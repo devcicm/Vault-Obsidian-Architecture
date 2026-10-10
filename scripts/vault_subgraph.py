@@ -176,20 +176,28 @@ def _desfase(nodes: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
+class _GrafoIlegible(Exception):
+    """El grafo existe y no se pudo leer; lleva el código del catálogo."""
+
+    def __init__(self, codigo: str, detalle: str) -> None:
+        super().__init__(detalle)
+        self.codigo = codigo
+
+
 def _load_graph() -> Optional[Dict[str, Any]]:
     """El grafo de consulta: el básico con el enriquecido superpuesto.
 
     Lo decide el dueño (`grafo_para_consulta`), el mismo que usa `vault_impact`
-    (AP-57).
+    (AP-57). `None` es solo que no hay grafo. AP-51: hasta 2026-10-10 un
+    `graph.json` corrupto también devolvía `None`, y la tool lo anunciaba como
+    GRAPH_MISSING; ahora sale `_GrafoIlegible` con la causa real.
     """
     try:
         return grafo_para_consulta(_grafo())
     except (json.JSONDecodeError, UnicodeDecodeError, OSError) as exc:
-        emit_error("vault_subgraph", "GRAPH_LOAD_ERROR", str(exc))
-        return None
+        raise _GrafoIlegible("GRAPH_LOAD_ERROR", f"{_graph_file()}: {exc}") from exc
     except Exception as exc:
-        emit_error("vault_subgraph", "UNEXPECTED_ERROR", str(exc))
-        return None
+        raise _GrafoIlegible("UNEXPECTED_ERROR", f"{type(exc).__name__}: {exc}") from exc
 
 
 def _nodes_by_path(graph: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
@@ -281,7 +289,10 @@ def vault_subgraph(
         return {"ok": False, "error_code": "INVALID_HOPS",
                 "error": "hops no puede ser negativo"}
 
-    graph = _load_graph()
+    try:
+        graph = _load_graph()
+    except _GrafoIlegible as exc:
+        return emit_error("vault_subgraph", exc.codigo, str(exc))
     if graph is None:
         return {
             "ok": False,
