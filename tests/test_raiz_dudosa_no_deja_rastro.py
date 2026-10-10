@@ -30,8 +30,14 @@ vault_raiz.VAULT_ROOT = falso
 vault_raiz._VAULT_ROOT_ORIGIN = "repo_root_fallback"
 import vault_write, vault_errors_trace
 from vault.autoria import voz
-cuerpo = "Contenido de prueba con cuerpo suficiente para pasar la puerta. " * 4
-r = vault_write.vault_write("07_Knowledge", "Nota de prueba", cuerpo, tags=["prueba"])
+# Tres líneas y agente: con menos, AP-11 o AP-16 rechazaban antes de llegar a
+# la raíz y el `mkdir` que este test dice cubrir no se ejercía (AP-44, medido
+# el 2026-10-10).
+cuerpo = "\\n".join(["Primera línea con palabras suficientes para la norma."] * 3)
+try:
+    r = vault_write.vault_write("07_Knowledge", "Nota de prueba", cuerpo, tags=["prueba"])
+except PermissionError as exc:
+    r = {"ok": False, "rechazo": type(exc).__name__}
 vault_errors_trace.log_trace({"tool": "sonda", "ok": False})
 voz.rotacion(voz._root_runtime())
 print(json.dumps({"write": r}, default=str))
@@ -42,6 +48,7 @@ def _sondear(falso: Path, permisivo: bool = False) -> dict:
     env = {k: v for k, v in os.environ.items()
            if k not in ("VAULT_ROOT", "VAULT_STRICT_ROOT", "VAULT_PERMISSIVE_ROOT")}
     env["PYTHONIOENCODING"] = "utf-8"
+    env["VAULT_AGENT"] = "pytest"
     if permisivo:
         env["VAULT_PERMISSIVE_ROOT"] = "1"
     p = subprocess.run([sys.executable, "-c", SONDA, str(falso), str(SCRIPTS)],
@@ -57,7 +64,7 @@ def test_raiz_adivinada_no_deja_ningun_fichero(tmp_path):
     falso = tmp_path / "site-packages" / "vault_toolkit"
     falso.mkdir(parents=True)
     salida = _sondear(falso)
-    assert salida["write"].get("ok") is False, salida
+    assert salida["write"].get("rechazo") == "RaizNoIdentificada", salida
     dejado = sorted(p.relative_to(falso).as_posix() for p in falso.rglob("*"))
     assert dejado == [], f"la raíz adivinada recibió escrituras: {dejado}"
 
