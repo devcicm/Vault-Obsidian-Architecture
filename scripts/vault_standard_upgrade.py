@@ -463,6 +463,8 @@ MIGRATIONS: Dict[str, Dict[str, Any]] = {
             "arquitectura; el fin de su vigencia sale de superseded_by o del status",
             "responsable y revisado_en (opcionales): quien responde del contenido de la nota "
             "y cuando se comprobo por ultima vez que sigue siendo cierta",
+            "version_pinned (opcional): mapa paquete -> version que la nota da por buena; "
+            "vault_drift_detect --mode vigencia lo cruza con el manifiesto del repo (AP-08)",
         ],
     },
 }

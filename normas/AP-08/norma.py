@@ -54,9 +54,15 @@ NORMA = {
         "manifiesto del repo declarado; medido el 2026-10-09 en las copias "
         "de ocho vaults consumidores, ninguna nota lo declara, y los "
         "`version:` que sí aparecen son la versión de la propia nota "
-        "(`v1.01`), no la de un paquete. Un detector sobre un universo vacío "
-        "saldría verde sin medir nada (AP-60), así que no se escribe hasta "
-        "que alguna tool emita el campo."
+        "(`v1.01`), no la de un paquete. Desde v41.4 el campo existe en el "
+        "contrato (opcional, mapa `paquete: versión`), lo emite "
+        "`vault_write --version-pinned` y el mismo modo lo cruza con el "
+        "manifiesto de la raíz del repo —`package.json`, `pyproject.toml`, "
+        "`requirements*.txt`— en `version_pinned.ancladas`, publicando cuántas "
+        "notas lo declaran y cuántas se compararon: un universo vacío sale "
+        "como tal, no como verde (AP-60). Sigue sin medir el número de versión "
+        "escrito en prosa por una nota que no declara el campo: qué librería "
+        "nombra el texto no se adivina."
     ),
     "introduced_version": "v19",
 }

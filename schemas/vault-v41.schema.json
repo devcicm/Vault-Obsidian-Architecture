@@ -117,6 +117,13 @@
       ],
       "cambio": "opcionales: quién responde del contenido y cuándo se comprobó por última vez; si están, responsable no vacío y revisado_en con fecha ISO",
       "fuente": "MIGRATIONS:responsable y revisado_en (opcionales)"
+    },
+    {
+      "campos": [
+        "version_pinned"
+      ],
+      "cambio": "opcional: mapa paquete → versión que la nota da por buena; si está, un mapa no vacío sin claves ni valores vacíos (AP-08)",
+      "fuente": "MIGRATIONS:version_pinned (opcional)"
     }
   ],
   "type": "object",
@@ -248,6 +255,23 @@
       "x-vault-nivel": "opcional",
       "x-vault-norma": "AP-08",
       "pattern": "^\\d{4}-\\d{2}-\\d{2}"
+    },
+    "version_pinned": {
+      "x-vault-tipo-esperado": "object",
+      "x-vault-nivel": "opcional",
+      "x-vault-norma": "AP-08",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "\\S"
+      },
+      "additionalProperties": {
+        "type": [
+          "string",
+          "number"
+        ],
+        "pattern": "\\S"
+      }
     }
   },
   "additionalProperties": true,
@@ -382,6 +406,23 @@
           "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-08",
           "pattern": "^\\d{4}-\\d{2}-\\d{2}"
+        },
+        "version_pinned": {
+          "x-vault-tipo-esperado": "object",
+          "x-vault-nivel": "opcional",
+          "x-vault-norma": "AP-08",
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "\\S"
+          },
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ],
+            "pattern": "\\S"
+          }
         }
       },
       "additionalProperties": true
@@ -509,6 +550,23 @@
           "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-08",
           "pattern": "^\\d{4}-\\d{2}-\\d{2}"
+        },
+        "version_pinned": {
+          "x-vault-tipo-esperado": "object",
+          "x-vault-nivel": "opcional",
+          "x-vault-norma": "AP-08",
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "\\S"
+          },
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ],
+            "pattern": "\\S"
+          }
         }
       },
       "additionalProperties": true
@@ -636,6 +694,23 @@
           "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-08",
           "pattern": "^\\d{4}-\\d{2}-\\d{2}"
+        },
+        "version_pinned": {
+          "x-vault-tipo-esperado": "object",
+          "x-vault-nivel": "opcional",
+          "x-vault-norma": "AP-08",
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "\\S"
+          },
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ],
+            "pattern": "\\S"
+          }
         }
       },
       "additionalProperties": true

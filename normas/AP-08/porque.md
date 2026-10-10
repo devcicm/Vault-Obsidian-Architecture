@@ -15,4 +15,4 @@ que nombra AP-08 en su cuerpo dentro de una tool que el catálogo declara, o un
 
 - **Detecta** (`tools_detecting`): `scripts/vault_drift_detect.py::vault_drift_vigencia`, `scripts/vault_drift_detect.py::main`.
 - **Cobertura parcial**: declarada en `norma.py` (`cobertura_parcial`).
-- **Tests** (`tests/`, criterio de la capa 4): `tests/test_ap08_prosa_universo.py::test_ninguna_tool_del_estandar_escribe_version_pinned`, `tests/test_ap08_vigencia.py::test_ap08_vigencia_nombra_la_nota_que_no_acompano_al_cambio`.
+- **Tests** (`tests/`, criterio de la capa 4): `tests/test_ap08_version_pinned.py::test_ap08_version_pinned_es_campo_opcional_del_contrato_v41`, `tests/test_ap08_version_pinned.py::test_ap08_vigencia_nombra_la_nota_anclada_a_una_version_que_ya_paso`, `tests/test_ap08_vigencia.py::test_ap08_vigencia_nombra_la_nota_que_no_acompano_al_cambio`.

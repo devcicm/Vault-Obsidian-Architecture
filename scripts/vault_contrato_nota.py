@@ -140,6 +140,14 @@ CAMPOS: Dict[str, Dict[str, Any]] = {
     "revisado_en": {"tipo": "string", "formato": "date", "nivel": "opcional",
                     "clases": ("contenido",), "requerido_desde": None,
                     "valores_desde": "v41", "norma": "AP-08", "patron": r"^\d{4}-\d{2}-\d{2}"},
+    # Las versiones de paquete que el texto de la nota da por buenas, como mapa
+    # `paquete: versión`. Lo pide la `prevention` de AP-08 desde v19 y nadie lo
+    # emitía; lo escribe `vault_write --version-pinned` y lo cruza con el
+    # manifiesto del repo `vault_drift_detect --mode vigencia`. La relación la
+    # declara la nota: el detector no adivina qué librería menciona el cuerpo.
+    "version_pinned": {"tipo": "object", "nivel": "opcional", "clases": ("contenido",),
+                       "requerido_desde": None, "valores_desde": "v41", "norma": "AP-08",
+                       "mapa_no_vacio": True},
 }
 
 #: Cuándo cambió el contrato y quién lo atestigua. `fuente` es
@@ -190,7 +198,11 @@ HISTORIA: Dict[str, List[Dict[str, Any]]] = {
             {"campos": ["responsable", "revisado_en"],
              "cambio": ("opcionales: quién responde del contenido y cuándo se comprobó por "
                         "última vez; si están, responsable no vacío y revisado_en con fecha ISO"),
-             "fuente": "MIGRATIONS:responsable y revisado_en (opcionales)"}],
+             "fuente": "MIGRATIONS:responsable y revisado_en (opcionales)"},
+            {"campos": ["version_pinned"],
+             "cambio": ("opcional: mapa paquete → versión que la nota da por buena; si está, "
+                        "un mapa no vacío sin claves ni valores vacíos (AP-08)"),
+             "fuente": "MIGRATIONS:version_pinned (opcional)"}],
 }
 
 #: Lo que el escritor pone cuando nadie dice otra cosa. Estaba como literal en
@@ -281,7 +293,29 @@ def errores_de_valor(datos: Mapping[str, Any], version: Optional[str] = None) ->
             errores.append(f"{campo} '{datos[campo]}' must be ISO 8601 (YYYY-MM-DDTHH:MM:SS...)")
         if d.get("no_vacio") and not str(datos[campo]).strip():
             errores.append(f"{campo} field present but empty (F7 AUTENTICIDAD requires non-empty value)")
+        if d.get("mapa_no_vacio") and not es_mapa_de_versiones(datos[campo]):
+            errores.append(f"{campo} must be a non-empty mapping package: version")
     return errores
+
+
+def es_mapa_de_versiones(valor: Any) -> bool:
+    """Un mapa no vacío `paquete: versión`, sin clave ni valor en blanco."""
+    return (isinstance(valor, Mapping) and bool(valor)
+            and all(str(k).strip() and v is not None and str(v).strip()
+                    for k, v in valor.items()))
+
+
+def pin_de_texto(texto: str) -> Optional[Tuple[str, str]]:
+    """`paquete@versión` → `(paquete, versión)`; None si falta una de las dos.
+
+    Corta por la **última** arroba: un paquete con ámbito de npm
+    (`@scope/pkg@2.1`) empieza por una. Es la forma de la CLI de `vault_write`;
+    el frontmatter guarda el mapa.
+    """
+    paquete, _, version = str(texto).strip().rpartition("@")
+    if not paquete.strip() or not version.strip():
+        return None
+    return paquete.strip(), version.strip()
 
 
 def contrato_de_version(version: str) -> Dict[str, Any]:
@@ -385,6 +419,13 @@ def _propiedad(campo: str, n: int, c: Mapping[str, Any]) -> Dict[str, Any]:
         if d.get("no_vacio"):
             prop["type"] = "string"
             prop["pattern"] = r"\S"
+        if d.get("mapa_no_vacio"):
+            # Un valor numérico sin comillas (`react: 18`) también lo acepta el
+            # validador; `pattern` solo restringe las cadenas.
+            prop["type"] = "object"
+            prop["minProperties"] = 1
+            prop["propertyNames"] = {"pattern": r"\S"}
+            prop["additionalProperties"] = {"type": ["string", "number"], "pattern": r"\S"}
     if "vocabulario" in d and n >= _numero(conocido_desde(campo) or "v99"):
         prop["x-vault-vocabulario-auditado"] = list(d["vocabulario"])
     return prop

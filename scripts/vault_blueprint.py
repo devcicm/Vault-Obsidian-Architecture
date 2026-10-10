@@ -141,7 +141,17 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     },
     {
         "id": "normas_criticas_sin_detector",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "v41.4",
+        "sostenida_por": [
+            "tests/test_ap08_version_pinned.py::test_ap08_vigencia_nombra_la_nota_anclada_a_una_version_que_ya_paso",
+            "tests/test_ap08_version_pinned.py::test_ap08_un_universo_vacio_se_publica_y_no_sale_verde_en_silencio",
+            "tests/test_ap08_version_pinned.py::test_ap08_vault_write_emite_version_pinned",
+            "tests/test_ap08_vigencia.py::test_ap08_vigencia_nombra_la_nota_que_no_acompano_al_cambio",
+            "tests/test_ap01_prosa.py::test_ap01_la_ruta_citada_en_prosa_que_no_existe_se_nombra",
+            "tests/test_ap01_prosa.py::test_ap01_la_cobertura_parcial_declara_la_prosa_medida",
+            "tests/test_ap04_hipotesis.py::test_ap04_no_tiene_detector_y_lo_declara",
+        ],
         "desde": "v40.11",
         "capa": "4",
         "que": (
@@ -196,7 +206,18 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "nula en /ans; la cifra vive en esa misma `cobertura_descubierta`. "
             "La parte en prosa de AP-08 tampoco: el `version_pinned:` que la "
             "haría decidible no lo declara ninguna nota de las copias medidas, "
-            "y el motivo queda en su `cobertura_parcial`.)"
+            "y el motivo queda en su `cobertura_parcial`.) Saldada, 2026-10-09, "
+            "cerrando lo decidible y declarando el resto, como decidió el "
+            "usuario: `version_pinned` entra en el contrato v41 (opcional, mapa "
+            "`paquete: versión`), lo emite `vault_write --version-pinned` y "
+            "`vault_drift_detect --mode vigencia` lo cruza con el manifiesto de "
+            "la raíz del repo, publicando su universo aunque esté vacío "
+            "(AP-60). Regla 7 sobre la copia de /ans y su repo en solo lectura: "
+            "0 notas lo declaran, y la respuesta lo dice en vez de salir verde. "
+            "Lo que queda sin detector —AP-04 entera, la prosa de AP-01 que no "
+            "es una ruta y la versión en prosa de AP-08 sin el campo— exige "
+            "interpretar el texto, y cada norma lo declara con su cifra medida "
+            "en su `cobertura_*`: ninguna queda en silencio ni es `critical`."
         ),
     },
     {

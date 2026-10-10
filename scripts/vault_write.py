@@ -1388,7 +1388,27 @@ Notas:
     # escritura hermanas lo declaran. Gana al `agent` de --meta.
     parser.add_argument("--agent", help="Agente que firma la nota (AP-16)")
 
+    # AP-08: la `prevention` pide `version_pinned` desde v19; sin un escritor
+    # que lo emita, el detector de `vault_drift_detect` mediría un universo vacío.
+    parser.add_argument(
+        "--version-pinned", action="append", metavar="PAQUETE@VERSION",
+        help="Versión de paquete que la nota da por buena (repetible; AP-08)",
+    )
+
     args = parser.parse_args()
+
+    pins: Dict[str, str] = {}
+    for texto in args.version_pinned or []:
+        pin = vault_contrato_nota.pin_de_texto(texto)
+        if pin is None:
+            print(json.dumps(emit_error(
+                "vault_write", "INVALID_VALUE",
+                f"--version-pinned '{texto}' no tiene la forma paquete@versión",
+                pista="Un paquete con ámbito de npm se escribe @scope/pkg@2.1: "
+                      "se corta por la última arroba.",
+            ), ensure_ascii=False))
+            return 1
+        pins[pin[0]] = pin[1]
 
     # --scan-path mode: scan directory for .md files
 
@@ -1418,6 +1438,8 @@ Notas:
                 meta = json.load(f)
         if args.agent:
             meta = {**(meta or {}), "agent": args.agent}
+        if pins:
+            meta = {**(meta or {}), "version_pinned": pins}
 
         for md_file in md_files:
             try:
@@ -1525,6 +1547,8 @@ Notas:
             meta = json.load(f)
     if args.agent:
         meta = {**(meta or {}), "agent": args.agent}
+    if pins:
+        meta = {**(meta or {}), "version_pinned": pins}
 
     # D5: los guards de contenido devuelven el envelope a mano; sale canónico.
     result = completar_envelope(

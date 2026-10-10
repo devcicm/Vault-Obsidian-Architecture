@@ -62,6 +62,7 @@ import vault_subproceso
 import sys
 
 from vault_errors import emit_error, emit_fallo, wrap_main, proyecto_registrado
+from vault_contrato_nota import es_mapa_de_versiones
 from vault_lib import parse_frontmatter, slugify_strict, utcnow
 from vault_norms_catalog import normalize_status
 from datetime import datetime, timezone
@@ -818,6 +819,126 @@ def _prosa_inexistente(
     return inexistentes, ambiguas
 
 
+# ─── AP-08 en el cuerpo: `version_pinned` frente al manifiesto ──────────────
+
+_REQUISITO = re.compile(r"^\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*(?:\[[^\]]*\])?\s*(.*)$")
+_NUMERO_DE_VERSION = re.compile(r"\d+(?:\.\d+)*")
+
+
+def _clave_de_paquete(nombre: str) -> str:
+    """El nombre normalizado como lo compara PEP 503: `FastAPI` y `fast_api`
+    son el mismo paquete. Los nombres de npm ya van en minúsculas y sin `_`,
+    así que la misma normalización no los confunde."""
+    return re.sub(r"[-_.]+", "-", str(nombre).strip()).lower()
+
+
+def _requisito(linea: str) -> Optional[Tuple[str, str]]:
+    """`FastAPI[all]>=0.110 ; python_version>'3.8'` → `("FastAPI", ">=0.110")`."""
+    linea = linea.split("#", 1)[0].split(";", 1)[0].strip()
+    if not linea or linea.startswith("-"):
+        return None
+    m = _REQUISITO.match(linea)
+    return (m.group(1), m.group(2).strip()) if m else None
+
+
+def versiones_del_manifiesto(repo: Path) -> Dict[str, Any]:
+    """Las versiones que declaran los manifiestos de la **raíz** del repo.
+
+    `package.json` (la versión del propio paquete y sus cuatro tablas de
+    dependencias), `pyproject.toml` (`[project]` y `[tool.poetry]`) y
+    `requirements*.txt`. Gana el primero que nombra un paquete, en ese orden.
+    Un manifiesto en una subcarpeta no se busca: el repo declarado es la raíz,
+    como para `files:`. `vault_onboard` lee los mismos ficheros para nombres y
+    framework, no versiones; no es el mismo criterio.
+    """
+    versiones: Dict[str, Dict[str, str]] = {}
+    leidos: List[str] = []
+    no_leidos: List[Dict[str, str]] = []
+
+    def anotar(nombre: Any, spec: Any, fuente: str) -> None:
+        if nombre and isinstance(spec, (str, int, float)):
+            versiones.setdefault(_clave_de_paquete(str(nombre)),
+                                 {"manifiesto": str(spec).strip(), "fuente": fuente})
+
+    pj = repo / "package.json"
+    if pj.is_file():
+        try:
+            datos = json.loads(pj.read_text(encoding="utf-8-sig"))
+        except (OSError, ValueError) as exc:
+            no_leidos.append({"fuente": "package.json", "motivo": type(exc).__name__})
+        else:
+            leidos.append("package.json")
+            anotar(datos.get("name"), datos.get("version"), "package.json")
+            for tabla in ("dependencies", "devDependencies", "peerDependencies",
+                          "optionalDependencies"):
+                for nombre, spec in (datos.get(tabla) or {}).items():
+                    anotar(nombre, spec, "package.json")
+    pp = repo / "pyproject.toml"
+    if pp.is_file():
+        try:
+            import tomllib  # 3.11+: con >=3.9 el fichero se declara no leído
+        except ImportError:
+            tomllib = None
+        if tomllib is None:
+            no_leidos.append({"fuente": "pyproject.toml",
+                              "motivo": "tomllib no está en este Python (<3.11)"})
+        else:
+            try:
+                datos = tomllib.loads(pp.read_text(encoding="utf-8-sig"))
+            except (OSError, ValueError) as exc:
+                no_leidos.append({"fuente": "pyproject.toml", "motivo": type(exc).__name__})
+            else:
+                leidos.append("pyproject.toml")
+                proyecto = datos.get("project") or {}
+                anotar(proyecto.get("name"), proyecto.get("version"), "pyproject.toml")
+                reqs = list(proyecto.get("dependencies") or [])
+                for grupo in (proyecto.get("optional-dependencies") or {}).values():
+                    reqs.extend(grupo or [])
+                for linea in reqs:
+                    r = _requisito(str(linea))
+                    if r:
+                        anotar(r[0], r[1], "pyproject.toml")
+                poetry = (datos.get("tool") or {}).get("poetry") or {}
+                anotar(poetry.get("name"), poetry.get("version"), "pyproject.toml")
+                for nombre, spec in (poetry.get("dependencies") or {}).items():
+                    if isinstance(spec, dict):
+                        spec = spec.get("version")
+                    anotar(nombre, spec, "pyproject.toml")
+    for req in sorted(repo.glob("requirements*.txt")):
+        try:
+            lineas = req.read_text(encoding="utf-8-sig").splitlines()
+        except (OSError, UnicodeDecodeError) as exc:
+            no_leidos.append({"fuente": req.name, "motivo": type(exc).__name__})
+            continue
+        leidos.append(req.name)
+        for linea in lineas:
+            r = _requisito(linea)
+            if r:
+                anotar(r[0], r[1], req.name)
+    return {"versiones": versiones, "leidos": leidos, "no_leidos": no_leidos}
+
+
+def _numeros(version: Any) -> Optional[Tuple[int, ...]]:
+    m = _NUMERO_DE_VERSION.search(str(version))
+    return tuple(int(x) for x in m.group(0).split(".")) if m else None
+
+
+def _pin_anclado(fijada: Any, manifiesto: str) -> Optional[bool]:
+    """True si la versión fijada ya no es la del manifiesto; None si no se compara.
+
+    Se compara la primera versión numérica de cada lado hasta la precisión del
+    más corto: `react: 18` sigue al día con `^18.2.0`, y `17.0.2` no. El
+    operador del manifiesto (`^`, `>=`, `~=`) no se interpreta: la versión
+    que escribe es la que el repo usa como referencia, y adivinar qué resuelve
+    un rango sería instalarlo.
+    """
+    a, b = _numeros(fijada), _numeros(manifiesto)
+    if a is None or b is None:
+        return None
+    k = min(len(a), len(b))
+    return a[:k] != b[:k]
+
+
 def vault_drift_vigencia(path: str, project: str) -> Dict[str, Any]:
     """AP-08: notas del proyecto cuyo código cambió después de su `updatedAt`.
 
@@ -862,6 +983,13 @@ def vault_drift_vigencia(path: str, project: str) -> Dict[str, Any]:
     prosa_base_ambigua = 0
     nombres: Optional[Set[str]] = None
     resueltos = 0
+    # AP-08 en el cuerpo: el universo se publica entero, también vacío (AP-60).
+    manifiesto: Optional[Dict[str, Any]] = None
+    pin_declaran = 0
+    pin_comparadas = 0
+    pin_ancladas: List[Dict[str, Any]] = []
+    pin_sin_comparar: List[Dict[str, Any]] = []
+    pin_ilegibles: List[str] = []
     for nota in sorted(notas_en_disco(raiz, secciones, incluir_indices=False)):
         rel = nota.relative_to(raiz).as_posix()
         if is_snapshot_path(rel):
@@ -886,6 +1014,33 @@ def vault_drift_vigencia(path: str, project: str) -> Dict[str, Any]:
             if ausentes_prosa:
                 prosa_inexistente.append({"path": rel, "norm": "AP-01",
                                           "inexistentes": ausentes_prosa})
+        if "version_pinned" in fm:
+            pin_declaran += 1
+            pins = fm.get("version_pinned")
+            if not es_mapa_de_versiones(pins):
+                pin_ilegibles.append(rel)
+            else:
+                if manifiesto is None:
+                    manifiesto = versiones_del_manifiesto(repo)
+                anclados: List[Dict[str, Any]] = []
+                sin_comparar: List[str] = []
+                comparada = False
+                for paquete, fijada in pins.items():
+                    dato = manifiesto["versiones"].get(_clave_de_paquete(str(paquete)))
+                    veredicto = None if dato is None else _pin_anclado(fijada, dato["manifiesto"])
+                    if veredicto is None:
+                        sin_comparar.append(str(paquete))
+                        continue
+                    comparada = True
+                    if veredicto:
+                        anclados.append({"paquete": str(paquete), "fijada": str(fijada),
+                                         "manifiesto": dato["manifiesto"],
+                                         "fuente": dato["fuente"]})
+                pin_comparadas += comparada
+                if anclados:
+                    pin_ancladas.append({"path": rel, "norm": "AP-08", "paquetes": anclados})
+                if sin_comparar:
+                    pin_sin_comparar.append({"path": rel, "paquetes": sin_comparar})
         files = fm.get("files")
         if isinstance(files, str):
             files = [files]
@@ -941,7 +1096,31 @@ def vault_drift_vigencia(path: str, project: str) -> Dict[str, Any]:
         "sin_historia": sin_historia,
         "codigo_inexistente": codigo_inexistente,
         "prosa_inexistente": prosa_inexistente,
-        "action_required": bool(desfasadas or sin_historia or codigo_inexistente),
+        "version_pinned": {
+            "norm": "AP-08",
+            "declaran": pin_declaran,
+            "comparadas": pin_comparadas,
+            "ancladas": pin_ancladas,
+            "sin_comparar": pin_sin_comparar,
+            "ilegibles": pin_ilegibles,
+            "manifiestos": (manifiesto or {}).get("leidos", []),
+            "manifiestos_no_leidos": (manifiesto or {}).get("no_leidos", []),
+            "universo": (
+                f"{pin_declaran} notas declaran `version_pinned`; "
+                f"{pin_comparadas} se compararon con el manifiesto." if pin_declaran else
+                "ninguna nota declara `version_pinned`: cero ancladas no dice que el "
+                "cuerpo esté al día, dice que no hay nada que comparar (AP-60)."
+            ),
+            "criterio": (
+                "Cada `paquete: versión` de `version_pinned` se compara con la versión "
+                "que declara el manifiesto de la raíz del repo, hasta la precisión del "
+                "más corto; distinta, la nota está anclada a una versión que ya pasó. "
+                "Un paquete fuera de todo manifiesto, o sin número de versión, se lista "
+                "en `sin_comparar` y no se juzga."
+            ),
+        },
+        "action_required": bool(desfasadas or sin_historia or codigo_inexistente
+                                or pin_ancladas),
         "criterio": (
             "Una nota con `files:` está desfasada si algún fichero cambió en git "
             "después de su `updatedAt`. Sin `files:` no se juzga; un `files:` "

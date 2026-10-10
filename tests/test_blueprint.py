@@ -247,15 +247,17 @@ def test_el_check_publica_cuantas_siguen_vivas_y_no_solo_el_total():
     assert envelope["declared_debt"] == len(bp.DEUDA_DECLARADA)
 
 
-def test_ap05_sigue_declarada_pendiente_y_nombrada():
+def test_ap05_sigue_nombrada_en_su_deuda_saldada():
     """La única `critical` sin detector no se pierde en un campo.
 
     Si algún día se le escribe el detector, esta entrada pasa a `saldada` con la
-    versión que lo hizo — no se borra.
+    versión que lo hizo — no se borra. Pasó en v41.4 (deuda #2): se cerró lo
+    decidible y el resto quedó declarado; AP-05 sigue nombrada en la entrada.
     """
     entrada = next(
         d for d in bp.DEUDA_DECLARADA if d["id"] == "normas_criticas_sin_detector")
-    assert entrada["estado"] == "pendiente"
+    assert entrada["estado"] == "saldada" and entrada["saldada_en"] == "v41.4"
+    assert entrada["sostenida_por"]
     assert "AP-05" in entrada["que"]
     assert "AP-05" in bp.blueprint()
 
