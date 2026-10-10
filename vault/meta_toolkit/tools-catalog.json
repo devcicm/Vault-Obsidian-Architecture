@@ -7011,6 +7011,10 @@
           "agent": {
             "type": "string",
             "description": "Agente que firma la nota (AP-16)"
+          },
+          "version-pinned": {
+            "type": "string",
+            "description": "Versión de paquete que la nota da por buena (repetible; AP-08)"
           }
         },
         "required": [
