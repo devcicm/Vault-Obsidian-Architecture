@@ -723,6 +723,29 @@ def move_folder(
     }
 
 
+def notas_que_enlazan(rel: str) -> List[str]:
+    """Notas con algún enlace que resuelve a `rel`, con el criterio de mover (AP-14).
+
+    Es el que `_mover_nota` usa para reescribir: wikilink por nombre o ruta,
+    con ancla y alias, y enlace markdown. `vault_delete` lo lee para avisar de
+    lo que deja roto; un criterio propio allí sería AP-57.
+    """
+    notas = [md for md in _raiz().rglob("*.md") if ".history" not in md.parts]
+    indice = indice_de_nombres(sorted(md.relative_to(_raiz()).as_posix() for md in notas))
+    enlazan = []
+    for md in notas:
+        desde = md.relative_to(_raiz()).as_posix()
+        if desde == rel:
+            continue
+        try:
+            contenido = md.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            continue
+        if _reescribir_enlaces(contenido, desde, rel, rel, indice)[1]:
+            enlazan.append(desde)
+    return sorted(enlazan)
+
+
 def check_move_impact(from_path: str, to_path: str) -> Dict[str, Any]:
     """Analiza el impacto de un movimiento sin ejecutarlo."""
     rechazo = _fuera_del_vault(from_path, to_path)
@@ -740,21 +763,7 @@ def check_move_impact(from_path: str, to_path: str) -> Dict[str, Any]:
 
     # El mismo criterio con el que `_mover_nota` reescribe (AP-57): el impacto
     # que se anuncia es el que el movimiento va a tener.
-    notas = [md for md in _raiz().rglob("*.md") if ".history" not in md.parts]
-    indice = indice_de_nombres(sorted(md.relative_to(_raiz()).as_posix() for md in notas))
-    backlinks = []
-    for md in notas:
-        if md == source:
-            continue
-
-        try:
-            md_content = md.read_text(encoding="utf-8", errors="ignore")
-        except (UnicodeDecodeError, PermissionError, OSError):
-            continue
-
-        rel = md.relative_to(_raiz()).as_posix()
-        if _reescribir_enlaces(md_content, rel, old_rel, old_rel, indice)[1]:
-            backlinks.append(rel)
+    backlinks = notas_que_enlazan(old_rel)
 
     return {
         "ok": True,

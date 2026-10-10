@@ -23,6 +23,7 @@ from vault_errors import emit_error, fuera_de_sesion, wrap_main
 from vault_entorno import agente_por_defecto
 from vault_io import assert_within_vault, atomic_write_json, atomic_write_text
 from vault_registry import es_artefacto_derivado
+from vault_move import notas_que_enlazan
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -201,6 +202,10 @@ def vault_delete(
     rel_path = note_path.resolve().relative_to(vault_root.resolve()).as_posix()
 
     already_logged = _already_deleted(path)
+    # AP-14: borrar deja rotos los enlaces que llegaban a la nota. No se
+    # reescriben —no hay destino—, pero el sobre los nombra: hasta 2026-10-10
+    # el consumidor se enteraba al auditar el grafo, no al borrar.
+    entrantes = notas_que_enlazan(rel_path)
 
     if dry_run:
         if already_logged:
@@ -216,6 +221,7 @@ def vault_delete(
             "sp01_status": sp01_note,
             "would_delete": not trash_only,
             "would_move_to_quarantine": trash_only,
+            "inbound_links": entrantes,
         }
 
     if not already_logged and not force:
@@ -243,6 +249,7 @@ def vault_delete(
             "note": path,
             "quarantined_to": str(trash_dest.relative_to(vault_root)).replace("\\", "/"),
             "sp01_status": sp01_note,
+            "inbound_links": entrantes,
             "search_index": _indice_tras_borrar(rel_path),
         }
     else:
@@ -257,6 +264,7 @@ def vault_delete(
                 "history": guardada,
                 "restore": f'vault_undo --restore "{rel_path}"',
             },
+            "inbound_links": entrantes,
             "search_index": _indice_tras_borrar(rel_path),
         }
 
