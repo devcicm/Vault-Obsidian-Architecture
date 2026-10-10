@@ -32,6 +32,7 @@ from vault_errors import emit_error, fuera_de_sesion, wrap_main
 
 from vault_io import assert_within_vault, atomic_write_text, get_vault_root, tomar_lock
 from vault_lib import separar_frontmatter, utcnow
+from vault_registry import es_artefacto_derivado
 from vault.kernel.frontmatter_escritura import Frontmatter
 from datetime import datetime, timezone
 
@@ -77,6 +78,18 @@ def vault_append(
 
     except ValueError as exc:
         return {"ok": False, "error_code": "INVALID_PATH", "error": str(exc)}
+
+    # AP-46: cada artefacto tiene un solo escritor. Un `.json` del sistema o el
+    # `index.md` que regenera su sección no son notas; añadirles texto los
+    # dejaba rotos con ok:true (medido como consumidor: standard-version.json
+    # corrupto y `vault status` inválido desde entonces). La ruta se resuelve
+    # antes de clasificarla, para que `x/../99_Index/...` no esquive el criterio.
+    relativa = note_path.resolve().relative_to(get_vault_root().resolve()).as_posix()
+    if note_path.suffix.lower() != ".md" or es_artefacto_derivado(relativa):
+        return {**emit_error(
+            "vault_append", "INVALID_PATH",
+            f"Not a note: {path} (only .md notes accept append; derived artifacts have their own writer)"),
+            "path": path}
 
     bloqueo = fuera_de_sesion("vault_append", note_path)
     if bloqueo:
