@@ -217,8 +217,8 @@ def _extract_error_codes(source: str) -> List[str]:
 
 def _read_source(name: str) -> Optional[str]:
     # Deuda #12: `scripts/<name>.py` puede ser un alias sin código; la fuente
-    # es la del dueño (AP-44). Que la tool exista se sigue mirando en scripts/.
-    p = vault_grafo_import.fuente_de(name) if (SCRIPTS_DIR / f"{name}.py").exists()         else SCRIPTS_DIR / f"{name}.py"
+    # es la del dueño (AP-44). Sin alias, `fuente_de` devuelve `scripts/<name>.py`.
+    p = vault_grafo_import.fuente_de(name)
     try:
         return p.read_text(encoding="utf-8", errors="replace") if p.exists() else None
     except Exception:
