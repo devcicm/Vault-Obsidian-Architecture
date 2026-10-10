@@ -564,6 +564,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "Escribe entrada en 00_System/.change-log.json",
             "Escribe entrada en 00_System/change-log.md",
             "Elimina o mueve a 20_Quarantine/",
+            "Guarda la versión borrada en .history/ (la restaura vault_undo --restore)",
         ],
         "example": "python vault_delete.py --path \"07_Knowledge/old.md\" --reason \"Duplicate of glossary/jwt.md\"",
         "related": ["vault_change_log", "vault_undo"],

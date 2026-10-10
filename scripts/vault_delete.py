@@ -20,12 +20,13 @@ from pathlib import Path
 from typing import Any, Dict
 
 from vault_errors import emit_error, fuera_de_sesion, wrap_main
-from vault_io import assert_within_vault, atomic_write_json
+from vault_io import assert_within_vault, atomic_write_json, atomic_write_text
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel import historia  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -101,6 +102,20 @@ def _indice_tras_borrar(rel_path: str) -> Dict[str, Any]:
     except Exception as exc:  # noqa: BLE001 - la nota ya no esta en disco
         return {"updated": False, "error": f"{type(exc).__name__}: {exc}",
                 "hint": "ejecutar vault_reindex"}
+
+
+def _guardar_lo_que_se_borra(note_path: Path, rel_path: str) -> str:
+    """CIA-A: la versión que se borra queda en `.history/` antes del `unlink`.
+
+    Hasta 2026-10-10 el borrado era definitivo salvo que una escritura previa
+    hubiese dejado versión. Mismo nombre que escribe `vault_write` y lee
+    `vault_undo` (`vault.kernel.historia`), así que `vault_undo --restore` la
+    encuentra sin saber que vino de un borrado. Devuelve el nombre guardado.
+    """
+    destino = historia.nombre_libre(_repo().dir_historial, rel_path)
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    atomic_write_text(destino, note_path.read_text(encoding="utf-8", errors="replace"))
+    return destino.name
 
 
 def vault_delete(
@@ -217,12 +232,17 @@ def vault_delete(
             "search_index": _indice_tras_borrar(rel_path),
         }
     else:
+        guardada = _guardar_lo_que_se_borra(note_path, rel_path)
         note_path.unlink()
         return {
             "ok": True,
             "action": "deleted",
             "note": path,
             "sp01_status": sp01_note,
+            "recoverable": {
+                "history": guardada,
+                "restore": f'vault_undo --restore "{rel_path}"',
+            },
             "search_index": _indice_tras_borrar(rel_path),
         }
 

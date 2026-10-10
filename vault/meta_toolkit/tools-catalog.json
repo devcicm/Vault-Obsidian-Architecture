@@ -1365,7 +1365,8 @@
       "side_effects": [
         "Escribe entrada en 00_System/.change-log.json",
         "Escribe entrada en 00_System/change-log.md",
-        "Elimina o mueve a 20_Quarantine/"
+        "Elimina o mueve a 20_Quarantine/",
+        "Guarda la versión borrada en .history/ (la restaura vault_undo --restore)"
       ],
       "status": "active",
       "exposed_via_mcp": true,

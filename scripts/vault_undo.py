@@ -65,10 +65,9 @@ def get_history_versions(note_path: str) -> List[Dict[str, Any]]:
     filtraba aquí también casaba con las versiones de `stem-otra.md`, y el orden
     por mtime lo deshace cualquier copia del vault.
     """
-    note_path_obj = _raiz() / note_path
-    if not note_path_obj.exists():
-        return []
-    rel = note_path_obj.relative_to(_raiz()).as_posix()
+    # Sin exigir que la nota exista: la versión de una nota borrada es justo la
+    # que más falta hace encontrar (CIA-A, 2026-10-10).
+    rel = (_raiz() / note_path).relative_to(_raiz()).as_posix()
     versions: List[Dict[str, Any]] = []
     for v in historia.versiones(_history_dir(), rel):
         try:
@@ -103,12 +102,17 @@ def _guardar_version_actual(note_path: Path) -> str:
     return destino.name
 
 
-def _restore_change_log(note_path: str, version_filename: str, agent: str) -> str:
-    """Write SP-01 entry before restoring over an existing note. Returns entry id."""
+def _restore_change_log(note_path: str, version_filename: str, agent: str,
+                        action: str = "updated") -> str:
+    """Write SP-01 entry before restoring. Returns entry id.
+
+    `created` cuando la nota no existía (se restaura una borrada); `updated` si
+    se tapa una existente.
+    """
     from vault_change_log import vault_change_log_add
 
     result = vault_change_log_add(
-        action="updated",
+        action=action,
         path=note_path,
         reason=f"Restored from .history/{version_filename}",
         agent=agent,
@@ -145,13 +149,12 @@ def vault_undo(
     vault_root = _raiz()
     note_path = vault_root / path
 
-    if not note_path.exists():
+    versions = get_history_versions(path)
+    if not note_path.exists() and not versions:
         return emit_error(
             "vault_undo", "NOTE_NOT_FOUND",
             f"No existe la nota: {path}",
         )
-
-    versions = get_history_versions(path)
     if not versions:
         return emit_error(
             "vault_undo", "HISTORY_NOT_FOUND",
@@ -171,6 +174,23 @@ def vault_undo(
 
     history_file = _history_dir() / target["filename"]
     restored_content = history_file.read_text(encoding="utf-8", errors="replace")
+
+    if not note_path.exists():
+        # CIA-A: la nota se borró (`vault_delete` guardó su versión). Vuelve a
+        # su sitio: no hay nada que tapar, así que no hace falta `--force` ni
+        # una copia `-restored-`. SP-01 lo anota como creación.
+        if not dry_run:
+            _restore_change_log(path, target["filename"], agent, action="created")
+            atomic_write_text(note_path, restored_content)
+        return {
+            "ok": True,
+            "action": "restored_deleted",
+            "note": path,
+            "restored_from": target["filename"],
+            "restored_at": utcnow(),
+            "versions_restored": 1,
+            "dry_run": dry_run,
+        }
 
     if force:
         previous_saved_as = None
