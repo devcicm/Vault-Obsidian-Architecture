@@ -887,7 +887,11 @@ def vault_write(
 
     """
 
-    tags = tags or []
+    # AP-26 / AP-39: `--tags "a,b"` —la forma que enseña el docstring— son dos
+    # tags. Llegaba como un valor y la normalización hacía de la coma un guion:
+    # una sola tag `a-b` (medido como consumidor, 2026-10-10). Obsidian no
+    # admite comas en una tag, así que partir no le quita nada a ninguna.
+    tags = [t.strip() for crudo in (tags or []) for t in str(crudo).split(",") if t.strip()]
 
     # CN-01: los bordes en blanco no son parte del título, y un título que no
     # puede nombrar una nota visible se rechaza antes de escribir nada.
