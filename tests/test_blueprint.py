@@ -117,9 +117,27 @@ def test_la_baseline_de_la_capa_4_esta_saldada_contra_lo_medido():
     assert resultado["settled_uncovered_norms"] == []
 
 
+def _una_norma_descubierta(monkeypatch):
+    """Una norma sin puerta ni test, añadida a la medida real.
+
+    Hasta 2026-10-09 estos tests leían la deuda del repo y suponían que había
+    alguna; con la capa 4 saldada (PAT-2 cubierta) se quedaban sin caso. La
+    norma se inyecta en `cobertura_de_normas`, no en `_sin_cobertura`, para que
+    el filtro de las que declaran su hueco siga en el camino probado.
+    """
+    real = bp.cobertura_de_normas
+
+    def con_una_mas():
+        return list(real()) + [{"code": "XX-00", "name": "inyectada por el test",
+                                "enforcement": "audit", "gates": [], "tests": [],
+                                "covered": False, "uncovered_declared": None}]
+
+    monkeypatch.setattr(bp, "cobertura_de_normas", con_una_mas)
+
+
 def test_una_norma_nueva_sin_puerta_ni_test_rompe_la_puerta(monkeypatch):
     """Que la baseline esté saldada no puede confundirse con que no se mida nada."""
-    monkeypatch.setattr(bp, "_leer_baseline", lambda: {"uncovered_norms": []})
+    _una_norma_descubierta(monkeypatch)
     resultado = bp.check()
     assert resultado["ok"] is False
     assert resultado["new_uncovered_norms"], "la puerta no mide nada"
@@ -131,6 +149,7 @@ def test_freeze_se_niega_a_estrenar_deuda(monkeypatch, tmp_path):
     Un `--freeze` que acepta cualquier cosa convierte la baseline en un inventario
     de lo que hay, que es lo contrario de un techo.
     """
+    _una_norma_descubierta(monkeypatch)
     monkeypatch.setattr(bp, "BASELINE", tmp_path / "vacia.json")
     salida = bp.freeze()
     assert salida["ok"] is False
@@ -140,6 +159,7 @@ def test_freeze_se_niega_a_estrenar_deuda(monkeypatch, tmp_path):
 
 
 def test_freeze_con_admitir_nuevos_los_lista(monkeypatch, tmp_path):
+    _una_norma_descubierta(monkeypatch)
     destino = tmp_path / "baseline.json"
     monkeypatch.setattr(bp, "BASELINE", destino)
     salida = bp.freeze(admitir_nuevos=True)

@@ -825,7 +825,7 @@ Un dominio = una nota canónica rica. Todas las referencias desde otros contexto
 
 - **Severidad:** N/A
 - **Enforcement:** recommended
-- **Detectado por:** vault_audit
+- **Detectado por:** vault_graph_fix, vault_audit
 
 Un stub con ≥3 líneas reales se enriquece progresivamente en cada sesión que lo toca. La eliminación solo aplica a skeletons (AP-11) y deceptive skeletons (AP-20).
 
@@ -1731,7 +1731,7 @@ Un dominio = una nota canónica rica. Todas las referencias desde otros contexto
 
 - **Severity:** N/A
 - **Enforcement:** recommended
-- **Detected by:** vault_audit
+- **Detected by:** vault_graph_fix, vault_audit
 
 Un stub con ≥3 líneas reales se enriquece progresivamente en cada sesión que lo toca. La eliminación solo aplica a skeletons (AP-11) y deceptive skeletons (AP-20).
 

@@ -40,7 +40,7 @@ from vault_errors import emit_error, wrap_main, proyecto_registrado
 
 from collections import defaultdict
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from difflib import SequenceMatcher
 
@@ -711,6 +711,39 @@ def _detect_stale(notes: List[Path]) -> List[Dict[str, Any]]:
             )
 
     return stale
+
+
+def _detect_stubs_sin_plazo(notes: List[Path]) -> List[Dict[str, Any]]:
+    """AP-03 visto desde PAT-2: stubs sin `expand_by`, con él vencido o ilegible.
+
+    La señal la afirmaba el catálogo desde v19 y nadie la leía. Publica la
+    cifra en su propia clave y no pesa en el `healthIndex`: no tiene fila en
+    `PENALIZACIONES` hasta medirla en vaults ajenos.
+    """
+    hoy = datetime.now(timezone.utc).date()
+    hallazgos = []
+    for n in notes:
+        fm = read_frontmatter(n)
+        if str(fm.get("status", "")).strip().lower() != "stub":
+            continue
+        rel = str(n.relative_to(_raiz())).replace("\\", "/")
+        # PAT-2: el patrón es el plazo; AP-03 es el stub que no lo tiene.
+        hallazgo = {"norm_code": "AP-03", "patron": "PAT-2", "path": rel}
+        valor = fm.get("expand_by")
+        if valor in (None, ""):
+            hallazgos.append({**hallazgo, "reason": "sin_expand_by"})
+            continue
+        try:
+            plazo = date.fromisoformat(str(valor)[:10])
+        except ValueError:
+            hallazgos.append({**hallazgo, "reason": "expand_by_ilegible",
+                              "expand_by": str(valor)})
+            continue
+        if plazo < hoy:
+            hallazgos.append({**hallazgo, "reason": "expand_by_vencido",
+                              "expand_by": plazo.isoformat(),
+                              "daysOverdue": (hoy - plazo).days})
+    return hallazgos
 
 
 def _detect_stuck_patterns(notes: List[Path]) -> List[Dict[str, Any]]:
@@ -2335,6 +2368,8 @@ def vault_audit(
 
     empty_indexes = _detect_empty_indexes(barrido=barrido)
 
+    stubs_sin_plazo = _detect_stubs_sin_plazo(all_notes)
+
     mermaid_errors = _detect_mermaid_errors()
 
     meta_issues = _detect_missing_metadata(content_notes)
@@ -2381,6 +2416,7 @@ def vault_audit(
         "ap22": ap22_count,
         "ap24": ap24_count,
         "empty_indexes": len(empty_indexes),
+        "stubs_sin_plazo": len(stubs_sin_plazo),
         "mermaid_errors": len(mermaid_errors),
         "missing_agent": len(missing_agent),
         "missing_tags": len(missing_tags),
@@ -2546,6 +2582,7 @@ def vault_audit(
                 {"norm_code": "AP-22", **e} for e in malformed_wikilinks
             ],
             "emptyIndexes": empty_indexes,
+            "stubsSinPlazo": stubs_sin_plazo,
             "mermaidErrors": mermaid_errors,
             "missingTags": missing_tags,
             "missingAgent": missing_agent,

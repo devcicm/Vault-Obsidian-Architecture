@@ -13,5 +13,5 @@ que nombra PAT-2 en su cuerpo dentro de una tool que el catálogo declara, o un
 `test_*` de `tests/` que la ejercita con el criterio de la capa 4.
 `vault_norms --check-framework` falla si alguna deja de existir.
 
-- **Patrón** (`tools_del_patron`): `vault_audit` (ninguna función de `scripts/vault_audit.py` nombra PAT-2 en su cuerpo).
-- **Tests** (`tests/`): ninguno la ejercita en el cuerpo de un `test_*`.
+- **Patrón** (`tools_del_patron`): `scripts/vault_graph_fix.py::_create_stub`; `scripts/vault_audit.py::_detect_stubs_sin_plazo`.
+- **Tests** (`tests/`, criterio de la capa 4): `tests/test_pat2_stub_con_plazo.py::test_pat2_el_audit_ve_el_stub_sin_plazo_y_el_vencido`.

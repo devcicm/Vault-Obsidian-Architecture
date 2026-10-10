@@ -37,7 +37,7 @@ import hashlib
 import re
 import sys
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -59,6 +59,7 @@ from vault_regex import (
 )
 # Los dueños canónicos del criterio que decide si un enlace resuelve (AP-57).
 from vault_lib import (
+    Config,
     indice_de_destinos,
     parse_frontmatter,
     resolver_destino_wikilink,
@@ -965,6 +966,12 @@ def wizard_pick(
 # no a 04_Sessions — son artefactos de triage, no notas de sesión.
 _STUBS_DIR = "02_Observability/maintenance/stubs"
 
+#: Plazo para enriquecer un stub antes de que `vault_audit` lo reporte vencido.
+#: No es una cifra propia: es el mismo plazo en que una nota pasa a stale
+#: (`vault_lib.Config.STALE_DAYS`). Un stub sin enriquecer en ese tiempo es una
+#: nota rancia que además nunca tuvo contenido.
+PLAZO_DE_ENRIQUECIMIENTO_DIAS = Config.STALE_DAYS
+
 
 def _stub_already_exists(root: Path, target_stem: str) -> bool:
     """Avoid creating a stub that collides with a real note."""
@@ -1004,7 +1011,9 @@ def _create_stub(
     stubs_dir = root / _STUBS_DIR
     stubs_dir.mkdir(parents=True, exist_ok=True)
     path = stubs_dir / f"{target_stem}.md"
-    now = datetime.now(timezone.utc).isoformat()[:19] + "Z"
+    ahora = datetime.now(timezone.utc)
+    now = ahora.isoformat()[:19] + "Z"
+    expand_by = (ahora + timedelta(days=PLAZO_DE_ENRIQUECIMIENTO_DIAS)).date().isoformat()
 
     ref_list = "\n".join(f"- `[[{p}]]`" for p in referenced_by[:20])
     if len(referenced_by) > 20:
@@ -1018,6 +1027,10 @@ def _create_stub(
         .set("id", f"stub-{target_stem}-{now[:10]}", texto=True)
         .set("title", target_stem, texto=True)
         .set("type", "stub")
+        # PAT-2: el stub nace con su plazo de enriquecimiento. Sin él, AP-03
+        # —stub sin política de expansión— lo cometía el propio toolkit.
+        .set("status", "stub")
+        .set("expand_by", expand_by, texto=True)
         .set("createdAt", now)
         .set("updatedAt", now)
         .set("created_by", "vault_graph_fix")

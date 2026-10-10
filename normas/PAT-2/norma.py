@@ -30,6 +30,6 @@ NORMA = {
     "prevention": "N/A — es el patrón correcto.",
     "tools_enforcing": [],
     "tools_detecting": [],
-    "tools_del_patron": ["vault_audit"],
+    "tools_del_patron": ["vault_graph_fix", "vault_audit"],
     "introduced_version": "v25",
 }
