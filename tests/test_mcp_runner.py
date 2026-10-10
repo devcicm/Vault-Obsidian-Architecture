@@ -40,6 +40,8 @@ pytestmark = pytest.mark.skipif(
     shutil.which("node") is None, reason="el runner MCP necesita Node en el PATH"
 )
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 class SesionMCP:
     """Cliente JSON-RPC mínimo sobre stdio, line-delimited."""
@@ -278,7 +280,7 @@ def test_ninguna_tool_ancla_rutas_de_entrada_en_el_cwd():
     culpables = [
         py.name
         for py in sorted(SCRIPTS.glob("vault_*.py"))
-        if "Path.cwd()" in py.read_text(encoding="utf-8") and py.name != "vault_io.py"
+        if "Path.cwd()" in gi.codigo_de(py).read_text(encoding="utf-8") and py.name != "vault_io.py"
     ]
     assert not culpables, (
         f"resuelven contra el CWD del proceso en vez de vault_io.resolve_input_path: {culpables}"

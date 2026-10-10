@@ -25,6 +25,8 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 from vault_norms_catalog import NORM_CATALOG  # noqa: E402
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def _ap08() -> dict:
     return next(n for n in NORM_CATALOG if n["code"] == "AP-08")
@@ -41,7 +43,7 @@ def test_quien_nombra_version_pinned_es_el_contrato_su_escritor_y_su_detector():
         p.name for p in (ROOT / "scripts").glob("*.py")
         # Los dos registros lo nombran como dato (la norma y su deuda), no lo emiten.
         if p.name not in {"vault_norms_catalog.py", "vault_blueprint.py"}
-        and "version_pinned" in p.read_text(encoding="utf-8")
+        and "version_pinned" in gi.codigo_de(p).read_text(encoding="utf-8")
     }
     # El contrato lo declara, su migración lo anuncia, el escritor lo emite y
     # el detector de AP-08 lo compara. Una tool nueva que lo nombre tiene que

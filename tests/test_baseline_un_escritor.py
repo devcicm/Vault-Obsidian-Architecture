@@ -34,6 +34,8 @@ OBJETIVO = {"tamano": 0, "fecha_limite": "2027-01-01", "cadencia_dias": 30,
 _SCAN_VACIO = {"new_untraceable": [], "untraceable_claims": [],
                "new_norms_without_distinction": [], "norms_without_distinction": []}
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def _previa(path: Path, clave: str) -> None:
     path.write_bytes(json.dumps({clave: [], "objetivo": OBJETIVO}).encode("utf-8"))
@@ -114,7 +116,7 @@ def test_ningun_modulo_escribe_una_baseline_por_su_cuenta():
     for py in sorted(SCRIPTS.glob("*.py")):
         if py.name == "vault_baseline.py":
             continue
-        for n in ast.walk(ast.parse(py.read_text(encoding="utf-8"))):
+        for n in ast.walk(ast.parse(gi.codigo_de(py).read_text(encoding="utf-8"))):
             if (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
                     and n.func.attr in ("write_text", "write_bytes")
                     and isinstance(n.func.value, ast.Name)

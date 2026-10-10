@@ -26,6 +26,8 @@ sys.path.insert(0, str(SCRIPTS))
 
 import vault_io  # noqa: E402
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 @pytest.fixture
 def raiz_restaurada():
@@ -131,7 +133,7 @@ def test_ningun_modulo_importa_ya_el_nombre_vault_root():
     )
     congelan = [
         py.name for py in SCRIPTS.glob("vault_*.py")
-        if patron.search(py.read_text(encoding="utf-8"))
+        if patron.search(gi.codigo_de(py).read_text(encoding="utf-8"))
     ]
     assert congelan == [], (
         f"vuelven a arrastrar el nombre en vez de resolver tarde: {congelan}"

@@ -434,9 +434,7 @@ def _check_entry_point(path: Path, source: str, name: str) -> List[Issue]:
 def _fuente(path: Path) -> Path:
     """El código que se analiza de `path`. Deuda #12: un `scripts/<tool>.py`
     migrado es un alias sin código; el código es el del dueño (AP-44)."""
-    if path.parent.resolve() == SCRIPTS_DIR.resolve():
-        return vault_grafo_import.fuente_de(path.stem)
-    return path
+    return vault_grafo_import.codigo_de(path)
 
 
 def scan_file(path: Path) -> List[Issue]:

@@ -32,6 +32,8 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 import vault_arch as arch  # noqa: E402
 from vault_entorno import VARIABLES, leer, tabla  # noqa: E402
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def test_toda_variable_declara_las_cinco_cosas():
     """Nombre, tipo, default, contexto que la lee y para qué sirve."""
@@ -88,7 +90,7 @@ def test_ningun_modulo_conserva_su_propio_default():
     for ruta in sorted((REPO_ROOT / "scripts").glob("vault_*.py")):
         if ruta.stem in arch._COPIAS_DE_ENTORNO_LEGITIMAS:
             continue
-        arbol = ast.parse(ruta.read_text(encoding="utf-8"))
+        arbol = ast.parse(gi.codigo_de(ruta).read_text(encoding="utf-8"))
         for nodo in ast.walk(arbol):
             # Por AST y no por texto: el propio guard menciona `os.environ` en
             # sus docstrings, y un test que lea líneas acusaría al detector.

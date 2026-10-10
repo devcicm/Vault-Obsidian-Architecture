@@ -45,6 +45,8 @@ _ESCRITURA_FUERA_DEL_VAULT = {
 
 TOKEN_FALSO = "ghp_" + "a" * 36
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def _escrituras_crudas(texto: str) -> int:
     """Cuenta `open(..., "w")` reales, no las menciones en comentarios."""
@@ -59,7 +61,7 @@ def _escrituras_crudas(texto: str) -> int:
 
 def test_ninguna_tool_escribe_saltandose_el_write_path():
     culpables = {
-        py.name: _escrituras_crudas(py.read_text(encoding="utf-8"))
+        py.name: _escrituras_crudas(gi.codigo_de(py).read_text(encoding="utf-8"))
         for py in sorted(SCRIPTS.glob("vault_*.py"))
         if py.name not in _ESCRITURA_FUERA_DEL_VAULT
     }

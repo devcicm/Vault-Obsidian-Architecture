@@ -25,6 +25,8 @@ sys.path.insert(0, str(SCRIPTS))
 import vault_io  # noqa: E402
 from vault_norms import _CONTAMINATION_DEPTH, _VAULT_ARTIFACT_NAMES, vault_norms_audit  # noqa: E402
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def _run_detect(tmp_path: Path, env_extra=None):
     """Ejecuta la detección en un proceso limpio con scripts/ copiado en tmp."""
@@ -210,7 +212,7 @@ def test_no_script_writes_the_contract_outside_the_vault():
     """Ninguna tool debe volver a escribir tool-spec.json junto a los scripts."""
     offenders = []
     for script in SCRIPTS.glob("vault_*.py"):
-        text = script.read_text(encoding="utf-8", errors="replace")
+        text = gi.codigo_de(script).read_text(encoding="utf-8", errors="replace")
         if 'SCRIPTS_DIR / "tool-spec.json"' in text or '_HERE / "tool-spec.json"' in text:
             offenders.append(script.name)
     assert not offenders, f"contrato resuelto fuera del vault en: {offenders}"

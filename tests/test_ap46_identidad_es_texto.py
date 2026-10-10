@@ -21,6 +21,8 @@ from vault.kernel.frontmatter_parsing import separar_frontmatter  # noqa: E402
 
 IDENTIDAD = {"title", "project"}
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def _sets_sin_texto(ruta: Path) -> list:
     """`.set("title"|"project", <variable>)` sin `texto=True`.
@@ -29,7 +31,7 @@ def _sets_sin_texto(ruta: Path) -> list:
     y queda fuera; una variable a secas sí puede.
     """
     malos = []
-    for n in ast.walk(ast.parse(ruta.read_text(encoding="utf-8"))):
+    for n in ast.walk(ast.parse(gi.codigo_de(ruta).read_text(encoding="utf-8"))):
         if (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
                 and n.func.attr == "set" and len(n.args) >= 2
                 and isinstance(n.args[0], ast.Constant) and n.args[0].value in IDENTIDAD

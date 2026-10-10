@@ -49,6 +49,8 @@ HOSTILES = [
     "  espacios  ",
 ]
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 @pytest.mark.parametrize("valor", HOSTILES)
 def test_todo_escalar_sobrevive_la_ida_y_la_vuelta(valor):
@@ -82,7 +84,7 @@ def test_ninguna_tool_escribe_el_titulo_sin_escapar():
     culpables = [
         f"{f.name}:{s[:m.start()].count(chr(10)) + 1}"
         for f in sorted((REPO_ROOT / "scripts").glob("*.py"))
-        for s in [f.read_text(encoding="utf-8")]
+        for s in [gi.codigo_de(f).read_text(encoding="utf-8")]
         for m in patron.finditer(s)
     ]
     assert not culpables, (
@@ -254,7 +256,7 @@ def test_ningun_envelope_sale_con_los_acentos_escapados():
     culpables = []
     for f in sorted(list((REPO_ROOT / "scripts").glob("*.py"))
                     + list((REPO_ROOT / "cli").glob("*.py"))):
-        for nodo in ast.walk(ast.parse(f.read_text(encoding="utf-8"))):
+        for nodo in ast.walk(ast.parse(gi.codigo_de(f).read_text(encoding="utf-8"))):
             if not (isinstance(nodo, ast.Call) and isinstance(nodo.func, ast.Name)
                     and nodo.func.id == "print"):
                 continue

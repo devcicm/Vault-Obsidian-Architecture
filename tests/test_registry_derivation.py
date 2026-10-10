@@ -25,6 +25,8 @@ from vault_norms import NORM_CATALOG, STATUS_VOCAB  # noqa: E402
 
 # ─── Catálogo de tools ───────────────────────────────────────────────────────
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def test_toda_tool_del_catalogo_pertenece_a_un_grupo():
     """Sin esto, una tool puede existir y ser invisible en todo recorrido por grupos."""
@@ -151,7 +153,7 @@ def test_status_vocab_no_esta_duplicado_como_literal_en_scripts():
     for path in (REPO_ROOT / "scripts").glob("vault_*.py"):
         if path == fuente:
             continue
-        texto = path.read_text(encoding="utf-8", errors="replace")
+        texto = gi.codigo_de(path).read_text(encoding="utf-8", errors="replace")
         for m in re.finditer(r"[\[\{]([^\[\]\{\}]{20,600}?)[\]\}]", texto, re.S):
             literales = set(re.findall(r"[\"']([a-z_]+)[\"']", m.group(1)))
             if firma.issubset(literales):
@@ -244,7 +246,7 @@ def test_ningun_modulo_declara_su_propia_lista_de_secciones():
     for py in sorted((REPO_ROOT / "scripts").glob("vault_*.py")):
         if py.name in exentos:
             continue
-        texto = py.read_text(encoding="utf-8", errors="ignore")
+        texto = gi.codigo_de(py).read_text(encoding="utf-8", errors="ignore")
         if "from vault_registry import" in texto or "import vault_registry" in texto:
             continue
         nombres = {m.strip("\"'") for m in patron.findall(texto)} & canonicas
@@ -287,7 +289,7 @@ def _colecciones_de_seccion():
 
     todas = set(vault_registry.ORDERED_SECTIONS)
     for fichero in sorted((REPO_ROOT / "scripts").glob("*.py")):
-        arbol = ast.parse(fichero.read_text(encoding="utf-8"))
+        arbol = ast.parse(gi.codigo_de(fichero).read_text(encoding="utf-8"))
         for nodo in arbol.body:
             if not isinstance(nodo, (ast.Assign, ast.AnnAssign)) or nodo.value is None:
                 continue
@@ -346,7 +348,7 @@ def test_ninguna_coleccion_menciona_una_seccion_inexistente():
     todas = set(vault_registry.ORDERED_SECTIONS)
     fantasmas = []
     for fichero in sorted((REPO_ROOT / "scripts").glob("*.py")):
-        arbol = ast.parse(fichero.read_text(encoding="utf-8"))
+        arbol = ast.parse(gi.codigo_de(fichero).read_text(encoding="utf-8"))
         for nodo in ast.walk(arbol):
             if isinstance(nodo, ast.Constant) and isinstance(nodo.value, str):
                 cabeza = nodo.value.split("/")[0]

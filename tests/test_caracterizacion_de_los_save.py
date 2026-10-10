@@ -117,6 +117,8 @@ VOLATILES = [
                 r"[0-9a-f]{4}-[0-9a-f]{12}"), "<UUID>"),
 ]
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def _estable(texto: str, raiz: Path) -> str:
     texto = texto.replace(str(raiz), "<VAULT>").replace(
@@ -352,7 +354,7 @@ def test_ningun_main_devuelve_envelope_en_vez_de_codigo_de_salida():
     culpables = []
     for ruta in sorted(SCRIPTS.glob("vault_*.py")):
         try:
-            arbol = ast.parse(ruta.read_text(encoding="utf-8"))
+            arbol = ast.parse(gi.codigo_de(ruta).read_text(encoding="utf-8"))
         except SyntaxError:  # pragma: no cover
             continue
         for fn in ast.walk(arbol):

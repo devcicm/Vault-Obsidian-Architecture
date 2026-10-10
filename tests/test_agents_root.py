@@ -18,11 +18,13 @@ AGENTS = REPO_ROOT / "AGENTS.md"
 _CIFRAS = {"una": 1, "dos": 2, "tres": 3, "cuatro": 4, "cinco": 5, "seis": 6,
            "siete": 7, "ocho": 8, "nueve": 9, "diez": 10}
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def _tools_con_root():
     tools = set()
     for script in (REPO_ROOT / "scripts").glob("*.py"):
-        arbol = ast.parse(script.read_text(encoding="utf-8"))
+        arbol = ast.parse(gi.codigo_de(script).read_text(encoding="utf-8"))
         for nodo in ast.walk(arbol):
             if (isinstance(nodo, ast.Call) and getattr(nodo.func, "attr", "") == "add_argument"
                     and any(isinstance(a, ast.Constant) and a.value == "--root" for a in nodo.args)):

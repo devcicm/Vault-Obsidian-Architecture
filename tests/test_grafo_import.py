@@ -180,3 +180,21 @@ def test_el_dueno_no_importa_a_nadie():
     """Fan-out cero. Un dueño de criterio que importa a sus consumidores no es
     un dueño: es un nudo, y cierra el ciclo que AP-58 mide."""
     assert G.fan_out()["vault_grafo_import"] == set()
+
+
+def test_codigo_de_resuelve_el_alias_a_su_dueno_y_deja_lo_demas():
+    """AP-44, deuda #12: un lector por ruta de `scripts/<m>.py` medía el alias
+    sin código. `codigo_de` es el único sitio que decide si una ruta es alias
+    (AP-57); el escáner de la CLI y los tests de propiedad pasan por él."""
+    raiz = G.DIRECTORIO.parent
+    alias = G.DIRECTORIO / "vault_subgraph.py"
+    assert G.codigo_de(alias) == (raiz / "vault" / "consulta" / "subgraph.py").resolve()
+    # Un módulo sin migrar se lee a sí mismo; una ruta de fuera, también.
+    assert G.codigo_de(G.DIRECTORIO / "vault_audit.py") == (G.DIRECTORIO / "vault_audit.py").resolve()
+    fuera = raiz / "cli" / "analyzer.py"
+    assert G.codigo_de(fuera) == fuera
+    # Todo alias que el puente conoce resuelve a un fichero con código.
+    for nombre, dueno in G._puente().items():
+        assert G.codigo_de(G.DIRECTORIO / f"{nombre}.py") == dueno
+        assert any(isinstance(n, (ast.FunctionDef, ast.ClassDef, ast.Assign))
+                   for n in ast.parse(dueno.read_text(encoding="utf-8")).body), nombre

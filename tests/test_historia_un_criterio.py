@@ -25,6 +25,8 @@ import vault_diff  # noqa: E402
 import vault_read  # noqa: E402
 import vault_undo  # noqa: E402
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 @pytest.fixture
 def vault(tmp_path, monkeypatch):
@@ -95,5 +97,5 @@ def test_nadie_fuera_del_kernel_construye_el_nombre_de_una_version():
     """El sello `%Y-%m-%dT%H-%M-%S` era la huella de cada copia del criterio."""
     huella = "%Y-%m-%dT%H-%M-%S"
     copias = [p.name for p in (RAIZ / "scripts").glob("*.py")
-              if huella in p.read_text(encoding="utf-8")]
+              if huella in gi.codigo_de(p).read_text(encoding="utf-8")]
     assert copias == [], copias

@@ -137,6 +137,20 @@ def fuente_de(modulo: str) -> Path:
     return _puente().get(modulo, (DIRECTORIO / f"{modulo}.py").resolve())
 
 
+def codigo_de(ruta: Path) -> Path:
+    """El fichero cuyo código hay que leer para medir `ruta`.
+
+    Si `ruta` es un `scripts/<m>.py`, su código es el de `fuente_de(m)`: un
+    alias migrado no tiene código propio. Cualquier otra ruta es su propio
+    código. Los lectores por ruta (guards, escáneres, tests de propiedad) pasan
+    por aquí en vez de decidir cada uno si `ruta` es alias (AP-57).
+    """
+    ruta = Path(ruta)
+    if ruta.parent.resolve() == DIRECTORIO:
+        return fuente_de(ruta.stem)
+    return ruta
+
+
 def nombre_de(ruta: Path) -> str:
     """El nombre de `scripts/` por el que se conoce a `ruta`: el del alias si
     `ruta` es el dueño de uno, o su propio nombre."""

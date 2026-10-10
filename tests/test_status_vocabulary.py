@@ -31,6 +31,8 @@ from vault_norms import (  # noqa: E402
     status_frontmatter_lines,
 )
 
+import vault_grafo_import as gi  # noqa: E402
+
 SCRIPTS = sorted((RAIZ / "scripts").glob("vault_*.py"))
 
 
@@ -198,7 +200,7 @@ _EMISION_DIRECTA = re.compile(r'["\']status:\s*\{')
 
 
 def _lineas_con_emision_directa(script):
-    fuente = script.read_text(encoding="utf-8", errors="replace")
+    fuente = gi.codigo_de(script).read_text(encoding="utf-8", errors="replace")
     return [
         (n, linea.strip())
         for n, linea in enumerate(fuente.splitlines(), 1)
@@ -234,7 +236,7 @@ def test_toda_tool_con_vocabulario_local_esta_declarada_en_el_registro():
     sospechosas = {}
     for script in SCRIPTS:
         try:
-            arbol = ast.parse(script.read_text(encoding="utf-8", errors="replace"))
+            arbol = ast.parse(gi.codigo_de(script).read_text(encoding="utf-8", errors="replace"))
         except SyntaxError:
             continue
         for nodo in ast.walk(arbol):
@@ -295,8 +297,8 @@ def _status_anunciado(script: Path):
 
 TOOLS_CON_STATUS_DE_DOMINIO = sorted(
     s for s in SCRIPTS
-    if "status_frontmatter_lines(" in s.read_text(encoding="utf-8", errors="replace")
-    and '"--status"' in s.read_text(encoding="utf-8", errors="replace")
+    if "status_frontmatter_lines(" in gi.codigo_de(s).read_text(encoding="utf-8", errors="replace")
+    and '"--status"' in gi.codigo_de(s).read_text(encoding="utf-8", errors="replace")
 )
 
 
@@ -314,7 +316,7 @@ def test_todo_status_que_la_cli_anuncia_resuelve_en_el_registro(script):
     y no tiene lista que comprobar; uno que valida a mano contra una tupla sí
     la tiene, así que no se acepta: tiene que declararla como `choices`.
     """
-    fuente = script.read_text(encoding="utf-8", errors="replace")
+    fuente = gi.codigo_de(script).read_text(encoding="utf-8", errors="replace")
     choices = _status_anunciado(script)
     if choices is None:
         assert "status not in (" not in fuente, (
