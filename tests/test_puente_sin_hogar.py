@@ -394,3 +394,13 @@ def test_la_memoria_de_spec_lee_la_fuente_en_el_dueno():
     assert "alias de `vault." not in sm._get_description(fuente)
     obligatorios, _ = sm._extract_args(fuente)
     assert obligatorios, "vault_append exige --path y --content"
+
+
+def test_validar_el_spec_de_una_tool_migrada_mide_al_dueno():
+    """`vault_spec_validate._read_source` leía el alias: un spec correcto que
+    declara `--path` y `--content` para `vault_append` salía como drift
+    —«falta en argparse»— porque el alias no tiene un solo `add_argument`."""
+    import vault_spec_validate as sv
+
+    r = sv.validate_tool("vault_append", {"required_args": ["--path", "--content"]})
+    assert not [d for d in r["drifts"] if "path" in str(d) or "content" in str(d)], r

@@ -34,6 +34,7 @@ from typing import Any, Dict, List, Optional, Set
 from vault_errors import emit_error, wrap_main
 from vault_io import resolve_tool_spec, tool_spec_path
 from vault_registry import folder_owner, check_folder_collisions
+import vault_grafo_import
 
 SCRIPTS_DIR = Path(__file__).parent
 
@@ -88,7 +89,9 @@ def load_spec() -> Dict[str, Any]:
 # ──────────────────────────────────────────────────────────────────────────────
 
 def _read_source(name: str) -> Optional[str]:
-    path = SCRIPTS_DIR / f"{name}.py"
+    # Deuda #12: `scripts/<name>.py` puede ser un alias sin código; la fuente
+    # es la del dueño (AP-44). Sin alias, `fuente_de` devuelve `scripts/<name>.py`.
+    path = vault_grafo_import.fuente_de(name)
     try:
         return path.read_text(encoding="utf-8", errors="replace") if path.exists() else None
     except (OSError, UnicodeDecodeError, PermissionError) as exc:
