@@ -234,6 +234,7 @@ def _fix_path_anchored(text: str, all_stems: dict[str, list[str]] | None = None)
     Sin índice (`all_stems is None`) no se toca nada: no saber es motivo para
     no escribir, no para escribir igual.
     """
+    # AP-21: la carpeta se despoja solo si el enlace no resuelve tal cual.
     pattern = r"\[\[([^\]]*\/[^\]]+)\]\]"
     fixes = 0
 
@@ -306,6 +307,8 @@ def _process_note(
     fixes: list[dict[str, Any]] = []
     resuelven = resuelven or set()
 
+    # AP-14: un enlace roto se reescribe al destino que existe; uno que
+    # resuelve no se toca.
     existing_stems = set(all_stems.keys())
     # AP-57: los candidatos se buscan **fuera** del código. Un `[[ejemplo]]`
     # dentro de un fence es texto que Obsidian enseña, no un enlace que

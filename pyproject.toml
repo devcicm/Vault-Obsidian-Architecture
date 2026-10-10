@@ -51,7 +51,8 @@ vault_gobernanza = "vault.gobernanza.tool:main"
 # copia: el mismo fichero que se sirve desde el checkout (`vault mcp-path`).
 # deuda #10: las normas en paquete viajan como package data de
 # vault_toolkit.normas, hermana de _impl/, que es donde vault_norms_catalog las
-# busca. Solo norma.py y porque.md: los test_*.py los ejecuta el repo.
+# busca. norma.py, porque.md y las caras derivadas guard.py y heal.py; los
+# test_*.py los ejecuta el repo.
 package-dir = {"vault_toolkit._impl" = "scripts", "vault_toolkit.mcp" = "mcp/nodejs", "vault_toolkit.normas" = "normas"}
 
 packages = ["vault", "vault.kernel", "vault.durabilidad", "vault.indices", "vault.grafo", "vault.consulta", "vault.gobernanza", "vault.ciclo_de_vida", "vault.meta_toolkit", "vault.autoria", "vault_toolkit", "vault_toolkit.operations", "vault_toolkit._impl", "vault_toolkit.mcp", "vault_toolkit.normas"]
@@ -66,7 +67,7 @@ build_py = "empaquetado.construir.BuildPy"
 "vault.meta_toolkit" = ["tools-catalog.json"]
 "vault.ciclo_de_vida" = ["runtime-seed.json"]
 "vault_toolkit.mcp" = ["vault-mcp-server.mjs", "tools-catalog.json", "env-table.json"]
-"vault_toolkit.normas" = ["*/norma.py", "*/porque.md"]
+"vault_toolkit.normas" = ["*/norma.py", "*/porque.md", "*/guard.py", "*/heal.py"]
 # `recursos_distribucion.entra_al_wheel` la clasifica `bootstrap`: sin ella,
 # `vault_graph_merge` y `vault_init` funcionan sin ontología en la wheel.
 "vault_toolkit._impl" = ["vault_ontology.json"]

@@ -476,7 +476,15 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     },
     {
         "id": "la_norma_no_es_un_paquete",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "v41.4",
+        "sostenida_por": [
+            "tests/test_normas_caras.py::test_todo_paquete_tiene_sus_cinco_caras",
+            "tests/test_normas_caras.py::test_las_caras_en_disco_son_las_derivadas",
+            "tests/test_normas_caras.py::test_un_sanador_que_no_nombra_la_norma_falla_la_forma",
+            "tests/test_normas_caras.py::test_una_cara_editada_a_mano_se_detecta",
+            "tests/test_normas_paquete.py::test_la_guarda_ve_la_cara_que_falta",
+        ],
         "desde": "v40.20",
         "capa": "7",
         "que": (
@@ -520,7 +528,18 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "`heal.py` propios. El criterio de cada norma sigue con su dueño "
             "en `scripts/` o `vault/`, y moverlo a la carpeta sería la "
             "segunda copia que el paquete viene a quitar, así que esta deuda "
-            "no se salda solo por haber migrado las entradas.)"
+            "no se salda solo por haber migrado las entradas.)\n\n"
+            "(2026-10-09, m197: saldada.) `guard.py` y `heal.py` existen en "
+            "cada paquete y son **derivados**, no escritos: cada "
+            "`ruta::símbolo` es una función que nombra la norma en su cuerpo "
+            "dentro de una tool que el catálogo declara, así que apuntan al "
+            "dueño sin copiar su criterio. Las tools que reparan salen de un "
+            "registro nuevo con dueño, `vault_norms_catalog.SANADORES`, que es "
+            "por tool y no por norma; `tools_healing(code)` se deriva de él. "
+            "Una norma sin sanador lleva `HEAL = None` con su `MOTIVO`, y un "
+            "par del registro sin función que lo nombre falla la puerta "
+            "(AP-55). `--check-framework` falla si una cara falta o no es la "
+            "que sale de derivarla, y la wheel las lleva."
         ),
     },
     {

@@ -22,6 +22,7 @@ estaban.** Son cruces de frontera reconocidos y congelados en
 movimiento de código habría hecho imposible atribuir un fallo a uno de los dos.
 """
 
+import ast
 import json
 import re
 import sys
@@ -57,11 +58,15 @@ from vault.gobernanza.auditoria_runtime import auditar_runtime  # noqa: E402
 # la fachada directamente desde el catálogo: importarlo aquí sin usarlo habría
 # creado una dependencia falsa justo en el commit que existe para medir cuáles
 # son las de verdad.
+from vault_grafo_import import fuente_de
 from vault_norms_catalog import (
     NORM_CATALOG,
+    RAIZ_NORMAS,
     STATUS_TRANSITIONS,
     STATUS_VOCAB,
+    norma_por_codigo,
     normalize_status,
+    tools_healing,
 )
 
 
@@ -247,10 +252,12 @@ def framework_drift_check(spec_path: Optional[Path] = None) -> Dict[str, Any]:
     # La norma como paquete (deuda #10): la forma de `normas/<código>/` la
     # mide el catálogo, que es quien la carga; aquí solo se publica y pesa.
     from vault_norms_catalog import NORMAS_EN_PAQUETE, forma_de_paquetes
-    paquetes = {"cargados": list(NORMAS_EN_PAQUETE), "problemas": forma_de_paquetes()}
+    paquetes = {"cargados": list(NORMAS_EN_PAQUETE), "problemas": forma_de_paquetes(),
+                "caras_desfasadas": caras_desfasadas()}
 
     return {
-        "ok": not missing and not sin_seccion and iso["ok"] and not paquetes["problemas"],
+        "ok": not missing and not sin_seccion and iso["ok"] and not paquetes["problemas"]
+              and not paquetes["caras_desfasadas"],
         "tool": "vault_norms.framework_drift",
         "spec": spec.name,
         "total_ids": sum(len(e) for e in FRAMEWORK_REGISTRIES.values()),
@@ -262,6 +269,191 @@ def framework_drift_check(spec_path: Optional[Path] = None) -> Dict[str, Any]:
         "iso_cobertura_invalida": iso["cobertura_invalida"],
         "paquetes_de_norma": paquetes,
     }
+
+
+# ─── Las caras `guard.py` y `heal.py` de cada paquete (deuda #10) ────────────
+#
+# Derivadas, no escritas: cada `ruta::símbolo` es una función que nombra la
+# norma en su cuerpo dentro de una tool que el catálogo declara —`guard.py`,
+# las que la aplican o la detectan; `heal.py`, las de `tools_healing`, que sale
+# del registro `vault_norms_catalog.SANADORES`—. Apuntan al dueño y no copian
+# su criterio: el día que la función cambie de sitio la cara se regenera, y el
+# día que deje de nombrar la norma la cara desaparece en vez de mentir.
+# `framework_drift_check` falla si lo que hay en disco no es lo que sale de
+# derivarlo.
+
+#: Los campos del catálogo cuyas tools son la cara `guard.py`.
+CAMPOS_DE_GUARD = ("tools_enforcing", "tools_detecting", "tools_del_patron")
+
+#: Cómo se regeneran, para el mensaje de la puerta.
+REGENERAR_CARAS = ('python -c "import sys; sys.path[:0]=[\'scripts\', \'.\']; '
+                   'import vault_norms_engine as e; e.escribir_caras_derivadas()"')
+
+
+def _cuerpo_sin_docstring(lineas: List[str], nodo: ast.AST) -> str:
+    """Las líneas del cuerpo, comentarios incluidos, sin la docstring: un
+    comentario que nombra la norma en la función que la cumple cuenta (capa 4),
+    y la docstring que la menciona de pasada, no."""
+    cuerpo = nodo.body
+    if ast.get_docstring(nodo, clean=False) is not None:
+        cuerpo = cuerpo[1:]
+    if not cuerpo:
+        return ""
+    # El comentario que encabeza el cuerpo va antes de la primera sentencia y
+    # el AST no lo ve: se sube por las líneas de comentario hasta la docstring
+    # o la firma.
+    inicio = cuerpo[0].lineno - 1
+    while inicio > 0 and lineas[inicio - 1].lstrip().startswith("#"):
+        inicio -= 1
+    return "".join(lineas[inicio:nodo.end_lineno])
+
+
+def funciones_que_nombran(ruta: Path, code: str) -> List[str]:
+    """Las funciones de `ruta` que nombran `code` en su cuerpo, en orden.
+
+    Solo la más interna: la externa contiene a la anidada y citarla sería
+    señalar el módulo entero. `AP-1` no casa dentro de `AP-14`.
+    """
+    try:
+        texto = ruta.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return []
+    patron = re.compile(rf"(?<![\w-]){re.escape(code)}(?!\d)")
+    if not patron.search(texto):
+        return []
+    try:
+        arbol = ast.parse(texto)
+    except SyntaxError:
+        return []
+    lineas = texto.splitlines(keepends=True)
+    hit = [n for n in ast.walk(arbol)
+           if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+           and patron.search(_cuerpo_sin_docstring(lineas, n))]
+    ids = {id(h) for h in hit}
+    internas = [h for h in hit
+                if not any(id(d) in ids for d in ast.walk(h) if d is not h)]
+    vistos: List[str] = []
+    for h in sorted(internas, key=lambda h: h.lineno):
+        if h.name not in vistos:
+            vistos.append(h.name)
+    return vistos
+
+
+def caras_de(code: str, tools: List[str], raiz_repo: Path) -> Dict[str, List[str]]:
+    """`{tool: ["ruta::símbolo", ...]}` para las tools dadas.
+
+    La ruta la resuelve `vault_grafo_import.fuente_de`, que sigue el alias del
+    puente hasta el dueño en `vault/`: la cara apunta a donde vive el código.
+    """
+    out: Dict[str, List[str]] = {}
+    for tool in tools:
+        modulo = tool.split()[0].split(".")[0]
+        ruta = fuente_de(modulo)
+        try:
+            rel = ruta.resolve().relative_to(Path(raiz_repo).resolve()).as_posix()
+        except ValueError:
+            rel = ruta.as_posix()
+        out[tool] = [f"{rel}::{f}" for f in funciones_que_nombran(ruta, code)]
+    return out
+
+
+def _lista_py(nombre: str, caras: List[str]) -> str:
+    if not caras:
+        return f"{nombre}: list = []\n"
+    return f"{nombre} = [\n" + "".join(f"    {c!r},\n" for c in caras) + "]\n"
+
+
+def caras_derivadas(code: str, raiz_repo: Path) -> Dict[str, Any]:
+    """El texto de `guard.py` y `heal.py` de `code`, y lo que no cuadra.
+
+    `problemas` lista las tools de `SANADORES` que dicen reparar la norma sin
+    una función que la nombre: el registro afirmaría un heal que nadie puede
+    seguir hasta el código (AP-55).
+    """
+    norma = norma_por_codigo(code) or {}
+    guard_tools = [t for campo in CAMPOS_DE_GUARD for t in (norma.get(campo) or [])]
+    guard = [c for cs in caras_de(code, guard_tools, raiz_repo).values() for c in cs]
+    heal_por_tool = caras_de(code, tools_healing(code), raiz_repo)
+    heal = [c for cs in heal_por_tool.values() for c in cs]
+    problemas = [f"SANADORES dice que {t} repara {code} y ninguna función suya lo nombra"
+                 for t, cs in heal_por_tool.items() if not cs]
+
+    cab_guard = (
+        f'"""{code} — las caras que la aplican y la detectan (deuda #10).\n\n'
+        "Derivado, no escrito: cada `ruta::símbolo` es una función de una tool de\n"
+        "`tools_enforcing`, `tools_detecting` o `tools_del_patron` que nombra la\n"
+        "norma en su cuerpo. El criterio sigue con su dueño; aquí solo se apunta a\n"
+        "él. `vault_norms --check-framework` falla si esto deja de ser lo que sale\n"
+        "de derivarlo; se regenera con `vault_norms_engine.escribir_caras_derivadas`.\n"
+        '"""\n\n'
+    )
+    cab_heal = (
+        f'"""{code} — las caras que la reparan en una nota que ya existe (deuda #10).\n\n'
+        "Derivado, no escrito: las tools salen de `vault_norms_catalog.SANADORES`\n"
+        "y cada `ruta::símbolo` es una función suya que nombra la norma en su\n"
+        "cuerpo. `vault_norms --check-framework` falla si esto deja de ser lo que\n"
+        "sale de derivarlo.\n"
+        '"""\n\n'
+    )
+    if heal:
+        cuerpo_heal = _lista_py("HEAL", heal)
+    else:
+        cuerpo_heal = (
+            "HEAL = None\n"
+            f"MOTIVO = {('ninguna tool de vault_norms_catalog.SANADORES repara ' + code + '.')!r}\n"
+        )
+    return {
+        "guard.py": cab_guard + _lista_py("GUARD", guard),
+        "heal.py": cab_heal + cuerpo_heal,
+        "problemas": problemas,
+    }
+
+
+def caras_desfasadas(raiz: Optional[Path] = None,
+                     raiz_repo: Optional[Path] = None) -> List[Dict[str, str]]:
+    """Qué `guard.py`/`heal.py` no son lo que sale de derivarlos.
+
+    Solo en el checkout: la wheel no lleva el código de gobernanza al que
+    apuntan muchas caras, y derivarlas allí daría otras.
+    """
+    raiz = Path(raiz) if raiz else RAIZ_NORMAS
+    raiz_repo = Path(raiz_repo) if raiz_repo else raiz.parent
+    if not (raiz_repo / "scripts").is_dir() or not raiz.is_dir():
+        return []
+    problemas: List[Dict[str, str]] = []
+    for carpeta in sorted(p for p in raiz.iterdir()
+                          if p.is_dir() and not p.name.startswith(("_", "."))):
+        esperado = caras_derivadas(carpeta.name, raiz_repo)
+        for p in esperado["problemas"]:
+            problemas.append({"paquete": carpeta.name, "problema": p})
+        for cara in ("guard.py", "heal.py"):
+            fichero = carpeta / cara
+            actual = fichero.read_text(encoding="utf-8") if fichero.is_file() else None
+            if actual is None:
+                continue  # la falta la reporta `forma_de_paquetes`
+            if actual != esperado[cara]:
+                problemas.append({"paquete": carpeta.name,
+                                  "problema": f"{cara} no es el derivado; regenerar con "
+                                              f"{REGENERAR_CARAS}"})
+    return problemas
+
+
+def escribir_caras_derivadas(raiz: Optional[Path] = None) -> Dict[str, Any]:
+    """Regenera `guard.py` y `heal.py` de cada paquete. Escribe en el repo del
+    estándar, no en un vault: es la doc derivada de la regla 3, como el plano."""
+    raiz = Path(raiz) if raiz else RAIZ_NORMAS
+    escritas: List[str] = []
+    for carpeta in sorted(p for p in raiz.iterdir()
+                          if p.is_dir() and not p.name.startswith(("_", "."))):
+        esperado = caras_derivadas(carpeta.name, raiz.parent)
+        for cara in ("guard.py", "heal.py"):
+            fichero = carpeta / cara
+            actual = fichero.read_text(encoding="utf-8") if fichero.is_file() else None
+            if actual != esperado[cara]:
+                fichero.write_bytes(esperado[cara].encode("utf-8"))
+                escritas.append(f"{carpeta.name}/{cara}")
+    return {"ok": True, "tool": "vault_norms_engine.escribir_caras_derivadas",
+            "written": len(escritas), "files": escritas}
 
 
 def iso_coverage_check(scripts_dir: Optional[Path] = None) -> Dict[str, Any]:

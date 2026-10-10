@@ -74,7 +74,8 @@ def forma_de_paquetes(raiz: Optional[Path] = None,
                       raiz_repo: Optional[Path] = None) -> List[Dict[str, str]]:
     """Qué paquetes de norma no tienen la forma declarada.
 
-    Falla si falta `norma.py`, `porque.md` o un `test_*.py`; si el `code` no es
+    Falla si falta `norma.py`, `porque.md`, `guard.py`, `heal.py` o un
+    `test_*.py`; si el `code` no es
     el nombre de la carpeta; si la carpeta no la carga el catálogo, o la carga
     dos veces; y si `porque.md` cita una cara `ruta::símbolo` que no existe.
 
@@ -97,7 +98,7 @@ def forma_de_paquetes(raiz: Optional[Path] = None,
         nombre = carpeta.name
         if cargadas.count(nombre) != 1:
             falta(nombre, f"el catálogo la carga {cargadas.count(nombre)} veces, no una")
-        for cara in ("norma.py", "porque.md"):
+        for cara in ("norma.py", "porque.md", "guard.py", "heal.py"):
             if not (carpeta / cara).is_file():
                 falta(nombre, f"falta {cara}")
         if raiz_repo is not None and not list(carpeta.glob("test_*.py")):
@@ -279,6 +280,33 @@ def norma_por_codigo(code: str) -> Dict[str, Any] | None:
     que quien viene de fuera entra por aquí.
     """
     return _NORM_BY_CODE.get(code)
+
+
+#: Las tools que reescriben una nota que ya existe para repararla, y qué normas
+#: repara cada una (deuda #10). El registro es por tool y no por norma: quien
+#: escribe un sanador declara aquí lo que sana, y el `tools_healing` de cada
+#: norma se deriva —`tools_healing(code)`— en vez de copiarse en 81 paquetes.
+#: No entra lo que escribe una nota nueva (eso es prevención, `tools_enforcing`)
+#: ni lo que restaura una versión anterior (`vault_undo`, `vault_restore`), que
+#: no repara ninguna norma: devuelve lo que había. Cada par lo sostiene una
+#: función del sanador que nombra la norma en su cuerpo; si no la hay,
+#: `vault_norms --check-framework` falla, porque el registro afirmaría un heal
+#: que nadie puede seguir hasta el código (AP-55).
+SANADORES: Dict[str, tuple] = {
+    "vault_fix_brackets": ("AP-22", "AP-24"),
+    "vault_frontmatter_heal": ("AP-56",),
+    "vault_frontmatter_completar": ("AP-12", "AP-13", "AP-16", "AP-26", "AP-27",
+                                    "AP-28", "AP-29", "AP-30"),
+    "vault_supersede": ("AP-17",),
+    "vault_project": ("AP-63",),
+    "vault_norms_engine": ("AP-46",),
+    "vault_graph_fix": ("AP-14", "AP-21"),
+}
+
+
+def tools_healing(code: str) -> List[str]:
+    """Las tools de `SANADORES` que reparan `code`, en el orden del registro."""
+    return [tool for tool, codigos in SANADORES.items() if code in codigos]
 
 _SEVERITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3, "N/A": 4}
 _CATEGORY_ORDER = {

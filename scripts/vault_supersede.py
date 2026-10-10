@@ -76,6 +76,7 @@ def _datos(texto: str) -> Dict[str, Any]:
 
 def supersede(path: str, by: str, apply: bool = False, replace: bool = False) -> Dict[str, Any]:
     """AP-17: anota en la sombra cuál es su canónica, sin borrarla ni tocar el cuerpo."""
+    # AP-17: la sombra queda anotada con `superseded_by`, no borrada.
     raiz = get_vault_root()
     try:
         nota = assert_within_vault(raiz / path, raiz)

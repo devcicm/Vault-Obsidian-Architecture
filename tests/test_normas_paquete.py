@@ -115,12 +115,15 @@ def test_la_forma_de_los_paquetes_del_repo_es_valida():
     assert cat.forma_de_paquetes() == []
 
 
-@pytest.mark.parametrize("falta", ["norma.py", "porque.md", "test_x_norma.py"])
+@pytest.mark.parametrize("falta", ["norma.py", "porque.md", "guard.py", "heal.py",
+                                   "test_x_norma.py"])
 def test_la_guarda_ve_la_cara_que_falta(tmp_path, falta):
     paquete = tmp_path / "AP-99"
     paquete.mkdir()
     (paquete / "norma.py").write_text('NORMA = {"code": "AP-99"}\n', encoding="utf-8")
     (paquete / "porque.md").write_text("# AP-99\n", encoding="utf-8")
+    (paquete / "guard.py").write_text("GUARD: list = []\n", encoding="utf-8")
+    (paquete / "heal.py").write_text("HEAL = None\nMOTIVO = 'x'\n", encoding="utf-8")
     (paquete / "test_x_norma.py").write_text("def test_x():\n    pass\n", encoding="utf-8")
     (paquete / falta).unlink()
     problemas = cat.forma_de_paquetes(tmp_path, cargadas=("AP-99",), raiz_repo=ROOT)
@@ -128,11 +131,14 @@ def test_la_guarda_ve_la_cara_que_falta(tmp_path, falta):
 
 
 def test_en_la_wheel_no_se_exige_el_test_que_no_viaja(tmp_path):
-    """La wheel lleva `norma.py` y `porque.md`; el test lo ejecuta el repo."""
+    """La wheel lleva `norma.py`, `porque.md`, `guard.py` y `heal.py`; el test
+    lo ejecuta el repo."""
     paquete = tmp_path / "AP-99"
     paquete.mkdir()
     (paquete / "norma.py").write_text('NORMA = {"code": "AP-99"}\n', encoding="utf-8")
     (paquete / "porque.md").write_text("# AP-99\n", encoding="utf-8")
+    (paquete / "guard.py").write_text("GUARD: list = []\n", encoding="utf-8")
+    (paquete / "heal.py").write_text("HEAL = None\nMOTIVO = 'x'\n", encoding="utf-8")
     assert cat.forma_de_paquetes(tmp_path, cargadas=("AP-99",)) == []
 
 
@@ -141,6 +147,8 @@ def test_la_guarda_ve_el_codigo_que_no_es_su_carpeta(tmp_path):
     paquete.mkdir()
     (paquete / "norma.py").write_text('NORMA = {"code": "AP-98"}\n', encoding="utf-8")
     (paquete / "porque.md").write_text("# AP-99\n", encoding="utf-8")
+    (paquete / "guard.py").write_text("GUARD: list = []\n", encoding="utf-8")
+    (paquete / "heal.py").write_text("HEAL = None\nMOTIVO = 'x'\n", encoding="utf-8")
     (paquete / "test_x_norma.py").write_text("def test_x():\n    pass\n", encoding="utf-8")
     problemas = cat.forma_de_paquetes(tmp_path, cargadas=("AP-99",))
     assert any("AP-98" in p["problema"] for p in problemas)
@@ -153,6 +161,8 @@ def test_la_guarda_ve_el_paquete_que_nadie_carga(tmp_path):
     paquete.mkdir()
     (paquete / "norma.py").write_text('NORMA = {"code": "AP-99"}\n', encoding="utf-8")
     (paquete / "porque.md").write_text("# AP-99\n", encoding="utf-8")
+    (paquete / "guard.py").write_text("GUARD: list = []\n", encoding="utf-8")
+    (paquete / "heal.py").write_text("HEAL = None\nMOTIVO = 'x'\n", encoding="utf-8")
     (paquete / "test_x_norma.py").write_text("def test_x():\n    pass\n", encoding="utf-8")
     problemas = cat.forma_de_paquetes(tmp_path, cargadas=())
     assert [p["paquete"] for p in problemas] == ["AP-99"]
@@ -166,6 +176,8 @@ def test_la_guarda_ve_la_cara_citada_que_no_existe(tmp_path):
     (paquete / "norma.py").write_text('NORMA = {"code": "AP-99"}\n', encoding="utf-8")
     (paquete / "porque.md").write_text(
         "- criterio: `vault/kernel/contenido.py::no_existe_nunca`\n", encoding="utf-8")
+    (paquete / "guard.py").write_text("GUARD: list = []\n", encoding="utf-8")
+    (paquete / "heal.py").write_text("HEAL = None\nMOTIVO = 'x'\n", encoding="utf-8")
     (paquete / "test_x_norma.py").write_text("def test_x():\n    pass\n", encoding="utf-8")
     problemas = cat.forma_de_paquetes(tmp_path, cargadas=("AP-99",), raiz_repo=ROOT)
     assert any("no_existe_nunca" in p["problema"] for p in problemas)
@@ -178,7 +190,7 @@ def test_el_check_framework_publica_la_forma():
     )
     datos = json.loads(r.stdout)
     assert datos["paquetes_de_norma"] == {"cargados": list(cat.NORMAS_EN_PAQUETE),
-                                          "problemas": []}
+                                          "problemas": [], "caras_desfasadas": []}
 
 
 def _tests_de_paquete():

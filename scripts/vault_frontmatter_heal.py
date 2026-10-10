@@ -250,6 +250,7 @@ def _notas(raiz: Path) -> List[Path]:
 
 
 def heal(apply: bool = False) -> Dict[str, Any]:
+    # AP-56: se reescribe solo el frontmatter que el consumidor no puede leer.
     raiz = get_vault_root()
     reparadas: List[Dict[str, Any]] = []
     irreparables: List[Dict[str, Any]] = []
