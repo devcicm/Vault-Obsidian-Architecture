@@ -57,6 +57,7 @@ from vault.kernel.fallos import FalloDeDominio
 from vault.kernel.indices_structural import DISPOSITIVOS_WINDOWS, es_dispositivo_windows
 from vault_raiz import (  # noqa: F401  (reexport deliberado)
     LOW_CONFIDENCE_ORIGINS,
+    escritura_admitida,
     get_vault_root,
     rebound_constants,
     reset_vault_root,
@@ -322,16 +323,12 @@ def _rechazar_raiz_insegura(path: Path) -> None:
     dependa de él (no-derogación), y `VAULT_ROOT` o `set_vault_root()` son la
     salida buena: las dos dan un origen confiado y no hacen falta banderas.
     """
-    if vault_root_is_confident() or _env("VAULT_PERMISSIVE_ROOT"):
+    # La decisión es de `vault_raiz.escritura_admitida`; aquí solo se explica
+    # el rechazo. Los escritores que no pasan por aquí —traza, contador de voz,
+    # `mkdir` de carpeta— la consultan también (AP-36, 2026-10-10).
+    if escritura_admitida(path, confiada=vault_root_is_confident(), raiz=get_vault_root()):
         return
-    # Solo si la escritura cae DENTRO de la raíz dudosa. Una tool con `--root`
-    # apuntada a un vault de verdad no tiene por qué pagar por el hecho de que
-    # la autodetección no encontrara nada.
     raiz = get_vault_root().resolve()
-    try:
-        path.resolve().relative_to(raiz)
-    except ValueError:
-        return
     if vault_root_origin() == "env_inexistente":
         raise PermissionError(
             f"VAULT_ROOT apunta a '{raiz}', que no es un directorio. Escribir "

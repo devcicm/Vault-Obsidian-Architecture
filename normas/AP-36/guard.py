@@ -10,6 +10,7 @@ de derivarlo; se regenera con `vault_norms_engine.escribir_caras_derivadas`.
 GUARD = [
     'scripts/vault_section_index.py::main',
     'scripts/vault_io.py::assert_within_vault',
+    'scripts/vault_io.py::_rechazar_raiz_insegura',
     'scripts/vault_io.py::_rechazar_traversal',
     'scripts/vault_norms.py::main',
 ]

@@ -87,9 +87,14 @@ def _root_runtime() -> Optional[Path]:
     desde el checkout y falla de forma inocua si esa hoja no está disponible.
     """
     try:
-        from vault_raiz import get_vault_root
+        from vault_raiz import escritura_admitida, get_vault_root
 
-        return get_vault_root()
+        raiz = get_vault_root()
+        # AP-36: con la raíz adivinada no hay runtime donde persistir el
+        # contador; `rotacion` cae a su rama inocua.
+        if not escritura_admitida(raiz / "00_System"):
+            return None
+        return raiz
     except (ImportError, OSError, RuntimeError):
         return None
 

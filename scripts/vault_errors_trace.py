@@ -23,7 +23,7 @@ from typing import Any, Dict, List, Optional, Tuple
 # ledger, índice de sección, vocabulario de tags— no aplicaba a un JSON generado
 # aquí mismo dentro de `00_System/`, y era justamente lo que arrastraba el ciclo.
 from vault_fs import escritura_atomica, file_lock, guarda_secretos
-from vault_raiz import get_vault_root
+from vault_raiz import escritura_admitida, get_vault_root
 
 
 # AP-36: los paths se resuelven LAZY vía get_vault_root() en cada llamada, para
@@ -98,6 +98,10 @@ def log_trace(entry: Dict[str, Any]) -> None:
     """Añade entrada al trace log con rotación a TRACE_MAX_ENTRIES."""
     try:
         tf = trace_file()
+        # AP-36: con la raíz adivinada la traza no se deposita. Es observabilidad
+        # best-effort y su destino sería el propio paquete instalado.
+        if not escritura_admitida(tf):
+            return
         tf.parent.mkdir(parents=True, exist_ok=True)
         try:
             with file_lock(tf, timeout=5):

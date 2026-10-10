@@ -232,6 +232,32 @@ def vault_root_is_confident() -> bool:
     return _VAULT_ROOT_ORIGIN not in LOW_CONFIDENCE_ORIGINS
 
 
+
+def escritura_admitida(path, *, confiada: Optional[bool] = None,
+                       raiz: Optional[Path] = None) -> bool:
+    """¿Se puede escribir en `path` sin saber de verdad cuál es el vault? (AP-36)
+
+    Dueño de la decisión que hasta 2026-10-10 vivía solo en
+    `vault_io._rechazar_raiz_insegura`, que protegía `atomic_write_text` y nada
+    más: la traza, el contador de voz y el `mkdir` de una carpeta destino no
+    pasan por ahí, y con la wheel instalada sembraban `00_System/` dentro del
+    propio paquete. Quien escriba fuera de `atomic_write_text` pregunta aquí.
+
+    Falso solo si la raíz es una suposición, no hay `VAULT_PERMISSIVE_ROOT` y
+    `path` cae dentro de esa raíz supuesta: una escritura con `--root` apuntada
+    a un vault de verdad no paga porque la autodetección no encontrara nada.
+    `confiada` y `raiz` los pasa quien ya los tiene resueltos (la fachada de IO).
+    """
+    if confiada is None:
+        confiada = vault_root_is_confident()
+    if confiada or _env("VAULT_PERMISSIVE_ROOT"):
+        return True
+    try:
+        Path(path).resolve().relative_to((raiz or get_vault_root()).resolve())
+    except ValueError:
+        return True
+    return False
+
 # ── Override en runtime (AP-36) ────────────────────────────────────────────────
 # Los tools que aceptan --root deben llamar set_vault_root() ANTES de escribir,
 # para que la capa de observabilidad (traces, tokens, locks) escriba en el vault

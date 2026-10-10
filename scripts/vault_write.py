@@ -44,6 +44,7 @@ from vault_errors import emit_error, emit_fallo, fuera_de_sesion, wrap_main
 
 from vault_io import (
     is_snapshot_path,  # dueño único de qué es una instantánea (AP-57)
+    _rechazar_raiz_insegura,  # AP-36: antes del mkdir de la carpeta destino
     write_report,
     atomic_write_text,
     atomic_write_json,
@@ -1184,8 +1185,11 @@ def vault_write(
                         "allowed": sorted(permitidos),
                     }
 
-    # Create folder if not exists
+    # Create folder if not exists. AP-36: la raíz se comprueba ANTES del `mkdir`;
+    # la escritura atómica rechazaba la nota pero la carpeta ya quedaba creada
+    # dentro de la raíz adivinada (medido como consumidor, 2026-10-10).
 
+    _rechazar_raiz_insegura(vault_path)
     vault_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Compute applicable norm_refs before generating frontmatter
