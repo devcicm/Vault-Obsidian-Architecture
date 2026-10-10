@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v41.2 — 2026-10-07  
+**Versión:** v41.3 — 2026-10-09  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -7566,6 +7566,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
 | v40.30 | 2026-08-16 | **Cuatro medidas cuyo alcance declarado era más ancho que el que de verdad recorrían, y tres defectos que solo existen fuera de este repo.** El resultado de una medida así no es un error sino un **cero**, que se lee igual que estar limpio: `cli/` llevaba en `ARBOLES_MEDIDOS` desde v40.9 sin contexto declarado, así que `_mapa_modulos()` devolvía `None` y las dos rutas de detección descartaban sus ficheros antes de leer un import; `vault_ciclos` medía el grafo de `scripts/`, de modo que `vault/` —el paquete que existe para imponer fronteras— era el único cuyos ciclos no contaba nadie; y `vault_audit` recorría el disco 25 veces por invocación para leer lo mismo. Los otros tres salieron de instalar `scripts vault cli mcp` **fuera del repo** y ejecutar contra un vault vacío, que es la regla 7 aplicada al propio programa: la autodetección caía a `repo_root_fallback` —«no encontré nada y estoy suponiendo»— y devolvía el directorio del toolkit, así que las escrituras aterrizaban dentro del programa; el servidor MCP escaneaba hacia arriba y registraba tres vaults ajenos **con `VAULT_ROOT` explícito puesto**, un inventario del disco del usuario expuesto al agente como default; y 23 llamadas a `subprocess` en 13 módulos decodificaban con la locale de la máquina mientras el toolkit emite UTF-8, lo que en cp1252 corrompe el acento en silencio y en cp932 tumba la tool entera. Ninguno de los siete podía verse desde dentro: el entorno que generó la medida comparte sus supuestos |
 | v41.2 | 2026-10-07 | **Un vault puede declarar sus propias secciones, y cada sección dice qué clase de documento contiene.** `vault_section` declara, lista y retira secciones propias en `00_System/secciones.json` (rango libre 22–98, clase Diátaxis, tipos admitidos); el registro, el puerto del kernel, el contrato, el audit y los barridos de grafo, validate, tags, delta, completar, graph_fix y section_index las ven. `vault_write` y `vault_move` aplican CN-02 al destino. Normas AP-14/21/22/SP-02, AP-15, AP-26, AP-27 y CN-02 realineadas con el código que las cumple; cuatro deudas halladas, declaradas en el plano. 4605 tests, 23 puertas |
+| v41.3 | 2026-10-09 | **El agente tiene protocolo de sesión, cada norma vive en su paquete y el puente de ADR-0002 empieza a caer por lotes.** Perfil MCP `agente` derivado del protocolo; `vault_supersede` y `vault_arquitectura_en`; AP-64 y AP-65; las normas pasan a `normas/<código>/` (deuda #10 pendiente por `guard.py`/`heal.py`); ocho módulos migran del puente (deuda #12 en curso); un solo criterio para `.history/`, el lock, la cascada de índices, el schema del SDD y la exposición MCP; SBOM y `SECURITY.md`. 5289 tests, 23 puertas |
 | v41.1 | 2026-10-07 | **Qué contrato cumple cada nota y qué notas no pertenecen a ninguna sección.** Clase `sin_seccion` en el contrato: un `.md` de la raíz o de una carpeta no registrada lleva identidad y timestamps, no CIA, `agent`, `tags`, `type` ni `status`. `vault_validate --check cumplimiento` informa por nota las versiones del contrato que cumple y lo que le falta para la vigente. `vault_audit` publica `notIntegrated` (notas que solo enlaza un índice) y la acción de las huérfanas deja de citar AP-13. 4463 tests, 23 puertas |
 | v41.0 | 2026-10-07 | **El contrato de nota es el criterio de lo que se escribe y se valida.** `vault_contrato_nota` es el dueño de los campos de una nota y de su nivel en cada versión desde v18; `vault_validate --contrato vNN` valida contra una versión anterior y cada versión desde v18 publica su JSON Schema en `schemas/`. **Ruptura:** `type` y `status` pasan de recomendados (v37–v40) a requeridos en notas de contenido, por presencia; `vault_frontmatter_completar` los pone. Los seis escritores cumplen el contrato entero; `jsonschema` declarado en el extra dev. 4431 tests, 23 puertas |
 | v40.36 | 2026-10-05 | **Lo que encontró usar la wheel contra un vault real.** Escritura en LF también en Windows (primitivo atómico e índices de sección); `vault_append` separa el bloque, deja un solo salto final y refresca `updatedAt` (AP-13); una escritura con frontmatter ilegible sale con `FRONTMATTER_PARSE_ERROR` y `vault_read` lo declara (AP-51, AP-52); soltar el último lock retira `.locks/` y `vault_knowledge_save` comparte lock con los demás escritores; `vault_reindex` no muere por el límite de 60 s; `vault tools show` publica los parámetros; el upgrade sella en LF y crea sus carpetas de registro. 4276 tests, 22 puertas |
@@ -7924,6 +7925,51 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v41.3 — 2026-10-09 `git: pending`
+
+**El agente tiene protocolo de sesión, cada norma vive en su paquete y el puente de
+ADR-0002 empieza a caer por lotes.**
+
+**Protocolo y perfil.** El protocolo de sesión del agente es un registro, el perfil
+`agente` sale de él y `VAULT_MCP_PERFIL` limita `tools/list` y `tools/call` al perfil
+pedido. Cada pista de recuperación dice cómo seguirla; las que no llegan al perfil
+declaran por qué. El banco de agente mide la promesa del servicio como la ejerce un
+agente, con la tarea `cerrar` y drift condicional con snapshot al empezar.
+
+**Tools nuevas.** `vault_supersede` anota `superseded_by` en una nota existente sin tocar
+su cuerpo; `vault_arquitectura_en` devuelve la arquitectura de un proyecto en una fecha o
+versión. El contrato v41 admite `vigente_desde`, `responsable` y `revisado_en`,
+opcionales, y la documentación declara sus ejes de trazabilidad y versionado.
+
+**Normas.** AP-64 (decisión cerrada sin responsable de su porqué) y AP-65 (decisión de
+impacto alto sin evaluar a quién afecta, ISO/IEC 42005). AP-01 y AP-08 dejan de estar
+descubiertas en la parte decidible; AP-04 sigue descubierta con su hipótesis medida.
+**Toda norma vive ahora en `normas/<código>/`** (`norma.py`, `porque.md` con caras
+derivadas, test propio) y `NORM_CATALOG` solo la carga en su sitio; el registro sale
+idéntico. Faltan `guard.py`/`heal.py` propios: la deuda #10 sigue pendiente. La capa 4
+cubre AP-12, AP-18, AP-27, AP-31, PAT-3, PAT-4 y PAT-6 contra su detector real.
+
+**Producción.** SBOM SPDX con inventario de licencias y `SECURITY.md`; el servicio de
+tokens exige credencial (SP-04); AP-51 se mide también en la frontera JS y el servidor
+MCP deja de publicar como vacío lo ilegible.
+
+**Dueños y fronteras.** Cada subruta de `00_System` tiene dueño y la puerta frena al que
+escribe la ajena, siguiendo un nivel la función importada. El puente `scripts/` →
+`_impl/` tiene cifra derivada y frontera, no cuenta lo que la wheel no lleva, y migran
+`vault_subproceso`, `vault_ledger`, cuatro hojas (lote A), `vault_secret_scan` (lote B)
+y `vault_entorno` (lote C) como alias en `sys.modules`; la deuda #12 sigue en curso.
+
+**Un solo criterio donde había varios.** `.history/` se nombra y se lee desde el kernel;
+el bucle de `_FileLock` es uno y recupera huérfanos; la cascada de índices no pisa un
+índice sin la marca del generador; el schema por tipo del SDD se deriva de lo que
+escribe cada escritor; los grupos no expuestos por MCP salen de la capacidad; la
+pendiente de una baseline cuenta el cambio en curso y ya no desfasa el plano.
+
+**Medido y descartado.** La prioridad del núcleo en `vault_context_pack` (deuda #11) se
+midió con el banco de agente y no se adopta; queda en el plano con su cifra.
 
 ---
 
