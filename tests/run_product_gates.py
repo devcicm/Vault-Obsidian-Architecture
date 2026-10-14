@@ -2,7 +2,7 @@
 """Ejecutor de gates de producto: clean_install + memory_e2e.
 
 Ejecuta los gates en orden, cada uno en su propio directorio temporal bajo
-vault-sandbox/product-gates/. Los resultados completos (stdout, stderr, código
+vault-sandbox/00_System/product-gates/. Los resultados completos (stdout, stderr, código
 de salida) se persisten en el sandbox.
 
 Cobertura:
@@ -22,7 +22,11 @@ import time
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SANDBOX = REPO_ROOT / "vault-sandbox" / "product-gates"
+# CN-02: los resultados son informes del vault y viven en `00_System/`, como
+# `quality-index.json`. En la raíz, `product-gates/` era una carpeta que el
+# vault no declara y el audit del sandbox salía con un CN-02 alto causado por
+# este arnés, no por ninguna nota.
+SANDBOX = REPO_ROOT / "vault-sandbox" / "00_System" / "product-gates"
 
 
 def _run_gate(name: str, script: Path) -> tuple[int, str, str]:
