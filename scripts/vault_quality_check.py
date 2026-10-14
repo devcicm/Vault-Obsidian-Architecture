@@ -45,8 +45,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vault_errors import wrap_main
-from vault_lib import cargar_bloque_tolerante, separar_frontmatter, utcnow
-from vault_io import atomic_write_json, file_lock, normalize_stem, write_report
+from vault_lib import (cargar_bloque_tolerante, indice_de_destinos, read_frontmatter,
+                       resolver_destino_wikilink, separar_frontmatter, utcnow)
+from vault_io import atomic_write_json, file_lock, write_report
 
 
 # F4 exactitud: qué tipos pertenecen a cada sección lo declara el registro.
@@ -236,17 +237,23 @@ def _extract_wiki_links(content: str) -> List[str]:
     return links
 
 
-def _normalize(s: str) -> str:
-    # Identidad por nombre: la del dueño, no una copia (AP-57, AP-17).
-    return normalize_stem(s)
-
-
 def _build_all_stems() -> Set[str]:
-    stems: Set[str] = set()
-    for n in _raiz().rglob("*.md"):
-        if ".history" not in str(n):
-            stems.add(_normalize(n.stem))
-    return stems
+    """Todo destino que resuelve en el vault, con el criterio de Obsidian.
+
+    AP-44/AP-57: lo decide el dueño, `vault_lib.indice_de_destinos` —sufijos
+    de ruta y `aliases:`, nunca `title:`—. Un conjunto de stems propio dejaba
+    roto todo enlace con carpeta (`[[99_Index/index]]`) y, por `normalize_stem`,
+    daba por resuelto `[[Mi Nota]]` contra `mi-nota.md`, que Obsidian pinta roto.
+    """
+    raiz = _raiz()
+    relativas, aliases = [], []
+    for n in raiz.rglob("*.md"):
+        if ".history" in str(n):
+            continue
+        relativas.append(n.relative_to(raiz))
+        raw = (read_frontmatter(n) or {}).get("aliases") or []
+        aliases.extend([raw] if isinstance(raw, str) else raw)
+    return indice_de_destinos(relativas, aliases)
 
 
 # ── Dimension scorers ──────────────────────────────────────────────────────────
@@ -334,11 +341,14 @@ def _score_timeliness(fm: Dict[str, str], path: Path) -> Tuple[float, List[str]]
     return score, [f"timeliness: {days} days since update (threshold: {threshold}d)"]
 
 
-def _score_consistency(body: str, all_stems: Set[str]) -> Tuple[float, List[str]]:
+def _score_consistency(
+    body: str, all_stems: Set[str], desde: Optional[Path] = None
+) -> Tuple[float, List[str]]:
     links = _extract_wiki_links(body)
     if not links:
         return 1.0, []
-    broken = [lnk for lnk in links if _normalize(lnk) not in all_stems]
+    broken = [lnk for lnk in links
+              if resolver_destino_wikilink(lnk, desde) not in all_stems]
     score = round(1.0 - len(broken) / len(links), 3)
     issues = [f"consistency: broken link [[{lnk}]]" for lnk in broken]
     return score, issues
@@ -526,7 +536,7 @@ def vault_quality_check(
         c_score, c_issues = _score_completeness(fm, body)
         v_score, v_issues = _score_validity(fm)
         t_score, t_issues = _score_timeliness(fm, note)
-        k_score, k_issues = _score_consistency(body, all_stems)
+        k_score, k_issues = _score_consistency(body, all_stems, Path(rel))
         a_score, a_issues = _score_accuracy(rel, fm)
         au_score, au_issues = _score_authenticity(fm)
         nr_score, nr_issues = _score_non_repudiation(rel, change_log_paths)
