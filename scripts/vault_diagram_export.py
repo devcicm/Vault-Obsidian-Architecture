@@ -411,8 +411,12 @@ Ejemplos:
                 print(f"Exportados: {result['exported']} diagramas")
                 for f in result.get("files", []):
                     print(f"  - {f}")
-            else:
+            elif args.config:
                 print(f"Configuración guardada: {_config_file()}")
+            else:
+                # AP-37: sin --config solo se lee; decir «guardada» era
+                # anunciar una escritura que no ocurrió.
+                print(json.dumps(result, indent=2, ensure_ascii=False))
         else:
             print(f"Error: {mensaje_de(result) or 'Unknown error'}")
             return 1
