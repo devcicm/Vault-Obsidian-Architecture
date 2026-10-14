@@ -908,6 +908,32 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "falso verde era de `notIntegrated`, no de `orphans`.)"
         ),
     },
+    {
+        "id": "f8_criterio_sin_decidir",
+        "estado": "pendiente",
+        "desde": "v41.3",
+        "capa": "5",
+        "que": (
+            "F8 (no repudio) se mide con un criterio que el manifiesto no "
+            "publica. El registro (`vault_fundamentals_catalog`, F8) verifica "
+            "que «al menos una entrada en .change-log.json referencia la ruta "
+            "de la nota» y `vault_quality_check._score_non_repudiation` lo "
+            "aplica a toda nota viva; la tabla de dimensiones del manifiesto "
+            "pide «1 por borrado». Como `vault_write` no anota creaciones en el "
+            "change-log, un vault recién poblado puntúa 0 en `non_repudiation` "
+            "en todas sus notas: 26 de 26, medido el 2026-10-14 con la wheel "
+            "instalada en un consumidor limpio."
+        ),
+        "por_que_no_ahora": (
+            "Cuál de los dos criterios manda es una decisión de producto: "
+            "(a) `vault_write` anota creaciones y actualizaciones, lo que es un "
+            "campo nuevo en su contrato, o (b) el registro se ciñe a borrados y "
+            "movimientos, como dice el manifiesto. El usuario la dejó declarada "
+            "el 2026-10-14. `tests/test_f8_criterio_sin_decidir.py::"
+            "test_limite_declarado_f8_registro_y_manifiesto_divergen` fija la "
+            "divergencia y falla el día que los dos digan lo mismo."
+        ),
+    },
 ]
 
 
