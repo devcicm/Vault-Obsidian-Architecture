@@ -4637,6 +4637,12 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
 
 # ──── end TOOLS_CATALOG ────
 
+#: Tools que arrancan un servicio y no vuelven hasta que las matan
+#: (`serve_forever`). Siguen catalogadas y se lanzan como proceso propio desde la
+#: CLI; por MCP cada llamada acababa en TOOL_TIMEOUT, así que no se exponen
+#: (AP-44: `tools/list` no anuncia lo que el consumidor no puede completar).
+SERVICIOS_DE_PROCESO_LARGO: frozenset = frozenset({"vault_token_service"})
+
 #: Tools sin script Python: implementadas de forma nativa en el servidor MCP.
 #: **Fuente única** del criterio — `cli/registry.py` lo importa de aquí y el
 #: `.mjs` lo lee de `tools-catalog.json`. No son fragmentos ausentes: son
@@ -5261,7 +5267,8 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
         status = spec_entry.get("status", "active")
         group = tool.get("group", "")
         # exposed_via_mcp: false para tools de gobernanza, internal o archived.
-        exposed = status not in STATUS_NO_EXPUESTO and group not in GRUPOS_NO_EXPUESTOS
+        exposed = (status not in STATUS_NO_EXPUESTO and group not in GRUPOS_NO_EXPUESTOS
+                   and name not in SERVICIOS_DE_PROCESO_LARGO)
 
         tools_json[name] = {
             "name": tool["name"],

@@ -6784,7 +6784,7 @@
       "guards": [],
       "side_effects": [],
       "status": "active",
-      "exposed_via_mcp": true,
+      "exposed_via_mcp": false,
       "execution_module": "vault_toolkit.operations.vault_token_service",
       "related": [
         "vault_tokens",
