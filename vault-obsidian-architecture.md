@@ -7929,7 +7929,7 @@ temp/
 
 ---
 
-### v41.4 — 2026-10-14 `git: pending`
+### v41.4 — 2026-10-14 `git: 7b21643`
 
 **El vault se usa como producto instalado sin errores de operación, y tres deudas del
 registro quedan saldadas.**
