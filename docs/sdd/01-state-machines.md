@@ -19,7 +19,7 @@
 | **Incidente** | detected / investigating / identified / mitigating / resolved / closed / post-mortem | vault_incident_save |
 | **Consumo de SLO** | healthy / 1h-burn / 6h-burn / 30d-burn / breached | vault_slo_save |
 | **Tratamiento de riesgo** | accept / mitigate / transfer / avoid | vault_risk_save |
-| **NCR** | open / closed | vault_ncr_save |
+| **NCR** | open / in_progress / pending_verification / closed / cancelled | vault_ncr_save |
 | **Backup** | active / superseded | vault_backup_list |
 | **Propagación pendiente** | pending / reviewed | vault_propagate |
 | **Ciclo de vida de una tool** | active / archived / internal | vault_mcp_catalog |
@@ -46,7 +46,7 @@
 | **Incident** | detected / investigating / identified / mitigating / resolved / closed / post-mortem | vault_incident_save |
 | **SLO burn** | healthy / 1h-burn / 6h-burn / 30d-burn / breached | vault_slo_save |
 | **Risk treatment** | accept / mitigate / transfer / avoid | vault_risk_save |
-| **NCR** | open / closed | vault_ncr_save |
+| **NCR** | open / in_progress / pending_verification / closed / cancelled | vault_ncr_save |
 | **Backup** | active / superseded | vault_backup_list |
 | **Propagation pending** | pending / reviewed | vault_propagate |
 | **Tool lifecycle** | active / archived / internal | vault_mcp_catalog |

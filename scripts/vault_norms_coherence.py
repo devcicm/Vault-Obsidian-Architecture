@@ -115,6 +115,19 @@ incongruencias decidibles leyendo una sola norma:
 El catálogo no tiene hoy ninguna norma sustituida, así que la cuarta mira un
 universo vacío; se publica `superseded_norms_total` para que ese cero se lea
 como lo que es y no como una comprobación superada (AP-60).
+
+**C10 — la máquina de estados y quien la describe.** Lo que ya vigilan los tests
+de `STATUS_TRANSITIONS` —que cubre el vocabulario, que todo estado es alcanzable
+y que sinónimos y dominios aterrizan en el canónico— no se repite aquí. C10
+mide lo que nadie cruzaba:
+
+- un estado desde el que no se llega a ningún terminal: la nota queda atrapada;
+- una transición de un estado a sí mismo, que no es una transición;
+- una máquina sin ningún estado terminal;
+- un ciclo de `LIFECYCLE_REGISTRY` que describe el mismo eje que el vocabulario
+  de dominio de su tool, pero se queda con una parte. Iguales es coherente;
+  disjuntos es otro eje —riesgo publica el tratamiento, no el estado—; un
+  solapamiento parcial es el SDD publicando una máquina que la tool no tiene.
 """
 
 import argparse
@@ -129,6 +142,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 import vault_baseline
 import vault_grafo_import
+import vault_norms_catalog
 from vault_errors import emit_error, wrap_main
 from vault_version import CURRENT_VERSION
 from vault_vocabulario import mapa
@@ -454,6 +468,42 @@ def incongruencias_de_severidad(catalogo: List[Dict[str, Any]]) -> List[Dict[str
     return problemas
 
 
+def incoherencias_del_ciclo(
+    transiciones: Dict[str, Set[str]],
+    lifecycle: List[Dict[str, Any]],
+    dominios: Dict[str, Any],
+) -> List[Dict[str, str]]:
+    """C10 — la máquina de estados no atrapa, y quien la publica no la recorta."""
+    problemas: List[Dict[str, str]] = []
+    terminales = {e for e, salidas in transiciones.items() if not salidas}
+    if not terminales:
+        problemas.append({"state": "*", "problem": "ningún estado terminal: no se sale nunca"})
+    for estado, salidas in sorted(transiciones.items()):
+        if estado in salidas:
+            problemas.append({"state": estado, "problem": "transición de un estado a sí mismo"})
+        vistos, pendientes = {estado}, [estado]
+        while pendientes:
+            for siguiente in transiciones.get(pendientes.pop(), ()):
+                if siguiente not in vistos:
+                    vistos.add(siguiente)
+                    pendientes.append(siguiente)
+        if terminales and not vistos & terminales:
+            problemas.append({"state": estado, "problem": (
+                "desde aquí no se llega a ningún estado terminal")})
+    for ciclo in lifecycle:
+        if ciclo.get("tool") not in dominios or not ciclo.get("states"):
+            continue
+        publicados = set(ciclo["states"])
+        de_dominio = set(dominios[ciclo["tool"]][1])
+        if publicados == de_dominio or not publicados & de_dominio:
+            continue
+        problemas.append({"entity": ciclo["entity"], "state": "*", "problem": (
+            f"el ciclo publicado y el vocabulario de {ciclo['tool']} se solapan "
+            f"a medias: faltan {sorted(de_dominio - publicados)}, sobran "
+            f"{sorted(publicados - de_dominio)}")})
+    return problemas
+
+
 def scan() -> Dict[str, Any]:
     catalogo = _catalogo()
     tools = _tools_del_catalogo()
@@ -658,10 +708,17 @@ def scan() -> Dict[str, Any]:
     # C9 — lo que la norma dice de sí misma.
     c9_incongruentes = incongruencias_de_severidad(catalogo)
 
+    # C10 — la máquina de estados y los registros que la describen.
+    c10_ciclo = incoherencias_del_ciclo(
+        vault_norms_catalog.STATUS_TRANSITIONS,
+        vault_norms_catalog.LIFECYCLE_REGISTRY,
+        vault_norms_catalog.DOMAIN_STATUS_VOCABS,
+    )
+
     ok = not (
         c1_inexistentes or c3_incoherentes or c4_invertidas
         or c5_sin_distincion or c6_sin_norma or nuevos or mudas_nuevas
-        or c9_incongruentes
+        or c9_incongruentes or c10_ciclo
     )
     return {
         "ok": ok,
@@ -696,6 +753,7 @@ def scan() -> Dict[str, Any]:
         # dicen. Se publica siempre —también cuando la lista es corta— porque el
         # sitio donde esto se esconde es justo el que AP-55 persigue.
         "severity_vs_enforcement": c9_incongruentes,
+        "status_machine_incoherent": c10_ciclo,
         "superseded_norms_total": sum(1 for n in catalogo if n.get("superseded_by")),
         "uncovered_norms": descubiertas,
         "uncovered_total": len(descubiertas),

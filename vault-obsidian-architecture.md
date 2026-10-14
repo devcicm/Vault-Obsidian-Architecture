@@ -6402,6 +6402,21 @@ Nace en cero y sin baseline. La cuarta regla mira hoy un universo vacío —ning
 norma del catálogo está sustituida— y lo dice en `superseded_norms_total`, para
 que el cero no se lea como una comprobación superada.
 
+**C10 — la máquina de estados y quien la describe.** Los tests de
+`STATUS_TRANSITIONS` ya vigilan el vocabulario, la alcanzabilidad y los
+sinónimos, y C10 no lo repite. Mide lo que nadie cruzaba:
+- un estado desde el que no se llega a ningún terminal;
+- una transición de un estado a sí mismo;
+- una máquina sin terminal;
+- un ciclo de `LIFECYCLE_REGISTRY` que solapa a medias con el vocabulario de
+  dominio de su tool.
+
+En la última, iguales es coherente y disjuntos es otro eje —el ciclo de riesgo
+publica el tratamiento, no el estado—. La primera medida encontró el caso real:
+el SDD publicaba NCR como `open / closed` mientras `vault_ncr_save` acepta cinco
+estados. Una máquina de estados publicada incompleta es una contradicción entre
+dos registros del mismo hecho, que es lo que AP-55 persigue.
+
 **Distinguida de AP-44.** AP-44 se comete al verificar: la tool mide con su
 propia normalización y queda ciega a su error. AP-55 está en el dato antes de que
 nadie verifique: dos registros canónicos afirman cosas distintas sobre el mismo

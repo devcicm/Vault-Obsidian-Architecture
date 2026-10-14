@@ -503,3 +503,47 @@ def test_c9_publica_el_universo_de_sustituidas_aunque_este_vacio():
     r = coherencia.scan()
     assert r["severity_vs_enforcement"] == []
     assert r["superseded_norms_total"] == 0
+
+
+# ── C10 — la máquina de estados y los registros que la describen ─────────────
+
+
+def _ciclo(transiciones, lifecycle=(), dominios=None):
+    return coherencia.incoherencias_del_ciclo(transiciones, list(lifecycle), dominios or {})
+
+
+def test_c10_muerde_sobre_un_estado_trampa():
+    """Un ciclo sin salida a un terminal deja a la nota atrapada para siempre."""
+    r = _ciclo({"a": {"b"}, "b": {"a"}, "fin": set()})
+    assert {p["state"] for p in r if "terminal" in p["problem"]} == {"a", "b"}
+
+
+def test_c10_muerde_sobre_una_transicion_a_si_mismo():
+    r = _ciclo({"a": {"a", "fin"}, "fin": set()})
+    assert any(p["state"] == "a" and "sí mismo" in p["problem"] for p in r)
+
+
+def test_c10_muerde_sobre_una_maquina_sin_terminal():
+    r = _ciclo({"a": {"b"}, "b": {"a"}})
+    assert any("ningún estado terminal" in p["problem"] for p in r)
+
+
+def test_c10_muerde_cuando_el_ciclo_publicado_se_queda_corto():
+    """El defecto real de NCR: el SDD publicaba dos estados de cinco."""
+    r = _ciclo({"fin": set()},
+               [{"entity": "NCR", "tool": "t", "states": ["open", "closed"]}],
+               {"t": ("t_state", {"open": "x", "closed": "y", "cancelled": "z"})})
+    assert any(p.get("entity") == "NCR" and "cancelled" in p["problem"] for p in r)
+
+
+def test_c10_calla_cuando_el_ciclo_describe_otro_eje():
+    """Riesgo publica el tratamiento, no el estado: disjuntos es otro eje."""
+    r = _ciclo({"fin": set()},
+               [{"entity": "Tratamiento", "tool": "t", "states": ["accept", "avoid"]}],
+               {"t": ("t_state", {"open": "x", "closed": "y"})})
+    assert r == []
+
+
+def test_c10_calla_sobre_los_registros_reales():
+    r = coherencia.scan()
+    assert r["status_machine_incoherent"] == []
