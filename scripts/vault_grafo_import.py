@@ -287,7 +287,9 @@ def grafo() -> Dict[str, Dict[str, Set[str]]]:
     top: Dict[str, Set[str]] = {}
     dif: Dict[str, Set[str]] = {}
     for p in sorted(DIRECTORIO.glob("*.py")):
-        arbol = _arbol(p, MODULOS_LOCALES)
+        # Un alias de la deuda #12 no tiene imports propios: sus aristas son las
+        # de su dueño. Leer `p` lo dejaba con fan-out 0 (AP-44).
+        arbol = _arbol(codigo_de(p), MODULOS_LOCALES)
         assert arbol is not None  # MODULOS_LOCALES levanta, nunca devuelve None
         dentro = _en_funcion(arbol)
         top.setdefault(p.stem, set())

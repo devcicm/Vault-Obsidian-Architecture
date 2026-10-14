@@ -220,3 +220,19 @@ def test_ningun_test_lee_un_script_por_ruta_sin_seguir_al_alias():
             if m and not re.search(r"\.(json|md|txt|toml|ya?ml)\b", m.group(1)):
                 culpables.append(f"{f.name}:{n}")
     assert culpables == [], culpables
+
+
+def test_el_grafo_mide_al_dueno_de_un_alias_y_no_al_alias():
+    """AP-44, deuda #12: `grafo()` parseaba `scripts/<m>.py`, y en un módulo
+    migrado eso es el alias, que no importa nada de `scripts/`. Todo migrado
+    salía con fan-out 0: AP-59 lo veía puro y AP-58 no veía los ciclos que
+    pasaban por él. Las aristas de un alias son las de su dueño."""
+    G_ = G.completo()
+    migrados = sorted(G._puente())
+    assert migrados, "sin alias no hay nada que medir"
+    for nombre in migrados:
+        esperado = G.importaciones(G.codigo_de(G.DIRECTORIO / f"{nombre}.py"),
+                                   G.MODULOS_LOCALES) - {nombre}
+        assert G_[nombre] == esperado, nombre
+    # Y al menos uno de ellos importa algo: si no, la igualdad no prueba nada.
+    assert any(G_[n] for n in migrados)
