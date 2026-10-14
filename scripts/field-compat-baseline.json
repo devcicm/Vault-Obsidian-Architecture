@@ -1675,5 +1675,6 @@
       "updated",
       "written"
     ]
-  }
+  },
+  "sin_objetivo_porque": "No es deuda: es el contrato de campos estables con los repos consumidores y crece por diseño cada vez que una tool publica un campo nuevo (1334 → 1410 entre 2026-08-30 y 2026-10-08). Lo que la puerta vigila es que ningún campo desaparezca sin `superseded_fields`, no su tamaño. Declarado el 2026-10-09 con la deuda #8."
 }

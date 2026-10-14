@@ -261,6 +261,9 @@ def congelar_campos() -> Dict[str, Any]:
         ),
         "stable": estables,
     }
+    # Lo que el congelador no genera —`sin_objetivo_porque`, un `objetivo`— lo
+    # declaró el dueño de la baseline; reescribir el fichero no lo deroga.
+    datos.update({k: v for k, v in previa.items() if k not in datos})
     FIELDS_BASELINE.write_text(
         json.dumps(datos, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",

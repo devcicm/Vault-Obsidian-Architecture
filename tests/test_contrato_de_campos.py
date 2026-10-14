@@ -274,3 +274,24 @@ def test_freeze_fields_es_idempotente_si_el_contrato_no_cambia(tmp_path, monkeyp
 
     assert resultado["ok"] is True
     assert baseline.read_bytes() == antes
+
+
+def test_freeze_fields_conserva_las_claves_que_no_genera(tmp_path, monkeypatch):
+    """Recongelar no puede borrar el compromiso declarado de la baseline.
+
+    `sin_objetivo_porque` (o un `objetivo`) lo escribe el dueño, no el
+    congelador; hasta v41.4 cualquier campo estable nuevo reescribía el
+    fichero entero y lo perdía en el pre-commit, y la capa 6 pasaba de
+    `no_aplica` a `sin objetivo` sin que nadie lo decidiera.
+    """
+    baseline = tmp_path / "field-compat-baseline.json"
+    datos = json.loads(vscc.FIELDS_BASELINE.read_text(encoding="utf-8"))
+    datos["stable"].pop(next(iter(datos["stable"])))  # fuerza reescritura
+    datos["sin_objetivo_porque"] = "crece por diseño"
+    baseline.write_text(json.dumps(datos), encoding="utf-8")
+    monkeypatch.setattr(vscc, "FIELDS_BASELINE", baseline)
+
+    vscc.congelar_campos()
+
+    escrito = json.loads(baseline.read_text(encoding="utf-8"))
+    assert escrito["sin_objetivo_porque"] == "crece por diseño"
