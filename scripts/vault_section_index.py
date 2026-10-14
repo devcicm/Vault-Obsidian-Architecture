@@ -384,7 +384,10 @@ def vault_section_index(
 
     Returns:
         {"ok": True, "path": "01_Projects/index.md", "noteCount": 12, "is_empty": False,
-         "subdirIndexes": [...]}
+         "subdirIndexes": [...], "creados": [...]}
+
+        `creados` son los índices que no existían antes de esta llamada: notas
+        nuevas en disco que el gancho de escritura pone en la búsqueda (AP-47).
     """
     # Guard CN-02/AP-15: solo secciones canónicas son destinos válidos. Sin esto,
     # folder="" o "." escribe index.md y .locks/ en la RAÍZ del vault.
@@ -457,6 +460,7 @@ def vault_section_index(
     now = utcnow()
     notes = _collect_notes(section_path, include_subdirs)
     preservados: List[str] = []
+    creados: List[str] = []
 
     # Discover immediate subdirectories (for subdir listing in index)
     subdir_folders: List[str] = []
@@ -494,6 +498,8 @@ def vault_section_index(
                     sub_folder, sub_notes, now, subdirs=None,
                     indice_disponible=indice_disponible,
                 )
+                if not sub_index.exists():
+                    creados.append(str(sub_index.relative_to(vroot)).replace("\\", "/"))
                 record_raw_write(sub_index, sub_contenido)
                 escritura_atomica(sub_index, sub_contenido)
             subdir_indexes.append(
@@ -514,6 +520,8 @@ def vault_section_index(
                 folder, notes, now, subdirs=subdir_folders or None,
                 indice_disponible=indice_disponible,
             )
+            if not index_path.exists():
+                creados.append(str(index_path.relative_to(vroot)).replace("\\", "/"))
             record_raw_write(index_path, contenido)
             escritura_atomica(index_path, contenido)
 
@@ -527,10 +535,11 @@ def vault_section_index(
         "noteCount": len(notes),
         "is_empty": len(notes) == 0,
         "subdirIndexes": subdir_indexes,
+        "creados": creados,
     }
 
 
-def refrescar_busqueda(path: Path) -> Dict[str, Any]:
+def refrescar_busqueda(path: Path, *mas: Path) -> Dict[str, Any]:
     """Pone la nota recién escrita en `search-index.json` (AP-47).
 
     Vive aquí y no en cada escritor porque `vault_io -> vault_section_index` es
@@ -539,7 +548,7 @@ def refrescar_busqueda(path: Path) -> Dict[str, Any]:
     """
     return ServicioReindex(
         RepositorioIndices(construir()), parse_frontmatter
-    ).refrescar(Path(path))
+    ).refrescar(Path(path), *(Path(m) for m in mas))
 
 
 # Nombre público conservado (lo importan tests y `vault_norms`); la definición

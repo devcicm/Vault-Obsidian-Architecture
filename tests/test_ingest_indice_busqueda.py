@@ -69,3 +69,30 @@ def test_ap47_el_refresco_y_la_reconstruccion_escriben_la_misma_fila(tmp_path, m
     assert len(refrescada) == 1, refrescada
     vault_reindex.vault_reindex()
     assert fila() == refrescada
+
+
+def test_ap47_el_index_md_que_crea_la_escritura_tambien_entra_en_la_busqueda(tmp_path, monkeypatch):
+    # Medido con C8 en una copia de /vcloud: frontmatter_completar escribió en
+    # 02_Observability/audits/, el gancho creó ahí un index.md que no existía y
+    # solo la nota escrita entró en el índice; el audit pasó a contar 144 en
+    # disco frente a 143 indexadas. El criterio es el de la reconstrucción.
+    vault_io = _vault(tmp_path, monkeypatch)
+    import vault_reindex
+
+    nota = tmp_path / "02_Observability" / "audits" / "revision.md"
+    nota.parent.mkdir(parents=True)
+    vault_io.atomic_write_text(
+        nota, "---\ntitle: Revisión\ntags: [ops]\n---\n\n" + TEXTO + "\n"
+    )
+    indice = tmp_path / "99_Index" / "search-index.json"
+
+    def rutas():
+        # Solo la sección escrita: en un vault vacío el reindex siembra además
+        # los ficheros de sistema, que no son lo que se mide aquí.
+        return {n["path"] for n in json.loads(indice.read_text(encoding="utf-8"))["notes"]
+                if n["path"].startswith("02_Observability/")}
+
+    escritas = rutas()
+    assert (tmp_path / "02_Observability" / "audits" / "index.md").exists()
+    vault_reindex.vault_reindex()
+    assert escritas == rutas(), rutas() - escritas

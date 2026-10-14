@@ -55,7 +55,7 @@ class ServicioReindex:
             "updatedAt": meta.get("updatedAt") or meta.get("createdAt") or "",
         }
 
-    def refrescar(self, ruta: Path) -> Dict[str, Any]:
+    def refrescar(self, ruta: Path, *mas: Path) -> Dict[str, Any]:
         """AP-47: inserta o sustituye la fila de UNA nota recién escrita.
 
         Solo `vault_write` actualizaba el índice; `vault_ingest` y los `*_save`
@@ -64,13 +64,23 @@ class ServicioReindex:
         de sección, y con el mismo criterio de «qué es nota» que la
         reconstrucción. Usa el mismo cerrojo que `atomic_update_json`, así que
         se serializa con `vault_write` y con `vault_reindex`.
+
+        `mas` son las notas que esa misma escritura creó de rebote —el
+        `index.md` que el gancho de sección genera—: entran en la misma pasada,
+        una sola escritura del índice, en vez de una por nota (AP-37 cuenta
+        escrituras, y escribir dos veces el mismo fichero no es más trabajo).
         """
         repo = self._repo
-        if not es_nota_indexable(ruta, repo.raiz, repo.ctx.secciones.ordenadas()):
+        secciones = repo.ctx.secciones.ordenadas()
+        entradas = []
+        for r in (ruta, *mas):
+            if es_nota_indexable(r, repo.raiz, secciones):
+                contenido = repo.ctx.lector.leer(r)
+                entradas.append(self._entrada(r, contenido, self._parsear(contenido) or {}))
+        if not entradas:
             return {"ok": True, "refreshed": False, "reason": "no_indexable"}
-        contenido = repo.ctx.lector.leer(ruta)
-        entrada = self._entrada(ruta, contenido, self._parsear(contenido) or {})
         destino = repo.indice_busqueda
+        rutas = {e["path"] for e in entradas}
         with repo.ctx.escritor.bloquear(destino):
             try:
                 indice = json.loads(repo.ctx.lector.leer(destino))
@@ -78,13 +88,14 @@ class ServicioReindex:
                 indice = {}
             if not isinstance(indice, dict):
                 indice = {}
-            notas = [n for n in indice.get("notes", []) if n.get("path") != entrada["path"]]
-            notas.append(entrada)
+            notas = [n for n in indice.get("notes", []) if n.get("path") not in rutas]
+            notas.extend(entradas)
             indice["notes"] = notas
             if "totalNotes" in indice:
                 indice["totalNotes"] = len(notas)
             repo.ctx.escritor.escribir_json(destino, indice)
-        return {"ok": True, "refreshed": True, "path": entrada["path"]}
+        return {"ok": True, "refreshed": True, "path": entradas[0]["path"],
+                "paths": [e["path"] for e in entradas]}
 
     def reconstruir(self, dry_run: bool = False) -> Dict[str, Any]:
         repo = self._repo

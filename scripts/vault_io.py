@@ -614,12 +614,17 @@ def _auto_section_index(path: Path) -> None:
         # mano, posiblemente con [[stem|alias]] en las celdas — formato
         # prohibido), regeneramos el índice canónico encima. Sin recursión:
         # el generador escribe via Path.write_text, no via atomic_write_text.
-        vault_section_index(section)
+        raiz = get_vault_root()
+        hecho = vault_section_index(section)
         # AP-47: la nota entra en el índice de búsqueda en la misma escritura,
         # escriba quien escriba. Mismo módulo, mismo gancho declarado.
         from vault_section_index import refrescar_busqueda  # lazy, ídem
 
-        refrescar_busqueda(path)
+        # Y también el index.md que el generador acaba de crear: es una nota en
+        # disco como cualquier otra. Solo van los que no existían antes de esta
+        # escritura (`creados`) — medido con C8 en una copia de /vcloud: 144 en
+        # disco frente a 143 indexadas tras un sanador. Una sola pasada.
+        refrescar_busqueda(path, *(raiz / rel for rel in (hecho.get("creados") or [])))
     except Exception as exc:
         try:
             from vault_errors import emit_error  # type: ignore
