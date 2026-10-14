@@ -894,8 +894,9 @@ def _detect_broken_links(
             continue
 
         for link in _extract_wiki_links(content, known=all_stems):
-            if _normalize(link) in all_stems:
-                continue
+            # Sin atajo por `normalize_stem` (AP-44, 2026-10-14): quita guiones,
+            # espacios y tildes, así que `[[Elegir PostgreSQL]]` casaba con
+            # `elegir-postgresql.md`, que Obsidian pinta roto. Resuelve el dueño.
 
             # Try path-anchored resolution: the link might be a relative
             # file path that Obsidian can resolve. Check if a file exists
