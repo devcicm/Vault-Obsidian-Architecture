@@ -3156,6 +3156,59 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         ),
         "related": ["vault_validate", "vault_gate", "vault_frontmatter_heal"],
     },
+    "vault_metricas": {
+        "name": "vault_metricas",
+        "script": "vault_metricas.py",
+        "group": "Normas",
+        "purpose": (
+            "Metricas de desarrollo (deuda pendiente, baselines vencidas, fallos "
+            "y duracion de la suite) y de producto (smoke, banco del agente, "
+            "recall sobre un vault ajeno, promesas sin ejecutor), cada una con "
+            "que mide, de donde sale, objetivo con fecha, cadencia y dueno, o "
+            "el motivo escrito de no tenerlo. Las calculadas se derivan del "
+            "repo; las observadas se guardan con el commit que las produjo en "
+            "un historico que solo crece."
+        ),
+        "params": {
+            "check": {"type": "boolean", "required": False,
+                      "description": "Registro, historico y documento", "validators": []},
+            "strict": {"type": "boolean", "required": False,
+                       "description": "Exit 1 si el check falla", "validators": []},
+            "doc": {"type": "boolean", "required": False,
+                    "description": "Regenera docs/METRICAS.md", "validators": []},
+            "registrar-suite": {"type": "string", "required": False,
+                                "description": "Log de una ronda de pytest", "validators": []},
+            "registrar-smoke": {"type": "string", "required": False,
+                                "description": "Salida JSON de vault_smoke", "validators": []},
+            "registrar-banco": {"type": "string", "required": False,
+                                "description": "Informe JSON de banco_agente", "validators": []},
+            "registrar": {"type": "string", "required": False,
+                          "description": "Registra una metrica observada", "validators": []},
+            "valor": {"type": "number", "required": False,
+                      "description": "Valor para --registrar", "validators": []},
+            "fuente": {"type": "string", "required": False,
+                       "description": "De donde sale la observacion", "validators": []},
+            "commit": {"type": "string", "required": False,
+                       "description": "Commit sobre el que se midio (por defecto HEAD)",
+                       "validators": []},
+        },
+        "guards": [
+            "El plazo del objetivo se valida con vault_baseline.validar_plazo, el "
+            "mismo contrato que las baselines (AP-57)",
+            "Una observacion cuyo commit no existe en git, o que estaba en HEAD y "
+            "desaparece, pone la puerta en rojo (AP-53)",
+            "Un log de pytest sin linea de resumen no se registra como cero fallos",
+            "Lo vencido y lo desactualizado se publica en alertas sin poner la "
+            "puerta en rojo",
+        ],
+        "side_effects": ["scripts/metricas-observaciones.json", "docs/METRICAS.md"],
+        "example": (
+            "python vault_metricas.py --check --strict\n"
+            "python vault_metricas.py --registrar-suite ronda.log --commit abc1234\n"
+            "python vault_metricas.py --doc"
+        ),
+        "related": ["vault_blueprint", "vault_produccion", "vault_smoke", "vault_gate"],
+    },
     "vault_produccion": {
         "name": "vault_produccion",
         "script": "vault_produccion.py",
@@ -4744,6 +4797,7 @@ GROUPS: Dict[str, List[str]] = {
         "vault_recursos",
         "vault_produccion",
         "vault_esquema",
+        "vault_metricas",
         "vault_fix_all",
     ],
     "Producción/SRE": ["vault_incident_save", "vault_slo_save"],

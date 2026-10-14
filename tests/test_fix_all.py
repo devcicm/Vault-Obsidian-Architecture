@@ -94,6 +94,7 @@ def test_los_pasos_en_el_orden_canonico():
         "env_table",
         "field_compat",
         "esquemas",
+        "metricas",
         "arquitectura",
         "blueprint",
         "doc_counts",

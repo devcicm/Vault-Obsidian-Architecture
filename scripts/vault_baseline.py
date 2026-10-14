@@ -244,17 +244,33 @@ def validar_objetivo(objetivo: Any) -> List[str]:
     este campo lo decía así: *exige decidir la cadencia de revisión antes que el
     campo*.
     """
-    problemas: List[str] = []
     if not isinstance(objetivo, dict):
         return [f"`objetivo` es {type(objetivo).__name__}, se esperaba objeto con "
                 f"{', '.join(CAMPOS_OBJETIVO)}"]
-    for campo in CAMPOS_OBJETIVO:
-        if campo not in objetivo:
-            problemas.append(f"falta `{campo}`")
+    problemas = ["falta `tamano`"] if "tamano" not in objetivo else []
     tamano = objetivo.get("tamano")
     if tamano is not None and (not isinstance(tamano, int) or tamano < 0):
         problemas.append("`tamano` debe ser un entero ≥ 0: es el tamaño al que "
                          "esta baseline debe haber encogido")
+    return problemas + validar_plazo(objetivo)
+
+
+#: Lo que todo compromiso con fecha declara, mida lo que mida: para cuándo,
+#: cada cuánto se revisa y quién lo revisa.
+CAMPOS_PLAZO = ("fecha_limite", "cadencia_dias", "dueno")
+
+
+def validar_plazo(objetivo: Dict[str, Any]) -> List[str]:
+    """La mitad del contrato de `objetivo` que no depende de qué se mide.
+
+    Separada en 2026-10-14 porque la necesitan también las métricas de
+    `vault_metricas` y la revisión de cada norma: tres sitios validando la
+    misma fecha y el mismo dueño serían AP-57 cometido al añadir controles.
+    """
+    problemas: List[str] = []
+    for campo in CAMPOS_PLAZO:
+        if campo not in objetivo:
+            problemas.append(f"falta `{campo}`")
     cadencia = objetivo.get("cadencia_dias")
     if cadencia is not None and (not isinstance(cadencia, int) or cadencia <= 0):
         problemas.append("`cadencia_dias` debe ser un entero > 0: cada cuánto se revisa")

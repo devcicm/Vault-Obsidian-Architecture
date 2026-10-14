@@ -240,6 +240,16 @@ PUERTAS: List[Dict[str, Any]] = [
                "contrato, va en vault_contrato_nota con su fuente en HISTORIA",
     },
     {
+        "id": "metricas",
+        "cmd": ["vault_metricas.py", "--check", "--strict"],
+        "mide": "Toda métrica de desarrollo y de producto declara qué mide, de "
+                "dónde sale y su objetivo con plazo y dueño (o por qué no lo "
+                "tiene), y el histórico de observaciones solo crece",
+        "fix": "corregir la entrada de METRICAS; una observación borrada se "
+               "restaura desde HEAD, y docs/METRICAS.md se regenera con "
+               "python scripts/vault_metricas.py --doc",
+    },
+    {
         "id": "doc_staleness",
         "cmd": ["vault_doc_staleness.py", "--check", "--strict"],
         "mide": "Todos los artefactos derivados del vault (data-framework.json, "

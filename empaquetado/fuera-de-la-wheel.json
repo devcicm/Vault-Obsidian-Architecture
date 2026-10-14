@@ -21,6 +21,7 @@
     "vault_foreign_check",
     "vault_gate",
     "vault_kernel",
+    "vault_metricas",
     "vault_noop_audit",
     "vault_norms",
     "vault_norms_coherence",

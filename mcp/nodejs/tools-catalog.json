@@ -3604,6 +3604,77 @@
       ],
       "json_flag": true
     },
+    "vault_metricas": {
+      "name": "vault_metricas",
+      "description": "Metricas de desarrollo (deuda pendiente, baselines vencidas, fallos y duracion de la suite) y de producto (smoke, banco del agente, recall sobre un vault ajeno, promesas sin ejecutor), cada una con que mide, de donde sale, objetivo con fecha, cadencia y dueno, o el motivo escrito de no tenerlo. Las calculadas se derivan del repo; las observadas se guardan con el commit que las produjo en un historico que solo crece.",
+      "group": "Normas",
+      "script": "vault_metricas.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "check": {
+            "type": "boolean",
+            "description": "Registro, historico y documento"
+          },
+          "strict": {
+            "type": "boolean",
+            "description": "Exit 1 si el check falla"
+          },
+          "doc": {
+            "type": "boolean",
+            "description": "Regenera docs/METRICAS.md"
+          },
+          "registrar-suite": {
+            "type": "string",
+            "description": "Log de una ronda de pytest"
+          },
+          "registrar-smoke": {
+            "type": "string",
+            "description": "Salida JSON de vault_smoke"
+          },
+          "registrar-banco": {
+            "type": "string",
+            "description": "Informe JSON de banco_agente"
+          },
+          "registrar": {
+            "type": "string",
+            "description": "Registra una metrica observada"
+          },
+          "valor": {
+            "type": "number",
+            "description": "Valor para --registrar"
+          },
+          "fuente": {
+            "type": "string",
+            "description": "De donde sale la observacion"
+          },
+          "commit": {
+            "type": "string",
+            "description": "Commit sobre el que se midio (por defecto HEAD)"
+          }
+        },
+        "additionalProperties": false
+      },
+      "guards": [
+        "El plazo del objetivo se valida con vault_baseline.validar_plazo, el mismo contrato que las baselines (AP-57)",
+        "Una observacion cuyo commit no existe en git, o que estaba en HEAD y desaparece, pone la puerta en rojo (AP-53)",
+        "Un log de pytest sin linea de resumen no se registra como cero fallos",
+        "Lo vencido y lo desactualizado se publica en alertas sin poner la puerta en rojo"
+      ],
+      "side_effects": [
+        "scripts/metricas-observaciones.json",
+        "docs/METRICAS.md"
+      ],
+      "status": "active",
+      "exposed_via_mcp": false,
+      "execution_module": null,
+      "related": [
+        "vault_blueprint",
+        "vault_produccion",
+        "vault_smoke",
+        "vault_gate"
+      ]
+    },
     "vault_migrate_docs": {
       "name": "vault_migrate_docs",
       "description": "Migra documentación entre vaults o estructuras.",
@@ -7201,6 +7272,7 @@
       "vault_recursos",
       "vault_produccion",
       "vault_esquema",
+      "vault_metricas",
       "vault_fix_all"
     ],
     "Producción/SRE": [

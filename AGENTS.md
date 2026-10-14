@@ -10,9 +10,9 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | Ruta | Qué es |
 |---|---|
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~11.000 líneas). Fuente normativa. |
-| `scripts/*.py` | ~161 scripts, 123 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
+| `scripts/*.py` | ~162 scripts, 124 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (5530 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (5556 tests). Toda norma con guard debe tener test. |
 | `normas/` | Normas como paquete (`normas/<código>/`: `norma.py`, `porque.md`, `guard.py`, `heal.py`, `test_*.py`). Las carga `vault_norms_catalog` en su sitio del catálogo; la forma la vigila `--check-framework`. Desde m186 toda norma vive aquí (cuántas, `NORMAS_EN_PAQUETE`). `guard.py`/`heal.py` son derivados —apuntan a la función dueña; los sanadores salen de `vault_norms_catalog.SANADORES`— y se regeneran con `vault_norms_engine.escribir_caras_derivadas`, no a mano. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
@@ -249,6 +249,9 @@ abajo, en «Cuatro cosas que el registro no puede decirte».
 - [ ] `python scripts/vault_esquema.py --check --strict`
       Los JSON Schema de schemas/ son los que el contrato de nota produce para cada versión, y ninguno se edita a mano.
       *Se arregla con:* python scripts/vault_esquema.py --sync; si el cambio es del contrato, va en vault_contrato_nota con su fuente en HISTORIA
+- [ ] `python scripts/vault_metricas.py --check --strict`
+      Toda métrica de desarrollo y de producto declara qué mide, de dónde sale y su objetivo con plazo y dueño (o por qué no lo tiene), y el histórico de observaciones solo crece.
+      *Se arregla con:* corregir la entrada de METRICAS; una observación borrada se restaura desde HEAD, y docs/METRICAS.md se regenera con python scripts/vault_metricas.py --doc
 - [ ] `python scripts/vault_doc_staleness.py --check --strict`
       Todos los artefactos derivados del vault (data-framework.json, norm-registry.json, quality-index.json, etc.) existen y contienen JSON válido.
       *Se arregla con:* Regenerar con: vault_fundamentals --framework && vault_norms --rebuild && vault_compact_contracts && vault_quality_check && vault_tags

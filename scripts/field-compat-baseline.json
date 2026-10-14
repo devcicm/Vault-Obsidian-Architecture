@@ -1,6 +1,6 @@
 {
   "schema": "field-compat/1",
-  "generated": "2026-10-08T07:16:58Z",
+  "generated": "2026-10-14T21:59:19Z",
   "why": "Campos que los repos consumidores pueden leer con garantía. Un campo que sale de aquí sin quedar anotado en superseded_fields rompe a quien lo leía, y por eso lo para una puerta.",
   "stable": {
     "vault_ai_decision": [
@@ -904,6 +904,22 @@
       "results",
       "total_errors"
     ],
+    "vault_metricas": [
+      "action",
+      "added",
+      "alertas",
+      "changed",
+      "filas",
+      "hint",
+      "metricas",
+      "observaciones",
+      "ok",
+      "path",
+      "problems",
+      "recovery",
+      "registradas",
+      "tool"
+    ],
     "vault_migrate_docs": [
       "classified",
       "created",
@@ -1659,6 +1675,5 @@
       "updated",
       "written"
     ]
-  },
-  "sin_objetivo_porque": "No es deuda: es el contrato de campos estables con los repos consumidores y crece por diseño cada vez que una tool publica un campo nuevo (1334 → 1410 entre 2026-08-30 y 2026-10-08). Lo que la puerta vigila es que ningún campo desaparezca sin `superseded_fields`, no su tamaño. Declarado el 2026-10-09 con la deuda #8."
+  }
 }

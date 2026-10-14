@@ -83,6 +83,12 @@ PASOS: List[Dict[str, Any]] = [
         "por_que": "regenera schemas/ desde vault_contrato_nota",
     },
     {
+        "nombre": "metricas",
+        "script": "vault_metricas.py",
+        "args": ["--doc"],
+        "por_que": "regenera docs/METRICAS.md desde el registro y el histórico",
+    },
+    {
         "nombre": "arquitectura",
         "script": "vault_arch.py",
         "args": ["--blueprint"],

@@ -106,6 +106,8 @@ NATURALEZAS: Dict[str, Dict[str, Any]] = {
             # Publica el contrato de nota como JSON Schema por versión en
             # schemas/ del repo; no abre el vault de nadie.
             "vault_esquema",
+            # Mide el proceso y el producto de este repo; no abre ningún vault.
+            "vault_metricas",
             "vault_servicio",
             "vault_smoke", "vault_voice",
             # v40.34. Infraestructura de mantenimiento del propio estándar:

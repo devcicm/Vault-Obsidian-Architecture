@@ -1,0 +1,89 @@
+{
+  "description": "Observaciones de vault_metricas: solo de añadir. Cada una con el commit sobre el que se midió; la puerta falla si una desaparece.",
+  "observaciones": [
+    {
+      "metrica": "suite_fallos",
+      "valor": 0,
+      "commit": "32d2561",
+      "fecha": "2026-10-14",
+      "fuente": "ronda r35 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5516,
+      "commit": "32d2561",
+      "fecha": "2026-10-14",
+      "fuente": "ronda r35 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 4119.01,
+      "commit": "32d2561",
+      "fecha": "2026-10-14",
+      "fuente": "ronda r35 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 0,
+      "commit": "55df632",
+      "fecha": "2026-10-14",
+      "fuente": "ronda r37 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5528,
+      "commit": "55df632",
+      "fecha": "2026-10-14",
+      "fuente": "ronda r37 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 4044.93,
+      "commit": "55df632",
+      "fecha": "2026-10-14",
+      "fuente": "ronda r37 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 0,
+      "commit": "7b21643",
+      "fecha": "2026-10-14",
+      "fuente": "ronda r38 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5530,
+      "commit": "7b21643",
+      "fecha": "2026-10-14",
+      "fuente": "ronda r38 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 4338.98,
+      "commit": "7b21643",
+      "fecha": "2026-10-14",
+      "fuente": "ronda r38 (suite completa en serie)"
+    },
+    {
+      "metrica": "smoke_fallos",
+      "valor": 0,
+      "commit": "df0ff4d",
+      "fecha": "2026-10-14",
+      "fuente": "vault_smoke 123/123 sobre df0ff4d"
+    },
+    {
+      "metrica": "banco_tareas_fallidas",
+      "valor": 0,
+      "commit": "df0ff4d",
+      "fecha": "2026-10-14",
+      "fuente": "banco_agente --copiar-de /vcloud (copia; original intacto por hash), muestra 25"
+    },
+    {
+      "metrica": "recall_pack_ajeno",
+      "valor": 1.0,
+      "commit": "df0ff4d",
+      "fecha": "2026-10-14",
+      "fuente": "banco_agente --copiar-de /vcloud (copia; original intacto por hash), muestra 25"
+    }
+  ]
+}

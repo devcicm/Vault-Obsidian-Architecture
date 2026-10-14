@@ -649,6 +649,42 @@
         "F8"
       ]
     },
+    "vault_metricas": {
+      "group": "Normas",
+      "group_id": 35,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "action",
+        "added",
+        "alertas",
+        "changed",
+        "filas",
+        "hint",
+        "metricas",
+        "observaciones",
+        "ok",
+        "path",
+        "problems",
+        "recovery",
+        "registradas",
+        "tool"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency",
+          "timeliness"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F8"
+      ]
+    },
     "vault_excepcion_declarada": {
       "group": "Normas",
       "group_id": 35,
@@ -4614,10 +4650,10 @@
     }
   },
   "_counts": {
-    "active": 123,
+    "active": 124,
     "internal": 16,
     "archived": 5,
-    "total": 144,
+    "total": 145,
     "active_groups": 37,
     "schema_version": "1.0"
   }

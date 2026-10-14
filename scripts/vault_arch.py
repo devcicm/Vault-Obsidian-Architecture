@@ -578,6 +578,10 @@ CONTEXTS: dict[str, dict] = {
             # `schemas/`. Meta-toolkit por sujeto: escribe en este repo, no en
             # ningún vault. El contrato es del núcleo; quien lo serializa, no.
             "vault_esquema",
+            # Métricas de desarrollo y de producto con objetivo e histórico.
+            # Meta-toolkit por sujeto: mide este repo y escribe en `scripts/`
+            # y `docs/`, nunca en un vault.
+            "vault_metricas",
             # Genera adaptadores de operaciones desde registros canónicos.
             # Meta-toolkit por sujeto: genera artefactos para la distribución.
             "vault_distribution_sync",
