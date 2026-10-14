@@ -148,7 +148,10 @@ def append_move_log(record: Dict[str, Any]) -> None:
 _RE_WIKILINK_ENTERO = re.compile(r"(!?)\[\[([^\]\[]+?)\]\]")
 #: Destino de un enlace markdown: `[texto](destino)`.
 _RE_ENLACE_MD = re.compile(r"(\]\()([^)\s]+)(\))")
-_RE_ESQUEMA = re.compile(r"[a-z][a-z0-9+.-]*:", re.IGNORECASE)
+#: El lookbehind no cambia lo que encuentra `.match` (al inicio no hay nada
+#: detrás) y deja el patrón lineal también con `search`: sin él, una tirada
+#: de letras sin `:` se re-escanea desde cada posición (cuadrático).
+_RE_ESQUEMA = re.compile(r"(?<![a-z0-9+.-])[a-z][a-z0-9+.-]*:", re.IGNORECASE)
 _BARRA = chr(92)
 
 
