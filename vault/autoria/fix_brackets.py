@@ -36,7 +36,7 @@ Output:
 
 Behavior:
     - All writes are atomic via vault_io.atomic_write_text
-    - Backups go to VAULT_ROOT/.vault-fix-backup-YYYYMMDD-HHMMSS/
+    - Backups go to VAULT_ROOT/vault-backups/.vault-fix-backup-YYYYMMDD-HHMMSS/
       (gitignored via data/vault/scripts.bak-*/ pattern + .bak suffix)
     - NEVER modifies files outside VAULT_ROOT
     - NEVER modifies the spec markdown (vault-obsidian-architecture.md)
@@ -53,7 +53,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import emit_error, wrap_main
-from vault_io import assert_within_vault, atomic_write_text, get_vault_root
+from vault_io import DIR_RESPALDOS, assert_within_vault, atomic_write_text, get_vault_root
 from vault_lib import utcnow, strip_code_blocks
 from vault_regex import (
     RE_EMPTY_LINK,
@@ -333,8 +333,13 @@ def _make_backup(files: List[Path]) -> Optional[Path]:
     if not files:
         return None
     ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    backup_dir = get_vault_root() / f".vault-fix-backup-{ts}"
-    backup_dir.mkdir(exist_ok=True)
+    # Dentro de la carpeta de respaldos declarada, no en la raíz: medido con C8
+    # en una copia de /ans, cada --apply estrenaba una carpeta de raíz que el
+    # audit contaba como CN-02. El prefijo se conserva porque los filtros que
+    # excluyen respaldos viejos (`EXCLUDE_PATH_SUBSTRINGS`, `vault_audit`)
+    # buscan esa subcadena, y los que ya están en la raíz siguen excluidos.
+    backup_dir = get_vault_root() / DIR_RESPALDOS / f".vault-fix-backup-{ts}"
+    backup_dir.mkdir(parents=True, exist_ok=True)
     for f in files:
         try:
             rel = f.relative_to(get_vault_root())

@@ -944,7 +944,11 @@ def atomic_update_json(
 #:
 #: Vive aquí, y no en la tool que lo descubrió, porque el criterio de "qué es
 #: una nota viva" es del vault, no de un barrido concreto.
-SNAPSHOT_DIRS = ("vault-backups", ".trash", ".history")
+#: Dónde deja sus copias de seguridad dentro del vault quien las haga: es la
+#: carpeta que `vault_registry.NON_SECTION_ROOT_FOLDERS` declara, así que no
+#: estrena una carpeta de raíz (CN-02) ni cuenta como nota viva.
+DIR_RESPALDOS = "vault-backups"
+SNAPSHOT_DIRS = (DIR_RESPALDOS, ".trash", ".history")
 
 
 def is_snapshot_path(rel: "str | Path") -> bool:

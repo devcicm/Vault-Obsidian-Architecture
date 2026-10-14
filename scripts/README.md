@@ -509,7 +509,7 @@ No modifica ningún fichero. `--vault-root` se resuelve por autodetección.
 
 ## Grupo 33 — Corrección Automática
 
-Tool companion de `vault_audit`. Detecta y arregla automáticamente las pathologies de corchetes en wiki-links (`AP-22` empty `[[]]`, `AP-24` nested/inverted/imbalance) que el audit reporta en `issues.malformedWikilinks[]`. El auto-fix es seguro: solo toca las patologías reversibles y deja backup atómico en `VAULT_ROOT/.vault-fix-backup-YYYYMMDD-HHMMSS/` antes de modificar nada.
+Tool companion de `vault_audit`. Detecta y arregla automáticamente las pathologies de corchetes en wiki-links (`AP-22` empty `[[]]`, `AP-24` nested/inverted/imbalance) que el audit reporta en `issues.malformedWikilinks[]`. El auto-fix es seguro: solo toca las patologías reversibles y deja backup atómico en `VAULT_ROOT/vault-backups/.vault-fix-backup-YYYYMMDD-HHMMSS/` antes de modificar nada (hasta v41.4 iba en la raíz y el audit lo contaba como CN-02).
 
 ### `vault_fix_brackets.py`
 
@@ -554,7 +554,7 @@ python vault_fix_brackets.py --include-sandbox
 
 **Garantías de seguridad:**
 - Solo modifica notas dentro de `VAULT_ROOT` (path traversal bloqueado por `vault_io.assert_within_vault`)
-- Backup atómico en `.vault-fix-backup-YYYYMMDD-HHMMSS/` antes de cada escritura
+- Backup atómico en `vault-backups/.vault-fix-backup-YYYYMMDD-HHMMSS/` antes de cada escritura
 - Solo aplica cambios a notas marcadas como `auto_fixable: true` en el dry-run
 - El kind `imbalance_*` NUNCA se auto-arregla — siempre requiere revisión manual
 

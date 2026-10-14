@@ -419,7 +419,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             },
         },
         "guards": [],
-        "side_effects": ["Backups en .vault-fix-backup-YYYYMMDD/"],
+        "side_effects": ["Backups en vault-backups/.vault-fix-backup-YYYYMMDD-HHMMSS/"],
         "example": 'python vault_fix_brackets.py\npython vault_fix_brackets.py --apply\npython vault_fix_brackets.py --path "02_Observability/errors/foo.md"',
         "related": ["vault_audit", "vault_regex"],
     },

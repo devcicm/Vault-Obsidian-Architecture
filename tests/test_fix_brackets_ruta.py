@@ -52,3 +52,17 @@ def test_ruta_valida_sigue_encontrando(vault):
 
     r = vault_fix_brackets.vault_fix_brackets(path="07_Knowledge/n.md")
     assert r["ok"] is True and r["scanned"] == 1 and r["findings_total"] == 1
+
+
+def test_cn02_el_respaldo_no_estrena_una_carpeta_en_la_raiz(vault):
+    # Medido con C8 en una copia de /ans: cada --apply dejaba en la raíz una
+    # `.vault-fix-backup-<ts>/` que el audit contaba como CN-02 — el sanador de
+    # AP-22/AP-24 subía otra norma. El criterio es el del audit, no el propio.
+    import vault_fix_brackets
+    from vault.gobernanza.auditoria_runtime import auditar_runtime
+
+    r = vault_fix_brackets.vault_fix_brackets(apply=True)
+    assert r["ok"] is True and r["backup_dir"], r
+    assert (vault / r["backup_dir"]).is_dir()
+    cn02 = [v for v in auditar_runtime(vault)["violations"] if v["norm"] == "CN-02"]
+    assert cn02 == [], cn02
