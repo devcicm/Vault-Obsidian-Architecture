@@ -54,6 +54,7 @@ from vault_io import atomic_write_json, file_lock, write_report
 # El mapa que había aquí tenía un solo tipo esperado por sección y era una de
 # las tres copias que se contradecían entre sí. Ver `vault_registry.SECTION_TYPES`
 # para por qué el modelo singular no era ampliable, solo sustituible.
+from vault_contrato_nota import clase_de_nota
 from vault_registry import SCAFFOLD_TYPE, SECTION_TYPES, type_misfiled_in
 from vault_fundamentals_catalog import cia_valores
 from vault_norms_catalog import STATUS_VOCAB, normalize_status
@@ -170,8 +171,13 @@ def _get_content_notes(scope: Optional[str] = None) -> List[Path]:
     for n in _raiz().rglob("*.md"):
         if _is_skipped(n) or n.name.startswith("_") or _is_structural(n):
             continue
+        rel = str(n.relative_to(_raiz())).replace("\\", "/")
+        # AP-57: lo que una tool regenera no es una nota que puntuar. Lo decide
+        # el dueño de la clase, como en vault_audit; `change-log.md` salía con
+        # integridad 0 en todo vault recién creado.
+        if clase_de_nota(rel, _raiz()) == "derivada":
+            continue
         if scope:
-            rel = str(n.relative_to(_raiz())).replace("\\", "/")
             if not rel.startswith(scope.rstrip("/")):
                 continue
         notes.append(n)
