@@ -256,7 +256,11 @@ def test_ap05_sigue_nombrada_en_su_deuda_saldada():
     """
     entrada = next(
         d for d in bp.DEUDA_DECLARADA if d["id"] == "normas_criticas_sin_detector")
-    assert entrada["estado"] == "saldada" and entrada["saldada_en"] == "v41.4"
+    import vault_changelog_check as chg
+
+    assert entrada["estado"] == "saldada"
+    # La versión sale del changelog, no de un literal (AP-47).
+    assert entrada["saldada_en"] in {e["version"] for e in chg.entradas()}
     assert entrada["sostenida_por"]
     assert "AP-05" in entrada["que"]
     assert "AP-05" in bp.blueprint()

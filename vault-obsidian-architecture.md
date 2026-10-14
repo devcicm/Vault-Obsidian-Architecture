@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v41.3 — 2026-10-09  
+**Versión:** v41.4 — 2026-10-14  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -7567,6 +7567,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v40.30 | 2026-08-16 | **Cuatro medidas cuyo alcance declarado era más ancho que el que de verdad recorrían, y tres defectos que solo existen fuera de este repo.** El resultado de una medida así no es un error sino un **cero**, que se lee igual que estar limpio: `cli/` llevaba en `ARBOLES_MEDIDOS` desde v40.9 sin contexto declarado, así que `_mapa_modulos()` devolvía `None` y las dos rutas de detección descartaban sus ficheros antes de leer un import; `vault_ciclos` medía el grafo de `scripts/`, de modo que `vault/` —el paquete que existe para imponer fronteras— era el único cuyos ciclos no contaba nadie; y `vault_audit` recorría el disco 25 veces por invocación para leer lo mismo. Los otros tres salieron de instalar `scripts vault cli mcp` **fuera del repo** y ejecutar contra un vault vacío, que es la regla 7 aplicada al propio programa: la autodetección caía a `repo_root_fallback` —«no encontré nada y estoy suponiendo»— y devolvía el directorio del toolkit, así que las escrituras aterrizaban dentro del programa; el servidor MCP escaneaba hacia arriba y registraba tres vaults ajenos **con `VAULT_ROOT` explícito puesto**, un inventario del disco del usuario expuesto al agente como default; y 23 llamadas a `subprocess` en 13 módulos decodificaban con la locale de la máquina mientras el toolkit emite UTF-8, lo que en cp1252 corrompe el acento en silencio y en cp932 tumba la tool entera. Ninguno de los siete podía verse desde dentro: el entorno que generó la medida comparte sus supuestos |
 | v41.2 | 2026-10-07 | **Un vault puede declarar sus propias secciones, y cada sección dice qué clase de documento contiene.** `vault_section` declara, lista y retira secciones propias en `00_System/secciones.json` (rango libre 22–98, clase Diátaxis, tipos admitidos); el registro, el puerto del kernel, el contrato, el audit y los barridos de grafo, validate, tags, delta, completar, graph_fix y section_index las ven. `vault_write` y `vault_move` aplican CN-02 al destino. Normas AP-14/21/22/SP-02, AP-15, AP-26, AP-27 y CN-02 realineadas con el código que las cumple; cuatro deudas halladas, declaradas en el plano. 4605 tests, 23 puertas |
 | v41.3 | 2026-10-09 | **El agente tiene protocolo de sesión, cada norma vive en su paquete y el puente de ADR-0002 empieza a caer por lotes.** Perfil MCP `agente` derivado del protocolo; `vault_supersede` y `vault_arquitectura_en`; AP-64 y AP-65; las normas pasan a `normas/<código>/` (deuda #10 pendiente por `guard.py`/`heal.py`); ocho módulos migran del puente (deuda #12 en curso); un solo criterio para `.history/`, el lock, la cascada de índices, el schema del SDD y la exposición MCP; SBOM y `SECURITY.md`. 5289 tests, 23 puertas |
+| v41.4 | 2026-10-14 | **El vault se usa como producto instalado sin errores de operación, y tres deudas del registro quedan saldadas.** Caras `guard.py`/`heal.py` derivadas en cada norma (#10); la fase 8 de sanación empieza por el núcleo (#11); `version_pinned` y AP-08 (#2); PAT-2 con plazo en el stub (capa 4 en cero); lotes D–H del puente; una sesión de agente consumidor sobre la wheel destapa y cierra defectos de escritura, lectura, borrado, consulta y protocolo MCP (`isError`, tools que no pueden terminar). F8 y la deuda #12 siguen declaradas. 5530 tests, 23 puertas |
 | v41.1 | 2026-10-07 | **Qué contrato cumple cada nota y qué notas no pertenecen a ninguna sección.** Clase `sin_seccion` en el contrato: un `.md` de la raíz o de una carpeta no registrada lleva identidad y timestamps, no CIA, `agent`, `tags`, `type` ni `status`. `vault_validate --check cumplimiento` informa por nota las versiones del contrato que cumple y lo que le falta para la vigente. `vault_audit` publica `notIntegrated` (notas que solo enlaza un índice) y la acción de las huérfanas deja de citar AP-13. 4463 tests, 23 puertas |
 | v41.0 | 2026-10-07 | **El contrato de nota es el criterio de lo que se escribe y se valida.** `vault_contrato_nota` es el dueño de los campos de una nota y de su nivel en cada versión desde v18; `vault_validate --contrato vNN` valida contra una versión anterior y cada versión desde v18 publica su JSON Schema en `schemas/`. **Ruptura:** `type` y `status` pasan de recomendados (v37–v40) a requeridos en notas de contenido, por presencia; `vault_frontmatter_completar` los pone. Los seis escritores cumplen el contrato entero; `jsonschema` declarado en el extra dev. 4431 tests, 23 puertas |
 | v40.36 | 2026-10-05 | **Lo que encontró usar la wheel contra un vault real.** Escritura en LF también en Windows (primitivo atómico e índices de sección); `vault_append` separa el bloque, deja un solo salto final y refresca `updatedAt` (AP-13); una escritura con frontmatter ilegible sale con `FRONTMATTER_PARSE_ERROR` y `vault_read` lo declara (AP-51, AP-52); soltar el último lock retira `.locks/` y `vault_knowledge_save` comparte lock con los demás escritores; `vault_reindex` no muere por el límite de 60 s; `vault tools show` publica los parámetros; el upgrade sella en LF y crea sus carpetas de registro. 4276 tests, 22 puertas |
@@ -7925,6 +7926,35 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v41.4 — 2026-10-14 `git: pending`
+
+**El vault se usa como producto instalado sin errores de operación, y tres deudas del
+registro quedan saldadas.**
+
+**Deudas.** Cada paquete de norma lleva `guard.py` y `heal.py` derivados, que apuntan a
+la función dueña sin copiar el criterio (#10). La fase 8 de `vault_sanacion` lista
+primero las notas del núcleo del vault (#11). El contrato admite `version_pinned`,
+`vault_write --version-pinned` lo escribe y `vault_drift_detect` lo cruza con el
+manifiesto para AP-08 (#2). PAT-2: el stub nace con `expand_by` y el audit vigila el
+plazo; la capa 4 queda en cero. El puente `scripts/` sigue cayendo por lotes (D a H) y
+la deuda #12 sigue pendiente con su cifra. F8 queda declarada como deuda: el registro y
+el manifiesto miden el no repudio con criterios distintos y la decisión es del dueño.
+
+**Consumidor.** Una sesión de agente sobre la wheel instalada —escritura, lectura,
+borrado, movimiento, consulta y MCP por stdio— destapó defectos que la suite no veía:
+títulos que no pueden nombrar una nota, slugs compartidos que se pisaban, enlaces que
+`vault_move` no reescribía, `vault_delete` sin restauración, `vault_search` que no
+encontraba lo escrito, rutas fuera del vault en `vault_list`, el pre-flight rechazando
+ortografía, y `vault_audit` y la calidad resolviendo enlaces por parecido en vez de con
+el criterio de Obsidian. El servidor MCP marca `isError` cuando la tool devuelve
+`ok: false`, deja de anunciar `vault_token_service` —un servicio que no termina y por MCP
+solo daba `TOOL_TIMEOUT`— y `vault run` dice que las tools nativas de Node las sirve el
+MCP en vez de darlas por ausentes.
+
+5530 tests, 23 puertas.
 
 ---
 
