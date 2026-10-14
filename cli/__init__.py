@@ -27,7 +27,8 @@ def _version_del_estandar() -> str:
     from importlib.util import module_from_spec, spec_from_file_location
     from pathlib import Path
 
-    ruta = Path(__file__).resolve().parent.parent / "scripts" / "vault_version.py"
+    # Deuda #12: el dueño vive en el kernel; `scripts/vault_version.py` es un alias.
+    ruta = Path(__file__).resolve().parent.parent / "vault" / "kernel" / "version.py"
     spec = spec_from_file_location("_cli_vault_version", ruta)
     modulo = module_from_spec(spec)
     spec.loader.exec_module(modulo)

@@ -698,7 +698,14 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "de `vault_grafo_import.DIRECTORIO`, que es `scripts/` en el checkout y "
             "`_impl/` en la wheel. Antes, m248 hizo que los tests de propiedad "
             "leyeran al dueño con `codigo_de`. Las caras de AP-05 citan "
-            "`vault/gobernanza/fuente_unica.py`. Quedan las nueve raíces del kernel.)"
+            "`vault/gobernanza/fuente_unica.py`. Quedan las nueve raíces del kernel.)\n\n"
+            "(Lote D, raíces del kernel, 2026-10-10: version, vocabulario y "
+            "contrato_nota a `vault/kernel/`. `cli/__init__.py` lee la versión del "
+            "dueño en el kernel —la CLI no viaja en la wheel—, el README de "
+            "`schemas/` cita `vault/kernel/contrato_nota.py` y la cara de AP-64 "
+            "también. Antes, m251 hizo que `vault_grafo_import.grafo()` midiera al "
+            "dueño y no al alias: con las aristas del alias el escalón de AP-59 "
+            "bajaba y `vault_errors` cruzaba un umbral que con las reales no cruza.)"
         ),
         "por_que_no_ahora": (
             "Transitorio hasta migrar scripts → vault/<contexto>, ADR-0002. "

@@ -60,14 +60,11 @@
   "system_writes": [],
   "bridge_modules": [
     "vault_baseline",
-    "vault_contrato_nota",
     "vault_fs",
     "vault_grafo_import",
     "vault_norms_catalog",
     "vault_raiz",
-    "vault_registry",
-    "vault_version",
-    "vault_vocabulario"
+    "vault_registry"
   ],
   "objetivos_por_clave": {
     "crossings": {

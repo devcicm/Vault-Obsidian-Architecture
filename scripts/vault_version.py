@@ -1,38 +1,24 @@
 #!/usr/bin/env python3
-"""vault_version — la versión del estándar, y nada más.
+"""vault_version — alias de `vault.kernel.version` (ADR-0002, deuda #12).
 
-Hoja del núcleo: no importa ningún `vault_*` y no importará ninguno. Si algún
-día lo necesita, es que ha dejado de ser un recurso y deja de tener sitio aquí.
-
-## Por qué existe (AP-62, v40.28)
-
-`CURRENT_VERSION` vivía en `vault_standard_upgrade`, que es la tool que **sube**
-el vault de una versión a otra: seis dependencias, escritura en disco y una CLI
-propia. Tres módulos —`vault_changelog_check`, `vault_init`, `vault_sdd_init`—
-lo importaban entero para leer una cadena de siete caracteres, y uno de los tres
-cruzaba de contexto para hacerlo. El síntoma es el de AP-62 en su forma más
-pura: la constante no tiene nada que ver con la maquinaria que la rodeaba, y
-estaba ahí por la razón de siempre —fue el primer sitio donde hizo falta—, no
-porque a nadie le pareciera su casa.
-
-`vault_standard_upgrade` la sigue reexportando, así que ningún llamador de fuera
-se rompe (no-derogación). Pero quien solo quiera el dato debe pedirlo aquí: por
-la fachada se paga el motor.
-
-## Qué NO va aquí
-
-El número de versión aparece además en el banner del manifiesto, en la tabla de
-versiones, en el badge del `README.md`, en el banner de `cli/README.md`, en
-`pyproject.toml` y en el `tool-spec.json` del sandbox. Eran **seis y aquí
-ponía cinco**: el de `cli/README.md` faltaba de esta lista y lo destapó
-`test_el_banner_de_la_cli_coincide` al subir a v40.29, que es exactamente para
-lo que ese test existe. **Ninguno se importa de aquí y ninguno debe:** son
-documentos y metadatos de empaquetado, cada uno con su formato, y quien los
-vigila es `vault_doc_counts` y el test del banner. Convertir este módulo en el
-generador de los cinco sería mover el problema, no resolverlo.
+El dueño vive en `vault/kernel/version.py` desde 2026-10-10 (lote D, raíces del kernel, de la migración
+del puente). Este nombre se conserva (no-derogación) como **alias en
+`sys.modules`**, no como fachada que reexporta: `import vault_version` devuelve el
+módulo del dueño, así que un `monkeypatch.setattr(vault_version, ...)` cambia lo que
+el dueño ve, y no hay dos copias de nada. En el checkout añade la raíz del
+repo al path para encontrar `vault/`; instalado (en `_impl`) ya es importable.
 """
 
-#: La versión del estándar en curso. Se sube a mano en la tanda que la cierra,
-#: junto con el banner del manifiesto, la tabla de versiones, el badge del
-#: README, `pyproject.toml` y el `tool-spec.json` del sandbox.
-CURRENT_VERSION = "v41.3"
+import sys
+from pathlib import Path
+
+_repo_root = next(
+    (p for p in Path(__file__).resolve().parents if (p / "vault").is_dir()),
+    None,
+)
+if _repo_root and str(_repo_root) not in sys.path:
+    sys.path.insert(0, str(_repo_root))
+
+import vault.kernel.version as _dueno  # noqa: E402
+
+sys.modules[__name__] = _dueno

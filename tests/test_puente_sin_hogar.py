@@ -567,3 +567,39 @@ def test_lote_g_migra_y_sus_rutas_salen_del_puente(modulo, dueno, ruta, fichero)
     r = subprocess.run([sys.executable, str(ROOT / "scripts" / f"{modulo}.py"), "--help"],
                        capture_output=True, text=True, encoding="utf-8", timeout=120)
     assert r.returncode == 0 and "usage" in r.stdout.lower(), r.stderr[-300:]
+
+
+LOTE_D_HOJAS = [
+    ("vault_version", "vault/kernel/version.py"),
+    ("vault_vocabulario", "vault/kernel/vocabulario.py"),
+    ("vault_contrato_nota", "vault/kernel/contrato_nota.py"),
+]
+
+
+@pytest.mark.parametrize("modulo,dueno", LOTE_D_HOJAS)
+def test_lote_d_hojas_del_kernel_migran_y_el_puente_las_suelta(modulo, dueno):
+    """Lote D de la deuda #12 (2026-10-10), primeras tres raíces: hojas del
+    kernel sin rutas propias. El alias es el dueño, el puente ya no las lista y
+    el grafo de imports las mide por el código del dueño (m251)."""
+    import importlib
+    import json
+
+    import vault_grafo_import as gi
+
+    assert modulo not in set(vault_arch.modulos_sin_hogar())
+    m = importlib.import_module(modulo)
+    assert m is importlib.import_module(dueno[:-3].replace("/", "."))
+    assert gi.fuente_de(modulo) == (ROOT / dueno).resolve()
+    puente = json.loads((ROOT / "scripts" / "arch-baseline.json").read_text(encoding="utf-8"))
+    assert modulo not in puente["bridge_modules"]
+    esperado = gi.importaciones(ROOT / dueno, gi.MODULOS_LOCALES) - {modulo}
+    assert gi.completo()[modulo] == esperado
+
+
+def test_la_cli_lee_la_version_del_dueno_en_el_kernel():
+    """`cli/__init__.py` cargaba `scripts/vault_version.py` por ruta; tras el
+    lote D ese fichero es un alias sin `CURRENT_VERSION`."""
+    import cli
+    import vault_version
+
+    assert cli.__version__ == vault_version.CURRENT_VERSION.lstrip("v")

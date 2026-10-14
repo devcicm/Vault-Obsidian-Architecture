@@ -1,6 +1,6 @@
 # Esquemas de nota por versión
 
-> Derivado de `scripts/vault_contrato_nota.py` por `python scripts/vault_esquema.py --sync`.
+> Derivado de `vault/kernel/contrato_nota.py` por `python scripts/vault_esquema.py --sync`.
 > No se edita a mano: `--check` falla si diverge, y lo escrito aquí se pierde.
 
 Un fichero por versión mayor del estándar, todos al lado: un vault que se quedó

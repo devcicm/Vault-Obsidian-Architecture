@@ -18,7 +18,7 @@ alguna deja de existir.
   lo deriva `scripts/vault_registry.py::regimen_de_estado`.
 - **Prevención** al escribir: `vault/kernel/contenido.py::meta_adr` propone el
   ADR en `draft` y sin `responsable` de relleno, y el contrato v41 declara el
-  campo (`scripts/vault_contrato_nota.py`).
+  campo (`vault/kernel/contrato_nota.py`).
 - **Detección**: `scripts/vault_norms.py::vault_norms_scan` y
   `vault/gobernanza/auditoria_runtime.py::auditar_runtime`.
 - **Heal**: no tiene. Quién responde de una decisión lo escribe esa persona; un
