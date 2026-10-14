@@ -45,3 +45,5 @@
 | 2026-10-14 | `df0ff4d` | `smoke_fallos` | 0 | vault_smoke 123/123 sobre df0ff4d |
 | 2026-10-14 | `df0ff4d` | `banco_tareas_fallidas` | 0 | banco_agente --copiar-de /vcloud (copia; original intacto por hash), muestra 25 |
 | 2026-10-14 | `df0ff4d` | `recall_pack_ajeno` | 1.0 | banco_agente --copiar-de /vcloud (copia; original intacto por hash), muestra 25 |
+| 2026-10-14 | `efc8093` | `colisiones_de_sanadores` | 0 | C8 --colisiones sobre copia de /vcloud (original intacto por hash); 6 sanadores, 4 ociosos |
+| 2026-10-14 | `efc8093` | `colisiones_de_sanadores` | 0 | C8 --colisiones sobre copia de /ans (original intacto por hash); 4 desenmascarados en ADR-004, completar y graph_fix fallidos |

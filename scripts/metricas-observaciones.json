@@ -84,6 +84,20 @@
       "commit": "df0ff4d",
       "fecha": "2026-10-14",
       "fuente": "banco_agente --copiar-de /vcloud (copia; original intacto por hash), muestra 25"
+    },
+    {
+      "metrica": "colisiones_de_sanadores",
+      "valor": 0,
+      "commit": "efc8093",
+      "fecha": "2026-10-14",
+      "fuente": "C8 --colisiones sobre copia de /vcloud (original intacto por hash); 6 sanadores, 4 ociosos"
+    },
+    {
+      "metrica": "colisiones_de_sanadores",
+      "valor": 0,
+      "commit": "efc8093",
+      "fecha": "2026-10-14",
+      "fuente": "C8 --colisiones sobre copia de /ans (original intacto por hash); 4 desenmascarados en ADR-004, completar y graph_fix fallidos"
     }
   ]
 }
