@@ -1060,7 +1060,8 @@ async function handleToolsCall(params, session) {
     if (name === "vault_health") {
       const result = await runHealthCheck(vaultRoot);
       await TraceLog.record(name, args, result, vaultRoot);
-      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+               ...(result?.ok === false ? { isError: true } : {}) };
     }
 
     if (name === "vault_registry") {
@@ -1097,7 +1098,10 @@ async function handleToolsCall(params, session) {
 
     await TraceLog.record(name, args, result, vaultRoot);
 
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    // AP-44: el cliente MCP decide si la llamada falló por `isError`, no
+    // abriendo el texto. Sin esto, leer una nota inexistente era un éxito.
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+             ...(result?.ok === false ? { isError: true } : {}) };
   } catch (e) {
     log("error", `Tool ${name} failed: ${e.message}`);
     return formatToolError("TOOL_EXECUTION_FAILED", e.message, name);
