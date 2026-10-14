@@ -18,6 +18,7 @@
 | `suite_fallos` | Tests en rojo en una ronda completa de la suite (failed + errors). | observada | baja | ≤ 0 tests para 2027-01-14 · cada 30 d · meta_toolkit — vault_metricas | resumen final de `python -m pytest tests/` (--registrar-suite) |
 | `suite_duracion_s` | Duración de una ronda completa de la suite, según pytest. | observada | baja | ≤ 4339 s para 2027-01-14 · cada 30 d · meta_toolkit — vault_metricas | resumen final de `python -m pytest tests/` (--registrar-suite) |
 | `suite_tests` | Tests ejecutados en una ronda completa de la suite. | observada | sube | — *sin objetivo*: crece por diseño —toda norma con guard lleva test— y un objetivo premiaría escribir tests por la cifra | resumen final de `python -m pytest tests/` (--registrar-suite) |
+| `colisiones_de_sanadores` | Normas ajenas que un sanador de SANADORES hace subir al reparar las suyas (AP-55, C8), sobre una copia temporal del vault medido. | observada | baja | ≤ 0 colisiones para 2027-01-14 · cada 30 d · meta_toolkit — vault_metricas | `collisions_total` de `python scripts/vault_norms_coherence.py --colisiones` |
 
 ## Producto
 

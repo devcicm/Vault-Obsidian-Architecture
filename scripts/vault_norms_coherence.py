@@ -128,22 +128,47 @@ mide lo que nadie cruzaba:
   de dominio de su tool, pero se queda con una parte. Iguales es coherente;
   disjuntos es otro eje —riesgo publica el tratamiento, no el estado—; un
   solapamiento parcial es el SDD publicando una máquina que la tool no tiene.
+
+**C8 — un sanador no dispara el detector de otra norma.** `SANADORES` dice qué
+tool repara qué normas, pero nadie comprobaba que reparar A no estrenara
+hallazgos de B. C8 tiene dos mitades. La **estática** está en la puerta: todo
+sanador declara en `SANACION_EN_LOTE` cómo se ejecuta sobre un vault entero, o en
+`SANADORES_SIN_LOTE` por qué no se puede. La **dinámica** es `--colisiones`:
+- copia el vault autodetectado a un temporal y nunca escribe en el origen;
+- ejecuta cada sanador sobre una copia fresca y compara `by_norm` de
+  `vault_norms --audit` antes y después;
+- una norma ajena que sube es una colisión, y una propia que sube es un sanador
+  que empeora lo que repara.
+
+Tarda decenas de segundos en el sandbox y decenas de minutos en un vault ajeno
+de cientos de notas —su watchdog lo deriva `limite_de_la_tool`—, por eso no
+está en la puerta: su cifra se registra
+como la métrica observada `colisiones_de_sanadores`. Dos límites, publicados en
+el envelope:
+- solo ve las normas que `vault_norms --audit` emite;
+- un sanador que no cambió nada no prueba nada (`healers_idle`).
 """
 
 import argparse
 import ast
 import json
+import hashlib
+import os
 import re
+import shutil
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Set
+from typing import Any, Callable, Dict, List, Optional, Set
 
 sys.path.insert(0, str(Path(__file__).parent))
 
 import vault_baseline
 import vault_grafo_import
+import vault_io
 import vault_norms_catalog
-from vault_errors import emit_error, wrap_main
+from vault_errors import TOOL_TIMEOUT_SECONDS, emit_error, wrap_main
 from vault_version import CURRENT_VERSION
 from vault_vocabulario import mapa
 
@@ -191,6 +216,25 @@ CAMPO_DESCUBIERTA = "cobertura_descubierta"
 #: C7 (AP-60). La exención honesta: la norma declara que no se confunde con
 #: ninguna, y escribe por qué. El silencio no es una tercera opción.
 CAMPO_SIN_DISTINCION = "distincion_no_aplica"
+
+#: C8. Cómo se ejecuta cada sanador de `SANADORES` sobre un vault entero. El
+#: primer elemento es el script; `{root}` se sustituye por la copia. La raíz llega
+#: también por `VAULT_ROOT` con `VAULT_STRICT_ROOT=1`, así que un sanador que
+#: autodetecta no puede caer en otro vault.
+SANACION_EN_LOTE: Dict[str, tuple] = {
+    "vault_fix_brackets": ("vault_fix_brackets.py", "--apply", "--include-sandbox"),
+    "vault_frontmatter_heal": ("vault_frontmatter_heal.py", "--apply"),
+    "vault_frontmatter_completar": ("vault_frontmatter_completar.py", "--apply"),
+    "vault_project": ("vault_project.py", "--heal", "--apply"),
+    "vault_norms_engine": ("vault_norms.py", "--heal-ap46", "--apply-heal", "--root", "{root}"),
+    "vault_graph_fix": ("vault_graph_fix.py", "--root", "{root}", "--apply", "--auto-fix-safe"),
+}
+#: C8. Los sanadores sin modo de lote, con el motivo escrito.
+SANADORES_SIN_LOTE: Dict[str, str] = {
+    "vault_supersede": (
+        "sustituye una nota concreta por otra (--path y --by): no hay lote que "
+        "ejecutar sin decidir antes qué nota manda, y eso no lo decide una medida"),
+}
 
 RE_CODIGO = re.compile(r"\b(?:AP|PAT|SP|CN)-\d+\b")
 
@@ -504,6 +548,143 @@ def incoherencias_del_ciclo(
     return problemas
 
 
+#: Lo que un sanador tiene para terminar sobre una copia. El watchdog interno de
+#: la tool (`VAULT_TOOL_TIMEOUT`) se fija en lo mismo, así que normalmente salta
+#: él y la tool devuelve su envelope `TOOL_TIMEOUT`; el del subprocess es la red.
+LIMITE_SANADOR_S = 900
+#: Lo que tiene cada audit de C8 (dos por sanador: antes y después).
+LIMITE_AUDIT_S = 900
+
+
+def _ejecutar_sanador(tool: str, raiz: Path) -> "int | str":
+    argv = [a.replace("{root}", str(raiz)) for a in SANACION_EN_LOTE[tool]]
+    # El watchdog de 60 s de VAULT_TOOL_TIMEOUT mataba a frontmatter_completar
+    # y graph_fix en una copia de /ans a medio sanar; el límite lo pone aquí
+    # el timeout del subprocess, no el de la tool.
+    env = dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
+               PYTHONIOENCODING="utf-8", VAULT_TOOL_TIMEOUT=str(LIMITE_SANADOR_S))
+    try:
+        return subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / argv[0]), *argv[1:]], env=env,
+            capture_output=True, text=True, encoding="utf-8",
+            timeout=LIMITE_SANADOR_S + 60).returncode
+    except subprocess.TimeoutExpired:
+        # Medido en una copia de /ans: frontmatter_completar no acaba en 900 s.
+        # Es un sanador fallido —se publica en `failed_healers`—, no el fin de
+        # la medida de los demás.
+        return "timeout"
+
+
+def limite_de_la_tool(argv: List[str]) -> int:
+    """Watchdog de la propia tool: el por defecto, salvo en `--colisiones`.
+
+    Medido en copias de /vcloud y /ans: la medida dinámica moría a los 60 s
+    (TOOL_TIMEOUT) aunque cada paso tuviera su límite. El suyo se deriva de los
+    de sus pasos —sanador, red del subprocess y dos audits por sanador—; un
+    VAULT_TOOL_TIMEOUT mayor sigue mandando, como en vault_reindex.
+    """
+    if "--colisiones" not in argv:
+        return TOOL_TIMEOUT_SECONDS
+    paso = LIMITE_SANADOR_S + 60 + 2 * LIMITE_AUDIT_S
+    return max(TOOL_TIMEOUT_SECONDS, len(SANACION_EN_LOTE) * paso)
+
+
+def _auditar(raiz: Path) -> Dict[str, Any]:
+    env = dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
+               PYTHONIOENCODING="utf-8")
+    r = subprocess.run(
+        [sys.executable, str(SCRIPTS_DIR / "vault_norms.py"), "--audit", "--root", str(raiz)],
+        env=env, capture_output=True, text=True, encoding="utf-8", timeout=LIMITE_AUDIT_S)
+    return json.loads(r.stdout)
+
+
+#: Normas cuyo hallazgo dice que el audit no pudo leer el frontmatter de la
+#: nota: mientras está, todo lo que depende de ese frontmatter queda oculto en
+#: esa nota. Medido con C8 en una copia de /ans (ADR-004).
+NORMAS_DE_LEGIBILIDAD = ("AP-46",)
+
+
+def _hallazgos(auditoria: Dict[str, Any]) -> Set[tuple]:
+    return {(v.get("norm"), v.get("path")) for v in auditoria.get("violations", [])}
+
+
+def _huella(raiz: Path) -> Dict[str, str]:
+    return {str(p.relative_to(raiz)): hashlib.sha1(p.read_bytes()).hexdigest()
+            for p in raiz.rglob("*.md")}
+
+
+def colisiones_de_sanadores(
+    fuente: Path,
+    ejecutar: Optional[Callable[[str, Path], "int | str"]] = None,
+    auditar: Optional[Callable[[Path], Dict[str, Any]]] = None,
+    sanadores: Optional[Dict[str, tuple]] = None,
+) -> Dict[str, Any]:
+    """C8 — cada sanador sobre una copia fresca de `fuente`; `fuente` no se toca."""
+    ejecutar = ejecutar or _ejecutar_sanador
+    auditar = auditar or _auditar
+    if sanadores is None:
+        sanadores = {t: n for t, n in vault_norms_catalog.SANADORES.items()
+                     if t in SANACION_EN_LOTE}
+    colisiones: List[Dict[str, Any]] = []
+    empeoran: List[Dict[str, Any]] = []
+    destapadas: List[Dict[str, Any]] = []
+    trabajaron: List[str] = []
+    ociosos: List[str] = []
+    fallidos: List[Dict[str, Any]] = []
+    observables: Set[str] = set()
+    for tool, propias in sanadores.items():
+        temporal = Path(tempfile.mkdtemp(prefix="vault-c8-"))
+        try:
+            raiz = temporal / "vault"
+            # `.locks/` no se copia, por lo mismo que en vault_smoke.
+            shutil.copytree(fuente, raiz, ignore=shutil.ignore_patterns(".locks"))
+            antes, huella = auditar(raiz), _huella(raiz)
+            rc = ejecutar(tool, raiz)
+            if rc:
+                fallidos.append({"healer": tool, "rc": rc})
+            despues = auditar(raiz)
+            (trabajaron if _huella(raiz) != huella else ociosos).append(tool)
+        finally:
+            shutil.rmtree(temporal, ignore_errors=True)
+        cuenta_antes, cuenta_despues = antes.get("by_norm", {}), despues.get("by_norm", {})
+        observables |= set(cuenta_antes) | set(cuenta_despues)
+        h_antes, h_despues = _hallazgos(antes), _hallazgos(despues)
+        legibles = ({r for n, r in h_antes if n in NORMAS_DE_LEGIBILIDAD}
+                    - {r for n, r in h_despues if n in NORMAS_DE_LEGIBILIDAD})
+        for norma in sorted(set(cuenta_despues)):
+            previo, ahora = cuenta_antes.get(norma, 0), cuenta_despues[norma]
+            if ahora <= previo:
+                continue
+            nuevas = sorted({r for n, r in h_despues - h_antes if n == norma})
+            ajenas = [r for r in nuevas if r not in legibles]
+            fila = {"healer": tool, "norm": norma, "before": previo, "after": ahora}
+            if nuevas and not ajenas:
+                destapadas.append({**fila, "paths": nuevas})
+                continue
+            fila["paths"] = ajenas
+            (empeoran if norma in propias else colisiones).append(fila)
+    return {
+        "ok": not (colisiones or empeoran or fallidos),
+        "tool": "vault_norms_coherence",
+        "norm": "AP-55",
+        "source": str(fuente),
+        "collisions": colisiones,
+        "collisions_total": len(colisiones),
+        "self_worsening": empeoran,
+        # No cuentan para `ok`: el hallazgo ya estaba en una nota que el audit
+        # no podía leer, y el sanador lo dejó a la vista al repararla.
+        "unmasked": destapadas,
+        "failed_healers": fallidos,
+        "healers_measured": sorted(sanadores),
+        "healers_that_worked": trabajaron,
+        # AP-60: un sanador que no cambió nada no prueba que no colisione.
+        "healers_idle": ociosos,
+        "healers_without_batch": sorted(SANADORES_SIN_LOTE),
+        # Solo se ve lo que `vault_norms --audit` emite.
+        "observable_norms": sorted(observables),
+    }
+
+
 def scan() -> Dict[str, Any]:
     catalogo = _catalogo()
     tools = _tools_del_catalogo()
@@ -708,6 +889,10 @@ def scan() -> Dict[str, Any]:
     # C9 — lo que la norma dice de sí misma.
     c9_incongruentes = incongruencias_de_severidad(catalogo)
 
+    # C8, mitad estática — todo sanador dice cómo se ejecuta en lote o por qué no.
+    c8_sin_declarar = sorted(
+        set(vault_norms_catalog.SANADORES) - set(SANACION_EN_LOTE) - set(SANADORES_SIN_LOTE))
+
     # C10 — la máquina de estados y los registros que la describen.
     c10_ciclo = incoherencias_del_ciclo(
         vault_norms_catalog.STATUS_TRANSITIONS,
@@ -718,7 +903,7 @@ def scan() -> Dict[str, Any]:
     ok = not (
         c1_inexistentes or c3_incoherentes or c4_invertidas
         or c5_sin_distincion or c6_sin_norma or nuevos or mudas_nuevas
-        or c9_incongruentes or c10_ciclo
+        or c9_incongruentes or c10_ciclo or c8_sin_declarar
     )
     return {
         "ok": ok,
@@ -754,6 +939,7 @@ def scan() -> Dict[str, Any]:
         # sitio donde esto se esconde es justo el que AP-55 persigue.
         "severity_vs_enforcement": c9_incongruentes,
         "status_machine_incoherent": c10_ciclo,
+        "healers_undeclared": c8_sin_declarar,
         "superseded_norms_total": sum(1 for n in catalogo if n.get("superseded_by")),
         "uncovered_norms": descubiertas,
         "uncovered_total": len(descubiertas),
@@ -844,7 +1030,7 @@ def main() -> int:
         description="vault_norms_coherence — AP-55: coherencia interna del catálogo de normas",
         allow_abbrev=False,
     )
-    parser.add_argument("--check", action="store_true", help="las siete medidas")
+    parser.add_argument("--check", action="store_true", help="C1-C10 (de C8, la mitad estática)")
     parser.add_argument("--strict", action="store_true", help="exit 1 si algo falla")
     parser.add_argument("--freeze", action="store_true", help="recongela la traza")
     parser.add_argument(
@@ -855,7 +1041,16 @@ def main() -> int:
         "--freeze-distincion", action="store_true",
         help="recongela las normas sin distinción de C7 (AP-60)",
     )
+    parser.add_argument(
+        "--colisiones", action="store_true",
+        help="C8 dinámica: cada sanador sobre una copia temporal del vault autodetectado",
+    )
     args = parser.parse_args()
+
+    if args.colisiones:
+        resultado = colisiones_de_sanadores(Path(vault_io.get_vault_root()))
+        print(json.dumps(resultado, ensure_ascii=False, indent=2))
+        return 1 if (args.strict and not resultado["ok"]) else 0
 
     if args.freeze_distincion:
         resultado = freeze_distincion(admitir_nuevos=args.admitir_nuevos)
@@ -873,4 +1068,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(wrap_main(main, "vault_norms_coherence"))
+    sys.exit(wrap_main(main, "vault_norms_coherence",
+                       timeout=limite_de_la_tool(sys.argv[1:])))

@@ -6417,6 +6417,31 @@ el SDD publicaba NCR como `open / closed` mientras `vault_ncr_save` acepta cinco
 estados. Una máquina de estados publicada incompleta es una contradicción entre
 dos registros del mismo hecho, que es lo que AP-55 persigue.
 
+**C8 — un sanador que sube otra norma.** Cada sanador de
+`vault_norms_catalog.SANADORES` repara sus normas, y nadie medía qué les hacía
+a las demás. C8 tiene dos mitades:
+- **La estática**, en `--check`: todo sanador del catálogo declara cómo se ejecuta
+  en lote (`SANACION_EN_LOTE`) o por qué no puede (`SANADORES_SIN_LOTE`). Si no
+  lo declara, sale en `healers_undeclared`.
+- **La dinámica**, en `--colisiones`: cada sanador corre sobre una copia nueva
+  del vault, auditada antes y después, y el original no se toca. Una norma ajena
+  que sube es una colisión (`collisions`), y una propia que sube es
+  `self_worsening`.
+
+Se compara por pares (norma, ruta), no por totales. Un hallazgo nuevo en una nota
+que antes no parseaba (AP-46) y que el sanador dejó legible es `unmasked`: ya
+estaba, y el sanador lo dejó a la vista. Contarlo como colisión acusaría al que
+sana. Un sanador que no cambió nada sale en `healers_idle`, porque cero
+colisiones de quien no trabajó no prueba nada (AP-60).
+
+La primera medida, sobre copias de dos vaults ajenos, encontró dos colisiones
+reales y las dos se arreglaron en su sitio:
+- el `index.md` que crea el gancho de escritura no entraba en la búsqueda (AP-47);
+- el respaldo de `vault_fix_brackets` estrenaba una carpeta en la raíz (CN-02).
+
+Además encontró un desenmascaramiento: el ADR-004 de /ans. Solo mide lo que
+`vault_norms --audit` emite (`observable_norms`).
+
 **Distinguida de AP-44.** AP-44 se comete al verificar: la tool mide con su
 propia normalización y queda ciega a su error. AP-55 está en el dato antes de que
 nadie verifique: dos registros canónicos afirman cosas distintas sobre el mismo

@@ -547,3 +547,152 @@ def test_c10_calla_cuando_el_ciclo_describe_otro_eje():
 def test_c10_calla_sobre_los_registros_reales():
     r = coherencia.scan()
     assert r["status_machine_incoherent"] == []
+
+
+# ── C8 — un sanador no dispara el detector de otra norma ─────────────────────
+
+
+def test_c8_todo_sanador_declara_como_se_ejecuta_en_lote(monkeypatch):
+    monkeypatch.setitem(coherencia.vault_norms_catalog.SANADORES, "vault_nuevo", ("AP-01",))
+    r = coherencia.scan()
+    assert "vault_nuevo" in r["healers_undeclared"]
+
+
+def test_c8_calla_sobre_el_registro_real():
+    assert coherencia.scan()["healers_undeclared"] == []
+
+
+def _vault_falso(tmp_path):
+    fuente = tmp_path / "fuente"
+    fuente.mkdir()
+    (fuente / "nota.md").write_text("x\n", encoding="utf-8")
+    return fuente
+
+
+def _audit(hallazgos):
+    """El envelope de `vault_norms --audit` a partir de pares (norma, ruta)."""
+    por_norma = {}
+    for norma, _ in hallazgos:
+        por_norma[norma] = por_norma.get(norma, 0) + 1
+    return {"by_norm": por_norma,
+            "violations": [{"norm": n, "path": r} for n, r in hallazgos]}
+
+
+def _como_hallazgos(por_norma):
+    return [(n, f"{n}-{i}.md") for n, c in por_norma.items() for i in range(c)]
+
+
+def _medir(tmp_path, efectos, sanadores, antes=None):
+    """`efectos`: tool -> by_norm (o lista de pares) tras sanar; el auditor lo
+    lee de un marcador. `antes`: los pares del audit previo."""
+    def ejecutar(tool, raiz):
+        if tool in efectos:
+            (raiz / "nota.md").write_text(tool, encoding="utf-8")
+        return 0
+
+    def auditar(raiz):
+        marca = (raiz / "nota.md").read_text(encoding="utf-8").strip()
+        if marca not in efectos:
+            return _audit(antes if antes is not None else [("AP-01", "AP-01-0.md")])
+        e = efectos[marca]
+        return _audit(e if isinstance(e, list) else _como_hallazgos(e))
+
+    return coherencia.colisiones_de_sanadores(
+        _vault_falso(tmp_path), ejecutar=ejecutar, auditar=auditar, sanadores=sanadores)
+
+
+def test_c8_muerde_cuando_un_sanador_dispara_otra_norma(tmp_path):
+    r = _medir(tmp_path, {"vault_a": {"AP-01": 0, "AP-02": 3}}, {"vault_a": ("AP-01",)})
+    assert r["collisions"] == [{"healer": "vault_a", "norm": "AP-02", "before": 0, "after": 3,
+                                "paths": ["AP-02-0.md", "AP-02-1.md", "AP-02-2.md"]}]
+    assert r["ok"] is False
+
+
+def test_c8_muerde_cuando_un_sanador_empeora_su_propia_norma(tmp_path):
+    r = _medir(tmp_path, {"vault_a": {"AP-01": 4}}, {"vault_a": ("AP-01",)})
+    assert r["self_worsening"] == [{"healer": "vault_a", "norm": "AP-01", "before": 1, "after": 4,
+                                    "paths": ["AP-01-1.md", "AP-01-2.md", "AP-01-3.md"]}]
+
+
+def test_c8_publica_al_sanador_que_no_trabajo(tmp_path):
+    """AP-60: si nadie trabajó, cero colisiones no prueba nada."""
+    r = _medir(tmp_path, {}, {"vault_a": ("AP-01",)})
+    assert r["collisions"] == [] and r["healers_that_worked"] == []
+    assert r["healers_idle"] == ["vault_a"]
+
+
+def test_c8_no_escribe_en_el_vault_de_origen(tmp_path):
+    fuente = _vault_falso(tmp_path)
+    coherencia.colisiones_de_sanadores(
+        fuente, ejecutar=lambda t, raiz: (raiz / "nota.md").write_text("roto"),
+        auditar=lambda raiz: _audit([]), sanadores={"vault_a": ("AP-01",)})
+    assert (fuente / "nota.md").read_text(encoding="utf-8") == "x\n"
+
+
+def test_c8_el_sanador_no_muere_por_el_watchdog_de_60s(monkeypatch, tmp_path):
+    # Medido en una copia de /ans: frontmatter_completar y graph_fix pasan del
+    # límite por defecto de VAULT_TOOL_TIMEOUT y salían con rc 1 a medio sanar,
+    # que es medir una copia rota y no al sanador.
+    import subprocess as sp
+    vistos = {}
+
+    class _R:
+        returncode = 0
+
+    def falso(argv, env=None, **kw):
+        vistos.update(env or {})
+        return _R()
+
+    monkeypatch.setattr(sp, "run", falso)
+    coherencia._ejecutar_sanador("vault_frontmatter_heal", tmp_path)
+    assert int(vistos["VAULT_TOOL_TIMEOUT"]) >= 900
+
+
+def test_c8_la_medida_entera_no_muere_por_el_watchdog_de_60s():
+    # Medido en copias de /vcloud y /ans: `--colisiones` copia el vault, audita
+    # dos veces y ejecuta un sanador por cada uno de SANACION_EN_LOTE; la tool
+    # que lo orquesta moría a los 60 s con TOOL_TIMEOUT aunque cada sanador
+    # tuviera ya su propio límite. El suyo es la suma de los de sus pasos.
+    import vault_errors
+    limite = coherencia.limite_de_la_tool(["--colisiones"])
+    paso = coherencia.LIMITE_SANADOR_S + 60 + 2 * coherencia.LIMITE_AUDIT_S
+    assert limite >= len(coherencia.SANACION_EN_LOTE) * paso
+    assert coherencia.limite_de_la_tool([]) == vault_errors.TOOL_TIMEOUT_SECONDS
+
+
+def test_c8_lo_que_aparece_en_una_nota_que_era_ilegible_es_desenmascarado(tmp_path):
+    # Medido en una copia de /ans: el ADR-004 tenía un frontmatter que no
+    # parseaba (AP-46); frontmatter_heal lo arregló y el audit vio por fin su
+    # `status: accepted` (CN-03) y la falta de `responsable` (AP-64). Eso ya
+    # estaba; el sanador no lo creó. Contarlo como colisión acusa al que sana.
+    r = _medir(tmp_path, {"vault_a": [("CN-03", "adr.md"), ("AP-64", "adr.md")]},
+               {"vault_a": ("AP-46",)}, antes=[("AP-46", "adr.md")])
+    assert r["collisions"] == [] and r["ok"] is True
+    assert {(u["norm"], tuple(u["paths"])) for u in r["unmasked"]} == {
+        ("CN-03", ("adr.md",)), ("AP-64", ("adr.md",))}
+
+
+def test_c8_lo_nuevo_en_otra_nota_sigue_siendo_colision(tmp_path):
+    r = _medir(tmp_path, {"vault_a": [("CN-03", "adr.md"), ("CN-03", "otra.md")]},
+               {"vault_a": ("AP-46",)}, antes=[("AP-46", "adr.md")])
+    assert r["collisions"] == [{"healer": "vault_a", "norm": "CN-03", "before": 0,
+                                "after": 2, "paths": ["otra.md"]}]
+    assert r["unmasked"] == []
+
+
+def test_c8_la_nota_que_sigue_ilegible_no_desenmascara_nada(tmp_path):
+    r = _medir(tmp_path, {"vault_a": [("AP-46", "adr.md"), ("CN-03", "adr.md")]},
+               {"vault_a": ("AP-46",)}, antes=[("AP-46", "adr.md")])
+    assert [c["norm"] for c in r["collisions"]] == ["CN-03"]
+
+
+def test_c8_un_sanador_que_no_termina_es_un_fallo_y_no_tumba_la_medida(monkeypatch, tmp_path):
+    # Medido en una copia de /ans (671 notas): frontmatter_completar no acaba
+    # en 900 s. Un TimeoutExpired sin capturar perdía la medida de los demás.
+    import subprocess as sp
+
+    def lento(argv, **kw):
+        raise sp.TimeoutExpired(argv, kw.get("timeout"))
+
+    monkeypatch.setattr(sp, "run", lento)
+    assert coherencia._ejecutar_sanador("vault_frontmatter_heal", tmp_path) == "timeout"

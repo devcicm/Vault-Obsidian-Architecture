@@ -4194,6 +4194,10 @@
           "freeze-distincion": {
             "type": "boolean",
             "description": "recongela las normas sin distinción de C7 (AP-60)"
+          },
+          "colisiones": {
+            "type": "boolean",
+            "description": "C8 dinámica: cada sanador sobre una copia temporal del vault autodetectado"
           }
         },
         "additionalProperties": false

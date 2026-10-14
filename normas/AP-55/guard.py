@@ -8,6 +8,7 @@ de derivarlo; se regenera con `vault_norms_engine.escribir_caras_derivadas`.
 """
 
 GUARD = [
+    'scripts/vault_norms_coherence.py::colisiones_de_sanadores',
     'scripts/vault_norms_coherence.py::scan',
     'scripts/vault_norms_coherence.py::freeze',
     'scripts/vault_norms_coherence.py::main',

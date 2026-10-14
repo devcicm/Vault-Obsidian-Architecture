@@ -125,6 +125,12 @@ METRICAS: List[Dict[str, Any]] = [
      "que": "Promesas a quien instala (versión, dependencia, plataforma, red) sin ejecutor.",
      "fuente": "vault_produccion.check()['descubiertas']",
      "objetivo": _plazo(0)},
+    {"id": "colisiones_de_sanadores", "tipo": "desarrollo", "origen": "observada",
+     "sentido": "menor", "unidad": "colisiones",
+     "que": ("Normas ajenas que un sanador de SANADORES hace subir al reparar las "
+             "suyas (AP-55, C8), sobre una copia temporal del vault medido."),
+     "fuente": "`collisions_total` de `python scripts/vault_norms_coherence.py --colisiones`",
+     "objetivo": _plazo(0)},
     {"id": "smoke_fallos", "tipo": "producto", "origen": "observada", "sentido": "menor",
      "unidad": "tools",
      "que": "Tools del catálogo que fallan el smoke.",
