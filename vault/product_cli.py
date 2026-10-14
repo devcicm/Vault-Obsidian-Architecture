@@ -118,8 +118,9 @@ def _sanitize_payload(obj: Any) -> Any:
 _PISTAS_DE_RESOLUCION = {
     UNKNOWN_TOOL: "`vault tools list` muestra las tools de esta instalación.",
     KNOWN_NOT_INSTALLED: (
-        "La tool está catalogada pero esta instalación no la trae; "
-        "`vault tools list` marca cuáles están instaladas."
+        "La CLI no la ejecuta. Si `vault tools show <tool>` dice `via: mcp`, "
+        "está instalada y la sirve el servidor MCP (`vault mcp-path` da la "
+        "configuración del cliente); si no, esta instalación no la trae."
     ),
     NOT_RUNTIME_OPERATION: (
         "Es mantenimiento del estándar, no operación sobre un vault: se ejecuta "
@@ -246,6 +247,7 @@ def cmd_tools_show(args: argparse.Namespace) -> int:
         "distributable": tool.distributable,
         "installed": tool.execution_module is not None,
         "execution_module": tool.execution_module,
+        "via": tool.via,
         "description": tool.proposito,
         "group": tool.grupo,
         "parameters": _parametros(tool.esquema),

@@ -56,6 +56,9 @@ def resolver_producto(nombre: str) -> ResolucionProducto:
         return ResolucionProducto(NOT_RUNTIME_OPERATION, tool=tool,
                                   detail=f"{nombre} es mantenimiento del estándar")
     if tool.execution_module is None:
+        if tool.via == "mcp":
+            return ResolucionProducto(KNOWN_NOT_INSTALLED, tool=tool,
+                                      detail=f"{nombre} la sirve el servidor MCP, no la CLI")
         return ResolucionProducto(KNOWN_NOT_INSTALLED, tool=tool,
                                   detail=f"{nombre} aún no está instalada")
     try:

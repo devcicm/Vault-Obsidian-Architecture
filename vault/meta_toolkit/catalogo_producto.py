@@ -31,6 +31,10 @@ class ToolProducto:
     #: El `inputSchema` del catálogo empaquetado: el mismo que valida el
     #: servidor MCP, así que la CLI no describe otros argumentos que él.
     esquema: Mapping[str, Any] = field(default_factory=dict)
+    #: Por dónde se ejecuta: ``cli`` (``vault run``), ``mcp`` (JavaScript nativo
+    #: del servidor; el dueño es ``vault_mcp_catalog.NATIVE_JS_TOOLS``, que
+    #: cruza en ``js_native_tools``) o ``ninguna`` en esta instalación.
+    via: str = "ninguna"
 
 
 def _naturaleza_por_tool() -> dict[str, str]:
@@ -52,6 +56,7 @@ def catalogo_producto() -> dict[str, ToolProducto]:
     if not isinstance(tools, Mapping):
         raise ValueError("catálogo de producto inválido: falta tools")
     naturalezas = _naturaleza_por_tool()
+    solo_mcp = frozenset(raw.get("js_native_tools") or ())
     if set(tools) != set(naturalezas):
         raise ValueError("catálogo de producto/naturalezas divergentes")
 
@@ -79,6 +84,7 @@ def catalogo_producto() -> dict[str, ToolProducto]:
             legacy_script=script or None,
             execution_module=module,
             esquema=dict(entry.get("inputSchema") or {}),
+            via="cli" if module else ("mcp" if nombre in solo_mcp else "ninguna"),
         )
     return dict(sorted(resultado.items()))
 
