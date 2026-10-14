@@ -101,6 +101,20 @@ vez: `distinguido_de` con contenido, o `distincion_no_aplica` con el motivo
 escrito. El silencio no es una tercera opción. Una norma nueva **no se congela**:
 se le escribe la distinción, igual que la capa 4 del plano exige test a la norma
 que estrena.
+
+**C9 — severidad, tipo, versión y vigencia no se contradicen.** Cuatro
+incongruencias decidibles leyendo una sola norma:
+
+- una norma `critical` con enforcement `recommended`: nadie la hace cumplir;
+- un patrón con severidad, o un antipatrón sin ella (`N/A`): la severidad
+  califica el daño de una ocurrencia, y un patrón no ocurre como daño;
+- una `introduced_version` posterior a la versión vigente;
+- una norma con `superseded_by` que sigue nombrando tools que la hacen cumplir:
+  la no-derogación conserva su contrato, no su enforcement.
+
+El catálogo no tiene hoy ninguna norma sustituida, así que la cuarta mira un
+universo vacío; se publica `superseded_norms_total` para que ese cero se lea
+como lo que es y no como una comprobación superada (AP-60).
 """
 
 import argparse
@@ -116,6 +130,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 import vault_baseline
 import vault_grafo_import
 from vault_errors import emit_error, wrap_main
+from vault_version import CURRENT_VERSION
 from vault_vocabulario import mapa
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
@@ -132,6 +147,9 @@ BASELINE_DISTINCION = SCRIPTS_DIR / "norms-distincion-baseline.json"
 #: C4 tratarlo como el menos grave de todos. Escribir el dict a secas era copiar
 #: el vocabulario dentro del guard que persigue las copias.
 GRAVEDAD = mapa("severidad", {"critical": 4, "high": 3, "medium": 2, "low": 1})
+#: C9. La severidad de un patrón: no califica un daño, y el catálogo lo
+#: escribe así en los seis patrones desde que existen.
+SIN_SEVERIDAD = "N/A"
 
 #: Combinaciones válidas de `enforcement` → campos que no pueden estar vacíos.
 #:
@@ -395,6 +413,47 @@ def normas_mudas(catalogo: List[Dict[str, Any]]) -> List[str]:
     return mudas
 
 
+def _clave_de_version(version: str) -> tuple:
+    """`v40.10` → (40, 10). Solo ordena; una forma que no entiende es C9."""
+    return tuple(int(x) for x in version.lstrip("v").split("."))
+
+
+def incongruencias_de_severidad(catalogo: List[Dict[str, Any]]) -> List[Dict[str, str]]:
+    """C9 — lo que una norma dice de sí misma no puede contradecirse."""
+    vigente = _clave_de_version(CURRENT_VERSION)
+    problemas: List[Dict[str, str]] = []
+    for norma in catalogo:
+        codigo, severidad = norma["code"], norma.get("severity")
+        enforcement = norma.get("enforcement")
+        if severidad == "critical" and enforcement == "recommended":
+            problemas.append({"norm": codigo, "problem": (
+                "severity=critical con enforcement=recommended: nadie la hace cumplir")})
+        es_patron = norma.get("type") == "pattern"
+        if es_patron and severidad != SIN_SEVERIDAD:
+            problemas.append({"norm": codigo, "problem": (
+                f"patrón con severity={severidad!r}: un patrón no califica un daño")})
+        if not es_patron and severidad not in GRAVEDAD:
+            problemas.append({"norm": codigo, "problem": (
+                f"antipatrón con severity={severidad!r}, fuera del vocabulario")})
+        introducida = norma.get("introduced_version")
+        if introducida:
+            try:
+                futura = _clave_de_version(introducida) > vigente
+            except ValueError:
+                problemas.append({"norm": codigo, "problem": (
+                    f"introduced_version={introducida!r} no es una versión")})
+            else:
+                if futura:
+                    problemas.append({"norm": codigo, "problem": (
+                        f"introduced_version={introducida} posterior a la vigente "
+                        f"{CURRENT_VERSION}")})
+        if norma.get("superseded_by") and norma.get("tools_enforcing"):
+            problemas.append({"norm": codigo, "problem": (
+                f"superseded_by={norma['superseded_by']} y aún nombra tools_enforcing: "
+                "lo sustituido conserva su contrato, no su enforcement")})
+    return problemas
+
+
 def scan() -> Dict[str, Any]:
     catalogo = _catalogo()
     tools = _tools_del_catalogo()
@@ -596,9 +655,13 @@ def scan() -> Dict[str, Any]:
     mudas_nuevas = sorted(set(mudas) - baseline_dist)
     mudas_saldadas = sorted(baseline_dist - set(mudas))
 
+    # C9 — lo que la norma dice de sí misma.
+    c9_incongruentes = incongruencias_de_severidad(catalogo)
+
     ok = not (
         c1_inexistentes or c3_incoherentes or c4_invertidas
         or c5_sin_distincion or c6_sin_norma or nuevos or mudas_nuevas
+        or c9_incongruentes
     )
     return {
         "ok": ok,
@@ -632,6 +695,8 @@ def scan() -> Dict[str, Any]:
         # Deuda con nombre, no un hueco: las normas que hoy no mide nadie y lo
         # dicen. Se publica siempre —también cuando la lista es corta— porque el
         # sitio donde esto se esconde es justo el que AP-55 persigue.
+        "severity_vs_enforcement": c9_incongruentes,
+        "superseded_norms_total": sum(1 for n in catalogo if n.get("superseded_by")),
         "uncovered_norms": descubiertas,
         "uncovered_total": len(descubiertas),
         "hint": (

@@ -463,3 +463,43 @@ def test_ap60_la_norma_esta_en_el_catalogo_y_se_distingue_de_las_dos():
     assert ap60["enforcement"] == "guard+audit"
     assert "vault_norms_coherence" in ap60["tools_enforcing"]
     assert set(ap60["distinguido_de"]) == {"AP-55", "AP-37"}
+
+
+# ── C9 — severidad, tipo y versión no se contradicen ─────────────────────────
+
+
+def test_c9_muerde_sobre_una_critica_solo_recomendada(monkeypatch):
+    """Una norma crítica que nadie hace cumplir es una opinión, no una norma."""
+    r = _con_catalogo(monkeypatch, [_norma(severity="critical", enforcement="recommended")])
+    assert any(p["norm"] == "AP-99" and "critical" in p["problem"]
+               for p in r["severity_vs_enforcement"])
+
+
+def test_c9_muerde_sobre_un_patron_con_severidad(monkeypatch):
+    r = _con_catalogo(monkeypatch, [_norma(
+        code="PAT-99", type="pattern", severity="high", enforcement="recommended",
+        tools_del_patron=["vault_audit"])])
+    assert any(p["norm"] == "PAT-99" for p in r["severity_vs_enforcement"])
+
+
+def test_c9_muerde_sobre_un_antipatron_sin_severidad(monkeypatch):
+    r = _con_catalogo(monkeypatch, [_norma(severity="N/A")])
+    assert any(p["norm"] == "AP-99" for p in r["severity_vs_enforcement"])
+
+
+def test_c9_muerde_sobre_una_norma_de_una_version_futura(monkeypatch):
+    r = _con_catalogo(monkeypatch, [_norma(introduced_version="v999.1")])
+    assert any("v999.1" in p["problem"] for p in r["severity_vs_enforcement"])
+
+
+def test_c9_muerde_sobre_una_sustituida_que_sigue_haciendose_cumplir(monkeypatch):
+    r = _con_catalogo(monkeypatch, [_norma(
+        superseded_by="AP-01", enforcement="guard", tools_enforcing=["vault_audit"])])
+    assert any("superseded_by" in p["problem"] for p in r["severity_vs_enforcement"])
+
+
+def test_c9_publica_el_universo_de_sustituidas_aunque_este_vacio():
+    """AP-60: un universo vacío no puede salir verde en silencio."""
+    r = coherencia.scan()
+    assert r["severity_vs_enforcement"] == []
+    assert r["superseded_norms_total"] == 0

@@ -6390,6 +6390,18 @@ inventa una para tapar el hueco. **C6 nace en cero y sin baseline** — una
 baseline aquí permitiría añadir una penalización sin decidir qué norma la
 sostiene, que es justo el vacío que la medida cierra.
 
+**C9 — lo que una norma dice de sí misma no se contradice.** C1–C7 cruzan la
+norma con el código o con otra norma; nadie leía una norma contra sí misma.
+C9 lo hace con cuatro reglas, todas decidibles sin interpretar:
+- una `critical` con enforcement `recommended`;
+- un patrón con severidad, o un antipatrón con `N/A`;
+- una `introduced_version` posterior a la vigente;
+- una norma con `superseded_by` que conserva `tools_enforcing`.
+
+Nace en cero y sin baseline. La cuarta regla mira hoy un universo vacío —ninguna
+norma del catálogo está sustituida— y lo dice en `superseded_norms_total`, para
+que el cero no se lea como una comprobación superada.
+
 **Distinguida de AP-44.** AP-44 se comete al verificar: la tool mide con su
 propia normalización y queda ciega a su error. AP-55 está en el dato antes de que
 nadie verifique: dos registros canónicos afirman cosas distintas sobre el mismo
