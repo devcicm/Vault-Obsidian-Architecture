@@ -5,95 +5,87 @@
   "sites": [
     {
       "firma": "vault_audit.py::_aliases_de::08d90f38",
-      "visto_en": "vault_audit.py:350"
+      "visto_en": "vault_audit.py:382"
     },
     {
       "firma": "vault_audit.py::_detect_empty_indexes::a36080b0",
-      "visto_en": "vault_audit.py:1083"
+      "visto_en": "vault_audit.py:1601"
     },
     {
       "firma": "vault_audit.py::_detect_graph_knowledge_antipatterns::a36080b0",
-      "visto_en": "vault_audit.py:1202"
+      "visto_en": "vault_audit.py:1720"
     },
     {
       "firma": "vault_audit.py::_detect_mermaid_errors::a36080b0",
-      "visto_en": "vault_audit.py:1113"
+      "visto_en": "vault_audit.py:1631"
     },
     {
       "firma": "vault_audit.py::_read_propagation_pending::08d90f38",
-      "visto_en": "vault_audit.py:1621"
-    },
-    {
-      "firma": "vault_audit.py::_read_quality_index::ada2d5bf",
-      "visto_en": "vault_audit.py:1509"
-    },
-    {
-      "firma": "vault_audit.py::_read_tag_health::ada2d5bf",
-      "visto_en": "vault_audit.py:1736"
+      "visto_en": "vault_audit.py:2144"
     },
     {
       "firma": "vault_encoding.py::log_encoding_fixes::a36080b0",
-      "visto_en": "vault_encoding.py:544"
+      "visto_en": "vault_encoding.py:578"
     },
     {
       "firma": "vault_errors.py::_inject_voice::a36080b0",
-      "visto_en": "vault_errors.py:216"
+      "visto_en": "vault_errors.py:303"
     },
     {
       "firma": "vault_errors.py::_write_output::a36080b0",
-      "visto_en": "vault_errors.py:253"
+      "visto_en": "vault_errors.py:358"
     },
     {
       "firma": "vault_errors.py::wrap_main._target::a36080b0",
-      "visto_en": "vault_errors.py:305"
+      "visto_en": "vault_errors.py:484"
     },
     {
       "firma": "vault_errors_trace.py::_count_tokens::a36080b0",
-      "visto_en": "vault_errors_trace.py:143"
+      "visto_en": "vault_errors_trace.py:162"
     },
     {
       "firma": "vault_errors_trace.py::_count_tokens::a36080b0#2",
-      "visto_en": "vault_errors_trace.py:151"
+      "visto_en": "vault_errors_trace.py:170"
     },
     {
       "firma": "vault_errors_trace.py::log_token_usage::a36080b0",
-      "visto_en": "vault_errors_trace.py:193"
+      "visto_en": "vault_errors_trace.py:212"
     },
     {
       "firma": "vault_errors_trace.py::log_trace::a36080b0",
-      "visto_en": "vault_errors_trace.py:102"
+      "visto_en": "vault_errors_trace.py:121"
     },
     {
       "firma": "vault_errors_trace.py::query_trace::08d90f38",
-      "visto_en": "vault_errors_trace.py:118"
+      "visto_en": "vault_errors_trace.py:137"
     },
     {
       "firma": "vault_io.py::_auto_section_index::a36080b0",
-      "visto_en": "vault_io.py:530"
+      "visto_en": "vault_io.py:627"
     },
     {
       "firma": "vault_io.py::_auto_tag_ledger::a36080b0",
-      "visto_en": "vault_io.py:571"
+      "visto_en": "vault_io.py:727"
     },
     {
       "firma": "vault_io.py::_registrar_escaner_degradado::a36080b0",
-      "visto_en": "vault_io.py:225"
+      "visto_en": "vault_io.py:259"
     },
     {
       "firma": "vault_io.py::atomic_write_text::a36080b0",
-      "visto_en": "vault_io.py:458"
+      "visto_en": "vault_io.py:514"
     },
     {
       "firma": "vault_io.py::update_section_index::a36080b0",
-      "visto_en": "vault_io.py:729"
+      "visto_en": "vault_io.py:909"
     },
     {
       "firma": "vault_quality_check.py::_compute_ap18::6f345a10",
-      "visto_en": "vault_quality_check.py:463"
+      "visto_en": "vault_quality_check.py:474"
     },
     {
       "firma": "vault_quality_check.py::_parse_date::ada2d5bf",
-      "visto_en": "vault_quality_check.py:213"
+      "visto_en": "vault_quality_check.py:219"
     },
     {
       "firma": "vault_restore.py::_reindexar_si_procede::a36080b0",
@@ -101,39 +93,39 @@
     },
     {
       "firma": "vault_sanacion.py::_medir_encoding::6f345a10",
-      "visto_en": "vault_sanacion.py:160"
+      "visto_en": "vault_sanacion.py:196"
     },
     {
       "firma": "vault_spec_generate_catalog.py::_extract_dict_from_source::f1f60e49",
-      "visto_en": "vault_spec_generate_catalog.py:67"
+      "visto_en": "vault_spec_generate_catalog.py:70"
     },
     {
       "firma": "vault_spec_memory.py::_get_description::a36080b0",
-      "visto_en": "vault_spec_memory.py:235"
+      "visto_en": "vault_spec_memory.py:238"
     },
     {
       "firma": "vault_spec_memory.py::_load_declared_returns::a36080b0",
-      "visto_en": "vault_spec_memory.py:105"
+      "visto_en": "vault_spec_memory.py:106"
     },
     {
       "firma": "vault_spec_memory.py::_read_source::ada2d5bf",
-      "visto_en": "vault_spec_memory.py:221"
+      "visto_en": "vault_spec_memory.py:224"
     },
     {
       "firma": "vault_standard_upgrade.py::_live_identity::f1f60e49",
-      "visto_en": "vault_standard_upgrade.py:90"
+      "visto_en": "vault_standard_upgrade.py:93"
     },
     {
       "firma": "vault_standard_upgrade.py::_run_compliance_check::a36080b0",
-      "visto_en": "vault_standard_upgrade.py:602"
+      "visto_en": "vault_standard_upgrade.py:704"
     },
     {
       "firma": "vault_standard_upgrade.py::vault_standard_upgrade::a36080b0",
-      "visto_en": "vault_standard_upgrade.py:808"
+      "visto_en": "vault_standard_upgrade.py:919"
     },
     {
       "firma": "vault_voice.py::_catalog::08d90f38",
-      "visto_en": "vault_voice.py:59"
+      "visto_en": "vault_voice.py:40"
     }
   ],
   "sites_v1_superseded": {
