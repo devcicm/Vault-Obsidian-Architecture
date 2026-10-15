@@ -28,11 +28,13 @@ import re
 
 import sys
 
-from vault_errors import emit_error, fuera_de_sesion, wrap_main
+from vault_change_log import vault_change_log_add
+from vault_errors import emit_error, fuera_de_sesion, mensaje_de, wrap_main
 
 from vault_io import assert_within_vault, atomic_write_text, get_vault_root, tomar_lock
 from vault_lib import separar_frontmatter, utcnow
 from vault_registry import es_artefacto_derivado
+from vault.kernel.entorno import agente_por_defecto
 from vault.kernel.frontmatter_escritura import Frontmatter
 from datetime import datetime, timezone
 
@@ -220,7 +222,20 @@ def _append_bajo_lock(
 
     atomic_write_text(note_path, existing_content)
 
-    return {
+    # F8 (no repudio): la constancia del añadido, como la de `vault_write`
+    # desde m292. Hasta 2026-10-15 el append cambiaba la nota sin anotar nada.
+    # Va después de escribir y no tumba el añadido: si falla, se publica.
+    constancia_id: Optional[str] = None
+    try:
+        constancia = vault_change_log_add(
+            "updated", path, "vault_append: contenido añadido", agent=agente_por_defecto())
+        constancia_id = constancia.get("id") if constancia.get("ok") else None
+        constancia_fallo = None if constancia_id else (
+            mensaje_de(constancia) or "la bitácora de cambios rechazó la entrada")
+    except OSError as exc:
+        constancia_fallo = f"la bitácora de cambios no se pudo escribir: {exc}"
+
+    result = {
         "ok": True,
         "path": path,
         "appendedLength": len(append_text),
@@ -230,6 +245,11 @@ def _append_bajo_lock(
         "updatedAt": updated_at,
         "message": "Content appended successfully",
     }
+    if constancia_id:
+        result["change_log"] = {"id": constancia_id, "action": "updated"}
+    else:
+        result["change_log_error"] = constancia_fallo
+    return result
 
 
 def main():
