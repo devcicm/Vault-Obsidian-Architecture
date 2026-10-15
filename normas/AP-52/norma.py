@@ -74,4 +74,5 @@ NORMA = {
     # contenido del vault, y esta norma es sobre el codigo de las tools.
     "tools_detecting": ["vault_error_contract"],
     "introduced_version": "v40.2",
+    "revisado_en": "2026-10-09",
 }

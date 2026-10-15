@@ -47,4 +47,5 @@ NORMA = {
     # [[nombre]] que resuelve a varias notas (issues.ambiguousLinks).
     "tools_detecting": ["vault_audit"],
     "introduced_version": "v25",
+    "revisado_en": "2026-10-09",
 }

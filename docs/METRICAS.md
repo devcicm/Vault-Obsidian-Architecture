@@ -11,6 +11,7 @@
 | Métrica | Qué mide | Origen | Mejora si | Objetivo | Fuente |
 |---|---|---|---|---|---|
 | `deuda_pendiente` | Deudas declaradas en el plano que siguen `pendiente`. | calculada | baja | ≤ 2 entradas para 2027-01-14 · cada 30 d · meta_toolkit — vault_metricas | vault_blueprint.DEUDA_DECLARADA |
+| `normas_vencidas` | Normas cuya revisión venció: `revisado_en` más su cadencia ya pasó (R4). | calculada | baja | ≤ 0 normas para 2027-01-14 · cada 30 d · meta_toolkit — vault_metricas | vault_norms_catalog.gestion_de_normas |
 | `baselines_vencidas` | Baselines cuyo objetivo pasó de fecha sin cumplirse. | calculada | baja | ≤ 0 baselines para 2027-01-14 · cada 30 d · meta_toolkit — vault_metricas | vault_baseline.estado_objetivo sobre vault_blueprint._BASELINES |
 | `baselines_por_encima_de_objetivo` | Baselines con objetivo que todavía no han encogido hasta él (en plazo o vencidas). | calculada | baja | ≤ 7 baselines para 2027-01-14 · cada 30 d · meta_toolkit — vault_metricas | vault_baseline.estado_objetivo sobre vault_blueprint._BASELINES |
 | `commits_ultima_version` | Commits entre el hash de la penúltima versión del changelog y el de la última. | calculada | baja | — *sin objetivo*: mide el tamaño del lote, no su calidad: un objetivo empujaría a partir o juntar commits para cumplirlo | vault_changelog_check.entradas + git rev-list |

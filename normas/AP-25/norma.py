@@ -40,4 +40,5 @@ NORMA = {
     "tools_enforcing": [],
     "tools_detecting": ["vault_audit", "vault_mermaid_check"],
     "introduced_version": "v34.2",
+    "revisado_en": "2026-10-09",
 }

@@ -36,4 +36,5 @@ NORMA = {
     "tools_enforcing": ["vault_write", "vault_frontmatter_completar"],
     "tools_detecting": ["vault_audit"],
     "introduced_version": "v20",
+    "revisado_en": "2026-10-09",
 }

@@ -29,4 +29,5 @@ NORMA = {
     "tools_enforcing": [],
     "tools_detecting": ["vault_norms"],
     "introduced_version": "v25",
+    "revisado_en": "2026-10-09",
 }

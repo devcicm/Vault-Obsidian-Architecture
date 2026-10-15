@@ -32,4 +32,5 @@ NORMA = {
     "tools_detecting": [],
     "tools_del_patron": ["vault_drift_detect", "vault_audit", "vault_write", "vault_change_log"],
     "introduced_version": "v25",
+    "revisado_en": "2026-10-09",
 }

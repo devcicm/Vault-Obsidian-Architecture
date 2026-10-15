@@ -55,4 +55,5 @@ NORMA = {
     "tools_enforcing": ["vault_produccion", "vault_token_service"],
     "tools_detecting": [],
     "introduced_version": "v40.34",
+    "revisado_en": "2026-10-09",
 }

@@ -45,4 +45,5 @@ NORMA = {
     "tools_enforcing": ["vault_mcp_catalog"],
     "tools_detecting": ["vault_mcp_catalog", "vault_norms"],
     "introduced_version": "v39",
+    "revisado_en": "2026-10-09",
 }

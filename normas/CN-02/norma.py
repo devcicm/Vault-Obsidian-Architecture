@@ -49,4 +49,5 @@ NORMA = {
     "tools_enforcing": ["vault_write", "vault_section", "vault_move"],
     "tools_detecting": ["vault_section_index", "vault_norms"],
     "introduced_version": "v30",
+    "revisado_en": "2026-10-09",
 }

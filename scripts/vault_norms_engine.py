@@ -254,10 +254,17 @@ def framework_drift_check(spec_path: Optional[Path] = None) -> Dict[str, Any]:
     from vault_norms_catalog import NORMAS_EN_PAQUETE, forma_de_paquetes
     paquetes = {"cargados": list(NORMAS_EN_PAQUETE), "problemas": forma_de_paquetes(),
                 "caras_desfasadas": caras_desfasadas()}
+    # Gestión (R4): un registro mal formado rompe la puerta; una norma vencida
+    # sale en `alertas`, porque vencer es trabajo pendiente y no contradicción.
+    from vault_norms_catalog import gestion_de_normas
+    gestion = gestion_de_normas()
+    alertas = [f"{v['code']}: revisión vencida el {v['vence_en']} "
+               f"(revisada el {v['revisado_en']}, cada {v['cadencia_dias']} días; "
+               f"responde {v['responsable']})" for v in gestion["vencidas"]]
 
     return {
         "ok": not missing and not sin_seccion and iso["ok"] and not paquetes["problemas"]
-              and not paquetes["caras_desfasadas"],
+              and not paquetes["caras_desfasadas"] and not gestion["problemas"],
         "tool": "vault_norms.framework_drift",
         "spec": spec.name,
         "total_ids": sum(len(e) for e in FRAMEWORK_REGISTRIES.values()),
@@ -268,6 +275,10 @@ def framework_drift_check(spec_path: Optional[Path] = None) -> Dict[str, Any]:
         "iso_tools_inexistentes": iso["tools_inexistentes"],
         "iso_cobertura_invalida": iso["cobertura_invalida"],
         "paquetes_de_norma": paquetes,
+        "gestion_de_normas": {"problemas": gestion["problemas"],
+                              "vencidas": [v["code"] for v in gestion["vencidas"]],
+                              "normas": len(gestion["normas"])},
+        "alertas": alertas,
     }
 
 

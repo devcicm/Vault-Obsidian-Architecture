@@ -49,4 +49,5 @@ NORMA = {
     "tools_enforcing": ["vault_smoke"],
     "tools_detecting": ["vault_smoke", "vault_norms"],
     "introduced_version": "v39",
+    "revisado_en": "2026-10-09",
 }

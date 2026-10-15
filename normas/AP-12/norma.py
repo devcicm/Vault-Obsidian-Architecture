@@ -34,4 +34,5 @@ NORMA = {
     # bloque completo es `vault_validate.validate_frontmatter`.
     "tools_detecting": ["vault_validate"],
     "introduced_version": "v19",
+    "revisado_en": "2026-10-09",
 }

@@ -63,4 +63,5 @@ NORMA = {
         "Señal nula: queda descubierta por eso, no por no haberla probado."
     ),
     "introduced_version": "v19",
+    "revisado_en": "2026-10-09",
 }

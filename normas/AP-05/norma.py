@@ -50,4 +50,5 @@ NORMA = {
         "planteó entero, y entero sigue abierto."
     ),
     "introduced_version": "v19",
+    "revisado_en": "2026-10-09",
 }

@@ -43,4 +43,5 @@ NORMA = {
     # además quien luego calcula el delta contra él.
     "tools_detecting": ["vault_delta"],
     "introduced_version": "v30",
+    "revisado_en": "2026-10-09",
 }

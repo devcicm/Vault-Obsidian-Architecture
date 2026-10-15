@@ -81,6 +81,11 @@ METRICAS: List[Dict[str, Any]] = [
      "que": "Deudas declaradas en el plano que siguen `pendiente`.",
      "fuente": "vault_blueprint.DEUDA_DECLARADA",
      "objetivo": _plazo(2)},
+    {"id": "normas_vencidas", "tipo": "desarrollo", "origen": "calculada", "sentido": "menor",
+     "unidad": "normas",
+     "que": "Normas cuya revisión venció: `revisado_en` más su cadencia ya pasó (R4).",
+     "fuente": "vault_norms_catalog.gestion_de_normas",
+     "objetivo": _plazo(0)},
     {"id": "baselines_vencidas", "tipo": "desarrollo", "origen": "calculada", "sentido": "menor",
      "unidad": "baselines",
      "que": "Baselines cuyo objetivo pasó de fecha sin cumplirse.",
@@ -189,6 +194,11 @@ def _deuda_pendiente() -> int:
     return sum(1 for d in vault_blueprint.DEUDA_DECLARADA if d.get("estado") == "pendiente")
 
 
+def _normas_vencidas() -> int:
+    from vault_norms_catalog import gestion_de_normas
+    return len(gestion_de_normas()["vencidas"])
+
+
 def _commits_ultima_version() -> int:
     ultima, previa = _dos_ultimas_versiones()
     salida = _git("rev-list", "--count", f"{previa['hash']}..{ultima['hash']}")
@@ -211,6 +221,7 @@ def _promesas_descubiertas() -> int:
 
 CALCULOS: Dict[str, Callable[[], float]] = {
     "deuda_pendiente": _deuda_pendiente,
+    "normas_vencidas": _normas_vencidas,
     "baselines_vencidas": lambda: sum(1 for e in _estados_de_baselines() if e == "vencido"),
     "baselines_por_encima_de_objetivo": lambda: sum(
         1 for e in _estados_de_baselines() if e in ("en_plazo", "vencido")),

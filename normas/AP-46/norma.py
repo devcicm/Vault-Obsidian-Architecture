@@ -63,4 +63,5 @@ NORMA = {
     # puede verlo. Quien lo mide es `vault_norms`.
     "tools_detecting": ["vault_norms"],
     "introduced_version": "v39.3",
+    "revisado_en": "2026-10-09",
 }

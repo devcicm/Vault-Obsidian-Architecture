@@ -53,4 +53,5 @@ NORMA = {
         "sesiones, y un peso no se fija con un solo dato."
     ),
     "introduced_version": "v19",
+    "revisado_en": "2026-10-09",
 }

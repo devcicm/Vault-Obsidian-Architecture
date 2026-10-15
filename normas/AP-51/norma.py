@@ -91,4 +91,5 @@ NORMA = {
     # afirmacion no falsable que AP-37 persigue.
     "tools_detecting": ["vault_blame_audit"],
     "introduced_version": "v40.1",
+    "revisado_en": "2026-10-09",
 }

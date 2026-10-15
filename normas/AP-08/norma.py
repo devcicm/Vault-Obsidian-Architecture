@@ -65,4 +65,5 @@ NORMA = {
         "nombra el texto no se adivina."
     ),
     "introduced_version": "v19",
+    "revisado_en": "2026-10-09",
 }

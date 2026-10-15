@@ -44,4 +44,5 @@ NORMA = {
     # enforcement sigue `guard` hasta que el usuario decida si penaliza.
     "tools_detecting": ["vault_audit"],
     "introduced_version": "v40.35",
+    "revisado_en": "2026-10-09",
 }

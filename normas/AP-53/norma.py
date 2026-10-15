@@ -64,4 +64,5 @@ NORMA = {
     "tools_enforcing": ["vault_changelog_check"],
     "tools_detecting": ["vault_changelog_check"],
     "introduced_version": "v40.7",
+    "revisado_en": "2026-10-09",
 }

@@ -50,4 +50,5 @@ NORMA = {
     # reporta `vault_graph_merge` en `unknown_predicates`.
     "tools_detecting": ["vault_graph_merge"],
     "introduced_version": "v37",
+    "revisado_en": "2026-10-09",
 }

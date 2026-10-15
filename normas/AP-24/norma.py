@@ -41,4 +41,5 @@ NORMA = {
         )
     },
     "introduced_version": "v34.2",
+    "revisado_en": "2026-10-09",
 }

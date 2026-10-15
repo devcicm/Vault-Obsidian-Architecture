@@ -38,4 +38,5 @@ NORMA = {
     "tools_enforcing": ["vault_frontmatter_completar"],
     "tools_detecting": ["vault_audit", "vault_norms"],
     "introduced_version": "v30",
+    "revisado_en": "2026-10-09",
 }

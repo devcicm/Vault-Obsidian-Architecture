@@ -35,4 +35,5 @@ NORMA = {
     # marca notas en `10_Migrated/` sin su `_report-*.md`.
     "tools_detecting": ["vault_norms"],
     "introduced_version": "v19",
+    "revisado_en": "2026-10-09",
 }

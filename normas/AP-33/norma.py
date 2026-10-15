@@ -41,4 +41,5 @@ NORMA = {
     "tools_enforcing": [],
     "tools_detecting": ["vault_graph_merge"],
     "introduced_version": "v37",
+    "revisado_en": "2026-10-09",
 }

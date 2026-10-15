@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import ast
 import re
+from datetime import date as _date, timedelta as _timedelta
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
@@ -307,6 +308,81 @@ SANADORES: Dict[str, tuple] = {
 def tools_healing(code: str) -> List[str]:
     """Las tools de `SANADORES` que reparan `code`, en el orden del registro."""
     return [tool for tool, codigos in SANADORES.items() if code in codigos]
+
+
+# ─── Gestión de normas (R4): quién responde, cuándo se revisó, cada cuánto ────
+#
+# Una norma con guard que nadie revisa envejece igual que una sin él: el guard
+# sigue en verde midiendo lo que la norma decía cuando se escribió. `revisado_en`
+# es un hecho por norma y vive en su `norma.py`; `responsable` y `cadencia_dias`
+# se derivan de aquí salvo que el paquete los declare, para no copiar la misma
+# constante en cada paquete (AP-47). La carga inicial de `revisado_en` es
+# 2026-10-09 en todas: la fecha del último commit que tocó cada `norma.py`
+# medida con git, que es cuando se empaquetaron (m186); no afirma una revisión
+# de contenido que no se hizo. Revisar una norma es leerla contra el código que
+# la sostiene y poner la fecha del día, cambie o no lo demás.
+
+#: Quién responde de una norma que no declara otro `responsable`.
+RESPONSABLE_POR_DEFECTO = "mantenedor"
+
+#: Cada cuántos días toca revisar una norma según cómo se aplica. Las que tienen
+#: guard o audit se revisan antes porque un detector desfasado da verde falso;
+#: las `recommended` solo orientan. `manual` no está: ninguna norma puede serlo
+#: (AGENTS.md, regla 5), y una que lo fuera sale como problema por no tener cadencia.
+CADENCIA_POR_ENFORCEMENT: Dict[str, int] = {
+    "guard": 90, "audit": 90, "guard+audit": 90, "recommended": 180,
+}
+
+
+def gestion_de_normas(hoy: Optional[_date] = None,
+                      catalogo: Optional[Sequence[Dict[str, Any]]] = None) -> Dict[str, Any]:
+    """El registro de gestión de cada norma, qué entradas están mal formadas y
+    cuáles han vencido.
+
+    Problema = el registro no se puede leer (falta `revisado_en`, no es una
+    fecha ISO, es posterior a `hoy`, o no hay cadencia ni declarada ni
+    derivable). Vencida = `revisado_en + cadencia_dias < hoy`: es trabajo
+    pendiente, no una contradicción, y por eso se publica aparte.
+    """
+    hoy = hoy or _date.today()
+    normas: List[Dict[str, Any]] = []
+    problemas: List[Dict[str, str]] = []
+    vencidas: List[Dict[str, Any]] = []
+    for norma in (NORM_CATALOG if catalogo is None else catalogo):
+        code = norma["code"]
+        cadencia = norma.get("cadencia_dias",
+                             CADENCIA_POR_ENFORCEMENT.get(norma.get("enforcement")))
+        responsable = norma.get("responsable", RESPONSABLE_POR_DEFECTO)
+        bruto = norma.get("revisado_en")
+        if not (isinstance(cadencia, int) and not isinstance(cadencia, bool) and cadencia > 0):
+            problemas.append({"code": code, "problema": (
+                f"sin cadencia: enforcement {norma.get('enforcement')!r} no tiene "
+                "cadencia derivada y el paquete no declara `cadencia_dias`")})
+            continue
+        if not (isinstance(responsable, str) and responsable.strip()):
+            problemas.append({"code": code, "problema": "`responsable` en blanco"})
+            continue
+        try:
+            revisado = _date.fromisoformat(bruto) if isinstance(bruto, str) else None
+        except ValueError:
+            revisado = None
+        if revisado is None:
+            problemas.append({"code": code, "problema": (
+                f"`revisado_en` debe ser una fecha AAAA-MM-DD, no {bruto!r}")})
+            continue
+        if revisado > hoy:
+            problemas.append({"code": code, "problema": (
+                f"`revisado_en` {bruto} es posterior a hoy ({hoy.isoformat()})")})
+            continue
+        vence = revisado + _timedelta(days=cadencia)
+        entrada = {"code": code, "responsable": responsable, "revisado_en": bruto,
+                   "cadencia_dias": cadencia, "vence_en": vence.isoformat(),
+                   "vencida": vence < hoy}
+        normas.append(entrada)
+        if entrada["vencida"]:
+            vencidas.append(entrada)
+    return {"hoy": hoy.isoformat(), "normas": normas, "problemas": problemas,
+            "vencidas": vencidas}
 
 _SEVERITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3, "N/A": 4}
 _CATEGORY_ORDER = {

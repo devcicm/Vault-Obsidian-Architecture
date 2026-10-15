@@ -46,4 +46,5 @@ NORMA = {
     "tools_enforcing": ["vault_section_index", "vault_io.assert_within_vault"],
     "tools_detecting": ["vault_norms"],
     "introduced_version": "v38",
+    "revisado_en": "2026-10-09",
 }

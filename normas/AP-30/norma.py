@@ -44,4 +44,5 @@ NORMA = {
     # ve. La cuenta `vault_audit` en `missing_cia`.
     "tools_detecting": ["vault_audit"],
     "introduced_version": "v30",
+    "revisado_en": "2026-10-09",
 }

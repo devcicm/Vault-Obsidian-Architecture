@@ -62,4 +62,5 @@ NORMA = {
         "copias de ocho consumidores dio cero pares."
     ),
     "introduced_version": "v25",
+    "revisado_en": "2026-10-09",
 }

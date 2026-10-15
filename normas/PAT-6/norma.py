@@ -38,4 +38,5 @@ NORMA = {
     "tools_detecting": [],
     "tools_del_patron": ["vault_graph_merge", "vault_audit"],
     "introduced_version": "v37",
+    "revisado_en": "2026-10-09",
 }

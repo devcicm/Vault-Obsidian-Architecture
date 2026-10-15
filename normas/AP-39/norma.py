@@ -48,4 +48,5 @@ NORMA = {
     "tools_enforcing": ["vault_write", "vault_tags"],
     "tools_detecting": ["vault_tags", "vault_norms"],
     "introduced_version": "v39",
+    "revisado_en": "2026-10-09",
 }

@@ -41,4 +41,5 @@ NORMA = {
     # lo cuenta en `missing_type`, con peso propio.
     "tools_detecting": ["vault_audit", "vault_validate"],
     "introduced_version": "v30",
+    "revisado_en": "2026-10-09",
 }
