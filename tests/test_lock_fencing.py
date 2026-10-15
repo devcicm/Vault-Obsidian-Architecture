@@ -206,3 +206,34 @@ def test_todas_las_formas_comparten_un_solo_lock(tmp_path, monkeypatch):
     canonica, *otras = _formas(tmp_path, monkeypatch)
     dirs = {bloqueo.rutas_de_lock(f)[1] for f in [canonica, *otras]}
     assert len(dirs) == 1, dirs
+
+
+def test_quien_perdio_el_lock_no_mueve_la_nota(tmp_path, monkeypatch):
+    """Auditoría del 2026-10-15: `vault_move` movía con `shutil.move`.
+
+    El movimiento no pasa por `escritura_atomica`, así que no comprobaba la toma:
+    quien perdía el lock de la nota mientras hacía la copia de respaldo la
+    movía igual, por debajo del escritor que se la había quitado.
+    """
+    import vault_io
+    import vault_move
+
+    raiz = tmp_path / "vault"
+    (raiz / "00_System").mkdir(parents=True)
+    (raiz / "07_Knowledge").mkdir()
+    nota = raiz / "07_Knowledge" / "a.md"
+    nota.write_text("---\ntitle: a\n---\n# a\n", encoding="utf-8")
+    vault_io.set_vault_root(raiz)
+    copiar = vault_move.shutil.copy2
+
+    def respaldo_y_robo(origen, destino):
+        _robar(nota)
+        return copiar(origen, destino)
+
+    monkeypatch.setattr(vault_move.shutil, "copy2", respaldo_y_robo)
+    try:
+        with pytest.raises(bloqueo.LockPerdido):
+            vault_move.move_note("07_Knowledge/a.md", "07_Knowledge/b.md")
+    finally:
+        bloqueo.soltar(nota, "ladron")
+    assert nota.exists() and not (raiz / "07_Knowledge" / "b.md").exists()

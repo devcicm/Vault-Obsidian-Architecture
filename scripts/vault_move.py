@@ -38,6 +38,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.bloqueo import comprobar_toma  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 from vault.kernel.frontmatter_parsing import (  # noqa: E402
     parse_frontmatter_with_body, separar_frontmatter,
@@ -510,6 +511,12 @@ def _mover_nota(
             backup_path = trash_dir / f"{source.stem}-{ts}{source.suffix}.bak"
             shutil.copy2(source, backup_path)
 
+        # El movimiento no pasa por `escritura_atomica`, así que el fencing se
+        # comprueba aquí, lo último antes del hecho (auditoría del 2026-10-15):
+        # quien perdió el lock de la nota mientras copiaba el respaldo no la
+        # mueve por debajo del escritor que se la quitó. `LockPerdido` llega a
+        # `wrap_main` como NOTE_LOCKED; el respaldo en `.trash/` no estorba.
+        comprobar_toma(source)
         shutil.move(str(source), str(destination))
         if reclasificado:
             _escribir_tipo(destination, reclasificado["to"])
