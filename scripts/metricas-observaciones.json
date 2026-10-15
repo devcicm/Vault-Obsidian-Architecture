@@ -182,6 +182,34 @@
       "commit": "abd5cc2",
       "fecha": "2026-10-15",
       "fuente": "vault_smoke sobre 124 tools"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 0,
+      "commit": "26c2b04",
+      "fecha": "2026-10-15",
+      "fuente": "pytest sobre suite.txt"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5624,
+      "commit": "26c2b04",
+      "fecha": "2026-10-15",
+      "fuente": "pytest sobre suite.txt"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 3436.61,
+      "commit": "26c2b04",
+      "fecha": "2026-10-15",
+      "fuente": "pytest sobre suite.txt"
+    },
+    {
+      "metrica": "smoke_fallos",
+      "valor": 0,
+      "commit": "26c2b04",
+      "fecha": "2026-10-15",
+      "fuente": "vault_smoke sobre 124 tools"
     }
   ]
 }
