@@ -8014,7 +8014,7 @@ temp/
 
 ---
 
-### v41.6 — 2026-10-15 `git: pending`
+### v41.6 — 2026-10-15 `git: 9de222f`
 
 **Cada norma dice cuándo se revisó, la escritura deja constancia y el piso de Python lo ejecuta una máquina.**
 
