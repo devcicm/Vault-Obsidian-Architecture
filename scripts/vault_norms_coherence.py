@@ -168,6 +168,7 @@ import vault_baseline
 import vault_grafo_import
 import vault_io
 import vault_norms_catalog
+import vault_subproceso
 from vault_errors import TOOL_TIMEOUT_SECONDS, emit_error, wrap_main
 from vault_version import CURRENT_VERSION
 from vault_vocabulario import mapa
@@ -1031,9 +1032,11 @@ def _fecha_git(ruta: Path) -> Optional[str]:
     """Fecha (AAAA-MM-DD) del último commit que tocó `ruta`, o `None` si git
     no la da: sin git, fuera del repo o sin historia."""
     try:
-        salida = subprocess.run(
+        # Por el dueño de la codificación: `text=True` a secas decodifica con
+        # la locale (lo vio test_portabilidad_v4030 en r41).
+        salida = vault_subproceso.ejecutar(
             ["git", "-C", str(Path(ruta).parent), "log", "-1", "--format=%cs", "--", str(ruta)],
-            capture_output=True, text=True, timeout=TOOL_TIMEOUT_SECONDS, check=False,
+            capture_output=True, timeout=TOOL_TIMEOUT_SECONDS, check=False,
         )
     except (OSError, subprocess.SubprocessError):
         return None
