@@ -56,3 +56,7 @@
 | 2026-10-15 | `ae3c5df` | `suite_tests` | 5604 | pytest sobre suite.txt |
 | 2026-10-15 | `ae3c5df` | `suite_duracion_s` | 3951.77 | pytest sobre suite.txt |
 | 2026-10-15 | `ae3c5df` | `smoke_fallos` | 0 | vault_smoke sobre 124 tools |
+| 2026-10-15 | `abd5cc2` | `suite_fallos` | 1 | pytest sobre suite.txt |
+| 2026-10-15 | `abd5cc2` | `suite_tests` | 5624 | pytest sobre suite.txt |
+| 2026-10-15 | `abd5cc2` | `suite_duracion_s` | 3997.04 | pytest sobre suite.txt |
+| 2026-10-15 | `abd5cc2` | `smoke_fallos` | 0 | vault_smoke sobre 124 tools |
