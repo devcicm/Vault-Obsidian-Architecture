@@ -27,6 +27,8 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple
 from vault_fs import escritura_atomica, file_lock, guarda_secretos
 from vault_raiz import escritura_admitida, get_vault_root
 
+from .escritura import apartar_ilegible
+
 
 # AP-36: los paths se resuelven LAZY vía get_vault_root() en cada llamada, para
 # que un tool ejecutado con --root (que llama vault_io.set_vault_root) escriba
@@ -90,6 +92,28 @@ def trazas_en_lote() -> Iterator[None]:
             log_trace(*pendientes)
 
 
+def _leer_registro(path: Path) -> List[Dict[str, Any]]:
+    """Las entradas de un registro de efecto lateral; si no se lee, se aparta.
+
+    Hasta el 2026-10-15 un JSON corrupto se leía como `[]` y se pisaba con la
+    entrada nueva: lo que había desaparecía sin aviso (AP-51). La traza y el
+    contador no deben tumbar a la tool que anotan —no se puede llamar a
+    `emit_error` desde aquí, es circular—, así que el fichero ilegible se
+    conserva aparte (`apartar_ilegible`) y el registro sigue desde cero.
+    """
+    try:
+        entries = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        entries = None
+    if isinstance(entries, list):
+        return entries
+    try:
+        apartar_ilegible(path)
+    except OSError:
+        pass  # AP-37: fail-safe — si ni se puede apartar, la escritura dirá
+    return []
+
+
 def _append_trace_entry(nuevas: List[Dict[str, Any]], use_atomic: bool) -> None:
     """Lee, rota y escribe el trace file con `nuevas` añadidas: una escritura.
 
@@ -97,14 +121,7 @@ def _append_trace_entry(nuevas: List[Dict[str, Any]], use_atomic: bool) -> None:
     """
     tf = trace_file()
     if tf.exists():
-        try:
-            entries: List[Dict] = json.loads(tf.read_text(encoding="utf-8"))
-            if not isinstance(entries, list):
-                entries = []
-        except Exception:
-            # AP-37 fail-safe: corrupt trace file — start fresh.
-            # Cannot call emit_error here (circular import with vault_errors).
-            entries = []
+        entries = _leer_registro(tf)
     else:
         entries = []
 
@@ -240,13 +257,7 @@ def log_token_usage(tool: str, input_text: str, output_text: str) -> None:
         tkf = tokens_file()
         tkf.parent.mkdir(parents=True, exist_ok=True)
         if tkf.exists():
-            try:
-                entries: List[Dict] = json.loads(tkf.read_text(encoding="utf-8"))
-                if not isinstance(entries, list):
-                    entries = []
-            except Exception:
-                # AP-37 fail-safe: corrupt token log — start fresh, preserve new entry.
-                entries = []
+            entries = _leer_registro(tkf)
         else:
             entries = []
         entries.append(entry)

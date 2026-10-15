@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import errno
 import os
+import time
 import uuid
 from pathlib import Path
 from typing import Callable, Sequence
@@ -90,3 +91,19 @@ def escritura_atomica(
         except OSError:
             pass
         raise
+
+
+def apartar_ilegible(path: Path) -> Path:
+    """Renombra `path` a `<nombre>.ilegible-<utc>-<hex>` y devuelve la ruta nueva.
+
+    Para los registros de efecto lateral —trazas, contadores, logs de
+    arreglos— que no deben tumbar la operación que anotan: un JSON que no se lee
+    se **aparta** en vez de leerse como vacío y pisarse con la entrada nueva
+    (auditoría del 2026-10-15, AP-51). El contenido queda entero junto al
+    original para repararlo a mano, y el nombre queda libre para seguir.
+    `os.replace` en el mismo directorio: no hay copia a medias.
+    """
+    sello = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+    destino = path.with_name(f"{path.name}.ilegible-{sello}-{uuid.uuid4().hex[:6]}")
+    os.replace(path, destino)
+    return destino

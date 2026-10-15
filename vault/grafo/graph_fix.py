@@ -65,6 +65,7 @@ from vault_lib import (
     parse_frontmatter,
     resolver_destino_wikilink,
 )
+from vault.kernel.escritura import apartar_ilegible
 from vault.kernel.frontmatter_escritura import Frontmatter
 from vault_graph_inspect import (
     _SKIP_DIRS,
@@ -468,11 +469,17 @@ def apply_fix(report: dict[str, Any], root: Path) -> dict[str, Any]:
     log_dir = root / _FIX_LOG_DIR
     log_dir.mkdir(parents=True, exist_ok=True)
     log_path = log_dir / f"{datetime.now(timezone.utc).strftime('%Y-%m-%d')}.json"
-    existing_log = []
+    existing_log: list = []
+    apartado = None
     if log_path.exists():
         try:
             existing_log = json.loads(log_path.read_text(encoding="utf-8"))
-        except Exception:
+        except (OSError, ValueError):
+            existing_log = None
+        if not isinstance(existing_log, list):
+            # El arreglo no se tumba por su log, pero lo que el log decía
+            # tampoco se pisa: se aparta para repararlo (AP-51, 2026-10-15).
+            apartado = apartar_ilegible(log_path)
             existing_log = []
 
     applied = 0
@@ -515,11 +522,14 @@ def apply_fix(report: dict[str, Any], root: Path) -> dict[str, Any]:
     )
     atomic_write_text(log_path, json.dumps(existing_log, indent=2, ensure_ascii=False))
 
-    return {
+    resultado = {
         "applied": applied,
         "errors": errors,
         "log_file": str(log_path.relative_to(root)).replace("\\", "/"),
     }
+    if apartado is not None:
+        resultado["log_apartado"] = str(apartado.relative_to(root)).replace("\\", "/")
+    return resultado
 
 
 def _strip_frontmatter(content: str) -> str:
