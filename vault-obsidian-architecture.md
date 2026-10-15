@@ -8011,7 +8011,7 @@ temp/
 
 ---
 
-### v41.5 — 2026-10-15 `git: pending`
+### v41.5 — 2026-10-15 `git: a4111e2`
 
 **Las normas tienen métricas, se vigilan entre sí y los sanadores escriben en lote.**
 
