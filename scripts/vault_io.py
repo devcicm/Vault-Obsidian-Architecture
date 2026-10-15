@@ -54,6 +54,7 @@ from vault_entorno import leer as _env
 # siguen funcionando sin tocarse. No-derogación: la puerta de entrada histórica
 # no se retira porque haya aparecido otra mejor.
 import vault_raiz as _raiz
+from vault.kernel.errors_trace import trazas_en_lote
 from vault.kernel.fallos import FalloDeDominio
 from vault.kernel.indices_structural import DISPOSITIVOS_WINDOWS, es_dispositivo_windows
 from vault_raiz import (  # noqa: F401  (reexport deliberado)
@@ -627,22 +628,25 @@ def escrituras_en_lote() -> Iterator[None]:
     notas, después de las secciones, porque los `index.md` que estas crean
     son nodos del grafo y tienen que existir antes de buscarlos.
 
-    Un lote anidado no cierra nada: lo cierra el de fuera. La bitácora de
-    tags sigue por nota —no llegaba al 1 % medido—.
+    Y tras el grafo, la traza: la abre `trazas_en_lote` alrededor de todo,
+    así que las entradas que dejen el lote y su cierre se escriben juntas al
+    final. Un lote anidado no cierra nada: lo cierra el de fuera. La bitácora
+    de tags sigue por nota —no llegaba al 10 % medido—.
     """
     if _LOTE.get() is not None:
         yield
         return
     lote = _Lote()
-    token = _LOTE.set(lote)
-    try:
-        yield
-    finally:
-        _LOTE.reset(token)
-        for section, rutas in lote.secciones.items():
-            _regenerar_seccion(section, rutas)
-        if lote.grafo:
-            _refrescar_grafo_de(lote.grafo)
+    with trazas_en_lote():
+        token = _LOTE.set(lote)
+        try:
+            yield
+        finally:
+            _LOTE.reset(token)
+            for section, rutas in lote.secciones.items():
+                _regenerar_seccion(section, rutas)
+            if lote.grafo:
+                _refrescar_grafo_de(lote.grafo)
 
 
 def _auto_section_index(path: Path) -> None:

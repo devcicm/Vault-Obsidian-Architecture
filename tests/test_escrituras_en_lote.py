@@ -189,3 +189,61 @@ def test_ap47_el_refresco_no_descarta_el_lote_si_la_primera_ruta_no_es_nota(tmp_
     r = vault_io.refrescar_grafo(tmp_path / "fuera.txt", nota)
     assert r.get("refreshed") is True, r
     assert "07_Knowledge/alfa.md" in _grafo(tmp_path)[0]
+
+
+# --- La traza también en lote ------------------------------------------------
+# Misma medida tras ca5c0bc: de 103 s, 47,6 eran `log_trace` en 191 llamadas
+# (las de `log_encoding_fixes`): cada entrada relee hasta 500, reescribe el
+# fichero entero y le pasa el escáner de secretos.
+
+def _traza(monkeypatch, tmp_path):
+    import vault.kernel.errors_trace as et
+
+    vault_io = _vault(tmp_path, monkeypatch)
+    escrituras = []
+    original = et.escritura_atomica
+
+    def contada(ruta, *a, **kw):
+        if Path(ruta).name == ".tool-trace.json":
+            escrituras.append(ruta)
+        return original(ruta, *a, **kw)
+
+    monkeypatch.setattr(et, "escritura_atomica", contada)
+    return vault_io, et, escrituras
+
+
+def _entradas(et):
+    return [e.get("n") for e in json.loads(et.trace_file().read_text(encoding="utf-8"))]
+
+
+def test_ap47_en_lote_la_traza_se_escribe_una_sola_vez(tmp_path, monkeypatch):
+    vault_io, et, escrituras = _traza(monkeypatch, tmp_path)
+    et.log_trace({"tool": "previa", "n": 0})
+    escrituras.clear()
+    with vault_io.escrituras_en_lote():
+        for n in (1, 2, 3):
+            et.log_trace({"tool": "t", "n": n})
+        assert escrituras == []
+        assert _entradas(et) == [0]
+    assert len(escrituras) == 1
+    assert _entradas(et) == [0, 1, 2, 3]
+
+
+def test_ap47_la_traza_en_lote_respeta_la_rotacion(tmp_path, monkeypatch):
+    vault_io, et, _ = _traza(monkeypatch, tmp_path)
+    monkeypatch.setattr(et, "TRACE_MAX_ENTRIES", 3)
+    with vault_io.escrituras_en_lote():
+        for n in range(5):
+            et.log_trace({"tool": "t", "n": n})
+    assert _entradas(et) == [2, 3, 4]
+
+
+def test_ap47_la_traza_en_lote_se_escribe_aunque_el_lote_falle(tmp_path, monkeypatch):
+    vault_io, et, _ = _traza(monkeypatch, tmp_path)
+    try:
+        with vault_io.escrituras_en_lote():
+            et.log_trace({"tool": "t", "n": 1})
+            raise RuntimeError("fallo a mitad del lote")
+    except RuntimeError:
+        pass
+    assert _entradas(et) == [1]

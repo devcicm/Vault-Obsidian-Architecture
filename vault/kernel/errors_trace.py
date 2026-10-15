@@ -4,11 +4,13 @@
 Importado por vault_errors.py. No debe importar vault_errors (circular).
 """
 
+import contextvars
 import json
 import re as _re
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 # v40.17 — se pide el mecanismo a las hojas, no el módulo de IO entero.
 #
@@ -56,8 +58,43 @@ TRACE_MAX_ENTRIES = 500
 TOKENS_MAX_ENTRIES = 2000
 
 
-def _append_trace_entry(entry: Dict[str, Any], use_atomic: bool) -> None:
-    """Lee, rota y escribe el trace file."""
+#: Entradas acumuladas dentro de `trazas_en_lote`; `None` fuera de un lote.
+_LOTE: "contextvars.ContextVar[Optional[List[Dict[str, Any]]]]" = contextvars.ContextVar(
+    "errors_trace_lote", default=None)
+
+
+@contextmanager
+def trazas_en_lote() -> Iterator[None]:
+    """Acumula las entradas de `log_trace` y las escribe una vez al salir (AP-47).
+
+    Medido el 2026-10-14 con cProfile en una copia de /ans: tras poner en lote
+    el índice de sección y el grafo, 47,6 de los 103 s de
+    `vault_frontmatter_completar --apply` eran 191 llamadas a `log_trace`
+    —las de `log_encoding_fixes`—: cada una relee hasta `TRACE_MAX_ENTRIES`,
+    reescribe el fichero entero y le pasa el escáner de secretos. Al salir
+    —también por excepción— las entradas se añaden en una sola escritura con
+    la misma rotación. Mientras dura el lote, `query_trace` no las ve todavía.
+
+    Un lote anidado no escribe nada: lo cierra el de fuera.
+    """
+    if _LOTE.get() is not None:
+        yield
+        return
+    pendientes: List[Dict[str, Any]] = []
+    token = _LOTE.set(pendientes)
+    try:
+        yield
+    finally:
+        _LOTE.reset(token)
+        if pendientes:
+            log_trace(*pendientes)
+
+
+def _append_trace_entry(nuevas: List[Dict[str, Any]], use_atomic: bool) -> None:
+    """Lee, rota y escribe el trace file con `nuevas` añadidas: una escritura.
+
+    Recibe una lista desde `trazas_en_lote`: fuera de un lote es de una entrada.
+    """
     tf = trace_file()
     if tf.exists():
         try:
@@ -71,7 +108,7 @@ def _append_trace_entry(entry: Dict[str, Any], use_atomic: bool) -> None:
     else:
         entries = []
 
-    entries.append(entry)
+    entries.extend(nuevas)
     if len(entries) > TRACE_MAX_ENTRIES:
         entries = entries[-TRACE_MAX_ENTRIES:]
 
@@ -94,8 +131,17 @@ def _append_trace_entry(entry: Dict[str, Any], use_atomic: bool) -> None:
         tf.write_text(text, encoding="utf-8")
 
 
-def log_trace(entry: Dict[str, Any]) -> None:
-    """Añade entrada al trace log con rotación a TRACE_MAX_ENTRIES."""
+def log_trace(entry: Dict[str, Any], *mas: Dict[str, Any]) -> None:
+    """Añade entrada al trace log con rotación a TRACE_MAX_ENTRIES.
+
+    `mas` son entradas que van en la misma escritura: las pasa el cierre de
+    `trazas_en_lote`. Dentro de un lote solo se apuntan; las escribe el cierre.
+    """
+    pendientes = _LOTE.get()
+    if pendientes is not None:
+        pendientes.extend((entry, *mas))
+        return
+    entradas = [entry, *mas]
     try:
         tf = trace_file()
         # AP-36: con la raíz adivinada la traza no se deposita. Es observabilidad
@@ -105,7 +151,7 @@ def log_trace(entry: Dict[str, Any]) -> None:
         tf.parent.mkdir(parents=True, exist_ok=True)
         try:
             with file_lock(tf, timeout=5):
-                _append_trace_entry(entry, use_atomic=True)
+                _append_trace_entry(entradas, use_atomic=True)
         except TimeoutError:
             # Se DESCARTA la entrada. Antes caía a
             # `_append_trace_entry(use_atomic=False)`, que escribe el fichero de
