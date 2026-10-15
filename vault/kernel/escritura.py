@@ -14,6 +14,8 @@ import uuid
 from pathlib import Path
 from typing import Callable, Sequence
 
+from .bloqueo import comprobar_toma
+
 
 Guarda = Callable[[Path, str], None]
 
@@ -70,6 +72,9 @@ def escritura_atomica(
     try:
         _escribir_temporal(temporary, text, encoding)
         _fsync_si_procede(temporary)
+        # Lo último antes del replace: quien perdió el lock de `path` mientras
+        # escribía el temporal no pisa lo que escribió quien se lo quitó.
+        comprobar_toma(path)
         os.replace(temporary, path)
     except OSError as exc:
         if exc.errno == errno.ENOSPC:

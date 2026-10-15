@@ -89,6 +89,11 @@ CAUSAS: Dict[str, str] = {
         "la sesión está atada a un proyecto (`VAULT_PROJECT_LOCK=1`) y el "
         "nombre pedido resuelve a otro, o el candado está puesto sin proyecto. "
         "Un agente que trabaja en un repo no escribe en la memoria de otro.",
+    "LOCK_PERDIDO":
+        "el lock de la nota pasó a otro escritor mientras esta escritura "
+        "preparaba el temporal —lo dio por caducado un dueño de otra máquina "
+        "o de un `owner.json` antiguo—. No se reemplazó la nota: pisarla "
+        "borraría lo que escribió quien se lo quitó.",
 }
 
 

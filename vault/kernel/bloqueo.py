@@ -7,7 +7,9 @@ dos veces: dd593d0 (cada uno nombraba el directorio a su manera y los dos
 escribían a la vez) y ad5b10b (el hueco del borrado pendiente hubo que
 arreglarlo en los dos sitios). Lo que tiene que ser igual en ambos vive aquí;
 desde v41.3 también el bucle de adquisición, con la caducidad y `owner.json`
-(`adquirir`/`soltar`). La reentrancia por hilo sigue en `vault_fs`.
+(`adquirir`/`soltar`). La reentrancia por hilo sigue en `vault_fs`. Tras v41.6,
+el huérfano lo decide el dueño (`_huerfano`) y la escritura comprueba que la
+toma sigue siendo suya antes de reemplazar (`comprobar_toma`).
 
 Hoja del núcleo: solo stdlib.
 """
@@ -18,6 +20,7 @@ import json
 import os
 import socket
 import sys
+import threading
 import time
 import uuid
 from pathlib import Path
@@ -253,6 +256,58 @@ def ficha_del_dueno(token: str) -> Dict[str, object]:
     }
 
 
+class LockPerdido(Exception):
+    """La toma de este hilo ya no es la dueña del lock: no se reemplaza nada.
+
+    Lleva `causa`, `mensaje` y `datos` para que `wrap_main` la traduzca por
+    `vault_errors.emit_fallo` a NOTE_LOCKED; se lee por pato y no hereda de
+    `FalloDeDominio` porque este módulo es hoja y solo usa stdlib (el mismo
+    trato que `vault_fs.SecretoDetectado`).
+    """
+
+    causa = "LOCK_PERDIDO"
+
+    def __init__(self, objetivo: Path) -> None:
+        mensaje = (f"El lock de {objetivo.name} pasó a otro escritor mientras se "
+                   "escribía; no se reemplazó la nota.")
+        super().__init__(mensaje)
+        self.mensaje = mensaje
+        self.datos = {"path": str(objetivo)}
+
+
+#: Las tomas vivas de cada hilo, `str(lock_dir) -> token`. Por hilo y no por
+#: proceso: la reentrancia de `vault_fs.file_lock` también es por hilo, y una
+#: escritura de otro hilo no escribe bajo esta toma.
+_TOMAS = threading.local()
+
+
+def _tomas() -> Dict[str, str]:
+    if not hasattr(_TOMAS, "vivas"):
+        _TOMAS.vivas = {}
+    return _TOMAS.vivas
+
+
+def comprobar_toma(objetivo: Path) -> None:
+    """Lanza `LockPerdido` si este hilo tomó el lock de `objetivo` y ya no es suyo.
+
+    El fencing de Kleppmann reducido a lo que admite un sistema de ficheros:
+    quien escribe relee `owner.json` justo antes de reemplazar. Sin toma
+    registrada no hay nada que comprobar —la escritura no va bajo este lock—.
+    Comprobación y replace no son atómicos entre sí: la ventana se estrecha a
+    microsegundos, no se cierra.
+    """
+    _, lock_dir = rutas_de_lock(objetivo)
+    token = _tomas().get(str(lock_dir))
+    if token is None:
+        return
+    try:
+        dueno = json.loads((lock_dir / "owner.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        dueno = None  # retirado: el ladrón ya entró y soltó
+    if not (isinstance(dueno, dict) and dueno.get("token") == token):
+        raise LockPerdido(objetivo)
+
+
 def _vaciar(carpeta: Path) -> None:
     try:
         for hijo in carpeta.iterdir():
@@ -313,6 +368,7 @@ def adquirir(objetivo: Path, timeout: float, caduca_tras: float = CADUCA_TRAS) -
                 json.dumps(ficha_del_dueno(token)),
                 encoding="utf-8",
             )
+            _tomas()[str(lock_dir)] = token
             return token
         except OSError:
             # Solo si `lock_dir` ya no está: lo dio por caducado alguien con un
@@ -327,6 +383,8 @@ def soltar(objetivo: Path, token: str) -> None:
     tercero con el ladrón todavía dentro (v40.34).
     """
     raiz, lock_dir = rutas_de_lock(objetivo)
+    if _tomas().get(str(lock_dir)) == token:
+        del _tomas()[str(lock_dir)]
     try:
         dueno = json.loads((lock_dir / "owner.json").read_text(encoding="utf-8"))
         mio = isinstance(dueno, dict) and dueno.get("token") == token
