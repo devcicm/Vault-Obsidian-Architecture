@@ -312,12 +312,18 @@ def _indices_disponibles(vroot: Path, previstos: set):
     return disponible
 
 
-def _renderizador(indice_disponible=None) -> RenderizadorDeIndice:
+def _renderizador(indice_disponible=None,
+                  nombres: Optional[Dict[str, List[str]]] = None) -> RenderizadorDeIndice:
     """Se construye por llamada: `section_description` lee el registro y
-    `safe_wikilink` el kernel, y ninguno de los dos se congela en el import."""
+    `safe_wikilink` el kernel, y ninguno de los dos se congela en el import.
+
+    `nombres` es el índice de nombres que comparten todos los renders de una
+    regeneración (AP-47): la sección y sus subcarpetas ven el mismo vault, y
+    reinventariarlo por render costaba ~1 s cada vez en un vault de 3500
+    ficheros —el 75 % de `frontmatter_completar` sobre una copia de /ans—."""
     # El índice de nombres se construye la primera vez que hace falta: una
     # sección vacía no enlaza nada y no tiene por qué recorrer el vault.
-    indice: Dict[str, List[str]] = {}
+    indice: Dict[str, List[str]] = {} if nombres is None else nombres
 
     def destino(rel: str) -> str:
         if not indice:
@@ -341,9 +347,10 @@ def _build_index_content(
     now: str,
     subdirs: Optional[List[str]] = None,
     indice_disponible=None,
+    nombres: Optional[Dict[str, List[str]]] = None,
 ) -> str:
     """Adaptador: el formato del índice vive en el dominio de Índices."""
-    return _renderizador(indice_disponible).render(
+    return _renderizador(indice_disponible, nombres).render(
         folder, notes, now, subcarpetas=subdirs)
 
 
@@ -435,6 +442,8 @@ def vault_section_index(
     if regeneracion_completa:
         previstos |= _indices_de_una_regeneracion_completa(vroot)
     indice_disponible = _indices_disponibles(vroot, previstos)
+    # Uno por regeneración, no por render (AP-47, medido en /ans).
+    nombres: Dict[str, List[str]] = {}
 
     aviso_hub = None
     try:
@@ -496,7 +505,7 @@ def vault_section_index(
             with file_lock(sub_index):
                 sub_contenido = _build_index_content(
                     sub_folder, sub_notes, now, subdirs=None,
-                    indice_disponible=indice_disponible,
+                    indice_disponible=indice_disponible, nombres=nombres,
                 )
                 if not sub_index.exists():
                     creados.append(str(sub_index.relative_to(vroot)).replace("\\", "/"))
@@ -518,7 +527,7 @@ def vault_section_index(
         with file_lock(index_path):
             contenido = _build_index_content(
                 folder, notes, now, subdirs=subdir_folders or None,
-                indice_disponible=indice_disponible,
+                indice_disponible=indice_disponible, nombres=nombres,
             )
             if not index_path.exists():
                 creados.append(str(index_path.relative_to(vroot)).replace("\\", "/"))
