@@ -8,9 +8,13 @@ vault recién poblado toda nota viva puntúa 0 en `non_repudiation`: medido el
 2026-10-14 con la wheel instalada, 26 notas de 26.
 
 Cuál de los dos manda es una decisión de producto, no de quien mide, y el usuario
-la dejó declarada como deuda (`f8_criterio_sin_decidir`). Este test fija el
-límite: falla el día que el registro y el manifiesto digan lo mismo, y entonces
-la deuda pasa a `saldada` con el test que la sostenga.
+la dejó declarada como deuda (`f8_criterio_sin_decidir`). Este test fijaba el
+límite: fallaba el día que el registro y el manifiesto dijeran lo mismo.
+
+Saldada el 2026-10-15 con la opción (a): `vault_write` anota altas y cambios
+(`tests/test_f8_vault_write_anota.py`, que la sostiene) y el manifiesto dice
+«1 por nota». El límite se conserva invertido —no-derogación—: ahora vigila que
+el cierre no se deshaga rebajando el criterio en vez de cumplirlo.
 """
 
 import sys
@@ -31,10 +35,12 @@ def test_la_deuda_de_f8_esta_declarada():
 
 
 def test_limite_declarado_f8_registro_y_manifiesto_divergen():
+    # Invertido al saldarse (2026-10-15): la divergencia quedó cerrada en la
+    # dirección del registro, no rebajándolo.
     f8 = next(f for f in FUNDAMENTALS if f["id"] == "F8")
     assert any("referencia la ruta de la nota" in v for v in f8["verifies"])
     fila = next(l for l in (REPO_ROOT / "vault-obsidian-architecture.md").read_text(
         encoding="utf-8").splitlines() if l.startswith("| No repudio (F8)"))
-    assert "1 por borrado" in fila
-    # La medida aplica el criterio del registro a una nota viva sin entrada.
+    assert "1 por borrado" not in fila
+    # El criterio sigue siendo el del registro: una nota viva sin entrada, 0.
     assert q._score_non_repudiation("07_Knowledge/viva.md", set())[0] == 0.0

@@ -42,7 +42,7 @@ import vault_contrato_nota
 import vault_fundamentals_catalog
 import vault_tags
 import yaml
-from vault_errors import emit_error, emit_fallo, fuera_de_sesion, wrap_main
+from vault_errors import emit_error, emit_fallo, fuera_de_sesion, mensaje_de, wrap_main
 
 from vault_io import (
     is_snapshot_path,  # dueño único de qué es una instantánea (AP-57)
@@ -108,7 +108,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 # La configuración se lee del registro único, no con un default por punto
 # de uso. Ver `vault_entorno.py`.
-from vault_entorno import leer as _env
+from vault_entorno import agente_por_defecto, leer as _env
+from vault_change_log import vault_change_log_add
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
@@ -1365,6 +1366,25 @@ def vault_write(
             # fallo en el resultado y el audit de AP-39 lo recoge después.
             introduced = -1
 
+    # F8 (no repudio): la constancia de quién creó o cambió la nota, en la
+    # bitácora que el registro de F8 lee. Hasta 2026-10-15 solo la dejaban los
+    # borrados (SP-01) y un vault recién poblado puntuaba 0 en `non_repudiation`
+    # en todas sus notas. Como la de AP-39, va después de escribir —anotar antes
+    # dejaría constancia de escrituras que fallaron— y no tumba la escritura: si
+    # falla, la nota ya está en disco y el fallo se publica.
+    accion = "created" if existing_id is None else "updated"
+    constancia_id: Optional[str] = None
+    try:
+        constancia = vault_change_log_add(
+            accion, rel_path, f"vault_write: nota {'creada' if accion == 'created' else 'actualizada'}",
+            agent=meta.get("agent", "") or agente_por_defecto(),
+        )
+        constancia_id = constancia.get("id") if constancia.get("ok") else None
+        constancia_fallo = None if constancia_id else (
+            mensaje_de(constancia) or "la bitácora de cambios rechazó la entrada")
+    except OSError as exc:
+        constancia_fallo = f"la bitácora de cambios no se pudo escribir: {exc}"
+
     tag_suggestions = _tag_suggestions(tags)
 
     # Se pasa la nota que se está escribiendo: un `[[../otra]]` se resuelve
@@ -1391,6 +1411,11 @@ def vault_write(
         result["ap23_warning"] = (
             f"AP-23: note has {line_count} lines — consider splitting into sub-notes (threshold: 500)"
         )
+
+    if constancia_id:
+        result["change_log"] = {"id": constancia_id, "action": accion}
+    else:
+        result["change_log_error"] = constancia_fallo
 
     if ghost_links:
         result["ghost_links"] = ghost_links

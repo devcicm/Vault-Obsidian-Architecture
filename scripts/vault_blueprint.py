@@ -910,7 +910,12 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     },
     {
         "id": "f8_criterio_sin_decidir",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "tras v41.5 (2026-10-15, sin versión publicada)",
+        "sostenida_por": [
+            "tests/test_f8_vault_write_anota.py::test_vault_write_anota_la_creacion_y_la_actualizacion",
+            "tests/test_f8_vault_write_anota.py::test_f8_registro_matriz_y_manifiesto_dicen_lo_mismo",
+        ],
         "desde": "v41.3",
         "capa": "5",
         "que": (
@@ -931,7 +936,14 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "movimientos, como dice el manifiesto. El usuario la dejó declarada "
             "el 2026-10-14. `tests/test_f8_criterio_sin_decidir.py::"
             "test_limite_declarado_f8_registro_y_manifiesto_divergen` fija la "
-            "divergencia y falla el día que los dos digan lo mismo."
+            "divergencia y falla el día que los dos digan lo mismo. (Saldada "
+            "el 2026-10-15: el usuario eligió (a). `vault_write` anota cada "
+            "alta y cada cambio en `.change-log.json` y lo publica en el campo "
+            "nuevo `change_log` de su envelope —`change_log_error` si la "
+            "bitácora falla, sin tumbar la escritura—; la matriz y el "
+            "manifiesto pasan a «1 por nota», que es lo que el registro ya "
+            "medía, y `vault_write` entra en las tools de F8. El criterio no "
+            "se rebajó: una nota viva sin entrada sigue puntuando 0.)"
         ),
     },
     {

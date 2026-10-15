@@ -257,6 +257,7 @@ FUNDAMENTALS: List[Dict[str, Any]] = [
         "frontmatter_fields": [],
         "tools": [
             "vault_change_log",
+            "vault_write",
             "vault_quality_check",
             "vault_log_error",
             "vault_ai_decision",

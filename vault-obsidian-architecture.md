@@ -231,7 +231,7 @@ Registro canónico en `vault_fundamentals.FUNDAMENTALS`. Cada fundamento se mape
 | **F5** | VALIDEZ | `validity` | Valores dentro del vocabulario permitido (`status`, `type`, ejes CIA) | `status`, `type`, `cia_*` | 5 |
 | **F6** | ACTUALIDAD / OPORTUNIDAD | `timeliness` | `updatedAt` dentro del umbral, salvo `evergreen: true`; umbral endurecido por CIA-I | `updatedAt`, `evergreen`, `cia_integrity` | 11 |
 | **F7** | AUTENTICIDAD | `authenticity` | Consta qué agente escribió la nota | `agent` | 14 |
-| **F8** | NO REPUDIO | `non_repudiation` | La operación dejó rastro en el change-log; nada se borra en silencio (SP-01) | — | 11 |
+| **F8** | NO REPUDIO | `non_repudiation` | La operación dejó rastro en el change-log: `vault_write` anota cada alta y cada cambio, y nada se borra en silencio (SP-01) | — | 11 |
 
 **Consulta:** `vault_fundamentals --list` · `vault_fundamentals --check <ruta>` (pass/fail por fundamento) · `vault_fundamentals --coverage` (matriz tool × fundamento).
 
@@ -405,7 +405,7 @@ La vista de una pantalla que hace verificable todo lo anterior. Generada por `va
 | Validez (F5) | `status` dentro de `STATUS_VOCAB` | 12 valores | `vault_norms --audit` | `vault_norms.STATUS_VOCAB` | audit (CN-03) |
 | Oportunidad / Actualidad (F6) | antigüedad de `updatedAt` | 30d · 15d si CIA `critical\|high` | `vault_audit` | bloque `stale` | audit |
 | Autenticidad (F7) | cobertura del campo `agent` | 100% | `vault_quality_check` | frontmatter `agent:` | audit (AP-16) |
-| No repudio (F8) | entradas en change-log | 1 por borrado | `vault_change_log` | `00_System/.change-log.json` | audit (SP-01) |
+| No repudio (F8) | entradas en change-log | 1 por nota | `vault_change_log` | `00_System/.change-log.json` | audit (SP-01) |
 | Unicidad (DQ-9) | duplicados canonical-shadow | 0 | `vault_merge --action detect` | `quality-index.json` | audit (AP-17/18) |
 | Localizable (FAIR-F) | notas huérfanas | 0 | `vault_audit` | `99_Index/index.md` | audit |
 | Interoperable (FAIR-I) | errores de sintaxis de wiki-link | 0 | `vault_graph_inspect` | `graph.json` | guard (AP-22/24) |

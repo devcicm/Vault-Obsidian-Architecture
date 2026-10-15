@@ -421,7 +421,7 @@ TRACEABILITY_MATRIX: List[Dict[str, str]] = [
     {"concept": "Validez (F5)", "metric": "status dentro de STATUS_VOCAB", "threshold": f"{len(STATUS_VOCAB)} valores", "tool": "vault_norms --audit", "artifact": "vault_norms.STATUS_VOCAB", "enforcement": "audit (CN-03)"},
     {"concept": "Oportunidad / Actualidad (F6)", "metric": "antigüedad de updatedAt", "threshold": "30d · 15d si CIA critical|high", "tool": "vault_audit", "artifact": "bloque stale", "enforcement": "audit"},
     {"concept": "Autenticidad (F7)", "metric": "cobertura del campo agent", "threshold": "100%", "tool": "vault_quality_check", "artifact": "frontmatter agent:", "enforcement": "audit (AP-16)"},
-    {"concept": "No repudio (F8)", "metric": "entradas en change-log", "threshold": "1 por borrado", "tool": "vault_change_log", "artifact": "00_System/.change-log.json", "enforcement": "audit (SP-01)"},
+    {"concept": "No repudio (F8)", "metric": "entradas en change-log", "threshold": "1 por nota", "tool": "vault_change_log", "artifact": "00_System/.change-log.json", "enforcement": "audit (SP-01)"},
     {"concept": "Unicidad (DQ-9)", "metric": "duplicados canonical-shadow", "threshold": "0", "tool": "vault_merge --action detect", "artifact": "quality-index.json", "enforcement": "audit (AP-17/18)"},
     {"concept": "Localizable (FAIR-F)", "metric": "notas huérfanas", "threshold": "0", "tool": "vault_audit", "artifact": "99_Index/index.md", "enforcement": "audit"},
     {"concept": "Interoperable (FAIR-I)", "metric": "errores de sintaxis de wiki-link", "threshold": "0", "tool": "vault_graph_inspect", "artifact": "graph.json", "enforcement": "guard (AP-22/24)"},
