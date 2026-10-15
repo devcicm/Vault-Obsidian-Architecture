@@ -42,6 +42,7 @@ from pathlib import Path
 from typing import Any
 
 from vault_io import (
+    FrontmatterIlegible,
     atomic_write_text,
     file_lock,
     get_vault_root,
@@ -1104,6 +1105,7 @@ def apply_classified_fixes(
     fixed_count = 0
     skip_count = 0
     stub_results: list[dict[str, Any]] = []
+    skipped_unreadable: list[dict[str, str]] = []
 
     note_fixes: dict[str, list[tuple[str, str]]] = defaultdict(list)
     for target_stem, decision in decisions.items():
@@ -1151,7 +1153,15 @@ def apply_classified_fixes(
                 note_changes += 1
         if note_changes == 0:
             continue
-        atomic_write_text(full_path, front + body)
+        try:
+            atomic_write_text(full_path, front + body)
+        except FrontmatterIlegible:
+            # AP-46: la nota ya no parseaba antes de tocarla. Abortar aquí
+            # dejaba los arreglos anteriores escritos, los siguientes sin
+            # aplicar y ningún log; se salta, se publica y se sigue.
+            skipped_unreadable.append(
+                {"note": source_path, "cause": "frontmatter_ilegible"})
+            continue
         fixed_count += note_changes
         applied_notes.add(source_path)
 
@@ -1168,6 +1178,7 @@ def apply_classified_fixes(
         "stubs_created": sum(1 for s in stub_results if s.get("created")),
         "stubs_skipped_existing": sum(1 for s in stub_results if not s.get("created")),
         "links_skipped": skip_count,
+        "skipped_unreadable": skipped_unreadable,
         "stubs": stub_results,
     }
     atomic_write_text(log_path, json.dumps(log, indent=2, ensure_ascii=False))
@@ -1178,6 +1189,7 @@ def apply_classified_fixes(
         "stubs_created": log["stubs_created"],
         "stubs_skipped_existing": log["stubs_skipped_existing"],
         "links_skipped": skip_count,
+        "skipped_unreadable": skipped_unreadable,
         "log_file": str(log_path.relative_to(root)).replace("\\", "/"),
     }
 

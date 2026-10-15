@@ -524,3 +524,49 @@ def test_un_enlace_que_resuelve_no_se_propone_para_reescribir(tmp_path):
 
     informe = gf.fix_vault(tmp_path, threshold=0.7)
     assert informe["summary"]["broken_links_fixed"] == 0
+
+
+# ── Una nota ilegible no aborta el arreglo de las demás (AP-46, R3) ─────────
+#
+# Medido el 2026-10-14 sobre una copia de un vault real: el ADR con el `title:`
+# sin comillas hacía que `atomic_write_text` se negase a escribir, la excepción
+# subía hasta `main` y la tool salía sin log, con los arreglos ya escritos a
+# medias y los de después sin aplicar. `apply_fix` ya saltaba la nota; la ruta
+# clasificada no.
+
+
+def test_nota_ilegible_se_salta_y_se_publica(tmp_path):
+    """AP-46: la nota que no parsea se publica en `skipped_unreadable` y el resto se arregla."""
+    vault = tmp_path / "vault"
+    (vault / "07_Knowledge").mkdir(parents=True)
+    (vault / "07_Knowledge" / "real.md").write_text(
+        "---\ntitle: Real\n---\n\nBody", encoding="utf-8")
+    rota = "---\ntitle: ADR 004 — Algo: con dos puntos\n---\n\nVer [[wrong-name]]"
+    (vault / "07_Knowledge" / "a-rota.md").write_text(rota, encoding="utf-8")
+    (vault / "07_Knowledge" / "b-sana.md").write_text(
+        "---\ntitle: Sana\n---\n\nVer [[wrong-name]]", encoding="utf-8")
+    notes_active = {
+        p: {"body": "", "title": "", "tags": set(), "body_hash": p}
+        for p in ("07_Knowledge/real.md", "07_Knowledge/a-rota.md",
+                  "07_Knowledge/b-sana.md")
+    }
+    decisions = {
+        "wrongname": {
+            "action": "fix",
+            "stem": "real",
+            "path": "07_Knowledge/real.md",
+            "referenced_by": ["07_Knowledge/a-rota.md", "07_Knowledge/b-sana.md"],
+            "classification": {"category": "exact_candidate"},
+        }
+    }
+
+    result = apply_classified_fixes(decisions, notes_active, vault)
+
+    assert result["skipped_unreadable"] == [
+        {"note": "07_Knowledge/a-rota.md", "cause": "frontmatter_ilegible"}]
+    assert result["applied_notes"] == 1
+    assert "[[real]]" in (vault / "07_Knowledge/b-sana.md").read_text(encoding="utf-8")
+    assert (vault / "07_Knowledge/a-rota.md").read_text(encoding="utf-8") == rota
+    import json
+    log = json.loads((vault / result["log_file"]).read_text(encoding="utf-8"))
+    assert log["skipped_unreadable"] == result["skipped_unreadable"]
