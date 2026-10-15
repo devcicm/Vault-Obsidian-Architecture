@@ -5714,6 +5714,35 @@ reporta `21 nota(s) en disco fuera del índice … (311 en disco / 290 indexadas
 `vault-sandbox`, recién reconstruido, queda limpio. Tests en
 `tests/test_ap47_indice_refleja_disco.py`.
 
+**Escrituras en lote: la proyección al día, una vez y no por nota.**
+`atomic_write_text` mantiene las proyecciones al escribir: regenera el `index.md`
+de la sección, mete la nota en la búsqueda, la refresca en el grafo y deja la
+traza. Nota a nota eso es correcto y, en un sanador que toca cientos de notas,
+inservible. Medido el 2026-10-14 con cProfile sobre una copia de un vault ajeno:
+`vault_frontmatter_completar --apply` tardaba 2990 s, y el 95 % era regenerar la
+sección tras cada escritura; `vault_graph_fix --apply --auto-fix-safe` moría por
+el watchdog de 60 s con 184 de sus 202 s en lo mismo.
+
+`vault_io.escrituras_en_lote()` es el contrato para quien escriba muchas notas.
+Dentro del lote, cada escritura solo **apunta** su sección y su nota. Al salir
+—también por excepción— cada sección se regenera una vez, con un solo
+inventario de nombres; el grafo se refresca una vez con todas las notas, después
+de las secciones, porque los `index.md` que estas crean son nodos; y la traza
+(`trazas_en_lote`) se escribe junta al final. Un lote anidado no cierra nada: lo
+cierra el de fuera. El resultado tiene que ser el de escribir nota a nota, y
+así se comprueba: comparando el árbol de dos copias, no el contador.
+
+- `vault_frontmatter_completar`: 2990 s → 32 s, el vault queda igual.
+- `vault_graph_fix --apply --auto-fix-safe`: 107 s sin lote → 15 s, mismo
+  árbol salvo la traza y el orden de inserción de `notes` en `search-index.json`.
+
+Lo que el lote **no** hace: mientras dura, el `index.md` de la sección va por
+detrás, y un sanador nuevo que no lo abra vuelve a pagar una regeneración por
+nota. La otra ruta de `vault_graph_fix` (`apply_fix`) y el resto de sanadores
+siguen sin lote; está declarado como deuda en `vault_blueprint.DEUDA_DECLARADA`
+(`sanadores_sin_lote`). Tests en `tests/test_escrituras_en_lote.py` y
+`tests/test_vault_graph_fix.py`.
+
 ---
 
 ### AP-48 — Implementación paralela por camino de acceso

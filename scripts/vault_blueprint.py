@@ -934,6 +934,31 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "divergencia y falla el día que los dos digan lo mismo."
         ),
     },
+    {
+        "id": "sanadores_sin_lote",
+        "estado": "pendiente",
+        "desde": "v41.4",
+        "capa": "5",
+        "que": (
+            "AP-47: `vault_io.escrituras_en_lote()` regenera sección, búsqueda "
+            "y grafo una vez por lote en vez de una vez por nota. Lo abren "
+            "`vault_frontmatter_completar` (2990 s → 32 s) y la ruta "
+            "clasificada de `vault_graph_fix` (107 s → 15 s). No lo abren "
+            "`vault_fix_brackets`, `vault_frontmatter_heal`, `vault_supersede`, "
+            "`vault_project`, `vault_norms_engine` ni `vault_graph_fix."
+            "apply_fix`: cada uno sigue pagando una regeneración por nota "
+            "escrita. Medido el 2026-10-14 sobre 35f5bad."
+        ),
+        "por_que_no_ahora": (
+            "Cada sanador que entra en el lote exige comparar el árbol de dos "
+            "copias de un vault ajeno —con lote y sin él— y no solo el "
+            "contador, como se hizo con los dos primeros; ninguno de los "
+            "restantes ha dado un TOOL_TIMEOUT medido. "
+            "`tests/test_sanadores_sin_lote.py::"
+            "test_limite_declarado_sanadores_sin_lote` fija la lista y falla "
+            "en cuanto encoge o crece."
+        ),
+    },
 ]
 
 
