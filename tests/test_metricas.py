@@ -147,3 +147,21 @@ def test_el_documento_es_derivado():
 
 def test_la_puerta_esta_en_el_registro():
     assert any(p["id"] == "metricas" for p in gate.PUERTAS)
+
+
+def test_una_version_en_curso_no_rompe_las_metricas_de_version(monkeypatch):
+    """Mientras dura un bump, la última entrada del changelog lleva `git: pending`.
+
+    Las métricas de versión miden las dos últimas versiones **cerradas**: con
+    `pending` en la cabeza, `git rev-list` no resolvía el rango y la puerta
+    `metricas` quedaba en rojo justo en el commit que sube la versión.
+    """
+    import vault_changelog_check
+
+    reales = vault_changelog_check.entradas()
+    cerradas = [e for e in reales if e["hash"] != "pending"]
+    en_curso = {"version": "v99.0", "fecha": date.today().isoformat(), "hash": "pending"}
+    monkeypatch.setattr(vault_changelog_check, "entradas", lambda: [en_curso] + cerradas)
+    con_pending = (vm._commits_ultima_version(), vm._dias_entre_versiones())
+    monkeypatch.setattr(vault_changelog_check, "entradas", lambda: cerradas)
+    assert con_pending == (vm._commits_ultima_version(), vm._dias_entre_versiones())

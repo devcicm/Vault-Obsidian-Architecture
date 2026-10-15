@@ -170,10 +170,17 @@ def _estados_de_baselines() -> List[str]:
 
 
 def _dos_ultimas_versiones() -> List[Dict[str, str]]:
+    """Las dos últimas versiones **cerradas** del changelog.
+
+    Mientras dura un bump la cabeza lleva `git: pending`, que no es un commit:
+    medirla ponía la puerta `metricas` en rojo justo en el commit que sube la
+    versión. Una versión en curso no tiene todavía tamaño ni fecha de cierre.
+    """
     import vault_changelog_check
-    entradas = vault_changelog_check.entradas()
+    entradas = [e for e in vault_changelog_check.entradas()
+                if e["hash"] not in vault_changelog_check.NO_HASH]
     if len(entradas) < 2:
-        raise ValueError("el changelog tiene menos de dos versiones")
+        raise ValueError("el changelog tiene menos de dos versiones cerradas")
     return entradas[:2]
 
 
