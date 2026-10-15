@@ -237,3 +237,40 @@ def test_quien_perdio_el_lock_no_mueve_la_nota(tmp_path, monkeypatch):
     finally:
         bloqueo.soltar(nota, "ladron")
     assert nota.exists() and not (raiz / "07_Knowledge" / "b.md").exists()
+
+
+def test_propagate_no_se_traga_el_lock_perdido(tmp_path, monkeypatch):
+    """Auditoría del 2026-10-15: `vault_propagate --clear` capturaba `LockPerdido`.
+
+    El `except Exception` lo convertía en un envelope que nadie devolvía, la
+    tool sacaba la nota de la cola igual y respondía ok:true: la marca
+    `propagation_pending` seguía en la nota y la cola ya no la listaba.
+    """
+    import vault_io
+    import vault_propagate
+
+    raiz = tmp_path / "vault"
+    (raiz / "00_System").mkdir(parents=True)
+    (raiz / "07_Knowledge").mkdir()
+    nota = raiz / "07_Knowledge" / "a.md"
+    original = "---\ntitle: a\npropagation_pending: true\n---\n# a\n"
+    nota.write_text(original, encoding="utf-8")
+    cola = raiz / "00_System" / "propagation-queue.json"
+    entrada = {"updated_at": "2026-10-15T00:00:00Z",
+               "pending": [{"path": "07_Knowledge/a.md", "urgency": "high"}]}
+    cola.write_text(json.dumps(entrada), encoding="utf-8")
+    vault_io.set_vault_root(raiz)
+    separar = vault_propagate.separar_frontmatter
+
+    def leer_y_robo(texto):
+        _robar(nota)
+        return separar(texto)
+
+    monkeypatch.setattr(vault_propagate, "separar_frontmatter", leer_y_robo)
+    try:
+        with pytest.raises(bloqueo.LockPerdido):
+            vault_propagate.vault_propagate_clear("07_Knowledge/a.md")
+    finally:
+        bloqueo.soltar(nota, "ladron")
+    assert nota.read_text(encoding="utf-8") == original
+    assert json.loads(cola.read_text(encoding="utf-8"))["pending"] == entrada["pending"]

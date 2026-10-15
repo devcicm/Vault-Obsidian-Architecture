@@ -51,6 +51,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.ciclo_de_vida.repositorio import RepositorioCicloDeVida  # noqa: E402
 from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.bloqueo import LockPerdido  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 # El vocabulario se declara una vez y se consume, no se copia. Ver
 # `vault_vocabulario.py` para el registro y su contexto dueño.
@@ -365,6 +366,12 @@ def vault_propagate_clear(note_path: str) -> Dict[str, Any]:
                     if despues.campos() != antes.campos():
                         atomic_write_text(full_path, despues.render() + "\n" + cuerpo)
                         cleared_fm = True
+        except LockPerdido:
+            # Quien perdió el lock no limpia nada, tampoco la cola: el
+            # `except Exception` de abajo lo convertía en un envelope que nadie
+            # devolvía y la nota salía de la cola con la marca todavía puesta
+            # (auditoría del 2026-10-15). `wrap_main` lo da como NOTE_LOCKED.
+            raise
         except (OSError, UnicodeDecodeError, PermissionError) as exc:
             emit_error("vault_propagate", "CLEAR_FM_ERROR", str(exc))
         except Exception as exc:
