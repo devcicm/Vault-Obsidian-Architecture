@@ -146,3 +146,25 @@ Cuántas son lo dice esa línea; las que quedan, `vault tools list` (las de
 La CLI escribe JSON en UTF-8 sea cual sea la codificación de la consola. Si un
 consumidor ve `est�ndar` en lugar de `estándar`, está leyendo con otra
 codificación: lee los bytes como UTF-8.
+
+Lee **los dos canales**. `vault run` lanza la tool y su respuesta —con
+`"ok": true` o con su `error_code`, como `missing_agent`— sale por **stdout**.
+Cuando es el propio `vault` el que rechaza la orden antes de lanzar nada
+(tool desconocida o no instalada, destino inválido, o un argumento que el
+pre-flight bloquea, como `--path ../../fuera.md` con `PREFLIGHT_REJECTED`), el
+JSON del error sale por **stderr** y stdout queda vacío. El código de salida
+dice cuál de los dos casos es:
+
+| Código | Constante | Qué pasó | Dónde está el JSON |
+|---|---|---|---|
+| `3` | `EXIT_UNKNOWN` | La tool no existe | stderr |
+| `4` | `EXIT_NOT_INSTALLED` | Existe, pero esta instalación no la trae | stderr |
+| `5` | `EXIT_NOT_RUNTIME` | Es de gobernanza del estándar, no de runtime | stderr |
+| `6` | `EXIT_INVALID_TARGET` | El módulo instalado no es un destino válido | stderr |
+| `7` | `EXIT_OPERATION_FAILED` | La tool se ejecutó y devolvió un fallo | stdout |
+| `8` | `EXIT_RUNTIME_INVALID` | `init`, `doctor` o `status` encontraron un runtime inválido | stderr |
+| `9` | `EXIT_INIT_CONFLICT` | `init` sobre una ruta en conflicto | stderr |
+| `10` | `EXIT_PREFLIGHT_FAILED` | El pre-flight bloqueó un argumento; no se ejecutó nada | stderr |
+
+Medido en la reinstalación del 2026-10-15: quien solo leía stdout veía una
+salida vacía con código 10 y ningún motivo.
