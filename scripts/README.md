@@ -576,6 +576,8 @@ python vault_graph_fix.py --stubs --apply                        # crea stubs pa
 
 `--auto-fix-safe` resuelve sin preguntar únicamente lo inequívoco. Los `partial_match` por debajo del umbral se **saltan y se registran**, nunca se adivinan: un enlace mal reparado es peor que uno roto, porque deja de reportarse.
 
+Una nota cuyo frontmatter ya no parseaba antes de tocarla no aborta el arreglo de las demás: se salta, sin escribirse, y sale en `apply_result.skipped_unreadable` y en el log de `00_System/.graph-fixes/` con `cause: frontmatter_ilegible` (AP-46). Repararla es de `vault_frontmatter_heal`. Con `--apply` clasificado las escrituras van en `vault_io.escrituras_en_lote()` (AP-47): sección, búsqueda y grafo se regeneran una vez al cerrar, no por nota.
+
 ### `vault_frontmatter_heal.py`
 Repara el frontmatter que **existe y no parsea** (AP-56). No es AP-28 —la nota sin bloque— sino la que abre `---`, se ve correcta al abrirla y para `yaml.safe_load` no tiene ni id ni tags ni estado. Por defecto es **dry-run**.
 
@@ -605,7 +607,7 @@ Cada valor sale en el envelope con su `origin` —`uuid4`, `primer_h1`, `nombre_
 
 Lo que **no toca**: ningún valor que ya está —ni para corregirlo—, un bloque que no parsea (es de `vault_frontmatter_heal`, y sale en `skipped` con esa pista), los artefactos derivados, las instantáneas y lo que no está en una sección del vault. No escribe si la nota cambió entre leerla y escribirla (AP-54). Tras `--apply`, la nota la aprueba `vault_validate`: ese es el criterio, no el de la tool.
 
-La escritura va por `atomic_write_text`, que deja la nota en LF y sin BOM. En una nota CRLF o con BOM el diff es el fichero entero; cada entrada lo declara en `encoding_normalized` (`["bom", "crlf"]`) para que no se descubra en el commit. Medido sobre una copia del sandbox: 26 notas inválidas → 0, y una segunda pasada escribe 0.
+La escritura va por `atomic_write_text`, que deja la nota en LF y sin BOM. En una nota CRLF o con BOM el diff es el fichero entero; cada entrada lo declara en `encoding_normalized` (`["bom", "crlf"]`) para que no se descubra en el commit. Medido sobre una copia del sandbox: 26 notas inválidas → 0, y una segunda pasada escribe 0. Con `--apply` las escrituras van en `vault_io.escrituras_en_lote()` (AP-47): cada sección se regenera una vez al cerrar, no por nota.
 
 No acepta `--root` (regla 1).
 

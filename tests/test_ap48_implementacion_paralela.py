@@ -87,6 +87,10 @@ def test_el_guard_caza_una_reincidencia(tmp_path, monkeypatch):
     # servidor de `REPO_ROOT`: hay que mover las dos o el falso no se lee.
     monkeypatch.setattr(vmc, "__file__", str(tmp_path / "scripts" / "vault_mcp_catalog.py"))
     monkeypatch.setattr(vmc, "REPO_ROOT", tmp_path)
+    # `check_contracts` mete en `sys.path` el directorio de su `__file__`, que
+    # aquí es el falso: sin restaurarlo, el stub `vault_graph.py` sombrea al
+    # real para todo test que importe `vault_graph` después en la misma sesión.
+    monkeypatch.setattr(sys, "path", list(sys.path))
     (tmp_path / "scripts").mkdir()
     (tmp_path / "scripts" / "vault_graph.py").write_text("# stub\n", encoding="utf-8")
     (tmp_path / "scripts" / "README.md").write_text(
