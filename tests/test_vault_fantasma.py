@@ -73,7 +73,9 @@ def test_una_raiz_que_existe_sigue_escribiendo(tmp_path):
         "--meta", json.dumps({"agent": "pytest"}),
     )
     assert env["ok"] is True, env
-    assert (raiz / "07_Knowledge" / "Hola.md").is_file()
+    # La ruta la dice la tool: `Hola.md` solo existía en un sistema de ficheros
+    # que no distingue mayúsculas (medido el 2026-10-15 en python:3.9-slim).
+    assert (raiz / env["path"]).is_file()
 
 
 def test_el_origen_se_declara_de_baja_confianza(tmp_path):

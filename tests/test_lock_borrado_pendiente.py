@@ -15,6 +15,7 @@ falla como lo hace Windows en ese hueco, sin crear nada.
 """
 
 import os
+import pathlib
 import sys
 from pathlib import Path
 
@@ -49,6 +50,11 @@ def _hueco(monkeypatch, ruta: Path, error: type) -> list:
         return real(path, *args, **kwargs)
 
     monkeypatch.setattr(os, "mkdir", mkdir)
+    # Hasta 3.10, `Path.mkdir` no llama a `os.mkdir` sino a la copia que
+    # `pathlib._NormalAccessor` guardó al importarse, y el hueco de `.locks`
+    # no se disparaba: medido el 2026-10-15 en python:3.9-slim.
+    if hasattr(pathlib, "_NormalAccessor"):
+        monkeypatch.setattr(pathlib._NormalAccessor, "mkdir", staticmethod(mkdir))
     return disparos
 
 

@@ -98,10 +98,9 @@ def test_actualizar_sin_status_no_degrada_la_nota(vault):
     """Tocar una nota revisada para corregir una frase la dejaba en 'draft'."""
     _escribir(vault, "Nota", "draft")
     _escribir(vault, "Nota", "reviewed")
-    assert _escribir(vault, "Nota")["ok"]
-    fm, _ = parse_frontmatter_with_body(
-        (vault / "07_Knowledge" / "Nota.md").read_text(encoding="utf-8")
-    )
+    r = _escribir(vault, "Nota")
+    assert r["ok"]
+    fm, _ = parse_frontmatter_with_body((vault / r["path"]).read_text(encoding="utf-8"))
     assert fm["status"] == "reviewed"
 
 
@@ -122,15 +121,15 @@ def test_el_id_sobrevive_a_la_actualizacion(vault):
 
 def test_el_id_devuelto_es_el_id_del_archivo(vault):
     r = _escribir(vault, "Nota", "draft")
-    fm, _ = parse_frontmatter_with_body(
-        (vault / "07_Knowledge" / "Nota.md").read_text(encoding="utf-8")
-    )
+    fm, _ = parse_frontmatter_with_body((vault / r["path"]).read_text(encoding="utf-8"))
     assert fm["id"] == r["id"], "eran dos uuid4 distintos: el devuelto no existía"
 
 
 def test_created_at_no_se_resetea_ni_cambia_de_forma(vault):
-    _escribir(vault, "Nota", "draft")
-    nota = vault / "07_Knowledge" / "Nota.md"
+    # La ruta la dice la tool: el nombre del fichero sale en minúsculas, y
+    # `Nota.md` solo lo encontraba un sistema de ficheros que no distingue
+    # mayúsculas (medido el 2026-10-15 en python:3.9-slim).
+    nota = vault / _escribir(vault, "Nota", "draft")["path"]
     original = parse_frontmatter_with_body(nota.read_text(encoding="utf-8"))[0]["createdAt"]
     for _ in range(3):
         _escribir(vault, "Nota")

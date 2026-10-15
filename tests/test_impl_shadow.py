@@ -27,8 +27,15 @@ def test_impl_preferred_over_fake_cwd_vault_io(tmp_path_factory):
         shutil.rmtree(venv_path)
     venv.create(venv_path, with_pip=False, clear=False)
 
-    venv_lib = venv_path / "Lib" if sys.platform != "darwin" else venv_path / "lib"
-    venv_site = venv_lib / "site-packages"
+    # El site-packages se le pregunta al intérprete del venv. Hasta 2026-10-15
+    # se suponía `Lib/site-packages`, que solo es la forma de Windows: en Linux
+    # es `lib/pythonX.Y/site-packages` y el test fallaba en python:3.9-slim con
+    # «No module named 'vault_toolkit'».
+    python_exec = venv_path / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")
+    venv_site = Path(subprocess.run(
+        [str(python_exec), "-c", "import sysconfig; print(sysconfig.get_paths()['purelib'])"],
+        capture_output=True, text=True, encoding="utf-8", check=True,
+    ).stdout.strip())
 
     vault_tk_src = REPO_ROOT / "vault_toolkit"
     vault_tk_dest = venv_site / "vault_toolkit"
@@ -60,7 +67,6 @@ def test_impl_preferred_over_fake_cwd_vault_io(tmp_path_factory):
         "print(getattr(m, 'FAUX', 'NO_FAUX'), end='')"
     )
 
-    python_exec = venv_path / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")
     result = subprocess.run(
         [str(python_exec), "-c", code],
         cwd=str(faux_cwd),

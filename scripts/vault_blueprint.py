@@ -971,6 +971,34 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "en cuanto encoge o crece."
         ),
     },
+    {
+        "id": "lock_caduca_por_reloj_de_pared",
+        "estado": "pendiente",
+        "desde": "v41.6",
+        "capa": "5",
+        "que": (
+            "`vault.kernel.bloqueo.adquirir` da un lock por huérfano cuando "
+            "`time.time() - createdAt` supera `CADUCA_TRAS` (120 s), y la edad "
+            "sale del reloj de pared, que salta: NTP, una VM que despierta, la "
+            "resincronización de WSL. Un salto hacia delante de más de 120 s le "
+            "roba el lock a un dueño vivo y dos escritores pisan la misma nota. "
+            "Medido el 2026-10-15 con la suite en python:3.9-slim sobre Docker "
+            "Desktop: el reloj del contenedor saltó 3458 s y `vault_append` "
+            "escribió con ok:true sobre una nota bloqueada "
+            "(`test_append_concurrente::"
+            "test_con_la_nota_bloqueada_no_escribe_y_lo_dice`)."
+        ),
+        "por_que_no_ahora": (
+            "No es regresión: el criterio es el de siempre, y apareció en la "
+            "ronda que sube a v41.6. Arreglarlo es una decisión de diseño: "
+            "mirar si el `pid` de `owner.json` vive exige una consulta por "
+            "plataforma y no sirve si dos máquinas comparten el vault por una "
+            "carpeta sincronizada, y `owner.json` no guarda el host. "
+            "`tests/test_lock_caduca_por_reloj_de_pared.py::"
+            "test_limite_declarado_lock_caduca_por_reloj_de_pared` fija el "
+            "límite y falla el día que un dueño vivo conserve el lock."
+        ),
+    },
 ]
 
 
