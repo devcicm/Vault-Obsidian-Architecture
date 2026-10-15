@@ -594,15 +594,24 @@ def refrescar_indice_de_seccion(path: Path) -> Dict[str, Any]:
     return {"ok": True, "section": section, "updated": True}
 
 
-#: Secciones pendientes de regenerar dentro de `escrituras_en_lote`, con las
-#: rutas escritas en cada una. `None` fuera de un lote.
-_LOTE: "contextvars.ContextVar[Optional[Dict[str, List[Path]]]]" = contextvars.ContextVar(
+class _Lote:
+    """Lo apuntado dentro de `escrituras_en_lote`: secciones y notas del grafo."""
+
+    def __init__(self) -> None:
+        #: Sección -> rutas escritas en ella, para regenerarla una vez.
+        self.secciones: Dict[str, List[Path]] = {}
+        #: Notas escritas, para refrescarlas en el grafo en una sola pasada.
+        self.grafo: List[Path] = []
+
+
+#: El lote en curso; `None` fuera de un lote.
+_LOTE: "contextvars.ContextVar[Optional[_Lote]]" = contextvars.ContextVar(
     "vault_io_lote", default=None)
 
 
 @contextmanager
 def escrituras_en_lote() -> Iterator[None]:
-    """Difiere el índice de sección de cada escritura al cierre del lote (AP-47).
+    """Difiere el índice de sección y el grafo de cada escritura al cierre (AP-47).
 
     Medido el 2026-10-14 con cProfile en una copia de /ans: el 95 % de los
     2990 s de `vault_frontmatter_completar --apply` sobre 504 notas era
@@ -612,20 +621,28 @@ def escrituras_en_lote() -> Iterator[None]:
     una pasada. El resultado es el de escribir nota a nota; lo que cambia es
     que, mientras dura el lote, el `index.md` de la sección va por detrás.
 
-    Un lote anidado no cierra nada: lo cierra el de fuera. El grafo y la
-    bitácora de tags siguen por nota —juntos no llegaban al 6 % medido—.
+    Con eso hecho, la misma medida dio 162 s y el 55 % era el grafo: cada
+    escritura relee y reescribe `graph.json`, y el escáner de secretos lo
+    recorre entero cada vez. El cierre lo refresca una vez con todas las
+    notas, después de las secciones, porque los `index.md` que estas crean
+    son nodos del grafo y tienen que existir antes de buscarlos.
+
+    Un lote anidado no cierra nada: lo cierra el de fuera. La bitácora de
+    tags sigue por nota —no llegaba al 1 % medido—.
     """
     if _LOTE.get() is not None:
         yield
         return
-    pendientes: Dict[str, List[Path]] = {}
-    token = _LOTE.set(pendientes)
+    lote = _Lote()
+    token = _LOTE.set(lote)
     try:
         yield
     finally:
         _LOTE.reset(token)
-        for section, rutas in pendientes.items():
+        for section, rutas in lote.secciones.items():
             _regenerar_seccion(section, rutas)
+        if lote.grafo:
+            _refrescar_grafo_de(lote.grafo)
 
 
 def _auto_section_index(path: Path) -> None:
@@ -641,9 +658,9 @@ def _auto_section_index(path: Path) -> None:
     section = _seccion_con_indice(path)
     if section is None:
         return
-    pendientes = _LOTE.get()
-    if pendientes is not None:
-        pendientes.setdefault(section, []).append(path)
+    lote = _LOTE.get()
+    if lote is not None:
+        lote.secciones.setdefault(section, []).append(path)
         return
     _regenerar_seccion(section, [path])
 
@@ -706,23 +723,38 @@ def _auto_grafo(path: Path) -> None:
     Va aparte de `_auto_section_index` porque el criterio de nota es otro: el
     grafo incluye `00_System/` y las secciones con índice propio, que el índice
     de sección salta. El criterio lo decide el servicio, con el de la
-    reconstrucción.
+    reconstrucción. Dentro de `escrituras_en_lote` solo apunta la nota.
     """
     if path.suffix != ".md":
         return
+    lote = _LOTE.get()
+    if lote is not None:
+        lote.grafo.append(Path(path))
+        return
+    _refrescar_grafo_de([Path(path)])
+
+
+def _refrescar_grafo_de(notas: List[Path]) -> None:
+    """Refresca `notas` y los `index.md` de sus carpetas en una pasada. Nunca lanza."""
     try:
-        # Los `index.md` de la cadena de carpetas de la nota: el índice de
+        # Los `index.md` de la cadena de carpetas de cada nota: el índice de
         # sección los acaba de regenerar con `Path.write_text`, fuera de este
         # gancho, y la reconstrucción los cuenta como nodos.
-        indices = []
         raiz = get_vault_root().resolve()
-        path = Path(path).resolve()  # ruta corta 8.3 frente a la raíz resuelta
-        carpeta = path.parent
-        while carpeta != raiz and raiz in carpeta.parents:
-            if (carpeta / "index.md").exists() and carpeta / "index.md" != path:
-                indices.append(carpeta / "index.md")
-            carpeta = carpeta.parent
-        refrescar_grafo(path, *indices)
+        # `resolve()`: ruta corta 8.3 frente a la raíz resuelta. `dict` para
+        # quitar repetidas conservando el orden de escritura.
+        rutas = list(dict.fromkeys(Path(n).resolve() for n in notas))
+        vistas = set(rutas)
+        indices = []
+        for path in rutas:
+            carpeta = path.parent
+            while carpeta != raiz and raiz in carpeta.parents:
+                indice = carpeta / "index.md"
+                if indice not in vistas and indice.exists():
+                    vistas.add(indice)
+                    indices.append(indice)
+                carpeta = carpeta.parent
+        refrescar_grafo(rutas[0], *rutas[1:], *indices)
     except FalloDeDominio as fallo:
         # Grafo ilegible: la escritura ya está hecha y no se deshace por esto;
         # queda en la traza con su causa y la pista de reconstruir.

@@ -119,3 +119,73 @@ def test_ap47_frontmatter_completar_escribe_en_lote(tmp_path, monkeypatch):
     r = frontmatter_completar.completar(apply=True, agent="pytest")
     assert r["written_count"] == 3, r
     assert secciones == ["07_Knowledge"]
+
+
+# --- El grafo también en lote ------------------------------------------------
+# Medido después de c3b7879 en la misma copia de /ans: de 210 s con cProfile,
+# 115 eran `_auto_grafo`, y de ellos 110 el escáner de secretos sobre
+# `graph.json` reescrito tras cada una de las 504 notas.
+
+def _con_grafo(raiz, monkeypatch):
+    import os
+    import subprocess
+
+    vault_io = _vault(raiz, monkeypatch)
+    vault_io.atomic_write_text(raiz / "07_Knowledge/base.md", _texto("base"))
+    r = subprocess.run(
+        [sys.executable, str(RAIZ / "scripts" / "vault_graph.py")],
+        env=dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
+                 PYTHONIOENCODING="utf-8"),
+        capture_output=True, text=True, encoding="utf-8")
+    assert r.returncode == 0, r.stdout + r.stderr
+    return vault_io
+
+
+def _grafo(raiz):
+    (fichero,) = [p for p in raiz.rglob("graph.json") if ".locks" not in p.parts]
+    g = json.loads(fichero.read_text(encoding="utf-8"))
+    aristas = sorted(json.dumps(e, sort_keys=True) for e in g.get("edges", []))
+    return sorted(g["nodes"]), aristas
+
+
+def _con_enlace(nombre):
+    return _texto(nombre).replace("Tercera línea", "Enlaza [[base]] en la tercera línea")
+
+
+def test_ap47_en_lote_el_grafo_se_refresca_una_sola_vez(tmp_path, monkeypatch):
+    vault_io = _con_grafo(tmp_path, monkeypatch)
+    llamadas = []
+    original = vault_io.refrescar_grafo
+    monkeypatch.setattr(vault_io, "refrescar_grafo",
+                        lambda *a: llamadas.append(a) or original(*a))
+    with vault_io.escrituras_en_lote():
+        for rel in NOTAS:
+            vault_io.atomic_write_text(tmp_path / rel, _con_enlace(Path(rel).stem))
+        assert llamadas == []
+    assert len(llamadas) == 1
+
+
+def test_ap47_el_grafo_en_lote_es_el_de_nota_a_nota(tmp_path, monkeypatch):
+    vault_io = _con_grafo(tmp_path / "a", monkeypatch)
+    for rel in NOTAS:
+        vault_io.atomic_write_text(tmp_path / "a" / rel, _con_enlace(Path(rel).stem))
+    nota_a_nota = _grafo(tmp_path / "a")
+
+    vault_io = _con_grafo(tmp_path / "b", monkeypatch)
+    with vault_io.escrituras_en_lote():
+        for rel in NOTAS:
+            vault_io.atomic_write_text(tmp_path / "b" / rel, _con_enlace(Path(rel).stem))
+    assert _grafo(tmp_path / "b") == nota_a_nota
+    assert "07_Knowledge/sub/gamma.md" in nota_a_nota[0]
+    assert "07_Knowledge/sub/index.md" in nota_a_nota[0]
+
+
+def test_ap47_el_refresco_no_descarta_el_lote_si_la_primera_ruta_no_es_nota(tmp_path, monkeypatch):
+    # El servicio miraba solo la primera ruta para decidir «not_a_note»; con
+    # un lote eso dejaba fuera del grafo todas las demás.
+    vault_io = _con_grafo(tmp_path, monkeypatch)
+    nota = tmp_path / "07_Knowledge/alfa.md"
+    nota.write_text(_con_enlace("alfa"), encoding="utf-8")
+    r = vault_io.refrescar_grafo(tmp_path / "fuera.txt", nota)
+    assert r.get("refreshed") is True, r
+    assert "07_Knowledge/alfa.md" in _grafo(tmp_path)[0]

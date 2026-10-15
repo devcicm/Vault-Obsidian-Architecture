@@ -127,9 +127,11 @@ class ServicioRefrescoGrafo:
         # `resolve()`: en Windows una ruta corta 8.3 (`CARLOS~1`) no es relativa
         # a la raíz resuelta, y la nota se daba por «no nota» sin error.
         rutas = [Path(r).resolve() for r in (ruta, *mas)]
-        if not es_nota_indexable(rutas[0], repo.raiz, secciones):
-            return {"ok": True, "refreshed": False, "reason": "not_a_note"}
+        # Todas, no solo la primera: en un lote (`vault_io.escrituras_en_lote`)
+        # la primera puede no ser nota y las demás sí.
         rutas = [r for r in rutas if es_nota_indexable(r, repo.raiz, secciones)]
+        if not rutas:
+            return {"ok": True, "refreshed": False, "reason": "not_a_note"}
         destino = repo.grafo
         with repo.ctx.escritor.bloquear(destino):
             try:
