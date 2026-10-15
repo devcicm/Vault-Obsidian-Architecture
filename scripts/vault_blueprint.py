@@ -972,6 +972,35 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         ),
     },
     {
+        "id": "spec_validate_returns_ciego",
+        "estado": "pendiente",
+        "desde": "v41.6",
+        "capa": "5",
+        "que": (
+            "AP-44: `vault_spec_validate` comprueba `declared_returns` de "
+            "`tool-spec.json` contra las claves escritas como literal en un "
+            "`return {...}` (o en el dict asignado a la variable que se "
+            "devuelve). No ve `r['clave'] = …`, `r.update(...)` ni las claves "
+            "que pone un ayudante común —el indicador de trabajo de AP-37, el "
+            "envelope de `emit_error`—, así que da drift a 90 de 145 tools y "
+            "8 «missing» que son tools del servidor JS. La CI lo ejecutaba con "
+            "`|| echo \"not yet implemented\"`. Medido el 2026-10-15 sobre "
+            "72bee01."
+        ),
+        "por_que_no_ahora": (
+            "Ampliar el AST a asignaciones por subíndice y `update` se midió: "
+            "baja de 98 a 95 sin pasar, porque el grueso lo ponen ayudantes de otro "
+            "módulo. Medirlo con el criterio del consumidor exige ejecutar "
+            "cada tool y leer su envelope, que es lo que ya hace `vault_smoke` "
+            "por otra vía; decidir si este detector se reescribe o se anota "
+            "`superseded_by` es una decisión de producto. Mientras, la CI lo "
+            "corre con `continue-on-error` y el nombre del paso cita esta "
+            "deuda. `tests/test_ci_sin_enmascarar.py::"
+            "test_limite_declarado_spec_validate_returns_ciego` fija el punto "
+            "ciego y falla el día que el detector lo vea."
+        ),
+    },
+    {
         "id": "lock_caduca_por_reloj_de_pared",
         "estado": "saldada",
         "saldada_en": "tras v41.6 (2026-10-15, sin versión publicada)",
