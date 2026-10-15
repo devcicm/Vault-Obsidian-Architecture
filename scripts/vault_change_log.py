@@ -48,10 +48,10 @@ import subprocess
 
 import sys
 
-from vault_errors import emit_error, mensaje_de, wrap_main, proyecto_registrado
+from vault_errors import emit_error, emit_fallo, mensaje_de, wrap_main, proyecto_registrado
 from vault_entorno import agente_por_defecto
 from vault_lib import utcnow
-from vault_io import atomic_write_text, file_lock
+from vault_io import IndiceIlegible, atomic_write_text, file_lock
 import uuid
 
 from pathlib import Path
@@ -104,14 +104,25 @@ def _log_json() -> Path:
 
 
 def _read_json_log() -> List[Dict[str, Any]]:
-    if not _log_json().exists():
-        return []
+    """Las entradas de la bitacora; `IndiceIlegible` si existe y no se lee.
 
+    Ausente y vacia son lo mismo: aun no hay historia. Ilegible no: hasta el
+    2026-10-15 un JSON roto se leia como `[]`, el siguiente `add` reescribia el
+    fichero con una sola entrada y respondia ok:true, y el historial de no
+    repudio (F8) desaparecia sin que nadie lo dijera (AP-51). Lo que no es una
+    lista tampoco se lee como bitacora: `append` habria fallado despues de
+    escribir la nota.
+    """
+    log = _log_json()
+    if not log.exists():
+        return []
     try:
-        return json.loads(_log_json().read_text(encoding="utf-8"))
-
-    except (json.JSONDecodeError, IOError):
-        return []
+        entries = json.loads(log.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise IndiceIlegible(log, exc) from exc
+    if not isinstance(entries, list):
+        raise IndiceIlegible(log, TypeError(f"se esperaba una lista, hay {type(entries).__name__}"))
+    return entries
 
 
 def _write_json_log(entries: List[Dict[str, Any]]) -> None:
@@ -233,7 +244,11 @@ def vault_change_log_add(
     # second write clobbers the first → lost entry. file_lock(LOG_JSON) makes the
     # whole critical section (JSON + MD append) atomic across processes.
     with file_lock(_log_json()):
-        entries = _read_json_log()
+        try:
+            entries = _read_json_log()
+        except IndiceIlegible as exc:
+            # No se escribe nada: el fichero queda como estaba para repararlo.
+            return emit_fallo("vault_change_log", exc)
 
         entries.append(entry)
 
@@ -270,7 +285,11 @@ def vault_change_log_query(
     action_filter: Optional[str] = None,
     last: int = 20,
 ) -> Dict[str, Any]:
-    entries = _read_json_log()
+    try:
+        entries = _read_json_log()
+    except IndiceIlegible as exc:
+        # `total: 0` diria que nunca hubo cambios.
+        return emit_fallo("vault_change_log", exc)
 
     if action_filter:
         entries = [e for e in entries if e.get("action") == action_filter.lower()]
