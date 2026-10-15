@@ -330,3 +330,15 @@ def test_la_dependencia_dura_de_pyyaml_se_mide_tambien_en_vault():
     duros = vp._importadores_duros_de_yaml()
     assert "vault/autoria/frontmatter_heal.py" in duros, duros
     assert "scripts/vault_write.py" in duros
+
+
+def test_el_piso_publica_que_lo_ultimo_lo_encontro_una_prueba_a_mano():
+    """El 2026-10-15 `vault init` moría en Python 3.9 con `write_text(newline=)`
+    (llegó en 3.10) mientras `piso_de_lenguaje` salía cubierta: la matriz de la
+    CI declara 3.9, pero esta rama no ha pasado por la CI y lo encontró un
+    contenedor python:3.9-slim a mano. Una promesa «cubierta» por un ejecutor
+    que no se ejecutó tiene que decirlo, igual que `sistemas_operativos`."""
+    por_id = {p["id"]: p for p in vp.PREGUNTAS}
+    piso = por_id["piso_de_lenguaje"].get("hueco_conocido", "")
+    assert "python:3.9-slim" in piso and "write_text" in piso
+    assert "python:3.9-slim" in por_id["sistemas_operativos"]["hueco_conocido"]

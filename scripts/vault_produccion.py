@@ -318,6 +318,15 @@ PREGUNTAS: List[Dict[str, Any]] = [
         "ejerce": _ci_prueba_el_piso,
         "quien": "matriz python-version de .github/workflows/vault-ci.yml + tests/test_piso_python.py",
         "estado": "cubierta",
+        "hueco_conocido": (
+            "La matriz de la CI declara 3.9, pero esta rama no ha pasado por la "
+            "CI. El 2026-10-15 `vault init` moría en 3.9 con "
+            "`write_text(newline=)`, que llegó en 3.10, y lo encontró a mano un "
+            "contenedor python:3.9-slim, no la matriz. test_piso_python mira "
+            "ahora también argumentos nombrados posteriores al piso, pero solo "
+            "los que lista; ejecutar en 3.9 sigue siendo lo único que lo cubre "
+            "entero."
+        ),
     },
     {
         "id": "dependencias_reales",
@@ -378,7 +387,10 @@ PREGUNTAS: List[Dict[str, Any]] = [
             "rama no ha pasado por la CI. El paseo de INSTALACIÓN fuera del repo "
             "se ha hecho de forma recurrente en Windows y una vez a mano en "
             "Linux (2026-10-04, wheel 40.35 en python:3.12-slim con usuario sin "
-            "privilegios: 16/16); en Linux no lo repite ninguna máquina. macOS "
+            "privilegios: 16/16) y otra el 2026-10-15 (wheel 41.5 corregida en "
+            "python:3.9-slim con usuario sin privilegios y Node 20: init, "
+            "escritura con bitácora, F8, audit, pre-flight y MCP con tools/call); "
+            "en Linux no lo repite ninguna máquina. macOS "
             "no lo toca nadie. Las instrucciones de instalación están inlined "
             "en README.md."
         ),
