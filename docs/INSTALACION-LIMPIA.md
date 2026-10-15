@@ -54,6 +54,12 @@ vault init <ruta-del-vault>       # INIT_CREATED
 vault doctor <ruta-del-vault>     # RUNTIME_OK
 ```
 
+El **padre** de `<ruta-del-vault>` tiene que existir: `vault init` no crea
+directorios intermedios, y con el padre ausente sale con código 8,
+`INVALID_PATH` y `"state": "INIT_INVALID_TARGET"` sin tocar nada. Crea antes
+la carpeta del proyecto (`mkdir -p <proyecto>`). Medido el 2026-10-15 en
+Linux con Python 3.9 siguiendo esta guía al pie de la letra.
+
 Para que ninguna tool adivine la raíz, exporta `VAULT_ROOT=<ruta-del-vault>` y
 `VAULT_STRICT_ROOT=1`: con la raíz sin resolver, la tool falla en vez de caer en
 otro sitio.
@@ -162,7 +168,7 @@ dice cuál de los dos casos es:
 | `5` | `EXIT_NOT_RUNTIME` | Es de gobernanza del estándar, no de runtime | stderr |
 | `6` | `EXIT_INVALID_TARGET` | El módulo instalado no es un destino válido | stderr |
 | `7` | `EXIT_OPERATION_FAILED` | La tool se ejecutó y devolvió un fallo | stdout |
-| `8` | `EXIT_RUNTIME_INVALID` | `init`, `doctor` o `status` encontraron un runtime inválido | stderr |
+| `8` | `EXIT_RUNTIME_INVALID` | `init`, `doctor` o `status` encontraron un runtime inválido, o `init` recibió una ruta inválida (`INIT_INVALID_TARGET`, p. ej. el padre no existe) | stderr |
 | `9` | `EXIT_INIT_CONFLICT` | `init` sobre una ruta en conflicto | stderr |
 | `10` | `EXIT_PREFLIGHT_FAILED` | El pre-flight bloqueó un argumento; no se ejecutó nada | stderr |
 

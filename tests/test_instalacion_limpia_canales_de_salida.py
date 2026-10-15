@@ -49,3 +49,20 @@ def test_un_rechazo_del_preflight_sale_por_stderr_con_stdout_vacio(capsys):
     assert salida.out == ""
     error = json.loads(salida.err)
     assert error["error_code"] == "PREFLIGHT_REJECTED"
+
+
+def test_la_guia_avisa_de_que_init_no_crea_el_padre(tmp_path, capsys):
+    """Medido el 2026-10-15 en python:3.9-slim siguiendo la guía al pie de la
+    letra: `vault init ~/proyecto/vault` sin `~/proyecto` sale con código 8
+    e INIT_INVALID_TARGET. Es deliberado —la pista lo dice—, pero la §3 no
+    avisaba y la fila 8 de la tabla solo hablaba de runtimes inválidos."""
+    rc = product_cli.main(["init", str(tmp_path / "no-existe" / "vault")])
+    error = json.loads(capsys.readouterr().err)
+    assert (error["error_code"], error["state"]) == ("INVALID_PATH", "INIT_INVALID_TARGET")
+
+    texto = GUIA.read_text(encoding="utf-8")
+    seccion_3 = texto[texto.index("## 3. "):texto.index("## 4. ")]
+    assert all(x in seccion_3 for x in ("INVALID_PATH", "INIT_INVALID_TARGET", "padre"))
+    fila = re.search(rf"^\| `{rc}` \| `EXIT_[A-Z_]+` \|(.*)$", _seccion_salida(), re.M)
+    assert fila and "INIT_INVALID_TARGET" in fila.group(1), (
+        f"la fila del código {rc} no cubre la ruta inválida de `init`")
