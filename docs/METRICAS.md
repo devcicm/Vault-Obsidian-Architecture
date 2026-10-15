@@ -47,3 +47,7 @@
 | 2026-10-14 | `df0ff4d` | `recall_pack_ajeno` | 1.0 | banco_agente --copiar-de /vcloud (copia; original intacto por hash), muestra 25 |
 | 2026-10-14 | `efc8093` | `colisiones_de_sanadores` | 0 | C8 --colisiones sobre copia de /vcloud (original intacto por hash); 6 sanadores, 4 ociosos |
 | 2026-10-14 | `efc8093` | `colisiones_de_sanadores` | 0 | C8 --colisiones sobre copia de /ans (original intacto por hash); 4 desenmascarados en ADR-004, completar y graph_fix fallidos |
+| 2026-10-14 | `42a6fa8` | `suite_fallos` | 0 | pytest sobre suite.txt |
+| 2026-10-14 | `42a6fa8` | `suite_tests` | 5600 | pytest sobre suite.txt |
+| 2026-10-14 | `42a6fa8` | `suite_duracion_s` | 4874.47 | pytest sobre suite.txt |
+| 2026-10-14 | `42a6fa8` | `smoke_fallos` | 0 | vault_smoke sobre 124 tools |
