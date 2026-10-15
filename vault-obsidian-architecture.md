@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v41.4 — 2026-10-14  
+**Versión:** v41.5 — 2026-10-15  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -7649,6 +7649,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v41.2 | 2026-10-07 | **Un vault puede declarar sus propias secciones, y cada sección dice qué clase de documento contiene.** `vault_section` declara, lista y retira secciones propias en `00_System/secciones.json` (rango libre 22–98, clase Diátaxis, tipos admitidos); el registro, el puerto del kernel, el contrato, el audit y los barridos de grafo, validate, tags, delta, completar, graph_fix y section_index las ven. `vault_write` y `vault_move` aplican CN-02 al destino. Normas AP-14/21/22/SP-02, AP-15, AP-26, AP-27 y CN-02 realineadas con el código que las cumple; cuatro deudas halladas, declaradas en el plano. 4605 tests, 23 puertas |
 | v41.3 | 2026-10-09 | **El agente tiene protocolo de sesión, cada norma vive en su paquete y el puente de ADR-0002 empieza a caer por lotes.** Perfil MCP `agente` derivado del protocolo; `vault_supersede` y `vault_arquitectura_en`; AP-64 y AP-65; las normas pasan a `normas/<código>/` (deuda #10 pendiente por `guard.py`/`heal.py`); ocho módulos migran del puente (deuda #12 en curso); un solo criterio para `.history/`, el lock, la cascada de índices, el schema del SDD y la exposición MCP; SBOM y `SECURITY.md`. 5289 tests, 23 puertas |
 | v41.4 | 2026-10-14 | **El vault se usa como producto instalado sin errores de operación, y tres deudas del registro quedan saldadas.** Caras `guard.py`/`heal.py` derivadas en cada norma (#10); la fase 8 de sanación empieza por el núcleo (#11); `version_pinned` y AP-08 (#2); PAT-2 con plazo en el stub (capa 4 en cero); lotes D–H del puente; una sesión de agente consumidor sobre la wheel destapa y cierra defectos de escritura, lectura, borrado, consulta y protocolo MCP (`isError`, tools que no pueden terminar). F8 y la deuda #12 siguen declaradas. 5530 tests, 23 puertas |
+| v41.5 | 2026-10-15 | **Las normas tienen métricas, se vigilan entre sí y los sanadores escriben en lote.** `vault_metricas` publica métricas de desarrollo y de producto con objetivo, plazo e histórico observado, y su puerta falla si el documento diverge; `vault_norms_coherence` suma C8 (un sanador que sube otra norma es una colisión medida), C9 (lo que una norma dice de sí misma no se contradice) y C10 (la máquina de estados no atrapa); `vault_io.escrituras_en_lote()` (AP-47) baja `vault_frontmatter_completar` de 2990 s a 32 s y `vault_graph_fix` clasificado de 107 s a 15 s, y `vault_graph_fix` salta la nota ilegible en vez de abortar (AP-46). Los sanadores que siguen sin lote quedan declarados (`sanadores_sin_lote`). 5604 tests, 24 puertas |
 | v41.1 | 2026-10-07 | **Qué contrato cumple cada nota y qué notas no pertenecen a ninguna sección.** Clase `sin_seccion` en el contrato: un `.md` de la raíz o de una carpeta no registrada lleva identidad y timestamps, no CIA, `agent`, `tags`, `type` ni `status`. `vault_validate --check cumplimiento` informa por nota las versiones del contrato que cumple y lo que le falta para la vigente. `vault_audit` publica `notIntegrated` (notas que solo enlaza un índice) y la acción de las huérfanas deja de citar AP-13. 4463 tests, 23 puertas |
 | v41.0 | 2026-10-07 | **El contrato de nota es el criterio de lo que se escribe y se valida.** `vault_contrato_nota` es el dueño de los campos de una nota y de su nivel en cada versión desde v18; `vault_validate --contrato vNN` valida contra una versión anterior y cada versión desde v18 publica su JSON Schema en `schemas/`. **Ruptura:** `type` y `status` pasan de recomendados (v37–v40) a requeridos en notas de contenido, por presencia; `vault_frontmatter_completar` los pone. Los seis escritores cumplen el contrato entero; `jsonschema` declarado en el extra dev. 4431 tests, 23 puertas |
 | v40.36 | 2026-10-05 | **Lo que encontró usar la wheel contra un vault real.** Escritura en LF también en Windows (primitivo atómico e índices de sección); `vault_append` separa el bloque, deja un solo salto final y refresca `updatedAt` (AP-13); una escritura con frontmatter ilegible sale con `FRONTMATTER_PARSE_ERROR` y `vault_read` lo declara (AP-51, AP-52); soltar el último lock retira `.locks/` y `vault_knowledge_save` comparte lock con los demás escritores; `vault_reindex` no muere por el límite de 60 s; `vault tools show` publica los parámetros; el upgrade sella en LF y crea sus carpetas de registro. 4276 tests, 22 puertas |
@@ -8007,6 +8008,42 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v41.5 — 2026-10-15 `git: pending`
+
+**Las normas tienen métricas, se vigilan entre sí y los sanadores escriben en lote.**
+
+**Métricas.** `vault_metricas` publica las métricas de desarrollo y de producto con su
+fuente, su objetivo y su plazo, y distingue las calculadas de las observadas: la suite
+y el smoke se registran por ronda con el commit medido (`--registrar-suite`,
+`--registrar-smoke`). `docs/METRICAS.md` es derivado y la puerta `metricas` falla si
+diverge. Las que no admiten objetivo lo dicen con su motivo en vez de inventarlo.
+
+**Normas que se vigilan entre sí (AP-55).** `vault_norms_coherence` suma tres
+comprobaciones: C8, un sanador que al reparar su norma sube el recuento de otra es una
+colisión medida, no una sospecha; C9, lo que una norma declara de sí misma —enforcement,
+cobertura, tools— no se contradice; C10, la máquina de estados de `status` no tiene
+estados trampa y nadie la publica recortada.
+
+**Escrituras en lote (AP-47).** `vault_io.escrituras_en_lote()` regenera cada sección,
+la búsqueda, el grafo y la traza una vez al cerrar el lote, no una vez por nota.
+`vault_frontmatter_completar` pasa de 2990 s a 32 s y `vault_graph_fix --apply
+--auto-fix-safe` de 107 s a 15 s sobre una copia de un vault ajeno, con el mismo árbol
+resultante. `vault_graph_fix` clasificado salta una nota cuyo frontmatter ya no parseaba
+y la publica en `skipped_unreadable` (AP-46), en vez de abortar el arreglo de las demás.
+Los sanadores que siguen escribiendo nota a nota quedan en `sanadores_sin_lote`.
+
+**Arreglos.** `--freeze-fields` ya no borra el compromiso declarado de la baseline
+(AP-53); el `index.md` que crea una escritura entra en la búsqueda (AP-47); el respaldo
+de `vault_fix_brackets` no estrena carpeta en la raíz (CN-02); `vault_metricas` deja de
+interpolar `clave: {valor}` en su fuente (AP-56); el test del guard de AP-48 deja
+`sys.path` como lo encontró; las métricas de versión miden las dos últimas versiones
+cerradas, porque una entrada `pending` ponía la puerta `metricas` en rojo en el propio
+commit del bump.
+
+5604 tests, 24 puertas.
 
 ---
 
