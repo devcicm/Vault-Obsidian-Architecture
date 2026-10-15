@@ -247,3 +247,40 @@ def test_ap47_la_traza_en_lote_se_escribe_aunque_el_lote_falle(tmp_path, monkeyp
     except RuntimeError:
         pass
     assert _entradas(et) == [1]
+
+
+# --- Un inventario de nombres para todo el cierre ----------------------------
+# Misma medida tras 52a6486: de 64 s, 21,7 eran `inventario_de_nombres` en 16
+# llamadas, una por sección regenerada al cerrar el lote, cada una leyendo
+# el frontmatter del vault entero.
+
+def test_ap47_el_cierre_inventaria_los_nombres_una_vez(tmp_path, monkeypatch):
+    import vault_section_index as vsi
+
+    vault_io = _vault(tmp_path, monkeypatch)
+    for rel in NOTAS:  # los index.md ya existen: el cierre no crea ninguno
+        vault_io.atomic_write_text(tmp_path / rel, _texto(Path(rel).stem))
+    inventarios = []
+    original = vsi.inventario_de_nombres
+    monkeypatch.setattr(vsi, "inventario_de_nombres",
+                        lambda *a: inventarios.append(1) or original(*a))
+    with vault_io.escrituras_en_lote():
+        for rel in NOTAS:
+            vault_io.atomic_write_text(tmp_path / rel, _texto(Path(rel).stem) + "Más.\n")
+    assert len(inventarios) == 1
+
+
+def test_ap47_un_index_creado_en_el_cierre_renueva_el_inventario(tmp_path, monkeypatch):
+    # Una nota nueva cambia qué destino es el más corto: tras crear un index.md
+    # el inventario compartido ya no es el del vault y se vuelve a hacer.
+    import vault_section_index as vsi
+
+    vault_io = _vault(tmp_path, monkeypatch)
+    inventarios = []
+    original = vsi.inventario_de_nombres
+    monkeypatch.setattr(vsi, "inventario_de_nombres",
+                        lambda *a: inventarios.append(1) or original(*a))
+    with vault_io.escrituras_en_lote():
+        for rel in NOTAS:
+            vault_io.atomic_write_text(tmp_path / rel, _texto(Path(rel).stem))
+    assert len(inventarios) == 2  # 01_Projects y 07_Knowledge crean su index.md

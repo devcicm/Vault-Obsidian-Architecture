@@ -643,8 +643,13 @@ def escrituras_en_lote() -> Iterator[None]:
             yield
         finally:
             _LOTE.reset(token)
+            # Un inventario de nombres para todas las secciones: leerlo es
+            # recorrer el frontmatter del vault entero, y era 21,7 de 64 s en
+            # 16 secciones. Un `index.md` creado lo deja viejo: se vacía.
+            nombres: Dict[str, List[str]] = {}
             for section, rutas in lote.secciones.items():
-                _regenerar_seccion(section, rutas)
+                if _regenerar_seccion(section, rutas, nombres):
+                    nombres.clear()
             if lote.grafo:
                 _refrescar_grafo_de(lote.grafo)
 
@@ -669,8 +674,13 @@ def _auto_section_index(path: Path) -> None:
     _regenerar_seccion(section, [path])
 
 
-def _regenerar_seccion(section: str, rutas: List[Path]) -> None:
-    """Regenera el índice de `section` y pone `rutas` en la búsqueda. Nunca lanza."""
+def _regenerar_seccion(section: str, rutas: List[Path],
+                       nombres: Optional[Dict[str, List[str]]] = None) -> List[str]:
+    """Regenera el índice de `section` y pone `rutas` en la búsqueda. Nunca lanza.
+
+    Devuelve los `index.md` que creó (`creados`), vacío también si falló.
+    `nombres` es el índice de nombres compartido de un lote.
+    """
     try:
         from vault_section_index import (
             vault_section_index,
@@ -681,7 +691,7 @@ def _regenerar_seccion(section: str, rutas: List[Path]) -> None:
         # prohibido), regeneramos el índice canónico encima. Sin recursión:
         # el generador escribe via Path.write_text, no via atomic_write_text.
         raiz = get_vault_root()
-        hecho = vault_section_index(section)
+        hecho = vault_section_index(section, nombres=nombres)
         # AP-47: la nota entra en el índice de búsqueda en la misma escritura,
         # escriba quien escriba. Mismo módulo, mismo gancho declarado.
         from vault_section_index import refrescar_busqueda  # lazy, ídem
@@ -690,13 +700,16 @@ def _regenerar_seccion(section: str, rutas: List[Path]) -> None:
         # disco como cualquier otra. Solo van los que no existían antes de esta
         # escritura (`creados`) — medido con C8 en una copia de /vcloud: 144 en
         # disco frente a 143 indexadas tras un sanador. Una sola pasada.
-        refrescar_busqueda(*rutas, *(raiz / rel for rel in (hecho.get("creados") or [])))
+        creados = list(hecho.get("creados") or [])
+        refrescar_busqueda(*rutas, *(raiz / rel for rel in creados))
+        return creados
     except Exception as exc:
         # AP-51: el fallo queda en la traza con su motivo. Sin un segundo
         # `except Exception: pass` alrededor: `log_trace` ya es best-effort y
         # no lanza, así que aquel solo podía callar un fallo de programación.
         from vault_errors import emit_error  # lazy, como el resto del gancho
         emit_error("_auto_section_index", "AUTO_INDEX_ERROR", str(exc))
+        return []
 
 
 def refrescar_grafo(path: Path, *mas: Path) -> Dict[str, Any]:

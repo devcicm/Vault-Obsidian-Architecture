@@ -374,7 +374,8 @@ def _indice_a_escribir(carpeta: Path) -> Optional[Path]:
 
 
 def vault_section_index(
-    folder: str, include_subdirs: bool = True, regeneracion_completa: bool = False
+    folder: str, include_subdirs: bool = True, regeneracion_completa: bool = False,
+    nombres: Optional[Dict[str, List[str]]] = None,
 ) -> Dict[str, Any]:
     """
     Generate or update {folder}/index.md with navigation, notes table and subdir listing.
@@ -388,6 +389,9 @@ def vault_section_index(
             escribe el índice de cada sección y `99_Index/index.md`
             (`vault_master_index`). Con eso la migaja y el hub los enlazan
             aunque todavía no estén en disco; sin él, solo los que ya existen.
+        nombres: índice de nombres que el llamador comparte entre varias
+            secciones (`vault_io.escrituras_en_lote`). Es del llamador
+            mantenerlo fiel al vault: tras un `creados` no vacío, vaciarlo.
 
     Returns:
         {"ok": True, "path": "01_Projects/index.md", "noteCount": 12, "is_empty": False,
@@ -442,8 +446,10 @@ def vault_section_index(
     if regeneracion_completa:
         previstos |= _indices_de_una_regeneracion_completa(vroot)
     indice_disponible = _indices_disponibles(vroot, previstos)
-    # Uno por regeneración, no por render (AP-47, medido en /ans).
-    nombres: Dict[str, List[str]] = {}
+    # Uno por regeneración, no por render (AP-47, medido en /ans); o el que
+    # comparte el llamador entre secciones.
+    if nombres is None:
+        nombres = {}
 
     aviso_hub = None
     try:
