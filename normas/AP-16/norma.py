@@ -32,7 +32,12 @@ NORMA = {
         "qué agente creó o modificó la nota (PAT-5: frontmatter as provenance chain)."
     ),
     "signal": "vault_audit reporta notas sin campo agent.",
-    "prevention": "vault_write agrega agent: automáticamente. Valores estándar: claude, system, human.",
+    "prevention": (
+        "vault_write escribe agent: desde --agent o, si falta, desde VAULT_AGENT; "
+        "sin ninguno de los dos bloquea con missing_agent antes de escribir "
+        "(las notas de 00_System/ quedan exentas). Valores estándar: claude, "
+        "system, human."
+    ),
     "tools_enforcing": ["vault_write", "vault_frontmatter_completar"],
     "tools_detecting": ["vault_audit"],
     "introduced_version": "v20",

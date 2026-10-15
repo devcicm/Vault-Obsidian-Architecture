@@ -92,7 +92,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-13** — Timestamps inválidos o incompletos en frontmatter | audit | — | `test_meta_contrato.py` |
 | **AP-14** — Wiki-links rotos o vacíos | guard+audit | — | `test_audit_acciones_de_movimiento.py`, `test_normas_caras.py`, `test_normas_enlaces_sin_solape.py`, `test_norms_coherence.py` |
 | **AP-15** — Archivos externos depositados en la raíz del vault | guard+audit | `framework` | `test_normas_sin_registro_a_mano.py`, `test_vault_norms_audit.py` |
-| **AP-16** — Sin identificador de agente en frontmatter | audit | — | `test_ap64_responsable.py`, `test_context_memory.py` |
+| **AP-16** — Sin identificador de agente en frontmatter | audit | — | `test_ap16_prevencion_dice_lo_que_hace.py`, `test_ap64_responsable.py`, `test_context_memory.py` |
 | **AP-17** — Canonical-shadow duplication | audit | — | `test_blueprint.py`, `test_normas_caras.py`, `test_normas_de_audit_ejercitadas.py` |
 | **AP-18** — Cross-folder content duplication | audit | — | `test_capa4_audit_ejercitada.py` |
 | **AP-19** — Shadow indexing | audit | `framework` | — |

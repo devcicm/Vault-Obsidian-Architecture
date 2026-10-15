@@ -4655,7 +4655,7 @@ proyecto/
 
 **Prevención:**
 - `vault_write` acepta `agent` como parámetro y lo incluye en frontmatter
-- Si el harness no pasa el parámetro, `vault_write` omite el campo (no bloquea) pero el campo queda vacío — auditable luego por `vault_audit`
+- Si el harness no pasa el parámetro, `vault_write` lo toma de `VAULT_AGENT`; sin ninguno de los dos **bloquea** con `missing_agent` antes de escribir (las notas de `00_System/` quedan exentas). Hasta el 2026-10-15 esta línea decía que lo omitía «sin bloquear» y el registro que lo rellenaba solo; la instalación ciega de R7 midió que el código bloquea, y es lo que ejerce el consumidor
 - Al configurar un agente en un harness nuevo, incluir `agent: {nombre}` en el system prompt como instrucción permanente
 
 ---

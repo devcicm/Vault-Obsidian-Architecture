@@ -169,7 +169,7 @@ Archivos .md colocados directamente en vault-{nombre}/ en lugar de en secciones 
 
 Nota sin campo agent: en el frontmatter. Sin este campo es imposible auditar qué agente creó o modificó la nota (PAT-5: frontmatter as provenance chain).
 
-**Prevención:** vault_write agrega agent: automáticamente. Valores estándar: claude, system, human.
+**Prevención:** vault_write escribe agent: desde --agent o, si falta, desde VAULT_AGENT; sin ninguno de los dos bloquea con missing_agent antes de escribir (las notas de 00_System/ quedan exentas). Valores estándar: claude, system, human.
 
 ### AP-17: Canonical-shadow duplication
 
@@ -1075,7 +1075,7 @@ Archivos .md colocados directamente en vault-{nombre}/ en lugar de en secciones 
 
 Nota sin campo agent: en el frontmatter. Sin este campo es imposible auditar qué agente creó o modificó la nota (PAT-5: frontmatter as provenance chain).
 
-**Prevention:** vault_write agrega agent: automáticamente. Valores estándar: claude, system, human.
+**Prevention:** vault_write escribe agent: desde --agent o, si falta, desde VAULT_AGENT; sin ninguno de los dos bloquea con missing_agent antes de escribir (las notas de 00_System/ quedan exentas). Valores estándar: claude, system, human.
 
 ### AP-17: Canonical-shadow duplication
 
