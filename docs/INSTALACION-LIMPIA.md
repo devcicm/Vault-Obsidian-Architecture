@@ -58,6 +58,20 @@ Para que ninguna tool adivine la raíz, exporta `VAULT_ROOT=<ruta-del-vault>` y
 `VAULT_STRICT_ROOT=1`: con la raíz sin resolver, la tool falla en vez de caer en
 otro sitio.
 
+Exporta también `VAULT_AGENT=<quién escribe>` (`claude`, `human`, `script`…):
+toda nota de contenido lleva `agent:` (AP-16), y sin `--agent` ni `VAULT_AGENT`
+la primera escritura sale con `missing_agent` antes de tocar el disco. Las
+notas de `00_System/` quedan exentas. Es lo primero con lo que tropezó la
+instalación ciega del 2026-10-15 (wheel limpia en un venv nuevo, siguiendo solo
+esta guía).
+
+```bash
+VAULT_AGENT=claude vault run vault_write --folder 07_Knowledge   --title "Primera nota" --tags inicio --content "<al menos tres líneas>"
+```
+
+La respuesta lleva `change_log` con la entrada que la escritura dejó en
+`00_System/.change-log.json` (F8, no repudio).
+
 ## 4. Registrar el servidor MCP
 
 ```bash
@@ -118,6 +132,14 @@ printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocol
 
 Debe imprimir una línea JSON con `"id":1` y `serverInfo`. Hasta el arreglo de
 2026-10-01, el servidor instalado no la imprimía (ver la comparativa).
+
+Por stderr sale además `[MCP WARN] Tools sin script en …, retiradas: …`. Es lo
+esperado: el catálogo describe el repo entero y la wheel de producto deja fuera
+las tools de gobernanza del estándar (`vault_arch`, `vault_blueprint`,
+`vault_doc_counts`…), que miden este repo y no tu vault. El servidor las retira
+de `tools/list` y dice cuáles en vez de ofrecer algo que fallaría al llamarlo.
+Cuántas son lo dice esa línea; las que quedan, `vault tools list` (las de
+`"installed": true`).
 
 ## 5. Leer la salida desde otro programa
 
