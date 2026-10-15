@@ -570,3 +570,42 @@ def test_nota_ilegible_se_salta_y_se_publica(tmp_path):
     import json
     log = json.loads((vault / result["log_file"]).read_text(encoding="utf-8"))
     assert log["skipped_unreadable"] == result["skipped_unreadable"]
+
+
+def test_ap47_el_arreglo_clasificado_regenera_cada_seccion_una_vez(tmp_path, monkeypatch):
+    """AP-47: el arreglo escribe en lote; la sección se regenera al cerrar, no por nota.
+
+    Medido el 2026-10-14 con cProfile sobre una copia de /ans: 184 de los 202 s
+    de `--apply --auto-fix-safe` eran 92 regeneraciones de índice, una por
+    escritura, y la tool moría por TOOL_TIMEOUT a los 60 s.
+    """
+    import vault_io
+    import vault_section_index as vsi
+
+    monkeypatch.setenv("VAULT_ROOT", str(tmp_path))
+    vault_io.set_vault_root(tmp_path)
+    (tmp_path / "07_Knowledge").mkdir()
+    (tmp_path / "07_Knowledge" / "real.md").write_text(
+        "---\ntitle: Real\n---\n\nBody", encoding="utf-8")
+    fuentes = [f"07_Knowledge/f{i}.md" for i in range(3)]
+    for rel in fuentes:
+        (tmp_path / rel).write_text(
+            "---\ntitle: F\n---\n\nVer [[wrong-name]]", encoding="utf-8")
+    secciones = []
+    original = vsi.vault_section_index
+
+    def contado(folder, *a, **kw):
+        secciones.append(folder)
+        return original(folder, *a, **kw)
+
+    monkeypatch.setattr(vsi, "vault_section_index", contado)
+    notes_active = {p: {"body": "", "title": "", "tags": set(), "body_hash": p}
+                    for p in fuentes + ["07_Knowledge/real.md"]}
+    decisions = {"wrongname": {
+        "action": "fix", "stem": "real", "path": "07_Knowledge/real.md",
+        "referenced_by": fuentes, "classification": {"category": "exact_candidate"}}}
+
+    result = apply_classified_fixes(decisions, notes_active, tmp_path)
+
+    assert result["applied_notes"] == 3
+    assert secciones == ["07_Knowledge"]

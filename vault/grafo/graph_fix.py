@@ -44,6 +44,7 @@ from typing import Any
 from vault_io import (
     FrontmatterIlegible,
     atomic_write_text,
+    escrituras_en_lote,
     file_lock,
     get_vault_root,
     is_snapshot_path,  # dueño único de qué es una instantánea (AP-57)
@@ -1100,7 +1101,22 @@ def apply_classified_fixes(
 
     Optimized: group all fixes by source NOTE, then write each note once
     applying all its fixes (replaces N writes per note with 1 write).
+
+    AP-47: todas las escrituras van en `escrituras_en_lote`, así que cada
+    sección, la búsqueda y el grafo se regeneran una vez al cerrar y no tras
+    cada nota. Medido el 2026-10-14 sobre una copia de /ans: 92
+    regeneraciones eran 184 de los 202 s y la tool moría por TOOL_TIMEOUT.
     """
+    with escrituras_en_lote():
+        return _aplicar_clasificados(decisions, notes_active, root)
+
+
+def _aplicar_clasificados(
+    decisions: dict[str, dict[str, Any]],
+    notes_active: dict[str, dict[str, Any]],
+    root: Path,
+) -> dict[str, Any]:
+    """Cuerpo de `apply_classified_fixes`; el lote lo abre quien lo llama."""
     applied_notes: set[str] = set()
     fixed_count = 0
     skip_count = 0
