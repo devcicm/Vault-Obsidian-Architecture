@@ -164,3 +164,45 @@ def test_el_consumidor_recibe_note_locked():
     assert MAPA_DE_FALLOS["LOCK_PERDIDO"] == "NOTE_LOCKED"
     codigo, _, campos = traducir_fallo(bloqueo.LockPerdido(Path("x/nota.md")))
     assert codigo == "NOTE_LOCKED" and campos["causa"] == "LOCK_PERDIDO"
+
+
+def _formas(tmp_path: Path, monkeypatch) -> list:
+    """Formas distintas de nombrar el mismo fichero que un tomador puede usar."""
+    import os
+
+    nota = _nota(tmp_path)
+    (tmp_path / "sub").mkdir()
+    monkeypatch.chdir(tmp_path)
+    formas = [Path("nota.md"), tmp_path / "sub" / ".." / "nota.md"]
+    corta = os.environ.get("TEMP", "")
+    if "~" in corta and str(nota.resolve()).lower() != str(nota).lower():
+        formas.append(nota)  # la de pytest conserva el 8.3 de TEMP
+    return [nota.resolve(), *formas]
+
+
+def test_la_toma_no_depende_de_como_se_escriba_la_ruta(tmp_path, monkeypatch):
+    """Auditoría del 2026-10-15: `rutas_de_lock` no normalizaba la ruta.
+
+    La toma se guardaba por `str(lock_dir)` tal como llegaba, así que quien
+    tomaba el lock con una forma de la ruta (relativa, con `..`, con el nombre
+    8.3 de TEMP en Windows) y escribía con otra no encontraba su toma:
+    `comprobar_toma` volvía sin comprobar nada y el fencing quedaba abierto.
+    """
+    canonica, *otras = _formas(tmp_path, monkeypatch)
+    for tomada in [canonica, *otras]:
+        for escrita in [canonica, *otras]:
+            token = bloqueo.adquirir(tomada, timeout=1.0)
+            try:
+                _robar(canonica)
+                with pytest.raises(bloqueo.LockPerdido):
+                    escritura_atomica(escrita, "de la victima\n")
+            finally:
+                bloqueo.soltar(tomada, token)
+                bloqueo.soltar(canonica, "ladron")
+            assert canonica.read_text(encoding="utf-8") == "original\n"
+
+
+def test_todas_las_formas_comparten_un_solo_lock(tmp_path, monkeypatch):
+    canonica, *otras = _formas(tmp_path, monkeypatch)
+    dirs = {bloqueo.rutas_de_lock(f)[1] for f in [canonica, *otras]}
+    assert len(dirs) == 1, dirs

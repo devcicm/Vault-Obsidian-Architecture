@@ -38,7 +38,20 @@ HUECO_BORRADO_PENDIENTE = 1.0
 
 
 def rutas_de_lock(objetivo: Path) -> Tuple[Path, Path]:
-    """`(.locks/, .locks/<nombre>.lock)` de `objetivo`: un solo nombre por nota."""
+    """`(.locks/, .locks/<nombre>.lock)` de `objetivo`: un solo nombre por nota.
+
+    La ruta se normaliza con `os.path.realpath` antes de derivar nada
+    (auditoría del 2026-10-15). La toma de cada hilo se guarda por
+    `str(lock_dir)`, y sin normalizar, quien tomaba el lock con una forma de la
+    ruta —relativa, con `..`, con el nombre 8.3 de TEMP en Windows— y escribía
+    con otra no encontraba su toma: `comprobar_toma` volvía sin comprobar nada.
+    `realpath` y no `Path.resolve`: en 3.9 sobre Windows `resolve()` de una ruta
+    relativa que no existe puede devolverla relativa (bpo-38671). Límite: el
+    último componente de una nota que aún no existe conserva la caja con que
+    llega, así que en un disco que no distingue mayúsculas `Nota.md` y
+    `nota.md` siguen siendo dos locks hasta que la nota existe.
+    """
+    objetivo = Path(os.path.realpath(objetivo))
     raiz = objetivo.parent / ".locks"
     return raiz, raiz / f"{objetivo.name}.lock"
 
