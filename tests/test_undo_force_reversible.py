@@ -22,6 +22,7 @@ SCRIPTS = ROOT / "scripts"
 sys.path.insert(0, str(ROOT))
 
 from vault.kernel.errores import problemas_de_forma  # noqa: E402
+from vault.kernel import bloqueo  # noqa: E402
 
 
 def _undo(raiz: Path, *argv: str) -> dict:
@@ -68,7 +69,7 @@ def test_force_con_la_nota_tomada_no_escribe_y_lo_dice(vault):
     lock_dir = nota.parent / ".locks" / f"{nota.name}.lock"
     lock_dir.mkdir(parents=True)
     (lock_dir / "owner.json").write_text(
-        json.dumps({"pid": 0, "createdAt": time.time(), "token": "otro"}), encoding="utf-8")
+        json.dumps(bloqueo.ficha_del_dueno("otro")), encoding="utf-8")
     historial = sorted(p.name for p in (vault / ".history").iterdir())
 
     r = _undo(vault, "--restore", "07_Knowledge/nota.md", "--force")

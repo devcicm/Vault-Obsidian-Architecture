@@ -11,7 +11,6 @@ import json
 import os
 import subprocess
 import sys
-import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -21,6 +20,7 @@ sys.path.insert(0, str(SCRIPTS))
 
 from vault.kernel.errores import problemas_de_forma  # noqa: E402
 from vault_lib import parse_frontmatter  # noqa: E402
+from vault.kernel import bloqueo  # noqa: E402
 
 RUNBOOK = (
     "---\ntitle: deploy\nexecutions: 0\n---\n# deploy\n\n"
@@ -73,7 +73,7 @@ def test_con_la_nota_tomada_no_escribe_y_lo_dice(tmp_path):
     ocupado = nota.parent / ".locks" / f"{nota.name}.lock"
     ocupado.mkdir(parents=True)
     (ocupado / "owner.json").write_text(
-        json.dumps({"pid": 0, "createdAt": time.time(), "token": "otro"}), encoding="utf-8")
+        json.dumps(bloqueo.ficha_del_dueno("otro")), encoding="utf-8")
     r = _leer(subprocess.Popen(
         _argv("--path", "08_Runbooks/deploy.md", "--outcome", "failed"),
         env=env, cwd=str(SCRIPTS), stdout=subprocess.PIPE, stderr=subprocess.PIPE))

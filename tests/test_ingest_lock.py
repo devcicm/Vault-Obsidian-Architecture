@@ -9,10 +9,10 @@ material sin revisar sustituyendo al revisado y `ok: true`.
 
 import json
 import sys
-import time
 from pathlib import Path
 
 import pytest
+from vault.kernel import bloqueo  # noqa: E402
 
 RAIZ = Path(__file__).parent.parent
 sys.path.insert(0, str(RAIZ / "scripts"))
@@ -55,7 +55,7 @@ def test_con_la_nota_tomada_por_otro_escritor_no_escribe_y_lo_dice(ingest, monke
     ocupado = destino.parent / ".locks" / f"{destino.name}.lock"
     ocupado.mkdir(parents=True)
     (ocupado / "owner.json").write_text(
-        json.dumps({"pid": 0, "createdAt": time.time(), "token": "otro"}), encoding="utf-8")
+        json.dumps(bloqueo.ficha_del_dueno("otro")), encoding="utf-8")
 
     r = _ingerir(vault_ingest)
 

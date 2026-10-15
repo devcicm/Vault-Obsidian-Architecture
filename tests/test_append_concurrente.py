@@ -15,6 +15,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from vault.kernel import bloqueo  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
@@ -67,7 +68,7 @@ def test_con_la_nota_bloqueada_no_escribe_y_lo_dice(tmp_path):
     ocupado = raiz / "07_Knowledge" / ".locks" / "log.md.lock"
     ocupado.mkdir(parents=True)
     (ocupado / "owner.json").write_text(
-        json.dumps({"pid": 0, "createdAt": __import__("time").time(), "token": "otro"}),
+        json.dumps(bloqueo.ficha_del_dueno("otro")),
         encoding="utf-8")
     proceso = subprocess.run(
         [sys.executable, str(SCRIPTS / "vault_append.py"),

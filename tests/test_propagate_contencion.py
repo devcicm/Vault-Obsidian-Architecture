@@ -12,7 +12,6 @@ import json
 import os
 import subprocess
 import sys
-import time
 from pathlib import Path
 
 import pytest
@@ -22,6 +21,7 @@ SCRIPTS = ROOT / "scripts"
 sys.path.insert(0, str(ROOT))
 
 from vault.kernel.errores import problemas_de_forma  # noqa: E402
+from vault.kernel import bloqueo  # noqa: E402
 
 PENDIENTE = "---\ntitle: n\npropagation_pending: \"2026-09-01\"\n---\n# n\n"
 
@@ -65,7 +65,7 @@ def test_clear_con_la_nota_tomada_no_escribe_y_lo_dice(entorno):
     ocupado = nota.parent / ".locks" / f"{nota.name}.lock"
     ocupado.mkdir(parents=True)
     (ocupado / "owner.json").write_text(
-        json.dumps({"pid": 0, "createdAt": time.time(), "token": "otro"}), encoding="utf-8")
+        json.dumps(bloqueo.ficha_del_dueno("otro")), encoding="utf-8")
     r = _propagar(raiz, "--clear", "07_Knowledge/n.md")
     assert r["ok"] is False and r["error_code"] == "NOTE_LOCKED", r
     assert problemas_de_forma(r) == [], r

@@ -11,7 +11,6 @@ import json
 import os
 import subprocess
 import sys
-import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -19,6 +18,7 @@ SCRIPTS = ROOT / "scripts"
 sys.path.insert(0, str(ROOT))
 
 from vault.kernel.errores import problemas_de_forma  # noqa: E402
+from vault.kernel import bloqueo  # noqa: E402
 
 
 def _preparar(tmp_path):
@@ -67,7 +67,7 @@ def test_overwrite_con_la_nota_tomada_no_escribe_y_lo_dice(tmp_path):
     ocupado = nota.parent / ".locks" / f"{nota.name}.lock"
     ocupado.mkdir(parents=True)
     (ocupado / "owner.json").write_text(
-        json.dumps({"pid": 0, "createdAt": time.time(), "token": "otro"}), encoding="utf-8")
+        json.dumps(bloqueo.ficha_del_dueno("otro")), encoding="utf-8")
 
     r = _merge(raiz, origen, tmp_path / "cwd", "overwrite")
 

@@ -16,10 +16,12 @@ from __future__ import annotations
 
 import json
 import os
+import socket
+import sys
 import time
 import uuid
 from pathlib import Path
-from typing import Tuple
+from typing import Dict, Optional, Tuple
 
 #: Cuánto se reintenta el hueco de un `.locks/` en borrado pendiente. Soltar el
 #: último lock de una carpeta lo retira, y en Windows un directorio en borrado
@@ -88,8 +90,129 @@ def retirar_carpeta_si_vacia(raiz: Path) -> bool:
     return True
 
 
-#: Edad a partir de la cual un lock se da por huérfano: su dueño murió dentro.
+#: Edad a partir de la cual un lock se da por huérfano cuando no se puede
+#: preguntar por su dueño: otra máquina, o un `owner.json` anterior a v41.6.
 CADUCA_TRAS = 120.0
+
+
+def maquina() -> str:
+    """Quién puede preguntar por el pid de `owner.json`: host y plataforma.
+
+    La plataforma va porque WSL y Windows comparten el nombre de host pero no
+    el espacio de pids: desde Linux, un pid de Windows no existe, y se daría
+    por muerto al dueño vivo de una carpeta montada en `/mnt/c`.
+    """
+    return f"{socket.gethostname()}|{sys.platform}"
+
+
+if sys.platform == "win32":
+    import ctypes
+    from ctypes import wintypes
+
+    _kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    _kernel32.OpenProcess.restype = wintypes.HANDLE
+    _kernel32.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+    _kernel32.GetExitCodeProcess.argtypes = (wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD))
+    _kernel32.GetProcessTimes.argtypes = (wintypes.HANDLE,) + (ctypes.POINTER(wintypes.FILETIME),) * 4
+    _kernel32.CloseHandle.argtypes = (wintypes.HANDLE,)
+    _CONSULTA_LIMITADA = 0x1000  # PROCESS_QUERY_LIMITED_INFORMATION
+    _SIGUE_ACTIVO = 259  # STILL_ACTIVE
+    _PARAMETRO_INVALIDO = 87  # ERROR_INVALID_PARAMETER: no hay proceso con ese pid
+
+    def _consultar(pid: int) -> Tuple[Optional[bool], Optional[str]]:
+        # `os.kill(pid, 0)` no sirve aquí: en Windows termina el proceso.
+        h = _kernel32.OpenProcess(_CONSULTA_LIMITADA, False, pid)
+        if not h:
+            if ctypes.get_last_error() == _PARAMETRO_INVALIDO:
+                return False, None
+            return None, None  # existe pero no se deja consultar
+        try:
+            codigo = wintypes.DWORD()
+            if not _kernel32.GetExitCodeProcess(h, ctypes.byref(codigo)):
+                return None, None
+            if codigo.value != _SIGUE_ACTIVO:
+                return False, None
+            tiempos = [wintypes.FILETIME() for _ in range(4)]
+            if not _kernel32.GetProcessTimes(h, *(ctypes.byref(t) for t in tiempos)):
+                return True, None
+            creado = tiempos[0]
+            return True, str((creado.dwHighDateTime << 32) | creado.dwLowDateTime)
+        finally:
+            _kernel32.CloseHandle(h)
+
+else:
+
+    def _consultar(pid: int) -> Tuple[Optional[bool], Optional[str]]:
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return False, None
+        except PermissionError:
+            pass  # vive, de otro usuario
+        except OSError:
+            return None, None
+        # En Linux la hora de inicio es el campo 22 de /proc/<pid>/stat, en
+        # ticks desde el arranque; el nombre del ejecutable va entre paréntesis
+        # y puede llevar espacios, así que se cuenta desde el último `)`.
+        try:
+            stat = Path(f"/proc/{pid}/stat").read_text(encoding="utf-8", errors="replace")
+            return True, stat[stat.rfind(")") + 2:].split()[19]
+        except (OSError, IndexError):
+            return True, None
+
+
+def proceso_vivo(pid: int) -> Optional[bool]:
+    """True/False si este proceso puede saberlo; None si no puede."""
+    return _consultar(pid)[0]
+
+
+def inicio_del_proceso(pid: int) -> Optional[str]:
+    """Hora de inicio de `pid` como marca opaca, o None si no se publica.
+
+    Distingue al dueño de un proceso que heredó su pid: py-filelock guarda lo
+    mismo en Windows por la misma razón.
+    """
+    return _consultar(pid)[1]
+
+
+def _dueno_vive(dueno: dict) -> Optional[bool]:
+    """Si el dueño de `owner.json` sigue dentro, cuando se puede saber.
+
+    Solo se pregunta en la misma máquina; fuera de ella, o con un `owner.json`
+    sin `maquina` (anterior a v41.6), devuelve None y decide la edad.
+    """
+    if dueno.get("maquina") != maquina():
+        return None
+    try:
+        pid = int(dueno["pid"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    vive, inicio = _consultar(pid)
+    if vive and dueno.get("inicio") and inicio and dueno["inicio"] != inicio:
+        return False  # el pid es ya de otro proceso
+    return vive
+
+
+def _huerfano(lock_dir: Path, caduca_tras: float) -> bool:
+    """Si `lock_dir` se puede robar: dueño muerto, o sin dueño consultable y viejo.
+
+    Hasta v41.6 decidía solo la edad, medida con el reloj de pared: un salto de
+    3458 s en python:3.9-slim sobre Docker Desktop le robó el lock a un dueño
+    vivo de 1,2 s y `vault_append` escribió sobre una nota bloqueada (deuda
+    `lock_caduca_por_reloj_de_pared`). Ahora, en la misma máquina, el reloj no
+    interviene: un dueño vivo conserva el lock aunque lleve horas —quien espera
+    sale por su timeout, como con `index.lock` de git— y uno muerto se recupera
+    sin esperar `CADUCA_TRAS`.
+    """
+    try:
+        dueno = json.loads((lock_dir / "owner.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        dueno = None
+    if isinstance(dueno, dict):
+        vive = _dueno_vive(dueno)
+        if vive is not None:
+            return not vive
+    return _edad(lock_dir) > caduca_tras
 
 
 def _edad(lock_dir: Path) -> float:
@@ -103,6 +226,31 @@ def _edad(lock_dir: Path) -> float:
         return time.time() - float(dueno.get("createdAt", 0))
     except (OSError, ValueError, TypeError, AttributeError):
         return time.time() - lock_dir.stat().st_mtime
+
+
+_INICIOS: Dict[int, Optional[str]] = {}
+
+
+def _inicio_propio() -> Optional[str]:
+    # Por pid y no una vez por módulo: un hijo de `fork` hereda el módulo.
+    pid = os.getpid()
+    if pid not in _INICIOS:
+        _INICIOS[pid] = inicio_del_proceso(pid)
+    return _INICIOS[pid]
+
+
+def ficha_del_dueno(token: str) -> Dict[str, object]:
+    """El `owner.json` que escribe una toma de este proceso con `token`.
+
+    Público para que quien simula un lock tomado —los tests de «nota tomada»—
+    escriba el mismo formato y no uno copiado a mano: con `{"pid": 0, …}` sin
+    `maquina` caían en la regla de edad, y un reloj que salta ±3459 s (medido en
+    python:3.9-slim sobre Docker Desktop) les robaba el lock.
+    """
+    return {
+        "pid": os.getpid(), "createdAt": time.time(), "token": token,
+        "maquina": maquina(), "inicio": _inicio_propio(),
+    }
 
 
 def _vaciar(carpeta: Path) -> None:
@@ -142,7 +290,7 @@ def adquirir(objetivo: Path, timeout: float, caduca_tras: float = CADUCA_TRAS) -
             continue
         except FileExistsError:
             try:
-                if _edad(lock_dir) > caduca_tras:
+                if _huerfano(lock_dir, caduca_tras):
                     # Robo por rename: borrarlo en su sitio deja que un segundo
                     # ladrón borre el lock que un tercero acaba de tomar.
                     # `os.replace` es atómico y solo uno lo gana.
@@ -162,7 +310,7 @@ def adquirir(objetivo: Path, timeout: float, caduca_tras: float = CADUCA_TRAS) -
             continue
         try:
             (lock_dir / "owner.json").write_text(
-                json.dumps({"pid": os.getpid(), "createdAt": time.time(), "token": token}),
+                json.dumps(ficha_del_dueno(token)),
                 encoding="utf-8",
             )
             return token

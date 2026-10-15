@@ -973,7 +973,13 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     },
     {
         "id": "lock_caduca_por_reloj_de_pared",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "tras v41.6 (2026-10-15, sin versión publicada)",
+        "sostenida_por": [
+            "tests/test_lock_dueno_vivo.py::test_un_salto_del_reloj_no_roba_el_lock_a_un_dueno_vivo",
+            "tests/test_lock_dueno_vivo.py::test_un_dueno_muerto_de_la_misma_maquina_se_recupera_sin_esperar",
+            "tests/test_lock_dueno_vivo.py::test_un_dueno_de_otra_maquina_sigue_caducando_por_edad",
+        ],
         "desde": "v41.6",
         "capa": "5",
         "que": (
@@ -996,7 +1002,18 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "carpeta sincronizada, y `owner.json` no guarda el host. "
             "`tests/test_lock_caduca_por_reloj_de_pared.py::"
             "test_limite_declarado_lock_caduca_por_reloj_de_pared` fija el "
-            "límite y falla el día que un dueño vivo conserve el lock."
+            "límite y falla el día que un dueño vivo conserve el lock. "
+            "(Saldada el 2026-10-15 con el criterio de py-filelock, elegido "
+            "por el usuario tras comparar py-filelock, QLockFile, "
+            "proper-lockfile, el DynamoDB Lock Client y git: `owner.json` "
+            "guarda `maquina` —host y plataforma, porque WSL y Windows "
+            "comparten host y no pids— e `inicio` del proceso, y en la misma "
+            "máquina el lock solo se rompe si el dueño murió o su pid es ya de "
+            "otro; el reloj no interviene. En Windows el pid se consulta con "
+            "`OpenProcess`, nunca con `os.kill`, que lo terminaría. Queda "
+            "declarado el límite que no tiene arreglo en un lock de ficheros: "
+            "un dueño de otra máquina —una carpeta sincronizada— o un "
+            "`owner.json` anterior siguen caducando por edad.)"
         ),
     },
 ]

@@ -8,7 +8,6 @@ nota ya escrita: un envelope que afirma lo contrario de lo que pasó.
 
 import json
 import sys
-import time
 from pathlib import Path
 
 import pytest
@@ -17,6 +16,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
 from vault_fs import tomar_lock  # noqa: E402
+from vault.kernel import bloqueo  # noqa: E402
 
 
 def _ocupar(objetivo: Path) -> Path:
@@ -24,7 +24,7 @@ def _ocupar(objetivo: Path) -> Path:
     lock_dir = objetivo.parent / ".locks" / f"{objetivo.name}.lock"
     lock_dir.mkdir(parents=True)
     (lock_dir / "owner.json").write_text(
-        json.dumps({"pid": 0, "createdAt": time.time(), "token": "otro"}), encoding="utf-8")
+        json.dumps(bloqueo.ficha_del_dueno("otro")), encoding="utf-8")
     return lock_dir
 
 

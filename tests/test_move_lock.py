@@ -15,7 +15,6 @@ import json
 import os
 import subprocess
 import sys
-import time
 from pathlib import Path
 
 import pytest
@@ -25,6 +24,7 @@ SCRIPTS = ROOT / "scripts"
 sys.path.insert(0, str(ROOT))
 
 from vault.kernel.errores import problemas_de_forma  # noqa: E402
+from vault.kernel import bloqueo  # noqa: E402
 
 
 def _mover(raiz: Path, *argv: str) -> dict:
@@ -45,7 +45,7 @@ def _ocupar(objetivo: Path) -> None:
     lock_dir = objetivo.parent / ".locks" / f"{objetivo.name}.lock"
     lock_dir.mkdir(parents=True)
     (lock_dir / "owner.json").write_text(
-        json.dumps({"pid": 0, "createdAt": time.time(), "token": "otro"}), encoding="utf-8")
+        json.dumps(bloqueo.ficha_del_dueno("otro")), encoding="utf-8")
 
 
 @pytest.fixture

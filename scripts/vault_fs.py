@@ -127,8 +127,11 @@ def file_lock(
     """Create an atomic directory lock near the target file.
 
     This avoids lost updates when multiple documentation tools update the same
-    JSON index during mass generation. Stale locks are removed after
-    ``stale_after`` seconds. Layered: an in-process threading.Lock serializes
+    JSON index during mass generation. A lock whose owner died on this machine
+    is taken over at once; a live owner keeps it whatever the clock says. Only
+    an owner this process cannot ask about (another machine, a pre-v41.6
+    ``owner.json``) expires after ``stale_after`` seconds — see
+    `vault.kernel.bloqueo._huerfano`. Layered: an in-process threading.Lock serializes
     threads in this process; the mkdir directory-lock serializes across processes.
 
     Reentrante por hilo: si el hilo que llama ya sostiene este mismo lock, el
