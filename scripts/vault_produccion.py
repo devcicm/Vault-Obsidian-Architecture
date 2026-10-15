@@ -120,12 +120,51 @@ def _ci_prueba_el_piso() -> bool:
     return bool(versiones) and min(versiones) == piso
 
 
+#: Qué runner de la CI ejerce cada classifier `Operating System ::`. «OS
+#: Independent» no está a propósito: promete cualquier sistema, y ninguna
+#: matriz lo cubre.
+RUNNER_DE_SISTEMA = {
+    "Operating System :: Microsoft :: Windows": "windows",
+    "Operating System :: POSIX :: Linux": "ubuntu",
+    "Operating System :: MacOS": "macos",
+}
+
+#: Los jobs que ejercen la promesa: la suite y la wheel instalada.
+JOBS_DE_SISTEMAS = ("validate", "product-gates")
+
+
+def sistemas_prometidos() -> List[str]:
+    """Los classifiers `Operating System ::` de `pyproject.toml`."""
+    proj = RAIZ / "pyproject.toml"
+    if not proj.exists():
+        return []
+    bloque = re.search(r"^classifiers\s*=\s*\[(.*?)^\]",
+                       proj.read_text(encoding="utf-8"), re.S | re.M)
+    return [c for c in re.findall(r'"([^"]+)"', bloque.group(1) if bloque else "")
+            if c.startswith("Operating System ::")]
+
+
 def _ci_cubre_los_sistemas() -> bool:
+    """Cada sistema prometido tiene runner en la matriz de cada job que ejerce.
+
+    Hasta 2026-10-15 bastaba con que el texto del YAML contuviera «ubuntu» y
+    «windows», también en un comentario, mientras el classifier decía «OS
+    Independent». Ahora se lee la matriz con `yaml.safe_load` (AP-44) y un
+    sistema que no está en `RUNNER_DE_SISTEMA` no cuenta como cubierto.
+    """
     ci = RAIZ / ".github" / "workflows" / "vault-ci.yml"
-    if not ci.exists():
+    prometidos = sistemas_prometidos()
+    if not ci.exists() or not prometidos:
         return False
-    texto = ci.read_text(encoding="utf-8")
-    return "ubuntu" in texto and "windows" in texto
+    if any(s not in RUNNER_DE_SISTEMA for s in prometidos):
+        return False
+    jobs = (yaml.safe_load(ci.read_text(encoding="utf-8")) or {}).get("jobs") or {}
+    for nombre in JOBS_DE_SISTEMAS:
+        matriz = ((jobs.get(nombre) or {}).get("strategy") or {}).get("matrix") or {}
+        runners = {str(r).split("-")[0] for r in matriz.get("os") or []}
+        if any(RUNNER_DE_SISTEMA[s] not in runners for s in prometidos):
+            return False
+    return True
 
 
 def _hay_dependencias_declaradas() -> bool:
@@ -380,7 +419,11 @@ PREGUNTAS: List[Dict[str, Any]] = [
             "sistema de ficheros— son justo las que no se ven desde dentro."
         ),
         "ejerce": _ci_cubre_los_sistemas,
-        "quien": "matriz os de la CI (ubuntu-latest, windows-latest)",
+        "quien": (
+            "matriz os de los jobs validate y product-gates (un runner por "
+            "classifier `Operating System ::`, vault_produccion."
+            "RUNNER_DE_SISTEMA)"
+        ),
         "estado": "cubierta",
         "hueco_conocido": (
             "La CI declara la suite y las product gates en ubuntu, pero esta "
@@ -391,8 +434,13 @@ PREGUNTAS: List[Dict[str, Any]] = [
             "python:3.9-slim con usuario sin privilegios y Node 20: init, "
             "escritura con bitácora, F8, audit, pre-flight y MCP con tools/call); "
             "en Linux no lo repite ninguna máquina. macOS "
-            "no lo toca nadie. Las instrucciones de instalación están inlined "
-            "en README.md."
+            "solo lo ejerce el runner macos-latest de la CI, añadido el "
+            "2026-10-15 junto con el classifier explícito que sustituye a «OS "
+            "Independent»; ninguna máquina local lo ha ejecutado. Docker-OSX y "
+            "dockur/macos se descartaron: exigen KVM, que este equipo (Windows "
+            "10 + WSL2) no expone, y la licencia de macOS solo permite "
+            "virtualizarlo sobre hardware Apple. Las instrucciones de "
+            "instalación están inlined en README.md."
         ),
     },
     {
