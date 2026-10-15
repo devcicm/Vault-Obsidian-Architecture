@@ -2834,12 +2834,8 @@ def main() -> int:
         return 0
 
     if args.sync_env:
-        TABLA_ENTORNO_MJS.write_text(
-            json.dumps(tabla_de_entorno_derivada(), indent=2,
-                       ensure_ascii=False) + "\n",
-            encoding="utf-8",
-            newline="\n",
-        )
+        TABLA_ENTORNO_MJS.write_bytes((json.dumps(tabla_de_entorno_derivada(), indent=2,
+                       ensure_ascii=False) + "\n").encode("utf-8"))
         print(json.dumps({"ok": True, "tool": "vault_arch",
                           "path": str(TABLA_ENTORNO_MJS)}, ensure_ascii=False))
         return 0
@@ -2858,7 +2854,7 @@ def main() -> int:
 
     if args.blueprint:
         destino = REPO_ROOT / "docs" / "ARQUITECTURA.md"
-        destino.write_text(blueprint() + "\n", encoding="utf-8", newline="\n")
+        destino.write_bytes((blueprint() + "\n").encode("utf-8"))
         print(json.dumps({"ok": True, "tool": "vault_arch",
                           "path": str(destino)}, ensure_ascii=False))
         return 0

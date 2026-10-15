@@ -115,8 +115,7 @@ def test_recongelar_conserva_la_sangria_del_fichero(tmp_path, sangria):
     Medido al congelar `system_writes` en `arch-baseline.json` (820bab7)."""
     p = tmp_path / "b.json"
     previo = {"note": "d", "sitios": ["a"], "otra": {"x": [1, 2]}}
-    p.write_text(json.dumps(previo, ensure_ascii=False, indent=sangria) + "\n",
-                 encoding="utf-8", newline="\n")
+    p.write_bytes((json.dumps(previo, ensure_ascii=False, indent=sangria) + "\n").encode("utf-8"))
     B.escribir(p, "sitios", "AP-XX", "d", ["a", "b"], campo_descripcion="note")
     esperado = dict(previo, sitios=["a", "b"])
     assert p.read_text(encoding="utf-8") == json.dumps(

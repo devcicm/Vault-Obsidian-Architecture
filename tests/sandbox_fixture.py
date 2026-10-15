@@ -76,21 +76,13 @@ def _write_seed(root: Path) -> None:
     health = seed["health_fixture"]
     for number in range(health["incomplete_notes"]):
         target = root / "07_Knowledge" / f"fixture-incomplete-{number:02d}.md"
-        target.write_text(
-            "---\n"
+        target.write_bytes(("---\n"
             f"title: Fixture incomplete {number}\n"
             "---\n\n"
-            f"[[{health['broken_link']}]]\n",
-            encoding="utf-8",
-            newline="\n",
-        )
+            f"[[{health['broken_link']}]]\n").encode("utf-8"))
     for number in range(health["frontmatterless_notes"]):
         target = root / "07_Knowledge" / f"fixture-raw-{number:02d}.md"
-        target.write_text(
-            f"Synthetic fixture note {number} without frontmatter.\n",
-            encoding="utf-8",
-            newline="\n",
-        )
+        target.write_bytes((f"Synthetic fixture note {number} without frontmatter.\n").encode("utf-8"))
 
 
 def clean(root: Path | None = None, *, preserve_contract: bool = True) -> None:

@@ -44,10 +44,8 @@ def _ejecutar(raiz: Path, script: str, *argv: str) -> dict:
 def _nota(raiz: Path, rel: str, extra: str = "") -> None:
     destino = raiz / rel
     destino.parent.mkdir(parents=True, exist_ok=True)
-    destino.write_text(
-        "---\ntitle: \"Libro blanco de arquitectura\"\n" + extra + "---\n\n"
-        "# Libro blanco de arquitectura\n\n" + CUERPO + "\n",
-        encoding="utf-8", newline="\n")
+    destino.write_bytes(("---\ntitle: \"Libro blanco de arquitectura\"\n" + extra + "---\n\n"
+        "# Libro blanco de arquitectura\n\n" + CUERPO + "\n").encode("utf-8"))
 
 
 def _primera(raiz: Path) -> str:

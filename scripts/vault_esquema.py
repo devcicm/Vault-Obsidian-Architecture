@@ -156,7 +156,7 @@ def sync() -> Dict[str, Any]:
         ruta = CARPETA / nombre
         if ruta.exists() and ruta.read_text(encoding="utf-8") == texto:
             continue
-        ruta.write_text(texto, encoding="utf-8", newline="\n")
+        ruta.write_bytes(texto.encode("utf-8"))
         escritos.append(f"schemas/{nombre}")
     return {"ok": True, "tool": "vault_esquema", "action": "sync",
             "versions": list(VERSIONES_CON_CONTRATO),

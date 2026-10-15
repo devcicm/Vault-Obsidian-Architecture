@@ -1621,7 +1621,7 @@ def main() -> int:
         # reescribe el documento entero devuelven el mismo `ok: true`, y quien
         # llama no puede saber cuál de las dos ocurrió.
         anterior = DOC.read_text(encoding="utf-8") if DOC.exists() else None
-        DOC.write_text(texto, encoding="utf-8", newline="\n")
+        DOC.write_bytes(texto.encode("utf-8"))
         salida: Dict[str, Any] = {
             "ok": True,
             "tool": "vault_blueprint",

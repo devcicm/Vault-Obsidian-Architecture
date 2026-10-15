@@ -36,7 +36,7 @@ def _vault(tmp_path: Path) -> Path:
 def _nota(root: Path, rel: str, fm: str, cuerpo: str = "Cuerpo de la nota.\n") -> Path:
     p = root / rel
     p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(f"---\n{fm}\n---\n\n{cuerpo}", encoding="utf-8", newline="\n")
+    p.write_bytes((f"---\n{fm}\n---\n\n{cuerpo}").encode("utf-8"))
     return p
 
 

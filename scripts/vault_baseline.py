@@ -209,8 +209,7 @@ def escribir(path: Path, clave: str, norma: str, descripcion: str,
     # baseline saldría entera en el diff cada vez que se recongela, escondiendo
     # el único dato que importa —qué firma entró o salió— dentro del ruido.
     # Por lo mismo, la sangría es la que el fichero ya tenía.
-    path.write_text(json.dumps(salida, ensure_ascii=False, indent=_sangria_de(path)) + "\n",
-                    encoding="utf-8", newline="\n")
+    path.write_bytes((json.dumps(salida, ensure_ascii=False, indent=_sangria_de(path)) + "\n").encode("utf-8"))
     return len(elementos)
 
 

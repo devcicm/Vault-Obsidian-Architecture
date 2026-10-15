@@ -226,10 +226,7 @@ def volcado_de_la_wheel() -> Dict[str, Any]:
 def escribir_volcado_de_la_wheel() -> Dict[str, Any]:
     datos = volcado_de_la_wheel()
     FUERA_DE_LA_WHEEL.parent.mkdir(parents=True, exist_ok=True)
-    FUERA_DE_LA_WHEEL.write_text(
-        json.dumps(datos, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8", newline="\n",
-    )
+    FUERA_DE_LA_WHEEL.write_bytes((json.dumps(datos, indent=2, ensure_ascii=False) + "\n").encode("utf-8"))
     return {"ok": True, "tool": "vault_servicio", "action": "wheel_sync",
             "written": str(FUERA_DE_LA_WHEEL.relative_to(_RAIZ)).replace("\\", "/"),
             "modules": len(datos["modulos"])}

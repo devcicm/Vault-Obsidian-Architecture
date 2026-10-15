@@ -75,11 +75,7 @@ def _version_data(seed: RuntimeSeed) -> dict[str, Any]:
 def _write_seed(root: Path, seed: RuntimeSeed, con_hub: bool = True) -> None:
     for section in seed.sections:
         (root / section).mkdir(parents=True, exist_ok=False)
-    _version_path(root).write_text(
-        json.dumps(_version_data(seed), indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-        newline="\n",
-    )
+    _version_path(root).write_bytes((json.dumps(_version_data(seed), indent=2, ensure_ascii=False) + "\n").encode("utf-8"))
     if con_hub:
         _write_hub_minimo(root)
 
@@ -110,13 +106,9 @@ def _write_hub_minimo(root: Path) -> None:
         .set("tags", ["nav", "hub"])
         .render()
     )
-    (root / "00_System" / "vault-hub.md").write_text(
-        frontmatter + "\n\n"
+    (root / "00_System" / "vault-hub.md").write_bytes((frontmatter + "\n\n"
         "# Vault runtime\n\n"
-        "Runtime documental inicializado por el toolkit instalado.\n",
-        encoding="utf-8",
-        newline="\n",
-    )
+        "Runtime documental inicializado por el toolkit instalado.\n").encode("utf-8"))
 
 
 def _target(target: str | Path) -> Path:

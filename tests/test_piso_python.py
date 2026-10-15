@@ -189,6 +189,55 @@ def test_ninguna_api_de_stdlib_es_posterior_al_piso():
     assert not culpables, "\n  ".join(sorted(set(culpables)))
 
 
+#: Argumento nombrado que una función de la stdlib estrenó después de 3.9:
+#: (método o función, argumento) -> versión. Medido el 2026-10-15 en un
+#: contenedor `python:3.9-slim` con la wheel 41.5: `vault init` moría con
+#: «write_text() got an unexpected keyword argument 'newline'», y ninguno de
+#: los tests de arriba lo veía, porque la función existe en 3.9 y solo el
+#: argumento es nuevo. Como `POSTERIORES_A_39`, no pretende ser exhaustivo.
+ARGUMENTOS_POSTERIORES_A_39 = {
+    ("write_text", "newline"): "3.10",
+    ("read_text", "newline"): "3.13",
+    ("zip", "strict"): "3.10",
+    ("dataclass", "slots"): "3.10",
+    ("dataclass", "kw_only"): "3.10",
+    ("glob", "case_sensitive"): "3.12",
+    ("rglob", "case_sensitive"): "3.12",
+}
+
+
+def _nombre_llamado(llamada: ast.Call) -> str:
+    f = llamada.func
+    return f.attr if isinstance(f, ast.Attribute) else getattr(f, "id", "")
+
+
+def test_ningun_argumento_nombrado_es_posterior_al_piso():
+    """Alcance declarado: el nombre del método y el del argumento, escritos
+    literalmente. No sabe de qué tipo es el objeto, así que un `write_text`
+    propio con `newline=` también saldría; ninguno lo tiene hoy, y si alguno
+    lo tuviera se renombra antes que abrir una excepción que esconda el caso."""
+    piso = piso_declarado()
+    culpables = []
+    for ruta in _ficheros():
+        arbol = ast.parse(ruta.read_text(encoding="utf-8", errors="replace"))
+        for nodo in ast.walk(arbol):
+            if not isinstance(nodo, ast.Call):
+                continue
+            for kw in nodo.keywords:
+                v = ARGUMENTOS_POSTERIORES_A_39.get((_nombre_llamado(nodo), kw.arg))
+                if v and tuple(int(x) for x in v.split(".")) > piso:
+                    culpables.append(f"{ruta.relative_to(RAIZ).as_posix()}:{nodo.lineno}: "
+                                     f"{_nombre_llamado(nodo)}({kw.arg}=) (desde {v})")
+    assert not culpables, (
+        f"argumento que Python {piso[0]}.{piso[1]} no acepta:\n  " + "\n  ".join(sorted(culpables)))
+
+
+def test_el_detector_de_argumentos_ve_el_caso_que_lo_motivo():
+    llamada = ast.parse('p.write_text(t, encoding="utf-8", newline="\\n")').body[0].value
+    assert _nombre_llamado(llamada) == "write_text"
+    assert ("write_text", llamada.keywords[1].arg) in ARGUMENTOS_POSTERIORES_A_39
+
+
 def test_la_ci_prueba_el_piso_que_se_promete():
     """Un piso que ninguna máquina ejecuta es una promesa, no un soporte.
 

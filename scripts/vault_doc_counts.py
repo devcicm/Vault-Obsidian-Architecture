@@ -518,7 +518,7 @@ def fix(docs: Optional[List[str]] = None, include_slow: bool = True) -> Dict:
                 # Los derivados versionados son LF también en Windows. Dejar
                 # que TextIO traduzca `\n` a CRLF convierte un cambio de cifra
                 # en un diff completo que `git diff --check` rechaza.
-                path.write_text(new_text, encoding="utf-8", newline="\n")
+                path.write_bytes(new_text.encode("utf-8"))
 
     return {
         "ok": True,

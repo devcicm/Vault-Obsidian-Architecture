@@ -5394,7 +5394,7 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
         with product_output.open("w", encoding="utf-8", newline="\n") as f:
             json.dump(catalog, f, indent=2, ensure_ascii=False)
             f.write("\n")
-        _runtime_seed_path().write_text(_runtime_seed_text(), encoding="utf-8", newline="\n")
+        _runtime_seed_path().write_bytes(_runtime_seed_text().encode("utf-8"))
 
     return output_path
 

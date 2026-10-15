@@ -70,7 +70,7 @@ def sync(*, check: bool = False) -> int:
     for stale in set(actual) - set(expected):
         (OPERATIONS / stale).unlink()
     for name, content in expected.items():
-        (OPERATIONS / name).write_text(content, encoding="utf-8", newline="\n")
+        (OPERATIONS / name).write_bytes(content.encode("utf-8"))
     return 0
 
 
