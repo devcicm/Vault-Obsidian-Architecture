@@ -437,10 +437,6 @@ def _build_indexes(
     """
 
     claves = _claves_de_nota(notes)
-    # Solo los nombres únicos se emparejan por nombre: el de un homónimo no
-    # dice a cuál de los dos apunta, y eso lo decide `resolver_wikilink`.
-    stem_map: Dict[str, str] = {
-        _normalize(n.stem): n.stem for n in notes if claves[n] == n.stem}
 
     all_stems: Set[str] = set()
     relativas: List[str] = []
@@ -481,6 +477,12 @@ def _build_indexes(
     # (AP-57), y se **suma** al emparejamiento de siempre: el arreglo solo
     # quita huérfanas falsas, no estrena ninguna. Un destino ambiguo cuenta para
     # todas sus candidatas, como ya hacía la clave por nombre.
+    #
+    # La suma se retiró en la auditoría del 2026-10-15: el emparejamiento de
+    # siempre (`stem_map`, por `normalize_stem`) era el gemelo del atajo que
+    # `_detect_broken_links` ya había perdido el 2026-10-14, y daba a un mismo
+    # enlace dos veredictos —roto y con destino—. Las únicas huérfanas que
+    # estrena son las que solo enlazaba un enlace que Obsidian no sigue.
     indice = indice_de_nombres(relativas, alias_por_ruta)
     ruta_a_stem: Dict[str, str] = {}
     for n in notes:
@@ -502,11 +504,6 @@ def _build_indexes(
             desde = None
 
         for link in _extract_wiki_links(content, known=all_stems):
-            target_key = _normalize(link)
-
-            if target_key in stem_map:
-                backlinks[stem_map[target_key]].add(claves[n])
-
             for candidata in resolver_wikilink(link, desde, indice)[1]:
                 if candidata in ruta_a_stem:
                     backlinks[ruta_a_stem[candidata]].add(claves[n])

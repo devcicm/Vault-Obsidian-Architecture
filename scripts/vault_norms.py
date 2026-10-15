@@ -232,6 +232,14 @@ def vault_norms_scan(path: str) -> Dict[str, Any]:
     wiki_links = re.findall(r"\[\[((?:[^\[\]]|\[(?!\[))+)\]\]", clean)
 
     if wiki_links:
+        # Un solo índice para AP-21 y AP-14, con el criterio de Obsidian
+        # (nombre de fichero, sufijo de ruta y `aliases:`; sin instantáneas).
+        from vault_io import is_snapshot_path
+        from vault_lib import (indice_de_nombres, inventario_de_nombres,
+                               resolver_wikilink, ruta_necesaria)
+
+        indice = indice_de_nombres(*inventario_de_nombres(_raiz(), is_snapshot_path))
+
         # AP-21: path-anchored — el `/` cuenta solo en el destino, no en el
         # alias. `vault_regex.RE_PATH_ANCHORED` ya lo tenía escrito y anotado
         # ("un '/' en el alias es válido"); esta copia no se enteró y medía el
@@ -243,10 +251,6 @@ def vault_norms_scan(path: str) -> Dict[str, Any]:
         if path_links:
             # AP-21 precisado (v40.35): la ruta que desambigua dos notas del
             # mismo nombre es legítima. Lo decide el dueño, sobre el vault.
-            from vault_io import is_snapshot_path
-            from vault_lib import indice_de_nombres, inventario_de_nombres, ruta_necesaria
-
-            indice = indice_de_nombres(*inventario_de_nombres(_raiz(), is_snapshot_path))
             path_links = [
                 l for l in path_links if not ruta_necesaria(l, Path(rel), indice)
             ]
@@ -260,21 +264,18 @@ def vault_norms_scan(path: str) -> Dict[str, Any]:
         if opens != closes or empty_brackets:
             _add("AP-22", f"corchetes desbalanceados ({opens} vs {closes}) o vacíos")
 
-        # AP-14: check for ghost links (note doesn't exist)
-        all_stems = {
-            normalize_stem(p.stem)
-            for p in _raiz().rglob("*.md")
-            # El hueco simétrico al del barrido principal, y en la direccion
-            # contraria: si los stems de las instantaneas cuentan, un enlace
-            # fantasma "resuelve" porque existe una COPIA en un backup. La nota
-            # viva ya no está y AP-14 no lo ve.
-            if not _es_instantanea(str(p.relative_to(_raiz())))
-        }
+        # AP-14: enlace fantasma, decidido como lo decide Obsidian (AP-44).
+        # Hasta la auditoría del 2026-10-15 se comparaba `normalize_stem` del
+        # enlace con el de cada fichero: el plegado quita guiones y espacios,
+        # así que `[[Elegir PostgreSQL]]` «resolvía» contra
+        # `elegir-postgresql.md` —Obsidian crea una nota vacía—, y un alias, un
+        # sufijo de ruta o un `#sección` salían como fantasmas. El dueño es
+        # `vault_lib.resolver_wikilink`; las instantáneas ya las excluye el
+        # inventario, así que una copia en un backup no hace resolver nada.
+        # Un enlace ambiguo (varios candidatos) no está roto: es AP-21/AP-17.
         ghost = [
-            l
-            for l in wiki_links
-            # Identidad por nombre: la del dueño, no una copia (AP-57, AP-17).
-            if normalize_stem(l.split("|")[0]) not in all_stems
+            l for l in wiki_links
+            if not resolver_wikilink(l, Path(rel), indice)[1]
         ]
         if ghost:
             _add("AP-14", f"wiki-links posiblemente rotos: {ghost[:3]}")

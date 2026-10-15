@@ -59,3 +59,18 @@ def test_ap44_lo_que_obsidian_abre_sigue_resolviendo(tmp_path):
               "[[03_Decisions/elegir-postgresql]] [[elegir-postgresql#Contexto]] "
               "[[elegir-postgresql|la decisión]]")
     assert _rotos(tmp_path, cuerpo) == []
+
+
+def test_ap44_un_enlace_roto_no_da_entrantes_a_quien_se_le_parece(tmp_path):
+    """Un solo veredicto por enlace (auditoría del 2026-10-15).
+
+    Retirado el atajo de `_detect_broken_links`, quedaba su gemelo en el índice
+    de backlinks (`stem_map`, emparejamiento por `normalize_stem`): el mismo
+    `[[Elegir PostgreSQL]]` salía **roto** y a la vez daba un entrante a
+    `elegir-postgresql.md`, que dejaba de ser huérfana por un enlace que
+    Obsidian no sigue. AP-14 en `vault_norms_scan` tenía la misma copia.
+    """
+    _rotos(tmp_path, "[[Elegir PostgreSQL]]")
+    notas = sorted((tmp_path / "v").rglob("*.md"))
+    backlinks, _ = va._build_indexes(notas)
+    assert not backlinks.get("elegir-postgresql"), dict(backlinks)
