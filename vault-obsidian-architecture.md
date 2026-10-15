@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v41.5 — 2026-10-15  
+**Versión:** v41.6 — 2026-10-15  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -7651,6 +7651,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v41.2 | 2026-10-07 | **Un vault puede declarar sus propias secciones, y cada sección dice qué clase de documento contiene.** `vault_section` declara, lista y retira secciones propias en `00_System/secciones.json` (rango libre 22–98, clase Diátaxis, tipos admitidos); el registro, el puerto del kernel, el contrato, el audit y los barridos de grafo, validate, tags, delta, completar, graph_fix y section_index las ven. `vault_write` y `vault_move` aplican CN-02 al destino. Normas AP-14/21/22/SP-02, AP-15, AP-26, AP-27 y CN-02 realineadas con el código que las cumple; cuatro deudas halladas, declaradas en el plano. 4605 tests, 23 puertas |
 | v41.3 | 2026-10-09 | **El agente tiene protocolo de sesión, cada norma vive en su paquete y el puente de ADR-0002 empieza a caer por lotes.** Perfil MCP `agente` derivado del protocolo; `vault_supersede` y `vault_arquitectura_en`; AP-64 y AP-65; las normas pasan a `normas/<código>/` (deuda #10 pendiente por `guard.py`/`heal.py`); ocho módulos migran del puente (deuda #12 en curso); un solo criterio para `.history/`, el lock, la cascada de índices, el schema del SDD y la exposición MCP; SBOM y `SECURITY.md`. 5289 tests, 23 puertas |
 | v41.4 | 2026-10-14 | **El vault se usa como producto instalado sin errores de operación, y tres deudas del registro quedan saldadas.** Caras `guard.py`/`heal.py` derivadas en cada norma (#10); la fase 8 de sanación empieza por el núcleo (#11); `version_pinned` y AP-08 (#2); PAT-2 con plazo en el stub (capa 4 en cero); lotes D–H del puente; una sesión de agente consumidor sobre la wheel destapa y cierra defectos de escritura, lectura, borrado, consulta y protocolo MCP (`isError`, tools que no pueden terminar). F8 y la deuda #12 siguen declaradas. 5530 tests, 23 puertas |
+| v41.6 | 2026-10-15 | **Cada norma dice cuándo se revisó, la escritura deja constancia y el piso de Python lo ejecuta una máquina.** Cada `norma.py` declara `revisado_en`, con responsable y cadencia derivados (R4), y `vault_norms_coherence --disparos` lista las normas cuyo código de sostén cambió o cuya cadencia venció (R5); `vault_write` y `vault_append` anotan altas, cambios y añadidos en `.change-log.json` y lo publican en `change_log` (F8, deuda `f8_criterio_sin_decidir` saldada); `vault init` arranca en Python 3.9 —`write_text(newline=)` es de 3.10— y `test_piso_python` vigila también los argumentos nombrados posteriores al piso; la guía de instalación dice qué frena a ciegas, por qué canal sale cada error y que `init` no crea el padre (R7); la suite corre en Linux con Python 3.9. 5633 tests, 24 puertas |
 | v41.5 | 2026-10-15 | **Las normas tienen métricas, se vigilan entre sí y los sanadores escriben en lote.** `vault_metricas` publica métricas de desarrollo y de producto con objetivo, plazo e histórico observado, y su puerta falla si el documento diverge; `vault_norms_coherence` suma C8 (un sanador que sube otra norma es una colisión medida), C9 (lo que una norma dice de sí misma no se contradice) y C10 (la máquina de estados no atrapa); `vault_io.escrituras_en_lote()` (AP-47) baja `vault_frontmatter_completar` de 2990 s a 32 s y `vault_graph_fix` clasificado de 107 s a 15 s, y `vault_graph_fix` salta la nota ilegible en vez de abortar (AP-46). Los sanadores que siguen sin lote quedan declarados (`sanadores_sin_lote`). 5604 tests, 24 puertas |
 | v41.1 | 2026-10-07 | **Qué contrato cumple cada nota y qué notas no pertenecen a ninguna sección.** Clase `sin_seccion` en el contrato: un `.md` de la raíz o de una carpeta no registrada lleva identidad y timestamps, no CIA, `agent`, `tags`, `type` ni `status`. `vault_validate --check cumplimiento` informa por nota las versiones del contrato que cumple y lo que le falta para la vigente. `vault_audit` publica `notIntegrated` (notas que solo enlaza un índice) y la acción de las huérfanas deja de citar AP-13. 4463 tests, 23 puertas |
 | v41.0 | 2026-10-07 | **El contrato de nota es el criterio de lo que se escribe y se valida.** `vault_contrato_nota` es el dueño de los campos de una nota y de su nivel en cada versión desde v18; `vault_validate --contrato vNN` valida contra una versión anterior y cada versión desde v18 publica su JSON Schema en `schemas/`. **Ruptura:** `type` y `status` pasan de recomendados (v37–v40) a requeridos en notas de contenido, por presencia; `vault_frontmatter_completar` los pone. Los seis escritores cumplen el contrato entero; `jsonschema` declarado en el extra dev. 4431 tests, 23 puertas |
@@ -8012,6 +8013,49 @@ temp/
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
 
 ---
+
+### v41.6 — 2026-10-15 `git: pending`
+
+**Cada norma dice cuándo se revisó, la escritura deja constancia y el piso de Python lo ejecuta una máquina.**
+
+**Revisión de normas (R4, R5).** Cada `norma.py` declara `revisado_en`; `responsable` y
+`cadencia_dias` se derivan de `RESPONSABLE_POR_DEFECTO` y `CADENCIA_POR_ENFORCEMENT` en
+vez de copiarse en cada paquete. La carga inicial es la fecha del último commit que
+tocó cada `norma.py`: no afirma una revisión de contenido que no se hizo. `vault_norms
+--check-framework` publica las vencidas y la métrica `normas_vencidas` las cuenta.
+`vault_norms_coherence --disparos` lista qué normas toca revisar y por qué —cadencia
+vencida o código de sostén cambiado en git después de `revisado_en`—; una tool cuya
+fecha no se puede medir sale en `codigo_sin_medir` (AP-60). Disparar no es fallar.
+
+**No repudio (F8).** `vault_write` anota cada alta y cada cambio en `.change-log.json` y
+`vault_append` cada añadido; los dos lo publican en el campo nuevo `change_log` de su
+envelope, o en `change_log_error` si la bitácora falla, sin tumbar la escritura. La
+matriz y el manifiesto pasan a «1 por nota», que es lo que el registro ya medía, y la
+deuda `f8_criterio_sin_decidir` queda saldada.
+
+**Piso de Python.** `vault init` moría en Python 3.9 con `write_text() got an unexpected
+keyword argument 'newline'`, medido en un contenedor `python:3.9-slim` con la wheel
+41.5: el argumento llegó en 3.10. Los 19 sitios pasan a `write_bytes(texto.encode
+("utf-8"))` y `test_piso_python` vigila los argumentos nombrados posteriores al piso.
+`vault_produccion` publica el hueco: la matriz de la CI declara 3.9, pero lo encontró
+una prueba a mano.
+
+**Instalación a ciegas (R7).** `docs/INSTALACION-LIMPIA.md` pide `VAULT_AGENT` antes de
+la primera escritura (AP-16), explica las tools de gobernanza que el servidor MCP
+retira, dice por qué canal sale cada error con la tabla de códigos derivada de
+`product_cli`, y avisa de que `vault init` no crea el directorio padre. El
+`vault_says` de AP-16 dice lo que `vault_write` hace de verdad: bloquea.
+
+**Arreglos.** `--disparos` lee git por `vault_subproceso.ejecutar`, el dueño de la
+codificación, en vez de la locale del sistema.
+
+**Suite en Linux con Python 3.9.** La suite completa corrió en `python:3.9-slim` con un
+usuario sin privilegios. Cuatro tests fallaban por su propio supuesto —`Lib/site-packages`,
+la mayúscula del nombre de fichero, el `os.mkdir` que antes de 3.11 no alcanza a
+`Path.mkdir`— y se corrigieron. Lo demás que falló allí es una deuda declarada, no
+arreglada: `lock_caduca_por_reloj_de_pared`. La edad del lock sale del reloj de pared, el
+del contenedor saltó 3458 s y `vault_append` escribió con ok:true sobre una nota
+bloqueada. Arreglarlo es una decisión de diseño, y un test fija el límite.
 
 ### v41.5 — 2026-10-15 `git: a4111e2`
 

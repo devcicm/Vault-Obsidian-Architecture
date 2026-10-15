@@ -911,7 +911,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     {
         "id": "f8_criterio_sin_decidir",
         "estado": "saldada",
-        "saldada_en": "tras v41.5 (2026-10-15, sin versión publicada)",
+        "saldada_en": "v41.6 (2026-10-15)",
         "sostenida_por": [
             "tests/test_f8_vault_write_anota.py::test_vault_write_anota_la_creacion_y_la_actualizacion",
             "tests/test_f8_vault_write_anota.py::test_f8_registro_matriz_y_manifiesto_dicen_lo_mismo",
