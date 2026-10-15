@@ -395,7 +395,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 |---|---|---|---|---|
 | `scripts/arch-baseline.json` | cruces entre contextos | 37 | ≤ 30 para 2027-03-31 · cada 90 d · meta_toolkit — vault_arch → **en_plazo** | 37 → 37 → 37 → 37 → 37 → 37 (plana, Δ+0) |
 | `scripts/arch-baseline.json` | cruces fuera de puerto | 8 | ≤ 4 para 2027-03-31 · cada 90 d · meta_toolkit — vault_arch → **en_plazo** | 8 → 8 → 8 → 8 → 8 → 8 (plana, Δ+0) |
-| `scripts/blame-baseline.json` | AP-51 | 31 | ≤ 20 para 2027-03-31 · cada 90 d · meta_toolkit — vault_blame_audit → **en_plazo** | 83 → 45 → 33 → 33 → 33 → 31 (encoge, Δ-55) |
+| `scripts/blame-baseline.json` | AP-51 | 30 | ≤ 20 para 2027-03-31 · cada 90 d · meta_toolkit — vault_blame_audit → **en_plazo** | 45 → 33 → 33 → 33 → 31 → 30 (encoge, Δ-56) |
 | `scripts/error-contract-baseline.json` | AP-52 | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_error_contract → **cumple** | 110 → 110 → 0 → 9 → 0 → 0 (encoge, Δ-158) |
 | `scripts/noop-baseline.json` | AP-37 | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_noop_audit → **cumple** | 0 → 0 → 0 → 0 (plana, Δ+0) |
 | `scripts/smoke-baseline.json` | AP-42 | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_smoke → **cumple** | 0 → 0 (plana, Δ+0) |

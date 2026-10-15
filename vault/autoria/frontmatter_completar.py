@@ -65,7 +65,8 @@ from vault_contrato_nota import POR_DEFECTO, campos_recomendados, clase_de_nota,
 from vault_entorno import leer as _env
 from vault_errors import emit_error, fuera_de_sesion, wrap_main
 from vault_fundamentals_catalog import cia_por_defecto
-from vault_io import assert_within_vault, atomic_write_text, get_vault_root, is_snapshot_path, tomar_lock
+from vault_io import (assert_within_vault, atomic_write_text, escrituras_en_lote, get_vault_root,
+                      is_snapshot_path, tomar_lock)
 from vault_lib import canonical_utc
 from vault_registry import secciones_del_vault, section_default_type
 from vault.kernel.frontmatter_escritura import Frontmatter
@@ -219,31 +220,34 @@ def completar(path: Optional[str] = None, apply: bool = False,
     completadas: List[Dict[str, Any]] = []
     omitidas: List[Dict[str, Any]] = []
     escritas = 0
-    for nota in notas:
-        rel = nota.relative_to(raiz).as_posix()
-        try:
-            texto = nota.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError) as exc:
-            omitidas.append({"path": rel, "cause": f"ilegible: {type(exc).__name__}"})
-            continue
-        campos, nuevo, causa = planificar(nota, rel, texto, agent)
-        if causa:
-            omitidas.append({"path": rel, "cause": causa,
-                             "hint": "python scripts/vault_frontmatter_heal.py --apply"})
-            continue
-        if not campos:
-            continue
-        entrada: Dict[str, Any] = {"path": rel, "fields": campos, "written": False,
-                                   "encoding_normalized": _normalizacion(nota)}
-        if apply:
-            bloqueo = fuera_de_sesion(TOOL, nota)
-            fallo = bloqueo["error_code"] if bloqueo else _escribir(nota, texto, nuevo)
-            if fallo:
-                omitidas.append({"path": rel, "cause": fallo})
+    # Una regeneración por sección al final, no una por nota (AP-47): medido
+    # en una copia de /ans, 504 escrituras costaban 2990 s nota a nota.
+    with escrituras_en_lote():
+        for nota in notas:
+            rel = nota.relative_to(raiz).as_posix()
+            try:
+                texto = nota.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError) as exc:
+                omitidas.append({"path": rel, "cause": f"ilegible: {type(exc).__name__}"})
                 continue
-            entrada["written"] = True
-            escritas += 1
-        completadas.append(entrada)
+            campos, nuevo, causa = planificar(nota, rel, texto, agent)
+            if causa:
+                omitidas.append({"path": rel, "cause": causa,
+                                 "hint": "python scripts/vault_frontmatter_heal.py --apply"})
+                continue
+            if not campos:
+                continue
+            entrada: Dict[str, Any] = {"path": rel, "fields": campos, "written": False,
+                                       "encoding_normalized": _normalizacion(nota)}
+            if apply:
+                bloqueo = fuera_de_sesion(TOOL, nota)
+                fallo = bloqueo["error_code"] if bloqueo else _escribir(nota, texto, nuevo)
+                if fallo:
+                    omitidas.append({"path": rel, "cause": fallo})
+                    continue
+                entrada["written"] = True
+                escritas += 1
+            completadas.append(entrada)
 
     return {
         "ok": not omitidas and (apply or not completadas),

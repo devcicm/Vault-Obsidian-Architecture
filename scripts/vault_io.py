@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Shared file IO helpers for vault tools."""
 
+import contextvars
 import copy
 import json
 import os
@@ -593,6 +594,40 @@ def refrescar_indice_de_seccion(path: Path) -> Dict[str, Any]:
     return {"ok": True, "section": section, "updated": True}
 
 
+#: Secciones pendientes de regenerar dentro de `escrituras_en_lote`, con las
+#: rutas escritas en cada una. `None` fuera de un lote.
+_LOTE: "contextvars.ContextVar[Optional[Dict[str, List[Path]]]]" = contextvars.ContextVar(
+    "vault_io_lote", default=None)
+
+
+@contextmanager
+def escrituras_en_lote() -> Iterator[None]:
+    """Difiere el índice de sección de cada escritura al cierre del lote (AP-47).
+
+    Medido el 2026-10-14 con cProfile en una copia de /ans: el 95 % de los
+    2990 s de `vault_frontmatter_completar --apply` sobre 504 notas era
+    `_auto_section_index`, que regenera la sección tras cada escritura. Dentro
+    del lote las escrituras se apuntan y, al salir —también por excepción—,
+    cada sección se regenera una vez y la búsqueda recibe todas sus notas en
+    una pasada. El resultado es el de escribir nota a nota; lo que cambia es
+    que, mientras dura el lote, el `index.md` de la sección va por detrás.
+
+    Un lote anidado no cierra nada: lo cierra el de fuera. El grafo y la
+    bitácora de tags siguen por nota —juntos no llegaban al 6 % medido—.
+    """
+    if _LOTE.get() is not None:
+        yield
+        return
+    pendientes: Dict[str, List[Path]] = {}
+    token = _LOTE.set(pendientes)
+    try:
+        yield
+    finally:
+        _LOTE.reset(token)
+        for section, rutas in pendientes.items():
+            _regenerar_seccion(section, rutas)
+
+
 def _auto_section_index(path: Path) -> None:
     """Auto-trigger section index update after writing any vault .md note.
 
@@ -601,10 +636,20 @@ def _auto_section_index(path: Path) -> None:
 
     Skips: non-.md files, index.md itself, system/index sections, paths outside vault.
     Uses lazy import to avoid circular dependency with vault_section_index.
+    Dentro de `escrituras_en_lote` solo apunta la sección; la regenera el cierre.
     """
     section = _seccion_con_indice(path)
     if section is None:
         return
+    pendientes = _LOTE.get()
+    if pendientes is not None:
+        pendientes.setdefault(section, []).append(path)
+        return
+    _regenerar_seccion(section, [path])
+
+
+def _regenerar_seccion(section: str, rutas: List[Path]) -> None:
+    """Regenera el índice de `section` y pone `rutas` en la búsqueda. Nunca lanza."""
     try:
         from vault_section_index import (
             vault_section_index,
@@ -624,13 +669,13 @@ def _auto_section_index(path: Path) -> None:
         # disco como cualquier otra. Solo van los que no existían antes de esta
         # escritura (`creados`) — medido con C8 en una copia de /vcloud: 144 en
         # disco frente a 143 indexadas tras un sanador. Una sola pasada.
-        refrescar_busqueda(path, *(raiz / rel for rel in (hecho.get("creados") or [])))
+        refrescar_busqueda(*rutas, *(raiz / rel for rel in (hecho.get("creados") or [])))
     except Exception as exc:
-        try:
-            from vault_errors import emit_error  # type: ignore
-            emit_error("_auto_section_index", "AUTO_INDEX_ERROR", str(exc))
-        except Exception:
-            pass  # AP-37: fail-safe logging — never crash the caller
+        # AP-51: el fallo queda en la traza con su motivo. Sin un segundo
+        # `except Exception: pass` alrededor: `log_trace` ya es best-effort y
+        # no lanza, así que aquel solo podía callar un fallo de programación.
+        from vault_errors import emit_error  # lazy, como el resto del gancho
+        emit_error("_auto_section_index", "AUTO_INDEX_ERROR", str(exc))
 
 
 def refrescar_grafo(path: Path, *mas: Path) -> Dict[str, Any]:
