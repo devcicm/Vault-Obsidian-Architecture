@@ -2676,6 +2676,7 @@ python vault_blueprint.py --freeze          # congela la deuda de la capa 4
 python vault_norms_coherence.py --check           # las cinco medidas
 python vault_norms_coherence.py --check --strict  # exit 1 si algo falla (puerta 14)
 python vault_norms_coherence.py --freeze          # recongela la baseline de C2
+python vault_norms_coherence.py --disparos        # R5: qué normas toca revisar y por qué
 ```
 
 | Medida | Qué cruza | Estado al declararla |
@@ -2693,6 +2694,8 @@ python vault_norms_coherence.py --freeze          # recongela la baseline de C2
 **Lo que C5 no hace, dicho en voz alta.** No descubre por su cuenta qué dos normas se solapan. Tres borradores lo intentaron y los tres devolvían decenas de pares de `vault_audit` y `vault_write` consigo mismos: son los orquestadores y acumulan todas las normas del informe porque lo arman entero, no porque duden entre dos. C5 verifica la distinción **una vez que alguien la declara**, y exige que sea recíproca: si solo la declara A, quien llegue leyendo B no ve la diferencia. Los borradores quedan en el módulo sin llamar, como registro de lo intentado.
 
 **Siete enforcers no son tools, y se admiten.** `vault_io.atomic_write_text` y `vault_io.assert_within_vault` son los helpers donde AP-46 y AP-36 se cumplen de verdad; `vault_errors` es donde vive el contrato de AP-43; `vault_mcp_catalog` es meta-toolkit que el catálogo MCP no se expone a sí mismo. Se verifican —módulo en `scripts/`, símbolo definido allí— y se publican aparte en `non_catalog_enforcers`. Obligarles a nombrar una tool solo conseguiría una afirmación que resuelve y es falsa.
+
+**`--disparos`: qué normas toca revisar (R5).** El registro de gestión de R4 (`vault_norms_catalog.gestion_de_normas`) dice cuándo se revisó cada norma; esto dice cuáles toca revisar ya. Dos disparos, decidibles sin interpretar: la cadencia vencida (`cadencia`) y un fichero de una tool que sostiene la norma —la aplica, la detecta, la sigue o la sana (`tools_healing`)— cambiado en git después de `revisado_en` (`codigo`). El segundo no dice que la norma sea falsa: dice que nadie la ha vuelto a leer contra ese código. Una tool cuya fecha no se puede medir sale en `codigo_sin_medir` en vez de contar como «sin cambios» (AP-60). Disparar no es fallar: ninguna puerta mira esta lista, y se salda revisando la norma y poniendo la fecha del día en su `norma.py`.
 
 ### `vault_criterios.py`
 

@@ -4198,6 +4198,10 @@
           "colisiones": {
             "type": "boolean",
             "description": "C8 dinámica: cada sanador sobre una copia temporal del vault autodetectado"
+          },
+          "disparos": {
+            "type": "boolean",
+            "description": "R5: normas que toca revisar, por cadencia vencida o código cambiado"
           }
         },
         "additionalProperties": false

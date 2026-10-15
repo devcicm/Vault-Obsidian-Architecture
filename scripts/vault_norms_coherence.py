@@ -1014,6 +1014,93 @@ def freeze_distincion(admitir_nuevos: bool = False) -> Dict[str, Any]:
     }
 
 
+# ─── Disparos de revisión (R5) ───────────────────────────────────────────────
+#
+# R4 dice cuándo se revisó cada norma; esto dice cuáles toca revisar ya y por
+# qué. Dos disparos, los dos decidibles sin interpretar: la cadencia vencida y
+# el código que sostiene la norma cambiado en git después de la revisión. El
+# segundo no dice que la norma sea falsa: dice que nadie la ha vuelto a leer
+# contra ese código. Disparar no es fallar, y ninguna puerta mira esta salida.
+
+#: Los campos del catálogo cuyas tools sostienen una norma. Los sanadores se
+#: suman desde `vault_norms_catalog.tools_healing`, que es su registro.
+CAMPOS_QUE_SOSTIENEN = ("tools_enforcing", "tools_detecting", "tools_del_patron")
+
+
+def _fecha_git(ruta: Path) -> Optional[str]:
+    """Fecha (AAAA-MM-DD) del último commit que tocó `ruta`, o `None` si git
+    no la da: sin git, fuera del repo o sin historia."""
+    try:
+        salida = subprocess.run(
+            ["git", "-C", str(Path(ruta).parent), "log", "-1", "--format=%cs", "--", str(ruta)],
+            capture_output=True, text=True, timeout=TOOL_TIMEOUT_SECONDS, check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    fecha = salida.stdout.strip()
+    return fecha if salida.returncode == 0 and len(fecha) == 10 else None
+
+
+def disparos(hoy=None, catalogo: Optional[List[Dict[str, Any]]] = None,
+             fecha_de: Optional[Callable[[Path], Optional[str]]] = None) -> Dict[str, Any]:
+    """Qué normas toca revisar (R5): por cadencia vencida o por código cambiado.
+
+    `fecha_de(ruta)` da la fecha del último cambio de un fichero; por defecto,
+    git. Una tool cuya fecha no se puede medir sale en `codigo_sin_medir` en vez
+    de contar como «sin cambios» (AP-60): un cero de quien no pudo mirar no es
+    un cero.
+    """
+    gestion = vault_norms_catalog.gestion_de_normas(hoy=hoy, catalogo=catalogo)
+    por_codigo = {n["code"]: n for n in (_catalogo() if catalogo is None else catalogo)}
+    fecha_de = fecha_de or _fecha_git
+    fechas: Dict[str, Optional[str]] = {}
+    sin_fichero: Set[str] = set()
+    sin_medir: Set[str] = set()
+    salida: List[Dict[str, Any]] = []
+    for g in gestion["normas"]:
+        norma = por_codigo[g["code"]]
+        motivos: List[Dict[str, str]] = []
+        if g["vencida"]:
+            motivos.append({"disparo": "cadencia", "vence_en": g["vence_en"],
+                            "revisado_en": g["revisado_en"]})
+        tools: List[str] = []
+        for campo in CAMPOS_QUE_SOSTIENEN:
+            tools.extend(norma.get(campo) or [])
+        tools.extend(vault_norms_catalog.tools_healing(g["code"]))
+        for tool in dict.fromkeys(tools):
+            # `vault_io.atomic_write_text` es un símbolo: su código es el del módulo.
+            modulo = tool.split(".")[0]
+            if modulo not in fechas:
+                ruta = vault_grafo_import.fuente_de(modulo)
+                if not ruta.is_file():
+                    sin_fichero.add(tool)
+                    fechas[modulo] = None
+                    continue
+                fechas[modulo] = fecha_de(ruta)
+                if fechas[modulo] is None:
+                    sin_medir.add(tool)
+            cambiado = fechas[modulo]
+            if cambiado and cambiado > g["revisado_en"]:
+                motivos.append({"disparo": "codigo", "tool": tool, "cambiado_en": cambiado})
+        if motivos:
+            salida.append({"code": g["code"], "responsable": g["responsable"],
+                           "revisado_en": g["revisado_en"], "motivos": motivos})
+    return {
+        "ok": not gestion["problemas"],
+        "tool": "vault_norms_coherence.disparos",
+        "hoy": gestion["hoy"],
+        "normas_medidas": len(gestion["normas"]),
+        "disparos_total": len(salida),
+        "disparos": salida,
+        "registro_ilegible": gestion["problemas"],
+        "codigo_sin_medir": sorted(sin_medir),
+        "tools_sin_fichero": sorted(sin_fichero),
+        "hint": ("Revisar es leer la norma contra el código que la sostiene y poner "
+                 "`revisado_en` con la fecha del día en su norma.py; disparar no es "
+                 "fallar y ninguna puerta mira esta lista."),
+    }
+
+
 def scan_claims() -> List[Dict[str, str]]:
     """Solo las afirmaciones sin traza. Delega en `scan()`.
 
@@ -1045,7 +1132,16 @@ def main() -> int:
         "--colisiones", action="store_true",
         help="C8 dinámica: cada sanador sobre una copia temporal del vault autodetectado",
     )
+    parser.add_argument(
+        "--disparos", action="store_true",
+        help="R5: normas que toca revisar, por cadencia vencida o código cambiado",
+    )
     args = parser.parse_args()
+
+    if args.disparos:
+        resultado = disparos()
+        print(json.dumps(resultado, ensure_ascii=False, indent=2))
+        return 0 if resultado["ok"] else 1
 
     if args.colisiones:
         resultado = colisiones_de_sanadores(Path(vault_io.get_vault_root()))
