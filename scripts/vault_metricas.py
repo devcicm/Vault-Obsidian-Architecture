@@ -548,16 +548,16 @@ def main() -> int:
             resumen = leer_resumen_pytest(_fichero(args.registrar_suite))
             r = registrar([{"metrica": k, "valor": v} for k, v in resumen.items()],
                           commit=args.commit,
-                          fuente=args.fuente or f"pytest: {Path(args.registrar_suite).name}")
+                          fuente=args.fuente or f"pytest sobre {Path(args.registrar_suite).name}")
         elif args.registrar_smoke:
             datos = json.loads(_fichero(args.registrar_smoke))
             r = registrar([{"metrica": "smoke_fallos", "valor": int(datos["failing"])}],
                           commit=args.commit,
-                          fuente=args.fuente or f"vault_smoke: {datos.get('checked')} tools")
+                          fuente=args.fuente or f"vault_smoke sobre {datos.get('checked')} tools")
         elif args.registrar_banco:
             r = registrar(_desde_banco(json.loads(_fichero(args.registrar_banco))),
                           commit=args.commit,
-                          fuente=args.fuente or f"banco_agente: {Path(args.registrar_banco).name}")
+                          fuente=args.fuente or f"banco_agente sobre {Path(args.registrar_banco).name}")
         elif args.registrar:
             if args.valor is None:
                 r = emit_error(tool, "MISSING_REQUIRED_ARG", "--registrar necesita --valor")
