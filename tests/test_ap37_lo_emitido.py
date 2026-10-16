@@ -57,3 +57,30 @@ def test_ap37_delta_dice_que_reescribio_el_indice(vault):
     ledger.write_ledger_reset()
     r = vault_delta.vault_delta()
     assert r["added"] and r["updated"] == 1 and r["written"] == 1, r
+
+
+def _graph_fix(monkeypatch, capsys, *argv):
+    import json
+
+    from vault.grafo import graph_fix
+
+    monkeypatch.setattr(sys, "argv", ["vault_graph_fix", *argv])
+    capsys.readouterr()
+    graph_fix.main()
+    return json.loads(capsys.readouterr().out)
+
+
+def test_ap37_graph_fix_apply_dice_lo_que_escribio(vault, monkeypatch, capsys):
+    r = _graph_fix(monkeypatch, capsys, "--apply")
+    assert any((vault / "00_System" / ".graph-fixes").glob("*.json"))
+    assert r["fixes_applied"] == 0 and r["written"] >= 1, r
+
+
+def test_ap37_graph_fix_clasificado_dice_lo_que_escribio(vault, monkeypatch, capsys):
+    (vault / "07_Knowledge" / "nota.md").write_text(
+        "---\ntitle: Nota\ntype: knowledge\n---\n\nVer [[Inexistente]].\n",
+        encoding="utf-8")
+    ledger.write_ledger_reset()
+    r = _graph_fix(monkeypatch, capsys, "--stubs-all", "--apply")
+    assert r["stubs_created"] == 1 and "fixes_applied" in r, r
+    assert r["created"] >= 1 and r["written"] >= 1, r

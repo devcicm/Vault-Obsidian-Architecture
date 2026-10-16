@@ -49,6 +49,7 @@ from vault_io import (
     get_vault_root,
     is_snapshot_path,  # dueño único de qué es una instantánea (AP-57)
     normalize_stem,
+    write_report,
 )
 from vault_registry import secciones_del_vault
 from vault_regex import (
@@ -1418,6 +1419,11 @@ def main() -> int:
                 "tool": "vault_graph_fix.classified",
                 "decisions_count": len(decisions),
                 "apply_result": apply_result,
+                # AP-37: lo hecho sube al envelope; dentro de `apply_result`
+                # el indicador no lo ve quien mide la respuesta.
+                "fixes_applied": apply_result.get("links_fixed", 0),
+                "stubs_created": apply_result.get("stubs_created", 0),
+                **write_report(),
             }
             print(json.dumps(output, indent=2, ensure_ascii=False))
             return 0
@@ -1447,6 +1453,10 @@ def main() -> int:
     if args.apply:
         apply_result = apply_fix(report, root)
         report["apply_result"] = apply_result
+        # AP-37: `fixes_applied` es el indicador que el contrato declara; el
+        # log de `.graph-fixes/` se escribe aunque no haya arreglos.
+        report["fixes_applied"] = apply_result["applied"]
+        report.update(write_report())
         print(json.dumps(report, indent=2, ensure_ascii=False))
         return 0 if apply_result["errors"] == [] else 1
 
