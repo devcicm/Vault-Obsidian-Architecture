@@ -29,7 +29,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vault_errors import emit_error, wrap_main
-from vault_lib import utcnow, parse_frontmatter_with_body
+from vault_lib import utcnow, parse_frontmatter_with_body, separar_frontmatter
 from vault_lib import campos_de_texto
 from vault_io import (
     atomic_write_json,
@@ -774,17 +774,16 @@ def vault_tags_rename(
             continue
 
         new_tags = [new_tag if t == old_tag else t for t in tags]
-        # Replace tags line in frontmatter. La línea va como función, no como
-        # plantilla: `json.dumps` escribe `ó` como `ó` y `re` leía ese
-        # `\u` como escape de plantilla (`bad escape \u`); un `\1` en el tag
-        # insertaba el grupo capturado.
-        new_content = re.sub(
-            r"^(tags:\s*).*$",
-            lambda _m: f"tags: {json.dumps(new_tags)}",
-            content,
-            count=1,
-            flags=re.MULTILINE,
-        )
+        # AP-46: el campo lo reescribe su dueño. Hasta el 2026-10-15 era un
+        # `re.sub` sobre la línea `tags:` —antes, una plantilla que leía el
+        # `\u` de `json.dumps` como escape—, y con la lista en bloque dejaba
+        # los `- item` viejos debajo del valor nuevo. `editar` reemplaza la
+        # clave con su continuación y conserva el resto línea a línea.
+        bloque, cuerpo = separar_frontmatter(content)
+        if bloque is None:
+            continue
+        # `render() + "\n" + cuerpo` devuelve los mismos bytes (separar_frontmatter).
+        new_content = Frontmatter.editar(bloque).set("tags", new_tags).render() + "\n" + cuerpo
         if new_content != content:
             rel = str(note_path.relative_to(raiz())).replace("\\", "/")
             if not dry_run:
