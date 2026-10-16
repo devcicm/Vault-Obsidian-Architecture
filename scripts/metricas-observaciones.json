@@ -210,6 +210,13 @@
       "commit": "26c2b04",
       "fecha": "2026-10-15",
       "fuente": "vault_smoke sobre 124 tools"
+    },
+    {
+      "metrica": "puertas_duracion_s",
+      "valor": 87.21,
+      "commit": "2fb0465",
+      "fecha": "2026-10-16",
+      "fuente": "vault_gate sobre 24 puertas"
     }
   ]
 }
