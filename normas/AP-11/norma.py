@@ -42,7 +42,7 @@ NORMA = {
     "signal": "vault_write rechaza con error_code: content_too_short.",
     "prevention": "vault_write exige ≥3 líneas de contenido real (00_System exempt). No crear notas que no estén listas.",
     "tools_enforcing": ["vault_write"],
-    "tools_detecting": ["vault_audit"],
+    "tools_detecting": ["vault_norms"],
     "introduced_version": "v19",
     "revisado_en": "2026-10-09",
 }

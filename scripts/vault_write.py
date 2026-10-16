@@ -162,6 +162,7 @@ def _check_content_gate(content: str, folder: str) -> bool:
     """
     if folder.startswith("00_System"):
         return True
+    # AP-45: sin líneas ni palabras reales la nota no llega a escribirse.
     real_lines = [
         l
         for l in content.split("\n")
@@ -526,6 +527,7 @@ def _collect_ghost_links(wiki_links: List[str], desde: Optional[Path] = None) ->
     alias = [a for lista in alias_por_ruta.values() for a in lista]
     destinos = indice_de_destinos(relativas, alias)
 
+    # AP-14 y SP-02: el destino que no resuelve se avisa al escribir.
     ghost = []
     for link in wiki_links:
         objetivo = resolver_destino_wikilink(link, desde)
@@ -823,6 +825,7 @@ def update_search_index(
     mapa viejo. Lock-protected read-modify-write.
     """
 
+    # AP-47: la proyección se escribe en la misma operación que la nota.
     _index_file().parent.mkdir(parents=True, exist_ok=True)
 
     body = separar_frontmatter(content)[1]

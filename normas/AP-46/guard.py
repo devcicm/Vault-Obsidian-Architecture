@@ -12,4 +12,6 @@ GUARD = [
     'scripts/vault_write.py::generate_frontmatter',
     'scripts/vault_norms.py::vault_norms_apply',
     'scripts/vault_norms.py::main',
+    'scripts/vault_norms_engine.py::heal_ap46',
+    'vault/gobernanza/auditoria_runtime.py::auditar_runtime',
 ]

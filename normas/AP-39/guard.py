@@ -11,4 +11,5 @@ GUARD = [
     'scripts/vault_write.py::_tag_suggestions',
     'scripts/vault_write.py::vault_write',
     'scripts/vault_tags.py::main',
+    'vault/gobernanza/auditoria_runtime.py::auditar_runtime',
 ]

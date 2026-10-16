@@ -158,6 +158,7 @@ def validate_frontmatter(note_path: Path, contrato: Optional[str] = None) -> Dic
         # Cuáles son lo dice `vault_registry`, no esta función.
         if is_index:
             return {"valid": True, "data": {}, "derived": True}
+        # AP-28: sin bloque no hay ningún campo que discutir.
         return {"valid": False, "error": "No frontmatter block"}
 
 
@@ -190,6 +191,7 @@ def validate_frontmatter(note_path: Path, contrato: Optional[str] = None) -> Dic
     # fields expanded» como toda su historia, y nadie más podía preguntar qué
     # le falta a una nota sin copiarlo. Desde v41 entre ellos está `type`
     # (AP-27): esta es la detección que el catálogo le atribuye.
+    # AP-12: el mismo conjunto `required` para toda nota de la clase.
     missing = faltantes(data, rel_path, contrato, raiz=_raiz())
     if missing:
         return {"valid": False, "error": f"Missing required fields: {missing}",

@@ -703,11 +703,8 @@ def scan() -> Dict[str, Any]:
         # C1 + C2
         for campo in ("tools_enforcing", "tools_detecting"):
             for nombre in norma.get(campo, []):
-                if nombre in tools:
-                    fuente = _fuente(nombre)
-                else:
-                    fuente = _sitio_de_modulo(nombre)
-                    if not fuente:
+                if nombre not in tools:
+                    if not _sitio_de_modulo(nombre):
                         c1_inexistentes.append(
                             {"norm": codigo, "field": campo, "value": nombre}
                         )
@@ -715,7 +712,13 @@ def scan() -> Dict[str, Any]:
                     no_catalogo.append(
                         {"norm": codigo, "field": campo, "value": nombre}
                     )
-                if codigo not in _sin_cabecera(fuente):
+                # C2 con el criterio de la cara `guard.py`: alguna función de
+                # las partes de la tool nombra la norma. Un registro a nivel de
+                # módulo —el catálogo que escribe `_desde_paquete("AP-50")`
+                # para todas— no es traza: es AP-55 midiéndose con lo medido.
+                modulo = nombre.split()[0].split(".")[0]
+                if not any(vault_grafo_import.funciones_que_nombran(p, codigo)
+                           for p in vault_grafo_import.partes_de(modulo)):
                     c2_sin_traza.append(
                         {
                             "norm": codigo,

@@ -86,8 +86,8 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-07** — ADRs incompletos | audit | `framework` | `test_ap07_criterio_adr.py`, `test_ap64_responsable.py`, `test_vault_norms_audit.py` |
 | **AP-08** — Documentación anclada a versiones obsoletas | audit | — | `test_ap08_version_pinned.py`, `test_ap08_vigencia.py` |
 | **AP-09** — Runbooks fuera de estructura | audit | `framework` | `test_vault_norms_audit.py` |
-| **AP-10** — Migración sin plan de rollback | audit | `framework` | — |
-| **AP-11** — Skeleton files — frontmatter válido, contenido vacío | guard | — | `test_envelope_forma.py`, `test_voice.py` |
+| **AP-10** — Migración sin plan de rollback | audit | `framework` | `test_norms_coherence.py` |
+| **AP-11** — Skeleton files — frontmatter válido, contenido vacío | guard | `framework` | `test_envelope_forma.py`, `test_voice.py` |
 | **AP-12** — Frontmatter inconsistente entre notas del mismo tipo | audit | — | `test_capa4_audit_ejercitada.py` |
 | **AP-13** — Timestamps inválidos o incompletos en frontmatter | audit | — | `test_meta_contrato.py` |
 | **AP-14** — Wiki-links rotos o vacíos | guard+audit | — | `test_audit_acciones_de_movimiento.py`, `test_normas_caras.py`, `test_normas_enlaces_sin_solape.py`, `test_norms_coherence.py` |
@@ -110,7 +110,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-26** — Missing tags — nota de contenido sin tags | guard+audit | — | `test_context_memory.py` |
 | **AP-27** — Missing type field — nota sin tipo declarado | guard+audit | — | `test_capa4_audit_ejercitada.py` |
 | **AP-28** — Missing frontmatter — nota sin bloque YAML | audit | — | `test_ap56_frontmatter_heal.py` |
-| **AP-29** — Missing status field — nota sin estado de ciclo de vida | audit | `framework` | — |
+| **AP-29** — Missing status field — nota sin estado de ciclo de vida | audit | — | `test_contrato_sin_seccion.py` |
 | **AP-30** — Missing CIA classification — nota sin clasificación de la tríada | audit | — | `test_normas_de_audit_ejercitadas.py` |
 | **AP-31** — Grafo sin tipos semanticos — edges sin predicate explícito | audit | — | `test_capa4_audit_ejercitada.py` |
 | **AP-32** — Relaciones tipadas sin predicate valido en la ontologia | audit | — | `test_graph_merge_sugerencias.py` |
@@ -129,9 +129,9 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-45** — Cobertura sin evidencia — la nota existe para llenar la sección | guard+audit | `framework` | `test_ap45_cobertura_sin_evidencia.py` |
 | **AP-46** — Frontmatter a mano — cada tool es su propio escritor | guard+audit | `framework` | `test_ap46_escritores_migrados.py`, `test_ap46_interpolacion_cruda.py`, `test_ap46_write_path_unico.py`, `test_norms_coherence.py`, `test_vault_sanacion.py` |
 | **AP-47** — Artefacto derivado desfasado — el índice dejó de reflejar el disco | guard+audit | `framework` | `test_ap47_indice_refleja_disco.py`, `test_audit_acciones_de_movimiento.py`, `test_delete_no_borra_derivados.py`, `test_grafo_refresco.py`, `test_sanadores_sin_lote.py` |
-| **AP-48** — Implementación paralela por camino de acceso | guard+audit | `contratos`, `framework` | `test_ap48_implementacion_paralela.py` |
-| **AP-49** — Vínculo resuelto en tiempo de import | guard+audit | `arquitectura`, `framework` | `test_arquitectura.py`, `test_durabilidad_dominio.py` |
-| **AP-50** — Decisión duplicada sin dueño declarado | guard+audit | `arquitectura`, `framework` | `test_ap57_criterios.py` |
+| **AP-48** — Implementación paralela por camino de acceso | guard+audit | `contratos` | `test_ap48_implementacion_paralela.py` |
+| **AP-49** — Vínculo resuelto en tiempo de import | guard+audit | `arquitectura` | `test_arquitectura.py`, `test_durabilidad_dominio.py` |
+| **AP-50** — Decisión duplicada sin dueño declarado | guard+audit | `arquitectura` | `test_ap57_criterios.py`, `test_norms_coherence.py` |
 | **AP-51** — La tool culpa al dato de su propio fallo | guard+audit | `blame` | `test_ap51_culpar_al_dato.py`, `test_baseline.py` |
 | **AP-52** — El error se emite fuera del contrato del catalogo | guard+audit | `contrato_error` | `test_ap52_contrato_de_error.py`, `test_regla7_contraste_ajeno.py` |
 | **AP-53** — El historial se afirma a mano y nadie lo contrasta con git | guard | `changelog` | `test_changelog_check.py` |
@@ -143,7 +143,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-59** — Núcleo declarado sin contraste | guard+audit | `kernel` | `test_kernel.py` |
 | **AP-60** — El guard cobra por declarar y regala el silencio | guard+audit | `norms_coherence` | `test_ap08_prosa_universo.py`, `test_norms_coherence.py` |
 | **AP-61** — El guard cae con el dato que vino a medir | guard+audit | `excepcion_declarada` | `test_excepcion_declarada.py` |
-| **AP-62** — El consumidor paga el fan-out del productor | guard+audit | `arquitectura`, `recursos` | `test_recursos.py` |
+| **AP-62** — El consumidor paga el fan-out del productor | guard+audit | `recursos` | `test_recursos.py` |
 | **AP-63** — El nombre de un proyecto como texto libre | guard+audit | — | `test_project_registrado.py`, `test_vault_project.py` |
 | **AP-64** — Decisión cerrada sin responsable | audit | `framework` | `test_ap64_responsable.py`, `test_iso42005_impacto.py`, `test_normas_paquete.py`, `test_norms_coherence.py` |
 | **AP-65** — Decisión de IA de impacto alto sin evaluación de impacto | audit | `framework` | `test_iso42005_impacto.py`, `test_normas_caras.py`, `test_normas_paquete.py` |

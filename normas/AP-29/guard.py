@@ -9,5 +9,6 @@ de derivarlo; se regenera con `vault_norms_engine.escribir_caras_derivadas`.
 
 GUARD = [
     'vault/autoria/frontmatter_completar.py::_valor',
+    'scripts/vault_audit.py::_detect_missing_metadata',
     'scripts/vault_audit.py::vault_audit',
 ]

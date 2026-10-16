@@ -7,4 +7,6 @@ norma en su cuerpo. El criterio sigue con su dueño; aquí solo se apunta a
 de derivarlo; se regenera con `vault_norms_engine.escribir_caras_derivadas`.
 """
 
-GUARD: list = []
+GUARD = [
+    'scripts/vault_arch.py::copias_de_vocabulario',
+]

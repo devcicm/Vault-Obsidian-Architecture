@@ -2424,6 +2424,7 @@ def copias_de_vocabulario() -> list[dict]:
     """
     from vault_vocabulario import VOCABULARIOS, valores as _valores
 
+    # AP-50: la misma decisión escrita fuera de su dueño.
     por_conjunto: dict[frozenset, str] = {}
     fuentes = {_VOCABULARIO_PROPIETARIO}
     for nombre in VOCABULARIOS:

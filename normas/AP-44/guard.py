@@ -14,6 +14,10 @@ GUARD = [
     'scripts/vault_audit.py::vault_audit',
     'scripts/vault_audit.py::_audit_external_path',
     'vault/grafo/graph_fix.py::_add_stems',
+    'vault/kernel/mermaid_reglas.py::validate_flowchart',
     'scripts/vault_norms.py::vault_norms_scan',
     'scripts/vault_norms.py::vault_norms_apply',
+    'scripts/vault_norms_engine.py::framework_drift_check',
+    'scripts/vault_norms_engine.py::_planificar_ap46',
+    'vault/gobernanza/auditoria_runtime.py::auditar_runtime',
 ]

@@ -60,7 +60,7 @@ NORMA = {
         "mirarlas, prefiriendo no contar un sitio a contar uno que no lo es."
     ),
     "tools_enforcing": ["vault_recursos"],
-    "tools_detecting": ["vault_recursos", "vault_arch"],
+    "tools_detecting": ["vault_recursos"],
     "distinguido_de": {
         "AP-57": (
             "AP-57 es el criterio escrito dos veces sin dueño; AP-62 es el "

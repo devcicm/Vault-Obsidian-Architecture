@@ -89,3 +89,31 @@ def test_el_audit_no_le_pide_campos_de_contenido(tmp_path):
     for lista in ("missing_cia", "missing_type", "missing_status", "missing_tags",
                   "missing_agent", "missing_contract"):
         assert not r[lista], (lista, r[lista])
+
+
+def test_ap29_la_nota_de_seccion_sin_status_la_detecta_el_audit(tmp_path):
+    """AP-29 tenía su única puerta en una afirmación falsa sobre `vault_norms`.
+
+    El catálogo la atribuía a `vault_norms`, que solo la nombra en el registro;
+    quien la detecta es `vault_audit._detect_missing_metadata`. Retirada la
+    afirmación (m5 de la auditoría), la norma necesita un test que la ejerza.
+    """
+    import vault_audit as va
+    import vault_grafo_import as gi
+    import vault_io
+
+    root = tmp_path / "v"
+    (root / "07_Knowledge").mkdir(parents=True)
+    nota = root / "07_Knowledge" / "sin-estado.md"
+    nota.write_text(
+        "---\nid: sin-estado\ntitle: Sin estado\ncreatedAt: 2026-10-15T00:00:00Z\n"
+        "updatedAt: 2026-10-15T00:00:00Z\ntype: concept\ntags: [x]\n---\n\n"
+        "# Sin estado\n\nCuerpo real de la nota.\n", encoding="utf-8")
+    vault_io.set_vault_root(root)
+
+    r = va._detect_missing_metadata([nota])
+    codigo = "AP-29"
+    assert [m["path"] for m in r["missing_status"]] == ["07_Knowledge/sin-estado.md"], codigo
+    # Y la función que la detecta la nombra en su cuerpo (criterio de C2).
+    assert "_detect_missing_metadata" in gi.funciones_que_nombran(
+        Path(va.__file__), codigo)

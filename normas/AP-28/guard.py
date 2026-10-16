@@ -10,4 +10,5 @@ de derivarlo; se regenera con `vault_norms_engine.escribir_caras_derivadas`.
 GUARD = [
     'vault/autoria/frontmatter_completar.py::planificar',
     'scripts/vault_audit.py::vault_audit',
+    'scripts/vault_validate.py::validate_frontmatter',
 ]

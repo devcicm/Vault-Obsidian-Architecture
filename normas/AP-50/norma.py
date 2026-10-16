@@ -67,7 +67,7 @@ NORMA = {
         "nacieron las catorce copias."
     ),
     "tools_enforcing": ["vault_arch"],
-    "tools_detecting": ["vault_norms", "vault_arch"],
+    "tools_detecting": ["vault_arch"],
     "distinguido_de": {
         "AP-57": (
             "AP-50 mira **datos** duplicados —vocabularios, defaults, "

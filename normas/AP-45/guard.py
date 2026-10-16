@@ -11,5 +11,7 @@ GUARD = [
     'scripts/vault_onboard.py::_write',
     'scripts/vault_onboard.py::vault_onboard',
     'scripts/vault_onboard.py::main',
+    'scripts/vault_write.py::_check_content_gate',
+    'vault/gobernanza/auditoria_runtime.py::auditar_runtime',
     'scripts/vault_audit.py::_detect_empty_indexes',
 ]

@@ -92,6 +92,54 @@ def test_c2_calla_cuando_la_afirmacion_si_tiene_traza(monkeypatch):
     assert r["untraceable_claims"] == []
 
 
+def test_c2_no_se_salda_con_el_catalogo_que_declara_la_norma(monkeypatch):
+    """Medido en la auditoría del 2026-10-15: `_fuente("vault_norms")` sumaba
+    `vault_norms_catalog`, que escribe `_desde_paquete("AP-50")` para cada
+    norma, así que toda afirmación sobre `vault_norms` tenía «traza» — AP-55
+    certificándose con el registro que mide. Ninguna función de vault_norms
+    nombra AP-50."""
+    r = _con_catalogo(monkeypatch, [
+        _norma(code="AP-50", tools_detecting=["vault_norms"])])
+    assert [c["claim"] for c in r["untraceable_claims"]] == [
+        "AP-50::tools_detecting::vault_norms"]
+
+
+def test_c2_sigue_a_la_tool_hasta_su_contexto(monkeypatch):
+    """`vault_norms --audit` delega en `vault.gobernanza.auditoria_runtime`,
+    y es allí donde AP-10 se nombra en la función que la detecta."""
+    r = _con_catalogo(monkeypatch, [
+        _norma(code="AP-10", tools_detecting=["vault_norms"])])
+    assert r["untraceable_claims"] == []
+
+
+def test_partes_de_sigue_al_contexto_y_no_al_kernel():
+    import vault_grafo_import as gi
+
+    partes = {p.resolve() for p in gi.partes_de("vault_norms")}
+    assert (REPO / "vault" / "gobernanza" / "auditoria_runtime.py").resolve() in partes
+    assert not any("kernel" in p.parts for p in partes), sorted(map(str, partes))
+
+
+def test_la_cara_guard_y_c2_comparten_criterio():
+    import vault_grafo_import
+    import vault_norms_engine
+
+    assert vault_norms_engine.funciones_que_nombran is vault_grafo_import.funciones_que_nombran
+    caras = vault_norms_engine.caras_derivadas("AP-10", REPO)
+    assert "'vault/gobernanza/auditoria_runtime.py::auditar_runtime'" in caras["guard.py"], caras
+
+
+def test_la_cara_heal_no_apunta_al_contexto_que_solo_detecta():
+    """`vault_norms` repara AP-46 en `heal_ap46` y la detecta en
+    `auditar_runtime`: seguir el contexto en la cara de reparación afirmaría
+    un heal que no existe."""
+    import vault_norms_engine
+
+    heal = vault_norms_engine.caras_derivadas("AP-46", REPO)["heal.py"]
+    assert "heal_ap46" in heal
+    assert "auditar_runtime" not in heal
+
+
 # ── C3 ────────────────────────────────────────────────────────────────────────
 
 

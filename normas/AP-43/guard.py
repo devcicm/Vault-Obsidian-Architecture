@@ -7,4 +7,10 @@ norma en su cuerpo. El criterio sigue con su dueño; aquí solo se apunta a
 de derivarlo; se regenera con `vault_norms_engine.escribir_caras_derivadas`.
 """
 
-GUARD: list = []
+GUARD = [
+    'scripts/vault_voice.py::speak',
+    'scripts/vault_voice.py::coverage',
+    'scripts/vault_errors.py::_inject_voice',
+    'scripts/vault_norms_engine.py::_checks_estandar',
+    'vault/gobernanza/auditoria_runtime.py::auditar_runtime',
+]

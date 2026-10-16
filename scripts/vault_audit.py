@@ -854,6 +854,7 @@ def _detect_broken_links(
     siguió es este enlace roto, así que es aquí donde se detecta y no en el
     momento de la escritura.
     """
+    # AP-14 y SP-02: lo que queda cuando no se buscó antes de enlazar.
     broken = []
 
     # Pre-compute a set of relative paths for path-anchored link resolution.
@@ -1531,7 +1532,11 @@ _SECCIONES_POR_EVENTO = frozenset({"18_Bugs", "19_Audits", "20_Quarantine", "21_
 def _detect_empty_indexes(
     barrido: Optional[List[Path]] = None
 ) -> List[Dict[str, Any]]:
-    """AP-11/AP-03: detect section folders whose index.md has no real notes.
+    """AP-03: detect section folders whose index.md has no real notes.
+
+    Hasta el 2026-10-15 decía «AP-11/AP-03» y el catálogo le atribuía AP-11.
+    No lo es: AP-11 es la nota con frontmatter y sin cuerpo, y la detecta
+    `vault_norms --scan`; aquí se emite AP-03, el índice sin notas.
 
 
 
@@ -1832,6 +1837,7 @@ def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]
             if not fm.get("type"):
                 missing_type.append({"path": rel, "title": fm.get("title", p.stem)})
 
+            # AP-29: sin `status` lo derogado se sigue leyendo como vigente.
             if not fm.get("status"):
                 missing_status.append({"path": rel, "title": fm.get("title", p.stem)})
 

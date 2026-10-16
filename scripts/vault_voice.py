@@ -74,6 +74,7 @@ def speak(
     writes: Optional[Dict[str, int]] = None,
 ) -> Optional[Dict[str, Any]]:
     """Fachada compatible que delega la composición al servicio estable."""
+    # AP-43: la norma llega al agente en el resultado que está leyendo.
     return _speak_estable(
         tool,
         payload,
@@ -101,6 +102,7 @@ def coverage() -> Dict[str, Any]:
         for norma in _catalog()
         if (norma.get("cobertura_descubierta") or "").strip()
     )
+    # AP-43: una norma que ninguna tool nombra no llega nunca al agente.
     mudas = sorted(todas - dichas - set(descubiertas))
     return {
         "ok": not mudas,

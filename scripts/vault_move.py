@@ -351,6 +351,7 @@ def _destino_invalido(origen: str, destino_carpeta: str) -> Optional[Dict[str, A
     una nota a una carpeta es escribirla allí. Una sección propia retirada no
     admite notas que vengan de fuera, pero sí reordenar las que ya tiene.
     """
+    # AP-15: la raíz no es destino; el criterio es el de vault_write.
     nueva = origen.replace("\\", "/").split("/")[0] != destino_carpeta.split("/")[0]
     try:
         motivo = motivo_de_destino_invalido(destino_carpeta, _raiz(), nueva=nueva)

@@ -36,7 +36,7 @@ NORMA = {
     "signal": "vault_audit la cuenta en missing_status y penaliza -1 por nota (tope -10).",
     "prevention": "Declarar --status dentro de STATUS_VOCAB (12 valores).",
     "tools_enforcing": ["vault_frontmatter_completar"],
-    "tools_detecting": ["vault_audit", "vault_norms"],
+    "tools_detecting": ["vault_audit"],
     "introduced_version": "v30",
     "revisado_en": "2026-10-09",
 }

@@ -116,6 +116,7 @@ def validate_flowchart(diagram: str) -> List[Dict[str, Any]]:
     validador. Medir con el criterio propio habría invalidado bloques que
     Mermaid dibuja sin quejarse — la tool certificándose a sí misma.
     """
+    # AP-44: «válido» es lo que Mermaid dibuja, no el gusto de este validador.
     errors: List[Dict[str, Any]] = []
     lines = diagram.strip().split("\n")
 

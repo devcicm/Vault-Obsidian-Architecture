@@ -58,7 +58,8 @@ from vault.gobernanza.auditoria_runtime import auditar_runtime  # noqa: E402
 # la fachada directamente desde el catálogo: importarlo aquí sin usarlo habría
 # creado una dependencia falsa justo en el commit que existe para medir cuáles
 # son las de verdad.
-from vault_grafo_import import fuente_de
+from vault_grafo_import import funciones_que_nombran  # noqa: F401  (reexportado; el dueño es vault_grafo_import)
+from vault_grafo_import import partes_de
 from vault_norms_catalog import (
     NORM_CATALOG,
     RAIZ_NORMAS,
@@ -301,70 +302,25 @@ REGENERAR_CARAS = ('python -c "import sys; sys.path[:0]=[\'scripts\', \'.\']; '
                    'import vault_norms_engine as e; e.escribir_caras_derivadas()"')
 
 
-def _cuerpo_sin_docstring(lineas: List[str], nodo: ast.AST) -> str:
-    """Las líneas del cuerpo, comentarios incluidos, sin la docstring: un
-    comentario que nombra la norma en la función que la cumple cuenta (capa 4),
-    y la docstring que la menciona de pasada, no."""
-    cuerpo = nodo.body
-    if ast.get_docstring(nodo, clean=False) is not None:
-        cuerpo = cuerpo[1:]
-    if not cuerpo:
-        return ""
-    # El comentario que encabeza el cuerpo va antes de la primera sentencia y
-    # el AST no lo ve: se sube por las líneas de comentario hasta la docstring
-    # o la firma.
-    inicio = cuerpo[0].lineno - 1
-    while inicio > 0 and lineas[inicio - 1].lstrip().startswith("#"):
-        inicio -= 1
-    return "".join(lineas[inicio:nodo.end_lineno])
-
-
-def funciones_que_nombran(ruta: Path, code: str) -> List[str]:
-    """Las funciones de `ruta` que nombran `code` en su cuerpo, en orden.
-
-    Solo la más interna: la externa contiene a la anidada y citarla sería
-    señalar el módulo entero. `AP-1` no casa dentro de `AP-14`.
-    """
-    try:
-        texto = ruta.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
-        return []
-    patron = re.compile(rf"(?<![\w-]){re.escape(code)}(?!\d)")
-    if not patron.search(texto):
-        return []
-    try:
-        arbol = ast.parse(texto)
-    except SyntaxError:
-        return []
-    lineas = texto.splitlines(keepends=True)
-    hit = [n for n in ast.walk(arbol)
-           if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
-           and patron.search(_cuerpo_sin_docstring(lineas, n))]
-    ids = {id(h) for h in hit}
-    internas = [h for h in hit
-                if not any(id(d) in ids for d in ast.walk(h) if d is not h)]
-    vistos: List[str] = []
-    for h in sorted(internas, key=lambda h: h.lineno):
-        if h.name not in vistos:
-            vistos.append(h.name)
-    return vistos
-
-
-def caras_de(code: str, tools: List[str], raiz_repo: Path) -> Dict[str, List[str]]:
+def caras_de(code: str, tools: List[str], raiz_repo: Path,
+             contextos: bool = True) -> Dict[str, List[str]]:
     """`{tool: ["ruta::símbolo", ...]}` para las tools dadas.
 
-    La ruta la resuelve `vault_grafo_import.fuente_de`, que sigue el alias del
-    puente hasta el dueño en `vault/`: la cara apunta a donde vive el código.
+    Las rutas las da `vault_grafo_import.partes_de` —el dueño, sus hermanos y
+    los contextos de `vault/` a los que delega—, el mismo universo que C2 de
+    `vault_norms_coherence`: la cara apunta a donde vive el código.
     """
     out: Dict[str, List[str]] = {}
     for tool in tools:
         modulo = tool.split()[0].split(".")[0]
-        ruta = fuente_de(modulo)
-        try:
-            rel = ruta.resolve().relative_to(Path(raiz_repo).resolve()).as_posix()
-        except ValueError:
-            rel = ruta.as_posix()
-        out[tool] = [f"{rel}::{f}" for f in funciones_que_nombran(ruta, code)]
+        caras: List[str] = []
+        for ruta in partes_de(modulo, contextos=contextos):
+            try:
+                rel = ruta.resolve().relative_to(Path(raiz_repo).resolve()).as_posix()
+            except ValueError:
+                rel = ruta.as_posix()
+            caras += [f"{rel}::{f}" for f in funciones_que_nombran(ruta, code)]
+        out[tool] = caras
     return out
 
 
@@ -384,7 +340,8 @@ def caras_derivadas(code: str, raiz_repo: Path) -> Dict[str, Any]:
     norma = norma_por_codigo(code) or {}
     guard_tools = [t for campo in CAMPOS_DE_GUARD for t in (norma.get(campo) or [])]
     guard = [c for cs in caras_de(code, guard_tools, raiz_repo).values() for c in cs]
-    heal_por_tool = caras_de(code, tools_healing(code), raiz_repo)
+    # Sin contextos delegados: ver `partes_de`.
+    heal_por_tool = caras_de(code, tools_healing(code), raiz_repo, contextos=False)
     heal = [c for cs in heal_por_tool.values() for c in cs]
     problemas = [f"SANADORES dice que {t} repara {code} y ninguna función suya lo nombra"
                  for t, cs in heal_por_tool.items() if not cs]

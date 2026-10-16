@@ -208,6 +208,7 @@ def vault_change_log_add(
     otra tool, y es esa separación la que permite que la constancia sobreviva
     aunque el borrado falle.
     """
+    # SP-01: la constancia del borrado se deja antes de borrar.
     action = action.lower()
 
     if action not in VALID_ACTIONS:

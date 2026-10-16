@@ -337,6 +337,15 @@ def _politica_de_vulnerabilidades() -> bool:
     return all(s in texto for s in SECCIONES_SECURITY) and "/security/advisories/new" in texto
 
 
+def _superficie_autenticada() -> bool:
+    """Los dos servicios HTTP exigen token y sus tests contra el real existen."""
+    # SP-04: sin estos ejecutores la promesa vuelve a ser un párrafo.
+    return (_existe("tests/test_mcp_http_seguridad.py")
+            and "tokenValido" in (RAIZ / "mcp" / "nodejs" / "vault-mcp-server.mjs").read_text(encoding="utf-8")
+            and _existe("tests/test_token_service_seguridad.py")
+            and "_autorizado" in (RAIZ / "scripts" / "vault_token_service.py").read_text(encoding="utf-8"))
+
+
 #: El registro. **Fuente única**: la guía de `docs/` se deriva de aquí y se
 #: regenera con `--guia`; lo que se escriba a mano allí se pierde.
 #:
@@ -459,10 +468,7 @@ PREGUNTAS: List[Dict[str, Any]] = [
             "SECURITY.md declaraba el servicio de tokens «no autentica» y esta "
             "fila no lo miraba: declarar el hueco no lo cerraba."
         ),
-        "ejerce": lambda: _existe("tests/test_mcp_http_seguridad.py")
-        and "tokenValido" in (RAIZ / "mcp" / "nodejs" / "vault-mcp-server.mjs").read_text(encoding="utf-8")
-        and _existe("tests/test_token_service_seguridad.py")
-        and "_autorizado" in (RAIZ / "scripts" / "vault_token_service.py").read_text(encoding="utf-8"),
+        "ejerce": _superficie_autenticada,
         "quien": (
             "tests/test_mcp_http_seguridad.py (servidor real por HTTP) + "
             "tests/test_token_service_seguridad.py (servicio de tokens real) + README.md"

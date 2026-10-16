@@ -10,6 +10,7 @@ de derivarlo; se regenera con `vault_norms_engine.escribir_caras_derivadas`.
 GUARD = [
     'scripts/vault_write.py::vault_write',
     'scripts/vault_knowledge_save.py::vault_knowledge_save',
+    'vault/autoria/conocimiento.py::_render',
     'scripts/vault_ai_decision.py::vault_ai_decision',
     'scripts/vault_audit.py::_detect_convenciones_cn01_cn04',
 ]

@@ -280,6 +280,7 @@ def _inject_voice(data: Any, tool_name: str, writes: Optional[Dict[str, int]]) -
     invocar tool por tool sería exactamente el registro-que-nadie-consume que
     esta norma existe para evitar.
     """
+    # AP-43: el refuerzo va en el punto de uso, en la salida de toda tool.
     if not isinstance(data, dict) or "vault_says" in data:
         return
     try:

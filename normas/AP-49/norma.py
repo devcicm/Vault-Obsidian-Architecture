@@ -66,7 +66,7 @@ NORMA = {
         "un commit, pero no puede crecer."
     ),
     "tools_enforcing": ["vault_arch"],
-    "tools_detecting": ["vault_norms", "vault_arch"],
+    "tools_detecting": ["vault_arch"],
     "distinguido_de": {
         "AP-58": (
             "AP-49 mira **cuándo** se resuelve un vínculo: un valor "

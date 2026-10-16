@@ -49,9 +49,10 @@ from __future__ import annotations
 
 
 import ast
+import re
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict, Iterable, Set
+from typing import Dict, Iterable, List, Set
 
 DIRECTORIO = Path(__file__).resolve().parent
 
@@ -159,6 +160,137 @@ def nombre_de(ruta: Path) -> str:
         if dueno == ruta:
             return alias
     return ruta.stem
+
+
+def _fichero_de_modulo(nombre: str) -> Path | None:
+    """`vault.<ctx>.<m>` → su fichero, o el `__init__.py` si es un paquete."""
+    ruta = _ruta_de_paquete(nombre)
+    if ruta is not None and ruta.suffix == ".py" and ruta.is_file():
+        return ruta
+    init = DIRECTORIO.parent.joinpath(*nombre.split("."), "__init__.py")
+    return init.resolve() if init.is_file() else None
+
+
+def _contextos_importados(ruta: Path) -> List[Path]:
+    """Los módulos de `vault/` fuera del kernel que `ruta` importa arriba.
+
+    Solo nivel superior: un import diferido no es la tool partiéndose, es un
+    préstamo puntual. El kernel se excluye porque es de todos: contarlo daría
+    a cada tool la traza de las normas que el núcleo nombra.
+    """
+    try:
+        arbol = ast.parse(ruta.read_text(encoding="utf-8", errors="ignore"))
+    except (OSError, SyntaxError):
+        return []
+    nombres: List[str] = []
+    for nodo in arbol.body:
+        if isinstance(nodo, ast.Import):
+            nombres += [a.name for a in nodo.names]
+        elif isinstance(nodo, ast.ImportFrom) and nodo.module and nodo.level == 0:
+            nombres.append(nodo.module)
+            nombres += [f"{nodo.module}.{a.name}" for a in nodo.names]
+    fuera: List[Path] = []
+    for n in nombres:
+        if not n.startswith("vault.") or n == "vault.kernel" or n.startswith("vault.kernel."):
+            continue
+        f = _fichero_de_modulo(n)
+        if f is not None and f not in fuera:
+            fuera.append(f)
+    return fuera
+
+
+def partes_de(tool: str, contextos: bool = True) -> List[Path]:
+    """Los ficheros que forman `tool`: dónde puede estar la función que la cumple.
+
+    Son tres, y los tres se derivan del disco:
+
+    - el dueño de la tool (`fuente_de`, que sigue el alias del puente);
+    - los hermanos `{tool}_*` que importa arriba: una tool sigue siendo una
+      cuando su fichero se trocea (`vault_norms` → catálogo + motor);
+    - los módulos de `vault/<ctx>/` fuera del kernel que importan la tool o
+      sus hermanos: `vault_norms --audit` delega en
+      `vault.gobernanza.auditoria_runtime`, y es allí donde nombra AP-10.
+
+    Es el universo que comparten C2 de `vault_norms_coherence` y la cara
+    `guard.py` de cada norma, para que «tiene traza» y «la detecta esta
+    función» no se decidan con dos criterios (AP-57).
+
+    `contextos=False` se queda en el dueño y sus hermanos: la cara `heal.py`
+    lo usa porque el contexto al que delega una tool que repara puede ser el
+    que solo detecta —`vault_norms` repara AP-46 en `heal_ap46` y la detecta
+    en `auditar_runtime`—, y una cara de reparación que apunta a un detector
+    afirma un heal que no existe.
+    """
+    base = fuente_de(tool)
+    if not base.is_file():
+        return []
+    partes = [base]
+    try:
+        cuerpo = ast.parse(base.read_text(encoding="utf-8", errors="ignore")).body
+    except SyntaxError:
+        cuerpo = []
+    for nodo in cuerpo:
+        if (isinstance(nodo, ast.ImportFrom) and nodo.module
+                and nodo.module.startswith(f"{tool}_")):
+            hermano = fuente_de(nodo.module)
+            if hermano.is_file() and hermano not in partes:
+                partes.append(hermano)
+    for p in (list(partes) if contextos else []):
+        for ctx in _contextos_importados(p):
+            if ctx not in partes:
+                partes.append(ctx)
+    return partes
+
+
+def _cuerpo_sin_docstring(lineas: List[str], nodo: ast.AST) -> str:
+    """Las líneas del cuerpo, comentarios incluidos, sin la docstring: un
+    comentario que nombra la norma en la función que la cumple cuenta (capa 4),
+    y la docstring que la menciona de pasada, no."""
+    cuerpo = nodo.body
+    if ast.get_docstring(nodo, clean=False) is not None:
+        cuerpo = cuerpo[1:]
+    if not cuerpo:
+        return ""
+    # El comentario que encabeza el cuerpo va antes de la primera sentencia y
+    # el AST no lo ve: se sube por las líneas de comentario hasta la docstring
+    # o la firma.
+    inicio = cuerpo[0].lineno - 1
+    while inicio > 0 and lineas[inicio - 1].lstrip().startswith("#"):
+        inicio -= 1
+    return "".join(lineas[inicio:nodo.end_lineno])
+
+
+def funciones_que_nombran(ruta: Path, code: str) -> List[str]:
+    """Las funciones de `ruta` que nombran `code` en su cuerpo, en orden.
+
+    Es el criterio de «la norma se nombra en la función que la cumple»: una
+    declaración a nivel de módulo —un registro, una tabla— no es una función
+    que la cumpla. Solo la más interna: la externa contiene a la anidada y
+    citarla sería señalar el módulo entero. `AP-1` no casa dentro de `AP-14`.
+    """
+    try:
+        texto = Path(ruta).read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return []
+    patron = re.compile(rf"(?<![\w-]){re.escape(code)}(?!\d)")
+    if not patron.search(texto):
+        return []
+    try:
+        arbol = ast.parse(texto)
+    except SyntaxError:
+        return []
+    lineas = texto.splitlines(keepends=True)
+    hit = [n for n in ast.walk(arbol)
+           if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+           and patron.search(_cuerpo_sin_docstring(lineas, n))]
+    ids = {id(h) for h in hit}
+    internas = [h for h in hit
+                if not any(id(d) in ids for d in ast.walk(h) if d is not h)]
+    vistos: List[str] = []
+    for h in sorted(internas, key=lambda h: h.lineno):
+        if h.name not in vistos:
+            vistos.append(h.name)
+    return vistos
 
 
 def _nombres_importados(nodo: ast.AST, proyeccion: str) -> Iterable[str]:

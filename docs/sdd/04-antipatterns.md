@@ -115,7 +115,7 @@ Ejecutar vault_migrate_docs sin tener vault_migrate_rollback disponible o sin sn
 
 - **Severidad:** critical
 - **Enforcement:** guard
-- **Detectado por:** vault_audit
+- **Detectado por:** vault_norms
 
 Nota creada con frontmatter correcto pero cuerpo vacío o solo con TODO/placeholders. El agente indexa la nota pero no recibe información útil de ella. Distinción con AP-03: AP-11 = 0 líneas reales; AP-03 = ≥3 líneas reales pero incompleto.
 
@@ -295,7 +295,7 @@ Nota sin bloque de frontmatter. Es el caso degenerado de AP-26/27/29/30 a la vez
 
 - **Severidad:** medium
 - **Enforcement:** audit
-- **Detectado por:** vault_audit, vault_norms
+- **Detectado por:** vault_audit
 
 Nota sin campo `status`. Sin estado no se puede distinguir lo vigente de lo obsoleto, y la nota escapa al vocabulario controlado de CN-03: es la vía por la que contenido derogado sigue leyéndose como vigente.
 
@@ -487,7 +487,7 @@ El estándar no lleva base de datos por decisión normativa, y con consistencia 
 
 - **Severidad:** critical
 - **Enforcement:** guard+audit
-- **Detectado por:** vault_norms, vault_mcp_catalog
+- **Detectado por:** vault_mcp_catalog
 
 La misma tool publicada tiene dos implementaciones y cuál se ejecuta depende de por dónde entres. No es una fachada sobre un núcleo común: son dos cuerpos de código que nadie contrasta, con un solo nombre y un solo contrato publicado -- así que el contrato describe como mucho a uno de los dos.
 
@@ -501,7 +501,7 @@ Medido en v39.5 sobre el servidor MCP: nueve tools con backend nativo en Node, s
 
 - **Severidad:** high
 - **Enforcement:** guard+audit
-- **Detectado por:** vault_norms, vault_arch
+- **Detectado por:** vault_arch
 
 Un módulo deriva su ruta, su configuración o su dependencia en el momento de **importarse**, no en el de usarse. `SYSTEM_DIR = VAULT_ROOT / '00_System'` a nivel de módulo se evalúa una sola vez, cuando el intérprete carga el fichero, y a partir de ahí es una constante.
 
@@ -515,7 +515,7 @@ Medido en v40.0 por el propio guard: **0 vínculos congelados en 0 módulos**. E
 
 - **Severidad:** high
 - **Enforcement:** guard+audit
-- **Detectado por:** vault_norms, vault_arch
+- **Detectado por:** vault_arch
 
 La misma **decisión** --qué valores son válidos, cuál es el default, cómo se escapa un campo-- se toma en más de un punto de uso sin que ningún registro declare quién manda. No es AP-05: aquel habla de un **dato** con dos fuentes, y se ve porque las dos copias divergen. Esto se ve cuando ya divergieron, que es tarde.
 
@@ -715,7 +715,7 @@ Límite declarado: solo ve la llamada de riesgo escrita **a la vista** en el cue
 
 - **Severidad:** medium
 - **Enforcement:** guard+audit
-- **Detectado por:** vault_recursos, vault_arch
+- **Detectado por:** vault_recursos
 
 Un módulo importa a otro **solo para leer un recurso** --una tabla constante, una función pura-- y con el import se lleva todas las dependencias del productor. Cuando los dos están en contextos distintos, la arquitectura registra un cruce de frontera de negocio donde lo único que ocurrió fue **leer un dato**.
 
@@ -1021,7 +1021,7 @@ Ejecutar vault_migrate_docs sin tener vault_migrate_rollback disponible o sin sn
 
 - **Severity:** critical
 - **Enforcement:** guard
-- **Detected by:** vault_audit
+- **Detected by:** vault_norms
 
 Nota creada con frontmatter correcto pero cuerpo vacío o solo con TODO/placeholders. El agente indexa la nota pero no recibe información útil de ella. Distinción con AP-03: AP-11 = 0 líneas reales; AP-03 = ≥3 líneas reales pero incompleto.
 
@@ -1201,7 +1201,7 @@ Nota sin bloque de frontmatter. Es el caso degenerado de AP-26/27/29/30 a la vez
 
 - **Severity:** medium
 - **Enforcement:** audit
-- **Detected by:** vault_audit, vault_norms
+- **Detected by:** vault_audit
 
 Nota sin campo `status`. Sin estado no se puede distinguir lo vigente de lo obsoleto, y la nota escapa al vocabulario controlado de CN-03: es la vía por la que contenido derogado sigue leyéndose como vigente.
 
@@ -1393,7 +1393,7 @@ El estándar no lleva base de datos por decisión normativa, y con consistencia 
 
 - **Severity:** critical
 - **Enforcement:** guard+audit
-- **Detected by:** vault_norms, vault_mcp_catalog
+- **Detected by:** vault_mcp_catalog
 
 La misma tool publicada tiene dos implementaciones y cuál se ejecuta depende de por dónde entres. No es una fachada sobre un núcleo común: son dos cuerpos de código que nadie contrasta, con un solo nombre y un solo contrato publicado -- así que el contrato describe como mucho a uno de los dos.
 
@@ -1407,7 +1407,7 @@ Medido en v39.5 sobre el servidor MCP: nueve tools con backend nativo en Node, s
 
 - **Severity:** high
 - **Enforcement:** guard+audit
-- **Detected by:** vault_norms, vault_arch
+- **Detected by:** vault_arch
 
 Un módulo deriva su ruta, su configuración o su dependencia en el momento de **importarse**, no en el de usarse. `SYSTEM_DIR = VAULT_ROOT / '00_System'` a nivel de módulo se evalúa una sola vez, cuando el intérprete carga el fichero, y a partir de ahí es una constante.
 
@@ -1421,7 +1421,7 @@ Medido en v40.0 por el propio guard: **0 vínculos congelados en 0 módulos**. E
 
 - **Severity:** high
 - **Enforcement:** guard+audit
-- **Detected by:** vault_norms, vault_arch
+- **Detected by:** vault_arch
 
 La misma **decisión** --qué valores son válidos, cuál es el default, cómo se escapa un campo-- se toma en más de un punto de uso sin que ningún registro declare quién manda. No es AP-05: aquel habla de un **dato** con dos fuentes, y se ve porque las dos copias divergen. Esto se ve cuando ya divergieron, que es tarde.
 
@@ -1621,7 +1621,7 @@ Límite declarado: solo ve la llamada de riesgo escrita **a la vista** en el cue
 
 - **Severity:** medium
 - **Enforcement:** guard+audit
-- **Detected by:** vault_recursos, vault_arch
+- **Detected by:** vault_recursos
 
 Un módulo importa a otro **solo para leer un recurso** --una tabla constante, una función pura-- y con el import se lleva todas las dependencias del productor. Cuando los dos están en contextos distintos, la arquitectura registra un cruce de frontera de negocio donde lo único que ocurrió fue **leer un dato**.
 

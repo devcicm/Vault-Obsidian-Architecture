@@ -9,4 +9,6 @@ de derivarlo; se regenera con `vault_norms_engine.escribir_caras_derivadas`.
 
 GUARD = [
     'scripts/vault_reindex.py::vault_reindex',
+    'scripts/vault_write.py::update_search_index',
+    'vault/gobernanza/auditoria_runtime.py::auditar_runtime',
 ]

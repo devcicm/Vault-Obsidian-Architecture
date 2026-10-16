@@ -13,4 +13,5 @@ GUARD = [
     'scripts/vault_io.py::_rechazar_raiz_insegura',
     'scripts/vault_io.py::_rechazar_traversal',
     'scripts/vault_norms.py::main',
+    'vault/gobernanza/auditoria_runtime.py::auditar_runtime',
 ]

@@ -8,5 +8,7 @@ de derivarlo; se regenera con `vault_norms_engine.escribir_caras_derivadas`.
 """
 
 GUARD = [
+    'scripts/vault_write.py::_collect_ghost_links',
     'scripts/vault_graph.py::vault_graph',
+    'scripts/vault_audit.py::_detect_broken_links',
 ]

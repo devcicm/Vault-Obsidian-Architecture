@@ -8,5 +8,6 @@ de derivarlo; se regenera con `vault_norms_engine.escribir_caras_derivadas`.
 """
 
 GUARD = [
+    'scripts/vault_produccion.py::_superficie_autenticada',
     'scripts/vault_token_service.py::_autorizado',
 ]
