@@ -319,6 +319,82 @@ def _huellas(blobs: Dict[str, bytes]) -> Dict[str, str]:
     return dict(zip(ids, valores))
 
 
+def _ruta_huellas() -> Optional[Path]:
+    """Dónde se guardan las huellas ya calculadas: dentro del directorio de git.
+
+    No se versiona, desaparece con el clon y la comparten los worktrees
+    (`--git-common-dir`). Sin git no hay historia que medir ni que guardar.
+    """
+    r = vault_subproceso.ejecutar(["git", "rev-parse", "--git-common-dir"],
+                                  cwd=RAIZ_REPO, capture_output=True)
+    if r.returncode != 0 or not r.stdout.strip():
+        return None
+    base = Path(r.stdout.strip())
+    return (base if base.is_absolute() else RAIZ_REPO / base) / "vault-kernel-huellas.json"
+
+
+def _clave_de_huella() -> str:
+    """Qué invalida lo guardado: el código de la huella y el intérprete.
+
+    `ast.dump` cambia entre versiones de Python, así que una huella de 3.12 no
+    es comparable con una de 3.14 aunque el blob sea el mismo.
+    """
+    import inspect
+    fuente = "".join(inspect.getsource(f) for f in (
+        _es_literal, _es_docstring, huella_de_comportamiento))
+    return hashlib.sha256(f"{sys.version_info[:2]}\n{fuente}".encode("utf-8")).hexdigest()
+
+
+def _huellas_guardadas(ruta: Optional[Path], clave: str) -> Dict[str, str]:
+    """Lo guardado con esta clave. Ilegible u otra clave: nada, y se recalcula.
+
+    Recalcular da la misma cifra que leer —la huella es pura—, así que aquí
+    un vacío no esconde nada: solo cuesta tiempo (no es el vacío de AP-51).
+    """
+    if ruta is None or not ruta.is_file():
+        return {}
+    try:
+        datos = json.loads(ruta.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return {}
+    if not isinstance(datos, dict) or datos.get("clave") != clave:
+        return {}
+    huellas = datos.get("huellas")
+    return dict(huellas) if isinstance(huellas, dict) else {}
+
+
+def _guardar_huellas(ruta: Optional[Path], clave: str, huellas: Dict[str, str]) -> None:
+    """Escritura atómica; si falla, la próxima medida recalcula y nada más."""
+    if ruta is None:
+        return
+    tmp = ruta.with_name(f"{ruta.name}.{os.getpid()}.tmp")
+    try:
+        tmp.write_text(json.dumps({"clave": clave, "huellas": huellas}), encoding="utf-8")
+        os.replace(tmp, ruta)
+    except OSError:
+        tmp.unlink(missing_ok=True)
+
+
+def _huellas_de(ids: Sequence[str]) -> Optional[Dict[str, str]]:
+    """La huella de cada blob, calculando solo las que no estaban guardadas.
+
+    Hasta la auditoría del 2026-10-15 se leían y parseaban todas las versiones
+    históricas en cada ejecución: ~2.400 blobs y 12,7 s de 13,8, creciendo con
+    cada commit aunque el trabajo nuevo fuese uno. Un blob es inmutable y su
+    huella pura, así que lo ya calculado no se vuelve a calcular.
+    """
+    ruta, clave = _ruta_huellas(), _clave_de_huella()
+    guardadas = _huellas_guardadas(ruta, clave)
+    faltan = [i for i in ids if i not in guardadas]
+    if faltan:
+        blobs = _leer_blobs(faltan)
+        if blobs is None:
+            return None
+        guardadas.update(_huellas(blobs))
+        _guardar_huellas(ruta, clave, guardadas)
+    return {i: guardadas[i] for i in ids}
+
+
 def _churn_de_comportamiento() -> Optional[Dict[str, int]]:
     cambios = _cambios_de_todos()
     if cambios is None:
@@ -326,10 +402,9 @@ def _churn_de_comportamiento() -> Optional[Dict[str, int]]:
     # El blob nulo de git —el «antes» de un alta, el «después» de una baja—
     # se reconoce por ser todo ceros, no por su longitud: SHA-256 lo alarga.
     ids = sorted({b for _, a, d in cambios for b in (a, d) if set(b) != {"0"}})
-    blobs = _leer_blobs(ids)
-    if blobs is None:
+    huella = _huellas_de(ids)
+    if huella is None:
         return None
-    huella = _huellas(blobs)
     cuenta: Dict[str, int] = {}
     for modulo, antes, despues in cambios:
         if huella.get(antes) != huella.get(despues):
