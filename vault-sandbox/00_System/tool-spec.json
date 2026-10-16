@@ -3211,8 +3211,9 @@
       "status": "active",
       "required_args": [
         "--project",
-        "--qa_type",
-        "--title"
+        "--title",
+        "--type",
+        "--description"
       ],
       "declared_returns": [
         "created",
