@@ -92,7 +92,9 @@ VARIABLES: Dict[str, Variable] = {
             "(`repo_root_fallback`). Sin ella, leer con esa raíz sigue "
             "permitido y escribir se rechaza: instalado fuera del repo, ese "
             "fallback devuelve el propio directorio del programa, así que la "
-            "escritura caía dentro del toolkit en vez de en un vault.",
+            "escritura caía dentro del toolkit en vez de en un vault. Cuando "
+            "esa raíz es el paquete del programa tampoco se lee: las tools se "
+            "niegan con VAULT_NOT_FOUND salvo con esta bandera.",
             _bandera,
         ),
         Variable(

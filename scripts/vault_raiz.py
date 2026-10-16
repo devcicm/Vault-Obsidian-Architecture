@@ -52,6 +52,15 @@ _VAULT_ROOT_ORIGIN: str = "unknown"
 LOW_CONFIDENCE_ORIGINS = frozenset({"repo_root_fallback", "env_inexistente"})
 
 
+def es_paquete_python(directorio) -> bool:
+    """Un paquete Python no es un vault, aunque se llame `vault/` (AP-44).
+
+    Dueño del criterio: lo usa la autodetección para descartar candidatos y
+    `raiz_es_el_programa()` para reconocer la raíz adivinada que es el toolkit.
+    """
+    return (Path(directorio) / "__init__.py").exists()
+
+
 def _detect_vault_root() -> Path:
     """Auto-detect vault root.
 
@@ -122,7 +131,7 @@ def _detect_vault_root() -> Path:
         # decir, anunciando confianza. Es AP-44 en el detector: se validaba a sí
         # mismo por convención de nombre en vez de por el criterio del
         # consumidor, que es «¿tiene esto contenido de vault?».
-        and not (s / "__init__.py").exists()
+        and not es_paquete_python(s)
     ]
     # Prefer candidates that already have vault content (initialized vault).
     # Con varios candidatos inicializados se selecciona el de mayor madurez:
@@ -212,6 +221,20 @@ def vault_root_origin() -> str:
     if _VAULT_ROOT_ORIGIN == "env_inexistente" and _raiz_env_ya_existe():
         return "env"
     return _VAULT_ROOT_ORIGIN
+
+
+def raiz_es_el_programa() -> bool:
+    """La raíz adivinada es el paquete del propio toolkit, no un vault (AP-36).
+
+    Instalado fuera del repo, el último recurso de `_detect_vault_root()`
+    devuelve el directorio del programa (`site-packages/vault_toolkit`). Una
+    raíz dudosa se lee y no se escribe; ésta no es dudosa sino equivocada:
+    leerla es auditar el código como si fuera el vault del usuario. Un override
+    explícito ya dijo cuál es el vault, y la decisión deja de aplicar.
+    """
+    return (_ACTIVE_VAULT_ROOT is None
+            and _VAULT_ROOT_ORIGIN == "repo_root_fallback"
+            and es_paquete_python(VAULT_ROOT))
 
 
 def _raiz_env_ya_existe() -> bool:

@@ -40,7 +40,7 @@ if str(_REPO_ROOT) not in sys.path:
 # La configuración se lee del registro único, no con un default por punto
 # de uso. Ver `vault_entorno.py`.
 from vault_entorno import leer as _env
-from vault_raiz import RaizNoIdentificada, get_vault_root, vault_root_origin
+from vault_raiz import RaizNoIdentificada, get_vault_root, raiz_es_el_programa, vault_root_origin
 from typing import Any, Callable, Dict, List, Optional
 
 from vault_errors_catalog import (
@@ -390,6 +390,45 @@ def _rechazo_por_raiz_inexistente(tool_name: str) -> Optional[Dict[str, Any]]:
     )
 
 
+#: Con estos argumentos la tool no lee la raíz adivinada: `--help` no toca el
+#: vault y `--root` lo fija la propia tool antes de leer nada.
+_ARGUMENTOS_SIN_RAIZ = ("-h", "--help", "--root")
+
+
+def _rechazo_por_raiz_del_programa(tool_name: str) -> Optional[Dict[str, Any]]:
+    """AP-36: la raíz adivinada es el propio toolkit instalado; no se lee.
+
+    Medido como consumidor el 2026-10-15 con la wheel 41.6: sin `VAULT_ROOT`,
+    `vault_audit` auditó `site-packages/vault_toolkit`, devolvió `ok: true` y
+    propuso reparar los ficheros del paquete, mientras `vault_write` ya se
+    negaba. El criterio «esto es el programa» es de `vault_raiz`; aquí solo se
+    decide no ejecutar. `VAULT_PERMISSIVE_ROOT=1` conserva lo anterior.
+    """
+    if not raiz_es_el_programa() or _env("VAULT_PERMISSIVE_ROOT"):
+        return None
+    if any(a.split("=", 1)[0] in _ARGUMENTOS_SIN_RAIZ for a in sys.argv[1:]):
+        return None
+    en_runtime = (Path.cwd() / "00_System" / "standard-version.json").is_file()
+    pista = (
+        "Indica el vault: `VAULT_ROOT=<runtime> vault run <tool> …`. Para crear "
+        "uno, `vault init <ruta>`."
+    )
+    if en_runtime:
+        pista = (
+            "El directorio actual es un runtime: `VAULT_ROOT=. vault run <tool> …` "
+            "lo usa. La raíz no se deduce del directorio actual a propósito: "
+            "lanzar una tool desde otra carpeta cambiaría en silencio el vault."
+        )
+    return construir_error(
+        tool_name, "VAULT_NOT_FOUND",
+        "No hay vault identificado: sin VAULT_ROOT, la única raíz disponible es "
+        "el propio paquete instalado, y leerla sería tratar el programa como si "
+        "fuera tu vault. No se ejecuta nada.",
+        extra={"cwd_is_runtime": en_runtime},
+        pista=pista,
+    )
+
+
 class _ArgumentosRechazados(SystemExit):
     """argparse rechazó la línea de órdenes antes de que la tool hiciera nada.
 
@@ -423,7 +462,7 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
     """
     limit = timeout if timeout is not None else TOOL_TIMEOUT_SECONDS
 
-    rechazo = _rechazo_por_raiz_inexistente(tool_name)
+    rechazo = _rechazo_por_raiz_inexistente(tool_name) or _rechazo_por_raiz_del_programa(tool_name)
     if rechazo is not None:
         _write_output(json.dumps(rechazo, ensure_ascii=False), sys.stdout)
         return 1

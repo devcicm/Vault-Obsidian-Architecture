@@ -208,6 +208,9 @@ def main(*, gate: str = "CLEAN_INSTALL_GATE") -> int:
 
         clean_env = dict(os.environ)
         clean_env.pop("PYTHONPATH", None)
+        # Un VAULT_ROOT de quien lanza el gate decidiría por el consumidor si
+        # hay vault o no; la instalación limpia empieza sin ninguno.
+        clean_env.pop("VAULT_ROOT", None)
 
         operations_members = sorted(m for m in members if m.startswith("vault_toolkit/operations/vault_") and m.endswith(".py"))
         if len(operations_members) == 0:
@@ -297,8 +300,18 @@ def main(*, gate: str = "CLEAN_INSTALL_GATE") -> int:
         if shown.get("execution_module") != QUERY_MODULE or shown.get("installed") is not True:
             _fail(f"installed metadata not exposed by public CLI: {shown}")
 
+        # AP-36 (2026-10-15): sin VAULT_ROOT la única raíz es el paquete
+        # instalado, y ninguna tool la lee como si fuera el vault.
+        sin_raiz = _run([str(vault), "run", "vault_query_parse", *QUERY_ARGS], cwd=work, env=clean_env)
+        try:
+            rechazo = json.loads(sin_raiz.stdout)
+        except json.JSONDecodeError:
+            rechazo = {}
+        if sin_raiz.returncode != 7 or rechazo.get("error_code") != "VAULT_NOT_FOUND":
+            _fail(f"vault run sin VAULT_ROOT no se negó: exit={sin_raiz.returncode} {sin_raiz.stdout}")
         public_run = _json_output(
-            _run([str(vault), "run", "vault_query_parse", *QUERY_ARGS], cwd=work, env=clean_env),
+            _run([str(vault), "run", "vault_query_parse", *QUERY_ARGS], cwd=work,
+                 env={**clean_env, "VAULT_ROOT": str(work)}),
             "vault run installed",
         )
         if public_run.get("ok") is not True or public_run.get("plan", [{}])[0].get("tool") != "vault_search":
@@ -340,7 +353,8 @@ def main(*, gate: str = "CLEAN_INSTALL_GATE") -> int:
 
         mcp = _mcp_instalado(vault, runtime, work, clean_env)
 
-        invocation = _run([str(python), "-I", "-m", QUERY_MODULE, *QUERY_ARGS], cwd=work, env=clean_env)
+        invocation = _run([str(python), "-I", "-m", QUERY_MODULE, *QUERY_ARGS], cwd=work,
+                          env={**clean_env, "VAULT_ROOT": str(runtime)})
         if invocation.returncode:
             _fail(f"installed operation failed:\n{invocation.stderr}\n{invocation.stdout}")
         try:
