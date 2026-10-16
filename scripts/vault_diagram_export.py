@@ -160,16 +160,16 @@ def export_diagram(
     direction: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Exporta un diagrama con opciones de visualización."""
+    diagram = extract_diagram(file_path)
+    if not diagram:
+        # AP-52: el fallo sale del catálogo, no de mutar un `ok: True`.
+        return emit_error("vault_diagram_export", "DIAGRAM_NOT_FOUND",
+                          f"{_relativa(file_path)}: ningún diagrama en el índice 0",
+                          args={"file": _relativa(file_path), "index": 0})
     result = {
         "ok": True,
         "file": _relativa(file_path),
     }
-
-    diagram = extract_diagram(file_path)
-    if not diagram:
-        result["ok"] = False
-        result["error"] = f"No diagram found at index 0"
-        return result
 
     config = generate_mermaid_config(
         zoom=zoom,

@@ -197,6 +197,13 @@ def vault_init(
             "El vault de destino se fija con VAULT_ROOT, no con --target.",
             args={"target": target_version},
         )
+    # Safety: refuse to run if VAULT_ROOT looks wrong (sandbox not detected).
+    # AP-52: el rechazo sale del catálogo, no de mutar un `ok: True`.
+    if not _raiz().exists() or not _raiz().is_dir():
+        return emit_error(
+            "vault_init", "VAULT_NOT_FOUND",
+            f"VAULT_ROOT does not exist or is not a directory: {_raiz()}",
+        )
     result = {
         "ok": True,
         **write_report(),
@@ -204,14 +211,6 @@ def vault_init(
         "target_version": target_version,
         "steps": [],
     }
-
-    # Safety: refuse to run if VAULT_ROOT looks wrong (sandbox not detected)
-    if not _raiz().exists() or not _raiz().is_dir():
-        result["ok"] = False
-        result["error"] = (
-            f"VAULT_ROOT does not exist or is not a directory: {_raiz()}"
-        )
-        return result
 
     # Step 0: --clean wipes existing content (only if explicitly asked)
     if clean and _raiz().exists():

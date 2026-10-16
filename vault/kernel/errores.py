@@ -565,6 +565,18 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": None,
         },
     },
+    "DIAGRAM_NOT_FOUND": {
+        "category": "not_found",
+        "severity": "error",
+        "message": "La nota no tiene ningún bloque ```mermaid en el índice pedido.",
+        "recovery": {
+            "action": "run_tool",
+            "tool": "vault_mermaid_check",
+            "args": [],
+            "hint": "Comprobar que la nota tiene un bloque ```mermaid cerrado; vault_mermaid_check lista los diagramas del vault.",
+            "docs": None,
+        },
+    },
     "MODULE_NOT_FOUND": {
         "category": "not_found",
         "severity": "error",
