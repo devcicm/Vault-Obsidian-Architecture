@@ -343,6 +343,70 @@ def test_la_pendiente_no_lanza_un_proceso_por_commit(tmp_path, monkeypatch):
     assert n_larga == n_corta, (n_corta, n_larga)
 
 
+def _repo_con_varias(tmp_path, historias):
+    """Un repo con una baseline por historia; cada commit toca todas las que
+    aún tienen tamaño en ese paso, como un `--freeze` que salda varias."""
+    import subprocess
+    def git(*a):
+        subprocess.run(["git", *a], cwd=tmp_path, check=True, capture_output=True)
+    git("init", "-q")
+    git("config", "user.email", "t@t")
+    git("config", "user.name", "t")
+    rutas = [tmp_path / f"b{i}.json" for i in range(len(historias))]
+    for paso in range(max(len(h) for h in historias)):
+        for ruta, historia in zip(rutas, historias):
+            if paso < len(historia):
+                ruta.write_text(json.dumps({"sitios": list(range(historia[paso]))}),
+                                encoding="utf-8")
+                git("add", ruta.name)
+        git("commit", "-q", "-m", f"paso {paso}")
+    return rutas, git
+
+
+def test_las_pendientes_de_todas_las_baselines_no_lanzan_procesos_por_baseline(
+        tmp_path, monkeypatch):
+    """Tras 0238503 quedaban tres procesos de git por baseline (`show` de HEAD,
+    `log`, `cat-file`): el plano pide quince y pagaba ~3,5 s de los ~5 s de
+    `vault_blueprint --check` (auditoría del 2026-10-15, pendiente c). El
+    coste no puede crecer con el número de baselines: se cuentan los procesos
+    con una y con tres, y deben coincidir. La serie de cada una, la suya."""
+    import subprocess
+    real = subprocess.run
+    rutas, _git = _repo_con_varias(tmp_path, [[5, 4, 3], [2, 2], [7, 6, 5, 1]])
+    monkeypatch.setattr(B, "REPO_ROOT", tmp_path)
+    rutas[1].write_text(json.dumps({"sitios": [0]}), encoding="utf-8")  # en curso
+
+    def contar(entradas):
+        llamadas = []
+        def espia(*a, **k):
+            llamadas.append(a[0] if a else k.get("args"))
+            return real(*a, **k)
+        monkeypatch.setattr(subprocess, "run", espia)
+        try:
+            r = B.pendientes(entradas, ultimos=20)
+        finally:
+            monkeypatch.setattr(subprocess, "run", real)
+        return r, len(llamadas)
+
+    todas = [(r, "sitios", "AP-XX") for r in rutas]
+    (una,), n_una = contar(todas[:1])
+    varias, n_varias = contar(todas)
+    assert n_varias == n_una, (n_una, n_varias)
+    assert [x["tamano"] for x in una["serie"]] == [5, 4, 3]
+    assert [[x["tamano"] for x in r["serie"]] for r in varias] == [
+        [5, 4, 3], [2, 1], [7, 6, 5, 1]]  # reescribir lo mismo no es un commit del fichero
+    assert varias[1]["serie"][-1]["commit"] == "en_curso"
+    # Y es lo mismo que pedirlas de una en una.
+    assert varias == [B.pendiente(*e, ultimos=20) for e in todas]
+
+
+def test_las_pendientes_respetan_la_ventana_de_cada_baseline(tmp_path, monkeypatch):
+    rutas, _git = _repo_con_varias(tmp_path, [[9, 8, 7, 6], [3, 2]])
+    monkeypatch.setattr(B, "REPO_ROOT", tmp_path)
+    r = B.pendientes([(x, "sitios", "AP-XX") for x in rutas], ultimos=3)
+    assert [[x["tamano"] for x in p["serie"]] for p in r] == [[8, 7, 6], [3, 2]]
+
+
 def test_un_commit_con_la_baseline_rota_se_salta_sin_romper_la_lectura(tmp_path, monkeypatch):
     """Leer todos los blobs de una vez no puede convertir uno ilegible en un
     corte de la serie: se salta ese y se siguen leyendo los demás."""

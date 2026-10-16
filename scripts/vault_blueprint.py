@@ -1464,14 +1464,14 @@ def blueprint(c: Optional[Dict[str, Any]] = None) -> str:
     A("")
     A("| Baseline | Norma | Congelado | Objetivo | Pendiente |")
     A("|---|---|---|---|---|")
-    for fichero, clave, norma in _BASELINES:
-        ruta = SCRIPTS_DIR / fichero
-        if not ruta.exists():
-            continue
+    presentes = [(SCRIPTS_DIR / f, c, n) for f, c, n in _BASELINES
+                 if (SCRIPTS_DIR / f).exists()]
+    # Todas las pendientes de una vez: dos procesos de git, no tres por fila.
+    for (ruta, clave, norma), p in zip(presentes, vault_baseline.pendientes(presentes)):
         datos = json.loads(ruta.read_text(encoding="utf-8"))
         total = _congelado(datos.get(clave))
-        A(f"| `scripts/{fichero}` | {norma} | {total} | {_objetivo(ruta, clave, norma)} "
-          f"| {_pendiente(ruta, clave, norma)} |")
+        A(f"| `scripts/{ruta.name}` | {norma} | {total} | {_objetivo(ruta, clave, norma)} "
+          f"| {_celda_pendiente(p)} |")
     A("")
     A("Todas encogen y ninguna crece sin decirlo: los tres audits con baseline indexan")
     A("por firma de sitio —`módulo::función::hash de `ast.unparse``— así que mover un")
@@ -1514,7 +1514,11 @@ def _objetivo(ruta: Path, clave: str, norma: str) -> str:
 
 def _pendiente(ruta: Path, clave: str, norma: str) -> str:
     """La celda de `Pendiente`: derivada de git, nunca escrita en el fichero."""
-    p = vault_baseline.pendiente(ruta, clave, norma)
+    return _celda_pendiente(vault_baseline.pendiente(ruta, clave, norma))
+
+
+def _celda_pendiente(p: Dict[str, Any]) -> str:
+    """La celda a partir de la pendiente ya derivada (`vault_baseline.pendientes`)."""
     if not p["disponible"]:
         return "— *sin historia de git*"
     if p["muestras"] < 2:

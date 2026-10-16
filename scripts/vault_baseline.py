@@ -363,17 +363,22 @@ def _tamano_en_curso(path: Path, rel: str, clave: str) -> Optional[int]:
     sería escribir historia—, y lo dirá quien lo cargue con `cargar`.
     """
     try:
+        (head,) = _blobs([f"HEAD:{rel}"])
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return _en_curso_contra(path, clave, head)
+
+
+def _en_curso_contra(path: Path, clave: str, head: Optional[bytes]) -> Optional[int]:
+    """`_tamano_en_curso` con el contenido de HEAD ya leído (`None` si git no
+    lo tiene): así `pendientes` lee el HEAD de todas las baselines de una vez."""
+    try:
         en_disco = path.read_bytes()
     except OSError:
         return None
-    try:
-        head = vault_subproceso.ejecutar(["git", "show", f"HEAD:{rel}"], cwd=REPO_ROOT,
-                                         capture_output=True, timeout=30, check=False)
-    except (OSError, subprocess.SubprocessError):
-        return None
     def _sin_cr(texto: str) -> str:
         return texto.replace("\r\n", "\n")
-    if head.returncode == 0 and _sin_cr(head.stdout) == _sin_cr(
+    if head is not None and _sin_cr(head.decode("utf-8", "replace")) == _sin_cr(
             en_disco.decode("utf-8", "replace")):
         return None
     try:
@@ -423,30 +428,88 @@ def pendiente(path: Path, clave: str, norma: str, ultimos: int = 20) -> Dict[str
     sería afirmar sobre la historia sin que git la respalde, que es AP-53
     exactamente. Aquí se lee de `git log` cada vez, y si git no está disponible
     se dice —`disponible: false`— en vez de devolver una serie vacía que se leería
-    como «esta deuda nunca se movió».
+    como «esta deuda nunca se movió». Es `pendientes` con una sola entrada.
     """
-    rel = path.relative_to(REPO_ROOT).as_posix()
-    # El cambio en curso cuenta como un punto, y entonces git aporta uno menos.
-    # Sin esto, el plano regenerado antes del commit que toca la baseline dejaba
-    # de estar al día justo después: la ventana de `git log -N` se desplazaba un
-    # commit y la serie empezaba en otro sitio (m166 existió solo para eso).
-    en_curso = _tamano_en_curso(path, rel, clave)
-    try:
-        salida = vault_subproceso.ejecutar(
-            ["git", "log", f"-{ultimos - (1 if en_curso is not None else 0)}",
-             "--format=%H %cs", "--", rel],
-            cwd=REPO_ROOT, capture_output=True, timeout=30, check=False)
-    except (OSError, subprocess.SubprocessError) as e:
-        return {"disponible": False, "motivo": f"git no ejecutable: {e}", "serie": []}
+    return pendientes([(path, clave, norma)], ultimos)[0]
+
+
+def _historias(rels: Sequence[str], ultimos: int) -> Dict[str, List[Tuple[str, str]]]:
+    """Los `ultimos` commits que tocaron cada ruta, en un solo `git log`.
+
+    `--name-only` dice qué rutas del filtro tocó cada commit, así que una
+    pasada sirve para todas. Un merge no lista ficheros sin `-m`, y por eso no
+    aporta punto a ninguna: es lo que hacía también `git log -- <ruta>` en
+    esta historia, y el test lo compara contra la consulta de una en una.
+    """
+    salida = vault_subproceso.ejecutar(
+        ["git", "log", "--format=%x01%H %cs", "--name-only", "--", *rels],
+        cwd=REPO_ROOT, capture_output=True, timeout=30, check=False)
     if salida.returncode != 0:
-        return {"disponible": False,
-                "motivo": (salida.stderr or "git log falló").strip(), "serie": []}
-    serie: List[Dict[str, Any]] = []
-    commits = [(c, f) for c, _, f in (l.partition(" ") for l in salida.stdout.splitlines()) if c]
+        raise subprocess.SubprocessError((salida.stderr or "git log falló").strip())
+    historias: Dict[str, List[Tuple[str, str]]] = {rel: [] for rel in rels}
+    actual: Optional[Tuple[str, str]] = None
+    for linea in salida.stdout.splitlines():
+        if linea.startswith("\x01"):
+            commit, _, fecha = linea[1:].partition(" ")
+            actual = (commit, fecha.strip())
+        elif linea.strip() and actual is not None:
+            vistos = historias.get(linea.strip())
+            if vistos is not None and len(vistos) < ultimos:
+                vistos.append(actual)
+    return historias
+
+
+def pendientes(entradas: Sequence[Tuple[Path, str, str]],
+               ultimos: int = 20) -> List[Dict[str, Any]]:
+    """`pendiente` de varias baselines con dos procesos de git en total.
+
+    Auditoría del 2026-10-15, pendiente c: tras 0238503 cada baseline pagaba
+    tres procesos (`show` de HEAD, `log`, `cat-file`) y el plano pide quince,
+    ~3,5 s de los ~5 s de `vault_blueprint --check`. Ahora un `log` para todas
+    las rutas y un `cat-file --batch` para sus HEAD y su historia (AP-66: el
+    coste crece con lo que no es trabajo). Cada resultado es el mismo que daría
+    `pendiente` sobre esa entrada sola, en el orden de la entrada.
+    """
+    entradas = list(entradas)
+    if not entradas:
+        return []
+    rels = [p.relative_to(REPO_ROOT).as_posix() for p, _, _ in entradas]
+
+    def sin_git(motivo: str) -> List[Dict[str, Any]]:
+        return [{"disponible": False, "motivo": motivo, "serie": []} for _ in entradas]
+
     try:
-        blobs = _blobs([f"{c}:{rel}" for c, _ in commits])
+        historias = _historias(rels, ultimos)
+    except OSError as e:
+        return sin_git(f"git no ejecutable: {e}")
+    except subprocess.SubprocessError as e:
+        return sin_git(str(e) or "git log falló")
+    revisiones = [f"HEAD:{rel}" for rel in rels]
+    for rel in rels:
+        revisiones.extend(f"{c}:{rel}" for c, _ in historias[rel])
+    try:
+        blobs = _blobs(revisiones)
     except (OSError, subprocess.SubprocessError) as e:
-        return {"disponible": False, "motivo": f"git no ejecutable: {e}", "serie": []}
+        return sin_git(f"git no ejecutable: {e}")
+    heads, resto = blobs[:len(rels)], iter(blobs[len(rels):])
+    resultados = []
+    for (path, clave, norma), rel, head in zip(entradas, rels, heads):
+        commits = historias[rel]
+        propios = [next(resto) for _ in commits]
+        # El cambio en curso cuenta como un punto, y entonces git aporta uno
+        # menos. Sin esto, el plano regenerado antes del commit que toca la
+        # baseline dejaba de estar al día justo después: la ventana de
+        # `git log -N` se desplazaba un commit (m166 existió solo para eso).
+        en_curso = _en_curso_contra(path, clave, head)
+        if en_curso is not None:
+            commits, propios = commits[:ultimos - 1], propios[:ultimos - 1]
+        resultados.append(_serie(commits, propios, clave, norma, en_curso))
+    return resultados
+
+
+def _serie(commits: Sequence[Tuple[str, str]], blobs: Sequence[Optional[bytes]],
+           clave: str, norma: str, en_curso: Optional[int]) -> Dict[str, Any]:
+    serie: List[Dict[str, Any]] = []
     for (commit, fecha), blob in zip(commits, blobs):
         if blob is None:
             continue
@@ -458,7 +521,7 @@ def pendiente(path: Path, clave: str, norma: str, ultimos: int = 20) -> Dict[str
             continue
         valor = datos.get(clave) if isinstance(datos, dict) else None
         if valor is not None:
-            serie.append({"commit": commit[:7], "fecha": fecha.strip(),
+            serie.append({"commit": commit[:7], "fecha": fecha,
                           "tamano": tamano_congelado(valor)})
     serie.reverse()  # del más viejo al más nuevo, que es como se lee una pendiente
     if en_curso is not None:
