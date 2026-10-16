@@ -89,12 +89,10 @@ def speak(
 
 def coverage() -> Dict[str, Any]:
     """AP-43: cobertura del catálogo del estándar, no del runtime."""
-    try:
-        from vault_mcp_catalog import TOOLS_CATALOG
+    # AP-51: sin catálogo no hay medida; `tools = []` daba todas por mudas.
+    from vault_mcp_catalog import TOOLS_CATALOG
 
-        tools = sorted(TOOLS_CATALOG)
-    except Exception:
-        tools = []
+    tools = sorted(TOOLS_CATALOG)
     dichas = {norma["code"] for tool in tools for norma in norms_for_tool(tool)}
     todas = {norma["code"] for norma in _catalog()}
     descubiertas = sorted(

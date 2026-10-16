@@ -1001,6 +1001,29 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         ),
     },
     {
+        "id": "ap48_sin_voz",
+        "estado": "pendiente",
+        "desde": "tras v41.6",
+        "capa": "4",
+        "que": (
+            "AP-43 sobre AP-48: ninguna tool del catálogo MCP pronuncia AP-48. "
+            "Su guard es `vault_mcp_catalog.check_contracts`, que corre la "
+            "puerta `contratos` y no es una tool del catálogo, así que la norma "
+            "no llega al agente por `vault_says`. Hasta f2110b5 la «pronunciaba» "
+            "`vault_norms`, que solo la nombraba en el registro: la afirmación "
+            "era falsa y C2 dejó de aceptarla. Medido el 2026-10-15."
+        ),
+        "por_que_no_ahora": (
+            "Darle voz exige que una tool del catálogo ejecute la comprobación "
+            "—exponer `vault_mcp_catalog` como tool, o que `vault_gate` publique "
+            "las normas de cada puerta desde una función que las mida— y las dos "
+            "son decisiones de superficie de producto, no un arreglo. Volver a "
+            "atribuírsela a `vault_norms` sería reponer la afirmación falsa. "
+            "`tests/test_voice.py::test_limite_declarado_ap48_sin_voz` fija la "
+            "muda y falla el día que una tool la pronuncie."
+        ),
+    },
+    {
         "id": "lock_caduca_por_reloj_de_pared",
         "estado": "saldada",
         "saldada_en": "tras v41.6 (2026-10-15, sin versión publicada)",

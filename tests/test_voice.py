@@ -189,9 +189,12 @@ def test_ninguna_norma_del_catalogo_es_muda():
     o a callar el hueco — las dos peores salidas.
     """
     r = voz.coverage()
-    assert r["ok"], f"normas que ninguna tool pronuncia: {r['silent']}"
+    # Solo la muda que el plano declara como deuda (ver el test de límite).
+    assert set(r["silent"]) <= MUDAS_DECLARADAS, (
+        f"normas que ninguna tool pronuncia: {r['silent']}")
     assert r["norms_total"] == len(NORM_CATALOG)
-    assert r["norms_spoken"] + len(r["uncovered_declared"]) == len(NORM_CATALOG)
+    assert (r["norms_spoken"] + len(r["uncovered_declared"]) + len(r["silent"])
+            == len(NORM_CATALOG))
 
 
 def test_toda_norma_no_pronunciada_declara_por_escrito_por_que():
@@ -227,3 +230,32 @@ def test_vault_voice_esta_en_el_catalogo_de_tools():
     from vault_mcp_catalog import TOOLS_CATALOG
 
     assert "vault_voice" in TOOLS_CATALOG
+
+
+def test_sin_catalogo_de_tools_la_cobertura_no_declara_mudas_todas(monkeypatch):
+    """Auditoría del 2026-10-15 (AP-51): `except Exception: tools = []`.
+
+    Sin el catálogo de tools, ninguna norma salía pronunciada y `coverage()`
+    las daba a todas por mudas; `vault_norms` emitía un AP-43 falso por cada
+    una. Lo honesto es que el fallo llegue, no un diagnóstico inventado.
+    """
+    monkeypatch.setitem(sys.modules, "vault_mcp_catalog", None)
+    with pytest.raises(ImportError):
+        voz.coverage()
+
+
+#: Mudas con deuda pendiente en `vault_blueprint.DEUDA_DECLARADA`.
+MUDAS_DECLARADAS = {"AP-48"}
+
+
+def test_limite_declarado_ap48_sin_voz():
+    """AP-48 no la pronuncia ninguna tool del catálogo: deuda `ap48_sin_voz`.
+
+    Falla el día que una tool la pronuncie; entonces la deuda se salda y
+    `MUDAS_DECLARADAS` se vacía.
+    """
+    import vault_blueprint
+
+    deuda = {d["id"]: d for d in vault_blueprint.DEUDA_DECLARADA}["ap48_sin_voz"]
+    assert deuda["estado"] == "pendiente"
+    assert voz.coverage()["silent"] == ["AP-48"]
