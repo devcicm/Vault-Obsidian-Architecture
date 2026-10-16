@@ -305,10 +305,12 @@ def _score_validity(fm: Dict[str, str]) -> Tuple[float, List[str]]:
             errors.append(f"validity: cia_sensitivity '{v}' invalid")
     if "status" in fm:
         v = fm["status"].lower().replace("-", "_")
-        # Lo que el dueño normaliza (sinónimo, calificador) es válido: CN-03 ya
-        # lo acepta, y la lista de heredados no puede ser una segunda tabla de
-        # sinónimos que penalice `accepted` (AP-57). Los heredados que el dueño
-        # no decide siguen tolerados (no-derogación).
+        # Lo que el dueño normaliza (sinónimo, calificador) es válido: tiene
+        # significado, y la lista de heredados no puede ser una segunda tabla de
+        # sinónimos que penalice `accepted` (AP-57). Validez no es CN-03: el
+        # runtime audit sigue marcando `accepted` por no estar escrito en
+        # STATUS_VOCAB, que es otra pregunta. Los heredados que el dueño no
+        # decide siguen tolerados (no-derogación).
         if v not in STATUS_VALUES and normalize_status(fm["status"])[0] is None:
             errors.append(f"validity: status '{fm['status']}' not in known values")
     if "type" in fm:

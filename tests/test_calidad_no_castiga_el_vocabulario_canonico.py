@@ -117,3 +117,27 @@ def test_un_status_que_el_dueno_normaliza_no_resta(valor):
     from vault_norms_catalog import normalize_status
     assert normalize_status(valor)[0] is not None
     assert q._score_validity({"status": valor}) == (1.0, [])
+
+
+def test_f5_y_cn03_miden_cosas_distintas_y_el_codigo_no_dice_lo_contrario(tmp_path):
+    """`accepted` tiene significado para el dueño (`normalize_status` lo lleva a
+    `approved`) y F5 no lo resta; pero no está escrito en el vocabulario
+    canónico, y el único detector de CN-03 lo marca. El comentario de
+    `_score_validity` afirmaba que CN-03 ya lo aceptaba: una frase falsa sobre
+    otra norma escrita en el sitio que la cita. Validez es «se entiende»,
+    CN-03 es «se escribe así»: las dos conductas se fijan aquí juntas."""
+    import inspect
+
+    from vault.gobernanza.auditoria_runtime import auditar_runtime
+
+    root = tmp_path / "vault"
+    (root / "00_System").mkdir(parents=True)
+    (root / "03_Decisions").mkdir()
+    (root / "03_Decisions" / "index.md").write_text("---\ntitle: idx\n---\n# idx\n",
+                                                    encoding="utf-8")
+    (root / "03_Decisions" / "adr.md").write_text(
+        "---\ntitle: ADR\nstatus: accepted\n---\n# ADR\n", encoding="utf-8")
+    marcadas = [v for v in auditar_runtime(root)["violations"] if v["norm"] == "CN-03"]
+    assert any("accepted" in v["detail"] for v in marcadas)
+    assert q._score_validity({"status": "accepted"}) == (1.0, [])
+    assert "CN-03 ya" not in inspect.getsource(q._score_validity)
