@@ -236,3 +236,54 @@ def test_el_grafo_mide_al_dueno_de_un_alias_y_no_al_alias():
         assert G_[nombre] == esperado, nombre
     # Y al menos uno de ellos importa algo: si no, la igualdad no prueba nada.
     assert any(G_[n] for n in migrados)
+
+
+# ── Coste: lineal en el tamaño, no en la historia de llamadas ────────────────
+
+def _anidadas(profundidad: int) -> ast.Module:
+    fuente, sangria = "", ""
+    for i in range(profundidad):
+        fuente += f"{sangria}def f{i}():\n"
+        sangria += "    "
+    fuente += f"{sangria}import vault_io\n"
+    return ast.parse(fuente)
+
+
+def test_en_funcion_es_lineal_en_el_anidamiento(monkeypatch):
+    """Auditoría del 2026-10-15: `_en_funcion` recorría cada función entera, y
+    las anidadas otra vez por cada función que las contiene — cuadrático en la
+    profundidad. Se cuentan nodos visitados: con 90 niveles no pueden pasar
+    de unas pocas veces el tamaño del árbol."""
+    arbol = _anidadas(90)  # el parser no admite 100
+    total = sum(1 for _ in ast.walk(arbol))
+    visitas = []
+    real = ast.iter_child_nodes
+    def espia(n):
+        visitas.append(1)
+        return real(n)
+    monkeypatch.setattr(ast, "iter_child_nodes", espia)
+    dentro = G._en_funcion(arbol)
+    monkeypatch.setattr(ast, "iter_child_nodes", real)
+    # Mismo resultado: todo nodo bajo alguna función, y la función misma.
+    esperado = {id(n) for n in ast.walk(arbol) if not isinstance(n, ast.Module)}
+    assert dentro == esperado
+    assert len(visitas) <= 3 * total, (len(visitas), total)
+
+
+def test_el_grafo_no_vuelve_a_recorrer_un_fichero_que_no_cambio(monkeypatch):
+    """`vault_recursos --check` pedía el grafo cuatro veces y cada una recorría
+    los ~250 árboles otra vez (22 s de 32). Los árboles ya estaban en caché; el
+    recorrido no. La segunda llamada no puede recorrer ninguno."""
+    G.grafo()
+    G.importaciones(RAIZ / "scripts" / "vault_arch.py")
+    recorridos = []
+    real = ast.walk
+    def espia(n):
+        recorridos.append(1)
+        return real(n)
+    monkeypatch.setattr(ast, "walk", espia)
+    segundo = G.grafo()
+    G.importaciones(RAIZ / "scripts" / "vault_arch.py")
+    monkeypatch.setattr(ast, "walk", real)
+    assert recorridos == []
+    assert segundo == G.grafo()

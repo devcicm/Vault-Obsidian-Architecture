@@ -52,7 +52,7 @@ import ast
 import re
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict, Iterable, List, Set
+from typing import Dict, FrozenSet, Iterable, List, Set, Tuple
 
 DIRECTORIO = Path(__file__).resolve().parent
 
@@ -323,12 +323,19 @@ def _en_funcion(arbol: ast.AST) -> Set[int]:
     estar dentro o fuera **es** lo que mide AP-58. Se calcula por identidad de
     nodo y no por número de línea porque un decorador o un `if` de por medio
     desplazan la línea sin cambiar la pertenencia.
+
+    Una sola pasada con el estado «ya dentro» heredado: hasta la auditoría del
+    2026-10-15 recorría cada función entera y las anidadas otra vez por cada
+    función que las contiene, cuadrático en la profundidad.
     """
     dentro: Set[int] = set()
-    for f in ast.walk(arbol):
-        if isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            for n in ast.walk(f):
-                dentro.add(id(n))
+    pila = [(arbol, False)]
+    while pila:
+        nodo, en = pila.pop()
+        en = en or isinstance(nodo, (ast.FunctionDef, ast.AsyncFunctionDef))
+        if en:
+            dentro.add(id(nodo))
+        pila.extend((h, en) for h in ast.iter_child_nodes(nodo))
     return dentro
 
 
@@ -394,16 +401,40 @@ def importaciones(ruta: Path, proyeccion: str = PREFIJO_VAULT) -> Set[str]:
     arbol = _arbol(ruta, proyeccion)
     if arbol is None:
         return set()
-    universo = None if proyeccion == PREFIJO_VAULT else modulos()
-    fuera: Set[str] = set()
-    for nodo in ast.walk(arbol):
-        for nombre in _nombres_importados(nodo, proyeccion):
-            if proyeccion == PREFIJO_VAULT:
-                if nombre.startswith("vault_"):
-                    fuera.add(nombre)
-            elif nombre in universo and nombre != ruta.stem:
-                fuera.add(nombre)
-    return fuera
+    top, dif = _nombres_del_arbol(arbol, proyeccion)
+    if proyeccion == PREFIJO_VAULT:
+        return {n for n in top | dif if n.startswith("vault_")}
+    universo = modulos()
+    return {n for n in top | dif if n in universo and n != ruta.stem}
+
+
+def _nombres_del_arbol(arbol: ast.AST, proyeccion: str) -> Tuple[FrozenSet[str], FrozenSet[str]]:
+    """Los nombres importados por el árbol, partidos en cabecera y diferidos.
+
+    Se memoriza por identidad del árbol, que `_arbol_firma` ya cachea por firma
+    del fichero: un fichero que cambia trae un árbol nuevo y con él un recorrido
+    nuevo. Hasta la auditoría del 2026-10-15 cada `grafo()` recorría los ~250
+    árboles otra vez, y `vault_recursos --check` lo pedía cuatro veces.
+    El filtro por universo se aplica fuera, porque el universo puede cambiar
+    sin que cambie el fichero.
+    """
+    clave = (id(arbol), proyeccion)
+    hecho = _NOMBRES.get(clave)
+    if hecho is not None and hecho[0] is arbol:
+        return hecho[1], hecho[2]
+    dentro = _en_funcion(arbol)
+    top: Set[str] = set()
+    dif: Set[str] = set()
+    for n in ast.walk(arbol):
+        for nombre in _nombres_importados(n, proyeccion):
+            (dif if id(n) in dentro else top).add(nombre)
+    _NOMBRES[clave] = (arbol, frozenset(top), frozenset(dif))
+    return _NOMBRES[clave][1], _NOMBRES[clave][2]
+
+
+#: (id del árbol, proyección) → (árbol, cabecera, diferidos). Guarda el árbol
+#: para que un `id` reciclado por el recolector no devuelva nombres de otro.
+_NOMBRES: Dict[Tuple[int, str], Tuple[ast.AST, FrozenSet[str], FrozenSet[str]]] = {}
 
 
 def grafo() -> Dict[str, Dict[str, Set[str]]]:
@@ -423,14 +454,9 @@ def grafo() -> Dict[str, Dict[str, Set[str]]]:
         # de su dueño. Leer `p` lo dejaba con fan-out 0 (AP-44).
         arbol = _arbol(codigo_de(p), MODULOS_LOCALES)
         assert arbol is not None  # MODULOS_LOCALES levanta, nunca devuelve None
-        dentro = _en_funcion(arbol)
-        top.setdefault(p.stem, set())
-        dif.setdefault(p.stem, set())
-        for n in ast.walk(arbol):
-            for nombre in _nombres_importados(n, MODULOS_LOCALES):
-                if nombre in mods and nombre != p.stem:
-                    destino = dif if id(n) in dentro else top
-                    destino[p.stem].add(nombre)
+        cabecera, diferidos = _nombres_del_arbol(arbol, MODULOS_LOCALES)
+        top[p.stem] = {n for n in cabecera if n in mods and n != p.stem}
+        dif[p.stem] = {n for n in diferidos if n in mods and n != p.stem}
     return {"top": top, "diferido": dif}
 
 
