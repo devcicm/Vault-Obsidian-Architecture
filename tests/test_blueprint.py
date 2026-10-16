@@ -424,3 +424,19 @@ def test_el_check_muerde_sobre_una_saldada_en_sin_forma(monkeypatch, valor):
          "estado": "saldada", "saldada_en": valor, "desde": "v0.1",
          "sostenida_por": ["tests/test_blueprint.py::test_la_deuda_declarada_vive_en_el_registro_y_no_en_el_documento"]}])
     assert any(p["kind"] == "deuda_saldada_en_sin_forma" for p in bp.check()["problems"])
+
+
+def test_ap66_check_mide_la_cobertura_una_sola_vez(monkeypatch):
+    """La capa 4 lee todos los tests del repo (1,7 s medidos el 2026-10-16) y
+    `check()` la pedía dos veces: una para el plano y otra para la baseline.
+    Repetir el mismo recorrido no es trabajo nuevo (AP-66)."""
+    original = bp.cobertura_de_normas
+    llamadas = []
+
+    def contada():
+        llamadas.append(1)
+        return original()
+
+    monkeypatch.setattr(bp, "cobertura_de_normas", contada)
+    assert bp.check()["ok"]
+    assert len(llamadas) == 1

@@ -47,7 +47,7 @@ import re
 import sys
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -1303,9 +1303,10 @@ def capas() -> Dict[str, Any]:
 
 # ── El plano ─────────────────────────────────────────────────────────────────
 
-def blueprint() -> str:
+def blueprint(c: Optional[Dict[str, Any]] = None) -> str:
+    """El plano en Markdown. `c` lo pasa quien ya calculó las capas (AP-66)."""
     r = _registros()
-    c = capas()
+    c = capas() if c is None else c
     lineas: List[str] = []
     A = lineas.append
 
@@ -1560,7 +1561,7 @@ _BASELINES = [
 
 # ── Guards ───────────────────────────────────────────────────────────────────
 
-def _sin_cobertura() -> set:
+def _sin_cobertura(cobertura: Optional[List[Dict[str, Any]]] = None) -> set:
     """Normas sin puerta ni test, **descontadas las que lo declaran por escrito**.
 
     Una norma con `cobertura_descubierta` es un hueco escrito y con motivo, y la
@@ -1569,7 +1570,7 @@ def _sin_cobertura() -> set:
     AP-04 apareció aquí el día que la cobertura por mención dejó de valer.
     """
     return {
-        n["code"] for n in cobertura_de_normas()
+        n["code"] for n in (cobertura_de_normas() if cobertura is None else cobertura)
         if not n["covered"] and not n["uncovered_declared"]
     }
 
@@ -1583,6 +1584,8 @@ FORMA_DE_SALDADA_EN = re.compile(
 def check(strict: bool = False) -> Dict[str, Any]:
     r = _registros()
     problemas: List[Dict[str, str]] = []
+    # AP-66: la capa 4 lee todos los tests; el plano y la baseline la comparten.
+    c = capas()
 
     # 1. El doc publicado no diverge de los registros.
     if not DOC.exists():
@@ -1590,7 +1593,7 @@ def check(strict: bool = False) -> Dict[str, Any]:
             {"kind": "plano_ausente", "detail": "docs/BLUEPRINT.md no existe — "
              "genera con `python scripts/vault_blueprint.py --blueprint`"}
         )
-    elif DOC.read_text(encoding="utf-8").strip() != blueprint().strip():
+    elif DOC.read_text(encoding="utf-8").strip() != blueprint(c).strip():
         problemas.append(
             {"kind": "plano_desactualizado", "detail": "docs/BLUEPRINT.md difiere de "
              "los registros — regenera con `--blueprint`. Si el cambio se escribió a "
@@ -1614,7 +1617,7 @@ def check(strict: bool = False) -> Dict[str, Any]:
 
     # 3. Capa 4 contra la baseline: solo puede encoger.
     base = set(_leer_baseline().get("uncovered_norms", []))
-    descubiertas = _sin_cobertura()
+    descubiertas = _sin_cobertura(c["4_normas"])
     nuevas = sorted(descubiertas - base)
     saldadas = sorted(base - descubiertas)
     if nuevas:
