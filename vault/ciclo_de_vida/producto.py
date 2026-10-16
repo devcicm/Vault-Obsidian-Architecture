@@ -112,10 +112,12 @@ def _write_hub_minimo(root: Path) -> None:
 
 
 def _target(target: str | Path) -> Path:
-    path = Path(target).expanduser()
+    # Se resuelve antes de mirar el nombre: `.` y `..` no tienen nombre hasta
+    # resolverse, y la raíz de un disco sigue sin tenerlo después.
+    path = Path(target).expanduser().resolve()
     if not path.name:
         raise ValueError("el runtime necesita una ruta de directorio concreta")
-    return path.resolve()
+    return path
 
 
 def _initialized(root: Path, seed: RuntimeSeed) -> bool:

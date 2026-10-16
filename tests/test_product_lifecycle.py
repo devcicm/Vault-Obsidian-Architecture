@@ -272,3 +272,18 @@ def test_doctor_dice_como_regenerar_standard_version_ap51(tmp_path, capsys, monk
         error = json.loads(capsys.readouterr().err)
         assert "vault_standard_upgrade --init" in error["recovery"]["hint"], error
         assert error.get("expected_version") == esperada, error
+
+
+def test_doctor_acepta_el_directorio_actual(tmp_path, monkeypatch):
+    """Medido el 2026-10-15 con la wheel 41.6: `vault doctor .` desde dentro de
+    un runtime salía INVALID_TARGET («necesita una ruta de directorio
+    concreta») porque `Path(".").name` está vacío antes de resolver. El
+    rechazo era para la raíz de un disco, que sigue sin nombre resuelta."""
+    runtime = tmp_path / "runtime"
+    assert producto.inicializar_runtime(runtime)["ok"]
+    monkeypatch.chdir(runtime)
+    assert producto.diagnosticar_runtime(".")["state"] == "RUNTIME_OK"
+    monkeypatch.chdir(runtime / "00_System")
+    assert producto.diagnosticar_runtime("..")["state"] == "RUNTIME_OK"
+    raiz_del_disco = Path(tmp_path.anchor)
+    assert producto.diagnosticar_runtime(raiz_del_disco)["state"] == "INVALID_TARGET"
