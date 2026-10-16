@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-65 más
-> las familias PAT, SP y CN. Por familia: AP 65, CN 4, PAT 6, SP 4.
-> Bilingual document. Full norm catalog: antipatterns AP-01..AP-65 plus the PAT,
-> SP and CN families. By family: AP 65, CN 4, PAT 6, SP 4.
+> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-66 más
+> las familias PAT, SP y CN. Por familia: AP 66, CN 4, PAT 6, SP 4.
+> Bilingual document. Full norm catalog: antipatterns AP-01..AP-66 plus the PAT,
+> SP and CN families. By family: AP 66, CN 4, PAT 6, SP 4.
 
 ---
 
 ## ES
 
-Total de normas registradas: 79 (AP 65, CN 4, PAT 6, SP 4)
+Total de normas registradas: 80 (AP 66, CN 4, PAT 6, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -771,6 +771,18 @@ El criterio tiene dueño en `vault.kernel.contenido.falta_de_evaluacion_de_impac
 
 Límites declarados: la norma sabe que la nota nombra afectados, no que la evaluación sea buena; la evaluación completa de 42005 (probabilidad, severidad por afectado, mitigación) no se mide. Contrastada en solo lectura contra los vaults ajenos y las copias de los trece consumidores (regla 7, 2026-10-08): ninguno tiene decisiones de IA con `impact_level`, así que el contraste no ejerció el detector sobre material real.
 
+### AP-66: El coste crece con lo que no es trabajo
+
+- **Severidad:** medium
+- **Enforcement:** guard
+- **Detectado por:** vault_arch
+
+Una tool cuyo tiempo crece con algo distinto de lo que mide: la historia del repo, la profundidad del árbol, el número de veces que se la llama. La auditoría del 2026-10-15 midió las puertas en 132 s y encontró cinco sitios así: `vault_baseline.pendiente` lanzaba un `git show` por cada commit que había listado `git log`, `vault_grafo_import` recorría el árbol entero dentro de su propio recorrido, `vault_arch` resolvía cada módulo repitiendo el mismo barrido, `vault_kernel` reparseaba la historia entera en cada ejecución y `vault_blueprint` volvía a leer cada cuerpo de test. Ninguno fallaba: daban el resultado correcto cada vez más tarde, y una puerta lenta es una puerta que se deja de ejecutar.
+
+**Prevención:** Un proceso por lote y no por elemento (`git cat-file --batch` en vez de un `git show` por commit); una pasada por árbol con su resultado memorizado; y, para la repetición que solo existe en ejecución, un test que cuente el trabajo --procesos lanzados, árboles recorridos-- y no el tiempo, que depende de la máquina.
+
+Límites declarados: el detector no ve la repetición dinámica --reparsear lo mismo en cada llamada, una caché que no acierta-- ni un bucle sobre los ficheros del repo que lanza un proceso por fichero, que es lineal en lo medido y a veces legítimo. Esos casos los vigilan los tests de trabajo de cada arreglo, no la puerta.
+
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
 - **Severidad:** high
@@ -915,7 +927,7 @@ El transporte HTTP/SSE del servidor MCP acepta sesiones sin token, responde con 
 
 ## EN
 
-Total registered norms: 79 (AP 65, CN 4, PAT 6, SP 4)
+Total registered norms: 80 (AP 66, CN 4, PAT 6, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -1676,6 +1688,18 @@ El criterio tiene dueño en `vault.kernel.contenido.falta_de_evaluacion_de_impac
 **Prevention:** Al registrar una decisión de impacto alto, pasar `--affected` con a quién afecta y cómo: `vault_ai_decision ... --impact_level high --affected '["usuarios finales - pierden la sesión al desplegar"]'`. Sin él la nota se escribe igual --un registro incompleto vale más que ninguno-- con `impact_assessment: pendiente`, y el envelope lo dice en `hint`.
 
 Límites declarados: la norma sabe que la nota nombra afectados, no que la evaluación sea buena; la evaluación completa de 42005 (probabilidad, severidad por afectado, mitigación) no se mide. Contrastada en solo lectura contra los vaults ajenos y las copias de los trece consumidores (regla 7, 2026-10-08): ninguno tiene decisiones de IA con `impact_level`, así que el contraste no ejerció el detector sobre material real.
+
+### AP-66: El coste crece con lo que no es trabajo
+
+- **Severity:** medium
+- **Enforcement:** guard
+- **Detected by:** vault_arch
+
+Una tool cuyo tiempo crece con algo distinto de lo que mide: la historia del repo, la profundidad del árbol, el número de veces que se la llama. La auditoría del 2026-10-15 midió las puertas en 132 s y encontró cinco sitios así: `vault_baseline.pendiente` lanzaba un `git show` por cada commit que había listado `git log`, `vault_grafo_import` recorría el árbol entero dentro de su propio recorrido, `vault_arch` resolvía cada módulo repitiendo el mismo barrido, `vault_kernel` reparseaba la historia entera en cada ejecución y `vault_blueprint` volvía a leer cada cuerpo de test. Ninguno fallaba: daban el resultado correcto cada vez más tarde, y una puerta lenta es una puerta que se deja de ejecutar.
+
+**Prevention:** Un proceso por lote y no por elemento (`git cat-file --batch` en vez de un `git show` por commit); una pasada por árbol con su resultado memorizado; y, para la repetición que solo existe en ejecución, un test que cuente el trabajo --procesos lanzados, árboles recorridos-- y no el tiempo, que depende de la máquina.
+
+Límites declarados: el detector no ve la repetición dinámica --reparsear lo mismo en cada llamada, una caché que no acierta-- ni un bucle sobre los ficheros del repo que lanza un proceso por fichero, que es lineal en lo medido y a veces legítimo. Esos casos los vigilan los tests de trabajo de cada arreglo, no la puerta.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 

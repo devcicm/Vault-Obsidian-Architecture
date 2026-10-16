@@ -2517,6 +2517,113 @@ def _leer_baseline() -> dict:
     return json.loads(BASELINE_PATH.read_text(encoding="utf-8"))
 
 
+#: Las llamadas que lanzan un proceso. `ejecutar` es el envoltorio del kernel
+#: (`vault/kernel/subproceso.py`); las de `subprocess` cuentan solo con el
+#: módulo delante, para no confundir `run` con cualquier método homónimo.
+_LANZA_PROCESO_SUBPROCESS = frozenset({"run", "check_output", "check_call", "call", "Popen"})
+
+
+def _lanza_proceso(nodo: ast.AST) -> bool:
+    if not isinstance(nodo, ast.Call):
+        return False
+    f = nodo.func
+    if isinstance(f, ast.Attribute):
+        if f.attr == "ejecutar":
+            return True
+        return (f.attr in _LANZA_PROCESO_SUBPROCESS
+                and isinstance(f.value, ast.Name) and f.value.id == "subprocess")
+    return isinstance(f, ast.Name) and f.id == "ejecutar"
+
+
+def _es_ast_walk(nodo: ast.AST) -> ast.AST | None:
+    """El argumento de `ast.walk(X)`, o `None` si `nodo` no es esa llamada."""
+    if (isinstance(nodo, ast.Call) and nodo.args
+            and isinstance(nodo.func, ast.Attribute) and nodo.func.attr == "walk"
+            and isinstance(nodo.func.value, ast.Name) and nodo.func.value.id == "ast"):
+        return nodo.args[0]
+    return None
+
+
+def _bucles(arbol: ast.AST):
+    """(iterable, cuerpo) de cada `for` y de cada generador de una comprensión."""
+    for nodo in ast.walk(arbol):
+        if isinstance(nodo, (ast.For, ast.AsyncFor)):
+            yield nodo, nodo.iter, nodo.body
+        elif isinstance(nodo, (ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp)):
+            cuerpo = [nodo.key, nodo.value] if isinstance(nodo, ast.DictComp) else [nodo.elt]
+            for gen in nodo.generators:
+                yield nodo, gen.iter, cuerpo + list(gen.ifs)
+
+
+def costes_que_crecen_en(arbol: ast.AST) -> list[dict]:
+    """AP-66 sobre un árbol: las dos formas reconocibles sin ejecutar.
+
+    - `proceso_por_linea_de_proceso`: un bucle cuyo iterable sale de un
+      proceso y cuyo cuerpo lanza otro. Es `pendiente` antes de 0238503: un
+      `git show` por cada commit que había listado `git log`, así que el coste
+      crecía con la historia del repo y no con la baseline que se medía.
+    - `recorrido_dentro_de_su_recorrido`: `ast.walk(X)` dentro del cuerpo de un
+      bucle sobre `ast.walk(X)`, con el mismo `X`. Cuadrático en el tamaño del
+      árbol para responder algo que cabe en una pasada. Recorrer el subárbol de
+      cada nodo no se marca: es lineal en lo que se mide.
+
+    Lo que no ve —la repetición que solo existe en ejecución, como reparsear
+    lo mismo en cada llamada o un bucle sobre los ficheros del repo— lo vigilan
+    los tests que cuentan trabajo de cada arreglo, no este detector.
+    """
+    hallazgos: list[dict] = []
+    funciones = [n for n in ast.walk(arbol)
+                 if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
+    for funcion in funciones or [arbol]:
+        de_proceso = {
+            t.id
+            for n in ast.walk(funcion)
+            if isinstance(n, ast.Assign) and _lanza_proceso(n.value)
+            for t in n.targets if isinstance(t, ast.Name)
+        }
+        for bucle, iterable, cuerpo in _bucles(funcion):
+            nombres = {n.id for n in ast.walk(iterable) if isinstance(n, ast.Name)}
+            iter_de_proceso = bool(nombres & de_proceso) or any(
+                _lanza_proceso(n) for n in ast.walk(iterable))
+            if iter_de_proceso and any(
+                    _lanza_proceso(n) for s in cuerpo for n in ast.walk(s)):
+                hallazgos.append({"kind": "proceso_por_linea_de_proceso",
+                                  "function": getattr(funcion, "name", None),
+                                  "line": bucle.lineno})
+                continue
+            recorrido = _es_ast_walk(iterable)
+            if recorrido is None:
+                continue
+            raiz = ast.dump(recorrido)
+            if any(ast.dump(x) == raiz for s in cuerpo for n in ast.walk(s)
+                   for x in [_es_ast_walk(n)] if x is not None):
+                hallazgos.append({"kind": "recorrido_dentro_de_su_recorrido",
+                                  "function": getattr(funcion, "name", None),
+                                  "line": bucle.lineno})
+    # Una función anidada se visita dos veces —como sí misma y dentro de la
+    # que la contiene—; el sitio es uno.
+    unicos = {(h["kind"], h["line"]): h for h in hallazgos}
+    return sorted(unicos.values(), key=lambda h: (h["line"], h["kind"]))
+
+
+def costes_que_crecen(rutas: list[Path] | None = None) -> list[dict]:
+    """AP-66 — el coste crece con lo que no es trabajo, en todo el alcance medido.
+
+    Sin baseline: se midió cero al declararla, porque los cinco sitios que la
+    auditoría del 2026-10-15 encontró se arreglaron antes. Una lista vacía de
+    excepciones solo invitaría a estrenarla.
+    """
+    hallazgos: list[dict] = []
+    for ruta in (rutas if rutas is not None else arboles_medidos()):
+        try:
+            arbol = _ast_de(ruta)
+        except SyntaxError:
+            continue
+        for h in costes_que_crecen_en(arbol):
+            hallazgos.append({"module": clave_de_modulo(ruta), **h})
+    return hallazgos
+
+
 def check(strict: bool = False) -> dict:
     base = set(_leer_baseline().get("crossings", []))
     actuales = cruces()
@@ -2610,6 +2717,9 @@ def check(strict: bool = False) -> dict:
     puente_nuevos = sorted(puente - base_puente)
     puente_saldados = sorted(base_puente - puente)
 
+    # AP-66, sin baseline: se midió cero al declararla.
+    crecen = costes_que_crecen()
+
     return {
         "ok": not nuevos and not huerfanos and not ausentes and not vinc_nuevos
               and not sin_presupuesto
@@ -2618,6 +2728,7 @@ def check(strict: bool = False) -> dict:
               and not puerto_nuevos and not entorno_sin_registro
               and not copias_vocab and not vocab_sin_dueno
               and not entorno_desfasado and not sis_nuevas and not puente_nuevos
+              and not crecen
               and not (strict and (saldados or vinc_saldados or rutas_saldadas
                                    or puerto_saldados or sis_saldadas
                                    or puente_saldados)),
@@ -2708,6 +2819,8 @@ def check(strict: bool = False) -> dict:
         "bridge_modules_baseline": len(base_puente),
         "new_bridge_modules": puente_nuevos,
         "settled_bridge_modules": puente_saldados,
+        # AP-66 — un bucle cuyo coste crece con algo que no es lo medido.
+        "growing_costs": crecen,
         "crossings": actuales,
     }
 

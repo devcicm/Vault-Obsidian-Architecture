@@ -86,12 +86,14 @@ def test_ap64_es_la_segunda_en_migrar_y_conserva_su_sitio():
 def test_el_catalogo_no_cambia_de_orden_ni_de_contenido():
     codigos = [n["code"] for n in cat.NORM_CATALOG]
     assert len(codigos) == len(set(codigos))
-    # Sitio de siempre: tras AP-64 y antes del primer patrón. El patrón no se
-    # nombra: un código escrito en un test cuenta como cobertura en la capa 4
-    # de `vault_blueprint`, y esta mención de pasada la habría inventado.
+    # Sitio de siempre: tras AP-64, y los antipatrones antes del primer patrón.
+    # Ni el patrón ni las normas posteriores se nombran: un código escrito en un
+    # test cuenta como cobertura en la capa 4 de `vault_blueprint`, y esta
+    # mención de pasada la habría inventado.
     i = codigos.index("AP-65")
     assert codigos[i - 1] == "AP-64"
-    assert cat.NORM_CATALOG[i + 1]["type"] == "pattern"
+    siguiente = next(n for n in cat.NORM_CATALOG[i + 1:] if n["type"] != "antipattern")
+    assert siguiente["type"] == "pattern"
     ap65 = cat.norma_por_codigo("AP-65")
     assert _anunciada_en_su_version("AP-65")
     assert ap65["tools_detecting"] == ["vault_norms"]

@@ -3527,7 +3527,7 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **79 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **80 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -6993,6 +6993,53 @@ evaluación sea buena: la probabilidad, la severidad por afectado y la mitigaci�
 42005 no se miden. Contrastada en solo lectura contra los vaults ajenos y los trece
 consumidores (regla 7, 2026-10-08): ninguno tiene decisiones de IA con `impact_level`, así
 que el detector no se ha ejercido sobre material real.
+
+---
+
+### AP-66 — El coste crece con lo que no es trabajo
+
+**Enforcement:** `guard` · **Severidad:** medium · **Introducido:** pendiente de versión (la fija el próximo bump)
+**Guard:** `python scripts/vault_arch.py --check --strict` (`growing_costs`) · **Detector:** `vault_arch.costes_que_crecen`
+
+**Síntoma.** Una puerta tarda cada vez más sin que crezca lo que mide. La auditoría del
+2026-10-15 midió las puertas en 132 s y encontró cinco sitios así:
+`vault_baseline.pendiente` lanzaba un `git show` por cada commit listado por `git log`,
+`vault_grafo_import` recorría el árbol entero dentro de su propio recorrido, `vault_arch`
+repetía el mismo barrido para resolver cada módulo, `vault_kernel` reparseaba la historia
+entera en cada ejecución y `vault_blueprint` volvía a leer cada cuerpo de test.
+
+**Por qué importa.** Ninguno de los cinco daba un resultado erróneo: daban el correcto, cada
+vez más tarde. El coste lo paga quien desarrolla en cada commit, y una puerta lenta es una
+puerta que se acaba saltando. Eso es justo lo que el estándar no puede permitirse, porque sus
+normas solo valen mientras alguien las ejecuta.
+
+**Señal.** Hay dos formas que se reconocen sin ejecutar el código:
+
+- `proceso_por_linea_de_proceso`: un bucle o una comprensión cuyo iterable sale de un
+  proceso (`subprocess.run`/`check_output`/`Popen` o `ejecutar` del kernel) y cuyo cuerpo
+  lanza otro proceso.
+- `recorrido_dentro_de_su_recorrido`: `ast.walk(X)` dentro de un bucle sobre `ast.walk(X)`
+  con el mismo `X`. Recorrer el subárbol de cada nodo no se marca, porque es lineal en lo
+  que se mide.
+
+**Prevención.**
+
+- Lanzar un proceso por lote y no uno por elemento: `git cat-file --batch` en lugar de un
+  `git show` por commit.
+- Recorrer cada árbol una sola vez y memorizar el resultado.
+- Para la repetición que solo aparece en ejecución, escribir un test que cuente el trabajo
+  hecho (procesos lanzados, árboles recorridos) y no el tiempo, que depende de la máquina.
+
+**Lo que verde no prueba.** El detector no ve:
+
+- la repetición dinámica, como reparsear lo mismo en cada llamada o una caché que nunca
+  acierta;
+- un bucle sobre los ficheros del repo que lanza un proceso por fichero, que es lineal en
+  lo medido y a veces es legítimo.
+
+Esos casos los vigilan los tests de trabajo de cada arreglo, no la puerta. La norma mide el
+código de este repo y no notas, así que la regla 7 no tiene aquí vault ajeno contra el que
+contrastarla.
 
 ---
 

@@ -42,6 +42,11 @@ NORMA = {
             "verdadero de un universo equivocado — comprobable, y por eso "
             "no es AP-37."
         ),
+        "AP-66": (
+            "AP-37 pregunta si una tool dice cuánto trabajo hizo; AP-66, "
+            "si su coste crece con ese trabajo o con otra cosa. Una tool "
+            "puede declarar `written` exacto y tardar con la historia del repo."
+        ),
     },
     "introduced_version": "v39",
     "revisado_en": "2026-10-09",
