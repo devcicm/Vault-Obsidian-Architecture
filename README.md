@@ -634,7 +634,7 @@ scripts/                    ← 162 archivos Python (124 tools del catálogo + 8
 ├── vault_infra_save.py     — componentes de infraestructura + mapa de red auto-generado
 ├── vault_knowledge_save.py — conocimiento estructurado por categoría
 ├── vault_diagram_save.py   — diagramas Mermaid/ASCII/PlantUML
-├── ...                     — 75 scripts adicionales
+├── ...                     — el resto de scripts (ver scripts/README.md)
 └── README.md               — referencia completa de parámetros y ejemplos
 ```
 

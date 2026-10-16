@@ -228,7 +228,7 @@ PUERTAS: List[Dict[str, Any]] = [
                 "dependencia, plataforma, superficie de red— tiene a alguien "
                 "que la ejerza, y los huecos están declarados con su motivo",
         "fix": "añadir el ejecutor que falta, o declarar la promesa como "
-               "descubierta con el motivo escrito; las otras veinte puertas "
+               "descubierta con el motivo escrito; las demás puertas "
                "miden el repo contra sí mismo y en esa sala no está el "
                "consumidor, que es como >=3.9 pasó en verde sin que ninguna "
                "máquina ejecutara 3.9",

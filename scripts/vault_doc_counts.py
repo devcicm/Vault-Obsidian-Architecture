@@ -333,7 +333,8 @@ COUNTED_FACTS: List[Dict] = [
         "description": "Archivos .py en scripts/",
         "value": count_scripts,
         # Deliberadamente NO se vigila "N scripts" a secas: el repo habla de
-        # "12 scripts de escritura" y "75 scripts adicionales", que son
+        # "12 scripts de escritura" (y hasta 2026-10-15 "75 scripts
+        # adicionales", que envejeció sin vigilar y se quitó), que son
         # subconjuntos legítimos. Un patrón laxo los marcaría como drift, el
         # guard daría falsos positivos y acabaría desactivado.
         "patterns": [

@@ -12,7 +12,7 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~11.000 líneas). Fuente normativa. |
 | `scripts/*.py` | ~162 scripts, 124 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (5686 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (5688 tests). Toda norma con guard debe tener test. |
 | `normas/` | Normas como paquete (`normas/<código>/`: `norma.py`, `porque.md`, `guard.py`, `heal.py`, `test_*.py`). Las carga `vault_norms_catalog` en su sitio del catálogo; la forma la vigila `--check-framework`. Desde m186 toda norma vive aquí (cuántas, `NORMAS_EN_PAQUETE`). `guard.py`/`heal.py` son derivados —apuntan a la función dueña; los sanadores salen de `vault_norms_catalog.SANADORES`— y se regeneran con `vault_norms_engine.escribir_caras_derivadas`, no a mano. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
@@ -245,7 +245,7 @@ abajo, en «Cuatro cosas que el registro no puede decirte».
       *Se arregla con:* partir el productor en catálogo y motor y repuntar a los consumidores al dueño; partir el fichero solo no mueve la cifra —lo enseñó v40.27—, y reclasificar el productor al núcleo sin medirle el fan-out lo vería AP-59
 - [ ] `python scripts/vault_produccion.py --check --strict`
       Toda promesa hecha a quien instala esto —versión mínima, dependencia, plataforma, superficie de red— tiene a alguien que la ejerza, y los huecos están declarados con su motivo.
-      *Se arregla con:* añadir el ejecutor que falta, o declarar la promesa como descubierta con el motivo escrito; las otras veinte puertas miden el repo contra sí mismo y en esa sala no está el consumidor, que es como >=3.9 pasó en verde sin que ninguna máquina ejecutara 3.9
+      *Se arregla con:* añadir el ejecutor que falta, o declarar la promesa como descubierta con el motivo escrito; las demás puertas miden el repo contra sí mismo y en esa sala no está el consumidor, que es como >=3.9 pasó en verde sin que ninguna máquina ejecutara 3.9
 - [ ] `python scripts/vault_esquema.py --check --strict`
       Los JSON Schema de schemas/ son los que el contrato de nota produce para cada versión, y ninguno se edita a mano.
       *Se arregla con:* python scripts/vault_esquema.py --sync; si el cambio es del contrato, va en vault_contrato_nota con su fuente en HISTORIA
