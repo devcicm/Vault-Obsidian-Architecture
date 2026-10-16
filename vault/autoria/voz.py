@@ -18,6 +18,8 @@ _APERTURA = {
     "blocked": "Te frené a propósito.",
     "wrote": "Acabas de cambiar lo que soy.",
     "read": "Nada cambió en mí con esta llamada.",
+    # AP-51: sin ledger no hay lectura que afirmar; «no pude mirar» no es «no hay».
+    "unknown": "No pude leer mi registro de escrituras: no sé si esta llamada me cambió.",
 }
 
 
@@ -147,6 +149,8 @@ def speak(
         momento = "blocked"
     elif escritas:
         momento = "wrote"
+    elif (writes or {}).get("ledger_ilegible"):
+        momento = "unknown"
     else:
         momento = "read"
 

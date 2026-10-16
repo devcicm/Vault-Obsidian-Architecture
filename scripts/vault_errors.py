@@ -500,8 +500,12 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
     _real_stdout = sys.stdout
     result_q: queue.Queue = queue.Queue()
 
-    def _writes() -> Dict[str, int]:
-        """El ledger AP-37 es thread-local: hay que leerlo en ESTE hilo."""
+    def _writes() -> Dict[str, Any]:
+        """El ledger AP-37 es thread-local: hay que leerlo en ESTE hilo.
+
+        AP-51: si no se puede leer, se dice. `{}` era «cero escrituras» para la
+        voz, que afirmaba «nada cambió» sin haberlo comprobado.
+        """
         try:
             # v40.17: la hoja `vault_ledger`, no `vault_io`. Contar escrituras no
             # necesita saber de saneado ni de índices, y pedir el módulo entero
@@ -511,7 +515,7 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
             return write_report()
         except Exception as exc:
             emit_error("vault_errors", "WRITE_REPORT_ERROR", str(exc))
-            return {}
+            return {"ledger_ilegible": f"{type(exc).__name__}: {exc}"}
 
     def _target():
         captured = io.StringIO()
