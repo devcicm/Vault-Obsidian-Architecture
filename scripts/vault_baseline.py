@@ -384,6 +384,38 @@ def _tamano_en_curso(path: Path, rel: str, clave: str) -> Optional[int]:
     return None if valor is None else tamano_congelado(valor)
 
 
+def _blobs(revisiones: Sequence[str]) -> List[Optional[bytes]]:
+    """El contenido de cada `commit:ruta`, en un solo proceso de git.
+
+    Hasta la auditoría del 2026-10-15 era un `git show` por commit: el coste
+    crecía con la historia y el plano lo pagaba por cada baseline. `cat-file
+    --batch` se lee en bytes —la cabecera da el tamaño en bytes, que en modo
+    texto no cuadraría con lo decodificado— y por eso no pasa por
+    `vault_subproceso.ejecutar`, que fija el modo texto. `None` donde git no
+    tiene el objeto, en el mismo orden que la entrada.
+    """
+    if not revisiones:
+        return []
+    salida = subprocess.run(["git", "cat-file", "--batch"], cwd=REPO_ROOT,
+                            input="".join(f"{r}\n" for r in revisiones).encode("utf-8"),
+                            capture_output=True, timeout=30, check=False)
+    if salida.returncode != 0:
+        raise subprocess.SubprocessError(
+            salida.stderr.decode("utf-8", "replace").strip() or "git cat-file falló")
+    datos, pos, blobs = salida.stdout, 0, []
+    for _ in revisiones:
+        fin = datos.index(b"\n", pos)
+        cabecera = datos[pos:fin].split()
+        pos = fin + 1
+        if len(cabecera) != 3:  # «<rev> missing» o ambiguo: git no lo tiene
+            blobs.append(None)
+            continue
+        tamano = int(cabecera[2])
+        blobs.append(datos[pos:pos + tamano])
+        pos += tamano + 1  # el contenido va seguido de un salto de línea
+    return blobs
+
+
 def pendiente(path: Path, clave: str, norma: str, ultimos: int = 20) -> Dict[str, Any]:
     """Cómo ha cambiado el tamaño de esta baseline, commit a commit.
 
@@ -410,16 +442,16 @@ def pendiente(path: Path, clave: str, norma: str, ultimos: int = 20) -> Dict[str
         return {"disponible": False,
                 "motivo": (salida.stderr or "git log falló").strip(), "serie": []}
     serie: List[Dict[str, Any]] = []
-    for linea in salida.stdout.splitlines():
-        commit, _, fecha = linea.partition(" ")
-        if not commit:
-            continue
-        blob = vault_subproceso.ejecutar(["git", "show", f"{commit}:{rel}"], cwd=REPO_ROOT,
-                              capture_output=True, timeout=30, check=False)
-        if blob.returncode != 0:
+    commits = [(c, f) for c, _, f in (l.partition(" ") for l in salida.stdout.splitlines()) if c]
+    try:
+        blobs = _blobs([f"{c}:{rel}" for c, _ in commits])
+    except (OSError, subprocess.SubprocessError) as e:
+        return {"disponible": False, "motivo": f"git no ejecutable: {e}", "serie": []}
+    for (commit, fecha), blob in zip(commits, blobs):
+        if blob is None:
             continue
         try:
-            datos = json.loads(blob.stdout)
+            datos = json.loads(blob.decode("utf-8", "replace"))
         except json.JSONDecodeError:
             # Un commit con la baseline a medias no invalida la serie entera:
             # se salta y se sigue. Fingir un tamaño sería inventar historia.

@@ -313,6 +313,52 @@ def test_sin_cambio_en_curso_no_se_inventa_un_punto(tmp_path, monkeypatch):
     assert all(x["commit"] != "en_curso" for x in r["serie"])
 
 
+def test_la_pendiente_no_lanza_un_proceso_por_commit(tmp_path, monkeypatch):
+    """Auditoría del 2026-10-15: `pendiente` lanzaba un `git show` por commit de
+    la ventana, y el plano la pide para cada baseline — 159 procesos y ~9 s por
+    `vault_blueprint --check`. El coste no puede crecer con la historia: se
+    cuentan los procesos con dos historias de largo distinto y deben coincidir.
+    """
+    import subprocess
+    real = subprocess.run
+    def contar(historia, sub):
+        ruta, _git = _repo_con_historia(tmp_path / sub, historia)
+        monkeypatch.setattr(B, "REPO_ROOT", tmp_path / sub)
+        llamadas = []
+        def espia(*a, **k):
+            llamadas.append(a[0] if a else k.get("args"))
+            return real(*a, **k)
+        monkeypatch.setattr(subprocess, "run", espia)
+        try:
+            r = B.pendiente(ruta, "sitios", "AP-XX", ultimos=20)
+        finally:
+            monkeypatch.setattr(subprocess, "run", real)
+        return r, len(llamadas)
+    (tmp_path / "corta").mkdir()
+    (tmp_path / "larga").mkdir()
+    corta, n_corta = contar([3, 2], "corta")
+    larga, n_larga = contar([9, 8, 7, 6, 5, 4, 3, 2], "larga")
+    assert [x["tamano"] for x in corta["serie"]] == [3, 2]
+    assert [x["tamano"] for x in larga["serie"]] == [9, 8, 7, 6, 5, 4, 3, 2]
+    assert n_larga == n_corta, (n_corta, n_larga)
+
+
+def test_un_commit_con_la_baseline_rota_se_salta_sin_romper_la_lectura(tmp_path, monkeypatch):
+    """Leer todos los blobs de una vez no puede convertir uno ilegible en un
+    corte de la serie: se salta ese y se siguen leyendo los demás."""
+    import subprocess
+    ruta, git = _repo_con_historia(tmp_path, [5, 4])
+    ruta.write_bytes(b'{"sitios": [1, 2,' + bytes([13, 10]))
+    git("add", "b.json")
+    git("commit", "-q", "-m", "roto")
+    ruta.write_text(json.dumps({"sitios": [1]}), encoding="utf-8")
+    git("add", "b.json")
+    git("commit", "-q", "-m", "t1")
+    monkeypatch.setattr(B, "REPO_ROOT", tmp_path)
+    r = B.pendiente(ruta, "sitios", "AP-XX", ultimos=10)
+    assert [x["tamano"] for x in r["serie"]] == [5, 4, 1]
+
+
 # ── La duplicación que esto vino a cerrar ────────────────────────────────────
 
 def test_ningun_guard_conserva_su_propia_carga_de_baseline():
