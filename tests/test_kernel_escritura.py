@@ -87,6 +87,74 @@ def test_fallo_de_replace_limpia_temporal_y_propagacion(monkeypatch, tmp_path):
     assert not list(tmp_path.glob(".tmp.*"))
 
 
+def _comparticion(winerror: int = 5) -> PermissionError:
+    """El `PermissionError` que da Windows cuando otro proceso tiene abierto el
+    destino sin compartir el borrado. `winerror` se fija a mano para que el
+    caso corra igual en POSIX."""
+    exc = PermissionError(13, "Acceso denegado")
+    exc.winerror = winerror
+    return exc
+
+
+def test_replace_reintenta_la_comparticion_transitoria_de_windows(monkeypatch, tmp_path):
+    """r48, 2026-10-16: `test_appends_en_paralelo_llegan_todos` en rojo, uno de
+    cada ~15 intentos fuera de la suite. Con un espía, ninguna apertura de la
+    nota fuera del lock y ningún robo: quien la tenía abierta era ajeno al
+    repo (antivirus, indexador) y el append devolvía PERMISSION_DENIED por un
+    instante de compartición. `bloqueo.soltar` ya reintentaba lo mismo."""
+    target = tmp_path / "note.md"
+    target.write_text("anterior", encoding="utf-8")
+    real = escritura.os.replace
+    fallos = [_comparticion(5), _comparticion(32)]
+
+    def ocupado(origen, destino):
+        if fallos:
+            raise fallos.pop(0)
+        real(origen, destino)
+
+    monkeypatch.setattr(escritura.os, "replace", ocupado)
+    escritura.escritura_atomica(target, "nueva")
+    assert target.read_text(encoding="utf-8") == "nueva"
+    assert not fallos
+    assert not list(tmp_path.glob(".tmp.*"))
+
+
+def test_replace_se_rinde_si_la_comparticion_no_se_libera(monkeypatch, tmp_path):
+    target = tmp_path / "note.md"
+    monkeypatch.setattr(escritura, "PLAZO_DE_COMPARTICION", 0.05)
+
+    def siempre(_origen, _destino):
+        raise _comparticion()
+
+    monkeypatch.setattr(escritura.os, "replace", siempre)
+    with pytest.raises(PermissionError):
+        escritura.escritura_atomica(target, "contenido")
+    assert not list(tmp_path.glob(".tmp.*"))
+
+
+def test_el_reintento_vuelve_a_comprobar_el_lock(monkeypatch, tmp_path):
+    """Quien pierde el lock mientras espera no reemplaza: el fencing va antes
+    de cada intento, no solo del primero."""
+    target = tmp_path / "note.md"
+    llamadas = []
+
+    def comprobar(_path):
+        llamadas.append(1)
+        if len(llamadas) > 1:
+            raise RuntimeError("lock perdido")
+
+    monkeypatch.setattr(escritura, "comprobar_toma", comprobar)
+
+    def ocupado(_origen, _destino):
+        raise _comparticion()
+
+    monkeypatch.setattr(escritura.os, "replace", ocupado)
+    with pytest.raises(RuntimeError, match="lock perdido"):
+        escritura.escritura_atomica(target, "contenido")
+    assert not target.exists()
+    assert not list(tmp_path.glob(".tmp.*"))
+
+
 def test_guardas_corren_antes_de_crear_el_directorio(tmp_path):
     target = tmp_path / "not-created" / "note.md"
 

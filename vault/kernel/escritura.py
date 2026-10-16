@@ -20,6 +20,15 @@ from .bloqueo import comprobar_toma
 
 Guarda = Callable[[Path, str], None]
 
+#: Errores de Windows de un destino que otro proceso tiene abierto sin
+#: compartir el borrado: acceso denegado (5) y violación de compartición (32).
+_COMPARTICION = {5, 32}
+
+#: Segundos que se reintenta el `os.replace` ante esa compartición. Medido en
+#: r48 (2026-10-16): un antivirus o indexador abre la nota recién reemplazada
+#: y el siguiente escritor, ya con el lock, recibía PERMISSION_DENIED.
+PLAZO_DE_COMPARTICION = 2.0
+
 
 def _fsync_enabled() -> bool:
     # Conserva la semántica de ``vault_entorno.leer``: sólo ``"1"`` activa
@@ -59,6 +68,29 @@ def _fsync_si_procede(temp: Path) -> None:
         os.close(directory_fd)
 
 
+def _reemplazar(temporary: Path, path: Path) -> None:
+    """`os.replace` con reintento acotado de la compartición transitoria de Windows.
+
+    El mismo transitorio que `bloqueo.soltar` ya reintenta con los locks. En
+    POSIX un `PermissionError` no lleva `winerror` y sale a la primera: allí sí
+    es un permiso. El fencing va antes de cada intento —quien pierde el lock
+    mientras espera no reemplaza— y agotado el plazo se propaga el error.
+    """
+    hasta = time.monotonic() + PLAZO_DE_COMPARTICION
+    while True:
+        # Lo último antes del replace: quien perdió el lock de `path` mientras
+        # escribía el temporal no pisa lo que escribió quien se lo quitó.
+        comprobar_toma(path)
+        try:
+            os.replace(temporary, path)
+            return
+        except PermissionError as exc:
+            if (getattr(exc, "winerror", None) not in _COMPARTICION
+                    or time.monotonic() >= hasta):
+                raise
+        time.sleep(0.02)
+
+
 def escritura_atomica(
     path: Path,
     text: str,
@@ -73,10 +105,7 @@ def escritura_atomica(
     try:
         _escribir_temporal(temporary, text, encoding)
         _fsync_si_procede(temporary)
-        # Lo último antes del replace: quien perdió el lock de `path` mientras
-        # escribía el temporal no pisa lo que escribió quien se lo quitó.
-        comprobar_toma(path)
-        os.replace(temporary, path)
+        _reemplazar(temporary, path)
     except OSError as exc:
         if exc.errno == errno.ENOSPC:
             exc.errno = errno.ENOSPC
