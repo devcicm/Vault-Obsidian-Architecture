@@ -403,3 +403,24 @@ def test_la_version_que_salda_una_deuda_ya_contenia_su_test():
         assert ultimo <= publicadas[version], (
             f"{d['id']}: dice {version} (publicada el {publicadas[version]}) y "
             f"su test es del {ultimo}")
+
+
+def test_toda_saldada_en_tiene_la_forma_de_una_version():
+    """`saldada_en` se lee como versión; texto libre no se puede cruzar con git.
+
+    Auditoría del 2026-10-15: el check solo exigía que no estuviera vacío, y
+    `test_la_version_que_salda_una_deuda_ya_contenia_su_test` se salta lo que
+    no encuentra en el changelog, así que «ayer» o «pronto» pasaban los dos.
+    """
+    for d in bp.DEUDA_DECLARADA:
+        if d.get("saldada_en") is not None:
+            assert bp.FORMA_DE_SALDADA_EN.match(d["saldada_en"]), (d["id"], d["saldada_en"])
+
+
+@pytest.mark.parametrize("valor", ["ayer", "41.6", "v41.6 sin fecha", "pronto"])
+def test_el_check_muerde_sobre_una_saldada_en_sin_forma(monkeypatch, valor):
+    monkeypatch.setattr(bp, "DEUDA_DECLARADA", [
+        {"id": "x", "capa": "5", "que": "q", "por_que_no_ahora": "p",
+         "estado": "saldada", "saldada_en": valor, "desde": "v0.1",
+         "sostenida_por": ["tests/test_blueprint.py::test_la_deuda_declarada_vive_en_el_registro_y_no_en_el_documento"]}])
+    assert any(p["kind"] == "deuda_saldada_en_sin_forma" for p in bp.check()["problems"])

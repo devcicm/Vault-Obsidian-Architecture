@@ -43,6 +43,7 @@ un plano no puede permitirse.
 import argparse
 import ast
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any, Dict, List
@@ -1536,6 +1537,12 @@ def _sin_cobertura() -> set:
     }
 
 
+#: Forma de `saldada_en`: la versión que la cerró, con fecha opcional, o
+#: «tras vN.N (fecha, …)» cuando se cerró sin versión publicada todavía.
+FORMA_DE_SALDADA_EN = re.compile(
+    r"^(tras )?v\d+\.\d+( \(\d{4}-\d{2}-\d{2}[^)]*\))?$")
+
+
 def check(strict: bool = False) -> Dict[str, Any]:
     r = _registros()
     problemas: List[Dict[str, str]] = []
@@ -1617,6 +1624,14 @@ def check(strict: bool = False) -> Dict[str, Any]:
             problemas.append(
                 {"kind": "deuda_saldada_sin_version",
                  "detail": f"{d['id']}: saldada sin `saldada_en`"}
+            )
+        # No vacío no basta: el test que cruza `saldada_en` con el changelog se
+        # salta lo que no encuentra, así que texto libre pasaba los dos.
+        elif d.get("saldada_en") is not None and not FORMA_DE_SALDADA_EN.match(d["saldada_en"]):
+            problemas.append(
+                {"kind": "deuda_saldada_en_sin_forma",
+                 "detail": f"{d['id']}: `saldada_en` {d['saldada_en']!r} no es "
+                           f"«vN.N», «vN.N (AAAA-MM-DD…)» ni «tras vN.N (…)»"}
             )
         # La versión dice cuándo; el test dice que sigue siendo verdad. Sin él,
         # `saldada` es una afirmación que nada vuelve a comprobar, y la
