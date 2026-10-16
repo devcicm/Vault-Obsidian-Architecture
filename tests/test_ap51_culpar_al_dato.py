@@ -88,6 +88,12 @@ CASOS = [
      "`yaml.YAMLError` es ast.Attribute y no ast.Name — quince falsos positivos"),
     ("try:\n    x()\nexcept json.JSONDecodeError:\n    return None", False,
      "el mismo caso, y es el más común del repo"),
+    ("try:\n    x()\nexcept Exception:\n    return 1", False,
+     "1 no es True aunque `1 == True`: el código de salida de `cli/vault_cli.main` "
+     "salía como vacío (medido el 2026-10-16)"),
+    ("try:\n    x()\nexcept Exception:\n    return 1.0", False, "ni 1.0"),
+    ("try:\n    x()\nexcept Exception:\n    return 0.0", True,
+     "0.0 sí es un cero, como 0"),
     ("try:\n    x()\nexcept Exception:\n    return [1]", False,
      "no está vacío: devuelve algo que el llamante puede mirar"),
     ("try:\n    x()\nexcept Exception:\n    return [], ['aviso']", False,

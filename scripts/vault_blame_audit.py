@@ -83,12 +83,31 @@ _CONTENEDORES = (ast.List, ast.Dict, ast.Set, ast.Tuple)
 #: comprobó, en cualquiera de los dos sentidos.
 _CONSTANTES = (None, "", 0, False, True)
 
+
+def _constante_vacia(valor) -> bool:
+    """¿Es `valor` una de `_CONSTANTES`, comparando también el tipo?
+
+    `valor in _CONSTANTES` compara con `==`, y en Python `1 == True`: el
+    `return 1` de `cli/vault_cli.main` —un código de salida— salía como vacío
+    (medido el 2026-10-16). Un número cuenta solo si es cero; un `bool`,
+    siempre.
+    """
+    if valor is None or isinstance(valor, bool):
+        return True
+    if isinstance(valor, (int, float, complex)):
+        return valor == 0
+    return valor in _CONSTANTES and isinstance(valor, str)
+
 #: Constructores del envelope de error. Llamarlos y descartar lo que devuelven
 #: deja el fallo en la traza y le da al llamante el vacío de siempre: es el
 #: caso de `vault_context_pack._must_preferences` (auditoría del 2026-10-15),
 #: que el detector no veía porque el handler ya no era solo un `return []`.
 #: Un `log()` genérico sigue sin contar —ver la tabla de `test_ap51_*`—: aquí
 #: el autor tenía en la mano el envelope que el llamante necesitaba y lo tiró.
+#: Medido el 2026-10-16: contar cualquier llamada suelta convertiría en deuda
+#: 16 handlers, y los 16 exponen el fallo —lo añaden a una lista que el
+#: llamante recibe (`errors`, `problemas`, `degraded`, `stale_files`,
+#: `skipped`) o lo emiten y salen con código 1—. Ninguno es un `log()` mudo.
 _EMISORES_DE_ERROR = {"emit_error", "emit_fallo", "construir_error"}
 
 
@@ -97,7 +116,7 @@ def _vacio(valor) -> bool:
     `return {}, ""` era el punto ciego de la auditoría del 2026-10-15."""
     if valor is None:
         return True
-    if isinstance(valor, ast.Constant) and valor.value in _CONSTANTES:
+    if isinstance(valor, ast.Constant) and _constante_vacia(valor.value):
         return True
     if isinstance(valor, _CONTENEDORES):
         elementos = getattr(valor, "elts", None)
