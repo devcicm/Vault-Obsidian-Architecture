@@ -3632,6 +3632,10 @@
             "type": "string",
             "description": "Salida JSON de vault_smoke"
           },
+          "registrar-puertas": {
+            "type": "string",
+            "description": "Salida JSON de vault_gate --strict"
+          },
           "registrar-banco": {
             "type": "string",
             "description": "Informe JSON de banco_agente"

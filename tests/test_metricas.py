@@ -165,3 +165,21 @@ def test_una_version_en_curso_no_rompe_las_metricas_de_version(monkeypatch):
     con_pending = (vm._commits_ultima_version(), vm._dias_entre_versiones())
     monkeypatch.setattr(vault_changelog_check, "entradas", lambda: cerradas)
     assert con_pending == (vm._commits_ultima_version(), vm._dias_entre_versiones())
+
+
+def test_la_duracion_de_las_puertas_se_lee_de_vault_gate():
+    """Cada commit pasa por las puertas; la suite, solo por ronda. Sin esta
+    métrica, que la puerta crezca hasta molestar no lo vería nadie (AP-66)."""
+    m = next(x for x in vm.METRICAS if x["id"] == "puertas_duracion_s")
+    assert (m["origen"], m["sentido"], m["unidad"]) == ("observada", "menor", "s")
+    salida = {"ok": True, "tool": "vault_gate", "gates_total": 24, "passing": 24,
+              "failing": 0, "seconds": 86.77}
+    assert vm.leer_salida_puertas(salida) == [
+        {"metrica": "puertas_duracion_s", "valor": 86.77}]
+    # Una salida sin `seconds` no se registra como cero segundos.
+    with pytest.raises(ValueError):
+        vm.leer_salida_puertas({"ok": True, "tool": "vault_gate"})
+    # Una ronda en rojo no mide lo mismo: la puerta que falla puede caer
+    # antes de hacer su trabajo y abaratar la cifra.
+    with pytest.raises(ValueError):
+        vm.leer_salida_puertas({**salida, "ok": False, "failing": 1})

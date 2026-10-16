@@ -36,6 +36,7 @@ que el compromiso cómodo fuese no fecharlo.
     python scripts/vault_metricas.py --doc                     # regenera docs/METRICAS.md
     python scripts/vault_metricas.py --registrar-suite LOG     # resumen de pytest
     python scripts/vault_metricas.py --registrar-smoke JSON    # salida de vault_smoke
+    python scripts/vault_metricas.py --registrar-puertas JSON  # salida de vault_gate --strict
     python scripts/vault_metricas.py --registrar ID --valor N --fuente TEXTO
 """
 
@@ -124,6 +125,12 @@ METRICAS: List[Dict[str, Any]] = [
      "fuente": "resumen final de `python -m pytest tests/` (--registrar-suite)",
      "sin_objetivo_porque": ("crece por diseño —toda norma con guard lleva test— y un objetivo "
                              "premiaría escribir tests por la cifra")},
+    {"id": "puertas_duracion_s", "tipo": "desarrollo", "origen": "observada", "sentido": "menor",
+     "unidad": "s",
+     "que": ("Suma de lo que tardan las puertas en verde, según vault_gate. La paga cada "
+             "commit, no cada ronda: crecer aquí es AP-66 en el proceso del repo."),
+     "fuente": "`seconds` de `python scripts/vault_gate.py --strict` (--registrar-puertas)",
+     "objetivo": _plazo(87)},
     # ── Producto ─────────────────────────────────────────────────────────────
     {"id": "promesas_descubiertas", "tipo": "producto", "origen": "calculada",
      "sentido": "menor", "unidad": "promesas",
@@ -532,6 +539,19 @@ def _desde_banco(datos: Dict[str, Any]) -> List[Dict[str, Any]]:
     return valores
 
 
+def leer_salida_puertas(datos: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """`seconds` de una ronda de `vault_gate` en verde.
+
+    Una ronda en rojo no se registra: la puerta que falla puede caer antes de
+    hacer su trabajo, y su cifra saldría más barata que la de una ronda sana.
+    """
+    if not _es_numero(datos.get("seconds")):
+        raise ValueError("la salida de vault_gate no trae `seconds`")
+    if datos.get("ok") is not True or datos.get("failing"):
+        raise ValueError("ronda de puertas en rojo: su duración no es comparable")
+    return [{"metrica": "puertas_duracion_s", "valor": datos["seconds"]}]
+
+
 def main() -> int:
     tool = "vault_metricas"
     ap = argparse.ArgumentParser(
@@ -541,6 +561,7 @@ def main() -> int:
     ap.add_argument("--doc", action="store_true", help="Regenera docs/METRICAS.md")
     ap.add_argument("--registrar-suite", metavar="LOG", help="Log de una ronda de pytest")
     ap.add_argument("--registrar-smoke", metavar="JSON", help="Salida JSON de vault_smoke")
+    ap.add_argument("--registrar-puertas", metavar="JSON", help="Salida JSON de vault_gate --strict")
     ap.add_argument("--registrar-banco", metavar="JSON", help="Informe JSON de banco_agente")
     ap.add_argument("--registrar", metavar="ID", help="Registra una métrica observada")
     ap.add_argument("--valor", type=float, help="Valor para --registrar")
@@ -549,7 +570,7 @@ def main() -> int:
     args = ap.parse_args()
 
     acciones = [a for a in ("check", "doc", "registrar_suite", "registrar_smoke",
-                            "registrar_banco", "registrar") if getattr(args, a)]
+                            "registrar_puertas", "registrar_banco", "registrar") if getattr(args, a)]
     if len(acciones) > 1:
         print(json.dumps(emit_error(tool, "CONFLICTING_ARGS",
                                     f"acciones incompatibles: {', '.join(acciones)}",
@@ -572,6 +593,10 @@ def main() -> int:
             r = registrar([{"metrica": "smoke_fallos", "valor": int(datos["failing"])}],
                           commit=args.commit,
                           fuente=args.fuente or f"vault_smoke sobre {datos.get('checked')} tools")
+        elif args.registrar_puertas:
+            datos = json.loads(_fichero(args.registrar_puertas))
+            r = registrar(leer_salida_puertas(datos), commit=args.commit,
+                          fuente=args.fuente or f"vault_gate sobre {datos.get('gates_total')} puertas")
         elif args.registrar_banco:
             r = registrar(_desde_banco(json.loads(_fichero(args.registrar_banco))),
                           commit=args.commit,
