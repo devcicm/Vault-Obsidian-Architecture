@@ -165,6 +165,10 @@ def log_trace(entry: Dict[str, Any], *mas: Dict[str, Any]) -> None:
         # best-effort y su destino sería el propio paquete instalado.
         if not escritura_admitida(tf):
             return
+        # AP-36: sin vault no se deposita. El `mkdir` de abajo creaba la raíz
+        # que el propio error decía inexistente (VAULT_NOT_FOUND, 2026-10-16).
+        if not get_vault_root().is_dir():
+            return
         tf.parent.mkdir(parents=True, exist_ok=True)
         try:
             with file_lock(tf, timeout=5):
