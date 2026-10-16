@@ -8,7 +8,22 @@ La implementación debe conformarse a lo declarado. Si hay drift → exit 1 (CI 
 Checks por tool:
   1. script_exists   — scripts/{name}.py debe existir
   2. args_match      — required_args del spec deben estar en argparse del script
-  3. returns_match   — declared_returns deben aparecer en return{} del script (AST)
+  3. returns_match   — SUPERSEDED por `vault_smoke.contract_gap` (2026-10-16).
+                       Solo con `--returns-estatico`: claves de declared_returns
+                       escritas como literal en un return{} (AST).
+  4. folder_ownership — FOLDER del script coincide con vault_registry
+
+`returns_match` medía con su propia normalización (AP-44): no ve `r["k"] = …`,
+`r.update(...)` ni lo que pone un ayudante común (`write_report`, `emit_error`),
+y daba drift a 90 de 145 tools. Ampliar el AST a subíndices y `update` se midió
+y bajó de 98 a 95: el grueso lo ponen ayudantes de otro módulo. El criterio del
+consumidor es el envelope emitido, y eso ya lo mide `vault_smoke` ejecutando el
+ejemplo documentado de cada tool. El chequeo no se borra (no-derogación): sigue
+detrás de `--returns-estatico` y el informe lo publica en `superseded_checks`.
+
+Tampoco es «missing» lo que no vive en `scripts/` por diseño: las tools
+archivadas (su `superseded_by` está en el spec), las JS nativas
+(`NATIVE_JS_TOOLS`) y las que el catálogo ejecuta como `execution_module`.
 
 Flujo correcto:
   1. Editar tool-spec.json (declarar spec ANTES de implementar)
@@ -21,6 +36,7 @@ Usage:
     python vault_spec_validate.py --tool vault_write  # valida una sola tool
     python vault_spec_validate.py --report            # human-readable
     python vault_spec_validate.py --strict            # falla también en scripts sin spec
+    python vault_spec_validate.py --returns-estatico  # reactiva returns_match (superseded)
 """
 
 import argparse
@@ -34,6 +50,7 @@ from typing import Any, Dict, List, Optional, Set
 from vault_errors import emit_error, wrap_main
 from vault_io import resolve_tool_spec, tool_spec_path
 from vault_registry import folder_owner, check_folder_collisions
+from vault_mcp_catalog import NATIVE_JS_TOOLS, TOOLS_CATALOG
 import vault_grafo_import
 
 SCRIPTS_DIR = Path(__file__).parent
@@ -43,6 +60,22 @@ _NON_TOOL_SCRIPTS = {
     "vault_errors", "vault_io", "vault_norms", "vault_test_runner",
     "vault_compact_contracts", "vault_manifest", "vault_spec_validate",
     "vault_spec_memory",
+}
+
+
+#: Chequeos retirados que siguen existiendo detrás de un flag. Se publican en
+#: cada informe para que un verde no se lea como «returns_match pasó».
+SUPERSEDED_CHECKS: Dict[str, Dict[str, str]] = {
+    "returns_match": {
+        "superseded_by": "vault_smoke.contract_gap",
+        "since": "2026-10-16",
+        "flag": "--returns-estatico",
+        "why": (
+            "AP-44: el AST solo ve claves escritas como literal en un return{}; "
+            "daba drift a 90 de 145 tools y ampliarlo bajó de 98 a 95. "
+            "vault_smoke contrasta el envelope que la tool emite de verdad."
+        ),
+    },
 }
 
 
@@ -95,6 +128,23 @@ def _read_source(name: str) -> Optional[str]:
     try:
         return path.read_text(encoding="utf-8", errors="replace") if path.exists() else None
     except (OSError, UnicodeDecodeError, PermissionError) as exc:
+        emit_error("vault_spec_validate", "SOURCE_READ_ERROR", str(exc))
+        return None
+
+
+def _fuente_de_modulo(name: str) -> Optional[str]:
+    """Fuente de una tool que el catálogo ejecuta como módulo (`execution_module`).
+
+    `vault_gobernanza` vive en `vault/gobernanza/tool.py` y no tiene
+    `scripts/<name>.py`: leer solo `scripts/` la daba por ausente (AP-44).
+    """
+    modulo = (TOOLS_CATALOG.get(name) or {}).get("execution_module")
+    if not modulo:
+        return None
+    path = vault_grafo_import.DIRECTORIO.parent / (modulo.replace(".", "/") + ".py")
+    try:
+        return path.read_text(encoding="utf-8", errors="replace") if path.is_file() else None
+    except OSError as exc:
         emit_error("vault_spec_validate", "SOURCE_READ_ERROR", str(exc))
         return None
 
@@ -193,11 +243,28 @@ def _extract_error_codes(source: str) -> Set[str]:
 # Validation logic
 # ──────────────────────────────────────────────────────────────────────────────
 
-def validate_tool(name: str, spec_entry: Dict[str, Any]) -> Dict[str, Any]:
-    """Valida una tool contra su entrada en el spec. Retorna resultado con drifts."""
+def validate_tool(name: str, spec_entry: Dict[str, Any],
+                  returns_estatico: bool = False) -> Dict[str, Any]:
+    """Valida una tool contra su entrada en el spec. Retorna resultado con drifts.
+
+    `returns_estatico` reactiva `returns_match`, superseded por
+    `vault_smoke.contract_gap` (ver `SUPERSEDED_CHECKS`).
+    """
     result: Dict[str, Any] = {"tool": name, "status": "pass", "drifts": []}
 
+    if spec_entry.get("status") == "archived":
+        # Archivada: su código ya no existe y el spec dice quién la sustituye.
+        result["status"] = "archived"
+        result["superseded_by"] = spec_entry.get("superseded_by") or spec_entry.get("replaced_by")
+        return result
+    if name in NATIVE_JS_TOOLS:
+        # Backend nativo en Node: no hay script Python que validar (AP-48).
+        result["status"] = "js_native"
+        return result
+
     source = _read_source(name)
+    if source is None:
+        source = _fuente_de_modulo(name)
 
     # Check 1: script_exists
     if source is None:
@@ -223,7 +290,7 @@ def validate_tool(name: str, spec_entry: Dict[str, Any]) -> Dict[str, Any]:
     # Check 3: declared_returns → deben aparecer en al menos un return{} del script
     spec_returns: List[str] = spec_entry.get("declared_returns", [])
     checkable = [k for k in spec_returns if k != "ok"]  # "ok" siempre presente
-    if checkable:
+    if checkable and returns_estatico:
         impl_keys = _extract_return_keys(source)
         missing_returns = [k for k in checkable if k not in impl_keys]
         if missing_returns:
@@ -260,6 +327,7 @@ def run_validation(
     spec: Dict[str, Any],
     tool_filter: Optional[str] = None,
     strict: bool = False,
+    returns_estatico: bool = False,
 ) -> Dict[str, Any]:
     tools = spec.get("tools", {})
 
@@ -276,11 +344,14 @@ def run_validation(
             return {"ok": False, "error_code": "TOOL_NOT_IN_SPEC",
                     "detail": f"'{tool_filter}' no está en tool-spec.json"}
 
-    results = [validate_tool(name, entry) for name, entry in sorted(tools.items())]
+    results = [validate_tool(name, entry, returns_estatico)
+               for name, entry in sorted(tools.items())]
 
     passed  = sum(1 for r in results if r["status"] == "pass")
     drifted = sum(1 for r in results if r["status"] == "drift")
     missing = sum(1 for r in results if r["status"] == "missing")
+    archived = sum(1 for r in results if r["status"] == "archived")
+    js_native = sum(1 for r in results if r["status"] == "js_native")
 
     overall_ok = drifted == 0 and missing == 0
     if strict and unspecced:
@@ -293,6 +364,9 @@ def run_validation(
         "passed": passed,
         "drifted": drifted,
         "missing": missing,
+        "archived": archived,
+        "js_native": js_native,
+        "superseded_checks": ({} if returns_estatico else SUPERSEDED_CHECKS),
         "unspecced_count": len(unspecced),
         "unspecced_tools": unspecced,
         "results": results,
@@ -317,6 +391,8 @@ def _print_report(v: Dict[str, Any]) -> None:
     for r in v.get("results", []):
         if r["status"] == "pass":
             print(f"  OK  {r['tool']}")
+        elif r["status"] in ("archived", "js_native"):
+            print(f"  --  {r['tool']} ({r['status']})")
         else:
             tag = "MISSING" if r["status"] == "missing" else "DRIFT  "
             print(f"  {tag} {r['tool']}")
@@ -328,6 +404,10 @@ def _print_report(v: Dict[str, Any]) -> None:
         print(f"\n  Scripts sin spec ({len(unspecced)}) — declarar en tool-spec.json:")
         for u in unspecced:
             print(f"    ?  {u}")
+
+    for check, datos in v.get("superseded_checks", {}).items():
+        print(f"\n  [{check}] superseded por {datos['superseded_by']} "
+              f"(reactivar con {datos['flag']})")
 
     status = "PASS" if v["ok"] else "FAIL"
     print(f"\nResultado: {status}\n")
@@ -360,6 +440,8 @@ Ejemplos:
     parser.add_argument("--report", action="store_true", help="Salida human-readable")
     parser.add_argument("--strict", action="store_true",
                         help="Falla si hay scripts sin entrada en spec (--unspecced)")
+    parser.add_argument("--returns-estatico", action="store_true",
+                        help="Reactiva returns_match (superseded por vault_smoke.contract_gap)")
 
     args = parser.parse_args()
 
@@ -370,7 +452,8 @@ Ejemplos:
                          indent=2, ensure_ascii=False))
         return 1
 
-    validation = run_validation(spec, tool_filter=args.tool, strict=args.strict)
+    validation = run_validation(spec, tool_filter=args.tool, strict=args.strict,
+                                returns_estatico=args.returns_estatico)
 
     if args.report:
         _print_report(validation)

@@ -93,8 +93,9 @@ def test_un_vault_recien_creado_valida_y_audita_limpio(tmp_path):
 def test_limite_declarado_spec_validate_returns_ciego(monkeypatch):
     """`returns_match` no ve una clave que se añade al dict fuera del literal.
 
-    Fija el límite de la deuda `spec_validate_returns_ciego`: el día que el
-    detector la vea, este test falla y la deuda se salda.
+    El límite sigue en pie con `--returns-estatico`, que conserva el contrato
+    del chequeo viejo (no-derogación); por defecto ya no da drift: lo mide
+    `vault_smoke.contract_gap` sobre el envelope emitido.
     """
     import vault_spec_validate as sv
 
@@ -106,12 +107,43 @@ def test_limite_declarado_spec_validate_returns_ciego(monkeypatch):
         "    return r\n"
     )
     monkeypatch.setattr(sv, "_read_source", lambda name: fuente)
-    res = sv.validate_tool("vault_x", {"declared_returns": ["ok", "written"]})
-    assert res["status"] == "drift", res
+    entrada = {"declared_returns": ["ok", "written"]}
+    assert sv.validate_tool("vault_x", entrada, returns_estatico=True)["status"] == "drift"
+    res = sv.validate_tool("vault_x", entrada)
+    assert res["status"] == "pass", res
     assert ast.parse(fuente)  # la fuente es Python válido: el fallo es del detector
 
 
-def test_la_deuda_spec_validate_returns_ciego_esta_declarada():
+def test_returns_match_queda_superseded_por_el_smoke():
+    import vault_smoke
+    import vault_spec_validate as sv
+
+    assert sv.SUPERSEDED_CHECKS["returns_match"]["superseded_by"] == "vault_smoke.contract_gap"
+    assert callable(vault_smoke.contract_gap)
+    v = sv.run_validation(sv.load_spec())
+    assert v["superseded_checks"] == sv.SUPERSEDED_CHECKS
+
+
+def test_spec_validate_no_da_por_ausente_lo_que_no_vive_en_scripts():
+    """Archivadas, JS nativas y tools con `execution_module` no son «missing»."""
+    import vault_spec_validate as sv
+
+    v = sv.run_validation(sv.load_spec())
+    por_tool = {r["tool"]: r["status"] for r in v["results"]}
+    assert por_tool["vault_create"] == "archived"
+    assert por_tool["vault_backup_base64"] == "js_native"
+    assert por_tool["vault_gobernanza"] == "pass"
+    assert v["missing"] == 0 and v["drifted"] == 0, [
+        r for r in v["results"] if r["status"] in ("missing", "drift")]
+    assert v["ok"] is True
+
+
+def test_la_deuda_spec_validate_returns_ciego_esta_saldada():
     d = next((d for d in bp.DEUDA_DECLARADA if d["id"] == "spec_validate_returns_ciego"), None)
-    assert d is not None and d["estado"] == "pendiente"
-    assert "test_limite_declarado_spec_validate_returns_ciego" in d["por_que_no_ahora"]
+    assert d is not None and d["estado"] == "saldada"
+    assert "vault_smoke" in d["saldada_en"] or "vault_smoke" in d["por_que_no_ahora"]
+
+
+def test_spec_validate_es_paso_duro_de_la_ci():
+    pasos = [p for _, p in _pasos() if "vault_spec_validate.py" in str(p.get("run") or "")]
+    assert pasos and not any(p.get("continue-on-error") for p in pasos)

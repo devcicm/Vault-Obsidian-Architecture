@@ -93,12 +93,11 @@ jobs:
           python scripts/vault_validate.py > /dev/null
           python scripts/vault_audit.py > /dev/null
 
-      # Todavía no es puerta: `returns_match` solo ve claves escritas como
-      # literal en un `return {...}`, así que da drift a casi toda tool que
-      # construye su respuesta por partes. Lo dice aquí, en vez de un `|| echo`,
-      # y la deuda lo fija con un test.
-      - name: vault_spec_validate (informativo, deuda spec_validate_returns_ciego)
-        continue-on-error: true
+      # Paso duro desde 2026-10-16: `returns_match`, que solo veía claves
+      # escritas como literal en un `return {...}`, quedó superseded por
+      # `vault_smoke.contract_gap` (envelope emitido). Lo que queda —script,
+      # required_args, carpeta— se mide contra el dueño.
+      - name: vault_spec_validate
         run: python scripts/vault_spec_validate.py
 
       - name: Run vault_norms --list

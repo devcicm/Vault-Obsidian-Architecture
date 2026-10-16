@@ -975,7 +975,13 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     },
     {
         "id": "spec_validate_returns_ciego",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "tras v41.7 (2026-10-16, superseded_by vault_smoke)",
+        "sostenida_por": [
+            "tests/test_ci_sin_enmascarar.py::test_returns_match_queda_superseded_por_el_smoke",
+            "tests/test_ci_sin_enmascarar.py::test_spec_validate_no_da_por_ausente_lo_que_no_vive_en_scripts",
+            "tests/test_ci_sin_enmascarar.py::test_spec_validate_es_paso_duro_de_la_ci",
+        ],
         "desde": "v41.6",
         "capa": "5",
         "que": (
@@ -999,7 +1005,15 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "corre con `continue-on-error` y el nombre del paso cita esta "
             "deuda. `tests/test_ci_sin_enmascarar.py::"
             "test_limite_declarado_spec_validate_returns_ciego` fija el punto "
-            "ciego y falla el día que el detector lo vea."
+            "ciego y falla el día que el detector lo vea. "
+            "Saldada el 2026-10-16 por decisión del usuario: `returns_match` "
+            "queda superseded_by `vault_smoke.contract_gap`, que contrasta el "
+            "envelope emitido, y sigue detrás de `--returns-estatico` "
+            "(no-derogación). Sin él, lo que quedaba eran 8 «missing» que no "
+            "viven en `scripts/` por diseño —5 archivadas, 2 JS nativas y "
+            "`vault_gobernanza`, que es `execution_module`— y un drift real "
+            "(`vault_qa_save` publicaba `--qa_type`, saldado en d6adcdd). La "
+            "tool pasa en verde y la CI la corre como paso duro."
         ),
     },
     {
