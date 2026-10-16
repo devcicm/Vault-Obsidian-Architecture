@@ -27,7 +27,7 @@ from typing import Any, Dict, List, Optional, Set
 
 from vault_errors import emit_error, wrap_main, proyecto_registrado
 from vault_lib import campos_de_texto, utcnow
-from vault_io import atomic_write_json
+from vault_io import atomic_write_json, write_report
 from vault_registry import ORDERED_SECTIONS, secciones_del_vault
 
 
@@ -253,6 +253,9 @@ def vault_delta(
             "notes_hashed": len(current),
             "dry_run": dry_run,
             "hash_index": str(_hash_index().relative_to(_raiz())).replace("\\", "/"),
+            # AP-37: el índice escrito es el trabajo de esta rama; sin esto el
+            # envelope solo decía cuántas notas leyó.
+            **write_report(),
         }
 
     previous = _load_hash_index()
@@ -307,6 +310,8 @@ def vault_delta(
         "summary": summary,
         "dry_run": dry_run,
         "hash_index_updated": not dry_run and not snapshot_only,
+        # AP-37: `changed`/`added` hablan de las notas; lo escrito es el índice.
+        **write_report(),
     }
 
 
