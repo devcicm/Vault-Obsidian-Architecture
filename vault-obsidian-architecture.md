@@ -8062,7 +8062,7 @@ temp/
 
 ---
 
-### v41.7 — 2026-10-16 `git: pending`
+### v41.7 — 2026-10-16 `git: cbca607`
 
 **Un lock se da por huérfano por su dueño, un registro ilegible se aparta en vez de pisarse y las puertas dejan de crecer con lo que no miden.**
 
