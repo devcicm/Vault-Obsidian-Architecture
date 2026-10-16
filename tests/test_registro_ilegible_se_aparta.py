@@ -17,6 +17,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT))
@@ -87,3 +89,30 @@ def test_el_log_de_graph_fix_corrupto_se_aparta(tmp_path):
     apartados = _apartados(log)
     assert [p.read_text(encoding="utf-8") for p in apartados] == [ROTO]
     assert segundo["log_apartado"] == str(apartados[0].relative_to(raiz)).replace("\\", "/")
+
+
+@pytest.mark.parametrize("roto", [ROTO, "[1, 2]"])
+def test_la_cola_de_propagacion_corrupta_se_aparta(tmp_path, roto):
+    """`vault_propagate` leía la cola ilegible como vacía y la pisaba al encolar.
+
+    Auditoría del 2026-10-15: `_read_propagation_queue` devolvía
+    `{"pending": []}` ante un JSON roto —o válido pero sin forma de cola— y
+    `_action_queue` escribía encima la única entrada nueva. Las pendientes que
+    había se perdían sin rastro.
+    """
+    import vault_io
+    import vault_propagate as vp
+
+    raiz = tmp_path / "vault"
+    for d in ("00_System", "07_Knowledge", "99_Index"):
+        (raiz / d).mkdir(parents=True)
+    vault_io.set_vault_root(raiz)
+    cola = vp._propagation_queue()
+    cola.parent.mkdir(parents=True, exist_ok=True)
+    cola.write_text(roto, encoding="utf-8")
+
+    vp._action_queue("07_Knowledge/n.md", ["07_Knowledge/m.md"], 1, "low")
+
+    assert [p["path"] for p in json.loads(cola.read_text(encoding="utf-8"))["pending"]] == [
+        "07_Knowledge/n.md"]
+    assert [p.read_text(encoding="utf-8") for p in _apartados(cola)] == [roto]

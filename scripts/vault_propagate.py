@@ -52,6 +52,7 @@ from vault.ciclo_de_vida.repositorio import RepositorioCicloDeVida  # noqa: E402
 from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 from vault.kernel.bloqueo import LockPerdido  # noqa: E402
+from vault.kernel.escritura import apartar_ilegible  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 # El vocabulario se declara una vez y se consume, no se copia. Ver
 # `vault_vocabulario.py` para el registro y su contexto dueño.
@@ -92,15 +93,23 @@ def _read_propagation_queue() -> Dict[str, Any]:
         return {"updated_at": utcnow(), "pending": []}
     try:
         data = json.loads(_propagation_queue().read_text(encoding="utf-8"))
-        return (
-            data if isinstance(data, dict) else {"updated_at": utcnow(), "pending": []}
-        )
-    except (json.JSONDecodeError, UnicodeDecodeError, OSError) as exc:
+        if isinstance(data, dict) and isinstance(data.get("pending", []), list):
+            return data
+        motivo = "la cola no tiene forma de cola"
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        motivo = str(exc)
+    except OSError as exc:
         emit_error("vault_propagate", "QUEUE_READ_ERROR", str(exc))
         return {"updated_at": utcnow(), "pending": []}
     except Exception as exc:
         emit_error("vault_propagate", "UNEXPECTED_ERROR", str(exc))
         return {"updated_at": utcnow(), "pending": []}
+    # AP-51: leída como vacía, la siguiente escritura pisaba las pendientes.
+    # Se aparta junto al original para repararla a mano y la cola sigue desde
+    # cero (auditoría del 2026-10-15, como la traza y el log de graph_fix).
+    apartado = apartar_ilegible(_propagation_queue())
+    emit_error("vault_propagate", "QUEUE_READ_ERROR", f"{motivo}; apartada en {apartado.name}")
+    return {"updated_at": utcnow(), "pending": []}
 
 
 def _write_propagation_queue(data: Dict[str, Any]) -> None:
