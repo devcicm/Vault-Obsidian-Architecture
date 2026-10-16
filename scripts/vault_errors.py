@@ -40,7 +40,8 @@ if str(_REPO_ROOT) not in sys.path:
 # La configuración se lee del registro único, no con un default por punto
 # de uso. Ver `vault_entorno.py`.
 from vault_entorno import leer as _env
-from vault_raiz import RaizNoIdentificada, get_vault_root, raiz_es_el_programa, vault_root_origin
+from vault_raiz import (RaizNoIdentificada, client_cwd, get_vault_root, raiz_es_el_programa,
+                        vault_root_origin)
 from typing import Any, Callable, Dict, List, Optional
 
 from vault_errors_catalog import (
@@ -408,7 +409,8 @@ def _rechazo_por_raiz_del_programa(tool_name: str) -> Optional[Dict[str, Any]]:
         return None
     if any(a.split("=", 1)[0] in _ARGUMENTOS_SIN_RAIZ for a in sys.argv[1:]):
         return None
-    en_runtime = (Path.cwd() / "00_System" / "standard-version.json").is_file()
+    # Donde está el usuario, no el proceso: por MCP el hijo corre en scripts/.
+    en_runtime = (client_cwd() / "00_System" / "standard-version.json").is_file()
     pista = (
         "Indica el vault: `VAULT_ROOT=<runtime> vault run <tool> …`. Para crear "
         "uno, `vault init <ruta>`."

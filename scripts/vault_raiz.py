@@ -61,6 +61,23 @@ def es_paquete_python(directorio) -> bool:
     return (Path(directorio) / "__init__.py").exists()
 
 
+def client_cwd() -> Path:
+    """Directorio desde el que el usuario invocó, no desde el que corre Python.
+
+    Vive aquí, en la hoja, porque lo leen `vault_io` (rutas de entrada) y
+    `vault_errors` (la pista del rechazo por raíz), y este último no puede
+    importar `vault_io` sin cerrar un ciclo (AP-58). El runner MCP lo
+    publica en `VAULT_CLIENT_CWD`. Sin esa variable —CLI directa— el CWD del
+    proceso sí es el del usuario y vale.
+    """
+    declarado = _env("VAULT_CLIENT_CWD")
+    if declarado:
+        candidato = Path(declarado)
+        if candidato.is_dir():
+            return candidato.resolve()
+    return Path.cwd()
+
+
 def _detect_vault_root() -> Path:
     """Auto-detect vault root.
 

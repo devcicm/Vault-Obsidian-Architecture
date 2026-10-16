@@ -277,10 +277,15 @@ def test_la_salida_no_json_no_finge_trabajo():
 
 def test_ninguna_tool_ancla_rutas_de_entrada_en_el_cwd():
     """El CWD del hijo es `scripts/`: `--file src/foo.ts` iría a `scripts/src/`."""
+    # La única excepción es el dueño del criterio, derivada de dónde vive
+    # `client_cwd` y no escrita a mano: se movió a `vault_raiz` el 2026-10-16.
+    import vault_io
+
+    dueno = vault_io.client_cwd.__module__ + ".py"
     culpables = [
         py.name
         for py in sorted(SCRIPTS.glob("vault_*.py"))
-        if "Path.cwd()" in gi.codigo_de(py).read_text(encoding="utf-8") and py.name != "vault_io.py"
+        if "Path.cwd()" in gi.codigo_de(py).read_text(encoding="utf-8") and py.name != dueno
     ]
     assert not culpables, (
         f"resuelven contra el CWD del proceso en vez de vault_io.resolve_input_path: {culpables}"

@@ -18,6 +18,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from typing import Optional, Tuple
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
@@ -37,9 +38,13 @@ print(json.dumps({"rc": rc, "ejecutada": bool(llamada)}))
 """
 
 
-def _sondear(raiz: Path, *argv: str, cwd: Path, permisivo: bool = False) -> tuple[dict, str]:
+def _sondear(raiz: Path, *argv: str, cwd: Path, permisivo: bool = False,
+             cwd_cliente: Optional[Path] = None) -> Tuple[dict, str]:
     env = {k: v for k, v in os.environ.items()
-           if k not in ("VAULT_ROOT", "VAULT_STRICT_ROOT", "VAULT_PERMISSIVE_ROOT")}
+           if k not in ("VAULT_ROOT", "VAULT_STRICT_ROOT", "VAULT_PERMISSIVE_ROOT",
+                        "VAULT_CLIENT_CWD")}
+    if cwd_cliente is not None:
+        env["VAULT_CLIENT_CWD"] = str(cwd_cliente)
     env["PYTHONIOENCODING"] = "utf-8"
     env["VAULT_AGENT"] = "pytest"
     if permisivo:
@@ -79,6 +84,20 @@ def test_desde_un_runtime_la_pista_lo_nombra(tmp_path):
     error = json.loads(envelope)
     assert error["cwd_is_runtime"] is True
     assert "VAULT_ROOT=." in error["recovery"]["hint"]
+
+
+def test_por_mcp_la_pista_mira_el_cwd_del_cliente(tmp_path):
+    """El runner MCP lanza la tool con cwd=scripts/ y publica el del usuario en
+    `VAULT_CLIENT_CWD`; el dueño de ese criterio es `client_cwd`. Mirar el CWD
+    del proceso le negaba la pista a quien sí estaba dentro de un runtime."""
+    paquete = _paquete(tmp_path)
+    runtime = tmp_path / "runtime"
+    (runtime / "00_System").mkdir(parents=True)
+    (runtime / "00_System" / "standard-version.json").write_text("{}", encoding="utf-8")
+    hijo = tmp_path / "scripts"
+    hijo.mkdir()
+    _, envelope = _sondear(paquete, cwd=hijo, cwd_cliente=runtime)
+    assert json.loads(envelope)["cwd_is_runtime"] is True
 
 
 def test_help_y_root_explicito_siguen_ejecutandose(tmp_path):

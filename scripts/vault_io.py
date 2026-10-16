@@ -60,6 +60,7 @@ from vault.kernel.indices_structural import DISPOSITIVOS_WINDOWS, es_dispositivo
 from vault_raiz import (  # noqa: F401  (reexport deliberado)
     LOW_CONFIDENCE_ORIGINS,
     RaizNoIdentificada,
+    client_cwd,
     escritura_admitida,
     get_vault_root,
     rebound_constants,
@@ -80,24 +81,12 @@ _detect_vault_root = _raiz._detect_vault_root
 
 # ── Rutas de ENTRADA del usuario (AP-36) ──────────────────────────────────────
 # Distinto problema que el vault root: aquí la ruta apunta al proyecto que se
-# documenta, no al vault. `Path.cwd()` no vale como ancla porque el CWD del
+# documenta, no al vault. El CWD del proceso no vale como ancla porque el CWD del
 # proceso no es el del usuario: el runner MCP lanza las tools con cwd=scripts/,
 # así que `--file src/foo.ts` resolvía a `scripts/src/foo.ts` y la tool leía un
-# fichero que no existe o, peor, otro que sí.
-
-
-def client_cwd() -> Path:
-    """Directorio desde el que el usuario invocó, no desde el que corre Python.
-
-    El runner MCP lo publica en `VAULT_CLIENT_CWD`. Sin esa variable —CLI
-    directa— el CWD del proceso sí es el del usuario y vale.
-    """
-    declarado = _env("VAULT_CLIENT_CWD")
-    if declarado:
-        candidato = Path(declarado)
-        if candidato.is_dir():
-            return candidato.resolve()
-    return Path.cwd()
+# fichero que no existe o, peor, otro que sí. `client_cwd` vive en `vault_raiz`
+# desde 2026-10-16 —lo necesita `vault_errors`, que no puede importar este
+# módulo sin cerrar un ciclo (AP-58)— y se reexporta arriba.
 
 
 def resolve_input_path(file_path) -> Path:
