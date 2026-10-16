@@ -1029,7 +1029,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     {
         "id": "ap48_sin_voz",
         "estado": "saldada",
-        "saldada_en": "tras v41.6 (2026-10-15, sin versión publicada)",
+        "saldada_en": "v41.7 (2026-10-16)",
         "sostenida_por": [
             "tests/test_voice.py::test_ap48_la_pronuncia_la_puerta_que_la_ejecuta",
             "tests/test_vault_onboard.py::test_el_vault_resultante_no_necesita_sanacion",
@@ -1057,7 +1057,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     {
         "id": "lock_caduca_por_reloj_de_pared",
         "estado": "saldada",
-        "saldada_en": "tras v41.6 (2026-10-15, sin versión publicada)",
+        "saldada_en": "v41.7 (2026-10-16)",
         "sostenida_por": [
             "tests/test_lock_dueno_vivo.py::test_un_salto_del_reloj_no_roba_el_lock_a_un_dueno_vivo",
             "tests/test_lock_dueno_vivo.py::test_un_dueno_muerto_de_la_misma_maquina_se_recupera_sin_esperar",
