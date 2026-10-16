@@ -69,3 +69,6 @@
 | 2026-10-16 | `6940d1c` | `suite_fallos` | 1 | ronda r44 (suite completa en serie) |
 | 2026-10-16 | `6940d1c` | `suite_tests` | 5736 | ronda r44 (suite completa en serie) |
 | 2026-10-16 | `6940d1c` | `suite_duracion_s` | 4492.65 | ronda r44 (suite completa en serie) |
+| 2026-10-16 | `0a5549d` | `suite_fallos` | 0 | ronda r45 (suite completa en serie) |
+| 2026-10-16 | `0a5549d` | `suite_tests` | 5737 | ronda r45 (suite completa en serie) |
+| 2026-10-16 | `0a5549d` | `suite_duracion_s` | 4567.03 | ronda r45 (suite completa en serie) |
