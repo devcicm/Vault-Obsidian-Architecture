@@ -9,4 +9,5 @@ de derivarlo; se regenera con `vault_norms_engine.escribir_caras_derivadas`.
 
 GUARD = [
     'scripts/vault_mcp_catalog.py::check_contracts',
+    'scripts/vault_gate.py::_etiquetar_normas',
 ]

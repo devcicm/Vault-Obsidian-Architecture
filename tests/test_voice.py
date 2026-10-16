@@ -244,18 +244,29 @@ def test_sin_catalogo_de_tools_la_cobertura_no_declara_mudas_todas(monkeypatch):
         voz.coverage()
 
 
-#: Mudas con deuda pendiente en `vault_blueprint.DEUDA_DECLARADA`.
-MUDAS_DECLARADAS = {"AP-48"}
+#: Mudas con deuda pendiente en `vault_blueprint.DEUDA_DECLARADA`. Vacío desde
+#: que `ap48_sin_voz` se saldó; queda para la próxima, que se declara aquí.
+MUDAS_DECLARADAS: set = set()
 
 
-def test_limite_declarado_ap48_sin_voz():
-    """AP-48 no la pronuncia ninguna tool del catálogo: deuda `ap48_sin_voz`.
+def test_ap48_la_pronuncia_la_puerta_que_la_ejecuta():
+    """Deuda `ap48_sin_voz`, saldada el 2026-10-15.
 
-    Falla el día que una tool la pronuncie; entonces la deuda se salda y
-    `MUDAS_DECLARADAS` se vacía.
+    de81017 la declaró muda y no vio el efecto: `vault_norms --audit` emite el
+    AP-43 en **todo** vault, así que uno recién creado arrancaba con una
+    violación del catálogo del estándar. La voz es `vault_gate`, tool del
+    catálogo, cuya puerta `contratos` ejecuta el detector de
+    `check_contracts` y nombra AP-48 en lo que mide. No es la afirmación que
+    retiró f2110b5: aquella era el catálogo declarándose a sí mismo.
     """
-    import vault_blueprint
+    import vault_gate
 
-    deuda = {d["id"]: d for d in vault_blueprint.DEUDA_DECLARADA}["ap48_sin_voz"]
-    assert deuda["estado"] == "pendiente"
-    assert voz.coverage()["silent"] == ["AP-48"]
+    assert "AP-48" not in voz.coverage()["silent"]
+    assert "vault_gate" in {n["code"]: n for n in NORM_CATALOG}["AP-48"]["tools_detecting"]
+    puerta = {p["id"]: p for p in vault_gate.PUERTAS}["contratos"]
+    assert puerta["cmd"] == ["vault_mcp_catalog.py", "--check-contracts"]
+    assert "AP-48" in puerta["mide"]
+    envelope = {"problems": [{"kind": "implementacion_paralela", "detail": "x"},
+                             {"kind": "tool_sin_contrato", "detail": "y"}]}
+    vault_gate._etiquetar_normas(envelope)
+    assert [p.get("norm") for p in envelope["problems"]] == ["AP-48", None]

@@ -1002,7 +1002,12 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     },
     {
         "id": "ap48_sin_voz",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "tras v41.6 (2026-10-15, sin versión publicada)",
+        "sostenida_por": [
+            "tests/test_voice.py::test_ap48_la_pronuncia_la_puerta_que_la_ejecuta",
+            "tests/test_vault_onboard.py::test_el_vault_resultante_no_necesita_sanacion",
+        ],
         "desde": "tras v41.6",
         "capa": "4",
         "que": (

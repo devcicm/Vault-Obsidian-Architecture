@@ -75,8 +75,10 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "contratos",
         "cmd": ["vault_mcp_catalog.py", "--check-contracts"],
-        "mide": "Toda tool del catálogo tiene entrada en tool-spec.json, y toda "
-                "entrada que ya no está declara su status en vez de borrarse",
+        "mide": "Toda tool del catálogo tiene entrada en tool-spec.json, toda "
+                "entrada que ya no está declara su status en vez de borrarse, y "
+                "ninguna tool tiene a la vez backend nativo en Node y script "
+                "Python (AP-48)",
         "fix": None,
     },
     {
@@ -272,6 +274,21 @@ def limite_total() -> int:
     return int(len(PUERTAS) * LIMITE_POR_PUERTA) + 60
 
 
+def _etiquetar_normas(envelope: Any) -> None:
+    """El hallazgo de una puerta llega con la norma que lo explica (AP-43).
+
+    `check_contracts` no es tool del catálogo, así que AP-48 solo llega al
+    agente por aquí: la puerta `contratos` la ejecuta y este corredor la
+    nombra sobre el hallazgo, no en un registro (deuda `ap48_sin_voz`).
+    """
+    if not isinstance(envelope, dict):
+        return
+    for problema in envelope.get("problems") or []:
+        # AP-48 — dos implementaciones bajo un nombre y un contrato.
+        if isinstance(problema, dict) and problema.get("kind") == "implementacion_paralela":
+            problema.setdefault("norm", "AP-48")
+
+
 def _correr(puerta: Dict[str, Any], timeout: float = LIMITE_POR_PUERTA) -> Dict[str, Any]:
     """Ejecuta una puerta como subproceso y traduce su resultado.
 
@@ -318,6 +335,7 @@ def _correr(puerta: Dict[str, Any], timeout: float = LIMITE_POR_PUERTA) -> Dict[
 
     if not salida["ok"]:
         salida["fix"] = puerta["fix"]
+        _etiquetar_normas(envelope)
         salida["detail"] = envelope if envelope is not None else (
             proc.stdout or proc.stderr
         )[-1200:]

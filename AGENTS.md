@@ -192,7 +192,7 @@ abajo, en «Cuatro cosas que el registro no puede decirte».
       El catálogo Python y tools-catalog.json no divergen.
       *Se arregla con:* python scripts/vault_mcp_catalog.py --sync
 - [ ] `python scripts/vault_mcp_catalog.py --check-contracts`
-      Toda tool del catálogo tiene entrada en tool-spec.json, y toda entrada que ya no está declara su status en vez de borrarse.
+      Toda tool del catálogo tiene entrada en tool-spec.json, toda entrada que ya no está declara su status en vez de borrarse, y ninguna tool tiene a la vez backend nativo en Node y script Python (AP-48).
 - [ ] `python scripts/vault_doc_counts.py --check --strict`
       Ninguna cifra de la documentación está escrita a mano (AP-47).
       *Se arregla con:* python scripts/vault_doc_counts.py --fix

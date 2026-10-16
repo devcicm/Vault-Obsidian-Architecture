@@ -63,7 +63,7 @@ NORMA = {
         "es el criterio del consumidor y no el propio (AP-44)."
     ),
     "tools_enforcing": ["vault_mcp_catalog"],
-    "tools_detecting": ["vault_mcp_catalog"],
+    "tools_detecting": ["vault_mcp_catalog", "vault_gate"],
     "introduced_version": "v39.5",
     "revisado_en": "2026-10-09",
 }

@@ -487,7 +487,7 @@ El estándar no lleva base de datos por decisión normativa, y con consistencia 
 
 - **Severidad:** critical
 - **Enforcement:** guard+audit
-- **Detectado por:** vault_mcp_catalog
+- **Detectado por:** vault_mcp_catalog, vault_gate
 
 La misma tool publicada tiene dos implementaciones y cuál se ejecuta depende de por dónde entres. No es una fachada sobre un núcleo común: son dos cuerpos de código que nadie contrasta, con un solo nombre y un solo contrato publicado -- así que el contrato describe como mucho a uno de los dos.
 
@@ -1393,7 +1393,7 @@ El estándar no lleva base de datos por decisión normativa, y con consistencia 
 
 - **Severity:** critical
 - **Enforcement:** guard+audit
-- **Detected by:** vault_mcp_catalog
+- **Detected by:** vault_mcp_catalog, vault_gate
 
 La misma tool publicada tiene dos implementaciones y cuál se ejecuta depende de por dónde entres. No es una fachada sobre un núcleo común: son dos cuerpos de código que nadie contrasta, con un solo nombre y un solo contrato publicado -- así que el contrato describe como mucho a uno de los dos.
 
