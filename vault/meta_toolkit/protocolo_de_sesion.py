@@ -178,6 +178,8 @@ PISTAS_FUERA_DEL_PERFIL: Dict[str, str] = {
     "BACKUP_NOT_FOUND": "lo traduce BACKUP_NO_ENCONTRADO, de vault.durabilidad "
                         "(restaurar y verificar snapshots), fuera del perfil",
     "CIRCULAR_WIKILINK": "declarado en el catálogo y sin emisor: ninguna tool lo devuelve",
+    "DIAGRAM_NOT_FOUND": "lo emite vault_diagram_export (exportar un bloque mermaid), "
+                         "fuera del perfil; añadido el 2026-10-16 (AP-52)",
     "SERVICE_UNAVAILABLE": "lo emiten vault_token_counter y vault_fix_all, fuera del perfil",
 }
 
