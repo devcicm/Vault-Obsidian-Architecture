@@ -72,3 +72,12 @@
 | 2026-10-16 | `0a5549d` | `suite_fallos` | 0 | ronda r45 (suite completa en serie) |
 | 2026-10-16 | `0a5549d` | `suite_tests` | 5737 | ronda r45 (suite completa en serie) |
 | 2026-10-16 | `0a5549d` | `suite_duracion_s` | 4567.03 | ronda r45 (suite completa en serie) |
+| 2026-10-16 | `cc1aaa9` | `suite_fallos` | 1 | ronda r47 (suite completa en serie) |
+| 2026-10-16 | `cc1aaa9` | `suite_tests` | 5758 | ronda r47 (suite completa en serie) |
+| 2026-10-16 | `cc1aaa9` | `suite_duracion_s` | 4391.35 | ronda r47 (suite completa en serie) |
+| 2026-10-16 | `d492db0` | `suite_fallos` | 1 | ronda r48 (suite completa en serie) |
+| 2026-10-16 | `d492db0` | `suite_tests` | 5758 | ronda r48 (suite completa en serie) |
+| 2026-10-16 | `d492db0` | `suite_duracion_s` | 4288.41 | ronda r48 (suite completa en serie) |
+| 2026-10-16 | `c52f3e1` | `suite_fallos` | 0 | ronda r49 (suite completa en serie) |
+| 2026-10-16 | `c52f3e1` | `suite_tests` | 5761 | ronda r49 (suite completa en serie) |
+| 2026-10-16 | `c52f3e1` | `suite_duracion_s` | 4374.15 | ronda r49 (suite completa en serie) |

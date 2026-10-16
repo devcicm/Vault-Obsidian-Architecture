@@ -259,6 +259,69 @@
       "commit": "0a5549d",
       "fecha": "2026-10-16",
       "fuente": "ronda r45 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 1,
+      "commit": "cc1aaa9",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r47 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5758,
+      "commit": "cc1aaa9",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r47 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 4391.35,
+      "commit": "cc1aaa9",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r47 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 1,
+      "commit": "d492db0",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r48 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5758,
+      "commit": "d492db0",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r48 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 4288.41,
+      "commit": "d492db0",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r48 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 0,
+      "commit": "c52f3e1",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r49 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5761,
+      "commit": "c52f3e1",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r49 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 4374.15,
+      "commit": "c52f3e1",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r49 (suite completa en serie)"
     }
   ]
 }
