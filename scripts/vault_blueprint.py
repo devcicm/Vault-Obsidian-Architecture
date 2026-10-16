@@ -45,6 +45,7 @@ import ast
 import json
 import re
 import sys
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -1147,19 +1148,31 @@ def _test_ejercita(code: str, texto: str) -> bool:
     """
     if code not in texto:
         return False
+    return any(code in s for s in _cuerpos_de_tests(texto))
+
+
+@lru_cache(maxsize=None)
+def _cuerpos_de_tests(texto: str) -> tuple:
+    """Cada sentencia de cada `test_*`, sin docstring, ya `unparse`-ada.
+
+    No depende de la norma buscada, así que se calcula una vez por fichero.
+    Hasta el 2026-10-15 se parseaba por cada norma: 79 × ~450 ficheros,
+    12 de los 26 s de `check()`. Una sentencia por elemento, como antes: la
+    búsqueda no puede casar a caballo entre dos.
+    """
     try:
         arbol = ast.parse(texto)
     except SyntaxError:
-        return False
+        return ()
+    cuerpos = []
     for nodo in ast.walk(arbol):
         if not isinstance(nodo, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
         if not nodo.name.startswith("test_"):
             continue
         cuerpo = nodo.body[1:] if ast.get_docstring(nodo) else nodo.body
-        if any(code in ast.unparse(s) for s in cuerpo):
-            return True
-    return False
+        cuerpos.extend(ast.unparse(s) for s in cuerpo)
+    return tuple(cuerpos)
 
 
 def cobertura_de_normas() -> List[Dict[str, Any]]:

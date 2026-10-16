@@ -119,3 +119,20 @@ def test_la_precondicion_sigue_siendo_la_documentada():
     doc = vc.medir.__doc__ or ""
     assert "*.md" in doc, "el docstring ya no nombra la precondicion"
     assert "modules_skipped" in doc, "el docstring no dice donde se ve el coste"
+
+
+def test_la_cobertura_parsea_cada_fichero_de_tests_una_sola_vez(monkeypatch):
+    """Auditoría del 2026-10-15: `_test_ejercita` parseaba el fichero entero por
+    cada norma —79 normas por ~450 ficheros, 70.468 llamadas y 12 s de los 26
+    de `check()`—. El cuerpo de los `test_*` de un fichero no depende de la
+    norma que se busque: se calcula una vez por texto.
+    """
+    import ast as _ast
+
+    bp._cuerpos_de_tests.cache_clear()
+    parseados = []
+    original = _ast.parse
+    monkeypatch.setattr(bp.ast, "parse", lambda t, *a, **k: parseados.append(t) or original(t, *a, **k))
+    for codigo in ("AP-99", "AP-98", "AP-97"):
+        bp._test_ejercita(codigo, _EJERCICIO + "\n# AP-98 AP-97\n")
+    assert len(parseados) == 1
