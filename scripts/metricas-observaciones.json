@@ -322,6 +322,27 @@
       "commit": "c52f3e1",
       "fecha": "2026-10-16",
       "fuente": "ronda r49 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 0,
+      "commit": "9b897bb",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r50 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5772,
+      "commit": "9b897bb",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r50 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 4288.26,
+      "commit": "9b897bb",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r50 (suite completa en serie)"
     }
   ]
 }
