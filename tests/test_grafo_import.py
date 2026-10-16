@@ -287,3 +287,43 @@ def test_el_grafo_no_vuelve_a_recorrer_un_fichero_que_no_cambio(monkeypatch):
     monkeypatch.setattr(ast, "walk", real)
     assert recorridos == []
     assert segundo == G.grafo()
+
+
+# ── Coste del puente (AP-66) ────────────────────────────────────────────────
+
+def test_el_puente_solo_parsea_los_candidatos_a_alias(tmp_path, monkeypatch):
+    """Medido el 2026-10-16: `_puente` parseaba los 162 módulos de `scripts/`
+    —`vault_mcp_catalog` entero incluido— para encontrar 39 alias, ~2 s de
+    `vault_blueprint --check`. Un alias tiene que contener la asignación a
+    `sys.modules[__name__]`; lo que no la escribe no se parsea (AP-66)."""
+    (tmp_path / "alias.py").write_text(
+        "import sys\nimport vault.kernel.x as _dueno\nsys.modules[ __name__ ] = _dueno\n",
+        encoding="utf-8")
+    (tmp_path / "menciona.py").write_text(
+        "import sys\nprint(sys.modules[__name__])\n", encoding="utf-8")
+    (tmp_path / "grande.py").write_text("x = 1\n" * 2000, encoding="utf-8")
+    monkeypatch.setattr(G, "DIRECTORIO", tmp_path)
+    monkeypatch.setattr(G, "_ruta_de_paquete", lambda dueno: tmp_path / f"{dueno}.py")
+    G._puente.cache_clear()
+    parseados = []
+    real = G.ast.parse
+
+    def contar(texto, *a, **k):
+        parseados.append(texto)
+        return real(texto, *a, **k)
+
+    monkeypatch.setattr(G.ast, "parse", contar)
+    try:
+        puente = G._puente()
+    finally:
+        G._puente.cache_clear()
+    assert set(puente) == {"alias"}
+    assert len(parseados) == 2, "solo alias.py y menciona.py son candidatos"
+
+
+def test_el_filtro_del_puente_no_pierde_ningun_alias_del_repo():
+    """El filtro es condición necesaria, no un criterio nuevo: parsear todo
+    `scripts/` da los mismos alias que el puente filtrado."""
+    G._puente.cache_clear()
+    todos = {p.stem for p in G.DIRECTORIO.glob("*.py") if G._dueno_del_alias(p)}
+    assert todos and set(G._puente()) == todos

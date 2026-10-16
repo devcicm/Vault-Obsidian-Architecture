@@ -116,12 +116,30 @@ def _ruta_de_paquete(dueno: str) -> Path | None:
     return Path(spec.origin).resolve() if spec and spec.origin else None
 
 
+#: Condición necesaria de un alias: escribe la asignación a `sys.modules[__name__]`.
+#: Tolera espacios y saltos dentro de los corchetes, que el AST también acepta.
+_MARCA_DE_ALIAS = re.compile(r"sys\s*\.\s*modules\s*\[\s*__name__\s*\]")
+
+
+def _candidato_a_alias(ruta: Path) -> bool:
+    """Si `ruta` puede ser un alias: un filtro de texto antes del AST.
+
+    AP-66, 2026-10-16: `_puente` parseaba los 162 módulos de `scripts/` para
+    encontrar 39 alias, ~2 s de `vault_blueprint --check`. No decide nada: lo
+    que pasa el filtro lo sigue juzgando `_dueno_del_alias`.
+    """
+    try:
+        return bool(_MARCA_DE_ALIAS.search(ruta.read_text(encoding="utf-8", errors="ignore")))
+    except OSError:
+        return False
+
+
 @lru_cache(maxsize=1)
 def _puente() -> Dict[str, Path]:
     """Alias de `scripts/` → fichero de su dueño. Se deriva del disco."""
     out: Dict[str, Path] = {}
     for p in DIRECTORIO.glob("*.py"):
-        dueno = _dueno_del_alias(p)
+        dueno = _dueno_del_alias(p) if _candidato_a_alias(p) else None
         destino = _ruta_de_paquete(dueno) if dueno else None
         if destino is not None:
             out[p.stem] = destino
