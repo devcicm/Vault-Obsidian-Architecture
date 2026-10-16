@@ -35,7 +35,8 @@ guard desactivado no protege nada. La baseline **solo puede encoger**.
 
 Se mide la **forma del literal**: un `dict` con `"ok": False` que además lleva
 `error`, `message` o `tool` —es decir, algo con pinta de envelope— y no lleva
-`error_code`. No se mide si ese dict llega de verdad a stdout, porque eso exige
+`error_code`. Desde el 2026-10-16 también la forma mutada: `var["ok"] = False`
+sobre un dict que, en la misma función, reúne esas claves sin `error_code`. No se mide si ese dict llega de verdad a stdout, porque eso exige
 seguir el valor por el flujo del programa y un análisis a medias produciría
 falsos negativos silenciosos, que es peor que un falso positivo visible.
 
@@ -127,6 +128,59 @@ DESCRIPCION = (
 )
 
 
+_FUNCIONES = (ast.FunctionDef, ast.AsyncFunctionDef)
+
+
+def _propios(funcion: ast.AST):
+    """Los nodos de `funcion` sin entrar en las funciones que define dentro."""
+    pendientes = list(ast.iter_child_nodes(funcion))
+    while pendientes:
+        nodo = pendientes.pop()
+        yield nodo
+        if not isinstance(nodo, (*_FUNCIONES, ast.Lambda, ast.ClassDef)):
+            pendientes.extend(ast.iter_child_nodes(nodo))
+
+
+def _mutados(arbol: ast.AST) -> List[tuple]:
+    """`var["ok"] = False` sobre un dict cuyas claves son las de un envelope.
+
+    El literal `{"ok": False, "error": …}` no es la única forma de construir
+    un envelope a mano: medido el 2026-10-15, `vault_diagram_export` y
+    `vault_init` armaban el resultado bueno y al fallar le cambiaban `ok` y le
+    colgaban `error`. Las claves de `var` son las de sus literales y las de
+    sus `var["k"] = …` **en la misma función**; no se sigue el valor por
+    llamadas ni por `update()`, que es el mismo límite de forma que el
+    detector de literales declara.
+    """
+    encontrados = []
+    for funcion in ast.walk(arbol):
+        if not isinstance(funcion, _FUNCIONES):
+            continue
+        claves: Dict[str, set] = {}
+        a_false = []
+        for nodo in _propios(funcion):
+            if not isinstance(nodo, ast.Assign):
+                continue
+            for destino in nodo.targets:
+                if isinstance(destino, ast.Name) and isinstance(nodo.value, ast.Dict):
+                    claves.setdefault(destino.id, set()).update(_claves(nodo.value))
+                elif (isinstance(destino, ast.Subscript)
+                      and isinstance(destino.value, ast.Name)
+                      and isinstance(destino.slice, ast.Constant)
+                      and isinstance(destino.slice.value, str)):
+                    var, clave = destino.value.id, destino.slice.value
+                    claves.setdefault(var, set()).add(clave)
+                    if (clave == "ok" and isinstance(nodo.value, ast.Constant)
+                            and nodo.value.value is False):
+                        a_false.append((var, nodo))
+        for var, nodo in a_false:
+            propias = claves.get(var, set())
+            if "error_code" in propias or not (MARCAS_DE_ENVELOPE & propias):
+                continue
+            encontrados.append((nodo, sorted(propias)))
+    return encontrados
+
+
 def offenders() -> List[Dict]:
     """Envelopes de error que no pasan por `ERROR_CATALOG`.
 
@@ -160,6 +214,10 @@ def offenders() -> List[Dict]:
             if f"{nombre}::{qualnames.get(id(nodo), '')}" in EXENCIONES:
                 continue
             encontrados.append((nodo, sorted(claves)))
+        encontrados.extend(
+            (nodo, claves) for nodo, claves in _mutados(arbol)
+            if f"{nombre}::{qualnames.get(id(nodo), '')}" not in EXENCIONES
+        )
         encontrados.sort(key=lambda par: (par[0].lineno, par[0].col_offset))
         firmas = firmar_todos(
             (nombre, qualnames.get(id(n), ""), n) for n, _ in encontrados

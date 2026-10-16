@@ -86,6 +86,43 @@ CASOS = [
         False,
         "ok no es constante: el detector no adivina el valor en runtime",
     ),
+    (
+        'def f():\n    r = {"ok": True, "file": "a"}\n    if x:\n'
+        '        r["ok"] = False\n        r["error"] = "no hay diagrama"\n'
+        '        return r\n    return r\n',
+        True,
+        "el `ok: True` mutado a error es el mismo envelope a mano por otro "
+        "camino (`vault_diagram_export`, `vault_init`; auditoría 2026-10-15)",
+    ),
+    (
+        'def f():\n    r = {"ok": True, "message": "", "tool": "t"}\n'
+        '    r["ok"] = False\n    return r\n',
+        True,
+        "las marcas pueden venir del literal inicial y no de la mutación",
+    ),
+    (
+        'def f():\n    r = {"ok": True}\n    r["ok"] = False\n'
+        '    r["error"] = "y"\n    r["error_code"] = "X"\n    return r\n',
+        False,
+        "con error_code asignado, en contrato",
+    ),
+    (
+        'def f():\n    r = {"ok": True, "count": 0}\n    r["ok"] = False\n'
+        '    return r\n',
+        False,
+        "sin marca de envelope sigue siendo cualquier estructura interna",
+    ),
+    (
+        'def f():\n    r = {"ok": True}\n    r["error"] = "y"\n    return r\n',
+        False,
+        "sin `ok = False` no es un envelope de error",
+    ),
+    (
+        'def f():\n    r = {"ok": True}\n    def g():\n        r = {}\n'
+        '        r["error"] = "y"\n    r["ok"] = False\n    return r\n',
+        False,
+        "las claves de otra función no cuentan: cada ámbito con las suyas",
+    ),
 ]
 
 import vault_grafo_import as gi  # noqa: E402
