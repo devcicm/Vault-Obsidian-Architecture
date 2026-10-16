@@ -33,7 +33,7 @@ import os
 import sys
 import uuid
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from vault_errors import emit_error, wrap_main
 from vault_norms_catalog import status_frontmatter_lines
@@ -44,7 +44,7 @@ from vault_io import (
     tomar_lock,
     update_section_index,
 )
-from vault_lib import parse_frontmatter_with_body, separar_frontmatter, slugify, utcnow
+from vault_lib import separar_frontmatter, slugify, utcnow
 
 
 
@@ -60,6 +60,7 @@ _LOCK_TIMEOUT = 10.0
 from vault.consulta.repositorio import RepositorioConsulta  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
+from vault.kernel.frontmatter_parsing import parse_frontmatter_robust  # noqa: E402
 from vault.kernel.indices_structural import describir_reserva, es_nombre_reservado  # noqa: E402
 
 
@@ -119,13 +120,27 @@ def _preference_files() -> List[Path]:
 
 
 def _load_preference(path: Path) -> Optional[Dict[str, Any]]:
+    """La preferencia, o None si no lo es o no se pudo leer (ver `_leer_preferencia`)."""
+    return _leer_preferencia(path)[0]
+
+
+def _leer_preferencia(path: Path) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    """La preferencia y, si el fichero no se pudo leer, el motivo.
+
+    Auditoría del 2026-10-15: un YAML roto salía `{}` de `vault_lib`, sin
+    `type: preference`, y la nota se descartaba como si no fuera una
+    preferencia; un `must` desaparecía del contexto del agente sin aviso.
+    """
+    # AP-51: «ilegible» y «no es una preferencia» no son el mismo vacío.
     try:
         raw = path.read_text(encoding="utf-8")
-    except OSError:
-        return None
-    fm, body = parse_frontmatter_with_body(raw)
+    except (OSError, UnicodeDecodeError) as exc:
+        return None, f"no se pudo leer: {type(exc).__name__}"
+    fm, body, legible, error = parse_frontmatter_robust(raw)
+    if not legible:
+        return None, f"frontmatter ilegible: {error}"
     if fm.get("type") != "preference":
-        return None
+        return None, None
     rel = path.relative_to(_raiz()).as_posix()
     return {
         "path": rel,
@@ -144,7 +159,7 @@ def _load_preference(path: Path) -> Optional[Dict[str, Any]]:
         "updatedAt": fm.get("updatedAt", ""),
         "revoked_reason": fm.get("revoked_reason", ""),
         "body": body.strip(),
-    }
+    }, None
 
 
 def vault_preferences_set(
@@ -301,8 +316,11 @@ def vault_preferences_list(
 ) -> Dict[str, Any]:
     """Lista las preferencias registradas, ordenadas por fuerza."""
     items: List[Dict[str, Any]] = []
+    unreadable: List[Dict[str, str]] = []
     for path in _preference_files():
-        pref = _load_preference(path)
+        pref, motivo = _leer_preferencia(path)
+        if motivo:
+            unreadable.append({"path": path.relative_to(_raiz()).as_posix(), "error": motivo})
         if pref is None:
             continue
         if not include_revoked and pref["status"] == STATUS_REVOKED:
@@ -329,6 +347,7 @@ def vault_preferences_list(
         "total": len(items),
         "by_strength": by_strength,
         "preferences": items,
+        "unreadable": unreadable,
         "hint": "vault_preferences --context para el bloque inyectable",
     }
 

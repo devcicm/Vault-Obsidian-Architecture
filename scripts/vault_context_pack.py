@@ -34,7 +34,7 @@ import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from vault_errors import emit_error, mensaje_de, wrap_main
 from vault_lib import parse_frontmatter_with_body
@@ -220,18 +220,31 @@ def _truncate_to_tokens(text: str, max_tokens: int) -> tuple[str, bool]:
 
 
 def _must_preferences() -> List[Dict[str, Any]]:
+    """Las preferencias `must` (ver `_preferencias_must`, que además avisa)."""
+    return _preferencias_must()[0]
+
+
+def _preferencias_must() -> Tuple[List[Dict[str, Any]], List[str]]:
+    """Las preferencias `must` y los avisos de las que no se pudieron cargar.
+
+    Auditoría del 2026-10-15: el fallo quedaba en la traza y el paquete salía
+    `ok: true` sin decir que le faltaban preferencias vinculantes.
+    """
+    # AP-51: una preferencia que falta se dice en el paquete, no solo en la traza.
     try:
         from vault_preferences import vault_preferences_list
 
         listing = vault_preferences_list(strength="must")
-        return listing.get("preferences", []) if listing.get("ok") else []
     except (ImportError, OSError) as exc:
         emit_error("vault_context_pack", "PREFERENCES_UNAVAILABLE",
                   f"No se pudieron cargar preferencias must: {exc}")
-        return []
+        return [], [f"preferencias must no disponibles: {type(exc).__name__}"]
     except Exception as exc:
         emit_error("vault_context_pack", "UNEXPECTED_ERROR", str(exc))
-        return []
+        return [], [f"preferencias must no disponibles: {type(exc).__name__}"]
+    avisos = [f"preferencia ilegible, fuera del paquete: {u['path']} ({u['error']})"
+              for u in listing.get("unreadable", [])]
+    return listing.get("preferences", []), avisos
 
 
 def vault_context_pack(
@@ -378,7 +391,8 @@ def vault_context_pack(
     SEPARATOR_TOKENS = 4  # "\n\n---\n\n"
     used = estimate_tokens(header)
 
-    preferences = _must_preferences() if include_preferences else []
+    preferences, avisos_de_preferencias = (
+        _preferencias_must() if include_preferences else ([], []))
     if preferences:
         lines = ["## Preferencias vinculantes del usuario", ""]
         lines += [f"- **{p['title']}** ({p['category']}): {p['statement']}"
@@ -413,7 +427,7 @@ def vault_context_pack(
 
     context = header + "\n\n" + "\n\n---\n\n".join(blocks) if blocks else ""
 
-    warnings: List[str] = []
+    warnings: List[str] = list(avisos_de_preferencias)
     if search_error:
         warnings.append(f"búsqueda léxica: {search_error}")
     if graph_error:
