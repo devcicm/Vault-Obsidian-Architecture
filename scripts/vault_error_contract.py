@@ -141,6 +141,36 @@ def _propios(funcion: ast.AST):
             pendientes.extend(ast.iter_child_nodes(nodo))
 
 
+def _actualizacion(nodo: ast.AST):
+    """`var.update({...})` o `var.update(k=…)`: `(var, claves, ok_es_false)`.
+
+    Un dict literal que ya es un envelope por sí mismo lo cuenta el detector
+    de literales; aquí su `ok: False` no se vuelve a contar, para que un mismo
+    sitio no salga dos veces.
+    """
+    if not (isinstance(nodo, ast.Call) and isinstance(nodo.func, ast.Attribute)
+            and nodo.func.attr == "update" and isinstance(nodo.func.value, ast.Name)):
+        return None
+    claves, ok_false = set(), False
+    for kw in nodo.keywords:
+        if kw.arg is None:
+            continue
+        claves.add(kw.arg)
+        if (kw.arg == "ok" and isinstance(kw.value, ast.Constant)
+                and kw.value.value is False):
+            ok_false = True
+    for arg in nodo.args:
+        if not isinstance(arg, ast.Dict):
+            continue
+        propias = _claves(arg)
+        claves |= propias
+        ok = _valor_de(arg, "ok")
+        if (isinstance(ok, ast.Constant) and ok.value is False
+                and not (MARCAS_DE_ENVELOPE & propias)):
+            ok_false = True
+    return nodo.func.value.id, claves, ok_false
+
+
 def _mutados(arbol: ast.AST) -> List[tuple]:
     """`var["ok"] = False` sobre un dict cuyas claves son las de un envelope.
 
@@ -148,9 +178,11 @@ def _mutados(arbol: ast.AST) -> List[tuple]:
     un envelope a mano: medido el 2026-10-15, `vault_diagram_export` y
     `vault_init` armaban el resultado bueno y al fallar le cambiaban `ok` y le
     colgaban `error`. Las claves de `var` son las de sus literales y las de
-    sus `var["k"] = …` **en la misma función**; no se sigue el valor por
-    llamadas ni por `update()`, que es el mismo límite de forma que el
-    detector de literales declara.
+    sus `var["k"] = …` y `var.update(…)` **en la misma función**; no se sigue
+    el valor por llamadas ni un `update()` con un dict no literal, que es el
+    mismo límite de forma que el detector de literales declara. `update()`
+    entró el 2026-10-16: era el punto ciego declarado, y medido no lo usaba
+    ningún sitio del repo para tocar `ok`.
     """
     encontrados = []
     for funcion in ast.walk(arbol):
@@ -159,6 +191,13 @@ def _mutados(arbol: ast.AST) -> List[tuple]:
         claves: Dict[str, set] = {}
         a_false = []
         for nodo in _propios(funcion):
+            actualizada = _actualizacion(nodo)
+            if actualizada is not None:
+                var, nuevas, ok_false = actualizada
+                claves.setdefault(var, set()).update(nuevas)
+                if ok_false:
+                    a_false.append((var, nodo))
+                continue
             if not isinstance(nodo, ast.Assign):
                 continue
             for destino in nodo.targets:

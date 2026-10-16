@@ -123,6 +123,43 @@ CASOS = [
         False,
         "las claves de otra función no cuentan: cada ámbito con las suyas",
     ),
+    (
+        'def f():\n    r = {"ok": True, "file": "a"}\n'
+        '    r.update({"ok": False, "error": "y"})\n    return r\n',
+        True,
+        "`update()` con un dict es la misma mutación por otra sintaxis "
+        "(punto ciego declarado hasta el 2026-10-16)",
+    ),
+    (
+        'def f():\n    r = {"ok": True}\n    r.update(ok=False, error="y")\n'
+        '    return r\n',
+        True,
+        "y con argumentos con nombre",
+    ),
+    (
+        'def f():\n    r = {"ok": True}\n    r["ok"] = False\n'
+        '    r.update({"message": "y"})\n    return r\n',
+        True,
+        "la marca puede llegar por `update()` y el `ok` por subíndice",
+    ),
+    (
+        'def f():\n    r = {"ok": True}\n'
+        '    r.update(ok=False, error="y", error_code="X")\n    return r\n',
+        False,
+        "con error_code en el mismo `update()`, en contrato",
+    ),
+    (
+        'def f():\n    r = {"ok": True, "count": 0}\n    r.update(ok=False)\n'
+        '    return r\n',
+        False,
+        "sin marca de envelope sigue sin serlo",
+    ),
+    (
+        'def f():\n    r = {"ok": True, "error": ""}\n    r.update(otro)\n'
+        '    return r\n',
+        False,
+        "un `update()` con un dict no literal no se adivina",
+    ),
 ]
 
 import vault_grafo_import as gi  # noqa: E402
