@@ -217,6 +217,27 @@
       "commit": "2fb0465",
       "fecha": "2026-10-16",
       "fuente": "vault_gate sobre 24 puertas"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 1,
+      "commit": "6940d1c",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r44 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5736,
+      "commit": "6940d1c",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r44 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 4492.65,
+      "commit": "6940d1c",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r44 (suite completa en serie)"
     }
   ]
 }

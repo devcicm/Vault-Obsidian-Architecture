@@ -66,3 +66,6 @@
 | 2026-10-15 | `26c2b04` | `suite_duracion_s` | 3436.61 | pytest sobre suite.txt |
 | 2026-10-15 | `26c2b04` | `smoke_fallos` | 0 | vault_smoke sobre 124 tools |
 | 2026-10-16 | `2fb0465` | `puertas_duracion_s` | 87.21 | vault_gate sobre 24 puertas |
+| 2026-10-16 | `6940d1c` | `suite_fallos` | 1 | ronda r44 (suite completa en serie) |
+| 2026-10-16 | `6940d1c` | `suite_tests` | 5736 | ronda r44 (suite completa en serie) |
+| 2026-10-16 | `6940d1c` | `suite_duracion_s` | 4492.65 | ronda r44 (suite completa en serie) |
