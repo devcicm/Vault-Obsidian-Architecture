@@ -460,9 +460,6 @@ def _load_spec() -> Optional[Dict[str, Any]]:
     except (json.JSONDecodeError, UnicodeDecodeError, OSError) as exc:
         emit_error("vault_manifest", "SPEC_PARSE_ERROR", str(exc))
         return None
-    except Exception as exc:
-        emit_error("vault_manifest", "UNEXPECTED_ERROR", str(exc))
-        return None
 
 
 def _build_manifest_from_spec(spec: Dict[str, Any]) -> List[Dict[str, Any]]:

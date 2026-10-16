@@ -2521,9 +2521,6 @@ def _update_indexes(sections: List[str], dry_run: bool) -> List[str]:
     except (OSError, PermissionError) as exc:
         emit_error("vault_onboard", "INDEX_UPDATE_ERROR", str(exc))
         return []
-    except Exception as exc:
-        emit_error("vault_onboard", "UNEXPECTED_ERROR", str(exc))
-        return []
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────

@@ -33,11 +33,7 @@ def _handlers(fuente: str):
 
 def _infringe(fuente: str) -> bool:
     """Aplica el criterio del audit a un fragmento suelto."""
-    h = _handlers(fuente)[0]
-    tipos = blame._tipos_capturados(h)
-    if not (blame.AMPLIAS & set(tipos)):
-        return False
-    return bool(h.body) and all(blame._es_vacio_indistinguible(s) for s in h.body)
+    return blame.handler_infringe(_handlers(fuente)[0])
 
 
 #: (fragmento, infringe, por qué). El "por qué" no es decoración: es lo que
@@ -66,6 +62,15 @@ CASOS = [
      "un predicado que responde por el camino de fallo afirma lo que no comprobó"),
     ("try:\n    x()\nexcept Exception:\n    return True", True,
      "y en el otro sentido, igual"),
+    ('try:\n    x()\nexcept Exception:\n    return {}, ""', True,
+     "una tupla de vacíos es un vacío: el punto ciego de `vault_quality_check` "
+     "(auditoría del 2026-10-15)"),
+    ("try:\n    x()\nexcept Exception as e:\n    emit_error('t', 'X', str(e))\n    return []",
+     True, "el envelope se construye y se tira: va a la traza y el llamante recibe "
+           "el vacío de siempre (`vault_context_pack`, 2026-10-15)"),
+    ("for i in y:\n    try:\n        x()\n    except Exception as e:\n"
+     "        vault_errors.emit_error('t', 'X', str(e))\n        continue", True,
+     "lo mismo saltando el elemento, y por atributo"),
 
     # ── No infringen: exponen el fallo, o el criterio es preciso ──
     ('try:\n    x()\nexcept Exception as e:\n    return {"ok": False, "error": str(e)}',
@@ -85,6 +90,12 @@ CASOS = [
      "el mismo caso, y es el más común del repo"),
     ("try:\n    x()\nexcept Exception:\n    return [1]", False,
      "no está vacío: devuelve algo que el llamante puede mirar"),
+    ("try:\n    x()\nexcept Exception:\n    return [], ['aviso']", False,
+     "la tupla lleva el aviso: el llamante puede distinguirlo"),
+    ("try:\n    x()\nexcept Exception as e:\n    return emit_error('t', 'X', str(e))",
+     False, "el envelope se devuelve: eso es exponer el fallo"),
+    ("try:\n    x()\nexcept Exception as e:\n    emit_error('t', 'X', str(e))", False,
+     "sin vacío final el handler sigue adelante; no es la forma que se mide"),
 ]
 
 

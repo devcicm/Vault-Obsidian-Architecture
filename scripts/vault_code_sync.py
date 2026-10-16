@@ -114,9 +114,6 @@ def _vault_ref_in_file(file_path: Path) -> Optional[str]:
     except (OSError, UnicodeDecodeError, PermissionError) as exc:
         emit_error("vault_code_sync", "FILE_READ_ERROR", str(exc))
         return None
-    except Exception as exc:
-        emit_error("vault_code_sync", "UNEXPECTED_ERROR", str(exc))
-        return None
 
 
 def _collect_code_notes(project: Optional[str]) -> List[Tuple[Path, Dict[str, str]]]:
@@ -132,10 +129,6 @@ def _collect_code_notes(project: Optional[str]) -> List[Tuple[Path, Dict[str, st
             meta = parse_frontmatter(p.read_text(encoding="utf-8", errors="ignore"))
             notes.append((p, meta))
         except (OSError, UnicodeDecodeError, ValueError):
-            continue
-        except Exception as exc:
-            emit_error("vault_code_sync", "PARSE_FRONTMATTER_ERROR",
-                      f"{p.name}: {exc}")
             continue
     return notes
 

@@ -58,9 +58,6 @@ def _load_entries(since: Optional[str] = None) -> List[Dict[str, Any]]:
     except (json.JSONDecodeError, UnicodeDecodeError, OSError) as exc:
         emit_error("vault_tokens", "JSON_PARSE_ERROR", str(exc))
         return []
-    except Exception as exc:
-        emit_error("vault_tokens", "UNEXPECTED_ERROR", str(exc))
-        return []
 
     if since:
         try:

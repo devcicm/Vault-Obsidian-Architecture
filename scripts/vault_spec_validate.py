@@ -97,9 +97,6 @@ def _read_source(name: str) -> Optional[str]:
     except (OSError, UnicodeDecodeError, PermissionError) as exc:
         emit_error("vault_spec_validate", "SOURCE_READ_ERROR", str(exc))
         return None
-    except Exception as exc:
-        emit_error("vault_spec_validate", "UNEXPECTED_ERROR", str(exc))
-        return None
 
 
 def _extract_argparse_flags(source: str) -> Set[str]:

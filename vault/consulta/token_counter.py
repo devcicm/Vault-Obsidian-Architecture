@@ -62,8 +62,9 @@ def _is_running(port: Optional[int] = None) -> bool:
     except (URLError, OSError) as exc:
         emit_error("vault_token_counter", "SERVICE_UNAVAILABLE", str(exc))
         return False
-    except Exception as exc:
-        emit_error("vault_token_counter", "UNEXPECTED_ERROR", str(exc))
+    except ValueError as exc:
+        # AP-51: lo que responde en el puerto y no habla JSON no es el servicio.
+        emit_error("vault_token_counter", "SERVICE_UNAVAILABLE", str(exc))
         return False
 
 

@@ -152,9 +152,6 @@ def _notes_changed_since(since_date: str) -> List[str]:
     except (json.JSONDecodeError, UnicodeDecodeError, OSError) as exc:
         emit_error("vault_impact", "CHANGELOG_READ_ERROR", str(exc))
         return []
-    except Exception as exc:
-        emit_error("vault_impact", "UNEXPECTED_ERROR", str(exc))
-        return []
     cutoff = since_date.strip()
     changed = []
     for entry in entries:

@@ -83,14 +83,18 @@ _CONTENEDORES = (ast.List, ast.Dict, ast.Set, ast.Tuple)
 #: comprobó, en cualquiera de los dos sentidos.
 _CONSTANTES = (None, "", 0, False, True)
 
+#: Constructores del envelope de error. Llamarlos y descartar lo que devuelven
+#: deja el fallo en la traza y le da al llamante el vacío de siempre: es el
+#: caso de `vault_context_pack._must_preferences` (auditoría del 2026-10-15),
+#: que el detector no veía porque el handler ya no era solo un `return []`.
+#: Un `log()` genérico sigue sin contar —ver la tabla de `test_ap51_*`—: aquí
+#: el autor tenía en la mano el envelope que el llamante necesitaba y lo tiró.
+_EMISORES_DE_ERROR = {"emit_error", "emit_fallo", "construir_error"}
 
-def _es_vacio_indistinguible(sentencia: ast.stmt) -> bool:
-    """¿Esta salida del handler es indistinguible de un resultado legítimo?"""
-    if isinstance(sentencia, (ast.Pass, ast.Continue)):
-        return True
-    if not isinstance(sentencia, ast.Return):
-        return False
-    valor = sentencia.value
+
+def _vacio(valor) -> bool:
+    """¿Este valor devuelto es un vacío? Una tupla de vacíos también lo es:
+    `return {}, ""` era el punto ciego de la auditoría del 2026-10-15."""
     if valor is None:
         return True
     if isinstance(valor, ast.Constant) and valor.value in _CONSTANTES:
@@ -99,8 +103,43 @@ def _es_vacio_indistinguible(sentencia: ast.stmt) -> bool:
         elementos = getattr(valor, "elts", None)
         if elementos is None:
             elementos = getattr(valor, "keys", [])
-        return not elementos
+        if not elementos:
+            return True
+        return isinstance(valor, ast.Tuple) and all(_vacio(e) for e in elementos)
     return False
+
+
+def _error_descartado(sentencia: ast.stmt) -> bool:
+    """`emit_error(...)` como sentencia suelta: el envelope se construye y se tira."""
+    if not (isinstance(sentencia, ast.Expr) and isinstance(sentencia.value, ast.Call)):
+        return False
+    func = sentencia.value.func
+    nombre = func.id if isinstance(func, ast.Name) else getattr(func, "attr", "")
+    return nombre in _EMISORES_DE_ERROR
+
+
+def handler_infringe(handler: ast.ExceptHandler) -> bool:
+    """El criterio de AP-51 sobre un handler: el audit y sus tests usan este.
+
+    Amplio, y su única salida es un vacío indistinguible —con o sin un
+    `emit_error` descartado antes—.
+    """
+    if not (AMPLIAS & set(_tipos_capturados(handler))) or not handler.body:
+        return False
+    if not _es_vacio_indistinguible(handler.body[-1]):
+        return False
+    return all(_es_vacio_indistinguible(s) or _error_descartado(s)
+               for s in handler.body)
+
+
+def _es_vacio_indistinguible(sentencia: ast.stmt) -> bool:
+    """¿Esta salida del handler es indistinguible de un resultado legítimo?"""
+    if isinstance(sentencia, (ast.Pass, ast.Continue)):
+        return True
+    if not isinstance(sentencia, ast.Return):
+        return False
+    valor = sentencia.value
+    return _vacio(valor)
 
 
 def _tipos_capturados(handler: ast.ExceptHandler) -> List[str]:
@@ -144,13 +183,8 @@ def offenders() -> List[Dict]:
         encontrados = []
         for handler in [n for n in ast.walk(arbol)
                         if isinstance(n, ast.ExceptHandler)]:
-            tipos = _tipos_capturados(handler)
-            if not (AMPLIAS & set(tipos)):
-                continue
-            if not handler.body:
-                continue
-            if all(_es_vacio_indistinguible(s) for s in handler.body):
-                encontrados.append((handler, tipos))
+            if handler_infringe(handler):
+                encontrados.append((handler, _tipos_capturados(handler)))
         encontrados.sort(key=lambda par: par[0].lineno)
         firmas = firmar_todos(
             (nombre, qualnames.get(id(h), ""), h) for h, _ in encontrados

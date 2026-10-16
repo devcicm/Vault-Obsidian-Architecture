@@ -357,9 +357,6 @@ def _get_docstring(source: str) -> str:
         return ast.get_docstring(tree) or ""
     except SyntaxError:
         return ""
-    except Exception as exc:
-        emit_error("vault_compact_contracts", "AST_PARSE_ERROR", str(exc))
-        return ""
 
 
 def _extract_argparse_args(source: str) -> tuple:
@@ -434,9 +431,6 @@ def introspect_tool(name: str) -> Optional[Dict[str, Any]]:
         source = path.read_text(encoding="utf-8", errors="replace")
     except (OSError, UnicodeDecodeError, PermissionError) as exc:
         emit_error("vault_compact_contracts", "FILE_READ_ERROR", str(exc))
-        return None
-    except Exception as exc:
-        emit_error("vault_compact_contracts", "UNEXPECTED_ERROR", str(exc))
         return None
 
     doc = _get_docstring(source)

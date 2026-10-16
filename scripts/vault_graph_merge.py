@@ -304,10 +304,6 @@ def _build_wiki_link_graph() -> Tuple[Dict[str, Dict], List[Dict], List[Dict], "
             contenidos[rel] = p.read_text(encoding="utf-8")
         except (UnicodeDecodeError, PermissionError, OSError):
             continue
-        except Exception as exc:
-            emit_error("vault_graph_merge", "FILE_READ_ERROR",
-                      f"{rel}: {exc}")
-            continue
 
     # El frontmatter, el índice de nombres y la resolución de los enlaces son
     # del escaneo único que comparte con `vault_graph` (AP-57): hasta ahora
@@ -465,10 +461,6 @@ def _merge_entity_relations(
             text = raw.decode("utf-8")
             data = json.loads(text)
         except (json.JSONDecodeError, UnicodeDecodeError, OSError):
-            continue
-        except Exception as exc:
-            emit_error("vault_graph_merge", "ENTITY_PARSE_ERROR",
-                      f"{rel_file.name}: {exc}")
             continue
 
         project = data.get("project", "unknown")
