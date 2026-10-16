@@ -60,6 +60,7 @@ _LOCK_TIMEOUT = 10.0
 from vault.consulta.repositorio import RepositorioConsulta  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
+from vault.kernel.escritura import apartar_ilegible  # noqa: E402
 from vault.kernel.frontmatter_parsing import parse_frontmatter_robust  # noqa: E402
 from vault.kernel.indices_structural import describir_reserva, es_nombre_reservado  # noqa: E402
 
@@ -246,8 +247,17 @@ def vault_preferences_set(
         timestamp = utcnow()
         created = timestamp
         previous = None
+        previa_ilegible = None
         if note_path.exists():
-            previous = _load_preference(note_path)
+            previous, motivo = _leer_preferencia(note_path)
+            # AP-51: «no había» y «no se lee» no son el mismo `None`; la rota
+            # se aparta entera antes de escribir encima, como un registro.
+            if motivo:
+                apartada = apartar_ilegible(note_path)
+                previa_ilegible = {
+                    "error": motivo,
+                    "set_aside": apartada.relative_to(_raiz()).as_posix(),
+                }
             if previous:
                 created = previous.get("createdAt") or timestamp
 
@@ -305,6 +315,7 @@ def vault_preferences_set(
         "strength": strength,
         "statement": statement,
         "previous_statement": (previous or {}).get("statement") if previous else None,
+        **({"previous_unreadable": previa_ilegible} if previa_ilegible else {}),
     }
 
 

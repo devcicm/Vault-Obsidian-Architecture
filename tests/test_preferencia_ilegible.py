@@ -70,3 +70,24 @@ def test_el_paquete_conserva_las_must_legibles_y_lo_avisa(tmp_path):
     assert r["ok"] is True, r
     assert r["preferences_included"] == 1, r
     assert any("rota.md" in w for w in r["warnings"]), r["warnings"]
+
+
+def test_set_sobre_una_preferencia_ilegible_la_aparta_y_lo_dice(tmp_path):
+    """`set` con el mismo título no pisa en silencio la versión que no se lee.
+
+    Auditoría del 2026-10-15: `previous` salía `None` tanto si no había nota
+    como si estaba rota, así que la rota se sobrescribía con `action: created`
+    y su `createdAt`, su porqué y su enunciado se perdían sin rastro.
+    """
+    raiz = _vault(tmp_path)
+    # `idioma` no es categoría de `--set`; la rota se planta en una que sí.
+    estilo = raiz / "17_Preferences" / "style"
+    estilo.mkdir()
+    (estilo / "rota.md").write_text(ROTA, encoding="utf-8")
+    r = _ejecutar(raiz, "vault_preferences.py", "--set", "--category", "style",
+                  "--title", "Rota", "--statement", "Otra cosa", "--strength", "must")
+    assert r["ok"] is True, r
+    apartada = r["previous_unreadable"]["set_aside"]
+    assert "frontmatter ilegible" in r["previous_unreadable"]["error"], r
+    assert (estilo / Path(apartada).name).read_text(encoding="utf-8") == ROTA
+    assert "Otra cosa" in (estilo / "rota.md").read_text(encoding="utf-8")
