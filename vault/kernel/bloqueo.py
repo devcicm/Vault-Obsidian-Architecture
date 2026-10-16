@@ -185,8 +185,8 @@ def proceso_vivo(pid: int) -> Optional[bool]:
 def inicio_del_proceso(pid: int) -> Optional[str]:
     """Hora de inicio de `pid` como marca opaca, o None si no se publica.
 
-    Distingue al dueño de un proceso que heredó su pid: py-filelock guarda lo
-    mismo en Windows por la misma razón.
+    Distingue al dueño de un proceso que heredó su pid: el pid solo no basta,
+    porque el sistema lo reutiliza.
     """
     return _consultar(pid)[1]
 
@@ -195,7 +195,7 @@ def _dueno_vive(dueno: dict) -> Optional[bool]:
     """Si el dueño de `owner.json` sigue dentro, cuando se puede saber.
 
     Solo se pregunta en la misma máquina; fuera de ella, o con un `owner.json`
-    sin `maquina` (anterior a v41.6), devuelve None y decide la edad.
+    sin `maquina` (escrito hasta v41.6 incluida), devuelve None y decide la edad.
     """
     if dueno.get("maquina") != maquina():
         return None
@@ -212,13 +212,15 @@ def _dueno_vive(dueno: dict) -> Optional[bool]:
 def _huerfano(lock_dir: Path, caduca_tras: float) -> bool:
     """Si `lock_dir` se puede robar: dueño muerto, o sin dueño consultable y viejo.
 
-    Hasta v41.6 decidía solo la edad, medida con el reloj de pared: un salto de
+    Hasta v41.6 incluida decidía solo la edad, medida con el reloj de pared: un salto de
     3458 s en python:3.9-slim sobre Docker Desktop le robó el lock a un dueño
     vivo de 1,2 s y `vault_append` escribió sobre una nota bloqueada (deuda
-    `lock_caduca_por_reloj_de_pared`). Ahora, en la misma máquina, el reloj no
-    interviene: un dueño vivo conserva el lock aunque lleve horas —quien espera
-    sale por su timeout, como con `index.lock` de git— y uno muerto se recupera
-    sin esperar `CADUCA_TRAS`.
+    `lock_caduca_por_reloj_de_pared`). Ahora, en la misma máquina y con un dueño
+    consultable, el reloj no interviene: un dueño vivo conserva el lock aunque
+    lleve horas —quien espera sale por su timeout, como con `index.lock` de
+    git— y uno muerto se recupera sin esperar `CADUCA_TRAS`. Sin `owner.json`
+    legible, desde otra máquina o sin poder consultar el proceso, sigue
+    decidiendo la edad, y con ella el reloj.
     """
     try:
         dueno = json.loads((lock_dir / "owner.json").read_text(encoding="utf-8"))
