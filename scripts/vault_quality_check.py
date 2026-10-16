@@ -194,11 +194,12 @@ def _get_all_notes() -> List[Path]:
 
 
 def _read_frontmatter_raw(path: Path) -> Tuple[Dict[str, str], str]:
-    """Returns (frontmatter_dict, body_text)."""
-    try:
-        content = path.read_text(encoding="utf-8", errors="ignore")
-    except Exception:
-        return {}, ""
+    """Returns (frontmatter_dict, body_text).
+
+    AP-51: un fallo de lectura se propaga. `({}, "")` puntuaba la nota ilegible
+    como una nota vacía sin frontmatter; quien la itera decide qué hacer.
+    """
+    content = path.read_text(encoding="utf-8", errors="ignore")
     bloque, cuerpo = separar_frontmatter(content)
     if bloque is None:
         return {}, content
@@ -469,7 +470,10 @@ def _compute_ap17(notes: List[Path]) -> Set[str]:
     for n in notes:
         if n.stem.lower() in _EXCLUDED:
             continue
-        fm, _ = _read_frontmatter_raw(n)
+        try:
+            fm, _ = _read_frontmatter_raw(n)
+        except OSError:
+            continue  # sale en `notes_unreadable`, que la publica
         title = fm.get("title", n.stem).lower()
         rel = str(n.relative_to(_raiz())).replace("\\", "/")
         items.append((rel, title))
@@ -534,10 +538,16 @@ def vault_quality_check(
 
     scored: Dict[str, Any] = {}
     total_score = 0.0
+    unreadable: List[Dict[str, str]] = []
 
     for note in notes:
         rel = str(note.relative_to(_raiz())).replace("\\", "/")
-        fm, body = _read_frontmatter_raw(note)
+        try:
+            fm, body = _read_frontmatter_raw(note)
+        except OSError as exc:
+            # AP-51: «no pude leerla» no es «no tiene frontmatter».
+            unreadable.append({"path": rel, "error": type(exc).__name__})
+            continue
         frontmatter_parsed = bool(fm)
         integrity_cia = fm.get("cia_integrity", "medium").lower()
 
@@ -615,6 +625,7 @@ def vault_quality_check(
         "overall_dq_score": overall_dq,
         "notes_below_07": below_07,
         "total_notes": total,
+        "notes_unreadable": unreadable,
         "notes": scored,
     }
 
@@ -640,6 +651,7 @@ def vault_quality_check(
         "overall_dq_score": overall_dq,
         "total_notes": total,
         "notes_below_07": below_07,
+        "notes_unreadable": unreadable,
         "generated_at": generated_at,
         "scope": scope or "vault",
         "notes": filtered,
