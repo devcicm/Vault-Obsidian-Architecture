@@ -1419,20 +1419,46 @@ def _resolver_modulo(arbol: ast.AST, props: dict, funciones: dict[str, str]) -> 
     """Punto fijo corto: nombres y `return` de funciones que apuntan a `00_System/`."""
     nombres: dict[str, str] = {}
     consts = _constantes_de_texto(arbol)
+    forma = _forma_de_resolucion(arbol)
     for _ in range(3):
-        for nodo in ast.walk(arbol):
-            if (isinstance(nodo, ast.Assign) and len(nodo.targets) == 1
-                    and isinstance(nodo.targets[0], ast.Name)):
-                s = _subruta_de_sistema(nodo.value, nombres, funciones, props, consts=consts)
+        for es_funcion, nombre, valores in forma:
+            for valor in valores:
+                s = _subruta_de_sistema(valor, nombres, funciones, props, consts=consts)
                 if s:
-                    nombres.setdefault(nodo.targets[0].id, s)
-            elif isinstance(nodo, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                for r in ast.walk(nodo):
-                    if isinstance(r, ast.Return) and r.value is not None:
-                        s = _subruta_de_sistema(r.value, nombres, funciones, props, consts=consts)
-                        if s:
-                            funciones.setdefault(nodo.name, s)
+                    (funciones if es_funcion else nombres).setdefault(nombre, s)
     return nombres
+
+
+def _forma_de_resolucion(arbol: ast.AST) -> list[tuple[bool, str, list[ast.AST]]]:
+    """Lo que `_resolver_modulo` mira del árbol, en el orden de `ast.walk`.
+
+    `(False, nombre, [valor])` por cada `nombre = valor`, y `(True, función,
+    [valores de return])` por cada función, con los `return` de sus anidadas
+    —como los veía el recorrido anidado—. Hasta la auditoría del 2026-10-15 el
+    punto fijo lo recorría en cada una de sus tres vueltas, y cada función
+    otra vez dentro, en las dos llamadas por fichero. La forma no cambia entre
+    vueltas ni entre llamadas: se calcula una vez por árbol, y `_ast_de` ya da
+    un árbol nuevo cuando cambia el fichero.
+    """
+    hecho = _FORMAS.get(id(arbol))
+    if hecho is not None and hecho[0] is arbol:
+        return hecho[1]
+    forma: list[tuple[bool, str, list[ast.AST]]] = []
+    for nodo in ast.walk(arbol):
+        if (isinstance(nodo, ast.Assign) and len(nodo.targets) == 1
+                and isinstance(nodo.targets[0], ast.Name)):
+            forma.append((False, nodo.targets[0].id, [nodo.value]))
+        elif isinstance(nodo, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            forma.append((True, nodo.name, [
+                r.value for r in ast.walk(nodo)
+                if isinstance(r, ast.Return) and r.value is not None]))
+    _FORMAS[id(arbol)] = (arbol, forma)
+    return forma
+
+
+#: id del árbol → (árbol, forma). Guarda el árbol para que un `id` reciclado
+#: por el recolector no devuelva la forma de otro.
+_FORMAS: dict[int, tuple[ast.AST, list[tuple[bool, str, list[ast.AST]]]]] = {}
 
 
 def funciones_de_sistema_del_repo(props: dict | None = None) -> dict[str, dict[str, str]]:

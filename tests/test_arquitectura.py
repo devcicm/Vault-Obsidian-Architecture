@@ -664,3 +664,32 @@ def test_el_catalogo_de_normas_es_una_hoja_del_nucleo():
     assert "vault_norms_engine" not in arch.CONTEXTS[arch.KERNEL]["modulos"]
     # el control negativo: si la medida volviera a ser vacía, esto falla.
     assert fan_out.get("vault_norms_engine", set()) != set()
+
+
+def test_resolver_modulo_recorre_el_arbol_una_vez_por_arbol(monkeypatch):
+    """Auditoría del 2026-10-15: el punto fijo de `_resolver_modulo` daba tres
+    vueltas y en cada una recorría el árbol entero y, dentro, cada función otra
+    vez; y se pide dos veces por fichero (`funciones_de_sistema_del_repo` y
+    `escrituras_de_sistema_en`): ~20 s de `vault_arch --check`. Lo que se recorre
+    es la forma del árbol, que no cambia entre vueltas ni entre llamadas."""
+    import ast as _ast
+    fuente = (
+        "RUTA = '00_System/a.json'\n"
+        "def f():\n    return RUTA\n"
+        "def g():\n    def h():\n        return f()\n    return h()\n"
+    )
+    arbol = _ast.parse(fuente)
+    props = {}
+    primero = arch._resolver_modulo(arbol, props, {})
+    recorridos = []
+    real = _ast.walk
+    def espia(n):
+        recorridos.append(1)
+        return real(n)
+    monkeypatch.setattr(_ast, "walk", espia)
+    funciones = {}
+    segundo = arch._resolver_modulo(arbol, props, funciones)
+    monkeypatch.setattr(_ast, "walk", real)
+    assert segundo == primero
+    assert funciones.get("f") == "a.json"
+    assert recorridos == [], len(recorridos)
