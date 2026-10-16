@@ -64,6 +64,16 @@ Para que ninguna tool adivine la raíz, exporta `VAULT_ROOT=<ruta-del-vault>` y
 `VAULT_STRICT_ROOT=1`: con la raíz sin resolver, la tool falla en vez de caer en
 otro sitio.
 
+**Cambio de contrato posterior a 41.6 (2026-10-16).** Sin `VAULT_ROOT`, cuando la
+autodetección no encuentra vault y cae en el propio paquete instalado, ninguna
+tool se ejecuta: sale con código 1 y `VAULT_NOT_FOUND`. Hasta 41.6 las de lectura
+—`vault run vault_query_parse`, `vault run vault_audit`— leían
+`site-packages/vault_toolkit` como si fuera el vault y devolvían `ok: true`. Si
+lanzas la tool desde dentro de un runtime, la pista del rechazo lo dice y
+propone `VAULT_ROOT=.`; no lo deduce en silencio. Siguen pasando `--help`,
+`--root <ruta>` y `VAULT_PERMISSIVE_ROOT=1`, que restaura lo anterior. Un
+checkout de un proyecto sin vault no cambia: su raíz no es un paquete.
+
 Exporta también `VAULT_AGENT=<quién escribe>` (`claude`, `human`, `script`…):
 toda nota de contenido lleva `agent:` (AP-16), y sin `--agent` ni `VAULT_AGENT`
 la primera escritura sale con `missing_agent` antes de tocar el disco. Las

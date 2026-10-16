@@ -84,7 +84,9 @@ donde importa, y prefiero decirlas aquí que dejar que las descubras tú.
 - **Se instala con `pip install -e .`** Entry points: `vault` y `vault_gobernanza`.
   El servidor MCP no tiene dependencias npm — solo Node 18+ built-ins.
 - **VAULT_ROOT es la única variable esencial.** Sin ella, las tools auto-detectan
-  buscando `vault-*/` en el directorio actual.
+  buscando `vault-*/` en el directorio actual; si la detección cae en el propio
+  paquete instalado, se niegan con `VAULT_NOT_FOUND` en vez de leerlo como vault
+  (posterior a 41.6, ver `docs/INSTALACION-LIMPIA.md`).
 - **El servidor MCP por HTTP (`--port`) escucha en `127.0.0.1` y exige token**
   (`Authorization: Bearer`, desde `VAULT_MCP_TOKEN` o generado e impreso por
   stderr al arrancar). Rechaza peticiones de navegador (`Origin`) y un `Host`
