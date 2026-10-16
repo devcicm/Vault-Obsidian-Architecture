@@ -86,3 +86,19 @@ def test_output_dentro_del_vault_escribe_y_devuelve_ruta_relativa(entorno):
     assert r["ok"], r
     assert (raiz / "06_Diagrams" / "export" / "d.mmd").read_text(encoding="utf-8").startswith("```mermaid")
     assert r["output"] == "06_Diagrams/export/d.mmd", r
+
+
+def test_no_exporta_los_diagramas_de_una_instantanea(entorno):
+    """`.trash/` y `vault-backups/` son instantáneas, como `.history` (vault_io).
+
+    Auditoría del 2026-10-15: el filtro era `".history" in str(md)`, así que una
+    nota tirada a `.trash/` dentro del proyecto seguía exportando sus diagramas.
+    """
+    raiz, _, _ = entorno
+    proyecto = raiz / "01_Projects" / "p"
+    (proyecto / "vivo.md").write_text(NOTA, encoding="utf-8")
+    (proyecto / ".trash").mkdir()
+    (proyecto / ".trash" / "tirada.md").write_text(NOTA, encoding="utf-8")
+    r = _exportar(raiz, "--project", "p", "--output", "salida")
+    assert r["ok"] is True, r
+    assert r["files"] == ["salida/vivo-0.mmd"], r

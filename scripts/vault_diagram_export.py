@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import emit_error, mensaje_de, wrap_main, proyecto_registrado
-from vault_io import assert_within_vault, atomic_write_text, write_report
+from vault_io import assert_within_vault, atomic_write_text, is_snapshot_path, write_report
 
 
 DEFAULT_CONFIG = {
@@ -218,7 +218,8 @@ def export_project(
     exported = []
 
     for md in project_dir.rglob("*.md"):
-        if ".history" in str(md):
+        # AP-57: las instantáneas las nombra vault_io, no este módulo.
+        if is_snapshot_path(md.relative_to(_raiz())):
             continue
 
         try:

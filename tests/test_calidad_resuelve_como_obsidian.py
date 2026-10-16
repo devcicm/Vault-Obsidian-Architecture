@@ -68,3 +68,20 @@ def test_ap44_la_carpeta_del_enlace_tiene_que_casar_como_sufijo(tmp_path):
 def test_ap44_espacios_contra_guiones_es_roto_como_en_obsidian(tmp_path):
     assert _rotos(tmp_path, "[[Mi Nota]]") == ["consistency: broken link [[Mi Nota]]"]
     assert _rotos(tmp_path, "[[MI-NOTA]]") == []
+
+
+def test_ap57_un_destino_que_solo_vive_en_una_instantanea_esta_roto(tmp_path):
+    """Las instantáneas son las de `vault_io.SNAPSHOT_DIRS`, no solo `.history`.
+
+    Auditoría del 2026-10-15: la calidad filtraba con `".history" in str(n)`,
+    así que una nota que solo sobrevive en `vault-backups/` o `.trash/` daba
+    por resuelto el enlace, mientras `vault_write` —que usa `is_snapshot_path`—
+    lo avisaba como fantasma. Dos tools, el mismo enlace, dos veredictos.
+    """
+    vault = tmp_path / "vault"
+    _nota(vault, "vault-backups/2026-10-01/perdida.md")
+    _nota(vault, ".trash/tirada.md")
+    assert _rotos(tmp_path, "[[perdida]] y [[tirada]]") == [
+        "consistency: broken link [[perdida]]",
+        "consistency: broken link [[tirada]]",
+    ]

@@ -49,7 +49,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-from vault_io import is_snapshot_path, normalize_stem as _normalize
+from vault_io import SNAPSHOT_DIRS, is_snapshot_path, normalize_stem as _normalize
 from vault_regex import (
     detect_bracket_anomalies,
     RE_NESTED_OPEN_3,
@@ -61,7 +61,8 @@ from vault_mermaid_check import scan_vault as _scan_mermaid
 SCRIPTS_DIR = Path(__file__).parent
 
 
-SKIP_FOLDERS = {"vault-backups", ".history"}
+# AP-57: las instantáneas las nombra vault_io; antes faltaba `.trash`.
+SKIP_FOLDERS = set(SNAPSHOT_DIRS)
 
 STALE_DAYS = 30
 
@@ -143,7 +144,8 @@ def _is_skipped(path: Path) -> bool:
     if ".vault-fix-backup-" in path_str:
         return True
 
-    return any(skip in path_str for skip in SKIP_FOLDERS)
+    # Segmento a segmento: un `in` sobre la cadena saltaba `como-usar-vault-backups.md`.
+    return is_snapshot_path(path_str)
 
 
 def _is_structural(path: Path) -> bool:

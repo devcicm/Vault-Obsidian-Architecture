@@ -47,7 +47,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from vault_errors import wrap_main
 from vault_lib import (cargar_bloque_tolerante, indice_de_destinos, read_frontmatter,
                        resolver_destino_wikilink, separar_frontmatter, utcnow)
-from vault_io import atomic_write_json, file_lock, write_report
+from vault_io import SNAPSHOT_DIRS, atomic_write_json, file_lock, is_snapshot_path, write_report
 
 
 # F4 exactitud: qué tipos pertenecen a cada sección lo declara el registro.
@@ -62,7 +62,8 @@ from vault_norms_catalog import STATUS_VOCAB, normalize_status
 # `vault_vocabulario.py` para el registro y su contexto dueño.
 from vault_vocabulario import opciones as _opciones
 
-SKIP_FOLDERS = {"10_Migrated", "vault-backups", ".history"}
+# AP-57: las instantáneas las nombra vault_io; `10_Migrated` es de la calidad.
+SKIP_FOLDERS = {"10_Migrated", *SNAPSHOT_DIRS}
 
 TIMELINESS_DEFAULT_DAYS = 30
 TIMELINESS_HIGH_DAYS = 15
@@ -158,8 +159,8 @@ def _change_log_json() -> Path:
 
 
 def _is_skipped(path: Path) -> bool:
-    path_str = str(path.relative_to(_raiz()))
-    return any(skip in path_str for skip in SKIP_FOLDERS)
+    # Segmento a segmento: un `in` sobre la cadena saltaba `como-usar-vault-backups.md`.
+    return any(p in SKIP_FOLDERS for p in path.relative_to(_raiz()).parts)
 
 
 def _is_structural(path: Path) -> bool:
@@ -188,7 +189,7 @@ def _get_all_notes() -> List[Path]:
     return [
         n
         for n in _raiz().rglob("*.md")
-        if not _is_skipped(n) and ".history" not in str(n)
+        if not _is_skipped(n)
     ]
 
 
@@ -254,7 +255,8 @@ def _build_all_stems() -> Set[str]:
     raiz = _raiz()
     relativas, aliases = [], []
     for n in raiz.rglob("*.md"):
-        if ".history" in str(n):
+        # AP-57: las instantáneas las nombra vault_io, no este módulo.
+        if is_snapshot_path(n.relative_to(raiz)):
             continue
         relativas.append(n.relative_to(raiz))
         raw = (read_frontmatter(n) or {}).get("aliases") or []
