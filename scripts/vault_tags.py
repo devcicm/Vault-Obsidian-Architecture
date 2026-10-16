@@ -37,6 +37,7 @@ from vault_io import (
     assert_within_vault,
     file_lock,
     safe_wikilink,
+    write_report,
 )
 
 from vault_registry import SECTIONS as _REGISTRY_SECTIONS
@@ -135,6 +136,10 @@ def _is_vault_note(path: Path) -> bool:
     `secciones_del_vault` cachea por firma del fichero y lanza `ValueError` si
     está roto; las entradas públicas lo traducen con `_registro_ilegible`.
     """
+    # El índice de tags lo genera esta tool: escaneado, el segundo `rebuild`
+    # lo listaba como nota sin tags y la cifra cambiaba sin cambiar el vault.
+    if Path(path).resolve() == _tag_index_md().resolve():
+        return False
     return es_nota_indexable(path, raiz(), secciones_del_vault(raiz()),
                              incluir_indices=False)
 
@@ -577,6 +582,8 @@ def vault_tags_rebuild(dry_run: bool = False) -> Dict[str, Any]:
 
     return {
         "ok": True,
+        # AP-37: lo escrito lo mide el ledger, no la tool.
+        **write_report(),
         "total_tags": len(tag_map),
         "total_tagged_notes": etiquetadas,
         "total_tag_uses": usos,
@@ -796,6 +803,8 @@ def vault_tags_rename(
 
     return {
         "ok": True,
+        # AP-37: notas, registro e índice, medidos por el ledger.
+        **write_report(),
         "old_tag": old_tag,
         "new_tag": new_tag,
         "updated_count": len(updated_notes),

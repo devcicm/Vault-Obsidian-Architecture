@@ -1003,6 +1003,30 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         ),
     },
     {
+        "id": "ap37_mide_lo_declarado",
+        "estado": "pendiente",
+        "desde": "tras v41.6",
+        "capa": "4",
+        "que": (
+            "AP-44 sobre AP-37: `vault_noop_audit` comprueba que el contrato "
+            "**declare** un indicador de trabajo, no que la tool lo **emita**. "
+            "`vault_tags` declaraba `total` y `renamed`, que ningún modo devuelve, "
+            "y `rebuild`/`rename` escribían sin `write_report()`: el audit en 0 "
+            "con una tool que callaba lo que escribía. Lo de `vault_tags` se "
+            "arregló; el criterio del audit sigue siendo el declarado. Medido el "
+            "2026-10-15."
+        ),
+        "por_que_no_ahora": (
+            "Contrastar lo emitido exige ejecutar cada tool con escritura por el "
+            "camino que escribe, sobre un vault desechable y con argumentos "
+            "válidos por modo; `vault_smoke` ejecuta un solo ejemplo, casi siempre "
+            "de lectura, y solo exige que salga **algún** campo declarado. Es un "
+            "banco de ejecución nuevo, no un arreglo del audit. "
+            "`tests/test_tags_dice_lo_que_escribe.py::test_limite_declarado_ap37_mide_lo_declarado` "
+            "fija el límite."
+        ),
+    },
+    {
         "id": "ap48_sin_voz",
         "estado": "saldada",
         "saldada_en": "tras v41.6 (2026-10-15, sin versión publicada)",
