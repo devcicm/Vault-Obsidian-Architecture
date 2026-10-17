@@ -108,6 +108,36 @@ def test_el_catalogo_no_promete_escanear_las_notas():
     for linea in ficha["example"].splitlines():
         partes = linea.split()
         if "--categories" in partes:
-            pedidas = partes[partes.index("--categories") + 1:]
-            pedidas = [p for p in pedidas if not p.startswith("--")]
+            pedidas = []
+            for p in partes[partes.index("--categories") + 1:]:
+                if p.startswith("--"):
+                    break
+                pedidas.append(p)
             assert set(pedidas) <= set(vault_security_rules.CATEGORIAS) | {"all"}, linea
+
+
+def test_un_path_relativo_del_repo_se_resuelve_desde_donde_se_ejecuta(scan, monkeypatch):
+    """README y docstring documentan `--path "src/"` corriendo desde el repo,
+    pero la ruta se resolvía solo contra la raíz del vault: desde el repo daba
+    FILE_NOT_FOUND. La del vault se mira primero, como hasta ahora."""
+    tool, tmp = scan
+    repo = tmp / "repo"
+    (repo / "src").mkdir(parents=True)
+    (repo / "src" / "a.js").write_text("const x = 1;\n", encoding="utf-8")
+    monkeypatch.chdir(repo)
+    r = tool.vault_security_scan("src/", save_findings=False)
+    assert r["ok"] is True, r
+    assert r["filesScanned"] == 1, r
+
+
+def test_el_path_relativo_al_vault_sigue_mandando(scan, monkeypatch):
+    tool, tmp = scan
+    vault = vault_io.get_vault_root()
+    (vault / "src").mkdir()
+    (vault / "src" / "a.js").write_text("const x = 1;\n", encoding="utf-8")
+    (vault / "src" / "b.js").write_text("const y = 2;\n", encoding="utf-8")
+    repo = tmp / "repo"
+    (repo / "src").mkdir(parents=True)
+    (repo / "src" / "c.js").write_text("const z = 3;\n", encoding="utf-8")
+    monkeypatch.chdir(repo)
+    assert tool.vault_security_scan("src/", save_findings=False)["filesScanned"] == 2

@@ -6155,7 +6155,7 @@
         "properties": {
           "path": {
             "type": "string",
-            "description": "Path to scan"
+            "description": "Code to scan: absolute, relative to the vault root, or else to the current directory"
           },
           "project": {
             "type": "string",

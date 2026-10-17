@@ -1907,7 +1907,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Genera reporte en 02_Observability/vulnerabilities/"],
-        "example": 'python vault_security_scan.py --path "01_Projects"\npython vault_security_scan.py --path "01_Projects" --project "mi-api" --categories secrets command_injection',
+        "example": 'python vault_security_scan.py --path "src/" --project "mi-api"\npython vault_security_scan.py --path "src/" --project "mi-api" --categories secrets command_injection --save_findings false',
         "related": ["vault_audit", "vault_log_error"],
     },
     "vault_drift_detect": {

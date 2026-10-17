@@ -329,6 +329,11 @@ def vault_security_scan(
     p = Path(path)
 
     scan_path = p if p.is_absolute() else _raiz() / p
+    if not p.is_absolute() and not scan_path.exists() and p.resolve().exists():
+        # README y docstring documentan `--path "src/"` desde el repo; solo
+        # contra el vault, eso era FILE_NOT_FOUND. El vault se mira primero,
+        # como hasta ahora (lo usa `vault_test_runner` con `01_Projects/...`).
+        scan_path = p.resolve()
 
     if not scan_path.exists():
         return emit_error("vault_security_scan", "FILE_NOT_FOUND", f"Path not found: {path}")
@@ -440,7 +445,9 @@ Notas:
         allow_abbrev=False,
     )
 
-    parser.add_argument("--path", required=True, help="Path to scan")
+    parser.add_argument(
+        "--path", required=True,
+        help="Code to scan: absolute, relative to the vault root, or else to the current directory")
 
     parser.add_argument("--project", type=proyecto_registrado("vault_security_scan"), default="", help="Project name")
 
