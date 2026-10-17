@@ -485,33 +485,36 @@ def apply_fix(report: dict[str, Any], root: Path) -> dict[str, Any]:
 
     applied = 0
     errors = []
-    for fix in report["fixes"]:
-        if not fix["new_content"]:
-            continue
-        target = root / fix["note"]
-        try:
-            # AP-54: leer, recomponer y escribir son tres pasos sobre el mismo
-            # fichero. Sin lock, otra tool que escriba entremedias pierde su
-            # cambio sin dejar rastro — y `--fix` masivo es justo cuando varias
-            # corren a la vez.
-            with file_lock(target):
-                existing_text = target.read_text(encoding="utf-8")
-                esperado = fix.get("source_sha")
-                if esperado and _sha_del_fichero(target) != esperado:
-                    errors.append({
-                        "note": fix["note"],
-                        "error": ("la nota cambió entre el análisis y la escritura: "
-                                  "aplicar el arreglo revertiría esa edición"),
-                        "error_code": "STALE_REPORT",
-                    })
-                    continue
-                stripped = _strip_frontmatter(existing_text)
-                body_part = existing_text.replace(stripped, "", 1) if stripped else ""
-                new_full = body_part + fix["new_content"]
-                atomic_write_text(target, new_full)
-            applied += 1
-        except Exception as exc:
-            errors.append({"note": fix["note"], "error": str(exc)})
+    # AP-47: como en `apply_classified_fixes`, la sección, la búsqueda y el
+    # grafo se regeneran una vez al cerrar el lote y no tras cada nota.
+    with escrituras_en_lote():
+        for fix in report["fixes"]:
+            if not fix["new_content"]:
+                continue
+            target = root / fix["note"]
+            try:
+                # AP-54: leer, recomponer y escribir son tres pasos sobre el mismo
+                # fichero. Sin lock, otra tool que escriba entremedias pierde su
+                # cambio sin dejar rastro — y `--fix` masivo es justo cuando varias
+                # corren a la vez.
+                with file_lock(target):
+                    existing_text = target.read_text(encoding="utf-8")
+                    esperado = fix.get("source_sha")
+                    if esperado and _sha_del_fichero(target) != esperado:
+                        errors.append({
+                            "note": fix["note"],
+                            "error": ("la nota cambió entre el análisis y la escritura: "
+                                      "aplicar el arreglo revertiría esa edición"),
+                            "error_code": "STALE_REPORT",
+                        })
+                        continue
+                    stripped = _strip_frontmatter(existing_text)
+                    body_part = existing_text.replace(stripped, "", 1) if stripped else ""
+                    new_full = body_part + fix["new_content"]
+                    atomic_write_text(target, new_full)
+                applied += 1
+            except Exception as exc:
+                errors.append({"note": fix["note"], "error": str(exc)})
 
     existing_log.append(
         {

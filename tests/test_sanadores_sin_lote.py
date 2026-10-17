@@ -2,9 +2,9 @@
 
 AP-47: `vault_io.escrituras_en_lote()` hace que la sección, la búsqueda y el
 grafo se regeneren una vez por lote y no una vez por nota. Lo abren
-`vault_frontmatter_completar` y la ruta clasificada de `vault_graph_fix`
-(`apply_classified_fixes`); el resto de `vault_norms_catalog.SANADORES` y la otra
-ruta de `vault_graph_fix` (`apply_fix`) no. Está declarado como deuda
+`vault_frontmatter_completar` y las dos rutas de `vault_graph_fix`
+(`apply_classified_fixes` y, desde el 2026-10-16, `apply_fix`); los que no,
+de `vault_norms_catalog.SANADORES`, los lista `SIN_LOTE`. Está declarado como deuda
 (`sanadores_sin_lote`), y este test fija el límite medido: falla en cuanto un
 sanador abre el lote —la deuda encoge y hay que anotarlo— y en cuanto aparece un
 sanador nuevo sin él, que es deuda nueva.
@@ -51,11 +51,12 @@ def test_limite_declarado_sanadores_sin_lote():
     )
 
 
-def test_limite_declarado_apply_fix_sin_lote():
+def test_las_dos_rutas_de_graph_fix_abren_el_lote():
+    # Hasta el 2026-10-16 `apply_fix` escribía nota a nota y este test lo fijaba.
     from vault.grafo import graph_fix
 
     assert "escrituras_en_lote" in inspect.getsource(graph_fix.apply_classified_fixes)
-    assert "escrituras_en_lote" not in inspect.getsource(graph_fix.apply_fix)
+    assert "escrituras_en_lote" in inspect.getsource(graph_fix.apply_fix)
 
 
 # --- Cada sanador que entra en el lote --------------------------------------
@@ -137,3 +138,50 @@ def test_ap47_project_heal_escribe_en_lote(tmp_path, monkeypatch):
         vault_io.set_vault_root(original)
     assert r["healed"] == 2, r
     assert secciones == ["07_Knowledge"], secciones
+
+
+def test_ap47_graph_fix_apply_fix_escribe_en_lote(tmp_path, monkeypatch):
+    import vault_io
+    from vault.grafo import graph_fix
+
+    nota = "---\ntitle: {0}\n---\n\n# {0}\n\nver [[roto]]\n"
+    original = _vault_con(tmp_path, monkeypatch, {
+        "07_Knowledge/a.md": nota.format("a"), "07_Knowledge/b.md": nota.format("b")})
+    informe = {"summary": {}, "fixes": [
+        {"note": f"07_Knowledge/{n}.md", "new_content": f"\n# {n}\n\nver roto\n"}
+        for n in ("a", "b")]}
+    try:
+        secciones = _secciones_regeneradas(monkeypatch)
+        r = graph_fix.apply_fix(informe, tmp_path)
+    finally:
+        vault_io.set_vault_root(original)
+    assert r["applied"] == 2 and not r["errors"], r
+    assert secciones == ["07_Knowledge"], secciones
+
+
+def test_ap47_apply_fix_no_da_por_caducado_el_indice_que_el_mismo_regenero(tmp_path, monkeypatch):
+    # Medido el 2026-10-16 en una copia de /ans: sin lote, escribir una nota
+    # regeneraba el `index.md` de su sección; si ese índice venía también en
+    # el informe, su `source_sha` ya no cuadraba y salía STALE_REPORT —rc 1—
+    # por un cambio que había hecho la propia tool.
+    import vault_io
+    from vault.grafo import graph_fix
+
+    import vault_section_index
+
+    original = _vault_con(tmp_path, monkeypatch, {
+        "07_Knowledge/a.md": "---\ntitle: a\n---\n\n# a\n\nver [[roto]]\n"})
+    try:
+        vault_section_index.vault_section_index("07_Knowledge")
+        indice = tmp_path / "07_Knowledge" / "index.md"
+        assert indice.is_file()
+        informe = {"summary": {}, "fixes": [
+            {"note": "07_Knowledge/a.md", "new_content": "\n# a\n\nver [[a]] de nuevo\n",
+             "source_sha": graph_fix._sha_del_fichero(tmp_path / "07_Knowledge" / "a.md")},
+            {"note": "07_Knowledge/index.md",
+             "new_content": indice.read_text(encoding="utf-8"),
+             "source_sha": graph_fix._sha_del_fichero(indice)}]}
+        r = graph_fix.apply_fix(informe, tmp_path)
+    finally:
+        vault_io.set_vault_root(original)
+    assert r["applied"] == 2 and not r["errors"], r

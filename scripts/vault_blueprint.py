@@ -963,10 +963,12 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "y `vault_frontmatter_heal` (59,6 s → 11,9 s sobre 45 notas con el "
             "frontmatter sembrado en una copia de /ans; 13,8 s → 4,6 s en /vcloud) "
             "y `vault_project --heal` (29,6 s → 9,5 s en /ans; 16,0 s → 5,1 s "
-            "en /vcloud). No lo abren "
-            "`vault_supersede`, `vault_norms_engine` ni `vault_graph_fix."
-            "apply_fix`: cada uno sigue pagando una regeneración por nota "
-            "escrita. Medido el 2026-10-14 sobre 35f5bad."
+            "en /vcloud) y `vault_graph_fix.apply_fix`: en una copia de /ans, "
+            "sin lote, escribir una nota regeneraba el `index.md` de su sección "
+            "y los dos índices que venían en el mismo informe salían como "
+            "STALE_REPORT —10 de 12 aplicados, rc 1—; con lote, 12 de 12. "
+            "No lo abren `vault_supersede` ni `vault_norms_engine`. "
+            "Medido el 2026-10-14 sobre 35f5bad."
         ),
         "por_que_no_ahora": (
             "Cada sanador que entra en el lote exige comparar el árbol de dos "
