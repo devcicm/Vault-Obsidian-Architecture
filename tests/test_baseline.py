@@ -454,8 +454,12 @@ def test_el_dueno_no_importa_ninguna_tool():
     llamadas de este fichero — o sea, dos copias más de un criterio que acababa
     de estrenar dueño (AP-57). La lista se escribe a mano a propósito: si crece
     sin que nadie lo note, este test ha dejado de decir algo.
+
+    Creció el 2026-10-16 con `vault_grafo_import`, otra hoja de solo
+    biblioteca estándar: al mudarse el dueño a `vault/kernel/`, `REPO_ROOT` ya
+    no podía salir de su `__file__` y sale del directorio del programa.
     """
-    HOJAS_DEL_KERNEL = {"vault_subproceso"}
+    HOJAS_DEL_KERNEL = {"vault_subproceso", "vault_grafo_import"}
     fuente = gi.codigo_de(RAIZ / "scripts" / "vault_baseline.py").read_text(encoding="utf-8")
     for linea in fuente.splitlines():
         if not linea.startswith(("import ", "from ")):

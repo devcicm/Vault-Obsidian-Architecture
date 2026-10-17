@@ -713,7 +713,14 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "directorio del programa de `vault_grafo_import.DIRECTORIO` —la raíz "
             "autodetectada no cambia, `spec_repo_sandbox` en el checkout— y "
             "`vault_fs` deja de tocar el path, que ya pone el alias. Tres tests "
-            "leían `scripts/vault_fs.py` por ruta y leen al dueño.)"
+            "leían `scripts/vault_fs.py` por ruta y leen al dueño.)\n\n"
+            "(Lote B, 2026-10-16: baseline a `vault/kernel/`, con `REPO_ROOT` "
+            "derivado del directorio del programa. `vault_grafo_import` no se "
+            "muda: es el ancla del puente, quien dice dónde está `scripts/`, y "
+            "lo dice con su propio `__file__`; mudarlo exigiría derivar ese "
+            "directorio de dos formas, por el checkout y por la wheel, en el "
+            "sitio que existe para que nadie más lo derive. Lo fija "
+            "`test_el_ancla_del_puente_no_se_muda`.)"
         ),
         "por_que_no_ahora": (
             "Transitorio hasta migrar scripts → vault/<contexto>, ADR-0002. "

@@ -59,7 +59,6 @@
   },
   "system_writes": [],
   "bridge_modules": [
-    "vault_baseline",
     "vault_grafo_import",
     "vault_norms_catalog",
     "vault_registry"

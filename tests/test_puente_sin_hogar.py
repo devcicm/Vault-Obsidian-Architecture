@@ -650,3 +650,39 @@ def test_lote_a_la_autodeteccion_sigue_dando_el_sandbox():
     origen, raiz = r.stdout.split("\n")[:2]
     assert origen == "spec_repo_sandbox"
     assert Path(raiz).resolve() == (ROOT / "vault-sandbox").resolve()
+
+
+def test_lote_b_la_baseline_migra_y_el_puente_la_suelta():
+    """Lote B de la quinta tanda (2026-10-16): `vault_baseline` a
+    `vault/kernel/baseline.py`. Su `REPO_ROOT` —donde se le pregunta a git por
+    la baseline congelada— sale del directorio del programa y no del
+    `__file__` del dueño, y sigue siendo la raíz del repo."""
+    import importlib
+    import json
+
+    import vault_baseline
+    import vault_grafo_import as gi
+
+    modulo, dueno = "vault_baseline", "vault/kernel/baseline.py"
+    assert modulo not in set(vault_arch.modulos_sin_hogar())
+    assert vault_baseline is importlib.import_module("vault.kernel.baseline")
+    assert gi.fuente_de(modulo) == (ROOT / dueno).resolve()
+    puente = json.loads((ROOT / "scripts" / "arch-baseline.json").read_text(encoding="utf-8"))
+    assert modulo not in puente["bridge_modules"]
+    esperado = gi.importaciones(ROOT / dueno, gi.MODULOS_LOCALES) - {modulo}
+    assert gi.completo()[modulo] == esperado
+    assert "__file__" not in (ROOT / dueno).read_text(encoding="utf-8")
+    assert vault_baseline.REPO_ROOT == ROOT.resolve()
+
+
+def test_el_ancla_del_puente_no_se_muda():
+    """`vault_grafo_import` es quien dice dónde está `scripts/` (`_impl/` en la
+    wheel), y lo dice con su propio `__file__`. Mudarlo exigiría derivar ese
+    directorio de dos formas —por el checkout y por el paquete instalado— en
+    el sitio que existe para que nadie más lo derive. Se queda como el ancla
+    del puente: si un día se muda, este test pide decir de dónde sale."""
+    import vault_grafo_import as gi
+
+    assert gi.__file__ is not None
+    assert gi.fuente_de("vault_grafo_import") == (ROOT / "scripts" / "vault_grafo_import.py").resolve()
+    assert gi.DIRECTORIO == (ROOT / "scripts").resolve()
