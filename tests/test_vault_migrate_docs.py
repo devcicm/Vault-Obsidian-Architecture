@@ -5,6 +5,7 @@ Nunca migra código fuente (.py, .js, .ts, etc.).
 """
 
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -50,14 +51,29 @@ def fuente_con_docs(tmp_path):
     return docs
 
 
-@pytest.fixture
-def vault_preparado(tmp_path, fuente_con_docs):
-    """Vault inicializado con la fuente de docs disponible."""
-    v = tmp_path / "vault-test-migrate"
+@pytest.fixture(scope="module")
+def _plantilla_migrate(tmp_path_factory):
+    """`vault_init` + alta de `testpr` una sola vez por módulo.
+
+    Hasta el 2026-10-17 cada test los ejecutaba en su setup, unos 17-21 s por
+    test en la suite completa. Las migraciones escriben en el vault, así que
+    cada test recibe una copia propia de la plantilla. Lo único del vault que
+    nombra su ruta es `00_System/.tool-trace.json`, que ningún test de este
+    fichero lee.
+    """
+    v = tmp_path_factory.mktemp("plantilla_migrate") / "vault-test-migrate"
     v.mkdir()
     _correr("vault_init.py", v)
     # AP-63: `--project testpr` resuelve contra el registro; se da de alta.
     _correr("vault_project.py", v, "--add", "testpr")
+    return v
+
+
+@pytest.fixture
+def vault_preparado(tmp_path, fuente_con_docs, _plantilla_migrate):
+    """Vault inicializado con la fuente de docs disponible (copia de la plantilla)."""
+    v = tmp_path / "vault-test-migrate"
+    shutil.copytree(_plantilla_migrate, v)
     return v, fuente_con_docs
 
 
