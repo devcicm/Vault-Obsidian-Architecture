@@ -26,8 +26,15 @@ from vault_norms_catalog import SANADORES  # noqa: E402
 #: entra (2026-10-16: `vault_fix_brackets`, `vault_frontmatter_heal`,
 #: `vault_project`).
 SIN_LOTE = {
-    "vault_supersede",
     "vault_norms_engine",
+}
+
+#: Los que no abren el lote porque no tienen nada que aplazar, con el motivo.
+#: No es una lista de perdones: cada entrada tiene su test, que mide el
+#: motivo, y deja de valer en cuanto el sanador escriba más de lo que dice.
+FUERA_DEL_LOTE = {
+    "vault_supersede": "una escritura por llamada: la sección ya se regenera una vez "
+                       "(test_vault_supersede_escribe_una_nota_por_llamada)",
 }
 
 
@@ -44,6 +51,9 @@ def test_la_deuda_de_sanadores_sin_lote_esta_declarada():
 
 def test_limite_declarado_sanadores_sin_lote():
     medidos = {t for t in SANADORES if not _abre_el_lote(t)}
+    assert set(FUERA_DEL_LOTE) <= medidos, (
+        f"{sorted(set(FUERA_DEL_LOTE) - medidos)} ya abren el lote: sobran en FUERA_DEL_LOTE")
+    medidos -= set(FUERA_DEL_LOTE)
     assert medidos == SIN_LOTE, (
         f"sin lote ahora: {sorted(medidos)}; declarados: {sorted(SIN_LOTE)}. "
         "Si encogió, actualiza la deuda `sanadores_sin_lote`; si creció, el "
@@ -185,3 +195,31 @@ def test_ap47_apply_fix_no_da_por_caducado_el_indice_que_el_mismo_regenero(tmp_p
     finally:
         vault_io.set_vault_root(original)
     assert r["applied"] == 2 and not r["errors"], r
+
+
+def test_vault_supersede_escribe_una_nota_por_llamada(tmp_path, monkeypatch):
+    # El motivo de FUERA_DEL_LOTE: sin bucle de escritura, un lote no aplaza
+    # nada. Si un día anota varias sombras en una llamada, esto falla.
+    import vault_io
+    from vault.autoria import supersede
+
+    escritas = []
+    original_write = supersede.atomic_write_text
+
+    def contada(path, *a, **kw):
+        escritas.append(Path(path).name)
+        return original_write(path, *a, **kw)
+
+    monkeypatch.setattr(supersede, "atomic_write_text", contada)
+    nota = "---\ntitle: {0}\n---\n\n# {0}\n\ncuerpo\n"
+    original = _vault_con(tmp_path, monkeypatch, {
+        "07_Knowledge/guia.md": nota.format("guia"),
+        "07_Knowledge/guia-copia.md": nota.format("guia-copia")})
+    try:
+        secciones = _secciones_regeneradas(monkeypatch)
+        r = supersede.supersede("07_Knowledge/guia-copia.md", "guia", apply=True)
+    finally:
+        vault_io.set_vault_root(original)
+    assert r["ok"] and r["written"], r
+    assert escritas == ["guia-copia.md"], escritas
+    assert secciones == ["07_Knowledge"], secciones

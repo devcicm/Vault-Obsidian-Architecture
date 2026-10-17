@@ -967,7 +967,10 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "sin lote, escribir una nota regeneraba el `index.md` de su sección "
             "y los dos índices que venían en el mismo informe salían como "
             "STALE_REPORT —10 de 12 aplicados, rc 1—; con lote, 12 de 12. "
-            "No lo abren `vault_supersede` ni `vault_norms_engine`. "
+            "`vault_supersede` no lo abre porque escribe una nota por llamada "
+            "y no tiene nada que aplazar (medido en "
+            "`test_vault_supersede_escribe_una_nota_por_llamada`). "
+            "No lo abre `vault_norms_engine`. "
             "Medido el 2026-10-14 sobre 35f5bad."
         ),
         "por_que_no_ahora": (
