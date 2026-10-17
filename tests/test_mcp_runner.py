@@ -279,13 +279,20 @@ def test_ninguna_tool_ancla_rutas_de_entrada_en_el_cwd():
     """El CWD del hijo es `scripts/`: `--file src/foo.ts` iría a `scripts/src/`."""
     # La única excepción es el dueño del criterio, derivada de dónde vive
     # `client_cwd` y no escrita a mano: se movió a `vault_raiz` el 2026-10-16.
+    # El mismo día (lote A) `vault_raiz` pasó a alias de `vault/kernel/raiz.py`
+    # y `__module__ + ".py"` dejó de nombrar un fichero de `scripts/`: el
+    # dueño se compara por el fichero que contiene la función, que es el que
+    # `gi.codigo_de` devuelve para el alias.
+    import inspect
+
     import vault_io
 
-    dueno = vault_io.client_cwd.__module__ + ".py"
+    dueno = Path(inspect.getsourcefile(vault_io.client_cwd)).resolve()
     culpables = [
         py.name
         for py in sorted(SCRIPTS.glob("vault_*.py"))
-        if "Path.cwd()" in gi.codigo_de(py).read_text(encoding="utf-8") and py.name != dueno
+        if "Path.cwd()" in gi.codigo_de(py).read_text(encoding="utf-8")
+        and gi.codigo_de(py).resolve() != dueno
     ]
     assert not culpables, (
         f"resuelven contra el CWD del proceso en vez de vault_io.resolve_input_path: {culpables}"
