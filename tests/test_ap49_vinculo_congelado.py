@@ -136,13 +136,40 @@ def test_la_cifra_de_la_norma_es_la_que_mide_la_puerta():
     assert f"{len({v['module'] for v in vinculos})} módulos**" in texto
 
 
+def _dueno_de_vault_root():
+    """El fichero que define `VAULT_ROOT`, derivado y no escrito a mano.
+
+    Desde el 2026-10-16 (lote A de la quinta tanda) es `vault/kernel/raiz.py`:
+    el dueño de la detección vive dentro de `vault/`. Definir la raíz no es
+    congelarla —AP-49 va contra el consumidor que copia el valor al importar—,
+    así que se exime solo el fichero donde `VAULT_ROOT = _detect_vault_root()`
+    está escrito. Si la definición se muda, la exención la sigue o se cae.
+    """
+    import vault_grafo_import as gi
+    dueno = gi.fuente_de("vault_raiz").resolve()
+    arbol = ast.parse(dueno.read_text(encoding="utf-8"))
+    assert any(
+        isinstance(n, (ast.Assign, ast.AnnAssign))
+        and isinstance(n.value, ast.Call)
+        and getattr(n.value.func, "id", None) == "_detect_vault_root"
+        and "VAULT_ROOT" in {t.id for t in (n.targets if isinstance(n, ast.Assign) else [n.target])
+                             if isinstance(t, ast.Name)}
+        for n in arbol.body
+    ), f"{dueno} ya no define VAULT_ROOT: la exención no tiene a quién eximir"
+    return dueno
+
+
 def test_el_kernel_nuevo_no_comete_la_norma_que_cura():
     """`vault/` no puede tener un solo vínculo congelado.
 
     Es el paquete que existe para eliminar AP-49: cometerla aquí sería el
     equivalente exacto de AP-44 —la solución certificándose a sí misma—.
+    El único exento es el dueño de `VAULT_ROOT` (`_dueno_de_vault_root`).
     """
+    dueno = _dueno_de_vault_root()
     for src in (REPO_ROOT / "vault").rglob("*.py"):
+        if src.resolve() == dueno:
+            continue
         arbol = ast.parse(src.read_text(encoding="utf-8"))
         for nodo in arbol.body:
             if isinstance(nodo, (ast.Assign, ast.AnnAssign)):
@@ -158,8 +185,12 @@ def test_ningun_modulo_de_vault_importa_vault_root():
 
     Se permite exactamente en `adaptadores.py`, que es la frontera declarada con
     `scripts/` — y ni siquiera ahí se importa el valor, se llama a la función.
+    El dueño que lo define no lo importa: lo exime `_dueno_de_vault_root`.
     """
+    dueno = _dueno_de_vault_root()
     for src in (REPO_ROOT / "vault").rglob("*.py"):
+        if src.resolve() == dueno:
+            continue
         texto = src.read_text(encoding="utf-8")
         assert "import VAULT_ROOT" not in texto, src.name
         assert "vault_io.VAULT_ROOT" not in texto, src.name
