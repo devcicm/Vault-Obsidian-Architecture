@@ -99,3 +99,17 @@ def test_un_fallo_al_escribir_no_deja_el_bucle_sin_fin(vault, monkeypatch):
     assert r["files_modified"] == [], r
     assert [f for f in r["fixes_applied"] if "error" in f] == [
         {"path": "07_Knowledge/n.md", "error": "disco lleno"}], r
+
+
+def test_ap51_un_arreglo_que_no_se_escribio_no_sale_ok(vault, monkeypatch):
+    # `ok: True` con la escritura fallada se leía como «arreglado»: el error
+    # solo aparecía mezclado dentro de `fixes_applied`.
+    from vault.autoria import fix_brackets
+
+    def falla(*a, **kw):
+        raise OSError("disco lleno")
+
+    monkeypatch.setattr(fix_brackets, "atomic_write_text", falla)
+    r = fix_brackets.vault_fix_brackets(apply=True)
+    assert r["ok"] is False and r["errors_count"] == 1, r
+    assert (vault / "07_Knowledge" / "n.md").read_text(encoding="utf-8") == ROTA
