@@ -69,3 +69,14 @@ def test_s4_el_envelope_no_saca_la_ruta_del_repo(tmp_path):
     repo = str(tmp_path / "repo")
     assert repo not in salida and json.dumps(repo)[1:-1] not in salida, r["hint"]
     assert "--mode snapshot" in r["hint"], "el campo estable se conserva"
+
+
+def test_ap37_el_snapshot_dice_que_escribio(tmp_path):
+    """AP-37, medido por `vault_noop_audit --ejecutado` (2026-10-17): el
+    snapshot escribe `00_System/.session-snapshot.json` y el envelope no
+    llevaba ningún indicador de trabajo, igual que uno que no hubiera escrito."""
+    raiz = _proyecto_enlazado(tmp_path)
+    rc, r, _ = _tool(raiz, "vault_drift_detect", "--project", "demo", "--mode", "snapshot")
+    assert rc == 0 and r["ok"] is True, r
+    assert r["written"] is True, r
+    assert (raiz / "00_System" / ".session-snapshot.json").is_file()

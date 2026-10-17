@@ -1204,6 +1204,9 @@ def vault_drift_detect(
             "timestamp": now,
             "backend": "git" if use_git else "hash",
             "git_commit": snapshot.get("git_commit"),
+            # AP-37: `_save_snapshot` escribió; sin esto el envelope no se
+            # distinguía del de una llamada que no tocó nada.
+            "written": True,
             "synced_commit_recorded_in": ficha,
             "files_tracked": len(snapshot.get("files", {}))
             if not use_git
