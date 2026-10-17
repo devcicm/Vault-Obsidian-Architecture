@@ -23,9 +23,8 @@ import vault_blueprint as bp  # noqa: E402
 from vault_norms_catalog import SANADORES  # noqa: E402
 
 #: El límite medido el 2026-10-14 sobre 35f5bad; encoge con cada sanador que
-#: entra (2026-10-16: `vault_fix_brackets`).
+#: entra (2026-10-16: `vault_fix_brackets`, `vault_frontmatter_heal`).
 SIN_LOTE = {
-    "vault_frontmatter_heal",
     "vault_supersede",
     "vault_project",
     "vault_norms_engine",
@@ -104,4 +103,20 @@ def test_ap47_fix_brackets_escribe_en_lote(tmp_path, monkeypatch):
     finally:
         vault_io.set_vault_root(original)
     assert sorted(r["files_modified"]) == ["07_Knowledge/a.md", "07_Knowledge/b.md"], r
+    assert secciones == ["07_Knowledge"], secciones
+
+
+def test_ap47_frontmatter_heal_escribe_en_lote(tmp_path, monkeypatch):
+    import vault_io
+    from vault.autoria import frontmatter_heal
+
+    roto = "---\ntitle: Overview: {0}\nid: {0}\n---\n\ncuerpo\n"
+    original = _vault_con(tmp_path, monkeypatch, {
+        "07_Knowledge/a.md": roto.format("a"), "07_Knowledge/b.md": roto.format("b")})
+    try:
+        secciones = _secciones_regeneradas(monkeypatch)
+        r = frontmatter_heal.heal(apply=True)
+    finally:
+        vault_io.set_vault_root(original)
+    assert r["healed"] == 2, r
     assert secciones == ["07_Knowledge"], secciones

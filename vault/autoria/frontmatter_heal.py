@@ -59,7 +59,8 @@ from typing import Any, Dict, List, Optional, Tuple
 import yaml
 
 from vault_errors import emit_error, wrap_main
-from vault_io import atomic_write_text, file_lock, get_vault_root, is_snapshot_path
+from vault_io import (atomic_write_text, escrituras_en_lote, file_lock,
+                      get_vault_root, is_snapshot_path)
 from vault_lib import separar_frontmatter, yaml_scalar
 
 #: Lo que esta tool sabe arreglar. Cualquier otra causa se reporta con su
@@ -254,53 +255,56 @@ def heal(apply: bool = False) -> Dict[str, Any]:
     reparadas: List[Dict[str, Any]] = []
     irreparables: List[Dict[str, Any]] = []
 
-    for p in _notas(raiz):
-        try:
-            texto = p.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError) as exc:
-            # No se cuenta como frontmatter roto: es una nota que no se pudo
-            # mirar, y agregarlas juntas es AP-51.
-            irreparables.append({
-                "path": str(p.relative_to(raiz)).replace("\\", "/"),
-                "error": f"ilegible: {type(exc).__name__}",
-                "cause": "ilegible",
-            })
-            continue
+    # AP-47: la sección, la búsqueda y el grafo se regeneran una vez al
+    # cerrar el lote y no tras cada nota reparada.
+    with escrituras_en_lote():
+        for p in _notas(raiz):
+            try:
+                texto = p.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError) as exc:
+                # No se cuenta como frontmatter roto: es una nota que no se pudo
+                # mirar, y agregarlas juntas es AP-51.
+                irreparables.append({
+                    "path": str(p.relative_to(raiz)).replace("\\", "/"),
+                    "error": f"ilegible: {type(exc).__name__}",
+                    "cause": "ilegible",
+                })
+                continue
 
-        fallo = diagnosticar(texto)
-        if fallo is None:
-            continue
-        rel = str(p.relative_to(raiz)).replace("\\", "/")
-        arreglo = reparar(texto)
-        if arreglo is None:
-            irreparables.append({"path": rel, "error": fallo["error"],
-                                 "cause": "no_mecanico"})
-            continue
+            fallo = diagnosticar(texto)
+            if fallo is None:
+                continue
+            rel = str(p.relative_to(raiz)).replace("\\", "/")
+            arreglo = reparar(texto)
+            if arreglo is None:
+                irreparables.append({"path": rel, "error": fallo["error"],
+                                     "cause": "no_mecanico"})
+                continue
 
-        entrada = {"path": rel, "error": fallo["error"],
-                   "keys_quoted": arreglo["keys_quoted"],
-                   # Qué claves vuelven a leerse. En el bloque sin cerrar es el
-                   # dato que importa: no eran cero por estar vacías, era el
-                   # frontmatter entero invisible para el consumidor.
-                   "keys_recovered": arreglo.get("keys_recovered", []),
-                   "cause": arreglo["cause"]}
-        if apply:
-            # AP-54: el arreglo se calculó sobre el texto leído arriba, así que
-            # leer y escribir son un solo acto lógico sobre el mismo fichero.
-            # Sin lock, una escritura ajena entremedias se perdía al pegar aquí
-            # una versión anterior — y este healer corre sobre el vault entero.
-            with file_lock(p):
-                if p.read_text(encoding="utf-8") != texto:
-                    irreparables.append({
-                        "path": rel,
-                        "error": ("la nota cambió entre el diagnóstico y la escritura: "
-                                  "reparar aquí revertiría esa edición"),
-                        "cause": "cambio_concurrente",
-                    })
-                    continue
-                atomic_write_text(p, arreglo["text"])
-            entrada["written"] = True
-        reparadas.append(entrada)
+            entrada = {"path": rel, "error": fallo["error"],
+                       "keys_quoted": arreglo["keys_quoted"],
+                       # Qué claves vuelven a leerse. En el bloque sin cerrar es el
+                       # dato que importa: no eran cero por estar vacías, era el
+                       # frontmatter entero invisible para el consumidor.
+                       "keys_recovered": arreglo.get("keys_recovered", []),
+                       "cause": arreglo["cause"]}
+            if apply:
+                # AP-54: el arreglo se calculó sobre el texto leído arriba, así que
+                # leer y escribir son un solo acto lógico sobre el mismo fichero.
+                # Sin lock, una escritura ajena entremedias se perdía al pegar aquí
+                # una versión anterior — y este healer corre sobre el vault entero.
+                with file_lock(p):
+                    if p.read_text(encoding="utf-8") != texto:
+                        irreparables.append({
+                            "path": rel,
+                            "error": ("la nota cambió entre el diagnóstico y la escritura: "
+                                      "reparar aquí revertiría esa edición"),
+                            "cause": "cambio_concurrente",
+                        })
+                        continue
+                    atomic_write_text(p, arreglo["text"])
+                entrada["written"] = True
+            reparadas.append(entrada)
 
     return {
         "ok": not (reparadas or irreparables) if not apply else not irreparables,
