@@ -2693,7 +2693,7 @@ Backup previo a migración de esquema v3 → v4 (columna archived en orders).
 
 #### `vault_security_scan(path, project?, depth?, categories?, save_findings?)`
 
-Escanea archivos de código fuente en busca de vulnerabilidades de seguridad con 45 reglas de detección distribuidas en 13 categorías. Guarda todos los hallazgos en el vault automáticamente.
+Escanea archivos de código fuente en busca de vulnerabilidades de seguridad con las reglas de detección de `vault_security_rules`, agrupadas por categoría (cuántas lo imprime `--help` desde el registro; hasta v41.7 aquí decía 45 y 13 con 58 y 14). Guarda todos los hallazgos en el vault automáticamente.
 
 **Parámetros:**
 | Parámetro | Tipo | Default | Descripción |
@@ -2701,7 +2701,7 @@ Escanea archivos de código fuente en busca de vulnerabilidades de seguridad con
 | `path` | string | — | Ruta del archivo o directorio a escanear |
 | `project` | string | `""` | Proyecto al que pertenece el código (para etiquetado en vault) |
 | `depth` | integer | `3` | Profundidad de recursión en directorios (1–5) |
-| `categories` | string[] | `["all"]` | Categorías a escanear. `["all"]` activa las 13 categorías |
+| `categories` | string[] | `["all"]` | Categorías a escanear. `["all"]` activa todas las categorías del registro |
 | `save_findings` | boolean | `true` | Guarda hallazgos en vault al finalizar |
 | `owasp_section` | boolean | `false` | Genera notas OWASP Top 10 en `02_Observability/security/owasp/{categoria}/` además del reporte consolidado |
 

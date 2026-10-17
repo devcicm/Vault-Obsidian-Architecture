@@ -141,3 +141,25 @@ def test_el_path_relativo_al_vault_sigue_mandando(scan, monkeypatch):
     (repo / "src" / "c.js").write_text("const z = 3;\n", encoding="utf-8")
     monkeypatch.chdir(repo)
     assert tool.vault_security_scan("src/", save_findings=False)["filesScanned"] == 2
+
+
+
+def test_las_cifras_de_reglas_no_estan_escritas_a_mano():
+    """Docstring, epílogo, README y manifiesto decían «45 reglas en 13
+    categorías» con 58 y 14 en `vault_security_rules` (AP-47). El código las
+    deriva; la prosa no las repite, porque registrarlas en `vault_doc_counts`
+    abría un cruce meta_toolkit -> gobernanza que la baseline no admite."""
+    import re
+
+    import vault_doc_counts
+    import vault_security_rules
+    import vault_security_scan
+
+    reglas = sum(len(v) for v in vault_security_rules.REGLAS_POR_CATEGORIA.values())
+    categorias = len(vault_security_rules.REGLAS_POR_CATEGORIA)
+    assert f"{reglas} security rules across {categorias} categories" in vault_security_scan.__doc__
+    cifra = re.compile(r"\d+\s+reglas(?: de (?:seguridad|detección))?(?: distribuidas)? en \d+ categor"
+                       r"|\d+\s+reglas de (?:seguridad|detección)|activa las \d+ categorías")
+    for doc in ("scripts/README.md", "vault-obsidian-architecture.md"):
+        vivo = vault_doc_counts._live_body(ROOT / doc)
+        assert not cifra.search(vivo), (doc, cifra.search(vivo).group(0))

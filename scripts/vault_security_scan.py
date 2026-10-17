@@ -6,7 +6,7 @@ Vault Security Scan Tool — Scan code for vulnerabilities
 
 
 
-Scans source files for 45 security rules across 13 categories.
+Scans source files for {reglas} security rules across {categorias} categories.
 
 Saves findings to vault with OWASP/CWE mapping.
 
@@ -113,6 +113,12 @@ SCAN_EXTS = {
 
 
 from vault_security_rules import REGLAS_POR_CATEGORIA as RULES, CATEGORIAS as CATEGORIES, MITIGACIONES as MITIGATIONS  # noqa: E402
+
+# AP-47: decía «45 reglas en 13 categorías» con 58 y 14 en el registro. La
+# cifra sale de él; el docstring y el epílogo solo la imprimen.
+N_REGLAS = sum(len(v) for v in RULES.values())
+N_CATEGORIAS = len(RULES)
+__doc__ = (__doc__ or "").replace("{reglas}", str(N_REGLAS)).replace("{categorias}", str(N_CATEGORIAS))
 
 
 
@@ -435,13 +441,13 @@ Notas:
 
   - VAULT_ROOT se detecta automaticamente desde la ubicacion del script
 
-  - 45 reglas en 13 categorias con mapeo OWASP/CWE
+  - {reglas} reglas en {categorias} categorias con mapeo OWASP/CWE
 
   - Los secretos se redactan en el output
 
-  - Categorias disponibles: secrets, injection, command_injection, xss, auth, crypto, path_traversal, ssrf, xxe, deserialize, prototype_pollution, redos, config, dependencies
+  - Categorias disponibles: {lista}
 
-""",
+""".replace("{reglas}", str(N_REGLAS)).replace("{categorias}", str(N_CATEGORIAS)).replace("{lista}", ", ".join(RULES)),
         allow_abbrev=False,
     )
 
