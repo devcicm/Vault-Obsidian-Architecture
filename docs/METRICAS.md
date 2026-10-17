@@ -87,3 +87,6 @@
 | 2026-10-17 | `9c85e2f` | `suite_fallos` | 0 | ronda r51 (suite completa en serie) |
 | 2026-10-17 | `9c85e2f` | `suite_tests` | 5804 | ronda r51 (suite completa en serie) |
 | 2026-10-17 | `9c85e2f` | `suite_duracion_s` | 3474.25 | ronda r51 (suite completa en serie) |
+| 2026-10-17 | `59f86d1` | `suite_fallos` | 0 | ronda r52 (suite completa en serie) |
+| 2026-10-17 | `59f86d1` | `suite_tests` | 5844 | ronda r52 (suite completa en serie) |
+| 2026-10-17 | `59f86d1` | `suite_duracion_s` | 2967.96 | ronda r52 (suite completa en serie) |
