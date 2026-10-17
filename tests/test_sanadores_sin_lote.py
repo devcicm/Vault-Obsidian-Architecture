@@ -22,12 +22,11 @@ sys.path.insert(0, str(REPO_ROOT))
 import vault_blueprint as bp  # noqa: E402
 from vault_norms_catalog import SANADORES  # noqa: E402
 
-#: El límite medido el 2026-10-14 sobre 35f5bad; encoge con cada sanador que
-#: entra (2026-10-16: `vault_fix_brackets`, `vault_frontmatter_heal`,
-#: `vault_project`).
-SIN_LOTE = {
-    "vault_norms_engine",
-}
+#: El límite medido el 2026-10-14 sobre 35f5bad; encogió con cada sanador que
+#: entró (2026-10-16: `vault_fix_brackets`, `vault_frontmatter_heal`,
+#: `vault_project` y `vault_graph_fix.apply_fix`) y quedó vacío. Uno nuevo
+#: sin lote lo hace crecer y es deuda nueva.
+SIN_LOTE: set = set()
 
 #: Los que no abren el lote porque no tienen nada que aplazar, con el motivo.
 #: No es una lista de perdones: cada entrada tiene su test, que mide el
@@ -35,6 +34,10 @@ SIN_LOTE = {
 FUERA_DEL_LOTE = {
     "vault_supersede": "una escritura por llamada: la sección ya se regenera una vez "
                        "(test_vault_supersede_escribe_una_nota_por_llamada)",
+    "vault_norms_engine": "heal_ap46 escribe con write_bytes, no con atomic_write_text: "
+                          "no hay regeneración que aplazar, y lo que falta es la "
+                          "escritura atómica, deuda `heal_ap46_escribe_sin_atomic_write` "
+                          "(test_limite_declarado_heal_ap46_escribe_sin_atomic_write)",
 }
 
 
@@ -223,3 +226,17 @@ def test_vault_supersede_escribe_una_nota_por_llamada(tmp_path, monkeypatch):
     assert r["ok"] and r["written"], r
     assert escritas == ["guia-copia.md"], escritas
     assert secciones == ["07_Knowledge"], secciones
+
+
+def test_limite_declarado_heal_ap46_escribe_sin_atomic_write():
+    # El motivo de FUERA_DEL_LOTE para vault_norms_engine, y la deuda que
+    # destapa: falla en cuanto heal_ap46 pase por atomic_write_text, y entonces
+    # la deuda se salda y el sanador entra en el lote como los demás.
+    import vault_norms_engine
+
+    fuente = inspect.getsource(vault_norms_engine.heal_ap46)
+    assert "path.write_bytes(" in fuente
+    assert "atomic_write_text" not in fuente
+    assert "file_lock" not in fuente and "tomar_lock" not in fuente
+    d = next(d for d in bp.DEUDA_DECLARADA if d["id"] == "heal_ap46_escribe_sin_atomic_write")
+    assert d["estado"] == "pendiente"

@@ -950,7 +950,18 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     },
     {
         "id": "sanadores_sin_lote",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "tras v41.7 (2026-10-16)",
+        "sostenida_por": [
+            "tests/test_sanadores_sin_lote.py::test_limite_declarado_sanadores_sin_lote",
+            "tests/test_sanadores_sin_lote.py::test_ap47_fix_brackets_escribe_en_lote",
+            "tests/test_sanadores_sin_lote.py::test_ap47_frontmatter_heal_escribe_en_lote",
+            "tests/test_sanadores_sin_lote.py::test_ap47_project_heal_escribe_en_lote",
+            "tests/test_sanadores_sin_lote.py::test_ap47_graph_fix_apply_fix_escribe_en_lote",
+            "tests/test_sanadores_sin_lote.py::test_las_dos_rutas_de_graph_fix_abren_el_lote",
+            "tests/test_sanadores_sin_lote.py::test_vault_supersede_escribe_una_nota_por_llamada",
+            "tests/test_sanadores_sin_lote.py::test_limite_declarado_heal_ap46_escribe_sin_atomic_write",
+        ],
         "desde": "v41.4",
         "capa": "5",
         "que": (
@@ -970,8 +981,11 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "`vault_supersede` no lo abre porque escribe una nota por llamada "
             "y no tiene nada que aplazar (medido en "
             "`test_vault_supersede_escribe_una_nota_por_llamada`). "
-            "No lo abre `vault_norms_engine`. "
-            "Medido el 2026-10-14 sobre 35f5bad."
+            "`vault_norms_engine` tampoco, y no por coste: `heal_ap46` escribe "
+            "con `write_bytes` y no pasa por `atomic_write_text`, así que no hay "
+            "regeneración que aplazar; lo que le falta es otra deuda, "
+            "`heal_ap46_escribe_sin_atomic_write`. "
+            "Medido el 2026-10-14 sobre 35f5bad; `SIN_LOTE` vacío el 2026-10-16."
         ),
         "por_que_no_ahora": (
             "Cada sanador que entra en el lote exige comparar el árbol de dos "
@@ -985,6 +999,34 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "—el defecto real está en una nota o en ninguna, y así el lote no "
             "se ejercita— y quitando marcas de tiempo y orden de listas JSON "
             "antes de comparar."
+        ),
+    },
+    {
+        "id": "heal_ap46_escribe_sin_atomic_write",
+        "estado": "pendiente",
+        "desde": "v41.7",
+        "capa": "5",
+        "que": (
+            "Regla 6 y AP-54: `vault_norms_engine.heal_ap46` —`vault_norms "
+            "--heal-ap46 --apply-heal`, que acepta `--root` y se pensó para "
+            "vaults reales— escribe la nota reparada con `path.write_bytes`: "
+            "sin temporal ni `os.replace`, sin lock entre diagnóstico y "
+            "escritura, sin escáner de secretos y sin regenerar sección, "
+            "búsqueda ni grafo. La copia en `.history/ap46-heal/` sale igual. "
+            "Un corte a mitad deja la nota truncada con el backup como única "
+            "salida. Medido el 2026-10-16 al cerrar `sanadores_sin_lote`, sobre "
+            "d21bebd."
+        ),
+        "por_que_no_ahora": (
+            "Pasar a `atomic_write_text` cambia lo que se escribe, no solo cómo: "
+            "sanea el encoding, puede rechazar por el escáner de secretos, y "
+            "regenera la sección contra `vault_io.get_vault_root()`, que con "
+            "`--root` no es el vault objetivo porque `--heal-ap46` no llama a "
+            "`set_vault_root` (el `--audit` sí). Exige decidir esa raíz y medir "
+            "el árbol sobre copias de /ans y /vcloud antes, como con los demás "
+            "sanadores. `tests/test_sanadores_sin_lote.py::"
+            "test_limite_declarado_heal_ap46_escribe_sin_atomic_write` fija el "
+            "límite y falla en cuanto cambie."
         ),
     },
     {
