@@ -54,7 +54,8 @@ from vault_errors import emit_error, emit_fallo, wrap_main
 # superseded_by: vault_errors.proyecto_registrado (v40.34). Vivió aquí;
 # se reexporta para quien lo importara de la tool.
 from vault_errors import proyecto_registrado  # noqa: F401
-from vault_io import atomic_write_json, atomic_write_text, file_lock, get_vault_root, is_snapshot_path, write_report
+from vault_io import (atomic_write_json, atomic_write_text, escrituras_en_lote, file_lock,
+                      get_vault_root, is_snapshot_path, write_report)
 from vault_lib import parse_frontmatter_with_body, utcnow
 from vault_norms_catalog import STATUS_VOCAB
 from vault_undo import _guardar_version_actual
@@ -209,43 +210,47 @@ def sanar(apply: bool = False) -> Dict[str, Any]:
     registro = proyectos.leer_registro(raiz)
     reparadas: List[Dict[str, Any]] = []
     sin_reparar: List[Dict[str, Any]] = []
-    for p, rel, crudo in _notas_de_proyecto(raiz):
-        fm, _cuerpo, legible, _causa = parse_frontmatter_robust(crudo)
-        if not legible:
-            # AP-51: se declara; reparar el YAML no es cosa de AP-63.
-            sin_reparar.append({"note": rel.as_posix(), "cause": "frontmatter_ilegible"})
-            continue
-        slug, retirar, motivo = _plan_de_nota(registro, fm)
-        if motivo:
-            sin_reparar.append({"note": rel.as_posix(), "cause": motivo,
-                                "values": _valores_de_proyecto(fm)})
-            continue
-        if slug is None:
-            continue
-        bloque, cuerpo = separar_frontmatter(crudo)
-        editado = Frontmatter.editar(bloque or "")
-        for clave in retirar:
-            editado.quitar(str(clave))
-        nuevo = editado.set("project", slug, texto=True).render() + "\n" + cuerpo
-        despues, _ = parse_frontmatter_with_body(nuevo)
-        esperado = {k: v for k, v in fm.items() if k not in retirar}
-        esperado["project"] = slug
-        if despues != esperado:
-            sin_reparar.append({"note": rel.as_posix(), "cause": "lectura_distinta",
-                                "values": _valores_de_proyecto(fm)})
-            continue
-        entrada: Dict[str, Any] = {"note": rel.as_posix(), "project": slug,
-                                   "from": _valores_de_proyecto(fm)}
-        if apply:
-            # AP-54: diagnóstico y escritura sobre el mismo texto.
-            with file_lock(p):
-                if p.read_text(encoding="utf-8") != crudo:
-                    sin_reparar.append({"note": rel.as_posix(), "cause": "cambio_concurrente"})
-                    continue
-                entrada["backup"] = ".history/" + _guardar_version_actual(p)
-                atomic_write_text(p, nuevo)
-            entrada["written"] = True
-        reparadas.append(entrada)
+    # AP-47: la sección, la búsqueda y el grafo se regeneran una vez al
+    # cerrar el lote y no tras cada nota reparada; `write_report` va
+    # después, con la traza del cierre ya escrita.
+    with escrituras_en_lote():
+        for p, rel, crudo in _notas_de_proyecto(raiz):
+            fm, _cuerpo, legible, _causa = parse_frontmatter_robust(crudo)
+            if not legible:
+                # AP-51: se declara; reparar el YAML no es cosa de AP-63.
+                sin_reparar.append({"note": rel.as_posix(), "cause": "frontmatter_ilegible"})
+                continue
+            slug, retirar, motivo = _plan_de_nota(registro, fm)
+            if motivo:
+                sin_reparar.append({"note": rel.as_posix(), "cause": motivo,
+                                    "values": _valores_de_proyecto(fm)})
+                continue
+            if slug is None:
+                continue
+            bloque, cuerpo = separar_frontmatter(crudo)
+            editado = Frontmatter.editar(bloque or "")
+            for clave in retirar:
+                editado.quitar(str(clave))
+            nuevo = editado.set("project", slug, texto=True).render() + "\n" + cuerpo
+            despues, _ = parse_frontmatter_with_body(nuevo)
+            esperado = {k: v for k, v in fm.items() if k not in retirar}
+            esperado["project"] = slug
+            if despues != esperado:
+                sin_reparar.append({"note": rel.as_posix(), "cause": "lectura_distinta",
+                                    "values": _valores_de_proyecto(fm)})
+                continue
+            entrada: Dict[str, Any] = {"note": rel.as_posix(), "project": slug,
+                                       "from": _valores_de_proyecto(fm)}
+            if apply:
+                # AP-54: diagnóstico y escritura sobre el mismo texto.
+                with file_lock(p):
+                    if p.read_text(encoding="utf-8") != crudo:
+                        sin_reparar.append({"note": rel.as_posix(), "cause": "cambio_concurrente"})
+                        continue
+                    entrada["backup"] = ".history/" + _guardar_version_actual(p)
+                    atomic_write_text(p, nuevo)
+                entrada["written"] = True
+            reparadas.append(entrada)
     return {
         "ok": True, "tool": TOOL, "action": "heal", "norm": "AP-63",
         "mode": "apply" if apply else "dry-run",

@@ -23,10 +23,10 @@ import vault_blueprint as bp  # noqa: E402
 from vault_norms_catalog import SANADORES  # noqa: E402
 
 #: El límite medido el 2026-10-14 sobre 35f5bad; encoge con cada sanador que
-#: entra (2026-10-16: `vault_fix_brackets`, `vault_frontmatter_heal`).
+#: entra (2026-10-16: `vault_fix_brackets`, `vault_frontmatter_heal`,
+#: `vault_project`).
 SIN_LOTE = {
     "vault_supersede",
-    "vault_project",
     "vault_norms_engine",
 }
 
@@ -116,6 +116,23 @@ def test_ap47_frontmatter_heal_escribe_en_lote(tmp_path, monkeypatch):
     try:
         secciones = _secciones_regeneradas(monkeypatch)
         r = frontmatter_heal.heal(apply=True)
+    finally:
+        vault_io.set_vault_root(original)
+    assert r["healed"] == 2, r
+    assert secciones == ["07_Knowledge"], secciones
+
+
+def test_ap47_project_heal_escribe_en_lote(tmp_path, monkeypatch):
+    import vault_io
+    import vault_project
+
+    nota = "---\ntitle: {0}\nProyecto: Pasarela\n---\n\n# {0}\n\ncuerpo\n"
+    original = _vault_con(tmp_path, monkeypatch, {
+        "07_Knowledge/a.md": nota.format("a"), "07_Knowledge/b.md": nota.format("b")})
+    try:
+        assert vault_project.registrar("mi-api", None, ["Pasarela"], "in-progress")["ok"]
+        secciones = _secciones_regeneradas(monkeypatch)
+        r = vault_project.sanar(apply=True)
     finally:
         vault_io.set_vault_root(original)
     assert r["healed"] == 2, r
