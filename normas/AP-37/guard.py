@@ -9,6 +9,7 @@ de derivarlo; se regenera con `vault_norms_engine.escribir_caras_derivadas`.
 
 GUARD = [
     'scripts/vault_noop_audit.py::_tool_spec',
+    'scripts/vault_noop_audit.py::ejecutado',
     'scripts/vault_noop_audit.py::scan',
     'scripts/vault_noop_audit.py::freeze',
     'scripts/vault_noop_audit.py::main',

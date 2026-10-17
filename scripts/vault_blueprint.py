@@ -1037,7 +1037,16 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "de lectura, y solo exige que salga **algún** campo declarado. Es un "
             "banco de ejecución nuevo, no un arreglo del audit. "
             "`tests/test_tags_dice_lo_que_escribe.py::test_limite_declarado_ap37_mide_lo_declarado` "
-            "fija el límite."
+            "fija el límite. "
+            "El 2026-10-16 entró el banco: `vault_noop_audit --ejecutado` ejecuta "
+            "el ejemplo de cada tool con side effects sobre la copia de "
+            "`vault_smoke` y contrasta el árbol con el envelope. Destapó dos que "
+            "escribían callando (`vault_delta --snapshot`, `vault_graph_fix "
+            "--apply`; a0fdb0c y 9985e24). Medido ese día: de 92 tools, 17 "
+            "medidas y en verde, 2 sin invocación (runtime node) y 73 cuyo "
+            "ejemplo no escribe, que el banco no ve. Saldarla exige un ejemplo "
+            "de escritura por tool, no otro detector; el modo estático sigue "
+            "midiendo lo declarado."
         ),
     },
     {

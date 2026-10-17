@@ -13,6 +13,20 @@ trabajo** — un campo cuyo valor distinga "hice N cosas" de "no hice nada".
     python scripts/vault_noop_audit.py --check    # tools sin indicador
     python scripts/vault_noop_audit.py --strict   # exit 1 si la deuda CRECIÓ
     python scripts/vault_noop_audit.py --freeze   # recongela la baseline
+    python scripts/vault_noop_audit.py --ejecutado  # mide el envelope emitido
+
+## `--ejecutado`: el indicador declarado no es el emitido
+
+El modo estático mira `declared_returns`. Un contrato que declara
+`fixes_applied` y un envelope que no lo trae pasan igual, porque mide lo que
+la tool promete y no lo que responde (AP-44). Medido el 2026-10-16 ejecutando
+el ejemplo documentado de cada tool con side effects y comparando el árbol:
+dos escribían y lo callaban (`vault_delta --snapshot`, `vault_graph_fix
+--apply`). El banco reutiliza la copia desechable de `vault_smoke` y
+clasifica cada tool en `medidas` (escribió y lo dijo), `sin_escritura` (su
+ejemplo no escribe: el banco no la ve), `sin_invocacion` y `ofensores`.
+Un banco sin ninguna medida no sale verde (AP-60). No es puerta: tarda lo
+que tarda el smoke, y lo que no cubre lo publica con su cifra.
 
 ## De baseline a guard duro (v39)
 
@@ -37,7 +51,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -117,6 +131,45 @@ def offenders() -> List[Dict]:
     return out
 
 
+def ejecutado(herramientas: Optional[Dict[str, Dict]] = None) -> Dict:
+    """AP-37 sobre el envelope emitido, ejecutando el ejemplo de cada tool."""
+    import vault_smoke
+
+    if herramientas is None:
+        import vault_mcp_catalog
+
+        herramientas = vault_mcp_catalog.TOOLS_CATALOG
+    medidas: List[str] = []
+    sin_escritura: List[str] = []
+    sin_invocacion: List[Dict] = []
+    ofensores: List[Dict] = []
+    for name, entry in sorted(herramientas.items()):
+        if not entry.get("side_effects"):
+            continue
+        r = vault_smoke.run_one(name, arbol=True)
+        if "cambiadas" not in r:
+            sin_invocacion.append({"tool": name, "motivo": r.get("skipped") or r.get("problem")})
+        elif not r["cambiadas"]:
+            sin_escritura.append(name)
+        elif set(r["returned"]) & WORK_INDICATORS:
+            medidas.append(name)
+        else:
+            ofensores.append({"tool": name, "cambiadas": r["cambiadas"],
+                              "returned": r["returned"]})
+    return {
+        # AP-60: sin una sola medida el banco no ha visto nada.
+        "ok": not ofensores and bool(medidas),
+        "tool": "vault_noop_audit",
+        "norm": "AP-37",
+        "modo": "ejecutado",
+        "total": len(medidas) + len(sin_escritura) + len(sin_invocacion) + len(ofensores),
+        "medidas": medidas,
+        "sin_escritura": sin_escritura,
+        "sin_invocacion": sin_invocacion,
+        "ofensores": ofensores,
+    }
+
+
 def load_baseline() -> List[str]:
     if not BASELINE_PATH.exists():
         return []
@@ -188,7 +241,16 @@ def main() -> int:
         "--admitir-nuevos", action="store_true",
         help="Permite que --freeze congele deuda sin precedente, listándola",
     )
+    parser.add_argument(
+        "--ejecutado", action="store_true",
+        help="Ejecuta el ejemplo de cada tool con side effects y contrasta el envelope",
+    )
     args = parser.parse_args()
+
+    if args.ejecutado:
+        salida = ejecutado()
+        print(json.dumps(salida, ensure_ascii=False))
+        return 0 if salida["ok"] or not args.strict else 1
 
     if args.freeze:
         salida = freeze(admitir_nuevos=args.admitir_nuevos)
@@ -203,4 +265,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(wrap_main(main, "vault_noop_audit"))
+    # `--ejecutado` dura lo que el smoke; el límite es el suyo.
+    sys.exit(wrap_main(main, "vault_noop_audit", timeout=3600))

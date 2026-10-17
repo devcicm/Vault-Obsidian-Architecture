@@ -83,7 +83,9 @@ def test_limite_declarado_ap37_mide_lo_declarado(vault):
 
     Falla el día que `vault_noop_audit` contraste lo declarado con lo emitido
     —o que el contrato de `vault_tags` deje de prometer `total`—; entonces la
-    deuda se salda.
+    deuda se salda. `--ejecutado` (2026-10-16) lo contrasta solo donde el
+    ejemplo documentado escribe, y el de `vault_tags` no escribe: el modo
+    estático, que es el de la puerta, sigue viendo lo declarado.
     """
     import vault_blueprint
     import vault_noop_audit

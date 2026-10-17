@@ -2424,6 +2424,7 @@ El síntoma que originó la norma: `vault_standard_upgrade --to latest` devolví
 python vault_noop_audit.py --check            # estado de la deuda AP-37
 python vault_noop_audit.py --check --strict   # exit 1 si la deuda CRECIÓ (gate de CI)
 python vault_noop_audit.py --freeze           # recongela scripts/noop-baseline.json
+python vault_noop_audit.py --ejecutado        # ejecuta el ejemplo de cada tool y contrasta árbol y envelope
 ```
 
 **Baseline, no guard duro.** Casi todas las tools con side effects nacieron sin indicador; un guard que falla en decenas de sitios se desactiva el primer día. El conteo vivo lo da `--check`, no este README. La baseline congela la deuda conocida y solo puede **encoger**: toda tool nueva nace conforme, y la que se corrige sale de la lista y ya no puede volver a entrar. Tras saldar deuda hay que ejecutar `--freeze` para que el gate no la readmita.

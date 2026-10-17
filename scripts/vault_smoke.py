@@ -148,8 +148,30 @@ def _con_json(script: str, argv: List[str]) -> List[str]:
     return argv
 
 
-def run_one(tool: str) -> Dict[str, Any]:
-    """Ejecuta una tool contra una copia desechable del sandbox."""
+def _arbol(raiz: Path) -> Dict[str, str]:
+    """Hash de cada fichero del vault salvo lo que no es trabajo.
+
+    Qué no cuenta como trabajo lo decide el ledger (`_NO_ES_TRABAJO`, la
+    traza), no esta función (AP-57); `.locks/` son candados efímeros.
+    """
+    import hashlib
+
+    from vault.kernel.ledger import _NO_ES_TRABAJO
+
+    out: Dict[str, str] = {}
+    for p in raiz.rglob("*"):
+        if p.is_file() and ".locks" not in p.parts and p.name not in _NO_ES_TRABAJO:
+            out[p.relative_to(raiz).as_posix()] = hashlib.sha256(p.read_bytes()).hexdigest()
+    return out
+
+
+def run_one(tool: str, arbol: bool = False) -> Dict[str, Any]:
+    """Ejecuta una tool contra una copia desechable del sandbox.
+
+    Con `arbol`, el resultado trae `cambiadas`: las rutas del vault que la
+    ejecución creó, cambió o borró. Es lo que `vault_noop_audit --ejecutado`
+    contrasta con el envelope (AP-37 con el criterio del consumidor).
+    """
     if tool in SIN_SMOKE:
         return {"tool": tool, "ok": True, "skipped": SIN_SMOKE[tool]}
     argv = invocation(tool)
@@ -182,6 +204,7 @@ def run_one(tool: str) -> Dict[str, Any]:
                             ignore=shutil.ignore_patterns(".locks"))
         else:
             vault.mkdir(parents=True)
+        antes = _arbol(vault) if arbol else {}
         env = dict(os.environ)
         env.update({
             "VAULT_ROOT": str(vault),
@@ -196,6 +219,10 @@ def run_one(tool: str) -> Dict[str, Any]:
         except subprocess.TimeoutExpired:
             return {"tool": tool, "ok": False, "problem": "timeout",
                     "detail": f"no terminó en {SMOKE_TIMEOUT}s"}
+        if arbol:
+            despues = _arbol(vault)
+            cambiadas = sorted(r for r in set(antes) | set(despues)
+                               if antes.get(r) != despues.get(r))
     finally:
         shutil.rmtree(destino, ignore_errors=True)
 
@@ -228,8 +255,11 @@ def run_one(tool: str) -> Dict[str, Any]:
                 "exit_code": proc.returncode}
     # Los campos devueltos viajan con el resultado para que `--contract` pueda
     # contrastarlos sin volver a ejecutar las 91 tools.
-    return {"tool": tool, "ok": True, "tool_ok": datos["ok"], "error_code": codigo,
-            "returned": sorted(datos), "exit_code": proc.returncode}
+    resultado = {"tool": tool, "ok": True, "tool_ok": datos["ok"], "error_code": codigo,
+                 "returned": sorted(datos), "exit_code": proc.returncode}
+    if arbol:
+        resultado["cambiadas"] = cambiadas
+    return resultado
 
 
 def _contrato_de(tool: str) -> set:
