@@ -172,13 +172,20 @@ def scan_file(file_path: Path, active_rules: dict) -> List[Dict[str, Any]]:
     return findings
 
 
-def scan_directory(
-    path: Path, depth: int, active_rules: dict
-) -> List[Tuple[Path, List[Dict]]]:
+def _escanear(
+    path: Path, active_rules: dict
+) -> Tuple[List[Tuple[Path, List[Dict]]], int]:
+    """Los ficheros con hallazgos y cuántos se escanearon en total.
+
+    AP-60: `filesScanned` era `len(results)`, que solo cuenta los ficheros con
+    hallazgos; un repo limpio salía como «0 archivos escaneados», igual que
+    una ruta sin un solo fichero de código.
+    """
     results = []
+    escaneados = 0
 
     if not path.exists():
-        return results
+        return results, escaneados
 
     for item in path.rglob("*"):
         if item.is_file():
@@ -188,12 +195,19 @@ def scan_directory(
             if item.suffix.lower() not in SCAN_EXTS:
                 continue
 
+            escaneados += 1
             findings = scan_file(item, active_rules)
 
             if findings:
                 results.append((item, findings))
 
-    return results
+    return results, escaneados
+
+
+def scan_directory(
+    path: Path, depth: int, active_rules: dict
+) -> List[Tuple[Path, List[Dict]]]:
+    return _escanear(path, active_rules)[0]
 
 
 def save_findings_to_vault(findings: List[Dict], project: str) -> List[str]:
@@ -325,14 +339,12 @@ def vault_security_scan(
     else:
         active_rules = RULES
 
-    results = scan_directory(scan_path, depth, active_rules)
+    results, files_scanned = _escanear(scan_path, active_rules)
 
     all_findings = []
 
     for file_path, findings in results:
         all_findings.extend(findings)
-
-    files_scanned = len(results)
 
     by_severity = _cubos("severidad", 0)
 
@@ -364,6 +376,7 @@ def vault_security_scan(
         **write_report(),
         "riskLevel": risk_level,
         "filesScanned": files_scanned,
+        "filesWithFindings": len(results),
         "totalFindings": len(all_findings),
         "bySeverity": by_severity,
         "byCategory": by_category,
