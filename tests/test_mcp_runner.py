@@ -50,7 +50,10 @@ class SesionMCP:
     STDERR_CHUNKS = 64
 
     def __init__(self, vault_root: Path, env_extra=None):
-        env = {**os.environ, "VAULT_ROOT": str(vault_root), **(env_extra or {})}
+        # El barrido de vaults se acota al del test: el default dentro del repo
+        # sube al home del usuario (ver test_la_sesion_de_prueba_no_inventaria_el_disco).
+        env = {**os.environ, "VAULT_ROOT": str(vault_root),
+               "VAULT_SCAN_ROOTS": str(vault_root), **(env_extra or {})}
         # Se quita a propósito: el runner tiene que fijarla él. Si el test la
         # heredara, el defecto de codificación quedaría tapado por el entorno.
         env.pop("PYTHONIOENCODING", None)
@@ -312,3 +315,21 @@ def test_la_tool_por_modulo_se_ejecuta_por_mcp(sesion):
     assert ":vault.gobernanza" not in texto, texto
     assert "No module named" not in texto, texto
     assert "TOOL_EXECUTION_FAILED" not in texto, texto
+
+
+def test_la_sesion_de_prueba_no_inventaria_el_disco(tmp_path):
+    """Medido el 2026-10-17: dentro del repo del estándar, `VAULT_SCAN_ROOTS`
+    vacía significa `REPO_ROOT/..` y `REPO_ROOT/../../..` a profundidad 4. Desde
+    el checkout eso es el home del usuario; cada `SesionMCP` contaba las notas
+    de sus vaults reales (regla 1) y tardaba ~11,9 s en arrancar frente a
+    0,05 s de la llamada. El arnés acota el barrido al vault del test; quien
+    prueba el descubrimiento pasa su propia raíz (`test_mcp_descubrimiento`)."""
+    vault = _init_vault(tmp_path / "solo")
+    s = SesionMCP(vault)
+    try:
+        env = json.loads(s.llamar("vault_registry", {})["result"]["content"][0]["text"])
+    finally:
+        s.cerrar()
+    fuera = [v["path"] for v in env["vaults"]
+             if not Path(v["path"]).resolve().is_relative_to(vault.resolve())]
+    assert fuera == [], fuera
