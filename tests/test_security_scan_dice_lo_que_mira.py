@@ -163,3 +163,24 @@ def test_las_cifras_de_reglas_no_estan_escritas_a_mano():
     for doc in ("scripts/README.md", "vault-obsidian-architecture.md"):
         vivo = vault_doc_counts._live_body(ROOT / doc)
         assert not cifra.search(vivo), (doc, cifra.search(vivo).group(0))
+
+
+def test_depth_no_promete_un_limite_que_no_aplica(scan):
+    """`--depth` decía «Directory depth (1-5)» y el manifiesto «profundidad de
+    recursión», pero `_escanear` recorre el árbol entero: el parámetro nunca
+    llegaba. Aplicarlo ahora haría que el mismo comando mirara menos en
+    silencio; se declara lo que hace."""
+    import subprocess
+
+    tool, tmp = scan
+    hondo = tmp / "src" / "a" / "b" / "c" / "d"
+    hondo.mkdir(parents=True)
+    (hondo / "x.js").write_text("const x = 1;\n", encoding="utf-8")
+    r = tool.vault_security_scan(str(tmp / "src"), depth=1, save_findings=False)
+    assert r["filesScanned"] == 1, r
+    assert r["depthApplied"] is False, r
+    ayuda = subprocess.run([sys.executable, str(ROOT / "scripts" / "vault_security_scan.py"), "--help"],
+                           capture_output=True, text=True, encoding="utf-8").stdout
+    assert "not applied" in ayuda, ayuda
+    manifiesto = (ROOT / "vault-obsidian-architecture.md").read_text(encoding="utf-8")
+    assert "Profundidad de recursión en directorios (1–5)" not in manifiesto

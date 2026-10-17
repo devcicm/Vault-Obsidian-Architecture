@@ -2700,7 +2700,7 @@ Escanea archivos de código fuente en busca de vulnerabilidades de seguridad con
 |---|---|---|---|
 | `path` | string | — | Ruta del archivo o directorio a escanear |
 | `project` | string | `""` | Proyecto al que pertenece el código (para etiquetado en vault) |
-| `depth` | integer | `3` | Profundidad de recursión en directorios (1–5) |
+| `depth` | integer | `3` | Se acepta por compatibilidad y no se aplica: se recorre el árbol entero bajo `path` (el envelope lo declara con `depthApplied: false`). Hasta v41.7 esta fila prometía «profundidad de recursión en directorios (1–5)» |
 | `categories` | string[] | `["all"]` | Categorías a escanear. `["all"]` activa todas las categorías del registro |
 | `save_findings` | boolean | `true` | Guarda hallazgos en vault al finalizar |
 | `owasp_section` | boolean | `false` | Genera notas OWASP Top 10 en `02_Observability/security/owasp/{categoria}/` además del reporte consolidado |

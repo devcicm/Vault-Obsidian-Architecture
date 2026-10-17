@@ -6163,7 +6163,7 @@
           },
           "depth": {
             "type": "integer",
-            "description": "Directory depth (1-5)"
+            "description": "Accepted for compatibility; not applied: the whole tree under --path is scanned"
           },
           "categories": {
             "type": "array",

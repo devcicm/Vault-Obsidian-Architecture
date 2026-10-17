@@ -405,6 +405,10 @@ def vault_security_scan(
         "riskLevel": risk_level,
         "filesScanned": files_scanned,
         "filesWithFindings": len(results),
+        # `depth` nunca llegó a `_escanear`: se recorre el árbol entero.
+        # Aplicarlo ahora haría que el mismo comando mirara menos sin
+        # avisar, así que se declara en vez de prometerse.
+        "depthApplied": False,
         "totalFindings": len(all_findings),
         "bySeverity": by_severity,
         "byCategory": by_category,
@@ -431,7 +435,7 @@ Ejemplos:
 
   python vault_security_scan.py --path "src/" --project "mi-api" --categories "secrets" "injection" --save_findings true
 
-  python vault_security_scan.py --path "C:/repos/backend/src" --project "backend" --depth 5
+  python vault_security_scan.py --path "C:/repos/backend/src" --project "backend"
 
   python vault_security_scan.py --path "src/" --project "mi-api" --categories "all" --save_findings false
 
@@ -457,7 +461,8 @@ Notas:
 
     parser.add_argument("--project", type=proyecto_registrado("vault_security_scan"), default="", help="Project name")
 
-    parser.add_argument("--depth", type=int, default=3, help="Directory depth (1-5)")
+    parser.add_argument("--depth", type=int, default=3,
+                        help="Accepted for compatibility; not applied: the whole tree under --path is scanned")
 
     parser.add_argument(
         "--categories", nargs="*", help=f"Categories to scan: {CATEGORIES}"
