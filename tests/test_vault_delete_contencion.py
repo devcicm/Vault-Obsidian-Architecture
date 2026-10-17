@@ -119,3 +119,28 @@ def test_un_indice_corrupto_no_convierte_el_borrado_en_fallo(entorno):
     r = _ejecutar(raiz, "--path", "07_Knowledge/vieja.md", "--reason", "prueba")
     assert r["ok"] and not r["search_index"]["updated"] and "error" in r["search_index"], r
     assert not nota.exists()
+
+
+# ── AP-37: el sobre dice qué hizo con los campos que declara ─────────────────
+# Medido el 2026-10-17 con `vault_noop_audit --ejecutado`: `tool-spec.json`
+# declara `deleted`, `trashed` y `change_logged`, y la tool no emitía ninguno;
+# el consumidor tenía que deducir el trabajo de la cadena `action`.
+
+@pytest.mark.parametrize("modo,deleted,trashed", [
+    ([], True, False),
+    (["--trash-only"], False, True),
+    (["--dry-run"], False, False),
+])
+def test_el_sobre_emite_los_indicadores_declarados(entorno, modo, deleted, trashed):
+    raiz, _, _ = entorno
+    r = _ejecutar(raiz, "--path", "07_Knowledge/vieja.md", "--reason", "prueba", *modo)
+    assert r["ok"], r
+    assert r["deleted"] is deleted and r["trashed"] is trashed, r
+    # Solo el dry-run deja de escribir la entrada de SP-01.
+    assert r["change_logged"] is (modo != ["--dry-run"]), r
+
+
+def test_force_no_escribe_change_log_y_lo_dice(entorno):
+    raiz, _, _ = entorno
+    r = _ejecutar(raiz, "--path", "07_Knowledge/vieja.md", "--reason", "prueba", "--force")
+    assert r["ok"] and r["deleted"] is True and r["change_logged"] is False, r

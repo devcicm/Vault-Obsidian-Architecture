@@ -223,10 +223,15 @@ def vault_delete(
             "sp01_status": sp01_note,
             "would_delete": not trash_only,
             "would_move_to_quarantine": trash_only,
+            # AP-37: los indicadores que `tool-spec.json` declara, en falso.
+            "deleted": False,
+            "trashed": False,
+            "change_logged": False,
             "inbound_links": entrantes,
         }
 
-    if not already_logged and not force:
+    change_logged = not already_logged and not force
+    if change_logged:
         entry_id = _write_deleted_entry(path, reason, agent)
         sp01_note = (
             "SP-01: entrada de change-log escrita antes de eliminar "
@@ -253,6 +258,9 @@ def vault_delete(
             "action": "moved_to_quarantine",
             "note": path,
             "quarantined_to": str(trash_dest.relative_to(vault_root)).replace("\\", "/"),
+            "deleted": False,
+            "trashed": True,
+            "change_logged": change_logged,
             "sp01_status": sp01_note,
             "inbound_links": entrantes,
             "section_index": seccion,
@@ -266,6 +274,9 @@ def vault_delete(
             "ok": True,
             "action": "deleted",
             "note": path,
+            "deleted": True,
+            "trashed": False,
+            "change_logged": change_logged,
             "sp01_status": sp01_note,
             "recoverable": {
                 "history": guardada,
