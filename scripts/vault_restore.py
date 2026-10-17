@@ -76,14 +76,15 @@ def main():
         epilog="""
 Ejemplos:
   python vault_restore.py --backup_name "vault-2026-05-06-143022-antes-de-migracion" --confirm true
-  python vault_restore.py --backup_name "vault-2026-05-01-120000" --confirm false
+  python vault_backup_list.py   # para ver los snapshots antes de elegir uno
 
 Notas:
   - VAULT_ROOT se detecta automaticamente desde la ubicacion del script
   - Operacion DESTRUCTIVA -- reemplaza todo el contenido del vault
   - vault-backups/ NUNCA se borra: contiene el snapshot que se esta leyendo
   - Ejecutar vault_backup.py primero para preservar estado actual
-  - --confirm false (default) solo muestra info sin restaurar
+  - Sin --confirm true se niega (CONFIRMACION_REQUERIDA): no hay vista previa;
+    los snapshots disponibles los lista vault_backup_list
 """,
         allow_abbrev=False,
     )

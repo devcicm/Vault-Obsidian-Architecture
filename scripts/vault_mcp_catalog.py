@@ -1760,7 +1760,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": ["Confirmar antes de sobreescribir"],
         "side_effects": ["Sobreescribe archivos del vault"],
-        "example": 'python vault_restore.py --backup_name "2026-06-24_120000" --confirm true\npython vault_restore.py --backup_name "2026-06-24_120000"',
+        "example": 'python vault_restore.py --backup_name "2026-06-24_120000" --confirm true',
         "related": ["vault_backup", "vault_backup_list"],
     },
     "vault_env_save": {

@@ -134,3 +134,19 @@ def test_ningun_ejemplo_usa_un_flag_o_un_valor_que_el_esquema_rechaza():
             if linea.startswith("python "):
                 malos += _fuera_del_esquema(nombre, linea, props)
     assert not malos, "\n".join(malos)
+
+
+def test_restore_no_documenta_una_vista_previa_que_no_existe():
+    """AP-42, medido por `vault_noop_audit --ejecutado` (2026-10-17), que corre
+    todas las líneas del ejemplo y no solo la primera, como el smoke: la
+    segunda línea de `vault_restore` omitía `--confirm` y la ayuda prometía
+    que así «solo muestra info sin restaurar». El servicio se niega a
+    propósito (`CONFIRMACION_REQUERIDA`, sin default permisivo): no hay vista
+    previa, y quien copiaba la línea recibía un error."""
+    lineas = TOOLS_CATALOG["vault_restore"]["example"].splitlines()
+    assert lineas and all("--confirm true" in l for l in lineas), lineas
+    ayuda = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "vault_restore.py"), "--help"],
+        capture_output=True, text=True, encoding="utf-8", timeout=120).stdout
+    assert "solo muestra info" not in ayuda, ayuda
+    assert "--confirm false" not in ayuda, ayuda
