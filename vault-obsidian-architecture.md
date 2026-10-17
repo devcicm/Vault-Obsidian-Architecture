@@ -8065,7 +8065,7 @@ temp/
 
 ---
 
-### v41.8 — 2026-10-17 `git: pending`
+### v41.8 — 2026-10-17 `git: d8238a0`
 
 **Lo que el producto promete lo ejerce alguien: el banco de AP-37 ejecuta cada ejemplo, el puente de ADR-0002 queda cerrado y los sanadores escriben en lote.**
 
