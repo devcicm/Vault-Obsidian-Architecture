@@ -451,6 +451,10 @@ def vault_fix_brackets(
         backup_dir = str(bd.relative_to(get_vault_root())).replace("\\", "/") if bd else None
         # AP-47: la sección, la búsqueda y el grafo se regeneran una vez al
         # cerrar el lote y no tras cada nota arreglada.
+        # Los errores van aparte y se añaden al final: añadirlos a la lista
+        # que se recorre hacía que la entrada de error —sin `kinds_applied`—
+        # fallara en su propia vuelta y añadiera otra, sin fin.
+        errores: List[Dict[str, Any]] = []
         with escrituras_en_lote():
             for fix in fixes_applied:
                 target = get_vault_root() / fix["path"]
@@ -462,7 +466,8 @@ def vault_fix_brackets(
                     atomic_write_text(target, new_content)
                     files_modified.append(fix["path"])
                 except Exception as e:
-                    fixes_applied.append({"path": fix["path"], "error": str(e)})
+                    errores.append({"path": fix["path"], "error": str(e)})
+        fixes_applied.extend(errores)
 
     # Group findings
     auto_fixable_count = sum(1 for f in findings if f["auto_fixable"])
