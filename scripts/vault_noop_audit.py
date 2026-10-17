@@ -161,6 +161,9 @@ FICHEROS_DEL_EJEMPLO: Dict[str, Dict[str, str]] = {
     "vault_quarantine": {"07_Knowledge/rara.md": "nota"},
     # `--path "src/"` es la raíz del código, relativa a donde se ejecuta.
     "vault_drift_detect": {"@trabajo/src/app.py": "codigo"},
+    # El escáner solo escribe si encuentra algo: el ejemplo presupone código
+    # con un hallazgo, no un `src/` limpio ni ausente.
+    "vault_security_scan": {"@trabajo/src/app.js": "codigo_con_secreto"},
     # Lo que los dos sanadores reparan: sin el defecto, su `--apply` no tiene
     # nada que escribir y el banco no los mide.
     "vault_fix_brackets": {"02_Observability/errors/foo.md": "corchetes"},
@@ -190,6 +193,7 @@ _CONTENIDOS = {
     "yaml_roto": ("---\ntitle: Overview: demo\ntype: knowledge\nstatus: draft\n"
                   "tags: [ejemplo]\n---\n\n# Overview\n\nCuerpo.\n"),
     "codigo": "def principal():\n    return 1\n",
+    "codigo_con_secreto": 'const password = "hunter22";\nspawn(cmd, { shell: true });\n',
     # AP-11 pide tres líneas reales a `vault_write`, y `vault_ingest` descarta
     # los bloques de menos de `MIN_CHUNK_CHARS` (120): un texto de una línea
     # no es el que el ejemplo presupone.

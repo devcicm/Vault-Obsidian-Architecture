@@ -124,3 +124,11 @@ def test_el_banco_no_ejecuta_las_tools_que_escriben_en_el_repo(monkeypatch):
     r = vault_noop_audit.ejecutado({t: {"side_effects": True} for t in del_estandar})
     assert r["fuera_del_vault"] == sorted(del_estandar), r
     assert r["ok"] is False and r["medidas"] == [], r
+
+
+def test_el_banco_da_al_escaner_codigo_con_un_hallazgo():
+    """`vault_security_scan --path "src/"` solo escribe si encuentra algo: con
+    el directorio de trabajo vacío daba FILE_NOT_FOUND y el banco la contaba
+    `sin_escritura`. El ejemplo presupone código que escanear."""
+    r = vault_noop_audit.ejecutado({"vault_security_scan": {"side_effects": True}})
+    assert r["medidas"] == ["vault_security_scan"], r
