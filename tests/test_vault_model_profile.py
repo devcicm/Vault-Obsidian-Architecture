@@ -103,6 +103,21 @@ class TestVaultModelProfileSet:
         result = vault_model_profile_set("invalid-profile")
         assert result["ok"] is False
         assert result["error_code"] == "MODEL_PROFILE_UNKNOWN"
+        assert "written" not in result
+
+    def test_set_dice_que_escribio(self, monkeypatch):
+        """AP-37, medido el 2026-10-17 con `vault_noop_audit --ejecutado`:
+        `--set` escribe el perfil activo y respondía con `profile_id` y
+        `budget`; `tool-spec.json` declara `written` y no salía."""
+        escritos = []
+        monkeypatch.setattr(
+            "vault_model_profile._load_registry",
+            lambda: {"claude": {"context_window": 200000, "budget": 15000, "supports_mcp": True}},
+        )
+        monkeypatch.setattr("vault_model_profile._write_active_profile", escritos.append)
+        result = vault_model_profile_set("claude")
+        assert result["ok"] is True and result["written"] is True, result
+        assert escritos == ["claude"]
 
 
 class TestCLIModes:

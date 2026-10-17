@@ -192,7 +192,9 @@ def vault_model_profile_set(profile_id: str) -> Dict[str, Any]:
             "error": f"Perfil '{profile_id}' no existe. Disponibles: {sorted(registry.keys())}",
         }
     _write_active_profile(profile_id)
-    return vault_model_profile_resolve(explicit=profile_id)
+    # AP-37: escribir el perfil activo es el trabajo; `written` lo declara
+    # `tool-spec.json` y sin él la respuesta no se distingue de `--active`.
+    return {**vault_model_profile_resolve(explicit=profile_id), "written": True}
 
 
 def main() -> int:
