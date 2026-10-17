@@ -160,3 +160,28 @@ def test_un_ciclo_se_rechaza(raiz):
 def test_fuera_del_vault_se_rechaza(raiz):
     r = _ejecutar(raiz, "--path", "../fuera.md", "--by", "mcp-agent-guide", "--apply")
     assert r["ok"] is False and r["error_code"] == "INVALID_PATH", r
+
+
+def test_la_propia_sombra_no_cuenta_como_candidata(raiz):
+    """El ejemplo documentado (`--path 10_Migrated/GUIA.md --by guia`) fallaba
+    siempre con «resuelve a 2 notas»: el nombre se resuelve sin distinguir
+    mayúsculas, como en Obsidian, y uno de los dos candidatos era la propia
+    nota sustituida, que la tool ya rechaza como destino. Medido el 2026-10-17
+    con el banco de AP-37, que ejecuta todas las líneas del ejemplo."""
+    _nota(raiz, "07_Knowledge/guia.md", "title: Guia")
+    sombra = _nota(raiz, "10_Migrated/GUIA.md", "title: Guia")
+    r = _ejecutar(raiz, "--path", "10_Migrated/GUIA.md", "--by", "guia", "--apply")
+    assert r["ok"] and r["written"] is True, r
+    assert r["canonical"] == "07_Knowledge/guia.md"
+    # El enlace escrito resuelve a una sola nota: el más corto que lo consigue.
+    assert _fm(sombra)["superseded_by"] == r["superseded_by"]
+    assert r["superseded_by"] == "[[07_Knowledge/guia]]"
+
+
+def test_con_otra_candidata_ademas_de_la_sombra_sigue_siendo_ambiguo(raiz):
+    _nota(raiz, "07_Knowledge/guia.md", "title: Guia")
+    _nota(raiz, "13_Flows/guia.md", "title: Otra")
+    _nota(raiz, "10_Migrated/GUIA.md", "title: Guia")
+    r = _ejecutar(raiz, "--path", "10_Migrated/GUIA.md", "--by", "guia")
+    assert r["ok"] is False and r["error_code"] == "INVALID_VALUE", r
+    assert sorted(r["candidates"]) == ["07_Knowledge/guia.md", "13_Flows/guia.md"]

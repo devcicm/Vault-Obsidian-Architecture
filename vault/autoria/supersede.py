@@ -89,6 +89,14 @@ def supersede(path: str, by: str, apply: bool = False, replace: bool = False) ->
     relativas, alias_por_ruta = inventario_de_nombres(raiz, is_snapshot_path)
     indice = indice_de_nombres(relativas, alias_por_ruta)
     canonica, candidatos = resolver_sustitucion(by, Path(rel), indice)
+    # La sombra no es destino posible (abajo, «no se sustituye a sí misma»), así
+    # que tampoco hace ambiguo el nombre: `--by guia` desde `GUIA.md` —el
+    # ejemplo documentado— resuelve a la otra nota, igual que sin mayúsculas
+    # resuelve Obsidian. Medido el 2026-10-17: fallaba siempre.
+    if not canonica and rel in candidatos:
+        candidatos = [c for c in candidatos if c != rel]
+        if len(candidatos) == 1:
+            canonica = candidatos[0]
     if not candidatos:
         return {**emit_error(
             TOOL, "NOTE_NOT_FOUND", f"--by {by!r} no resuelve a ninguna nota",
