@@ -606,7 +606,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     {
         "id": "puente_scripts_impl_sin_contrato",
         "estado": "saldada",
-        "saldada_en": "tras v41.7 (2026-10-16)",
+        "saldada_en": "v41.8 (2026-10-17)",
         "sostenida_por": [
             "tests/test_puente_sin_hogar.py::test_el_contrato_del_puente_solo_admite_el_ancla",
             "tests/test_puente_sin_hogar.py::test_un_modulo_sin_hogar_congelado_sigue_fuera_de_contrato",
@@ -991,7 +991,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     {
         "id": "sanadores_sin_lote",
         "estado": "saldada",
-        "saldada_en": "tras v41.7 (2026-10-16)",
+        "saldada_en": "v41.8 (2026-10-17)",
         "sostenida_por": [
             "tests/test_sanadores_sin_lote.py::test_limite_declarado_sanadores_sin_lote",
             "tests/test_sanadores_sin_lote.py::test_ap47_fix_brackets_escribe_en_lote",
@@ -1044,7 +1044,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     {
         "id": "heal_ap46_escribe_sin_atomic_write",
         "estado": "saldada",
-        "saldada_en": "tras v41.7 (2026-10-17)",
+        "saldada_en": "v41.8 (2026-10-17)",
         "sostenida_por": [
             "tests/test_ap46_heal.py::test_un_corte_a_mitad_no_deja_la_nota_truncada",
             "tests/test_ap46_heal.py::test_el_heal_no_sanea_lo_que_no_repara",
@@ -1089,7 +1089,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     {
         "id": "spec_validate_returns_ciego",
         "estado": "saldada",
-        "saldada_en": "tras v41.7 (2026-10-16, superseded_by vault_smoke)",
+        "saldada_en": "v41.8 (2026-10-17, superseded_by vault_smoke)",
         "sostenida_por": [
             "tests/test_ci_sin_enmascarar.py::test_returns_match_queda_superseded_por_el_smoke",
             "tests/test_ci_sin_enmascarar.py::test_spec_validate_no_da_por_ausente_lo_que_no_vive_en_scripts",

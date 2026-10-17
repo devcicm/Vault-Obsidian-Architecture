@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v41.7 — 2026-10-16  
+**Versión:** v41.8 — 2026-10-17  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -7702,6 +7702,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v41.4 | 2026-10-14 | **El vault se usa como producto instalado sin errores de operación, y tres deudas del registro quedan saldadas.** Caras `guard.py`/`heal.py` derivadas en cada norma (#10); la fase 8 de sanación empieza por el núcleo (#11); `version_pinned` y AP-08 (#2); PAT-2 con plazo en el stub (capa 4 en cero); lotes D–H del puente; una sesión de agente consumidor sobre la wheel destapa y cierra defectos de escritura, lectura, borrado, consulta y protocolo MCP (`isError`, tools que no pueden terminar). F8 y la deuda #12 siguen declaradas. 5530 tests, 23 puertas |
 | v41.6 | 2026-10-15 | **Cada norma dice cuándo se revisó, la escritura deja constancia y el piso de Python lo ejecuta una máquina.** Cada `norma.py` declara `revisado_en`, con responsable y cadencia derivados (R4), y `vault_norms_coherence --disparos` lista las normas cuyo código de sostén cambió o cuya cadencia venció (R5); `vault_write` y `vault_append` anotan altas, cambios y añadidos en `.change-log.json` y lo publican en `change_log` (F8, deuda `f8_criterio_sin_decidir` saldada); `vault init` arranca en Python 3.9 —`write_text(newline=)` es de 3.10— y `test_piso_python` vigila también los argumentos nombrados posteriores al piso; la guía de instalación dice qué frena a ciegas, por qué canal sale cada error y que `init` no crea el padre (R7); la suite corre en Linux con Python 3.9. 5633 tests, 24 puertas |
 | v41.7 | 2026-10-16 | **Un lock se da por huérfano por su dueño, un registro ilegible se aparta en vez de pisarse y las puertas dejan de crecer con lo que no miden.** El lock guarda máquina e inicio del proceso y solo se rompe si su dueño murió, quien lo perdió no escribe ni mueve (fencing) y la toma va por la ruta real (deuda `lock_caduca_por_reloj_de_pared` saldada); la bitácora, la traza, la cola de propagación, las preferencias, el ledger de voz y una nota ilegible se apartan o se nombran (AP-51); AP-66 «el coste crece con lo que no es trabajo» con su detector en `vault_arch`, y cinco puertas dejan de crecer con la historia o el anidamiento; AP-48 la pronuncia su puerta (deuda `ap48_sin_voz` saldada); AP-51 y AP-52 ven la tupla vacía, el envelope tirado y el `ok: True` mutado a error. **Ruptura:** sin `VAULT_ROOT`, una tool instalada cuya autodetección cae en el propio paquete se niega con `VAULT_NOT_FOUND`. 5772 tests, 24 puertas |
+| v41.8 | 2026-10-17 | **Lo que el producto promete lo ejerce alguien: el banco de AP-37 ejecuta cada ejemplo, el puente de ADR-0002 queda cerrado y los sanadores escriben en lote.** `vault_noop_audit --ejecutado` corre cada línea del `example` de las tools con side effects sobre una copia desechable, con el proyecto y los ficheros que presupone, y contrasta el árbol con el envelope: seis tools que escribían callando lo dicen ya, y la que no escribe declara por qué; `vault_security_scan` cuenta lo que escanea, no afirma «Riesgo: BAJO» sin ficheros de código, rechaza la categoría que no existe y deja de prometer un `--depth` que no aplica; cinco de los seis últimos módulos del puente migran a `vault/kernel`, el sexto queda como ancla declarada y `vault_arch --check` falla si uno queda sin hogar (deuda `puente_scripts_impl_sin_contrato` saldada); `sanadores_sin_lote`, `heal_ap46_escribe_sin_atomic_write` y `spec_validate_returns_ciego` saldadas. **Cambio de contrato:** `--categories` con un valor desconocido devuelve `INVALID_CATEGORY` en vez de descartarlo. 5844 tests, 24 puertas |
 | v41.5 | 2026-10-15 | **Las normas tienen métricas, se vigilan entre sí y los sanadores escriben en lote.** `vault_metricas` publica métricas de desarrollo y de producto con objetivo, plazo e histórico observado, y su puerta falla si el documento diverge; `vault_norms_coherence` suma C8 (un sanador que sube otra norma es una colisión medida), C9 (lo que una norma dice de sí misma no se contradice) y C10 (la máquina de estados no atrapa); `vault_io.escrituras_en_lote()` (AP-47) baja `vault_frontmatter_completar` de 2990 s a 32 s y `vault_graph_fix` clasificado de 107 s a 15 s, y `vault_graph_fix` salta la nota ilegible en vez de abortar (AP-46). Los sanadores que siguen sin lote quedan declarados (`sanadores_sin_lote`). 5604 tests, 24 puertas |
 | v41.1 | 2026-10-07 | **Qué contrato cumple cada nota y qué notas no pertenecen a ninguna sección.** Clase `sin_seccion` en el contrato: un `.md` de la raíz o de una carpeta no registrada lleva identidad y timestamps, no CIA, `agent`, `tags`, `type` ni `status`. `vault_validate --check cumplimiento` informa por nota las versiones del contrato que cumple y lo que le falta para la vigente. `vault_audit` publica `notIntegrated` (notas que solo enlaza un índice) y la acción de las huérfanas deja de citar AP-13. 4463 tests, 23 puertas |
 | v41.0 | 2026-10-07 | **El contrato de nota es el criterio de lo que se escribe y se valida.** `vault_contrato_nota` es el dueño de los campos de una nota y de su nivel en cada versión desde v18; `vault_validate --contrato vNN` valida contra una versión anterior y cada versión desde v18 publica su JSON Schema en `schemas/`. **Ruptura:** `type` y `status` pasan de recomendados (v37–v40) a requeridos en notas de contenido, por presencia; `vault_frontmatter_completar` los pone. Los seis escritores cumplen el contrato entero; `jsonschema` declarado en el extra dev. 4431 tests, 23 puertas |
@@ -8063,6 +8064,57 @@ temp/
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
 
 ---
+
+### v41.8 — 2026-10-17 `git: pending`
+
+**Lo que el producto promete lo ejerce alguien: el banco de AP-37 ejecuta cada ejemplo, el puente de ADR-0002 queda cerrado y los sanadores escriben en lote.**
+
+**Banco de AP-37 sobre lo emitido.** `vault_noop_audit --ejecutado` ejecuta cada línea
+`python …` del `example` de las tools con side effects, cada una en su copia desechable
+del sandbox con el proyecto del ejemplo dado de alta y los ficheros que presupone
+(`FICHEROS_DEL_EJEMPLO`), y compara el árbol con el envelope: una tool que escribe sin
+indicador de trabajo es un ofensor. Destapó seis: `vault_delta --snapshot`,
+`vault_graph_fix --apply`, `vault_delete`, `vault_folder_registry --scan`/`--add`,
+`vault_model_profile --set` y `vault_drift_detect --mode snapshot`, que ya lo dicen. Las
+tools cuyo ejemplo no escribe llevan el motivo medido en `SIN_ESCRITURA_DECLARADA`; una sin
+motivo, o declarada que sí escribe, deja el banco en rojo. Las de la gobernanza del
+estándar no se ejecutan: escriben en el repo, no en el vault. La deuda
+`ap37_mide_lo_declarado` sigue pendiente con la cifra del banco, porque la puerta corre el
+modo estático.
+
+**`vault_security_scan`.** `filesScanned` cuenta los ficheros escaneados y no los que
+tuvieron hallazgos (nuevo `filesWithFindings`); sin un solo fichero de código da
+`riskLevel: "SIN_DATOS"` en vez de «BAJO» y dice que las notas `.md` no se escanean.
+**Cambio de contrato:** una categoría desconocida devuelve `INVALID_CATEGORY` con las
+admitidas, en vez de descartarse y escanear con cero reglas; `"secrets,injection"` separado
+por comas se acepta, como documentaba la ayuda. Un `--path` relativo que no existe en el
+vault se resuelve desde el directorio actual. Las cifras de reglas y categorías salen del
+registro (decía 45 y 13 con 58 y 14, AP-47) y `--depth` declara que no se aplica
+(`depthApplied: false`): aplicarlo ahora haría que el mismo comando mirara menos.
+
+**Puente de ADR-0002.** `vault_raiz`, `vault_fs`, `vault_baseline`, `vault_registry` y
+`vault_norms_catalog` migran a `vault/kernel/`; `vault_grafo_import` queda como ancla
+declarada. `vault_arch --check` falla si un módulo de `scripts/` en la wheel no es alias
+ni tiene hogar (deuda `puente_scripts_impl_sin_contrato` saldada).
+
+**Sanadores en lote.** `vault_fix_brackets`, `vault_frontmatter_heal`, `vault_project` y
+`vault_graph_fix.apply_fix` escriben dentro de `vault_io.escrituras_en_lote()`, con árbol
+idéntico al de sin lote sobre copias de dos vaults ajenos; `vault_supersede` queda fuera
+con el motivo medido (deuda `sanadores_sin_lote` saldada). `heal_ap46` escribe por el
+write path, con lock y dentro del lote (deuda `heal_ap46_escribe_sin_atomic_write`
+saldada). Un fallo al escribir no deja a `vault_fix_brackets` en un bucle sin fin ni lo
+deja salir `ok` (AP-51).
+
+**Contratos y ejemplos.** `returns_match` de `vault_spec_validate` queda `superseded_by:
+vault_smoke`, que contrasta lo emitido, y su paso de CI deja de ser informativo (deuda
+`spec_validate_returns_ciego` saldada). La ficha de `vault_drift_detect` describe a esta
+tool, el ejemplo de `vault_runbook_log` cita `08_Runbooks`, dos ejemplos dejan de usar
+valores que su tool rechaza, `vault_restore` deja de documentar una vista previa que no
+existe y `vault_qa_save` publica los flags que su CLI acepta. `vault_supersede` no toma la
+propia sombra como destino ambiguo.
+
+**Suite.** `vault_init` y el alta del proyecto corren una vez por módulo donde el test no
+escribe, y la sesión MCP de prueba deja de inventariar el disco del usuario.
 
 ### v41.7 — 2026-10-16 `git: cbca607`
 
