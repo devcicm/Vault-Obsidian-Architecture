@@ -1887,7 +1887,10 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "name": "vault_security_scan",
         "script": "vault_security_scan.py",
         "group": "Seguridad",
-        "purpose": "Escaneo de seguridad del vault y código.",
+        "purpose": (
+            "Escaneo de seguridad del código de un proyecto (OWASP/CWE) por "
+            "extensión de código; las notas .md no se escanean."
+        ),
         "params": {
             "project": {
                 "type": "string",
@@ -1904,7 +1907,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Genera reporte en 02_Observability/vulnerabilities/"],
-        "example": 'python vault_security_scan.py --path "01_Projects"\npython vault_security_scan.py --path "01_Projects" --project "mi-api" --categories secrets pii',
+        "example": 'python vault_security_scan.py --path "01_Projects"\npython vault_security_scan.py --path "01_Projects" --project "mi-api" --categories secrets command_injection',
         "related": ["vault_audit", "vault_log_error"],
     },
     "vault_drift_detect": {

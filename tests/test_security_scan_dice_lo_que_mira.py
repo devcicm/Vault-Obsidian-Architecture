@@ -66,3 +66,48 @@ def test_sin_ficheros_de_codigo_no_afirma_riesgo_bajo(scan):
     assert r["filesScanned"] == 0, r
     assert r["riskLevel"] == "SIN_DATOS", r
     assert "BAJO" not in r["summary"], r["summary"]
+
+
+def test_una_categoria_que_no_existe_se_rechaza(scan):
+    """El ejemplo del catálogo pedía `--categories secrets pii`: `pii` no es
+    una categoría y se descartaba en silencio. Con solo ella el escaneo corría
+    con cero reglas y salía limpio."""
+    tool, tmp = scan
+    codigo = tmp / "src"
+    codigo.mkdir()
+    (codigo / "a.py").write_text("x = 1\n", encoding="utf-8")
+    r = tool.vault_security_scan(str(codigo), categories=["pii"], save_findings=False)
+    assert r["ok"] is False and r["error_code"] == "INVALID_CATEGORY", r
+    assert "pii" in r["message"], r
+
+
+def test_las_categorias_separadas_por_comas_son_las_documentadas(scan):
+    """README y docstring documentan `--categories "secrets,injection"`; con
+    `nargs="*"` llegaba como una sola categoría inexistente."""
+    tool, tmp = scan
+    codigo = tmp / "src"
+    codigo.mkdir()
+    (codigo / "a.js").write_text('const password = "hunter22";\nspawn(cmd, { shell: true });\n',
+                                 encoding="utf-8")
+    con_coma = tool.vault_security_scan(str(codigo), categories=["secrets,command_injection"],
+                                        save_findings=False)
+    separadas = tool.vault_security_scan(str(codigo), categories=["secrets", "command_injection"],
+                                         save_findings=False)
+    assert con_coma["ok"] is True, con_coma
+    assert separadas["totalFindings"] >= 2, separadas
+    assert con_coma["totalFindings"] == separadas["totalFindings"], (con_coma, separadas)
+
+
+def test_el_catalogo_no_promete_escanear_las_notas():
+    from vault_mcp_catalog import TOOLS_CATALOG
+
+    ficha = TOOLS_CATALOG["vault_security_scan"]
+    assert "vault y código" not in ficha["purpose"], ficha["purpose"]
+    assert ".md" in ficha["purpose"], ficha["purpose"]
+    import vault_security_rules
+    for linea in ficha["example"].splitlines():
+        partes = linea.split()
+        if "--categories" in partes:
+            pedidas = partes[partes.index("--categories") + 1:]
+            pedidas = [p for p in pedidas if not p.startswith("--")]
+            assert set(pedidas) <= set(vault_security_rules.CATEGORIAS) | {"all"}, linea

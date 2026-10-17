@@ -6147,7 +6147,7 @@
     },
     "vault_security_scan": {
       "name": "vault_security_scan",
-      "description": "Escaneo de seguridad del vault y código.",
+      "description": "Escaneo de seguridad del código de un proyecto (OWASP/CWE) por extensión de código; las notas .md no se escanean.",
       "group": "Seguridad",
       "script": "vault_security_scan.py",
       "inputSchema": {

@@ -333,6 +333,18 @@ def vault_security_scan(
     if not scan_path.exists():
         return emit_error("vault_security_scan", "FILE_NOT_FOUND", f"Path not found: {path}")
 
+    # README y docstring documentan `--categories "secrets,injection"`; con
+    # `nargs="*"` llega como un solo elemento. Y una categoría que no existe
+    # se descartaba en silencio: con solo ella, el escaneo corría sin reglas.
+    if categories:
+        categories = [c.strip() for v in categories for c in str(v).split(",") if c.strip()]
+        desconocidas = sorted(set(categories) - set(RULES) - {"all"})
+        if desconocidas:
+            return emit_error(
+                "vault_security_scan", "INVALID_CATEGORY",
+                f"Categorías desconocidas: {', '.join(desconocidas)}. "
+                f"Admitidas: {', '.join(list(RULES) + ['all'])}")
+
     if categories and "all" not in categories:
         active_rules = {k: v for k, v in RULES.items() if k in categories}
 
