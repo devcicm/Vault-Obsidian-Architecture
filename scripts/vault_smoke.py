@@ -48,7 +48,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -110,28 +110,53 @@ def _rechazos_de_entrada() -> frozenset:
 RECHAZOS_DE_ENTRADA = _rechazos_de_entrada()
 
 
-def invocation(tool: str) -> Optional[List[str]]:
-    """Primera línea del `example` del catálogo, como argv ejecutable."""
+def _argv_de_linea(script: str, linea: str) -> Optional[List[str]]:
+    """Una línea `python …` del `example` como argv, o None si no se deja partir."""
+    try:
+        partes = shlex.split(linea, posix=False)
+    except ValueError:
+        return None
+    # `posix=False` conserva las comillas de los valores: hay que quitarlas
+    # a mano, porque en POSIX el ejemplo con `\n` embebido se destroza.
+    # Las simples también: es como se escribe un JSON en una shell, y hasta
+    # 2026-10-08 le llegaban a la tool pegadas al valor.
+    partes = [p[1:-1] if len(p) > 1 and p[0] == p[-1] and p[0] in "\"'" else p
+              for p in partes]
+    return _con_json(script, [sys.executable, str(SCRIPTS_DIR / script)] + partes[2:])
+
+
+def _lineas_python(tool: str) -> Tuple[Optional[str], List[str]]:
     entrada = TOOLS_CATALOG.get(tool) or {}
     script = entrada.get("script")
     if not script or not (SCRIPTS_DIR / script).is_file():
+        return None, []
+    lineas = [linea.strip() for linea in (entrada.get("example") or "").splitlines()]
+    return script, [linea for linea in lineas if linea.startswith("python ")]
+
+
+def invocation(tool: str) -> Optional[List[str]]:
+    """Primera línea del `example` del catálogo, como argv ejecutable."""
+    script, lineas = _lineas_python(tool)
+    if script is None:
         return None
-    for linea in (entrada.get("example") or "").splitlines():
-        linea = linea.strip()
-        if not linea.startswith("python "):
-            continue
-        try:
-            partes = shlex.split(linea, posix=False)
-        except ValueError:
-            return None
-        # `posix=False` conserva las comillas de los valores: hay que quitarlas
-        # a mano, porque en POSIX el ejemplo con `\n` embebido se destroza.
-        # Las simples también: es como se escribe un JSON en una shell, y hasta
-        # 2026-10-08 le llegaban a la tool pegadas al valor.
-        partes = [p[1:-1] if len(p) > 1 and p[0] == p[-1] and p[0] in "\"'" else p
-                  for p in partes]
-        return _con_json(script, [sys.executable, str(SCRIPTS_DIR / script)] + partes[2:])
+    if lineas:
+        return _argv_de_linea(script, lineas[0])
     return [sys.executable, str(SCRIPTS_DIR / script), "--help"]
+
+
+def invocations(tool: str) -> List[List[str]]:
+    """Cada línea `python …` del `example`, como argv, en el orden documentado.
+
+    El smoke ejecuta la primera, que casi siempre es la de lectura (`--list`,
+    `--check`, el dry-run). `vault_noop_audit --ejecutado` las ejecuta todas,
+    porque la de escritura suele venir después y es la que AP-37 mide
+    (2026-10-17). Una línea que no se deja partir no se lista: la primera ya
+    la denuncia el smoke como AP-42.
+    """
+    script, lineas = _lineas_python(tool)
+    if script is None:
+        return []
+    return [argv for argv in (_argv_de_linea(script, linea) for linea in lineas) if argv]
 
 
 def _con_json(script: str, argv: List[str]) -> List[str]:
@@ -165,16 +190,26 @@ def _arbol(raiz: Path) -> Dict[str, str]:
     return out
 
 
-def run_one(tool: str, arbol: bool = False) -> Dict[str, Any]:
+def run_one(tool: str, arbol: bool = False, argv: Optional[List[str]] = None,
+            preparar: Optional[Callable[[Path, Path], Optional[Path]]] = None,
+            origen: Optional[Path] = None) -> Dict[str, Any]:
     """Ejecuta una tool contra una copia desechable del sandbox.
 
     Con `arbol`, el resultado trae `cambiadas`: las rutas del vault que la
     ejecución creó, cambió o borró. Es lo que `vault_noop_audit --ejecutado`
     contrasta con el envelope (AP-37 con el criterio del consumidor).
+
+    El banco de AP-37 pasa además `argv` (otra línea del ejemplo), `origen`
+    (un sandbox con el proyecto del ejemplo dado de alta) y `preparar`, que
+    recibe la copia y su directorio desechable, crea lo que el ejemplo da por
+    existente y devuelve el directorio desde el que se ejecuta, o None para
+    `scripts/`. Lo que prepara queda antes de la foto del árbol: no cuenta
+    como trabajo de la tool.
     """
     if tool in SIN_SMOKE:
         return {"tool": tool, "ok": True, "skipped": SIN_SMOKE[tool]}
-    argv = invocation(tool)
+    if argv is None:
+        argv = invocation(tool)
     if argv is None:
         entrada = TOOLS_CATALOG.get(tool) or {}
         if entrada.get("runtime") == "node":
@@ -192,18 +227,20 @@ def run_one(tool: str, arbol: bool = False) -> Dict[str, Any]:
 
     destino = Path(tempfile.mkdtemp(prefix="vault-smoke-"))
     vault = destino / "vault"
+    origen = SANDBOX if origen is None else origen
     try:
-        if SANDBOX.is_dir():
+        if origen.is_dir():
             # `.locks/` no se copia. Son directorios que `file_lock` crea y
             # borra en milisegundos: si otra cosa está escribiendo en el
             # sandbox mientras copiamos, `copytree` ve el lock al listar y ya
             # no está al abrirlo, y aborta con WinError 3. Copiar un candado
             # ajeno tampoco tendría sentido — el vault de destino es nuevo y
             # nadie lo tiene tomado.
-            shutil.copytree(SANDBOX, vault,
+            shutil.copytree(origen, vault,
                             ignore=shutil.ignore_patterns(".locks"))
         else:
             vault.mkdir(parents=True)
+        cwd = (preparar(vault, destino) if preparar else None) or SCRIPTS_DIR
         antes = _arbol(vault) if arbol else {}
         env = dict(os.environ)
         env.update({
@@ -215,7 +252,7 @@ def run_one(tool: str, arbol: bool = False) -> Dict[str, Any]:
         try:
             proc = subprocess.run(argv, capture_output=True, text=True, env=env,
                                   encoding="utf-8", errors="replace",
-                                  timeout=SMOKE_TIMEOUT, cwd=str(SCRIPTS_DIR))
+                                  timeout=SMOKE_TIMEOUT, cwd=str(cwd))
         except subprocess.TimeoutExpired:
             return {"tool": tool, "ok": False, "problem": "timeout",
                     "detail": f"no terminó en {SMOKE_TIMEOUT}s"}

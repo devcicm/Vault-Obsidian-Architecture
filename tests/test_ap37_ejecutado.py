@@ -48,6 +48,11 @@ def banco(tmp_path, monkeypatch):
         ruta.write_text(codigo, encoding="utf-8")
         scripts[nombre] = [sys.executable, str(ruta)]
     monkeypatch.setattr(vault_smoke, "invocation", lambda tool: scripts.get(tool))
+    monkeypatch.setattr(vault_smoke, "invocations",
+                        lambda tool: [scripts[tool]] if tool in scripts else [])
+    # El sandbox mínimo no tiene la estructura que pide `vault_project --add`:
+    # las tools falsas no necesitan proyecto.
+    monkeypatch.setattr(vault_noop_audit, "PROYECTO_DEL_EJEMPLO", None)
     return {nombre: {"side_effects": True} for nombre in scripts}
 
 
@@ -70,3 +75,52 @@ def test_ap37_ejecutado_sin_nada_medido_no_sale_verde(banco):
     assert r["ok"] is False and r["medidas"] == [], r
     r = vault_noop_audit.ejecutado({"otra": {"side_effects": True}})
     assert r["ok"] is False and r["sin_invocacion"][0]["tool"] == "otra", r
+
+
+def test_ap37_ejecutado_ejecuta_cada_linea_del_ejemplo(banco, monkeypatch):
+    """2026-10-17: el banco ejecutaba solo la primera línea del `example`, que
+    casi siempre es la de lectura (`--list`, `--check`, el dry-run), y 73 de
+    92 salían `sin_escritura`. La de escritura suele ser la segunda."""
+    lineas = {"dos": [vault_smoke.invocation("lee"), vault_smoke.invocation("dice")]}
+    monkeypatch.setattr(vault_smoke, "invocations", lambda tool: lineas.get(tool, []))
+    r = vault_noop_audit.ejecutado({"dos": {"side_effects": True}})
+    assert r["medidas"] == ["dos"] and r["ok"] is True, r
+
+
+def test_ap37_ejecutado_una_linea_que_calla_basta_para_ofender(banco, monkeypatch):
+    lineas = {"mixta": [vault_smoke.invocation("dice"), vault_smoke.invocation("calla")]}
+    monkeypatch.setattr(vault_smoke, "invocations", lambda tool: lineas.get(tool, []))
+    r = vault_noop_audit.ejecutado({"mixta": {"side_effects": True}})
+    assert [o["tool"] for o in r["ofensores"]] == ["mixta"] and r["ok"] is False, r
+
+
+def test_invocations_devuelve_cada_linea_documentada():
+    lineas = vault_smoke.invocations("vault_fix_brackets")
+    assert len(lineas) == 3
+    assert lineas[0] == vault_smoke.invocation("vault_fix_brackets")
+    assert "--apply" in lineas[1] and "--path" in lineas[2]
+
+
+def test_el_banco_prepara_el_proyecto_y_los_ficheros_del_ejemplo():
+    """Con el sandbox tal cual, 26 ejemplos daban `PROJECT_NOT_FOUND` —`mi-api`
+    no está dado de alta— y 13 no encontraban la nota o el fichero que citan.
+    Un `ok: false` sin escribir no es una medida de AP-37."""
+    r = vault_noop_audit.ejecutado({t: {"side_effects": True}
+                                    for t in ("vault_bug_save", "vault_quarantine")})
+    assert r["medidas"] == ["vault_bug_save", "vault_quarantine"], r
+
+
+def test_el_banco_no_ejecuta_las_tools_que_escriben_en_el_repo(monkeypatch):
+    """La primera ronda que ejecutó todas las líneas (2026-10-17) corrió el
+    `--freeze` y el `--fix` del meta-toolkit y reescribió tres baselines,
+    `AGENTS.md` y `docs/BLUEPRINT.md` del checkout. Esas tools escriben en el
+    repo, no en el vault: el banco las publica aparte y no las toca."""
+    def no_se_ejecuta(*a, **k):
+        raise AssertionError(f"el banco ejecutó {a}")
+
+    monkeypatch.setattr(vault_smoke, "run_one", no_se_ejecuta)
+    monkeypatch.setattr(vault_noop_audit, "PROYECTO_DEL_EJEMPLO", None)
+    del_estandar = ("vault_blame_audit", "vault_doc_counts", "vault_blueprint")
+    r = vault_noop_audit.ejecutado({t: {"side_effects": True} for t in del_estandar})
+    assert r["fuera_del_vault"] == sorted(del_estandar), r
+    assert r["ok"] is False and r["medidas"] == [], r
