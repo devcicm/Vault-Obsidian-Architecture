@@ -113,11 +113,23 @@ def test_c2_sigue_a_la_tool_hasta_su_contexto(monkeypatch):
 
 
 def test_partes_de_sigue_al_contexto_y_no_al_kernel():
+    """`partes_de` no entra al kernel por contextos: el núcleo es de todos.
+
+    Desde el 2026-10-16 (lote D de la quinta tanda) el hermano
+    `vault_norms_catalog` —la tool troceada en catálogo + motor— tiene su
+    código en `vault/kernel/norms_catalog.py`. Entra como hermano, igual que
+    antes de mudarse, no como contexto. Lo único del kernel admitido es ese
+    hermano, derivado de `fuente_de`; cualquier otro fichero del núcleo es
+    entrar por contexto y vuelve a fallar.
+    """
     import vault_grafo_import as gi
 
     partes = {p.resolve() for p in gi.partes_de("vault_norms")}
     assert (REPO / "vault" / "gobernanza" / "auditoria_runtime.py").resolve() in partes
-    assert not any("kernel" in p.parts for p in partes), sorted(map(str, partes))
+    del_kernel = {p for p in partes if "kernel" in p.parts}
+    assert del_kernel == {gi.fuente_de("vault_norms_catalog").resolve()}, sorted(map(str, partes))
+    assert gi.fuente_de("vault_norms_catalog").resolve() not in {
+        c.resolve() for p in partes for c in gi._contextos_importados(p)}
 
 
 def test_la_cara_guard_y_c2_comparten_criterio():
