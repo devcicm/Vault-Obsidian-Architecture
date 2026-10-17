@@ -1320,7 +1320,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Actualiza relaciones en 07_Knowledge/"],
-        "example": 'python vault_relation_add.py --project "mi-api" --from "User" --to "Order" --relation_type "one-to-many"',
+        "example": 'python vault_relation_add.py --project "mi-api" --from "User" --to "Order" --relation_type "has_many" --cardinality "1:N"',
         "related": ["vault_diagram_save", "vault_code_relation"],
     },
     "vault_code_module": {
@@ -1880,7 +1880,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Genera diagrama en 09_Infrastructure/{project}/"],
-        "example": 'python vault_infra_map.py --project "mi-api" --location "us-east-1"',
+        "example": 'python vault_infra_map.py --project "mi-api" --location "cloud-aws"',
         "related": ["vault_infra_save", "vault_diagram_save"],
     },
     "vault_security_scan": {

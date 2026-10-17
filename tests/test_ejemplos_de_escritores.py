@@ -85,3 +85,52 @@ def test_el_filtro_documentado_de_pattern_list_es_un_tipo_que_existe():
         partes = shlex.split(linea)
         if "--type" in partes:
             assert partes[partes.index("--type") + 1] in PATTERN_TYPES, linea
+
+
+def _fuera_del_esquema(nombre: str, linea: str, props: dict) -> list:
+    """Flags y valores de una línea de ejemplo que el esquema publicado rechaza."""
+    from vault_mcp_catalog import PARAMS_FIJADOS_POR_LA_SESION
+
+    partes, malos, i = shlex.split(linea), [], 2
+    while i < len(partes):
+        if not partes[i].startswith("--"):
+            i += 1
+            continue
+        flag = partes[i][2:].split("=")[0]
+        j = i + 1
+        while j < len(partes) and not partes[j].startswith("--"):
+            j += 1
+        clave = next((c for c in (flag, flag.replace("-", "_")) if c in props), None)
+        if clave is None:
+            if flag not in PARAMS_FIJADOS_POR_LA_SESION:
+                malos.append(f"{nombre}: --{flag} no está en el esquema")
+        else:
+            esquema = props[clave]
+            enum = esquema.get("enum") or (esquema.get("items") or {}).get("enum")
+            for valor in partes[i + 1:j]:
+                if enum and valor not in [str(e) for e in enum]:
+                    malos.append(f"{nombre}: --{flag} {valor!r} fuera de {enum}")
+        i = j
+    return malos
+
+
+def test_ningun_ejemplo_usa_un_flag_o_un_valor_que_el_esquema_rechaza():
+    """Toda línea `python …` de todo ejemplo, contra el esquema que se publica.
+
+    El test de arriba ejecuta seis escritores y solo su primera línea. El banco
+    de AP-37 (2026-10-17) ejecutó todas y destapó dos ejemplos que la propia
+    tool rechaza: `vault_infra_map --location "us-east-1"` (las ubicaciones son
+    `cloud-aws`, `homelab`…) y `vault_relation_add --relation_type
+    "one-to-many"` (los tipos son `has_many`, `belongs_to`…). El esquema sale de
+    argparse (AP-40), así que es lo que acepta la CLI y lo que valida el
+    cliente MCP; contrastar con él no ejecuta nada.
+    """
+    publicado = json.loads((ROOT / "mcp" / "nodejs" / "tools-catalog.json")
+                           .read_text(encoding="utf-8"))["tools"]
+    malos = []
+    for nombre, tool in sorted(TOOLS_CATALOG.items()):
+        props = publicado.get(nombre, {}).get("inputSchema", {}).get("properties", {})
+        for linea in (tool.get("example") or "").splitlines():
+            if linea.startswith("python "):
+                malos += _fuera_del_esquema(nombre, linea, props)
+    assert not malos, "\n".join(malos)
