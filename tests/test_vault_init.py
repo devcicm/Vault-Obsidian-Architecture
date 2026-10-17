@@ -7,7 +7,9 @@ genera los índices y reporta el health score inicial.
 `MODO-AGENTICO-SANACION.md` y `tests/test_vault_onboard.py`.
 """
 
+import copy
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -54,14 +56,31 @@ def _corriendo(script, vault_root, *args):
     return r
 
 
-@pytest.fixture
-def vault_vacio(tmp_path):
-    """Un vault recién inicializado sin contenido."""
-    v = tmp_path / "vault-test-init"
+@pytest.fixture(scope="module")
+def _plantilla_init(tmp_path_factory):
+    """`vault_init` una sola vez por módulo; `vault_vacio` entrega copias.
+
+    Hasta el 2026-10-17 cada test ejecutaba `vault_init` en su setup, unos
+    16 s por test en la suite completa. Dos tests lanzan `vault_norms --audit`,
+    que escribe en el vault, así que compartir un vault cambiaría el
+    aislamiento: cada test recibe una copia propia de la plantilla. Lo único
+    del vault que nombra su ruta es `00_System/.tool-trace.json`, la traza de
+    la invocación; ningún test de este fichero la lee.
+    """
+    v = tmp_path_factory.mktemp("plantilla_init") / "vault-test-init"
     v.mkdir()
     salida = _correr("vault_init.py", v)
     assert salida.get("ok"), f"vault_init falló: {salida}"
     return v, salida
+
+
+@pytest.fixture
+def vault_vacio(tmp_path, _plantilla_init):
+    """Un vault recién inicializado sin contenido (copia de la plantilla)."""
+    plantilla, salida = _plantilla_init
+    v = tmp_path / "vault-test-init"
+    shutil.copytree(plantilla, v)
+    return v, copy.deepcopy(salida)
 
 
 class TestCarpetasEstandar:
