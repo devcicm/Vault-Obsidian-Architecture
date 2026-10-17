@@ -110,7 +110,8 @@ def test_vault_fs_no_redefine_el_primitive_atomico_estable():
 
 
 def test_vault_fs_reexporta_la_misma_funcion_atomica_del_owner_estable():
-    spec = importlib.util.spec_from_file_location("vault_fs_for_test", ROOT / "scripts" / "vault_fs.py")
+    spec = importlib.util.spec_from_file_location(
+        "vault_fs_for_test", gi.codigo_de(ROOT / "scripts" / "vault_fs.py"))
     assert spec and spec.loader
     legacy_fs = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(legacy_fs)

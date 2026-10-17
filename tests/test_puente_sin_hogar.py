@@ -603,3 +603,50 @@ def test_la_cli_lee_la_version_del_dueno_en_el_kernel():
     import vault_version
 
     assert cli.__version__ == vault_version.CURRENT_VERSION.lstrip("v")
+
+
+LOTE_A_RAICES = [
+    ("vault_raiz", "vault/kernel/raiz.py"),
+    ("vault_fs", "vault/kernel/fs.py"),
+]
+
+
+@pytest.mark.parametrize("modulo,dueno", LOTE_A_RAICES)
+def test_lote_a_raiz_y_fs_migran_y_el_puente_las_suelta(modulo, dueno):
+    """Lote A de la quinta tanda (2026-10-16): las dos hojas del kernel que se
+    anclaban en su propio `__file__`. El alias es el dueño, el puente ya no las
+    lista, el grafo las mide por el código del dueño y el dueño ya no se ancla
+    en su fichero: desde `vault/kernel/` el `parent.parent` sería `vault/`."""
+    import importlib
+    import json
+
+    import vault_grafo_import as gi
+
+    assert modulo not in set(vault_arch.modulos_sin_hogar())
+    m = importlib.import_module(modulo)
+    assert m is importlib.import_module(dueno[:-3].replace("/", "."))
+    assert gi.fuente_de(modulo) == (ROOT / dueno).resolve()
+    puente = json.loads((ROOT / "scripts" / "arch-baseline.json").read_text(encoding="utf-8"))
+    assert modulo not in puente["bridge_modules"]
+    esperado = gi.importaciones(ROOT / dueno, gi.MODULOS_LOCALES) - {modulo}
+    assert gi.completo()[modulo] == esperado
+    assert "__file__" not in (ROOT / dueno).read_text(encoding="utf-8")
+
+
+def test_lote_a_la_autodeteccion_sigue_dando_el_sandbox():
+    """El ancla de `_detect_vault_root` sale de `vault_grafo_import.DIRECTORIO`
+    (`scripts/` en el checkout, `_impl/` en la wheel): la raíz que devuelve no
+    cambia por haberse mudado el código a `vault/kernel/`."""
+    import os
+    import subprocess
+
+    env = {k: v for k, v in os.environ.items()
+           if k not in ("VAULT_ROOT", "VAULT_STRICT_ROOT", "VAULT_PERMISSIVE_ROOT")}
+    codigo = ("import vault_raiz as r;"
+              "print(r.vault_root_origin()); print(r.get_vault_root())")
+    r = subprocess.run([sys.executable, "-c", codigo], env=env, cwd=str(ROOT / "scripts"),
+                       capture_output=True, text=True, encoding="utf-8", timeout=120)
+    assert r.returncode == 0, r.stderr[-300:]
+    origen, raiz = r.stdout.split("\n")[:2]
+    assert origen == "spec_repo_sandbox"
+    assert Path(raiz).resolve() == (ROOT / "vault-sandbox").resolve()

@@ -60,10 +60,8 @@
   "system_writes": [],
   "bridge_modules": [
     "vault_baseline",
-    "vault_fs",
     "vault_grafo_import",
     "vault_norms_catalog",
-    "vault_raiz",
     "vault_registry"
   ],
   "objetivos_por_clave": {

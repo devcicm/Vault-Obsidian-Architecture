@@ -25,7 +25,7 @@ import vault_fs  # noqa: E402
 from vault.autoria.conocimiento import _FileLock  # noqa: E402
 from vault.kernel.bloqueo import rutas_de_lock  # noqa: E402
 
-TOMADORES = (SCRIPTS / "vault_fs.py", ROOT / "vault" / "autoria" / "conocimiento.py")
+TOMADORES = (ROOT / "vault" / "kernel" / "fs.py", ROOT / "vault" / "autoria" / "conocimiento.py")
 PIEZAS = ("rutas_de_lock", "crear_carpeta_de_locks", "retirar_carpeta_si_vacia")
 
 

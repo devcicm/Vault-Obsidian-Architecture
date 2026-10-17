@@ -852,6 +852,11 @@ def cruces() -> list[dict]:
             destino = mapa.get(destino_mod)
             if destino is None or destino == origen or destino == KERNEL:
                 continue
+            # Mismo criterio que en `scripts/` y `cli/`: el gancho de un dueño
+            # migrado sigue siendo una frontera declarada, y lo mide
+            # `dependencias_del_kernel()` con el nombre del alias.
+            if (clave, destino_mod) in GANCHOS_DEL_KERNEL:
+                continue
             fuera.append({
                 "from": clave, "from_context": origen,
                 "to": destino_mod, "to_context": destino,
@@ -863,6 +868,8 @@ def cruces() -> list[dict]:
         for nodo in ast.walk(arbol):
             for destino in _destino_de_import(nodo, rel):
                 if destino in CONTEXTS and destino not in (origen, KERNEL):
+                    if (clave, f"vault/{destino}") in GANCHOS_DEL_KERNEL:
+                        continue
                     fuera.append({
                         "from": clave, "from_context": origen,
                         "to": f"vault/{destino}", "to_context": destino,
@@ -1919,7 +1926,10 @@ def dependencias_del_kernel() -> list[dict]:
         fichero = SCRIPTS_DIR / f"{nombre}.py"
         if not fichero.exists():
             continue
-        for destino in sorted(_importaciones(fichero)):
+        # Deuda #12: el código de una hoja migrada es el del dueño (AP-44). Con
+        # el alias, toda hoja del kernel ya en `vault/kernel/` salía sin
+        # dependencias, y un import al dominio desde ella no rompía nada.
+        for destino in sorted(_importaciones(vault_grafo_import.codigo_de(fichero))):
             ctx = mapa.get(destino)
             if ctx is None or ctx == KERNEL:
                 continue

@@ -73,7 +73,7 @@ def test_conocimiento_no_suelta_un_lock_que_ya_no_es_suyo(tmp_path):
 
 def test_ap57_ningun_tomador_tiene_su_propio_bucle():
     """El `os.mkdir` del lock solo lo llama el kernel."""
-    for fichero in (SCRIPTS / "vault_fs.py", ROOT / "vault" / "autoria" / "conocimiento.py"):
+    for fichero in (ROOT / "vault" / "kernel" / "fs.py", ROOT / "vault" / "autoria" / "conocimiento.py"):
         arbol = ast.parse(fichero.read_text(encoding="utf-8"))
         llamadas = [n for n in ast.walk(arbol) if isinstance(n, ast.Call)
                     and isinstance(n.func, ast.Attribute) and n.func.attr == "mkdir"

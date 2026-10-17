@@ -707,7 +707,13 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "`schemas/` cita `vault/kernel/contrato_nota.py` y la cara de AP-64 "
             "también. Antes, m251 hizo que `vault_grafo_import.grafo()` midiera al "
             "dueño y no al alias: con las aristas del alias el escalón de AP-59 "
-            "bajaba y `vault_errors` cruzaba un umbral que con las reales no cruza.)"
+            "bajaba y `vault_errors` cruzaba un umbral que con las reales no cruza.)\n\n"
+            "(Lote A de la quinta tanda, 2026-10-16: raiz y fs a `vault/kernel/`. "
+            "Las dos se anclaban en su `__file__`: `vault_raiz` toma ahora el "
+            "directorio del programa de `vault_grafo_import.DIRECTORIO` —la raíz "
+            "autodetectada no cambia, `spec_repo_sandbox` en el checkout— y "
+            "`vault_fs` deja de tocar el path, que ya pone el alias. Tres tests "
+            "leían `scripts/vault_fs.py` por ruta y leen al dueño.)"
         ),
         "por_que_no_ahora": (
             "Transitorio hasta migrar scripts → vault/<contexto>, ADR-0002. "
