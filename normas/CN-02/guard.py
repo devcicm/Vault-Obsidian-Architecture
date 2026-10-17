@@ -17,6 +17,6 @@ GUARD = [
     'scripts/vault_move.py::move_folder',
     'scripts/vault_section_index.py::vault_section_index',
     'scripts/vault_norms.py::main',
-    'scripts/vault_norms_catalog.py::compute_norm_refs',
+    'vault/kernel/norms_catalog.py::compute_norm_refs',
     'vault/gobernanza/auditoria_runtime.py::auditar_runtime',
 ]

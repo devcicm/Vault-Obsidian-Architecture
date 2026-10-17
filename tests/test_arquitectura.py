@@ -656,11 +656,19 @@ def test_el_catalogo_de_normas_es_una_hoja_del_nucleo():
     dueño de la adyacencia es `fan_out()`. Es el fallo de v40.17 otra vez —un
     cero fabricado—, y la guarda contra repetirlo es el `fan_out` de abajo:
     un módulo que sí importa tiene que salir distinto de vacío.
+
+    2026-10-16 (lote D de la quinta tanda) — el fan-out deja de ser cero y pasa
+    a ser exactamente `vault_grafo_import`, otra hoja del núcleo de solo
+    biblioteca estándar: al mudarse el catálogo a `vault/kernel/`,
+    `RAIZ_NORMAS` ya no podía salir de su `__file__` y sale del directorio del
+    programa. Es una arista núcleo → núcleo, no una tool; la igualdad exacta
+    hace que cualquier import más vuelva a fallar aquí.
     """
     import vault_grafo_import as g
     fan_out = g.fan_out()
     assert "vault_norms_catalog" in arch.CONTEXTS[arch.KERNEL]["modulos"]
-    assert fan_out.get("vault_norms_catalog", set()) == set()
+    assert "vault_grafo_import" in arch.CONTEXTS[arch.KERNEL]["modulos"]
+    assert fan_out.get("vault_norms_catalog", set()) == {"vault_grafo_import"}
     assert "vault_norms_engine" not in arch.CONTEXTS[arch.KERNEL]["modulos"]
     # el control negativo: si la medida volviera a ser vacía, esto falla.
     assert fan_out.get("vault_norms_engine", set()) != set()

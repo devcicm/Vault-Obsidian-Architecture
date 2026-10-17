@@ -69,7 +69,7 @@ el contenido sea verdadero, completo o relevante. Las ediciones externas al
 toolkit no pasan automáticamente por sus guards, y conservar documentos no
 hace que un agente los consulte u obedezca por sí mismo.
 
-El alcance de las normas está en el [catálogo](./scripts/vault_norms_catalog.py);
+El alcance de las normas está en el [catálogo](./vault/kernel/norms_catalog.py);
 la evidencia de soporte y sus huecos, en la
 [guía de producción](./docs/GUIA-DE-PRODUCCION.md).
 

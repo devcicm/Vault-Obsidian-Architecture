@@ -709,3 +709,27 @@ def test_lote_c_el_registro_migra_y_el_puente_lo_suelta():
     esperado = gi.importaciones(ROOT / dueno, gi.MODULOS_LOCALES) - {modulo}
     assert gi.completo()[modulo] == esperado
     assert "__file__" not in (ROOT / dueno).read_text(encoding="utf-8")
+
+
+def test_lote_d_el_catalogo_de_normas_migra_y_el_puente_solo_guarda_el_ancla():
+    """Lote D de la quinta tanda (2026-10-16): `vault_norms_catalog` a
+    `vault/kernel/norms_catalog.py`. `RAIZ_NORMAS` salía del abuelo de su
+    `__file__`, que desde `vault/kernel/` es `vault/`: el catálogo habría
+    buscado sus paquetes en `vault/normas/`. Sale del directorio del programa.
+    Tras este lote el puente solo lista el ancla declarada."""
+    import importlib
+    import json
+
+    import vault_grafo_import as gi
+    import vault_norms_catalog
+
+    modulo, dueno = "vault_norms_catalog", "vault/kernel/norms_catalog.py"
+    assert modulo not in set(vault_arch.modulos_sin_hogar())
+    assert vault_norms_catalog is importlib.import_module("vault.kernel.norms_catalog")
+    assert gi.fuente_de(modulo) == (ROOT / dueno).resolve()
+    puente = json.loads((ROOT / "scripts" / "arch-baseline.json").read_text(encoding="utf-8"))
+    assert puente["bridge_modules"] == ["vault_grafo_import"]
+    esperado = gi.importaciones(ROOT / dueno, gi.MODULOS_LOCALES) - {modulo}
+    assert gi.completo()[modulo] == esperado
+    assert "__file__" not in (ROOT / dueno).read_text(encoding="utf-8")
+    assert vault_norms_catalog.RAIZ_NORMAS == (ROOT / "normas").resolve()

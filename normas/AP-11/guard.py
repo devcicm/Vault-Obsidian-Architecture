@@ -10,5 +10,5 @@ de derivarlo; se regenera con `vault_norms_engine.escribir_caras_derivadas`.
 GUARD = [
     'scripts/vault_write.py::vault_write',
     'scripts/vault_norms.py::vault_norms_scan',
-    'scripts/vault_norms_catalog.py::compute_norm_refs',
+    'vault/kernel/norms_catalog.py::compute_norm_refs',
 ]

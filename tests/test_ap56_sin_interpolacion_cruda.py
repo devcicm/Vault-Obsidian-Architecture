@@ -33,7 +33,7 @@ _SEGURAS = {"valor_de_frontmatter", "yaml_scalar", "dumps", "uuid4", "utcnow"}
 #: Sitio → por qué su valor no puede traer una clave. Sin número de línea, para
 #: que mover el sitio no lo estrene como deuda (la lección de v40.6).
 _VOCABULARIO_CERRADO = {
-    "scripts/vault_norms_catalog.py: status: {canonico}": (
+    "vault/kernel/norms_catalog.py: status: {canonico}": (
         "`canonico` sale de split_domain_status y la función lanza si no está en "
         "STATUS_VOCAB; el módulo es hoja del núcleo y no importa el escapador"
     ),

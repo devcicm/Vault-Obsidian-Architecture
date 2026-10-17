@@ -126,7 +126,7 @@ FUNCIONES_CON_DUENO: List[Dict[str, Any]] = [
     },
     {
         "simbolo": "vinetas_de_lista",
-        "dueño": "scripts/vault_norms_catalog.py",
+        "dueño": "vault/kernel/norms_catalog.py",
         "por_que": (
             "AP-20 se decidía con la misma regex copiada en tres sitios, y las "
             "tres compartían el defecto: una viñeta vacía se tragaba la línea "

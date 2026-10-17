@@ -724,7 +724,12 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "(Lote C, 2026-10-16: registry a `vault/kernel/`. `comando_de_tool` "
             "decidía «estoy instalado» por el nombre del directorio de su "
             "`__file__`; lo decide el del programa. La cara de AP-64 y "
-            "`docs/architecture/layers.md` citan al dueño.)"
+            "`docs/architecture/layers.md` citan al dueño.)\n\n"
+            "(Lote D, 2026-10-16: norms_catalog a `vault/kernel/`, con "
+            "`RAIZ_NORMAS` derivado del directorio del programa; su fan-out pasa "
+            "de cero a exactamente `vault_grafo_import`, núcleo → núcleo. Las "
+            "caras `guard.py` de seis normas se regeneran hacia el dueño. El "
+            "puente queda en el ancla declarada.)"
         ),
         "por_que_no_ahora": (
             "Transitorio hasta migrar scripts → vault/<contexto>, ADR-0002. "
