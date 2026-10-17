@@ -733,3 +733,45 @@ def test_lote_d_el_catalogo_de_normas_migra_y_el_puente_solo_guarda_el_ancla():
     assert gi.completo()[modulo] == esperado
     assert "__file__" not in (ROOT / dueno).read_text(encoding="utf-8")
     assert vault_norms_catalog.RAIZ_NORMAS == (ROOT / "normas").resolve()
+
+
+def test_el_contrato_del_puente_solo_admite_el_ancla():
+    """Contrato del puente (ADR-0002, 2026-10-16): en la wheel, todo módulo de
+    `scripts/` es alias de su dueño, tiene hogar en `vault/<contexto>/` o es un
+    ancla declarada con su motivo. Hoy el único sin hogar es el ancla."""
+    r = vault_arch.check()
+    assert r["bridge_anchor"] == ["vault_grafo_import"]
+    assert r["bridge_contract_violations"] == []
+    assert r["stale_bridge_anchor"] == []
+    assert set(vault_arch.modulos_sin_hogar()) == set(vault_arch.ANCLA_DEL_PUENTE)
+    assert all(m.strip() for m in vault_arch.ANCLA_DEL_PUENTE.values())
+
+
+def test_un_modulo_sin_hogar_congelado_sigue_fuera_de_contrato(monkeypatch):
+    """`--freeze` reescribe `bridge_modules` sin negarse: con solo la baseline,
+    un módulo sin hogar entraba congelándolo. El contrato no lee la baseline."""
+    actuales = vault_arch.modulos_sin_hogar()
+    original = vault_arch._leer_baseline
+    monkeypatch.setattr(vault_arch, "modulos_sin_hogar",
+                        lambda: sorted(actuales + ["vault_nuevo_sin_hogar"]))
+
+    def congelada():
+        base = dict(original())
+        base["bridge_modules"] = sorted(base.get("bridge_modules", [])
+                                        + ["vault_nuevo_sin_hogar"])
+        return base
+
+    monkeypatch.setattr(vault_arch, "_leer_baseline", congelada)
+    r = vault_arch.check()
+    assert r["new_bridge_modules"] == []
+    assert r["bridge_contract_violations"] == ["vault_nuevo_sin_hogar"]
+    assert r["ok"] is False
+
+
+def test_un_ancla_que_encuentra_hogar_bloquea_la_puerta(monkeypatch):
+    """Un ancla que ya tiene hogar es una declaración que miente: se retira a
+    conciencia, con la fecha que la cerró, no se deja en el registro."""
+    monkeypatch.setattr(vault_arch, "modulos_sin_hogar", lambda: [])
+    r = vault_arch.check()
+    assert r["stale_bridge_anchor"] == ["vault_grafo_import"]
+    assert r["ok"] is False

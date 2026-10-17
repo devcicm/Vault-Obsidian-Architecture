@@ -605,7 +605,15 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     },
     {
         "id": "puente_scripts_impl_sin_contrato",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "tras v41.7 (2026-10-16)",
+        "sostenida_por": [
+            "tests/test_puente_sin_hogar.py::test_el_contrato_del_puente_solo_admite_el_ancla",
+            "tests/test_puente_sin_hogar.py::test_un_modulo_sin_hogar_congelado_sigue_fuera_de_contrato",
+            "tests/test_puente_sin_hogar.py::test_un_ancla_que_encuentra_hogar_bloquea_la_puerta",
+            "tests/test_puente_sin_hogar.py::test_el_ancla_del_puente_no_se_muda",
+            "tests/test_puente_sin_hogar.py::test_lote_d_el_catalogo_de_normas_migra_y_el_puente_solo_guarda_el_ancla",
+        ],
         "desde": "v40.34",
         "capa": "3",
         "que": (
@@ -729,11 +737,21 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "`RAIZ_NORMAS` derivado del directorio del programa; su fan-out pasa "
             "de cero a exactamente `vault_grafo_import`, núcleo → núcleo. Las "
             "caras `guard.py` de seis normas se regeneran hacia el dueño. El "
-            "puente queda en el ancla declarada.)"
+            "puente queda en el ancla declarada.)\n\n"
+            "(Saldada el 2026-10-16: el contrato existe. `vault_arch --check` "
+            "falla si un módulo de `scripts/` que viaja en la wheel no es "
+            "alias, no tiene hogar y no está en `vault_arch.ANCLA_DEL_PUENTE`, "
+            "y también si un ancla declarada ya tiene hogar. La baseline "
+            "`bridge_modules` no bastaba: `--freeze` la reescribe sin negarse. "
+            "Lo que no se salda: `vault_grafo_import` sigue en `scripts/` por "
+            "diseño, con el motivo escrito en el registro, y `tiene_hogar` es "
+            "sintáctico —importar del contexto no es haber migrado entero—.)"
         ),
         "por_que_no_ahora": (
             "Transitorio hasta migrar scripts → vault/<contexto>, ADR-0002. "
-            "La fachada y el package-dir existen; la deuda es de diseño, no de implementacion."
+            "La fachada y el package-dir existen; la deuda es de diseño, no de implementacion. "
+            "(Ya no aplica desde el 2026-10-16: se conserva como estaba, por "
+            "no-derogación.)"
         ),
     },
     # Las cuatro siguientes salieron en la ronda de v41.2 (regla 7 sobre copias

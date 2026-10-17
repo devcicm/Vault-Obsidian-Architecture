@@ -1,6 +1,7 @@
 # ADR-0002: puente scripts → _impl en la wheel instalada
 
 - **Estado:** aceptado
+- **Estado del puente (2026-10-16):** contrato en `vault_arch --check`. Todo módulo de `scripts/` que viaja en la wheel es alias de su dueño en `vault/<contexto>/`, tiene hogar allí o es un ancla de `vault_arch.ANCLA_DEL_PUENTE`, que hoy es solo `vault_grafo_import`. La deuda `puente_scripts_impl_sin_contrato` está saldada.
 - **Fecha:** 2026-09-27
 - **Decisión:** Fachada de re-export en `scripts/vault_regex.py` + `package-dir` en `pyproject.toml`
 - **Alcance:** resolución de imports entre el checkout fuente y la wheel instalada; no redefine la arquitectura de contextos

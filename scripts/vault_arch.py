@@ -1043,6 +1043,36 @@ def modulos_sin_hogar() -> list[str]:
     return sin_hogar
 
 
+#: El contrato del puente (ADR-0002, deuda #12), cerrado el 2026-10-16: en la
+#: wheel, todo módulo de `scripts/` es alias de su dueño en `vault/<contexto>/`,
+#: tiene hogar allí o es un ancla declarada aquí con su motivo. La baseline
+#: `bridge_modules` congelaba lo que había y bloqueaba lo nuevo, pero
+#: `--freeze` la reescribe sin negarse: un módulo sin hogar entraba
+#: congelándolo. Este registro no lo escribe ningún freeze.
+ANCLA_DEL_PUENTE: dict[str, str] = {
+    "vault_grafo_import": (
+        "Dice dónde está `scripts/` (`_impl/` en la wheel) con su propio "
+        "`__file__`, y de su `DIRECTORIO` derivan el suyo los dueños que se "
+        "mudaron a `vault/kernel/`. Mudarlo exigiría derivar ese directorio de "
+        "dos formas —por el checkout y por el paquete instalado— en el sitio "
+        "que existe para que nadie más lo derive. Lo fija "
+        "`tests/test_puente_sin_hogar.py::test_el_ancla_del_puente_no_se_muda`."
+    ),
+}
+
+
+def contrato_del_puente(sin_hogar=None) -> dict:
+    """Qué incumple el contrato del puente.
+
+    `fuera_de_contrato`: módulos sin hogar que no son ancla. `ancla_con_hogar`:
+    anclas declaradas que ya no están en el puente, y que por tanto mienten.
+    """
+    puente = set(modulos_sin_hogar() if sin_hogar is None else sin_hogar)
+    anclas = set(ANCLA_DEL_PUENTE)
+    return {"fuera_de_contrato": sorted(puente - anclas),
+            "ancla_con_hogar": sorted(anclas - puente)}
+
+
 #: Lo que cuenta como escribir. `mkdir` entra: crear una sección de contenido
 #: es tocar el vault del usuario aunque no se deje un byte dentro.
 #:
@@ -2726,6 +2756,7 @@ def check(strict: bool = False) -> dict:
     puente = set(modulos_sin_hogar())
     puente_nuevos = sorted(puente - base_puente)
     puente_saldados = sorted(base_puente - puente)
+    contrato_puente = contrato_del_puente(puente)
 
     # AP-66, sin baseline: se midió cero al declararla.
     crecen = costes_que_crecen()
@@ -2738,6 +2769,8 @@ def check(strict: bool = False) -> dict:
               and not puerto_nuevos and not entorno_sin_registro
               and not copias_vocab and not vocab_sin_dueno
               and not entorno_desfasado and not sis_nuevas and not puente_nuevos
+              and not contrato_puente["fuera_de_contrato"]
+              and not contrato_puente["ancla_con_hogar"]
               and not crecen
               and not (strict and (saldados or vinc_saldados or rutas_saldadas
                                    or puerto_saldados or sis_saldadas
@@ -2829,6 +2862,11 @@ def check(strict: bool = False) -> dict:
         "bridge_modules_baseline": len(base_puente),
         "new_bridge_modules": puente_nuevos,
         "settled_bridge_modules": puente_saldados,
+        # El contrato del puente, sin baseline: lo que no es ancla ni tiene
+        # hogar bloquea aunque se haya congelado.
+        "bridge_anchor": sorted(ANCLA_DEL_PUENTE),
+        "bridge_contract_violations": contrato_puente["fuera_de_contrato"],
+        "stale_bridge_anchor": contrato_puente["ancla_con_hogar"],
         # AP-66 — un bucle cuyo coste crece con algo que no es lo medido.
         "growing_costs": crecen,
         "crossings": actuales,
