@@ -122,6 +122,11 @@ class ServicioCarpetas:
             "total_folders": len(registro["folders"]),
             "new_folders": len(nuevas),
             "new_paths": [f["path"] for f in nuevas],
+            # AP-37: el registro se reescribe siempre (`detected_at`), haya o
+            # no carpetas nuevas. `total` es el nombre que declara el contrato.
+            "written": True,
+            "added": len(nuevas),
+            "total": len(registro["folders"]),
         }
 
     def listar(self) -> List[Dict[str, Any]]:
@@ -146,7 +151,7 @@ class ServicioCarpetas:
         }
         registro["folders"].append(entrada)
         self.guardar(registro)
-        return {"ok": True, "folder": entrada}
+        return {"ok": True, "folder": entrada, "added": 1}
 
     def eliminar(self, ruta: str) -> Dict[str, Any]:
         registro = self.registro()
