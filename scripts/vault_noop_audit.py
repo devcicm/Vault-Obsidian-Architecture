@@ -157,7 +157,7 @@ FICHEROS_DEL_EJEMPLO: Dict[str, Dict[str, str]] = {
     "vault_delete": {"07_Knowledge/old.md": "nota"},
     "vault_move": {"01_Projects/foo.md": "nota"},
     "vault_quarantine": {"07_Knowledge/rara.md": "nota"},
-    "vault_runbook_log": {"13_Runbooks/deploy.md": "nota"},
+    "vault_runbook_log": {"08_Runbooks/deploy.md": "nota"},
     "vault_supersede": {"10_Migrated/GUIA.md": "nota", "07_Knowledge/guia.md": "nota"},
     "vault_propagate": {"01_Projects/mi-api/overview.md": "nota"},
     "vault_diagram_export": {"06_Diagrams/foo.md": "diagrama"},

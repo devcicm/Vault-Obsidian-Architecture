@@ -400,3 +400,23 @@ def test_las_secciones_dirigidas_por_eventos_son_las_mismas_en_todo_el_estandar(
     assert not sembradas, (
         f"vault_init siembra andamios en secciones que deben quedar vacías: {sorted(sembradas)}"
     )
+
+
+def test_ningun_ejemplo_del_catalogo_cita_una_seccion_inexistente():
+    """El ejemplo es lo que el agente copia, y una sección que no existe lo
+    convierte en un fallo para quien lo sigue al pie de la letra.
+
+    Medido el 2026-10-17: `vault_runbook_log` documentaba
+    `--path "13_Runbooks/deploy.md"`, y los runbooks viven en `08_Runbooks`.
+    El test de arriba no lo veía: parte por `/` la constante entera, y en un
+    comando la sección va en mitad de la cadena.
+    """
+    patron = re.compile(r"(?<![\w/.])(\d\d_[A-Z][A-Za-z_]*)/")
+    todas = set(vault_registry.ORDERED_SECTIONS)
+    fantasmas = [
+        f"{nombre} → '{seccion}'"
+        for nombre, tool in sorted(vault_mcp_catalog.TOOLS_CATALOG.items())
+        for seccion in patron.findall(tool.get("example") or "")
+        if seccion not in todas
+    ]
+    assert not fantasmas, "ejemplos que citan secciones fuera del registro: " + ", ".join(fantasmas)

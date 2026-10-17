@@ -3888,7 +3888,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Actualiza log del runbook"],
-        "example": 'python vault_runbook_log.py --path "13_Runbooks/deploy.md" --outcome "success"',
+        "example": 'python vault_runbook_log.py --path "08_Runbooks/deploy.md" --outcome "success"',
         "related": ["vault_runbook_save", "vault_audit"],
     },
     "vault_incident_save": {
