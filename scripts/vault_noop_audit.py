@@ -205,6 +205,28 @@ _CONTENIDOS = {
 }
 
 
+
+#: Tools con side effects cuyo ejemplo documentado no escribe en la copia, con
+#: el motivo medido el 2026-10-17 (banco v3). Sin esto `sin_escritura` era una
+#: lista suelta: una tool nueva cuyo ejemplo no hace nada se sumaba sin que
+#: nadie preguntara por qué. Ahora la que no está aquí deja el banco en rojo, y
+#: la que está aquí y escribió también: la declaración ya no es cierta.
+SIN_ESCRITURA_DECLARADA: Dict[str, str] = {
+    "vault_code_sync": "el ejemplo sincroniza un repo que el proyecto del banco no tiene enlazado; sin repo no hay nada que copiar",
+    "vault_diagram_export": "mi-api no tiene diagramas propios y la línea con --path solo devuelve la configuración de exportación",
+    "vault_fuente_unica": "solo lectura por diseño (regla 7): mide divergencias de AP-05 y no escribe",
+    "vault_history_compact": "la copia no tiene .history/ con versiones que compactar",
+    "vault_merge": "--detect es de solo lectura y la línea de fusión cita el marcador /path/to/other-vault, que no existe",
+    "vault_migrate_docs": "el ejemplo corre en dry-run: informa del plan de migración sin aplicarlo",
+    "vault_migrate_rollback": "no hay informe de una migración previa que deshacer",
+    "vault_propagate": "--queue-report solo lee la cola de propagación",
+    "vault_restore": "la copia no tiene backups; sin --confirm true la tool rehúsa (CONFIRMACION_REQUERIDA)",
+    "vault_standard_upgrade": "el sandbox ya está en la versión vigente del estándar: no hay nada que subir",
+    "vault_tags": "la línea del ejemplo es --ledger, de solo lectura",
+    "vault_undo": "la copia no tiene historial de cambios que deshacer",
+}
+
+
 def _preparar(tool: str):
     """El `preparar` de `vault_smoke.run_one` para los ficheros de una tool."""
     ficheros = FICHEROS_DEL_EJEMPLO.get(tool)
@@ -343,9 +365,14 @@ def ejecutado(herramientas: Optional[Dict[str, Dict]] = None) -> Dict:
         import shutil
 
         shutil.rmtree(base, ignore_errors=True)
+    sin_motivo = [t for t in sin_escritura if t not in SIN_ESCRITURA_DECLARADA]
+    declaradas_que_escriben = sorted(t for t in SIN_ESCRITURA_DECLARADA
+                                     if t in medidas or t in {o["tool"] for o in ofensores})
     return {
-        # AP-60: sin una sola medida el banco no ha visto nada.
-        "ok": not ofensores and bool(medidas),
+        # AP-60: sin una sola medida el banco no ha visto nada; y una tool que
+        # no escribe sin motivo declarado es una que nadie ha mirado.
+        "ok": (not ofensores and bool(medidas) and not sin_motivo
+               and not declaradas_que_escriben),
         "tool": "vault_noop_audit",
         "norm": "AP-37",
         "modo": "ejecutado",
@@ -354,6 +381,10 @@ def ejecutado(herramientas: Optional[Dict[str, Dict]] = None) -> Dict:
         "medidas": medidas,
         "sin_escritura": sin_escritura,
         "lineas_sin_escritura": lineas_sin_escritura,
+        "sin_escritura_declarada": {t: SIN_ESCRITURA_DECLARADA[t] for t in sin_escritura
+                                    if t in SIN_ESCRITURA_DECLARADA},
+        "sin_escritura_sin_motivo": sin_motivo,
+        "declaradas_que_escriben": declaradas_que_escriben,
         "sin_invocacion": sin_invocacion,
         "ofensores": ofensores,
         "fuera_del_vault": fuera_del_vault,

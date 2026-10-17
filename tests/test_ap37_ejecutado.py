@@ -64,7 +64,8 @@ def test_ap37_ejecutado_ve_la_tool_que_escribe_y_calla(banco):
     assert r["medidas"] == ["dice"] and r["sin_escritura"] == ["lee"], r
 
 
-def test_ap37_ejecutado_la_traza_no_cuenta_como_trabajo(banco):
+def test_ap37_ejecutado_la_traza_no_cuenta_como_trabajo(banco, monkeypatch):
+    monkeypatch.setattr(vault_noop_audit, "SIN_ESCRITURA_DECLARADA", {"lee": "solo lee"})
     r = vault_noop_audit.ejecutado({"lee": banco["lee"], "dice": banco["dice"]})
     assert r["ok"] is True and r["ofensores"] == [], r
 
@@ -132,3 +133,31 @@ def test_el_banco_da_al_escaner_codigo_con_un_hallazgo():
     `sin_escritura`. El ejemplo presupone código que escanear."""
     r = vault_noop_audit.ejecutado({"vault_security_scan": {"side_effects": True}})
     assert r["medidas"] == ["vault_security_scan"], r
+
+
+def test_una_tool_que_no_escribe_sin_motivo_declarado_no_sale_verde(banco, monkeypatch):
+    """2026-10-17: 13 tools con side effects no escribieron en el banco, cada
+    una por un motivo distinto y medido (dry-run, sin backup, solo lectura…).
+    Publicadas como lista suelta, una tool nueva cuyo ejemplo no escribe se
+    sumaba a ella sin que nadie preguntara por qué."""
+    monkeypatch.setattr(vault_noop_audit, "SIN_ESCRITURA_DECLARADA", {})
+    r = vault_noop_audit.ejecutado({"lee": banco["lee"], "dice": banco["dice"]})
+    assert r["ok"] is False and r["sin_escritura_sin_motivo"] == ["lee"], r
+    monkeypatch.setattr(vault_noop_audit, "SIN_ESCRITURA_DECLARADA", {"lee": "solo lee"})
+    r = vault_noop_audit.ejecutado({"lee": banco["lee"], "dice": banco["dice"]})
+    assert r["ok"] is True and r["sin_escritura_declarada"] == {"lee": "solo lee"}, r
+
+
+def test_una_declaracion_de_que_no_escribe_que_ya_no_es_cierta_falla(banco, monkeypatch):
+    monkeypatch.setattr(vault_noop_audit, "SIN_ESCRITURA_DECLARADA",
+                        {"lee": "solo lee", "dice": "no escribe"})
+    r = vault_noop_audit.ejecutado({"lee": banco["lee"], "dice": banco["dice"]})
+    assert r["ok"] is False and r["declaradas_que_escriben"] == ["dice"], r
+
+
+def test_lo_declarado_sin_escritura_son_tools_vivas_con_side_effects():
+    import vault_mcp_catalog
+
+    for tool, motivo in vault_noop_audit.SIN_ESCRITURA_DECLARADA.items():
+        assert vault_mcp_catalog.TOOLS_CATALOG[tool].get("side_effects"), tool
+        assert len(motivo) > 20, (tool, motivo)
