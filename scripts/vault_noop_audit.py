@@ -155,8 +155,16 @@ PROYECTO_DEL_EJEMPLO: Optional[Tuple[str, str]] = ("mi-api", "Mi API")
 #: vault que el documentado presupone.
 FICHEROS_DEL_EJEMPLO: Dict[str, Dict[str, str]] = {
     "vault_delete": {"07_Knowledge/old.md": "nota"},
-    "vault_move": {"01_Projects/foo.md": "nota"},
+    # Mover a `03_Decisions` es reclasificar (CN-02): el ejemplo presupone una
+    # nota cuyo tipo pertenece allí, y una carpeta `old/` que mover.
+    "vault_move": {"01_Projects/foo.md": "decision", "01_Projects/old/nota.md": "proyecto"},
     "vault_quarantine": {"07_Knowledge/rara.md": "nota"},
+    # `--path "src/"` es la raíz del código, relativa a donde se ejecuta.
+    "vault_drift_detect": {"@trabajo/src/app.py": "codigo"},
+    # Lo que los dos sanadores reparan: sin el defecto, su `--apply` no tiene
+    # nada que escribir y el banco no los mide.
+    "vault_fix_brackets": {"02_Observability/errors/foo.md": "corchetes"},
+    "vault_frontmatter_heal": {"07_Knowledge/escalar-sin-escapar.md": "yaml_roto"},
     "vault_runbook_log": {"08_Runbooks/deploy.md": "nota"},
     "vault_supersede": {"10_Migrated/GUIA.md": "nota", "07_Knowledge/guia.md": "nota"},
     "vault_propagate": {"01_Projects/mi-api/overview.md": "nota"},
@@ -173,7 +181,23 @@ _CONTENIDOS = {
              "tags: [ejemplo]\n---\n\n# Nota del ejemplo\n\nCuerpo.\n"),
     "diagrama": ("---\ntitle: Diagrama del ejemplo\ntype: diagram\nstatus: draft\n"
                  "tags: [ejemplo]\n---\n\n```mermaid\ngraph TD\n  A --> B\n```\n"),
-    "texto": "# Texto del ejemplo\n\nCuerpo.\n",
+    "decision": ("---\ntitle: Decision del ejemplo\ntype: decision\nstatus: draft\n"
+                 "tags: [ejemplo]\n---\n\n# Decision del ejemplo\n\nCuerpo.\n"),
+    "proyecto": ("---\ntitle: Proyecto del ejemplo\ntype: project\nstatus: draft\n"
+                 "tags: [ejemplo]\n---\n\n# Proyecto del ejemplo\n\nCuerpo.\n"),
+    "corchetes": ("---\ntitle: Error del ejemplo\ntype: error\nstatus: draft\n"
+                  "tags: [ejemplo]\n---\n\n# Error del ejemplo\n\nVer [[]] y [[[[guia]]]].\n"),
+    "yaml_roto": ("---\ntitle: Overview: demo\ntype: knowledge\nstatus: draft\n"
+                  "tags: [ejemplo]\n---\n\n# Overview\n\nCuerpo.\n"),
+    "codigo": "def principal():\n    return 1\n",
+    # AP-11 pide tres líneas reales a `vault_write`, y `vault_ingest` descarta
+    # los bloques de menos de `MIN_CHUNK_CHARS` (120): un texto de una línea
+    # no es el que el ejemplo presupone.
+    "texto": ("# Texto del ejemplo\n\n"
+              "Este servicio expone la API publica del proyecto y valida cada peticion "
+              "contra el esquema antes de tocar la base de datos.\n"
+              "Los errores se devuelven con un codigo estable y un mensaje legible.\n"
+              "El despliegue se hace con la imagen etiquetada por el commit.\n"),
 }
 
 
