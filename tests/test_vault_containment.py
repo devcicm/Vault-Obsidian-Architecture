@@ -203,7 +203,11 @@ def test_tool_spec_is_valid_and_has_tools():
 def test_legacy_tool_spec_location_is_read_only():
     """La ruta legacy se conserva como fallback de LECTURA (no-derogación)."""
     assert vault_io.LEGACY_TOOL_SPEC.name == "tool-spec.json"
-    assert vault_io.LEGACY_TOOL_SPEC.parent == SCRIPTS
+    # Resuelta por los dos lados: `LEGACY_TOOL_SPEC` sale de `resolve()` y
+    # `SCRIPTS` de `__file__` tal cual. Lanzada la suite desde la forma corta
+    # 8.3 de Windows (`CARLOS~1`), las dos nombraban el mismo directorio y la
+    # igualdad de `Path` fallaba (medido el 2026-10-17).
+    assert vault_io.LEGACY_TOOL_SPEC.parent == SCRIPTS.resolve()
     # Ya no debe existir en este repo: se movió, no se duplicó.
     assert not vault_io.LEGACY_TOOL_SPEC.exists(), "hay dos copias del contrato — riesgo de drift"
 
