@@ -1911,7 +1911,11 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "name": "vault_drift_detect",
         "script": "vault_drift_detect.py",
         "group": "Drift Detection",
-        "purpose": "Detecta drift de configuración entre ambientes.",
+        "purpose": (
+            "Detecta cambios de código sin documentar: compara el código del "
+            "proyecto con un snapshot y cruza lo cambiado con la documentación "
+            "del vault (AP-08 con --mode vigencia)."
+        ),
         "params": {
             "project": {
                 "type": "string",
@@ -1919,16 +1923,22 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Proyecto",
                 "validators": [],
             },
-            "compare": {
+            "path": {
                 "type": "string",
-                "required": True,
-                "description": "Entornos a comparar: dev-staging, staging-prod",
+                "required": False,
+                "description": "Raíz del código a escanear; por defecto, el repo enlazado con vault_project --link",
                 "validators": [],
             },
         },
         "guards": [],
-        "side_effects": ["Reporta drift detectado"],
-        "example": 'python vault_drift_detect.py --path "01_Projects" --project "mi-api" --mode "status"',
+        "side_effects": [
+            "--mode snapshot escribe el snapshot de sesión en 00_System/ y, sobre git, "
+            "repo.synced_commit en la ficha del proyecto",
+        ],
+        "example": (
+            'python vault_drift_detect.py --path "src/" --project "mi-api" --mode snapshot\n'
+            'python vault_drift_detect.py --path "src/" --project "mi-api" --mode status'
+        ),
         "related": ["vault_audit", "vault_env_matrix"],
     },
     "vault_impact": {

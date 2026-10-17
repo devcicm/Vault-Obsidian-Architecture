@@ -1741,7 +1741,7 @@
     },
     "vault_drift_detect": {
       "name": "vault_drift_detect",
-      "description": "Detecta drift de configuración entre ambientes.",
+      "description": "Detecta cambios de código sin documentar: compara el código del proyecto con un snapshot y cruza lo cambiado con la documentación del vault (AP-08 con --mode vigencia).",
       "group": "Drift Detection",
       "script": "vault_drift_detect.py",
       "inputSchema": {
@@ -1749,7 +1749,7 @@
         "properties": {
           "path": {
             "type": "string",
-            "description": "Project root path to scan (por defecto, el enlazado con vault_project --link)"
+            "description": "Raíz del código a escanear; por defecto, el repo enlazado con vault_project --link"
           },
           "project": {
             "type": "string",
@@ -1780,7 +1780,7 @@
       },
       "guards": [],
       "side_effects": [
-        "Reporta drift detectado"
+        "--mode snapshot escribe el snapshot de sesión en 00_System/ y, sobre git, repo.synced_commit en la ficha del proyecto"
       ],
       "status": "active",
       "exposed_via_mcp": true,
