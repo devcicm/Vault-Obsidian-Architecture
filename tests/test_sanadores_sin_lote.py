@@ -34,10 +34,9 @@ SIN_LOTE: set = set()
 FUERA_DEL_LOTE = {
     "vault_supersede": "una escritura por llamada: la sección ya se regenera una vez "
                        "(test_vault_supersede_escribe_una_nota_por_llamada)",
-    "vault_norms_engine": "heal_ap46 escribe con write_bytes, no con atomic_write_text: "
-                          "no hay regeneración que aplazar, y lo que falta es la "
-                          "escritura atómica, deuda `heal_ap46_escribe_sin_atomic_write` "
-                          "(test_limite_declarado_heal_ap46_escribe_sin_atomic_write)",
+    # `vault_norms_engine` salió el 2026-10-17: heal_ap46 escribe por
+    # atomic_write_text dentro del lote (deuda heal_ap46_escribe_sin_atomic_write
+    # saldada).
 }
 
 
@@ -229,14 +228,16 @@ def test_vault_supersede_escribe_una_nota_por_llamada(tmp_path, monkeypatch):
 
 
 def test_limite_declarado_heal_ap46_escribe_sin_atomic_write():
-    # El motivo de FUERA_DEL_LOTE para vault_norms_engine, y la deuda que
-    # destapa: falla en cuanto heal_ap46 pase por atomic_write_text, y entonces
-    # la deuda se salda y el sanador entra en el lote como los demás.
+    # Hasta el 2026-10-17 fijaba el límite (write_bytes, sin lock). Saldada la
+    # deuda, fija lo contrario: heal_ap46 abre el lote, escribe por el write
+    # path con lock y no vuelve a escribir bytes a pelo.
     import vault_norms_engine
 
-    fuente = inspect.getsource(vault_norms_engine.heal_ap46)
-    assert "path.write_bytes(" in fuente
-    assert "atomic_write_text" not in fuente
-    assert "file_lock" not in fuente and "tomar_lock" not in fuente
+    heal = inspect.getsource(vault_norms_engine.heal_ap46)
+    escribe = inspect.getsource(vault_norms_engine._escribir_reparada)
+    assert "escrituras_en_lote" in heal and "set_vault_root" in heal
+    assert "atomic_write_text" in escribe and "tomar_lock" in escribe
+    assert "write_bytes(" not in heal + escribe
+    assert "write_bytes(" not in inspect.getsource(vault_norms_engine._heal_ap46)
     d = next(d for d in bp.DEUDA_DECLARADA if d["id"] == "heal_ap46_escribe_sin_atomic_write")
-    assert d["estado"] == "pendiente"
+    assert d["estado"] == "saldada"

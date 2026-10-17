@@ -1043,7 +1043,15 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     },
     {
         "id": "heal_ap46_escribe_sin_atomic_write",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "tras v41.7 (2026-10-17)",
+        "sostenida_por": [
+            "tests/test_ap46_heal.py::test_un_corte_a_mitad_no_deja_la_nota_truncada",
+            "tests/test_ap46_heal.py::test_el_heal_no_sanea_lo_que_no_repara",
+            "tests/test_ap46_heal.py::test_una_nota_con_secreto_no_se_reescribe",
+            "tests/test_ap46_heal.py::test_la_seccion_se_regenera_y_la_raiz_del_proceso_se_devuelve",
+            "tests/test_sanadores_sin_lote.py::test_limite_declarado_heal_ap46_escribe_sin_atomic_write",
+        ],
         "desde": "v41.7",
         "capa": "5",
         "que": (
@@ -1055,7 +1063,15 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "búsqueda ni grafo. La copia en `.history/ap46-heal/` sale igual. "
             "Un corte a mitad deja la nota truncada con el backup como única "
             "salida. Medido el 2026-10-16 al cerrar `sanadores_sin_lote`, sobre "
-            "d21bebd."
+            "d21bebd.\n\n"
+            "(Saldada el 2026-10-17: con `--apply-heal`, `heal_ap46` apunta la "
+            "raíz del proceso al vault pedido y la devuelve al salir, abre "
+            "`escrituras_en_lote()` y escribe cada nota con lock, relectura bajo "
+            "el lock, backup por temporal y `atomic_write_text(sanitize=False)`: "
+            "el heal repara el bloque y no sanea bytes del cuerpo. Un rechazo "
+            "del write path —secreto, nombre reservado, frontmatter que no "
+            "relee, corte de E/S— sale en `skipped` con su motivo y no cuenta "
+            "como curada. `vault_norms_engine` sale de `FUERA_DEL_LOTE`.)"
         ),
         "por_que_no_ahora": (
             "Pasar a `atomic_write_text` cambia lo que se escribe, no solo cómo: "
@@ -1066,7 +1082,8 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "el árbol sobre copias de /ans y /vcloud antes, como con los demás "
             "sanadores. `tests/test_sanadores_sin_lote.py::"
             "test_limite_declarado_heal_ap46_escribe_sin_atomic_write` fija el "
-            "límite y falla en cuanto cambie."
+            "límite y falla en cuanto cambie. (Ya no aplica desde el "
+            "2026-10-17: se conserva como estaba, por no-derogación.)"
         ),
     },
     {

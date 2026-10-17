@@ -144,3 +144,63 @@ def test_una_raiz_inexistente_falla_por_el_catalogo(tmp_path):
     r = vault_norms.heal_ap46(root=tmp_path / "no-existe")
     assert r["ok"] is False
     assert r["error_code"] == "VAULT_NOT_FOUND"
+
+
+
+# ── Cómo escribe (deuda `heal_ap46_escribe_sin_atomic_write`, 2026-10-17) ──
+#
+# Hasta el 2026-10-17 el heal escribía con `path.write_bytes`: sin temporal ni
+# `os.replace`, sin lock, sin escáner y sin regenerar la sección. Lo que repara
+# no cambia; cambia el camino por el que llega al disco.
+
+def test_un_corte_a_mitad_no_deja_la_nota_truncada(tmp_path, monkeypatch):
+    """Si el `os.replace` falla, la nota sigue siendo la original."""
+    import vault.kernel.escritura as escritura
+
+    raiz = _vault(tmp_path)
+
+    def corte(temporal, destino):
+        raise OSError("corte simulado")
+
+    monkeypatch.setattr(escritura, "_reemplazar", corte)
+    r = vault_norms.heal_ap46(root=raiz, apply=True)
+    assert (raiz / "03_Decisions" / "rota.md").read_text(encoding="utf-8") == SIN_ESCAPAR
+    assert (raiz / "03_Decisions" / "abierta.md").read_text(encoding="utf-8") == SIN_CERRAR
+    assert r["healed"] == 0, r
+    assert {o["note"] for o in r["skipped"]} >= {"03_Decisions/rota.md", "03_Decisions/abierta.md"}
+
+
+def test_el_heal_no_sanea_lo_que_no_repara(tmp_path):
+    """El cuerpo llega byte a byte: el saneado de `atomic_write_text` cambiaría
+    lo que el heal no tiene por qué tocar (aquí, un espacio duro)."""
+    raiz = _vault(tmp_path)
+    texto = SIN_ESCAPAR.replace("Texto del cuerpo.", "Texto del cuerpo.")
+    (raiz / "03_Decisions" / "rota.md").write_text(texto, encoding="utf-8")
+    vault_norms.heal_ap46(root=raiz, apply=True)
+    assert _cuerpo((raiz / "03_Decisions" / "rota.md").read_text(encoding="utf-8")) == _cuerpo(texto)
+
+
+def test_una_nota_con_secreto_no_se_reescribe(tmp_path):
+    """El escáner del write path vale también aquí: se omite con su motivo."""
+    raiz = _vault(tmp_path)
+    clave = "AKIA" + "IOSFODNN7EXAMPLE"
+    texto = SIN_ESCAPAR.replace("Texto del cuerpo.", f"Clave {clave}.")
+    (raiz / "03_Decisions" / "rota.md").write_text(texto, encoding="utf-8")
+    r = vault_norms.heal_ap46(root=raiz, apply=True)
+    assert (raiz / "03_Decisions" / "rota.md").read_text(encoding="utf-8") == texto
+    motivo = next(o["reason"] for o in r["skipped"] if o["note"] == "03_Decisions/rota.md")
+    assert "secret" in motivo.lower() or "secreto" in motivo.lower(), motivo
+
+
+def test_la_seccion_se_regenera_y_la_raiz_del_proceso_se_devuelve(tmp_path):
+    """Reparar el título de una nota deja viejo el índice de su sección; y el
+    heal apunta la raíz al vault pedido sin dejarla apuntada al terminar."""
+    import vault_io
+
+    raiz = _vault(tmp_path)
+    antes = vault_io.get_vault_root().resolve()
+    vault_norms.heal_ap46(root=raiz, apply=True)
+    assert vault_io.get_vault_root().resolve() == antes
+    indice = raiz / "03_Decisions" / "index.md"
+    assert indice.exists(), "la sección de la nota reparada no se regeneró"
+    assert "rota" in indice.read_text(encoding="utf-8")

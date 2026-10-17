@@ -7,5 +7,5 @@ sale de derivarlo.
 """
 
 HEAL = [
-    'scripts/vault_norms_engine.py::heal_ap46',
+    'scripts/vault_norms_engine.py::_heal_ap46',
 ]

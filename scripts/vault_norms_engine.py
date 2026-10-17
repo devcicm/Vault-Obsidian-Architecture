@@ -614,12 +614,59 @@ def heal_ap46(root: Optional[Path] = None, apply: bool = False) -> Dict[str, Any
     y una reparación automática no pedida sobre material ajeno es exactamente lo
     que la regla 7 dice que no se hace.
     """
+    import vault_io
     from vault_io import get_vault_root, is_snapshot_path
 
     raiz = Path(root) if root else get_vault_root()
     if not raiz.exists():
         return emit_error("vault_norms", "VAULT_NOT_FOUND",
                           f"No existe la raíz indicada: {raiz}")
+    if not apply:
+        return _heal_ap46(raiz, apply, is_snapshot_path)
+    # Escribir pasa por el write path, y el write path resuelve contra la raíz
+    # del proceso: lock, guardas, sección y grafo. Se apunta al vault pedido y
+    # se devuelve al salir, como `sanacion._medir_audit` — una llamada no deja
+    # reapuntado el vault de quien la hizo.
+    previa = get_vault_root()
+    try:
+        vault_io.set_vault_root(raiz)
+        with vault_io.escrituras_en_lote():
+            return _heal_ap46(raiz, apply, is_snapshot_path)
+    finally:
+        vault_io.set_vault_root(previa)
+
+
+def _escribir_reparada(path: Path, raw: str, texto: str, copia: Path) -> Optional[str]:
+    """Escribe la nota reparada; devuelve el motivo si no la escribió.
+
+    Hasta el 2026-10-17 eran dos `write_bytes` (deuda
+    `heal_ap46_escribe_sin_atomic_write`): un corte a mitad dejaba la nota
+    truncada, sin lock entre el diagnóstico y la escritura, sin escáner y sin
+    regenerar la sección. Ahora: lock de la nota, relectura bajo el lock,
+    backup y nota por temporal y `os.replace`. `sanitize=False` porque el heal
+    repara el bloque y nada más: el saneado cambiaría bytes del cuerpo que no
+    le corresponden. Un rechazo del write path —secreto, nombre reservado,
+    frontmatter que no relee— se publica como omitida con su motivo.
+    """
+    import vault_fs
+    import vault_io
+
+    lock = vault_fs.tomar_lock(path, 10.0)
+    if lock is None:
+        return "nota bloqueada por otro escritor; no se tocó"
+    with lock:
+        try:
+            if path.read_text(encoding="utf-8") != raw:
+                return "la nota cambió entre el diagnóstico y la escritura; no se tocó"
+            vault_fs.escritura_atomica(copia, raw)
+            vault_io.atomic_write_text(path, texto, sanitize=False)
+        except (OSError, ValueError, UnicodeDecodeError) as exc:
+            # PermissionError (secreto) y FrontmatterIlegible son subclases.
+            return f"el write path la rechazó: {type(exc).__name__}: {exc}"
+    return None
+
+
+def _heal_ap46(raiz: Path, apply: bool, is_snapshot_path) -> Dict[str, Any]:
 
     sello = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     destino_backup = raiz / ".history" / "ap46-heal" / sello
@@ -661,9 +708,10 @@ def heal_ap46(root: Optional[Path] = None, apply: bool = False) -> Dict[str, Any
         entrada = {"note": rel, "class": plan["clase"], "keys": plan["claves"]}
         if apply:
             copia = destino_backup / rel
-            copia.parent.mkdir(parents=True, exist_ok=True)
-            copia.write_bytes(raw.encode("utf-8"))
-            path.write_bytes(plan["texto"].encode("utf-8"))
+            motivo = _escribir_reparada(path, raw, plan["texto"], copia)
+            if motivo is not None:
+                omitidas.append({"note": rel, "reason": motivo})
+                continue
             entrada["backup"] = copia.relative_to(raiz).as_posix()
         reparadas.append(entrada)
 
