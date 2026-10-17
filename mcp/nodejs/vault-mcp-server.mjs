@@ -1262,6 +1262,8 @@ function argumentosACli(args, schema) {
     const tipo = props[key]?.type || "string";
     if (tipo === "boolean") {
       if (value === true || value === "true") cli.push(flag);
+      // Un `BooleanOptionalAction` publica `x-negable`: su `false` es `--no-<key>`.
+      else if (props[key]?.["x-negable"] && (value === false || value === "false")) cli.push("--no-" + key);
     } else if (tipo === "array") {
       const elementos = (Array.isArray(value) ? value : [value]).map(String);
       if (elementos.length) cli.push(flag, ...elementos);

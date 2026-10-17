@@ -5050,8 +5050,14 @@ def _evaluar_en_el_modulo(script: str, expresion: Any) -> Any:
 
 
 def argparse_params(script: str) -> Dict[str, Dict[str, Any]]:
-    """Params reales de un script, leídos de sus `add_argument` largos."""
+    """Params reales de un script, leídos de sus `add_argument` largos.
+
+    Las llamadas las lee `vault.meta_toolkit.flags_cli`, el extractor único
+    que comparten `vault_manifest`, `vault_spec_validate`, `vault_spec_memory`
+    y `vault_doc_sync` (v41.9); aquí solo se evalúa lo que no es literal.
+    """
     import ast
+    from vault.meta_toolkit import flags_cli
 
     ruta = Path(__file__).resolve().parent / script
     if not script or not ruta.is_file():
@@ -5061,27 +5067,17 @@ def argparse_params(script: str) -> Dict[str, Dict[str, Any]]:
     # `fuente_de`, el criterio del import (AP-44).
     ruta = vault_grafo_import.fuente_de(ruta.stem)
     try:
-        arbol = ast.parse(ruta.read_text(encoding="utf-8"))
+        llamadas = flags_cli.declaraciones(ruta.read_text(encoding="utf-8"))
     except (OSError, SyntaxError):
         return {}
 
     params: Dict[str, Dict[str, Any]] = {}
-    for nodo in ast.walk(arbol):
-        if not (isinstance(nodo, ast.Call) and getattr(nodo.func, "attr", "") == "add_argument"):
-            continue
-        largos = [
-            a.value for a in nodo.args
-            if isinstance(a, ast.Constant) and isinstance(a.value, str) and a.value.startswith("--")
-        ]
+    for llamada in llamadas:
+        largos = [n for n in llamada.nombres if n.startswith("--")]
         if not largos:
             continue  # posicional o flag corto: no se publica por MCP
-        kw = {k.arg: k.value for k in nodo.keywords}
-
-        def _const(nombre):
-            v = kw.get(nombre)
-            return v.value if isinstance(v, ast.Constant) else None
-
-        accion, nargs = _const("action"), _const("nargs")
+        kw, _const = llamada.kw, llamada.constante
+        accion, nargs = llamada.accion, _const("nargs")
         # El `type=` de argparse es el contrato real del valor: hasta v40.34 se
         # ignoraba y `limit`, `budget`, `hops`… salían como `string`, así que un
         # cliente que validaba contra el esquema mandaba `"diez"` y solo se
@@ -5096,7 +5092,9 @@ def argparse_params(script: str) -> Dict[str, Dict[str, Any]]:
             convierte = None
         escalar = _TIPO_DE_CONVERSOR.get(convierte, "string")
         items = None
-        if accion in ("store_true", "store_false"):
+        # `negable` es `BooleanOptionalAction`: hasta v41.8 su `action=` no era
+        # literal, no se leía, y `--reversible` se publicaba como texto.
+        if accion in ("store_true", "store_false", "negable"):
             tipo = "boolean"
         elif nargs in ("*", "+") or isinstance(nargs, int):
             tipo = "array"
@@ -5134,6 +5132,8 @@ def argparse_params(script: str) -> Dict[str, Dict[str, Any]]:
         }
         if items:
             params[largos[0][2:]]["items"] = items
+        if accion == "negable":
+            params[largos[0][2:]]["negable"] = True
     return params
 
 
@@ -5227,6 +5227,11 @@ def _convert_to_json_schema(py_tool: Dict[str, Any]) -> Dict[str, Any]:
         prop = {"type": tipo, "description": pinfo.get("description", "")}
         if tipo == "array":
             prop["items"] = {"type": pinfo.get("items", "string")}
+        if pinfo.get("negable"):
+            # `false` tiene flag propio (`--no-<param>`): sin esta marca el
+            # servidor solo sabe omitir el flag, y el default de un negable
+            # puede ser `True`.
+            prop["x-negable"] = True
         if pinfo.get("required"):
             schema["required"].append(pname)
         if "enum" in str(pinfo.get("validators", [])) or any(v.startswith("enum:") for v in pinfo.get("validators", [])):

@@ -22,6 +22,7 @@ Modes:
 """
 
 import argparse
+import ast
 import json
 import re
 import subprocess
@@ -50,6 +51,7 @@ from vault.ciclo_de_vida.repositorio import RepositorioCicloDeVida  # noqa: E402
 from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
 from vault.meta_toolkit.repositorio import RepositorioMetaToolkit  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.meta_toolkit import flags_cli  # extractor único de add_argument (v41.9)  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -170,35 +172,23 @@ DECLARED_RETURNS: Dict[str, List[str]] = _load_declared_returns()
 # ──────────────────────────────────────────────────────────────────────────────
 
 def _extract_args(source: str):
-    """Extract required and optional argparse args from source."""
+    """Los argumentos del script en `(obligatorios, opcionales)`, leídos por
+    `flags_cli`. Un posicional cuenta como obligatorio."""
     required, optional = [], []
-    lines = source.splitlines()
-    i = 0
-    while i < len(lines):
-        line = lines[i].strip()
-        if "add_argument(" in line:
-            call = line
-            depth = call.count("(") - call.count(")")
-            j = i + 1
-            while depth > 0 and j < len(lines):
-                call += " " + lines[j].strip()
-                depth += lines[j].count("(") - lines[j].count(")")
-                j += 1
-            names = re.findall(r"""add_argument\(\s*["']([^"']+)["']""", call)
-            if not names:
-                i += 1
-                continue
-            flag = names[0]
-            name = flag.lstrip("-").replace("-", "_") if flag.startswith("-") else flag
-            is_required = "required=True" in call or not flag.startswith("-")
-            is_bool = "store_true" in call or "store_false" in call
-            type_match = re.search(r"type=(\w+)", call)
-            arg_type = type_match.group(1) if type_match else ("bool" if is_bool else "str")
-            help_match = re.search(r"""help=["']([^"']{0,120})""", call)
-            help_text = help_match.group(1) if help_match else ""
-            entry = {"name": name, "flag": flag, "type": arg_type, "help": help_text}
-            (required if is_required else optional).append(entry)
-        i += 1
+    for d in flags_cli.declaraciones(source):
+        flag = d.nombres[0]
+        name = flag.lstrip("-").replace("-", "_") if flag.startswith("-") else flag
+        tipo = d.kw.get("type")
+        if isinstance(tipo, ast.Name):
+            arg_type = tipo.id
+        elif d.accion in ("store_true", "store_false"):
+            arg_type = "bool"
+        else:
+            arg_type = "str"
+        ayuda = d.constante("help")
+        entry = {"name": name, "flag": flag, "type": arg_type,
+                 "help": ayuda[:120] if isinstance(ayuda, str) else ""}
+        (required if d.obligatorio or d.posicional else optional).append(entry)
     return required, optional
 
 

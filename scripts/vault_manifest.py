@@ -430,6 +430,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.meta_toolkit.repositorio import RepositorioMetaToolkit  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.meta_toolkit import flags_cli  # extractor único de add_argument (v41.9)  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -488,28 +489,8 @@ def _build_manifest_from_spec(spec: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 
 def _extract_required_flags(source: str) -> List[str]:
-    """Extrae --flags marcados required=True en argparse."""
-    flags: List[str] = []
-    lines = source.splitlines()
-    i = 0
-    while i < len(lines):
-        line = lines[i].strip()
-        if "add_argument(" in line:
-            call = line
-            depth = call.count("(") - call.count(")")
-            j = i + 1
-            while depth > 0 and j < len(lines):
-                call += " " + lines[j].strip()
-                depth += lines[j].count("(") - lines[j].count(")")
-                j += 1
-            names = re.findall(r"""add_argument\(\s*["']([^"']+)["']""", call)
-            if names:
-                flag = names[0]
-                is_required = "required=True" in call or not flag.startswith("-")
-                if is_required and flag.startswith("-"):
-                    flags.append(flag)
-        i += 1
-    return flags
+    """Los flags con `required=True`, leídos por `flags_cli` (el extractor único)."""
+    return flags_cli.obligatorios(source)
 
 
 def _bootstrap_spec() -> Dict[str, Any]:

@@ -63,6 +63,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import vault_grafo_import  # noqa: E402
 from vault_errors import emit_error  # noqa: E402
 from vault_mcp_catalog import GROUPS, TOOLS_CATALOG  # noqa: E402
+from vault.meta_toolkit import flags_cli  # extractor único de add_argument (v41.9)  # noqa: E402
 
 README = Path(__file__).resolve().parent / "README.md"
 
@@ -143,10 +144,10 @@ def _flags_declarados(script: Path) -> set:
     if script.parent.resolve() == (REPO_ROOT / "scripts").resolve():
         script = vault_grafo_import.fuente_de(script.stem)
     src = script.read_bytes().decode("utf-8", "replace")
-    declarados = set(RE_FLAG_DECLARADO.findall(src))
-    if "BooleanOptionalAction" in src:
-        declarados |= {"--no-" + f[2:] for f in declarados}
-    return declarados
+    # El extractor único (v41.9): el regex veía solo el primer nombre de la
+    # llamada y daba `--no-x` a todo flag si el fichero nombraba
+    # `BooleanOptionalAction` en cualquier sitio.
+    return {f for f in flags_cli.flags_aceptados(src) if f.startswith("--")}
 
 
 def lineas_logicas(texto: str) -> List[tuple]:

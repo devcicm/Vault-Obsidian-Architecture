@@ -88,6 +88,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.meta_toolkit.repositorio import RepositorioMetaToolkit  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.meta_toolkit import flags_cli  # extractor único de add_argument (v41.9)  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -150,25 +151,9 @@ def _fuente_de_modulo(name: str) -> Optional[str]:
 
 
 def _extract_argparse_flags(source: str) -> Set[str]:
-    """Extrae todos los --flag declarados en add_argument()."""
-    flags: Set[str] = set()
-    lines = source.splitlines()
-    i = 0
-    while i < len(lines):
-        line = lines[i].strip()
-        if "add_argument(" in line:
-            call = line
-            depth = call.count("(") - call.count(")")
-            j = i + 1
-            while depth > 0 and j < len(lines):
-                call += " " + lines[j].strip()
-                depth += lines[j].count("(") - lines[j].count(")")
-                j += 1
-            for n in re.findall(r"""add_argument\(\s*["']([^"']+)["']""", call):
-                if n.startswith("-"):
-                    flags.add(n)
-        i += 1
-    return flags
+    """Todo flag con guion que acepta el script; lo lee `flags_cli`, el mismo
+    extractor con el que `vault_manifest` escribe los `required_args` (AP-44)."""
+    return flags_cli.flags_aceptados(source)
 
 
 def _extract_return_keys(source: str) -> Set[str]:

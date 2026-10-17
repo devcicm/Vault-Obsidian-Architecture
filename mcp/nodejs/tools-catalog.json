@@ -55,8 +55,9 @@
             ]
           },
           "reversible": {
-            "type": "string",
-            "description": "Whether the decision can be reversed (default: true)"
+            "type": "boolean",
+            "description": "Whether the decision can be reversed (default: true)",
+            "x-negable": true
           },
           "human_approved": {
             "type": "boolean",
