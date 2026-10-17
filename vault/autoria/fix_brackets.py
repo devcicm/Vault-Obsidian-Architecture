@@ -53,7 +53,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import emit_error, wrap_main
-from vault_io import DIR_RESPALDOS, assert_within_vault, atomic_write_text, get_vault_root
+from vault_io import (DIR_RESPALDOS, assert_within_vault, atomic_write_text,
+                      escrituras_en_lote, get_vault_root)
 from vault_lib import utcnow, strip_code_blocks
 from vault_regex import (
     RE_EMPTY_LINK,
@@ -448,17 +449,20 @@ def vault_fix_brackets(
     if apply and files_to_backup:
         bd = _make_backup(files_to_backup)
         backup_dir = str(bd.relative_to(get_vault_root())).replace("\\", "/") if bd else None
-        for fix in fixes_applied:
-            target = get_vault_root() / fix["path"]
-            try:
-                # Recompute content from disk (in case multiple fixes share a file? no — unique paths)
-                content = target.read_text(encoding="utf-8", errors="ignore")
-                kinds = fix["kinds_applied"]
-                new_content = _apply_fixes(content, kinds)
-                atomic_write_text(target, new_content)
-                files_modified.append(fix["path"])
-            except Exception as e:
-                fixes_applied.append({"path": fix["path"], "error": str(e)})
+        # AP-47: la sección, la búsqueda y el grafo se regeneran una vez al
+        # cerrar el lote y no tras cada nota arreglada.
+        with escrituras_en_lote():
+            for fix in fixes_applied:
+                target = get_vault_root() / fix["path"]
+                try:
+                    # Recompute content from disk (in case multiple fixes share a file? no — unique paths)
+                    content = target.read_text(encoding="utf-8", errors="ignore")
+                    kinds = fix["kinds_applied"]
+                    new_content = _apply_fixes(content, kinds)
+                    atomic_write_text(target, new_content)
+                    files_modified.append(fix["path"])
+                except Exception as e:
+                    fixes_applied.append({"path": fix["path"], "error": str(e)})
 
     # Group findings
     auto_fixable_count = sum(1 for f in findings if f["auto_fixable"])
