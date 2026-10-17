@@ -1159,7 +1159,16 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "medidas y en verde, 2 sin invocación (runtime node) y 73 cuyo "
             "ejemplo no escribe, que el banco no ve. Saldarla exige un ejemplo "
             "de escritura por tool, no otro detector; el modo estático sigue "
-            "midiendo lo declarado."
+            "midiendo lo declarado. "
+            "El 2026-10-17 el banco ejecuta cada línea del ejemplo y prepara el "
+            "proyecto y los ficheros que presupone: de 92, 57 medidas, 12 que no "
+            "escriben con su motivo en `vault_noop_audit.SIN_ESCRITURA_DECLARADA` "
+            "(una sin motivo, o declarada que sí escribe, lo deja en rojo), 2 sin "
+            "invocación (runtime node), 21 fuera del vault (gobernanza del "
+            "estándar) y 0 ofensores; destapó `vault_drift_detect --mode snapshot` "
+            "(a744633). Lo que queda: la puerta corre el modo estático, porque "
+            "el banco tarda minutos, y el contrato de `vault_tags` sigue "
+            "prometiendo `total`."
         ),
     },
     {
