@@ -4039,6 +4039,10 @@
           "admitir-nuevos": {
             "type": "boolean",
             "description": "Permite que --freeze congele deuda sin precedente, listándola"
+          },
+          "ejecutado": {
+            "type": "boolean",
+            "description": "Ejecuta el ejemplo de cada tool con side effects y contrasta el envelope"
           }
         },
         "additionalProperties": false
