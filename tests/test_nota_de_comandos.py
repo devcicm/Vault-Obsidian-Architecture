@@ -103,16 +103,19 @@ def test_cada_comando_de_la_nota_pasa_argparse(vault):
     assert fallos == [], fallos
 
 
-def test_instalado_la_receta_sale_como_vault_run(tmp_path):
-    """En la wheel el registro vive en `vault_toolkit/_impl/`, sin `scripts/`."""
-    impl = tmp_path / "_impl"
-    impl.mkdir()
-    shutil.copy(SCRIPTS / "vault_registry.py", impl / "vault_registry.py")
-    spec = importlib.util.spec_from_file_location("registro_instalado",
-                                                  impl / "vault_registry.py")
-    modulo = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(modulo)
-    assert modulo.comando_de_tool("vault_audit") == "vault run vault_audit"
-    assert (modulo.comando_de_tool("vault_tags --audit")
+def test_instalado_la_receta_sale_como_vault_run(tmp_path, monkeypatch):
+    """En la wheel las tools viven en `vault_toolkit/_impl/`, sin `scripts/`.
+
+    Hasta el lote C (2026-10-16) se copiaba `scripts/vault_registry.py` a un
+    `_impl/` falso; ahora ese fichero es un alias y el registro decide por el
+    directorio del programa, que es lo que se simula.
+    """
+    import vault_grafo_import
+    import vault_registry
+
+    monkeypatch.setattr(vault_grafo_import, "DIRECTORIO", tmp_path / "_impl")
+    assert vault_registry.comando_de_tool("vault_audit") == "vault run vault_audit"
+    assert (vault_registry.comando_de_tool("vault_tags --audit")
             == "vault run vault_tags --audit")
+    monkeypatch.undo()
     assert comando_de_tool("vault_tags --audit") == "python scripts/vault_tags.py --audit"

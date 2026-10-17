@@ -686,3 +686,26 @@ def test_el_ancla_del_puente_no_se_muda():
     assert gi.__file__ is not None
     assert gi.fuente_de("vault_grafo_import") == (ROOT / "scripts" / "vault_grafo_import.py").resolve()
     assert gi.DIRECTORIO == (ROOT / "scripts").resolve()
+
+
+def test_lote_c_el_registro_migra_y_el_puente_lo_suelta():
+    """Lote C de la quinta tanda (2026-10-16): `vault_registry` a
+    `vault/kernel/registry.py`. `comando_de_tool` decidía «estoy instalado»
+    por el nombre del directorio de su `__file__`, que desde `vault/kernel/`
+    nunca es `_impl`: la nota de comandos de la wheel habría publicado
+    `python scripts/...`. Lo decide el directorio del programa."""
+    import importlib
+    import json
+
+    import vault_grafo_import as gi
+    import vault_registry
+
+    modulo, dueno = "vault_registry", "vault/kernel/registry.py"
+    assert modulo not in set(vault_arch.modulos_sin_hogar())
+    assert vault_registry is importlib.import_module("vault.kernel.registry")
+    assert gi.fuente_de(modulo) == (ROOT / dueno).resolve()
+    puente = json.loads((ROOT / "scripts" / "arch-baseline.json").read_text(encoding="utf-8"))
+    assert modulo not in puente["bridge_modules"]
+    esperado = gi.importaciones(ROOT / dueno, gi.MODULOS_LOCALES) - {modulo}
+    assert gi.completo()[modulo] == esperado
+    assert "__file__" not in (ROOT / dueno).read_text(encoding="utf-8")

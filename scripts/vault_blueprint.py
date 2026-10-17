@@ -720,7 +720,11 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "lo dice con su propio `__file__`; mudarlo exigiría derivar ese "
             "directorio de dos formas, por el checkout y por la wheel, en el "
             "sitio que existe para que nadie más lo derive. Lo fija "
-            "`test_el_ancla_del_puente_no_se_muda`.)"
+            "`test_el_ancla_del_puente_no_se_muda`.)\n\n"
+            "(Lote C, 2026-10-16: registry a `vault/kernel/`. `comando_de_tool` "
+            "decidía «estoy instalado» por el nombre del directorio de su "
+            "`__file__`; lo decide el del programa. La cara de AP-64 y "
+            "`docs/architecture/layers.md` citan al dueño.)"
         ),
         "por_que_no_ahora": (
             "Transitorio hasta migrar scripts → vault/<contexto>, ADR-0002. "

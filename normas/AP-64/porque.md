@@ -15,7 +15,7 @@ alguna deja de existir.
 - **Criterio** (dueño único, lo leen las otras):
   `vault/kernel/contenido.py::falta_de_responsable`, sobre la misma definición
   de ADR que AP-07, `vault/kernel/contenido.py::es_adr`. El régimen del estado
-  lo deriva `scripts/vault_registry.py::regimen_de_estado`.
+  lo deriva `vault/kernel/registry.py::regimen_de_estado`.
 - **Prevención** al escribir: `vault/kernel/contenido.py::meta_adr` propone el
   ADR en `draft` y sin `responsable` de relleno, y el contrato v41 declara el
   campo (`vault/kernel/contrato_nota.py`).

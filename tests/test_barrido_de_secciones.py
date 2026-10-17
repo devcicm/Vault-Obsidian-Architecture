@@ -27,7 +27,7 @@ ROOT = Path(__file__).resolve().parent.parent
 _NOMBRES = {"ORDERED_SECTIONS", "VAULT_SECTIONS", "REQUIRED_FOLDERS", "STANDARD_SECTIONS"}
 
 #: El dueño de la lista: dentro de él, usarla es definirla.
-_DUENO = "scripts/vault_registry.py"
+_DUENO = "vault/kernel/registry.py"
 
 PERMITIDOS = {
     "scripts/vault_audit.py::<module>":
