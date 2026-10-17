@@ -1009,6 +1009,8 @@ Restaura un `.b64zip.json` en un directorio nuevo. Nunca escribe sobre un vault 
 ### `vault_security_scan.py`
 Escanea archivos de código en busca de 45 reglas de seguridad (OWASP/CWE). Guarda hallazgos en `02_Observability/vulnerabilities/`.
 
+`filesScanned` cuenta los ficheros escaneados y `filesWithFindings` los que tuvieron hallazgos. Solo se escanean extensiones de código (`SCAN_EXTS`), no notas `.md`: una ruta sin ninguna devuelve `riskLevel: "SIN_DATOS"` en vez de afirmar un riesgo que nadie midió.
+
 ```bash
 python vault_security_scan.py --path "src/" --project mi-api
 python vault_security_scan.py --path "src/" --project mi-api --categories "secrets,injection"

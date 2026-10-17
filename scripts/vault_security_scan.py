@@ -366,6 +366,11 @@ def vault_security_scan(
     elif by_severity["medium"] > 0:
         risk_level = "MEDIO"
 
+    if files_scanned == 0:
+        # AP-60: sin un solo fichero de `SCAN_EXTS` no se ha medido ningún
+        # riesgo; «BAJO» afirmaría lo que nadie miró.
+        risk_level = "SIN_DATOS"
+
     saved_files = []
 
     if save_findings and all_findings:
@@ -382,7 +387,12 @@ def vault_security_scan(
         "byCategory": by_category,
         "findings": all_findings[:20],
         "savedToVault": saved_files,
-        "summary": f"{files_scanned} archivos escaneados — {len(all_findings)} hallazgos ({by_severity['critical']} críticos, {by_severity['high']} altos) — Riesgo: {risk_level}",
+        "summary": (
+            f"0 archivos escaneados: ninguno con extensión de código ({', '.join(sorted(SCAN_EXTS))}); "
+            "las notas .md no se escanean — Riesgo: SIN_DATOS"
+            if files_scanned == 0 else
+            f"{files_scanned} archivos escaneados — {len(all_findings)} hallazgos ({by_severity['critical']} críticos, {by_severity['high']} altos) — Riesgo: {risk_level}"
+        ),
     }
 
 

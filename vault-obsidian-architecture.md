@@ -2776,6 +2776,8 @@ Escanea archivos de código fuente en busca de vulnerabilidades de seguridad con
 }
 ```
 
+`filesWithFindings` (desde v41.8) separa los ficheros con hallazgos de los escaneados, que es lo que `filesScanned` cuenta. Una ruta sin ningún fichero de código devuelve `riskLevel: "SIN_DATOS"`: «BAJO» afirmaría un riesgo que nadie midió.
+
 **Cuándo usar:**
 - Al comenzar a trabajar en un proyecto por primera vez
 - Antes de hacer code review o merge de cambios sensibles

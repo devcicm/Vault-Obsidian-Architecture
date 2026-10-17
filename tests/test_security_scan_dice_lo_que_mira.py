@@ -52,3 +52,17 @@ def test_separa_los_ficheros_con_hallazgos(scan):
     r = tool.vault_security_scan(str(codigo), save_findings=False)
     assert r["filesScanned"] == 2, r
     assert r["filesWithFindings"] == (1 if r["totalFindings"] else 0), r
+
+
+def test_sin_ficheros_de_codigo_no_afirma_riesgo_bajo(scan):
+    """Las notas `.md` no están en `SCAN_EXTS`: el ejemplo del catálogo
+    escaneaba `01_Projects` y respondía «Riesgo: BAJO» sin haber mirado nada."""
+    tool, tmp = scan
+    notas = tmp / "notas"
+    notas.mkdir()
+    (notas / "nota.md").write_text("# Nota\n\nTexto.\n", encoding="utf-8")
+    r = tool.vault_security_scan(str(notas), save_findings=False)
+    assert r["ok"] is True, r
+    assert r["filesScanned"] == 0, r
+    assert r["riskLevel"] == "SIN_DATOS", r
+    assert "BAJO" not in r["summary"], r["summary"]
