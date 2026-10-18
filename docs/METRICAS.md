@@ -99,3 +99,6 @@
 | 2026-10-17 | `9bf32f3` | `suite_fallos` | 0 | ronda r55 (suite completa en serie) |
 | 2026-10-17 | `9bf32f3` | `suite_tests` | 5858 | ronda r55 (suite completa en serie) |
 | 2026-10-17 | `9bf32f3` | `suite_duracion_s` | 3275.55 | ronda r55 (suite completa en serie) |
+| 2026-10-17 | `e8500f7` | `suite_fallos` | 0 | ronda r56 (suite completa en serie) |
+| 2026-10-17 | `e8500f7` | `suite_tests` | 5858 | ronda r56 (suite completa en serie) |
+| 2026-10-17 | `e8500f7` | `suite_duracion_s` | 3269.91 | ronda r56 (suite completa en serie) |
