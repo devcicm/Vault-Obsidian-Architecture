@@ -8067,7 +8067,7 @@ temp/
 
 ---
 
-### v41.10 — 2026-10-17 `git: pending`
+### v41.10 — 2026-10-17 `git: b37e1b1`
 
 **Un handler se juzga por si el fallo llega al llamante, no por si deja rastro.**
 
