@@ -8068,7 +8068,7 @@ temp/
 
 ---
 
-### v41.11 — 2026-10-18 `git: pending`
+### v41.11 — 2026-10-18 `git: 3e0fd3b`
 
 **El porqué de cada puerta se publica derivado, no se escribe dos veces.**
 
