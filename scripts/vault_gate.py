@@ -97,9 +97,10 @@ PUERTAS: List[Dict[str, Any]] = [
     },
     {
         "id": "noop",
-        "cmd": ["vault_noop_audit.py", "--check", "--strict"],
+        "cmd": ["vault_noop_audit.py", "--check", "--ejecutado", "--strict"],
         "mide": "AP-37 — ninguna tool con side effects devuelve ok: true sin "
-                "indicador de trabajo",
+                "indicador de trabajo, en lo declarado y en lo que el ejemplo "
+                "emite al ejecutarse",
         "fix": "saldar la deuda y luego --freeze",
     },
     {

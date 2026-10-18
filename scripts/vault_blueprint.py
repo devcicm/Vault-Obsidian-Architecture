@@ -1131,7 +1131,11 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     },
     {
         "id": "ap37_mide_lo_declarado",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "v41.9 (2026-10-17)",
+        "sostenida_por": [
+            "tests/test_tags_dice_lo_que_escribe.py::test_ap37_la_puerta_mide_lo_emitido_y_salda_la_deuda",
+        ],
         "desde": "tras v41.6",
         "capa": "4",
         "que": (
@@ -1166,9 +1170,10 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "(una sin motivo, o declarada que sí escribe, lo deja en rojo), 2 sin "
             "invocación (runtime node), 21 fuera del vault (gobernanza del "
             "estándar) y 0 ofensores; destapó `vault_drift_detect --mode snapshot` "
-            "(a744633). Lo que queda: la puerta corre el modo estático, porque "
-            "el banco tarda minutos, y el contrato de `vault_tags` sigue "
-            "prometiendo `total`."
+            "(a744633). Se saldó en v41.9: la puerta `noop` corre `--check "
+            "--ejecutado` (el banco mide en ~104 s, dentro del límite por "
+            "puerta) y `vault_tags` anotó `total`/`renamed`/`tags` en "
+            "`superseded_fields`."
         ),
     },
     {

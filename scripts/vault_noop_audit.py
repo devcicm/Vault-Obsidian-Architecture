@@ -468,6 +468,17 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    if args.ejecutado and args.check:
+        # La puerta (v41.9): el estático vigila la baseline de lo declarado y
+        # el banco, lo emitido. Hasta v41.8 la puerta corría solo el primero y
+        # daba crédito a un `total` que `vault_tags` no devolvía nunca.
+        estatico, banco = scan(), ejecutado()
+        salida = {"ok": estatico["ok"] and banco["ok"], "tool": "vault_noop_audit",
+                  "norm": "AP-37", "modo": "check+ejecutado",
+                  "estatico": estatico, "ejecutado": banco}
+        print(json.dumps(salida, ensure_ascii=False))
+        return 0 if salida["ok"] or not args.strict else 1
+
     if args.ejecutado:
         salida = ejecutado()
         print(json.dumps(salida, ensure_ascii=False))

@@ -78,28 +78,21 @@ def test_ap37_rename_dice_lo_que_escribio(vault):
     assert r["written"] == 0, r
 
 
-def test_limite_declarado_ap37_mide_lo_declarado(vault):
-    """El audit da por bueno un indicador que el contrato declara y nadie emite.
+def test_ap37_la_puerta_mide_lo_emitido_y_salda_la_deuda():
+    """Saldada en v41.9: la puerta corre el banco además del estático.
 
-    Falla el día que `vault_noop_audit` contraste lo declarado con lo emitido
-    —o que el contrato de `vault_tags` deje de prometer `total`—; entonces la
-    deuda se salda. `--ejecutado` (2026-10-16) lo contrasta solo donde el
-    ejemplo documentado escribe, y el de `vault_tags` no escribe: el modo
-    estático, que es el de la puerta, sigue viendo lo declarado.
+    Hasta v41.8 este test fijaba el límite —el audit daba por bueno un `total`
+    que `vault_tags` declaraba y nunca emitía, porque la puerta solo miraba lo
+    declarado—. Ahora la puerta ejecuta `--ejecutado` y `vault_tags` se mide
+    por su `rebuild`.
     """
     import vault_blueprint
-    import vault_noop_audit
+    import vault_gate
 
     deuda = {d["id"]: d for d in vault_blueprint.DEUDA_DECLARADA}["ap37_mide_lo_declarado"]
-    assert deuda["estado"] == "pendiente"
-    vault_io.set_vault_root(_ORIGINAL["raiz"])  # el contrato vive en el repo
-    try:
-        ofensores = {o["tool"] for o in vault_noop_audit.offenders()}
-    finally:
-        vault_io.set_vault_root(vault)
-    assert "vault_tags" not in ofensores
-    emitidos = set(vault_tags.vault_tags_rebuild()) | set(vault_tags.vault_tags_rename("api", "x"))
-    assert "total" not in emitidos
+    assert deuda["estado"] == "saldada", deuda
+    puerta = {p["id"]: p for p in vault_gate.PUERTAS}["noop"]
+    assert "--ejecutado" in puerta["cmd"] and "--check" in puerta["cmd"], puerta
 
 
 def test_ap37_el_banco_mide_vault_tags_por_el_camino_que_escribe():

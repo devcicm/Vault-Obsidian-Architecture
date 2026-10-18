@@ -199,8 +199,8 @@ abajo, en «Cuatro cosas que el registro no puede decirte».
 - [ ] `python scripts/vault_doc_sync.py --check --strict`
       Toda tool tiene sección en scripts/README.md y el índice una fila por grupo.
       *Se arregla con:* python scripts/vault_doc_sync.py --fix  (solo el índice; las secciones se escriben a mano)
-- [ ] `python scripts/vault_noop_audit.py --check --strict`
-      AP-37 — ninguna tool con side effects devuelve ok: true sin indicador de trabajo.
+- [ ] `python scripts/vault_noop_audit.py --check --ejecutado --strict`
+      AP-37 — ninguna tool con side effects devuelve ok: true sin indicador de trabajo, en lo declarado y en lo que el ejemplo emite al ejecutarse.
       *Se arregla con:* saldar la deuda y luego --freeze
 - [ ] `python scripts/vault_blame_audit.py --check --strict`
       AP-51 — ningún handler amplio devuelve un vacío indistinguible de un resultado legítimo.
