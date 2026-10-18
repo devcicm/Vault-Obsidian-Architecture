@@ -77,8 +77,10 @@ CASOS = [
      False, "expone el fallo: el llamante recibe la mala noticia y decide"),
     ("try:\n    x()\nexcept Exception:\n    raise", False,
      "propaga, que es la forma más honesta"),
-    ("try:\n    x()\nexcept Exception:\n    log(); return []", False,
-     "deja rastro; el vacío ya no es mudo"),
+    ("try:\n    x()\nexcept Exception:\n    log(); return []", True,
+     "v41.10: deja rastro en stderr, pero el llamante recibe el mismo vacío"),
+    ("try:\n    x()\nexcept Exception as e:\n    errores.append(e); return []", False,
+     "el fallo queda en una lista que el llamante recibe"),
     ("try:\n    x()\nexcept FileNotFoundError:\n    return []", False,
      "es un criterio: el autor sabe qué tolera y por qué"),
     ("try:\n    x()\nexcept (FileNotFoundError, json.JSONDecodeError):\n    return []",
@@ -209,3 +211,18 @@ def test_ap51_la_frontera_js_no_tiene_deuda_y_bloquea_la_puerta(tmp_path, monkey
     resultado = blame.scan()
     assert resultado["ok"] is False
     assert [o["file"] for o in resultado["js_silent_catches"]] == ["srv.mjs"]
+
+
+def test_ap51_un_helper_del_modulo_que_expone_absuelve_y_uno_que_solo_registra_no():
+    fuente = (
+        "degradado = []\n"
+        "def anotar(e):\n    degradado.append(e)\n"
+        "def avisar(e):\n    print(e)\n"
+        "def a():\n    try:\n        x()\n    except Exception as e:\n        anotar(e); return []\n"
+        "def b():\n    try:\n        x()\n    except Exception as e:\n        avisar(e); return []\n"
+    )
+    arbol = ast.parse(fuente)
+    expuestos = blame.expositores(arbol)
+    a, b = [h for h in ast.walk(arbol) if isinstance(h, ast.ExceptHandler)]
+    assert not blame.handler_infringe(a, expuestos)
+    assert blame.handler_infringe(b, expuestos)

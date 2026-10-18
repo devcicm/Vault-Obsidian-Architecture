@@ -102,13 +102,18 @@ def _constante_vacia(valor) -> bool:
 #: deja el fallo en la traza y le da al llamante el vacío de siempre: es el
 #: caso de `vault_context_pack._must_preferences` (auditoría del 2026-10-15),
 #: que el detector no veía porque el handler ya no era solo un `return []`.
-#: Un `log()` genérico sigue sin contar —ver la tabla de `test_ap51_*`—: aquí
-#: el autor tenía en la mano el envelope que el llamante necesitaba y lo tiró.
-#: Medido el 2026-10-16: contar cualquier llamada suelta convertiría en deuda
-#: 16 handlers, y los 16 exponen el fallo —lo añaden a una lista que el
-#: llamante recibe (`errors`, `problemas`, `degraded`, `stale_files`,
-#: `skipped`) o lo emiten y salen con código 1—. Ninguno es un `log()` mudo.
+#: Hasta v41.9 un `log()` genérico no contaba: cualquier llamada suelta
+#: sacaba al handler del detector, y un `log(); return []` que solo escribe en
+#: stderr salía en verde. Desde v41.10 el criterio es si el fallo **llega al
+#: llamante**, no si deja rastro: una llamada solo cuenta como exposición si
+#: muta un contenedor (`_MUTADORES`) o si llama a una función del mismo módulo
+#: que lo hace (`expositores`). Medido el 2026-10-17: los únicos sitios que el
+#: criterio viejo absolvía y el nuevo no habría visto eran los once de
+#: `vault_onboard`, que exponen por `_registrar_degradacion` → `degraded`.
 _EMISORES_DE_ERROR = {"emit_error", "emit_fallo", "construir_error"}
+
+#: Métodos que dejan el fallo en un contenedor que el llamante recibe.
+_MUTADORES = {"append", "extend", "add", "update", "insert", "setdefault"}
 
 
 def _vacio(valor) -> bool:
@@ -137,18 +142,46 @@ def _error_descartado(sentencia: ast.stmt) -> bool:
     return nombre in _EMISORES_DE_ERROR
 
 
-def handler_infringe(handler: ast.ExceptHandler) -> bool:
+def _expone(nodo: ast.AST) -> bool:
+    """¿Hay en `nodo` una mutación de contenedor o una asignación por subíndice?"""
+    for n in ast.walk(nodo):
+        if (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+                and n.func.attr in _MUTADORES):
+            return True
+        if isinstance(n, ast.Assign) and any(isinstance(d, ast.Subscript) for d in n.targets):
+            return True
+    return False
+
+
+def expositores(arbol: ast.AST) -> frozenset:
+    """Funciones del módulo que dejan el fallo donde el llamante lo recibe."""
+    return frozenset(f.name for f in ast.walk(arbol)
+                     if isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef)) and _expone(f))
+
+
+def _solo_rastro(sentencia: ast.stmt, expuestos: frozenset) -> bool:
+    """Una llamada suelta que deja rastro sin que el fallo llegue al llamante."""
+    if not (isinstance(sentencia, ast.Expr) and isinstance(sentencia.value, ast.Call)):
+        return False
+    func = sentencia.value.func
+    if isinstance(func, ast.Attribute) and func.attr in _MUTADORES:
+        return False
+    return not (isinstance(func, ast.Name) and func.id in expuestos)
+
+
+def handler_infringe(handler: ast.ExceptHandler, expuestos: frozenset = frozenset()) -> bool:
     """El criterio de AP-51 sobre un handler: el audit y sus tests usan este.
 
     Amplio, y su única salida es un vacío indistinguible —con o sin un
-    `emit_error` descartado antes—.
+    `emit_error` descartado o un `log()` antes—. `expuestos` son las funciones
+    del módulo que exponen el fallo (`expositores`).
     """
     if not (AMPLIAS & set(_tipos_capturados(handler))) or not handler.body:
         return False
     if not _es_vacio_indistinguible(handler.body[-1]):
         return False
     return all(_es_vacio_indistinguible(s) or _error_descartado(s)
-               for s in handler.body)
+               or _solo_rastro(s, expuestos) for s in handler.body)
 
 
 def _es_vacio_indistinguible(sentencia: ast.stmt) -> bool:
@@ -199,10 +232,11 @@ def offenders() -> List[Dict]:
         except SyntaxError:
             continue
         qualnames = mapa_de_qualnames(arbol)
+        expuestos = expositores(arbol)
         encontrados = []
         for handler in [n for n in ast.walk(arbol)
                         if isinstance(n, ast.ExceptHandler)]:
-            if handler_infringe(handler):
+            if handler_infringe(handler, expuestos):
                 encontrados.append((handler, _tipos_capturados(handler)))
         encontrados.sort(key=lambda par: par[0].lineno)
         firmas = firmar_todos(
