@@ -200,3 +200,19 @@ def test_el_schema_json_se_deriva_no_se_copia():
     la divergencia regresa entera y en silencio."""
     fuente = gi.codigo_de(SCRIPTS / "vault_mcp_catalog.py").read_text(encoding="utf-8")
     assert "reconciled_params(py_tool)" in fuente
+
+
+def test_ap40_ningun_param_del_registro_es_un_flag_que_no_existe():
+    """El registro no afirma un contrato que la CLI no tiene (v41.9).
+
+    `reconciled_params` descarta en silencio lo que no es flag, así que el MCP
+    no lo veía; el registro sí lo afirmaba, con validadores que contradecían
+    al código —`probability: low|medium|high` frente a `--likelihood 1..5`—.
+    """
+    assert cat.params_huerfanos() == {}
+
+
+def test_ap40_un_param_inventado_en_el_registro_rompe_check_sync():
+    falso = {"vault_ai_decision": {**cat.TOOLS_CATALOG["vault_ai_decision"],
+                                   "params": {"decision": {"description": "x"}}}}
+    assert cat.params_huerfanos(falso) == {"vault_ai_decision": ["decision"]}

@@ -152,23 +152,11 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Término de búsqueda",
                 "validators": ["not_empty"],
             },
-            "project": {
-                "type": "string",
-                "required": False,
-                "description": "Filtrar por proyecto",
-                "validators": [],
-            },
             "folder": {
                 "type": "string",
                 "required": False,
                 "description": "Filtrar por carpeta",
                 "validators": [],
-            },
-            "limit": {
-                "type": "int",
-                "required": False,
-                "description": "Límite de resultados (default: 10)",
-                "validators": ["min:1", "max:100"],
             },
         },
         "guards": [],
@@ -654,12 +642,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "type": "boolean",
                 "required": False,
                 "description": "También generar graph.json",
-                "validators": [],
-            },
-            "hash": {
-                "type": "boolean",
-                "required": False,
-                "description": "También generar hash-index.json",
                 "validators": [],
             },
         },
@@ -1293,23 +1275,11 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Proyecto",
                 "validators": [],
             },
-            "entity": {
-                "type": "string",
-                "required": True,
-                "description": "Entidad origen",
-                "validators": ["not_empty"],
-            },
             "to": {
                 "type": "string",
                 "required": True,
                 "description": "Entidad destino",
                 "validators": ["not_empty"],
-            },
-            "type": {
-                "type": "string",
-                "required": True,
-                "description": "Tipo: one-to-one, one-to-many, many-to-many",
-                "validators": ["enum:one-to-one,one-to-many,many-to-many"],
             },
             "label": {
                 "type": "string",
@@ -1335,23 +1305,11 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Proyecto",
                 "validators": [],
             },
-            "module": {
-                "type": "string",
-                "required": True,
-                "description": "Nombre del módulo",
-                "validators": ["not_empty"],
-            },
             "language": {
                 "type": "string",
                 "required": True,
                 "description": "Lenguaje: python, javascript, typescript, go, rust",
                 "validators": ["enum:python,javascript,typescript,go,rust"],
-            },
-            "viewpoints": {
-                "type": "string",
-                "required": False,
-                "description": "Viewpoints IEEE 1016: context,interface,data,operations,dependency",
-                "validators": [],
             },
         },
         "guards": [],
@@ -1371,12 +1329,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Proyecto",
                 "validators": [],
             },
-            "depth": {
-                "type": "int",
-                "required": False,
-                "description": "Profundidad máxima (default: 3)",
-                "validators": ["min:1", "max:10"],
-            },
         },
         "guards": [],
         "side_effects": ["Genera 11_Code/{project}/map.md con diagrama"],
@@ -1395,24 +1347,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Proyecto",
                 "validators": [],
             },
-            "from": {
-                "type": "string",
-                "required": True,
-                "description": "Componente origen",
-                "validators": [],
-            },
-            "to": {
-                "type": "string",
-                "required": True,
-                "description": "Componente destino",
-                "validators": [],
-            },
-            "type": {
-                "type": "string",
-                "required": True,
-                "description": "Tipo: imports,calls,extends,implements,depends",
-                "validators": ["enum:imports,calls,extends,implements,depends"],
-            },
         },
         "guards": [],
         "side_effects": ["Actualiza índice de relaciones en 11_Code/"],
@@ -1425,22 +1359,10 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "group": "Código",
         "purpose": "Consulta información del índice de código.",
         "params": {
-            "query": {
-                "type": "string",
-                "required": True,
-                "description": "Consulta: module, relation, imports",
-                "validators": ["enum:module,relation,imports"],
-            },
             "project": {
                 "type": "string",
                 "required": False,
                 "description": "Filtrar por proyecto",
-                "validators": [],
-            },
-            "pattern": {
-                "type": "string",
-                "required": False,
-                "description": "Patrón de búsqueda",
                 "validators": [],
             },
         },
@@ -1461,12 +1383,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Proyecto",
                 "validators": [],
             },
-            "action": {
-                "type": "string",
-                "required": True,
-                "description": "Acción: scan, update, diff",
-                "validators": ["enum:scan,update,diff"],
-            },
         },
         "guards": [],
         "side_effects": ["Actualiza 11_Code/{project}/index.json"],
@@ -1479,24 +1395,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "group": "Normas",
         "purpose": "Etiqueta módulos de código por funcionalidad.",
         "params": {
-            "project": {
-                "type": "string",
-                "required": True,
-                "description": "Proyecto",
-                "validators": [],
-            },
-            "module": {
-                "type": "string",
-                "required": True,
-                "description": "Módulo a etiquetar",
-                "validators": [],
-            },
-            "tags": {
-                "type": "string",
-                "required": True,
-                "description": "Tags separados por coma",
-                "validators": [],
-            },
         },
         "guards": [],
         "side_effects": ["Actualiza frontmatter del módulo"],
@@ -1563,29 +1461,11 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Nombre del patrón",
                 "validators": ["not_empty"],
             },
-            "category": {
-                "type": "string",
-                "required": True,
-                "description": "Categoría: creational, structural, behavioral, architectural",
-                "validators": ["enum:creational,structural,behavioral,architectural"],
-            },
             "description": {
                 "type": "string",
                 "required": True,
                 "description": "Descripción del patrón",
                 "validators": ["min_length:20"],
-            },
-            "implementation": {
-                "type": "string",
-                "required": False,
-                "description": "Código de ejemplo",
-                "validators": [],
-            },
-            "use_cases": {
-                "type": "string",
-                "required": False,
-                "description": "Casos de uso separados por coma",
-                "validators": [],
             },
         },
         "guards": [],
@@ -1599,18 +1479,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "group": "Patrones",
         "purpose": "Lista patrones arquitectónicos disponibles.",
         "params": {
-            "category": {
-                "type": "string",
-                "required": False,
-                "description": "Filtrar por categoría",
-                "validators": ["enum:creational,structural,behavioral,architectural"],
-            },
-            "search": {
-                "type": "string",
-                "required": False,
-                "description": "Buscar por nombre",
-                "validators": [],
-            },
         },
         "guards": [],
         "side_effects": [],
@@ -1661,12 +1529,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "group": "Conocimiento",
         "purpose": "Recupera conocimiento por tema o búsqueda.",
         "params": {
-            "topic": {
-                "type": "string",
-                "required": False,
-                "description": "Tema a buscar",
-                "validators": [],
-            },
             "query": {
                 "type": "string",
                 "required": False,
@@ -1691,18 +1553,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "group": "Backups",
         "purpose": "Crea backup del vault en carpeta timestamped.",
         "params": {
-            "include_history": {
-                "type": "boolean",
-                "required": False,
-                "description": "Incluir .history/ (default: False)",
-                "validators": [],
-            },
-            "compress": {
-                "type": "boolean",
-                "required": False,
-                "description": "Comprimir a zip (default: False)",
-                "validators": [],
-            },
             "label": {
                 "type": "string",
                 "required": False,
@@ -1739,24 +1589,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "group": "Backups",
         "purpose": "Restaura vault desde backup.",
         "params": {
-            "backup_id": {
-                "type": "string",
-                "required": True,
-                "description": "ID del backup a restaurar",
-                "validators": [],
-            },
-            "target": {
-                "type": "string",
-                "required": False,
-                "description": "Carpeta destino (default: VAULT_ROOT)",
-                "validators": [],
-            },
-            "dry_run": {
-                "type": "boolean",
-                "required": False,
-                "description": "Simular sin aplicar",
-                "validators": [],
-            },
         },
         "guards": ["Confirmar antes de sobreescribir"],
         "side_effects": ["Sobreescribe archivos del vault"],
@@ -1780,12 +1612,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "required": True,
                 "description": "Entorno: dev, staging, prod",
                 "validators": ["enum:dev,staging,prod"],
-            },
-            "variables": {
-                "type": "string",
-                "required": True,
-                "description": "Variables en formato KEY=VALUE separadas por espacio",
-                "validators": [],
             },
         },
         "guards": ["No guardar secrets en texto plano"],
@@ -1823,24 +1649,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Proyecto",
                 "validators": [],
             },
-            "title": {
-                "type": "string",
-                "required": True,
-                "description": "Título",
-                "validators": ["not_empty"],
-            },
-            "provider": {
-                "type": "string",
-                "required": True,
-                "description": "Proveedor: aws, gcp, azure, onprem",
-                "validators": ["enum:aws,gcp,azure,onprem"],
-            },
-            "components": {
-                "type": "string",
-                "required": True,
-                "description": "Componentes separados por coma",
-                "validators": [],
-            },
             "description": {
                 "type": "string",
                 "required": False,
@@ -1863,12 +1671,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "type": "string",
                 "required": True,
                 "description": "Proyecto",
-                "validators": [],
-            },
-            "components": {
-                "type": "string",
-                "required": True,
-                "description": "Componentes separados por coma",
                 "validators": [],
             },
             "location": {
@@ -1897,12 +1699,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "required": False,
                 "description": "Proyecto específico",
                 "validators": [],
-            },
-            "scan_type": {
-                "type": "string",
-                "required": False,
-                "description": "Tipo: full, secrets, dependencies",
-                "validators": ["enum:full,secrets,dependencies"],
             },
         },
         "guards": [],
@@ -1950,18 +1746,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "group": "Propagación",
         "purpose": "Análisis de impacto en cascada de cambios.",
         "params": {
-            "path": {
-                "type": "string",
-                "required": True,
-                "description": "Nota a analizar",
-                "validators": ["within_vault"],
-            },
-            "depth": {
-                "type": "int",
-                "required": False,
-                "description": "Profundidad máxima (default: 3)",
-                "validators": ["min:1", "max:10"],
-            },
         },
         "guards": [],
         "side_effects": [],
@@ -1974,24 +1758,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "group": "Propagación",
         "purpose": "Propaga cambios entre notas relacionadas.",
         "params": {
-            "source": {
-                "type": "string",
-                "required": True,
-                "description": "Nota fuente",
-                "validators": ["within_vault"],
-            },
-            "template": {
-                "type": "string",
-                "required": True,
-                "description": "Template de propagación",
-                "validators": [],
-            },
-            "dry_run": {
-                "type": "boolean",
-                "required": False,
-                "description": "Simular sin aplicar",
-                "validators": [],
-            },
         },
         "guards": [],
         "side_effects": ["Actualiza notas relacionadas"],
@@ -2046,18 +1812,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "group": "Data Quality",
         "purpose": "Verifica calidad de datos del vault.",
         "params": {
-            "project": {
-                "type": "string",
-                "required": False,
-                "description": "Proyecto específico",
-                "validators": [],
-            },
-            "metrics": {
-                "type": "string",
-                "required": False,
-                "description": "Métricas: completeness,consistency,accuracy",
-                "validators": [],
-            },
         },
         "guards": [],
         "side_effects": ["Genera reporte en 00_System/"],
@@ -2172,12 +1926,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "group": "Índices",
         "purpose": "Genera índice de una sección del vault.",
         "params": {
-            "section": {
-                "type": "string",
-                "required": True,
-                "description": "Sección (ej: 01_Projects)",
-                "validators": [],
-            },
         },
         "guards": [],
         "side_effects": ["Genera {section}/index.md"],
@@ -2215,12 +1963,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Filtrar por proyecto",
                 "validators": [],
             },
-            "days": {
-                "type": "int",
-                "required": False,
-                "description": "Días hacia atrás (default: 30)",
-                "validators": ["min:1", "max:365"],
-            },
         },
         "guards": [],
         "side_effects": [],
@@ -2237,18 +1979,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "type": "string",
                 "required": False,
                 "description": "Proyecto específico",
-                "validators": [],
-            },
-            "from": {
-                "type": "string",
-                "required": False,
-                "description": "Desde fecha (YYYY-MM-DD)",
-                "validators": [],
-            },
-            "to": {
-                "type": "string",
-                "required": False,
-                "description": "Hasta fecha (YYYY-MM-DD)",
                 "validators": [],
             },
         },
@@ -2307,12 +2037,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Proyecto",
                 "validators": [],
             },
-            "decision": {
-                "type": "string",
-                "required": True,
-                "description": "Decisión tomada",
-                "validators": ["not_empty"],
-            },
             "rationale": {
                 "type": "string",
                 "required": True,
@@ -2337,24 +2061,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "group": "Normas",
         "purpose": "Gestiona normas y estándares del vault.",
         "params": {
-            "action": {
-                "type": "string",
-                "required": True,
-                "description": "Acción: list, add, check",
-                "validators": ["enum:list,add,check"],
-            },
-            "name": {
-                "type": "string",
-                "required": False,
-                "description": "Nombre de la norma",
-                "validators": [],
-            },
-            "content": {
-                "type": "string",
-                "required": False,
-                "description": "Contenido de la norma",
-                "validators": [],
-            },
         },
         "guards": [],
         "side_effects": [],
@@ -3682,24 +3388,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "group": "Tokens",
         "purpose": "Gestión de tokens del proyecto.",
         "params": {
-            "project": {
-                "type": "string",
-                "required": True,
-                "description": "Proyecto",
-                "validators": [],
-            },
-            "action": {
-                "type": "string",
-                "required": True,
-                "description": "Acción: list, add, remove",
-                "validators": ["enum:list,add,remove"],
-            },
-            "token_type": {
-                "type": "string",
-                "required": False,
-                "description": "Tipo: api_key, access_token, refresh_token",
-                "validators": [],
-            },
         },
         "guards": ["No guardar tokens en texto plano"],
         "side_effects": [],
@@ -3712,18 +3400,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "group": "Tokens",
         "purpose": "Cuenta tokens de contenido.",
         "params": {
-            "content": {
-                "type": "string",
-                "required": True,
-                "description": "Contenido a contar",
-                "validators": [],
-            },
-            "model": {
-                "type": "string",
-                "required": False,
-                "description": "Modelo: gpt-4, gpt-3.5-turbo (default: gpt-4)",
-                "validators": [],
-            },
         },
         "guards": [],
         "side_effects": [],
@@ -3736,18 +3412,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "group": "Tokens",
         "purpose": "Servicio de gestión de tokens.",
         "params": {
-            "action": {
-                "type": "string",
-                "required": True,
-                "description": "Acción: estimate, budget, report",
-                "validators": ["enum:estimate,budget,report"],
-            },
-            "project": {
-                "type": "string",
-                "required": False,
-                "description": "Proyecto",
-                "validators": [],
-            },
         },
         "guards": [],
         "side_effects": [],
@@ -3808,28 +3472,10 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Proyecto",
                 "validators": [],
             },
-            "name": {
-                "type": "string",
-                "required": True,
-                "description": "Nombre del test",
-                "validators": ["not_empty"],
-            },
-            "type": {
-                "type": "string",
-                "required": True,
-                "description": "Tipo: unit, integration, e2e",
-                "validators": ["enum:unit,integration,e2e"],
-            },
             "description": {
                 "type": "string",
                 "required": True,
                 "description": "Descripción del test",
-                "validators": [],
-            },
-            "coverage": {
-                "type": "string",
-                "required": False,
-                "description": "Cobertura esperada",
                 "validators": [],
             },
         },
@@ -3849,12 +3495,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "required": True,
                 "description": "Proyecto",
                 "validators": [],
-            },
-            "name": {
-                "type": "string",
-                "required": True,
-                "description": "Nombre del runbook",
-                "validators": ["not_empty"],
             },
             "trigger": {
                 "type": "string",
@@ -3880,24 +3520,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "group": "Runbooks",
         "purpose": "Registra ejecución de runbook.",
         "params": {
-            "runbook": {
-                "type": "string",
-                "required": True,
-                "description": "Nombre del runbook",
-                "validators": [],
-            },
-            "status": {
-                "type": "string",
-                "required": True,
-                "description": "Status: success, failure, partial",
-                "validators": ["enum:success,failure,partial"],
-            },
-            "output": {
-                "type": "string",
-                "required": False,
-                "description": "Output de la ejecución",
-                "validators": [],
-            },
         },
         "guards": [],
         "side_effects": ["Actualiza log del runbook"],
@@ -3921,12 +3543,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "required": True,
                 "description": "Severidad: SEV1, SEV2, SEV3, SEV4",
                 "validators": ["enum:SEV1,SEV2,SEV3,SEV4"],
-            },
-            "description": {
-                "type": "string",
-                "required": True,
-                "description": "Descripción",
-                "validators": ["min_length:20"],
             },
             "timeline": {
                 "type": "string",
@@ -3957,12 +3573,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "required": True,
                 "description": "Proyecto",
                 "validators": [],
-            },
-            "name": {
-                "type": "string",
-                "required": True,
-                "description": "Nombre del SLO",
-                "validators": ["not_empty"],
             },
             "target": {
                 "type": "string",
@@ -4000,12 +3610,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Versión (semver)",
                 "validators": [],
             },
-            "description": {
-                "type": "string",
-                "required": True,
-                "description": "Descripción del release",
-                "validators": [],
-            },
             "changes": {
                 "type": "string",
                 "required": False,
@@ -4036,12 +3640,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Título del riesgo",
                 "validators": ["not_empty"],
             },
-            "probability": {
-                "type": "string",
-                "required": True,
-                "description": "Probabilidad: low, medium, high",
-                "validators": ["enum:low,medium,high"],
-            },
             # Hasta v40.35 declaraba `low..critical` como texto obligatorio: la
             # CLI pide un entero 1-5 con 3 por defecto, y el esquema publicado
             # anunciaba cuatro valores que ella rechaza.
@@ -4050,18 +3648,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "required": False,
                 "description": "Impacto en la matriz de riesgo, 1-5 (por defecto 3)",
                 "validators": ["enum:1,2,3,4,5"],
-            },
-            "description": {
-                "type": "string",
-                "required": True,
-                "description": "Descripción",
-                "validators": ["min_length:20"],
-            },
-            "mitigation": {
-                "type": "string",
-                "required": False,
-                "description": "Mitigación propuesta",
-                "validators": [],
             },
         },
         "guards": [],
@@ -4079,24 +3665,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "type": "string",
                 "required": True,
                 "description": "Proyecto",
-                "validators": [],
-            },
-            "data_type": {
-                "type": "string",
-                "required": True,
-                "description": "Tipo de dato sensible",
-                "validators": [],
-            },
-            "classification": {
-                "type": "string",
-                "required": True,
-                "description": "Clasificación: public, internal, confidential, restricted",
-                "validators": ["enum:public,internal,confidential,restricted"],
-            },
-            "description": {
-                "type": "string",
-                "required": True,
-                "description": "Descripción del dato",
                 "validators": [],
             },
             "third_parties": {
@@ -4165,24 +3733,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "group": "Migración",
         "purpose": "Migra documentación entre vaults o estructuras.",
         "params": {
-            "source": {
-                "type": "string",
-                "required": True,
-                "description": "Vault o carpeta fuente",
-                "validators": [],
-            },
-            "target": {
-                "type": "string",
-                "required": True,
-                "description": "Carpeta destino",
-                "validators": [],
-            },
-            "mapping": {
-                "type": "string",
-                "required": False,
-                "description": "Mapeo de rutas en JSON",
-                "validators": ["valid_json"],
-            },
             "dry_run": {
                 "type": "boolean",
                 "required": False,
@@ -4201,18 +3751,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "group": "Migración",
         "purpose": "Revierte migración anterior.",
         "params": {
-            "migration_id": {
-                "type": "string",
-                "required": True,
-                "description": "ID de la migración a revertir",
-                "validators": [],
-            },
-            "dry_run": {
-                "type": "boolean",
-                "required": False,
-                "description": "Simular sin aplicar",
-                "validators": [],
-            },
         },
         "guards": ["Confirmar antes de revertir"],
         "side_effects": ["Revierte archivos migrados"],
@@ -4230,24 +3768,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "required": True,
                 "description": "Título",
                 "validators": ["not_empty"],
-            },
-            "type": {
-                "type": "string",
-                "required": True,
-                "description": "Tipo: book, article, website, paper",
-                "validators": ["enum:book,article,website,paper"],
-            },
-            "authors": {
-                "type": "string",
-                "required": True,
-                "description": "Autores separados por coma",
-                "validators": [],
-            },
-            "year": {
-                "type": "string",
-                "required": True,
-                "description": "Año de publicación",
-                "validators": [],
             },
             "url": {
                 "type": "string",
@@ -4273,12 +3793,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "group": "Salud del Vault",
         "purpose": "Unifica wikilinks + entity relations + code relations en graph-enriched.json con predicados semánticos.",
         "params": {
-            "vault_root": {
-                "type": "string",
-                "required": False,
-                "description": "Ruta al vault (default: VAULT_ROOT env)",
-                "validators": [],
-            },
         },
         "guards": [],
         "side_effects": [
@@ -5185,6 +4699,28 @@ def reconciled_params(py_tool: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
     return salida
 
 
+def params_huerfanos(catalogo: Optional[Dict[str, Dict[str, Any]]] = None) -> Dict[str, List[str]]:
+    """AP-40 en el registro: params escritos en `TOOLS_CATALOG` que no son flags.
+
+    `reconciled_params` los descarta al publicar, así que el MCP nunca los
+    vio; pero el registro afirmaba un contrato que la CLI no tenía —`decision`
+    en `vault_ai_decision`, `probability: low|medium|high` en `vault_risk_save`
+    cuando el flag es `--likelihood 1..5`— y ningún guard lo miraba. Hasta
+    v41.8 había 81 en 41 tools. Una tool sin argparse legible no cuenta: allí
+    lo declarado es lo único que se publica.
+    """
+    salida: Dict[str, List[str]] = {}
+    for nombre, tool in sorted((catalogo or TOOLS_CATALOG).items()):
+        reales = argparse_params(tool.get("script", "") or "")
+        if not reales:
+            continue
+        conocidos = {k.replace("-", "_") for k in reales}
+        sobran = sorted(p for p in tool.get("params", {}) if p.replace("-", "_") not in conocidos)
+        if sobran:
+            salida[nombre] = sobran
+    return salida
+
+
 #: Flags que la CLI acepta y MCP no publica: el vault de una llamada MCP lo fija
 #: la sesión del servidor (`VAULT_ROOT` del hijo), no el agente. Publicado,
 #: `root` dejaba a un agente dirigir `vault_graph_fix` o `vault_section_index`
@@ -5478,6 +5014,15 @@ def check_sync(json_path: Optional[str] = None) -> Dict[str, Any]:
     if result["missing_in_py"]:
         result["ok"] = False
         result["diffs"].append(f"Tools in JSON but missing from Python: {', '.join(result['missing_in_py'])}")
+
+    huerfanos = params_huerfanos()
+    if huerfanos:
+        result["ok"] = False
+        result["params_huerfanos"] = huerfanos
+        result["diffs"].append(
+            "Params del catálogo que no son flags de argparse (AP-40): "
+            + "; ".join(f"{t}: {', '.join(ps)}" for t, ps in huerfanos.items())
+            + " — se nombran como el flag real o se quitan")
 
     # AP-57 — el criterio «esta tool no tiene script Python» tiene un dueño,
     # y aquí se comprueba que nadie lo reescriba. La frontera de lenguaje es lo

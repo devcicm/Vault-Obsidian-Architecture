@@ -40,10 +40,16 @@ NORMA = {
         "reconciled_params() publica solo lo que la CLI acepta, conservando la "
         "descripción escrita a mano cuando el nombre coincide. "
         "vault_mcp_catalog --check-params audita el JSON ya generado (que es lo "
-        "que el servidor consume) contra el argparse real."
+        "que el servidor consume) contra el argparse real. Desde v41.9 también "
+        "el registro: vault_mcp_catalog.params_huerfanos() lista los params "
+        "escritos en TOOLS_CATALOG que no son flags —reconciled_params los "
+        "descartaba en silencio y el registro afirmaba un contrato inexistente, "
+        "81 en 41 tools— y --check falla con cualquiera. Los flags los lee un "
+        "único extractor, vault.meta_toolkit.flags_cli, el mismo para el "
+        "catálogo, tool-spec.json y su validador."
     ),
     "tools_enforcing": ["vault_mcp_catalog"],
     "tools_detecting": ["vault_mcp_catalog", "vault_norms"],
     "introduced_version": "v39",
-    "revisado_en": "2026-10-09",
+    "revisado_en": "2026-10-17",
 }
