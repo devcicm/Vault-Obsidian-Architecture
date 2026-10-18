@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v41.10 — 2026-10-17  
+**Versión:** v41.11 — 2026-10-18  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -7702,6 +7702,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v41.4 | 2026-10-14 | **El vault se usa como producto instalado sin errores de operación, y tres deudas del registro quedan saldadas.** Caras `guard.py`/`heal.py` derivadas en cada norma (#10); la fase 8 de sanación empieza por el núcleo (#11); `version_pinned` y AP-08 (#2); PAT-2 con plazo en el stub (capa 4 en cero); lotes D–H del puente; una sesión de agente consumidor sobre la wheel destapa y cierra defectos de escritura, lectura, borrado, consulta y protocolo MCP (`isError`, tools que no pueden terminar). F8 y la deuda #12 siguen declaradas. 5530 tests, 23 puertas |
 | v41.6 | 2026-10-15 | **Cada norma dice cuándo se revisó, la escritura deja constancia y el piso de Python lo ejecuta una máquina.** Cada `norma.py` declara `revisado_en`, con responsable y cadencia derivados (R4), y `vault_norms_coherence --disparos` lista las normas cuyo código de sostén cambió o cuya cadencia venció (R5); `vault_write` y `vault_append` anotan altas, cambios y añadidos en `.change-log.json` y lo publican en `change_log` (F8, deuda `f8_criterio_sin_decidir` saldada); `vault init` arranca en Python 3.9 —`write_text(newline=)` es de 3.10— y `test_piso_python` vigila también los argumentos nombrados posteriores al piso; la guía de instalación dice qué frena a ciegas, por qué canal sale cada error y que `init` no crea el padre (R7); la suite corre en Linux con Python 3.9. 5633 tests, 24 puertas |
 | v41.7 | 2026-10-16 | **Un lock se da por huérfano por su dueño, un registro ilegible se aparta en vez de pisarse y las puertas dejan de crecer con lo que no miden.** El lock guarda máquina e inicio del proceso y solo se rompe si su dueño murió, quien lo perdió no escribe ni mueve (fencing) y la toma va por la ruta real (deuda `lock_caduca_por_reloj_de_pared` saldada); la bitácora, la traza, la cola de propagación, las preferencias, el ledger de voz y una nota ilegible se apartan o se nombran (AP-51); AP-66 «el coste crece con lo que no es trabajo» con su detector en `vault_arch`, y cinco puertas dejan de crecer con la historia o el anidamiento; AP-48 la pronuncia su puerta (deuda `ap48_sin_voz` saldada); AP-51 y AP-52 ven la tupla vacía, el envelope tirado y el `ok: True` mutado a error. **Ruptura:** sin `VAULT_ROOT`, una tool instalada cuya autodetección cae en el propio paquete se niega con `VAULT_NOT_FOUND`. 5772 tests, 24 puertas |
+| v41.11 | 2026-10-18 | **El porqué de cada puerta se publica derivado, no se escribe dos veces.** `docs/PUERTAS.md` sale de `vault_gate.PUERTAS` y del docstring de cada tool (el del dueño si es alias), con las normas que cita enlazadas a su `porque.md`; `--fix-doc` lo regenera y `--check-doc` falla si diverge. El docstring del catálogo dejaba una cifra a mano (AP-47). 5863 tests, 24 puertas |
 | v41.10 | 2026-10-17 | **Un handler se juzga por si el fallo llega al llamante, no por si deja rastro.** AP-51: un `log()` suelto ya no absuelve a un `except Exception` que devuelve un vacío; solo expone la mutación de un contenedor o la llamada a una función del módulo que lo hace (`expositores`). AP-52: `var.update(otro)` se lee cuando `otro` es un dict literal asignado una vez. Lo que ninguno de los dos detectores sigue queda declarado en `cobertura_parcial`, con test. 5858 tests, 24 puertas |
 | v41.9 | 2026-10-17 | **El contrato de una tool sale de su código: un solo lector de argparse, el catálogo no afirma params que la CLI no tiene y la puerta de AP-37 mide lo emitido.** `vault/meta_toolkit/flags_cli.py` es el único lector de `add_argument` y los cuatro que leían con regex delegan en él; un flag `BooleanOptionalAction` se publica booleano y su `false` llega a la CLI; `check_sync` falla con un param del catálogo que no es flag de argparse (AP-40) y se retiran 81; `vault_tags` deja de prometer `total`, `renamed` y `tags`; la puerta `noop` corre el banco (deuda `ap37_mide_lo_declarado` saldada). **Cambio de contrato:** campos de `vault_tags` sustituidos (anotados en `superseded_fields`). 5852 tests, 24 puertas |
 | v41.8 | 2026-10-17 | **Lo que el producto promete lo ejerce alguien: el banco de AP-37 ejecuta cada ejemplo, el puente de ADR-0002 queda cerrado y los sanadores escriben en lote.** `vault_noop_audit --ejecutado` corre cada línea del `example` de las tools con side effects sobre una copia desechable, con el proyecto y los ficheros que presupone, y contrasta el árbol con el envelope: seis tools que escribían callando lo dicen ya, y la que no escribe declara por qué; `vault_security_scan` cuenta lo que escanea, no afirma «Riesgo: BAJO» sin ficheros de código, rechaza la categoría que no existe y deja de prometer un `--depth` que no aplica; cinco de los seis últimos módulos del puente migran a `vault/kernel`, el sexto queda como ancla declarada y `vault_arch --check` falla si uno queda sin hogar (deuda `puente_scripts_impl_sin_contrato` saldada); `sanadores_sin_lote`, `heal_ap46_escribe_sin_atomic_write` y `spec_validate_returns_ciego` saldadas. **Cambio de contrato:** `--categories` con un valor desconocido devuelve `INVALID_CATEGORY` en vez de descartarlo. 5844 tests, 24 puertas |
@@ -8066,6 +8067,19 @@ temp/
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
 
 ---
+
+### v41.11 — 2026-10-18 `git: pending`
+
+**El porqué de cada puerta se publica derivado, no se escribe dos veces.**
+
+Hasta v41.10 el checklist de `AGENTS.md` decía qué mide cada puerta y cómo se arregla,
+pero el porqué solo vivía en el docstring de cada tool: quien leía el checklist no lo
+veía y quien quisiera publicarlo tenía que copiarlo, que es AP-05. `vault_gate.razones()`
+genera `docs/PUERTAS.md` desde `PUERTAS` y el docstring de cada tool —el del dueño si el
+script es un alias (ADR-0002)— y enlaza las normas citadas a `normas/<código>/porque.md`.
+`--fix-doc` lo regenera junto al checklist y `--check-doc` falla con `reasons_drift` si se
+edita a mano. El docstring de `vault_mcp_catalog` decía «69 tools» (AP-47) y ahora remite a
+`len(TOOLS_CATALOG)`. `docs/README.md` enlaza puertas y normas.
 
 ### v41.10 — 2026-10-17 `git: b37e1b1`
 
