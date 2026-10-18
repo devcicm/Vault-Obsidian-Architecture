@@ -71,7 +71,8 @@ def test_sin_git_lo_dice_en_vez_de_salir_vacio():
 
 
 def test_disparos_sobre_el_catalogo_real():
-    r = coh.disparos(hoy=HOY)
+    # Reloj real: el catálogo real envejece con él, no con HOY (r53).
+    r = coh.disparos(hoy=date.today())
     assert r["ok"] is True
     import vault_norms_catalog as cat
     assert r["normas_medidas"] == len(cat.NORM_CATALOG)

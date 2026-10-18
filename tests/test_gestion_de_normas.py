@@ -23,7 +23,9 @@ import vault_norms_catalog as cat  # noqa: E402
 
 
 def test_toda_norma_tiene_responsable_revision_y_cadencia():
-    g = cat.gestion_de_normas(hoy=date(2026, 10, 15))
+    # El catálogo real se mide contra el reloj real: con una fecha fija, la
+    # primera revisión posterior a ella salía «en el futuro» (r53, AP-40).
+    g = cat.gestion_de_normas(hoy=date.today())
     assert g["problemas"] == []
     assert len(g["normas"]) == len(cat.NORM_CATALOG)
     for n in g["normas"]:
