@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v41.8 — 2026-10-17  
+**Versión:** v41.9 — 2026-10-17  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -7702,6 +7702,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v41.4 | 2026-10-14 | **El vault se usa como producto instalado sin errores de operación, y tres deudas del registro quedan saldadas.** Caras `guard.py`/`heal.py` derivadas en cada norma (#10); la fase 8 de sanación empieza por el núcleo (#11); `version_pinned` y AP-08 (#2); PAT-2 con plazo en el stub (capa 4 en cero); lotes D–H del puente; una sesión de agente consumidor sobre la wheel destapa y cierra defectos de escritura, lectura, borrado, consulta y protocolo MCP (`isError`, tools que no pueden terminar). F8 y la deuda #12 siguen declaradas. 5530 tests, 23 puertas |
 | v41.6 | 2026-10-15 | **Cada norma dice cuándo se revisó, la escritura deja constancia y el piso de Python lo ejecuta una máquina.** Cada `norma.py` declara `revisado_en`, con responsable y cadencia derivados (R4), y `vault_norms_coherence --disparos` lista las normas cuyo código de sostén cambió o cuya cadencia venció (R5); `vault_write` y `vault_append` anotan altas, cambios y añadidos en `.change-log.json` y lo publican en `change_log` (F8, deuda `f8_criterio_sin_decidir` saldada); `vault init` arranca en Python 3.9 —`write_text(newline=)` es de 3.10— y `test_piso_python` vigila también los argumentos nombrados posteriores al piso; la guía de instalación dice qué frena a ciegas, por qué canal sale cada error y que `init` no crea el padre (R7); la suite corre en Linux con Python 3.9. 5633 tests, 24 puertas |
 | v41.7 | 2026-10-16 | **Un lock se da por huérfano por su dueño, un registro ilegible se aparta en vez de pisarse y las puertas dejan de crecer con lo que no miden.** El lock guarda máquina e inicio del proceso y solo se rompe si su dueño murió, quien lo perdió no escribe ni mueve (fencing) y la toma va por la ruta real (deuda `lock_caduca_por_reloj_de_pared` saldada); la bitácora, la traza, la cola de propagación, las preferencias, el ledger de voz y una nota ilegible se apartan o se nombran (AP-51); AP-66 «el coste crece con lo que no es trabajo» con su detector en `vault_arch`, y cinco puertas dejan de crecer con la historia o el anidamiento; AP-48 la pronuncia su puerta (deuda `ap48_sin_voz` saldada); AP-51 y AP-52 ven la tupla vacía, el envelope tirado y el `ok: True` mutado a error. **Ruptura:** sin `VAULT_ROOT`, una tool instalada cuya autodetección cae en el propio paquete se niega con `VAULT_NOT_FOUND`. 5772 tests, 24 puertas |
+| v41.9 | 2026-10-17 | **El contrato de una tool sale de su código: un solo lector de argparse, el catálogo no afirma params que la CLI no tiene y la puerta de AP-37 mide lo emitido.** `vault/meta_toolkit/flags_cli.py` es el único lector de `add_argument` y los cuatro que leían con regex delegan en él; un flag `BooleanOptionalAction` se publica booleano y su `false` llega a la CLI; `check_sync` falla con un param del catálogo que no es flag de argparse (AP-40) y se retiran 81; `vault_tags` deja de prometer `total`, `renamed` y `tags`; la puerta `noop` corre el banco (deuda `ap37_mide_lo_declarado` saldada). **Cambio de contrato:** campos de `vault_tags` sustituidos (anotados en `superseded_fields`). 5852 tests, 24 puertas |
 | v41.8 | 2026-10-17 | **Lo que el producto promete lo ejerce alguien: el banco de AP-37 ejecuta cada ejemplo, el puente de ADR-0002 queda cerrado y los sanadores escriben en lote.** `vault_noop_audit --ejecutado` corre cada línea del `example` de las tools con side effects sobre una copia desechable, con el proyecto y los ficheros que presupone, y contrasta el árbol con el envelope: seis tools que escribían callando lo dicen ya, y la que no escribe declara por qué; `vault_security_scan` cuenta lo que escanea, no afirma «Riesgo: BAJO» sin ficheros de código, rechaza la categoría que no existe y deja de prometer un `--depth` que no aplica; cinco de los seis últimos módulos del puente migran a `vault/kernel`, el sexto queda como ancla declarada y `vault_arch --check` falla si uno queda sin hogar (deuda `puente_scripts_impl_sin_contrato` saldada); `sanadores_sin_lote`, `heal_ap46_escribe_sin_atomic_write` y `spec_validate_returns_ciego` saldadas. **Cambio de contrato:** `--categories` con un valor desconocido devuelve `INVALID_CATEGORY` en vez de descartarlo. 5844 tests, 24 puertas |
 | v41.5 | 2026-10-15 | **Las normas tienen métricas, se vigilan entre sí y los sanadores escriben en lote.** `vault_metricas` publica métricas de desarrollo y de producto con objetivo, plazo e histórico observado, y su puerta falla si el documento diverge; `vault_norms_coherence` suma C8 (un sanador que sube otra norma es una colisión medida), C9 (lo que una norma dice de sí misma no se contradice) y C10 (la máquina de estados no atrapa); `vault_io.escrituras_en_lote()` (AP-47) baja `vault_frontmatter_completar` de 2990 s a 32 s y `vault_graph_fix` clasificado de 107 s a 15 s, y `vault_graph_fix` salta la nota ilegible en vez de abortar (AP-46). Los sanadores que siguen sin lote quedan declarados (`sanadores_sin_lote`). 5604 tests, 24 puertas |
 | v41.1 | 2026-10-07 | **Qué contrato cumple cada nota y qué notas no pertenecen a ninguna sección.** Clase `sin_seccion` en el contrato: un `.md` de la raíz o de una carpeta no registrada lleva identidad y timestamps, no CIA, `agent`, `tags`, `type` ni `status`. `vault_validate --check cumplimiento` informa por nota las versiones del contrato que cumple y lo que le falta para la vigente. `vault_audit` publica `notIntegrated` (notas que solo enlaza un índice) y la acción de las huérfanas deja de citar AP-13. 4463 tests, 23 puertas |
@@ -8064,6 +8065,34 @@ temp/
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
 
 ---
+
+### v41.9 — 2026-10-17 `git: pending`
+
+**El contrato de una tool sale de su código: un solo lector de argparse, el catálogo no afirma params que la CLI no tiene y la puerta de AP-37 mide lo emitido.**
+
+**Un solo lector de flags.** `vault/meta_toolkit/flags_cli.py` lee los `add_argument`
+por AST; `vault_spec_validate`, `vault_manifest`, `vault_spec_memory` y `vault_doc_sync`
+leían cada uno con su regex —el productor de `tool-spec.json` y su validador con criterios
+distintos, AP-44 por AP-57— y delegan en él. Un flag `BooleanOptionalAction` se publica por
+MCP como booleano con `x-negable` y el servidor emite `--no-<flag>` con `false`: antes
+salía como texto y `--reversible false` no llegaba a la CLI.
+
+**El catálogo no afirma params que la CLI no tiene (AP-40).** `params_huerfanos()` hace
+fallar `vault_mcp_catalog --check` con un param declarado que no es flag de argparse; antes
+`reconciled_params` lo descartaba en silencio. Se retiran 81 de 41 tools, ninguno publicado:
+el `tools-catalog.json` no cambia.
+
+**`vault_tags` dice lo que escribe.** Su ejemplo ejercita `--ledger` y el contrato deja de
+prometer campos que ningún modo emite. **Cambio de contrato:** `total` → `total_tags`/`written`,
+`renamed` → `updated_notes`/`updated_count`, `tags` → `current_tags`, anotados en
+`superseded_fields` desde v41.9.
+
+**AP-37 mide lo emitido en la puerta.** `vault_noop_audit --check --ejecutado` combina el
+estático y el banco, y la puerta `noop` lo corre (83–104 s, bajo `LIMITE_POR_PUERTA`). La
+deuda `ap37_mide_lo_declarado` queda saldada.
+
+**Suite.** Los tests sobre el catálogo real de normas se miden contra el reloj real: con
+la fecha fija, la primera revisión posterior a ella salía «en el futuro».
 
 ### v41.8 — 2026-10-17 `git: d8238a0`
 
