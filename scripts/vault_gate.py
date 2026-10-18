@@ -548,7 +548,7 @@ def fix_doc() -> Dict[str, Any]:
     if razones_cambiadas:
         destino = REPO_ROOT / RAZONES
         destino.parent.mkdir(parents=True, exist_ok=True)
-        destino.write_text(razones(), encoding="utf-8", newline="\n")
+        destino.write_bytes(razones().encode("utf-8"))
     return {
         "ok": True, "tool": "vault_gate", "action": "fix-doc",
         "changed": cambiado or razones_cambiadas, "reasons_changed": razones_cambiadas,
