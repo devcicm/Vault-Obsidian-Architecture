@@ -222,7 +222,6 @@ SIN_ESCRITURA_DECLARADA: Dict[str, str] = {
     "vault_propagate": "--queue-report solo lee la cola de propagación",
     "vault_restore": "la copia no tiene backups; sin --confirm true la tool rehúsa (CONFIRMACION_REQUERIDA)",
     "vault_standard_upgrade": "el sandbox ya está en la versión vigente del estándar: no hay nada que subir",
-    "vault_tags": "la línea del ejemplo es --ledger, de solo lectura",
     "vault_undo": "la copia no tiene historial de cambios que deshacer",
 }
 

@@ -4251,14 +4251,16 @@
       "status": "active",
       "required_args": [],
       "declared_returns": [
+        "current_tags",
         "error_code",
         "message",
         "ok",
         "recovery",
-        "renamed",
         "suggestions",
-        "tags",
-        "total"
+        "total_tags",
+        "updated_count",
+        "updated_notes",
+        "written"
       ],
       "dq": {
         "dq_dimensions": [],
@@ -4275,6 +4277,29 @@
           ],
           "since": "v40.5",
           "reason": "El fallo salía como cadena libre: el consumidor no podía decidir si reintentar ni de quién era la culpa. Ahora sale por `emit_error` con código del catálogo y recuperación (AP-52). El campo se anota, no se borra."
+        },
+        "total": {
+          "superseded_by": [
+            "total_tags",
+            "written"
+          ],
+          "since": "v41.9",
+          "reason": "Ningún modo lo emitía: el contrato lo prometía y el AP-37 estático daba crédito a `total` sin que la tool lo devolviera (deuda ap37_mide_lo_declarado). Medido por modo el 2026-10-17. El campo se anota, no se borra."
+        },
+        "renamed": {
+          "superseded_by": [
+            "updated_notes",
+            "updated_count"
+          ],
+          "since": "v41.9",
+          "reason": "Ningún modo lo emitía: el contrato lo prometía y el AP-37 estático daba crédito a `total` sin que la tool lo devolviera (deuda ap37_mide_lo_declarado). Medido por modo el 2026-10-17. El campo se anota, no se borra."
+        },
+        "tags": {
+          "superseded_by": [
+            "current_tags"
+          ],
+          "since": "v41.9",
+          "reason": "Ningún modo lo emitía: el contrato lo prometía y el AP-37 estático daba crédito a `total` sin que la tool lo devolviera (deuda ap37_mide_lo_declarado). Medido por modo el 2026-10-17. El campo se anota, no se borra."
         }
       }
     },

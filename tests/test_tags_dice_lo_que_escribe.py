@@ -100,3 +100,30 @@ def test_limite_declarado_ap37_mide_lo_declarado(vault):
     assert "vault_tags" not in ofensores
     emitidos = set(vault_tags.vault_tags_rebuild()) | set(vault_tags.vault_tags_rename("api", "x"))
     assert "total" not in emitidos
+
+
+def test_ap37_el_banco_mide_vault_tags_por_el_camino_que_escribe():
+    """Su único ejemplo era `--ledger`, de lectura: el banco lo apartaba como
+    `sin_escritura` y el contrato seguía prometiendo `total` (v41.9)."""
+    import vault_mcp_catalog
+    import vault_noop_audit
+
+    assert "vault_tags" not in vault_noop_audit.SIN_ESCRITURA_DECLARADA
+    r = vault_noop_audit.ejecutado({"vault_tags": vault_mcp_catalog.TOOLS_CATALOG["vault_tags"]})
+    assert r["medidas"] == ["vault_tags"], r
+
+
+def test_el_contrato_de_vault_tags_no_promete_lo_que_no_emite(vault):
+    import json
+
+    vault_io.set_vault_root(_ORIGINAL["raiz"])
+    try:
+        entrada = json.loads(vault_io.resolve_tool_spec().read_text(encoding="utf-8"))["tools"]["vault_tags"]
+    finally:
+        vault_io.set_vault_root(vault)
+    emitidos = (set(vault_tags.vault_tags_rebuild()) | set(vault_tags.vault_tags_rename("api", "x"))
+                | set(vault_tags.vault_tags_suggest("07_Knowledge/nota.md")))
+    de_error = {"error_code", "message", "recovery"}
+    assert set(entrada["declared_returns"]) - de_error <= emitidos, entrada["declared_returns"]
+    for campo in ("total", "renamed", "tags"):
+        assert campo in entrada["superseded_fields"], campo

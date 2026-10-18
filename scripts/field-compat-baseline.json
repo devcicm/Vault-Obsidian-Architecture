@@ -1,6 +1,6 @@
 {
   "schema": "field-compat/1",
-  "generated": "2026-10-14T21:59:19Z",
+  "generated": "2026-10-18T00:19:38Z",
   "why": "Campos que los repos consumidores pueden leer con garantía. Un campo que sale de aquí sin quedar anotado en superseded_fields rompe a quien lo leía, y por eso lo para una puerta.",
   "stable": {
     "vault_ai_decision": [
@@ -1557,14 +1557,16 @@
       "written"
     ],
     "vault_tags": [
+      "current_tags",
       "error_code",
       "message",
       "ok",
       "recovery",
-      "renamed",
       "suggestions",
-      "tags",
-      "total"
+      "total_tags",
+      "updated_count",
+      "updated_notes",
+      "written"
     ],
     "vault_test_save": [
       "action",

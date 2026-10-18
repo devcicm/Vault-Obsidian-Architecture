@@ -629,7 +629,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "Reconstruye 00_System/tag-registry.json y 99_Index/tag-index.md",
             "Anota términos nuevos en 19_Audits/vocabulary/tag-ledger.json (append-only)",
         ],
-        "example": "python vault_tags.py --ledger",
+        "example": "python vault_tags.py\npython vault_tags.py --ledger",
         "related": ["vault_delta", "vault_audit"],
     },
     "vault_reindex": {
