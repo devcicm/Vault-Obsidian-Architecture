@@ -141,8 +141,28 @@ def _propios(funcion: ast.AST):
             pendientes.extend(ast.iter_child_nodes(nodo))
 
 
-def _actualizacion(nodo: ast.AST):
+def _literales_unicos(funcion: ast.AST) -> Dict[str, ast.Dict]:
+    """Variables de la función asignadas **una sola vez**, y a un dict literal.
+
+    Es lo que `var.update(otro)` puede leer sin adivinar (v41.10): si `otro`
+    se reasigna, o viene de una llamada, su valor depende de por dónde pase la
+    ejecución y no se sigue —ese residuo es la `cobertura_parcial` de AP-52—.
+    """
+    vistas: Dict[str, list] = {}
+    for nodo in _propios(funcion):
+        if isinstance(nodo, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
+            destinos = nodo.targets if isinstance(nodo, ast.Assign) else [nodo.target]
+            for d in destinos:
+                if isinstance(d, ast.Name):
+                    vistas.setdefault(d.id, []).append(nodo.value)
+    return {n: v[0] for n, v in vistas.items()
+            if len(v) == 1 and isinstance(v[0], ast.Dict)}
+
+
+def _actualizacion(nodo: ast.AST, literales: Dict[str, ast.Dict] = None):
     """`var.update({...})` o `var.update(k=…)`: `(var, claves, ok_es_false)`.
+
+    Un `var.update(otro)` se lee cuando `otro` está en `literales`.
 
     Un dict literal que ya es un envelope por sí mismo lo cuenta el detector
     de literales; aquí su `ok: False` no se vuelve a contar, para que un mismo
@@ -160,6 +180,8 @@ def _actualizacion(nodo: ast.AST):
                 and kw.value.value is False):
             ok_false = True
     for arg in nodo.args:
+        if isinstance(arg, ast.Name) and literales and arg.id in literales:
+            arg = literales[arg.id]
         if not isinstance(arg, ast.Dict):
             continue
         propias = _claves(arg)
@@ -179,10 +201,11 @@ def _mutados(arbol: ast.AST) -> List[tuple]:
     `vault_init` armaban el resultado bueno y al fallar le cambiaban `ok` y le
     colgaban `error`. Las claves de `var` son las de sus literales y las de
     sus `var["k"] = …` y `var.update(…)` **en la misma función**; no se sigue
-    el valor por llamadas ni un `update()` con un dict no literal, que es el
-    mismo límite de forma que el detector de literales declara. `update()`
-    entró el 2026-10-16: era el punto ciego declarado, y medido no lo usaba
-    ningún sitio del repo para tocar `ok`.
+    el valor por llamadas ni un `update()` con un dict que no sea literal o
+    una variable asignada una sola vez a uno (`_literales_unicos`, v41.10),
+    que es el mismo límite de forma que el detector de literales declara.
+    `update()` entró el 2026-10-16: era el punto ciego declarado, y medido no
+    lo usaba ningún sitio del repo para tocar `ok`.
     """
     encontrados = []
     for funcion in ast.walk(arbol):
@@ -190,8 +213,9 @@ def _mutados(arbol: ast.AST) -> List[tuple]:
             continue
         claves: Dict[str, set] = {}
         a_false = []
+        literales = _literales_unicos(funcion)
         for nodo in _propios(funcion):
-            actualizada = _actualizacion(nodo)
+            actualizada = _actualizacion(nodo, literales)
             if actualizada is not None:
                 var, nuevas, ok_false = actualizada
                 claves.setdefault(var, set()).update(nuevas)

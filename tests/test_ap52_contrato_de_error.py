@@ -160,6 +160,18 @@ CASOS = [
         False,
         "un `update()` con un dict no literal no se adivina",
     ),
+    (
+        'def f():\n    r = {"ok": True, "error": ""}\n    otro = {"ok": False}\n'
+        '    r.update(otro)\n    return r\n',
+        True,
+        "v41.10: un dict literal asignado una vez se sigue hasta el `update()`",
+    ),
+    (
+        'def f(c):\n    r = {"ok": True, "error": ""}\n    otro = {"ok": True}\n'
+        '    if c:\n        otro = {"ok": False}\n    r.update(otro)\n    return r\n',
+        False,
+        "reasignado depende del camino: no se adivina (cobertura_parcial)",
+    ),
 ]
 
 import vault_grafo_import as gi  # noqa: E402
