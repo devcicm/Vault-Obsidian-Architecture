@@ -2536,14 +2536,14 @@ python vault_gate.py            # corre todas
 python vault_gate.py --strict   # exit 1 si alguna falla (gate de CI)
 python vault_gate.py --list     # qué mide cada puerta y cómo se arregla
 python vault_gate.py --check-doc  # el checklist de AGENTS.md vs. el registro
-python vault_gate.py --fix-doc    # regenera el bloque derivado del checklist
+python vault_gate.py --fix-doc    # regenera el checklist y docs/PUERTAS.md
 ```
 
 El problema que resuelve no es de comodidad. Las puertas estaban repartidas en un checklist de prosa, y una lista en prosa falla de tres maneras que ya se cobraron su precio aquí: **nadie sabe cuántas son** —se decía "las siete" mientras el checklist tenía ocho ítems y la práctica corría seis—; **añadir una puerta no la pone en circulación**, porque un guard que nadie añade al checklist no corre, que es AP-42 aplicado a las propias puertas; y **correrlas a mano las corre a medias**, porque el comando que se saltea siempre es el más lento.
 
 **La lista canónica vive en el registro `PUERTAS`, no en el doc,** y `--check-doc` verifica que el checklist de `AGENTS.md` las cite todas. El orden es el del estándar —registro canónico primero, doc después, guard que falla si divergen—; al revés sería AP-50 estrenada en la misma versión que la declara. Si una puerta falta en el checklist, se añade al checklist: el registro manda.
 
-**Desde v40.16 el checklist no se escribe, se genera.** Cada puerta llevaba en `AGENTS.md` su propio párrafo a mano —dieciséis descripciones de lo que `mide` y `fix` ya decían—, que es una segunda fuente de verdad (AP-05) y envejece en la dirección cómoda: el registro cambia y la prosa se queda. Ahora el bloque vive entre marcas, lo escribe `--fix-doc` y `--check-doc` compara literalmente; comprobar solo que el nombre del script aparezca dejaba pasar justo esa deriva. El **porqué** de cada puerta no se deriva y sigue en el docstring de su tool.
+**Desde v40.16 el checklist no se escribe, se genera.** Cada puerta llevaba en `AGENTS.md` su propio párrafo a mano —dieciséis descripciones de lo que `mide` y `fix` ya decían—, que es una segunda fuente de verdad (AP-05) y envejece en la dirección cómoda: el registro cambia y la prosa se queda. Ahora el bloque vive entre marcas, lo escribe `--fix-doc` y `--check-doc` compara literalmente; comprobar solo que el nombre del script aparezca dejaba pasar justo esa deriva. El **porqué** de cada puerta vive en el docstring de su tool, y desde v41.11 `docs/PUERTAS.md` lo publica derivado de ahí: resumen y primer párrafo del docstring —el del dueño si el script es un alias (ADR-0002)— y las normas que cita, enlazadas a su `porque.md`. El mismo `--fix-doc` lo regenera y `--check-doc` falla (`reasons_drift`) si se edita a mano: el porqué se corrige en el docstring.
 
 **No reimplementa nada y no baja el enforcement de ninguna norma** (regla 5). Cada puerta corre como subproceso con su propio exit code y su propio envelope, y esta tool solo agrega. Mirar los datos por su cuenta la convertiría en una segunda fuente de verdad sobre el estado del repo (AP-05) y la haría medir con su criterio en vez del de la puerta (AP-44).
 

@@ -181,7 +181,8 @@ drift se cierra en cada commit sin intervención manual.
 escriba a mano aquí se pierde. Hasta v40.16 cada puerta llevaba su propio párrafo: una
 segunda descripción de lo que el registro ya decía, envejeciendo en la dirección cómoda.
 El **porqué** de cada decisión no cabe en un campo y no está aquí — está en el docstring
-de cada tool, que es donde lo lee quien la abre. Lo que no se deriva de ninguna parte va
+de cada tool, que es donde lo lee quien la abre, y desde v41.11 `docs/PUERTAS.md` lo
+publica derivado de ahí (mismo `--fix-doc`/`--check-doc`). Lo que no se deriva de ninguna parte va
 abajo, en «Cuatro cosas que el registro no puede decirte».
 
 <!-- puertas:inicio — generado por vault_gate.py --fix-doc -->
