@@ -419,3 +419,9 @@ def test_el_detector_no_se_mide_por_texto():
         for n in ast.walk(arbol)
     )
     assert usa_ast, "el detector debe recorrer el AST, no el texto"
+
+
+def test_ap52_la_cobertura_parcial_declara_lo_que_el_detector_no_sigue():
+    import vault_norms_catalog as cat
+    parcial = cat.norma_por_codigo("AP-52")["cobertura_parcial"]
+    assert "_literales_unicos" in parcial and "reasignada" in parcial

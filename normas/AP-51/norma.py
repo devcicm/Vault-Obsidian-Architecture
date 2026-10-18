@@ -8,6 +8,15 @@ ejecutar. Movida tal cual desde `NORM_CATALOG` el 2026-10-09; las caras están e
 
 NORMA = {
     "code": "AP-51",
+    "cobertura_parcial": (
+        "Detectada desde v41.10 por si el fallo **llega al llamante**, no por si "
+        "deja rastro: una llamada suelta solo expone si muta un contenedor o si "
+        "llama a una función del mismo módulo que lo hace "
+        "(`vault_blame_audit.expositores`). Lo que no se sigue: un helper de otro "
+        "módulo que expone (cuenta como `log()` mudo, el sentido de error seguro) "
+        "y un contenedor mutado que el llamante nunca recibe. Medido el "
+        "2026-10-17: ningún sitio del repo cae en el segundo caso conocido."
+    ),
     "distinguido_de": {
         "AP-52": (
             "Las dos son fallos del manejo de error en una tool. AP-51 es la "
@@ -91,5 +100,5 @@ NORMA = {
     # afirmacion no falsable que AP-37 persigue.
     "tools_detecting": ["vault_blame_audit"],
     "introduced_version": "v40.1",
-    "revisado_en": "2026-10-09",
+    "revisado_en": "2026-10-17",
 }

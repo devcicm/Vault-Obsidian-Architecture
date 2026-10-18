@@ -8,6 +8,13 @@ ejecutar. Movida tal cual desde `NORM_CATALOG` el 2026-10-09; las caras están e
 
 NORMA = {
     "code": "AP-52",
+    "cobertura_parcial": (
+        "Detectada en su parte decidible: literales, `var[\"k\"] = …` y "
+        "`var.update(…)` con un dict literal o una variable asignada una sola vez "
+        "a uno (`vault_error_contract._literales_unicos`, v41.10). Lo que no se "
+        "sigue —y no se adivina—: el valor que llega por una llamada o por una "
+        "variable reasignada según el camino. Medido el 2026-10-17: 0 sitios."
+    ),
     "distinguido_de": {
         "AP-51": (
             "Las dos son fallos del manejo de error en una tool. AP-51 es la "
@@ -74,5 +81,5 @@ NORMA = {
     # contenido del vault, y esta norma es sobre el codigo de las tools.
     "tools_detecting": ["vault_error_contract"],
     "introduced_version": "v40.2",
-    "revisado_en": "2026-10-09",
+    "revisado_en": "2026-10-17",
 }

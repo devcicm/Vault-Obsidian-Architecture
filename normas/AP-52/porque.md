@@ -15,4 +15,5 @@ que nombra AP-52 en su cuerpo dentro de una tool que el catálogo declara, o un
 
 - **Aplica** (`tools_enforcing`): `scripts/vault_error_contract.py::scan`, `scripts/vault_error_contract.py::freeze`, `scripts/vault_error_contract.py::migrate`, `scripts/vault_error_contract.py::main`.
 - **Detecta** (`tools_detecting`): `scripts/vault_error_contract.py::scan`, `scripts/vault_error_contract.py::freeze`, `scripts/vault_error_contract.py::migrate`, `scripts/vault_error_contract.py::main`.
+- **Cobertura parcial**: declarada en `norma.py` (`cobertura_parcial`).
 - **Tests** (`tests/`, criterio de la capa 4): `tests/test_ap52_contrato_de_error.py::test_la_baseline_esta_congelada_y_al_dia`, `tests/test_ap52_contrato_de_error.py::test_la_deuda_de_ap52_esta_saldada`, `tests/test_ap52_contrato_de_error.py::test_la_norma_esta_registrada_con_enforcement_real`, `tests/test_ap52_contrato_de_error.py::test_la_norma_tiene_seccion_en_el_manifiesto`, `tests/test_regla7_contraste_ajeno.py::test_el_self_test_verifica_las_cuatro_negativas`.

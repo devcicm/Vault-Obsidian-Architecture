@@ -15,4 +15,5 @@ que nombra AP-51 en su cuerpo dentro de una tool que el catálogo declara, o un
 
 - **Aplica** (`tools_enforcing`): `scripts/vault_blame_audit.py::catch_silenciosos_js`, `scripts/vault_blame_audit.py::scan`, `scripts/vault_blame_audit.py::freeze`, `scripts/vault_blame_audit.py::migrate`, `scripts/vault_blame_audit.py::main`.
 - **Detecta** (`tools_detecting`): `scripts/vault_blame_audit.py::catch_silenciosos_js`, `scripts/vault_blame_audit.py::scan`, `scripts/vault_blame_audit.py::freeze`, `scripts/vault_blame_audit.py::migrate`, `scripts/vault_blame_audit.py::main`.
+- **Cobertura parcial**: declarada en `norma.py` (`cobertura_parcial`).
 - **Tests** (`tests/`, criterio de la capa 4): `tests/test_ap51_culpar_al_dato.py::test_la_baseline_esta_congelada_y_el_repo_no_ha_crecido`, `tests/test_ap51_culpar_al_dato.py::test_la_norma_esta_registrada_con_enforcement_real`, `tests/test_ap51_culpar_al_dato.py::test_freeze_no_se_ejecuta_por_error_al_solo_comprobar`, `tests/test_baseline.py::test_la_pendiente_de_una_baseline_del_repo_sale_de_git`, `tests/test_baseline.py::test_sin_git_la_pendiente_lo_dice_en_vez_de_devolver_serie_vacia`.

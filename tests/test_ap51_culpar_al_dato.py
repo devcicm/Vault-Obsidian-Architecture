@@ -226,3 +226,9 @@ def test_ap51_un_helper_del_modulo_que_expone_absuelve_y_uno_que_solo_registra_n
     a, b = [h for h in ast.walk(arbol) if isinstance(h, ast.ExceptHandler)]
     assert not blame.handler_infringe(a, expuestos)
     assert blame.handler_infringe(b, expuestos)
+
+
+def test_ap51_la_cobertura_parcial_declara_lo_que_el_detector_no_sigue():
+    import vault_norms_catalog as cat
+    parcial = cat.norma_por_codigo("AP-51")["cobertura_parcial"]
+    assert "expositores" in parcial and "otro módulo" in parcial
