@@ -8066,7 +8066,7 @@ temp/
 
 ---
 
-### v41.9 — 2026-10-17 `git: pending`
+### v41.9 — 2026-10-17 `git: 733993d`
 
 **El contrato de una tool sale de su código: un solo lector de argparse, el catálogo no afirma params que la CLI no tiene y la puerta de AP-37 mide lo emitido.**
 
