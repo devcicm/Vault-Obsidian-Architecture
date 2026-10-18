@@ -2,7 +2,7 @@
 """
 Vault MCP Catalog — Catálogo canónico de tools del vault.
 
-Contiene la definición de todas las 69 tools con sus:
+Contiene la definición de todas las tools (cuántas, `len(TOOLS_CATALOG)`) con sus:
 - Propósito
 - Parámetros
 - Validadores

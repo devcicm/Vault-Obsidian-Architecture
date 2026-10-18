@@ -38,7 +38,9 @@ verde aquí no es verde allí.
 """
 
 import argparse
+import ast
 import json
+import re
 import subprocess
 import sys
 import time
@@ -394,6 +396,78 @@ def checklist() -> str:
     return "\n".join(lineas)
 
 
+#: El registro de por qué existe cada puerta. Derivado entero: el porqué se
+#: lee del docstring de la tool que la puerta ejecuta —donde lo lee quien la
+#: abre— y no se escribe aquí una segunda vez.
+RAZONES = Path("docs") / "PUERTAS.md"
+_ALIAS = re.compile(r"El dueño vive en `([^`]+\.py)`")
+_NORMA = re.compile(r"\b(AP-\d+|PAT-\d+|SP-\d+|CN-\d+)\b")
+
+
+def _docstring(script: Path) -> str:
+    """El docstring del módulo; si es un alias (ADR-0002), el de su dueño."""
+    doc = ast.get_docstring(ast.parse(script.read_text(encoding="utf-8"))) or ""
+    alias = _ALIAS.search(doc)
+    if alias and (REPO_ROOT / alias.group(1)).exists():
+        return _docstring(REPO_ROOT / alias.group(1))
+    return doc
+
+
+def _prosa(parrafo: str) -> str:
+    """Un párrafo en una línea; si abre una lista, la lista conserva sus filas."""
+    texto, _, lista = parrafo.partition("\n- ")
+    linea = " ".join(texto.split())
+    if not lista:
+        return linea
+    filas = ["- " + " ".join(f.split()) for f in lista.split("\n- ")]
+    return linea + "\n\n" + "\n".join(filas)
+
+
+def razon(puerta: Dict[str, Any]) -> Dict[str, Any]:
+    """Resumen y primer párrafo de prosa del docstring, y las normas que cita."""
+    doc = _docstring(SCRIPTS_DIR / puerta["cmd"][0])
+    parrafos = [b.strip() for b in doc.split("\n\n") if b.strip()]
+    resumen = " ".join(parrafos[0].split()) if parrafos else ""
+    cuerpo = next((_prosa(b) for b in parrafos[1:]
+                   if not b.startswith(("#", "-", "python", "    ", "|"))), "")
+    normas = sorted(set(_NORMA.findall(resumen + " " + puerta["mide"])),
+                    key=lambda c: (c.split("-")[0], int(c.split("-")[1])))
+    return {"resumen": resumen, "porque": cuerpo,
+            "normas": [n for n in normas if (REPO_ROOT / "normas" / n).is_dir()]}
+
+
+def razones() -> str:
+    lineas = [
+        "# Las puertas de cierre y por qué existe cada una", "",
+        "> **Derivado.** Sale de `vault_gate.PUERTAS` y del docstring de cada tool;",
+        "> se regenera con `python scripts/vault_gate.py --fix-doc` y `--check-doc`",
+        "> falla si diverge. Lo escrito a mano aquí se pierde: el porqué se corrige",
+        "> en el docstring de la tool.", "",
+        f"Puertas: {len(PUERTAS)}. Verde en todas no es verde en la suite.", "",
+    ]
+    for p in PUERTAS:
+        r = razon(p)
+        lineas += [f"## `{p['id']}`", "",
+                   f"- **Comando:** `python scripts/{' '.join(p['cmd'])}`",
+                   f"- **Mide:** {p['mide']}."]
+        if p["fix"]:
+            lineas.append(f"- **Se arregla con:** {p['fix']}")
+        if r["normas"]:
+            lineas.append("- **Normas:** " + ", ".join(
+                f"[{n}](../normas/{n}/porque.md)" for n in r["normas"]))
+        lineas += ["", f"**{r['resumen']}**", ""]
+        if r["porque"]:
+            lineas += [r["porque"], ""]
+    return "\n".join(lineas)
+
+
+def _razones_al_dia() -> bool:
+    doc = REPO_ROOT / RAZONES
+    if not doc.exists():
+        return False
+    return doc.read_text(encoding="utf-8").replace("\r\n", "\n").strip() == razones().strip()
+
+
 def _bloque_publicado(texto: str) -> str:
     if MARCA_INICIO not in texto or MARCA_FIN not in texto:
         return ""
@@ -411,6 +485,9 @@ def check_doc() -> Dict[str, Any]:
        mano el texto de una puerta pasaba desapercibido mientras el nombre del
        script siguiera ahí — que es como los dieciséis párrafos se despegaron
        del registro sin que nadie lo viera.
+    3. **`docs/PUERTAS.md` coincide con `razones()`** (v41.11). El porqué de
+       cada puerta vivía solo en el docstring de su tool, y quien leía el
+       checklist veía qué mide pero no por qué existe.
     """
     doc = REPO_ROOT / "AGENTS.md"
     if not doc.exists():
@@ -425,8 +502,11 @@ def check_doc() -> Dict[str, Any]:
         divergencia = "bloque_desactualizado"
     else:
         divergencia = None
+    razones_al_dia = _razones_al_dia()
     return {
-        "ok": not ausentes and not divergencia,
+        "ok": not ausentes and not divergencia and razones_al_dia,
+        "reasons_doc": str(RAZONES).replace("\\", "/"),
+        "reasons_drift": None if razones_al_dia else "razones_desactualizadas",
         "tool": "vault_gate",
         "action": "check-doc",
         "gates_total": len(PUERTAS),
@@ -442,7 +522,7 @@ def check_doc() -> Dict[str, Any]:
 
 
 def fix_doc() -> Dict[str, Any]:
-    """Reescribe el bloque derivado de `AGENTS.md` conservando sus finales de línea."""
+    """Reescribe el bloque derivado de `AGENTS.md` (conservando sus finales de línea) y `docs/PUERTAS.md`."""
     doc = REPO_ROOT / "AGENTS.md"
     if not doc.exists():
         return emit_error("vault_gate", "FILE_NOT_FOUND", "AGENTS.md no encontrado")
@@ -464,9 +544,15 @@ def fix_doc() -> Dict[str, Any]:
     cambiado = salida != crudo
     if cambiado:
         doc.write_bytes(salida.encode("utf-8"))
+    razones_cambiadas = not _razones_al_dia()
+    if razones_cambiadas:
+        destino = REPO_ROOT / RAZONES
+        destino.parent.mkdir(parents=True, exist_ok=True)
+        destino.write_text(razones(), encoding="utf-8", newline="\n")
     return {
         "ok": True, "tool": "vault_gate", "action": "fix-doc",
-        "changed": cambiado, "gates_total": len(PUERTAS),
+        "changed": cambiado or razones_cambiadas, "reasons_changed": razones_cambiadas,
+        "gates_total": len(PUERTAS),
     }
 
 
@@ -511,7 +597,7 @@ No sustituye a la suite: `python -m pytest tests/` sigue siendo obligatorio.
     parser.add_argument("--check-doc", action="store_true", dest="check_doc",
                         help="Comprueba que el checklist de AGENTS.md las cite todas")
     parser.add_argument("--fix-doc", action="store_true", dest="fix_doc",
-                        help="Regenera el bloque derivado del checklist en AGENTS.md")
+                        help="Regenera el checklist de AGENTS.md y docs/PUERTAS.md")
     args = parser.parse_args()
 
     if args.fix_doc:

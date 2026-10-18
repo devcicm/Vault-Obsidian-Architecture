@@ -2513,7 +2513,7 @@
           },
           "fix-doc": {
             "type": "boolean",
-            "description": "Regenera el bloque derivado del checklist en AGENTS.md"
+            "description": "Regenera el checklist de AGENTS.md y docs/PUERTAS.md"
           }
         },
         "additionalProperties": false

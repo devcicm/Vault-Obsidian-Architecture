@@ -233,3 +233,51 @@ def test_la_corrida_no_hereda_el_limite_por_defecto_de_wrap_main():
         nombres = {k.arg: k.value for k in c.keywords}
         assert "timeout" in nombres, "wrap_main sin timeout hereda el límite por defecto"
         assert ast.unparse(nombres["timeout"]) == "limite_total()"
+
+
+# --- el registro de razones (v41.11) -----------------------------------------
+
+def test_las_razones_salen_del_registro_y_del_docstring():
+    """Cada puerta con su comando, lo que mide y el porqué de su tool."""
+    doc = vault_gate.razones()
+    for p in vault_gate.PUERTAS:
+        assert f"## `{p['id']}`" in doc
+        assert p["mide"] in doc
+        r = vault_gate.razon(p)
+        assert r["resumen"] and r["resumen"] in doc, p["id"]
+
+
+def test_un_alias_da_la_razon_de_su_dueno():
+    """ADR-0002: el docstring del alias solo dice dónde vive el dueño."""
+    campos = next(p for p in vault_gate.PUERTAS if p["cmd"][0] == "vault_spec_catalog_check.py")
+    assert "alias de" not in vault_gate.razon(campos)["resumen"]
+
+
+def test_las_normas_citadas_existen_como_paquete():
+    for p in vault_gate.PUERTAS:
+        for n in vault_gate.razon(p)["normas"]:
+            assert (vault_gate.REPO_ROOT / "normas" / n / "porque.md").exists(), n
+    noop = next(p for p in vault_gate.PUERTAS if p["cmd"][0] == "vault_noop_audit.py")
+    assert "AP-37" in vault_gate.razon(noop)["normas"]
+
+
+def test_editar_a_mano_las_razones_las_pone_en_rojo(tmp_path, monkeypatch):
+    (tmp_path / "AGENTS.md").write_text(vault_gate.checklist(), encoding="utf-8")
+    destino = tmp_path / vault_gate.RAZONES
+    destino.parent.mkdir(parents=True)
+    destino.write_text(vault_gate.razones().replace("**Mide:**", "**Mide (a mano):**"),
+                       encoding="utf-8")
+    monkeypatch.setattr(vault_gate, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(vault_gate, "_docstring", lambda s: "Resumen.\n\nPorque sí.")
+
+    r = vault_gate.check_doc()
+    assert r["ok"] is False and r["reasons_drift"] == "razones_desactualizadas"
+    assert r["checklist_drift"] is None
+
+    assert vault_gate.fix_doc()["reasons_changed"] is True
+    assert vault_gate.check_doc()["ok"] is True
+
+
+def test_el_registro_publicado_esta_al_dia():
+    r = vault_gate.check_doc()
+    assert r["reasons_drift"] is None, "python scripts/vault_gate.py --fix-doc"

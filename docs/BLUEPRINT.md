@@ -118,7 +118,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-34** — Relacion tipada huerfana — endpoint inexistente en el vault | audit | — | `test_graph_merge_sugerencias.py` |
 | **AP-35** — Silos de relacion — sistemas de grafos aislados | audit | — | `test_skills_catalogo.py` |
 | **AP-36** — Contención e idempotencia — side-effects fuera del vault o no rastreables | guard+audit | `framework` | `test_ap46_heal.py`, `test_arquitectura.py`, `test_ciclo_de_vida_dominio.py`, `test_consulta_dominio.py`, `test_gobernanza_dominio.py`, `test_grafo_dominio.py`, `test_indices_dominio.py`, `test_mcp_http_seguridad.py`, `test_skills_contract.py`, `test_vault_containment.py`, `test_vault_norms_audit.py` |
-| **AP-37** — No-op silencioso — ok: true sin indicador de trabajo | audit | `noop` | `test_noop_audit.py`, `test_norms_coherence.py`, `test_voice.py` |
+| **AP-37** — No-op silencioso — ok: true sin indicador de trabajo | audit | `noop` | `test_noop_audit.py`, `test_norms_coherence.py`, `test_vault_gate.py`, `test_voice.py` |
 | **AP-38** — Vocabulario validado después de escribir, no antes | guard+audit | `framework` | `test_status_vocabulary.py` |
 | **AP-39** — Vocabulario abierto sin memoria | guard+audit | `framework` | `test_ap39_registro_en_el_write_path.py`, `test_tag_vocabulary.py`, `test_vault_init.py` |
 | **AP-40** — Contrato publicado que la CLI rechaza | guard+audit | `contratos`, `framework` | `test_catalog_params.py` |

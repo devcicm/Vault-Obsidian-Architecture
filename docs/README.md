@@ -24,10 +24,12 @@ deriva o lo archiva.
 
 | Documento | Para qué |
 |---|---|
-| [Arquitectura](ARQUITECTURA.md) | Contextos acotados y fronteras |
+| [Arquitectura](ARQUITECTURA.md) | Contextos acotados y fronteras — derivado: se regenera con `vault_arch --blueprint` |
+| [Puertas de cierre](PUERTAS.md) | Qué mide cada puerta, cómo se arregla y por qué existe — derivado de `vault_gate.PUERTAS` y de los docstrings: se regenera con `vault_gate --fix-doc` |
 | [Plano de construcción](BLUEPRINT.md) | Derivado de los registros: se regenera con `vault_blueprint --blueprint`, no se edita |
 | [Seis capas conceptuales](architecture/layers.md) | Piezas y responsabilidades |
 | [ADR](adr/) | Decisiones de arquitectura registradas |
+| [Normas](sdd/04-antipatterns.md) | Catálogo AP/PAT/SP/CN derivado de `vault_norms_catalog`; cada norma es un paquete en [`normas/`](../normas/) con su `porque.md` |
 | [SDD](sdd/) | Principios, máquinas de estado, implementación, uso y antipatrones |
 
 ## Producto
