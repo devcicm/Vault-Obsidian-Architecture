@@ -577,6 +577,24 @@ def _write_version_file(data: Dict[str, Any]) -> None:
     _version_file().write_bytes((json.dumps(data, indent=2, ensure_ascii=False) + "\n").encode("utf-8"))
 
 
+def _catalogo_de_versiones() -> Dict[str, Any]:
+    """Lo que hace falta para MIRAR las versiones sin migrar a ninguna.
+
+    La firma del vault es metadato, no interruptor: desde la vigente tiene que
+    poder verse qué versiones conoce el registro, cuál es la vigente del
+    paquete y en cuál está sellado este vault. Ninguno de esos tres datos
+    autoriza una escritura ni cambia el comportamiento del resto de tools —
+    por eso viaja en los envelopes informativos (--check, --report) y no en
+    los que aplican. Medido 2026-10-18: antes había que deducirlo del epilog
+    a mano de --help, que decía "v19 a v34" cuando la vigente era v41.11.
+    """
+    return {
+        "known_versions": list(VERSION_ORDER),
+        "current_standard": CURRENT_VERSION,
+        "applied_version": _read_version_file().get("applied_version"),
+    }
+
+
 STANDARD_FOLDERS = standard_folders()  # from vault_registry — fuente unica
 
 
@@ -960,6 +978,7 @@ def vault_standard_upgrade(
             "pending_migrations": len(pending),
             "available_fixes": all_fixes,
             "fix_types": list(FIX_TYPES.keys()),
+            **_catalogo_de_versiones(),
         }
         if validate:
             result["compliance"] = _run_compliance_check(current_applied)
@@ -1022,6 +1041,7 @@ def vault_standard_upgrade(
             "stamp_pending": pendiente_de_sellar and not sellado,
             "folders_created": creadas,
             "folders_to_create": [] if creadas else faltan,
+            **_catalogo_de_versiones(),
         }
         if validate:
             result["compliance"] = _run_compliance_check(current_applied)
@@ -1055,6 +1075,7 @@ def vault_standard_upgrade(
                 to_version,
                 [f for d in pending_details for f in d["folders_to_create"]],
             ),
+            **_catalogo_de_versiones(),
         }
         if validate:
             result["compliance"] = _run_compliance_check(current_applied)
@@ -1125,7 +1146,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Vault Standard Upgrade -- detect and apply version migrations",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
+        epilog=f"""
 Ejemplos:
   # Solo reportar migraciones pendientes (no aplica nada)
   python vault_standard_upgrade.py --check
@@ -1150,7 +1171,7 @@ Ejemplos:
   - --fixes-only solo ejecuta fixes sin aplicar migraciones
   - --dry-run simula todo sin aplicar cambios
   - --report genera reporte de fixes disponibles
-  - Versiones disponibles: v19 a v34
+  - Versiones disponibles: {VERSION_ORDER[0]} a {VERSION_ORDER[-1]} (vigente: {CURRENT_VERSION})
 """,
         allow_abbrev=False,
     )

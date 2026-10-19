@@ -35,7 +35,9 @@ dependencies = ["PyYAML>=6.0"]
 [project.optional-dependencies]
 # jsonschema: la suite mide schemas/ con el validador que usaria un consumidor
 # sin Python (AP-44); Draft202012Validator existe desde 4.0.
-dev = ["pytest>=7.0", "pytest-cov>=4.0", "ruff>=0.3.0", "jsonschema>=4.0"]
+# pytest-xdist y pytest-timeout sostienen la forma canónica local de la suite
+# (`-n auto`) y su red anti-cuelgue (`--timeout` de addopts).
+dev = ["pytest>=7.0", "pytest-cov>=4.0", "pytest-xdist>=3.5", "pytest-timeout>=2.3", "ruff>=0.3.0", "jsonschema>=4.0"]
 
 [project.urls]
 Homepage = "https://github.com/devcicm/Vault-Obsidian-Architecture"
@@ -79,7 +81,7 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "-v --tb=short"
+addopts = "-v --tb=short --timeout=300"
 
 [tool.setuptools.exclude-package-data]
 "*" = ["*.bak-*", "scripts.bak-*", ".history/*", "vault-backups/*"]

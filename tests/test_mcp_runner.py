@@ -27,6 +27,7 @@ import shutil
 import subprocess
 import sys
 import threading
+import weakref
 from collections import deque
 from pathlib import Path
 
@@ -41,6 +42,28 @@ pytestmark = pytest.mark.skipif(
 )
 
 import vault_grafo_import as gi  # noqa: E402
+
+
+def _matar_arbol(proc: subprocess.Popen) -> None:
+    """Mata el proceso del servidor y su árbol de hijos.
+
+    `Popen.kill()` en Windows solo mata al padre: si el server se lanzara vía
+    `npm start`, el `node` nieto quedaría vivo. Hoy no tiene hijos y se mata
+    por árbol igual — es el contrato que quien lee `cerrar` supone.
+    """
+    if proc.poll() is not None:
+        return
+    if os.name == "nt":
+        subprocess.run(
+            ["taskkill", "/PID", str(proc.pid), "/T", "/F"],
+            capture_output=True, check=False,
+        )
+    else:
+        proc.terminate()
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            proc.kill()
 
 
 class SesionMCP:
@@ -69,6 +92,12 @@ class SesionMCP:
             env=env,
             cwd=str(REPO_ROOT),
         )
+        # Si el test muere sin pasar por cerrar() —un fallo sin finally, un
+        # pytest-timeout, un kill de la corrida— el hijo no hereda la muerte en
+        # Windows: quedaba un `node` huérfano por cada sesión abierta (medido
+        # 2026-10-18: 13 servidores vivos horas después de la corrida). Esta
+        # red de seguridad lo mata cuando el objeto se recoge.
+        self._a_la_caza = weakref.finalize(self, _matar_arbol, self.proc)
         self._stderr_chunks = deque(maxlen=self.STDERR_CHUNKS)
         self._stderr_thread = threading.Thread(
             target=self._drenar_stderr, name="mcp-stderr-drain", daemon=True
@@ -133,9 +162,10 @@ class SesionMCP:
             self.proc.stdin.close()
             self.proc.wait(timeout=30)
         except Exception:
-            self.proc.kill()
+            _matar_arbol(self.proc)
             self.proc.wait(timeout=30)
         finally:
+            self._a_la_caza.detach()
             self._stderr_thread.join(timeout=5)
             assert not self._stderr_thread.is_alive(), "el drenaje de stderr no terminó"
 

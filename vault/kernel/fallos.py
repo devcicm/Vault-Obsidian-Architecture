@@ -94,6 +94,12 @@ CAUSAS: Dict[str, str] = {
         "preparaba el temporal —lo dio por caducado un dueño de otra máquina "
         "o de un `owner.json` antiguo—. No se reemplazó la nota: pisarla "
         "borraría lo que escribió quien se lo quitó.",
+    "DIAGRAMA_MERMAID_INVALID":
+        "el contenido Mermaid del diagrama no pasa la validación del parser "
+        "del estándar (`vault.kernel.mermaid_reglas`). La nota NO se escribe: "
+        "persistir un bloque que Mermaid no dibuja contamina el índice y "
+        "hunde `healthIndex.content`. El envelope lleva `validation_errors[]` "
+        "con la lista accionable.",
 }
 
 

@@ -287,6 +287,15 @@ El vocabulario de `status` es **fuente única** en `vault_norms.STATUS_VOCAB` (1
 
 ```mermaid
 stateDiagram-v2
+    state stub
+    state draft
+    state planned
+    state in_progress
+    state implemented
+    state verified
+    state deprecated
+    state refactoring
+    state obsolete
     [*] --> stub: vault_graph_fix --stubs
     stub --> draft: primer contenido real (>=3 lineas)
     [*] --> draft: vault_write (content gate)
@@ -2239,6 +2248,12 @@ Maneja toda la lógica de negocio de usuarios.
 
 ```mermaid
 classDiagram
+    class BaseService{
+        +Database db
+    }
+    class IUserService{
+        <<interface>>
+    }
     BaseService <|-- UserService
     IUserService <|.. UserService
     class UserService{

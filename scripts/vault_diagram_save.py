@@ -32,6 +32,8 @@ from vault_errors import emit_error, wrap_main, proyecto_registrado
 from vault_registry import section_default_type
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_io import atomic_write_text, assert_within_vault, write_report
+from vault.kernel.mermaid_reglas import validate_mermaid
+
 import uuid
 
 from pathlib import Path
@@ -219,6 +221,28 @@ def vault_diagram_save(
         body_sections.append(f"```\n{content}\n```")
 
     final_content = frontmatter.render() + "\n\n" + con_titulo(title, "\n\n".join(body_sections))
+
+    if diagram_type == "mermaid":
+        # Guard de pre-escritura AP-25: no se persiste un diagrama que el
+        # parser del estándar declara inválido. Sin esto, una nota en
+        # `06_Diagrams/` con un bloque que Mermaid no dibuja contamina el
+        # índice (cuenta como diagrama) y hunde `healthIndex.content` con
+        # `undefined_state` y compañía. Medido 2026-10-18: este guard cierra
+        # el camino que la sesión de banco del agente tenía para dejar
+        # artefactos rotos en disco.
+        errores_mermaid = [
+            e for e in validate_mermaid(content)
+            if e.get("severity") != "info"  # los info no bloquean
+        ]
+        if errores_mermaid:
+            return emit_error(
+                "vault_diagram_save",
+                "MERMAID_INVALID",
+                "El diagrama no valida contra la gramática del estándar; "
+                "no se escribe hasta que el contenido sea válido.",
+                args={"validation_errors": errores_mermaid, "content": content},
+                pista="Corrige la sintaxis Mermaid y vuelve a invocar la tool.",
+            )
 
     diagram_path.parent.mkdir(parents=True, exist_ok=True)
 

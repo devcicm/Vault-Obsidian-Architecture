@@ -106,7 +106,7 @@ rojo, y una puerta en rojo se desactiva.
 | **PAT-5** — Frontmatter as provenance chain | recommended | — | `test_context_memory.py` |
 | **AP-23** — Note complexity ceiling — nota demasiado larga | audit | `framework` | — |
 | **AP-24** — Bracket imbalance — corchetes sin pareja, anidados o invertidos | guard+audit | — | `test_normas_caras.py`, `test_norms_coherence.py`, `test_vault_norms.py` |
-| **AP-25** — Mermaid diagram syntax errors — nodos/tipos no definidos | audit | — | `test_skills_catalogo.py`, `test_vault_norms.py` |
+| **AP-25** — Mermaid diagram syntax errors — nodos/tipos no definidos | audit | — | `test_manifiesto_pasa_ap25.py`, `test_skills_catalogo.py`, `test_vault_norms.py` |
 | **AP-26** — Missing tags — nota de contenido sin tags | guard+audit | — | `test_context_memory.py` |
 | **AP-27** — Missing type field — nota sin tipo declarado | guard+audit | — | `test_capa4_audit_ejercitada.py` |
 | **AP-28** — Missing frontmatter — nota sin bloque YAML | audit | — | `test_ap56_frontmatter_heal.py` |
@@ -149,7 +149,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-65** — Decisión de IA de impacto alto sin evaluación de impacto | audit | `framework` | `test_iso42005_impacto.py`, `test_normas_caras.py`, `test_normas_paquete.py` |
 | **AP-66** — El coste crece con lo que no es trabajo | guard | `arquitectura` | — |
 | **PAT-6** — Semantic graph enrichment — enriquecimiento periodico del grafo | recommended | — | `test_capa4_audit_ejercitada.py` |
-| **SP-01** — Delete protocol — change_log obligatorio antes de eliminar | audit | `framework` | `test_vault_norms.py` |
+| **SP-01** — Delete protocol — change_log obligatorio antes de eliminar | audit | `framework` | `test_mermaid_reglas_parsers.py`, `test_vault_norms.py` |
 | **SP-02** — Forward-link verification — buscar antes de linkar | guard | — | `test_normas_enlaces_sin_solape.py`, `test_vault_norms.py` |
 | **SP-03** — Session snapshot pattern — delta antes de operaciones masivas | audit | — | `test_vault_norms.py` |
 | **SP-04** — Sesión MCP por HTTP sin credencial — cualquier proceso local la abre | guard | `produccion` | `test_mcp_http_seguridad.py`, `test_token_service_seguridad.py` |

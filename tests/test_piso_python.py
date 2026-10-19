@@ -39,7 +39,10 @@ POSTERIORES_A_39 = {
     "typing.TypeIs": "3.13",
 }
 
-EXCLUIDOS = (".git", "vault-sandbox", "node_modules", ".venv")
+#: `build/` y `dist/` son artefactos de una wheel anterior, no código que se
+#: promete: medido 2026-10-18, un `build/lib/` viejo hacía fallar el piso con
+#: `write_text(newline=)` de ficheros que nadie distribuye.
+EXCLUIDOS = (".git", "vault-sandbox", "node_modules", ".venv", "build", "dist")
 
 
 def piso_declarado() -> tuple[int, int]:

@@ -269,7 +269,11 @@ PUERTAS: List[Dict[str, Any]] = [
 # heredar los 60 s por defecto de `wrap_main` mataba a `vault_gate --strict`
 # —el comando que AGENTS.md publica— a mitad de las puertas, que en serie
 # tardan cerca de dos minutos; solo pasaba con VAULT_TOOL_TIMEOUT exportado.
-LIMITE_POR_PUERTA = 180.0
+# 180 s se quedaban cortos para la más pesada, `vault_noop_audit --check
+# --ejecutado --strict` (AP-37): mide 92 tools contra una copia del vault y en
+# Windows tarda unos cinco minutos, así que la corrida agregada la daba por
+# roja por timeout mientras en directo pasaba en verde (medido 2026-10-18).
+LIMITE_POR_PUERTA = 420.0
 
 
 def limite_total() -> int:

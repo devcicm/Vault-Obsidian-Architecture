@@ -4304,12 +4304,12 @@
           "no-git": {
             "type": "boolean",
             "description": "Omitir la arqueología de historia"
+          },
+          "heal-legacy": {
+            "type": "boolean",
+            "description": "Recorre el vault y cura el frontmatter legacy de cada nota (cita titles con `:`, rellena `status`/`tags`/`updatedAt` si faltan). No hace onboard; es una pasada de mantenimiento."
           }
         },
-        "required": [
-          "project",
-          "path"
-        ],
         "additionalProperties": false
       },
       "guards": [
@@ -8294,6 +8294,16 @@
         "action": "manual",
         "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
         "docs": null
+      }
+    },
+    "MERMAID_INVALID": {
+      "category": "validation",
+      "severity": "error",
+      "message": "El diagrama no valida contra la gramática Mermaid del estándar.",
+      "recovery": {
+        "action": "fix_input",
+        "hint": "El envelope lleva `validation_errors[]` con la lista de hallazgos (tipo, mensaje, sugerencia). Corregir el contenido Mermaid y reintentar.",
+        "docs": "vault-obsidian-architecture.md §Diagramas"
       }
     },
     "MIGRATION_MISMATCH": {

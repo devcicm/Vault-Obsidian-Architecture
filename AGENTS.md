@@ -12,7 +12,7 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~12.000 líneas). Fuente normativa. |
 | `scripts/*.py` | ~162 scripts, 124 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (5863 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (5906 tests). Toda norma con guard debe tener test. |
 | `normas/` | Normas como paquete (`normas/<código>/`: `norma.py`, `porque.md`, `guard.py`, `heal.py`, `test_*.py`). Las carga `vault_norms_catalog` en su sitio del catálogo; la forma la vigila `--check-framework`. Desde m186 toda norma vive aquí (cuántas, `NORMAS_EN_PAQUETE`). `guard.py`/`heal.py` son derivados —apuntan a la función dueña; los sanadores salen de `vault_norms_catalog.SANADORES`— y se regeneran con `vault_norms_engine.escribir_caras_derivadas`, no a mano. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
@@ -138,6 +138,11 @@ Si necesitas un dato de estos, léelo del registro — no lo redefinas ni lo cop
 
 # Suite completa — debe quedar en verde antes de cerrar cualquier cambio
 python -m pytest tests/ --tb=short
+
+# Suite completa en paralelo — forma canónica en local (xdist): la misma
+# suite, una fracción del tiempo. Un fallo que solo aparece con `-n auto`
+# se re-verifica en serie antes de darlo por real.
+python -m pytest tests/ -q -n auto
 
 # Normas y marco de datos
 python scripts/vault_norms.py --audit --root vault-sandbox   # audita el vault contra las normas

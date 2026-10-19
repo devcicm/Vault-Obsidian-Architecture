@@ -286,6 +286,23 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": "vault-obsidian-architecture.md §Vocabularios",
         },
     },
+    "MERMAID_INVALID": {
+        # Causa: `vault_diagram_save` (y el futuro `vault_write` con un
+        # bloque mermaid) rechazan un diagrama que no valida contra
+        # `vault.kernel.mermaid_reglas`. Medido 2026-10-18: sin este
+        # código, un agente podía dejar en disco un `06_Diagrams/*.md` con
+        # un bloque que Mermaid no dibuja, hundiendo `healthIndex.content`.
+        "category": "validation",
+        "severity": "error",
+        "message": "El diagrama no valida contra la gramática Mermaid del estándar.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "El envelope lleva `validation_errors[]` con la lista de "
+                    "hallazgos (tipo, mensaje, sugerencia). Corregir el contenido "
+                    "Mermaid y reintentar.",
+            "docs": "vault-obsidian-architecture.md §Diagramas",
+        },
+    },
     "RESERVED_NAME": {
         "category": "validation",
         "severity": "error",
@@ -1932,6 +1949,7 @@ MAPA_DE_FALLOS: Dict[str, str] = {
     "PROYECTO_AMBIGUO": "PROJECT_AMBIGUOUS",
     "PROYECTO_FUERA_DE_SESION": "PROJECT_LOCKED",
     "LOCK_PERDIDO": "NOTE_LOCKED",
+    "DIAGRAMA_MERMAID_INVALID": "MERMAID_INVALID",
 }
 
 

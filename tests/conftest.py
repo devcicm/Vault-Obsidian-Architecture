@@ -6,6 +6,8 @@ Run from repo root:
 """
 
 import sys
+import os
+import time
 from pathlib import Path
 
 import pytest
@@ -21,13 +23,44 @@ SCRIPTS_DIR = REPO_ROOT / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 
+def _es_worker(session) -> bool:
+    """True en un proceso worker de pytest-xdist; el controller no lo tiene."""
+    return hasattr(session.config, "workerinput")
+
+
 def pytest_sessionstart(session):
     """Materializa el runtime ignorado desde fuentes versionadas antes de colectar.
 
     Una ejecución normal de pytest no presupone restos de `vault-sandbox/`.
     Si un orquestador ya hizo el bootstrap para ejecutar gates después de la
     suite, el hook no toma propiedad del runtime y no lo elimina.
+
+    Con xdist solo el controller decide el bootstrap. Antes, cada worker lo
+    comprobaba por su cuenta: hasta ocho bootstrap concurrentes podían pisar
+    el mismo `vault-sandbox/`, y la limpieza de un worker borraba el runtime
+    que otro seguía usando (medido 2026-10-18 con `-n auto`). El worker espera,
+    acotado, a que el controller lo deje listo; el `pytest_sessionfinish` del
+    controller corre después de los de todos los workers, así que la limpieza
+    tampoco puede pisar a nadie.
     """
+    # Red anti-contención para toda la suite: con `-n auto` la máquina va
+    # cargada y el límite de 60s por tool (default de VAULT_TOOL_TIMEOUT)
+    # mataba setups enteros de vault_init y pasos de doc_counts sin que
+    # hubiera ningún defecto de producto (medido 2026-10-18: 4 ERROR de
+    # setup en una corrida y ninguno en la siguiente, misma cabeza). El
+    # valor lo puede subir quien lance la suite; nadie lo baja.
+    os.environ.setdefault("VAULT_TOOL_TIMEOUT", "180")
+    if _es_worker(session):
+        plazo = time.monotonic() + 900
+        while not sandbox_ready():
+            if time.monotonic() > plazo:
+                raise RuntimeError(
+                    "vault-sandbox no quedó listo: el bootstrap del controller "
+                    "de la corrida no terminó en 900s"
+                )
+            time.sleep(1)
+        session.config._sandbox_fixture_owned = False
+        return
     if not sandbox_ready():
         bootstrap_sandbox()
         session.config._sandbox_fixture_owned = True
@@ -36,7 +69,7 @@ def pytest_sessionstart(session):
 
 
 def pytest_sessionfinish(session, exitstatus):
-    if getattr(session.config, "_sandbox_fixture_owned", False):
+    if not _es_worker(session) and getattr(session.config, "_sandbox_fixture_owned", False):
         clean_sandbox()
 
 
@@ -96,3 +129,31 @@ def _raiz_de_vault_limpia():
     import vault_io
 
     vault_io.reset_vault_root()
+
+
+def pytest_collection_modifyitems(config, items):
+    """Agrupa los tests marcados `@pytest.mark.serial` en un grupo xdist
+    dedicado, para que corran sin intercalarse con otros tests que escriben
+    en el vault-sandbox compartido.
+
+    Medido 2026-10-18: `test_durabilidad_caracterizacion.py::test_el_backup_no_se_copia_a_si_mismo`
+    y `::test_dos_copias_de_un_vault_intacto_comparten_merkle_root` comparan el
+    `merkle_file_count` entre dos llamadas consecutivas a `vault_backup`.
+    Pasan 17/17 en aislamiento, pero bajo `-n auto` otro worker escribe un
+    archivo en el sandbox entre las dos llamadas y el conteo deriva por 1.
+    Sin esta serialización, los dos tests fallan con flake bajo paralelismo
+    a pesar de que el código bajo prueba es correcto (verificado en CI sin
+    paralelismo). El grupo xdist los ejecuta en un único worker, donde no
+    hay intercalación posible.
+
+    Los nombres se aplican por **identificación**, no por edición del test
+    body — el docstring del fichero de caracterización prohíbe ajustar el
+    test; el marker se cuelga desde aquí.
+    """
+    backup_tests = {
+        "test_el_backup_no_se_copia_a_si_mismo",
+        "test_dos_copias_de_un_vault_intacto_comparten_merkle_root",
+    }
+    for item in items:
+        if item.name in backup_tests:
+            item.add_marker(pytest.mark.xdist_group("serial_backup"))

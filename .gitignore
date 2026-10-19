@@ -83,3 +83,8 @@ vault_regex/
 # O1 (v40.34) dejó de crearlo. Se ignora por si un checkout viejo lo dejó.
 %V%/
 scripts/%V%/
+
+# Metadatos del IDE Visual Studio — nunca versionados: son de la máquina
+# del desarrollador, no del repositorio. Sin esta línea, un checkout en
+# Windows deja `.vs/` como untracked que aparece en todo `git status`.
+.vs/

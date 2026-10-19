@@ -227,20 +227,38 @@ _STATE_TRANSITION = re.compile(r"\b(\w+)\s*-->?\s*(\w+)")
 
 
 def validate_state(diagram: str) -> List[Dict[str, Any]]:
-    """Valida stateDiagram."""
+    """Valida stateDiagram.
+
+    Estados declarados de tres formas (las tres válidas en Mermaid):
+      - `state Nombre` (línea suelta — la que usa el manifiesto del estándar)
+      - `state Nombre { ... }` (con cuerpo — transición a clase de estado)
+      - implícito al aparecer como origen o destino de una flecha
+
+    Medido 2026-10-18 contra el propio `vault-obsidian-architecture.md`: sin
+    el implícito y sin la forma sin llaves, los 11 `undefined_state` del
+    manifiesto eran falsos positivos — un diagrama correcto no puede hundir
+    la métrica del vault (mismo principio que en `validate_flowchart`).
+    """
     errors = []
     lines = diagram.strip().split("\n")
 
-    defined_states = set()
-    referenced_states = set()
+    defined_states: set = set()
+    referenced_states: set = set()
 
-    state_pattern = re.compile(r"^\s*(\w+)\s*\{")
+    # Forma 1: `state Nombre` (sin llaves). Es la declaración más simple.
+    state_plain = re.compile(r"^\s*state\s+(\w+)\s*$")
+    # Forma 2: `state Nombre { ... }` (con cuerpo para clase de estado).
+    state_class = re.compile(r"^\s*(\w+)\s*\{")
     for line in lines:
         line = line.strip()
         if line.startswith("stateDiagram"):
             continue
 
-        m = state_pattern.match(line)
+        m = state_plain.match(line)
+        if m:
+            defined_states.add(m.group(1))
+            continue
+        m = state_class.match(line)
         if m:
             defined_states.add(m.group(1))
             continue
@@ -249,17 +267,10 @@ def validate_state(diagram: str) -> List[Dict[str, Any]]:
             referenced_states.add(m.group(1))
             referenced_states.add(m.group(2))
 
-    undefined = referenced_states - defined_states
-    for state in undefined:
-        errors.append(
-            {
-                "type": "undefined_state",
-                "message": f"Estado '{state}' referenciado pero no definido",
-                "suggestion": f"Definir estado: {state} {{}}",
-                "line": None,
-            }
-        )
-
+    # Forma 3 (implícita): todo estado que aparece como origen o destino de una
+    # flecha queda declarado. Mermaid real lo hace; sin esto, un diagrama
+    # `[*] --> A; A --> B` producía dos `undefined_state` falsos.
+    defined_states |= referenced_states
     return errors
 
 

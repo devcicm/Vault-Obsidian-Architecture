@@ -11,6 +11,7 @@ Tres familias:
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -35,6 +36,31 @@ def _ficheros_de_la_copia(raiz):
         cwd=raiz, capture_output=True, check=True,
     ).stdout.decode("utf-8")
     return sorted(set(filter(None, salida.split("\0"))))
+
+
+def _quitar_worktree(destino: Path) -> None:
+    """Teardown que no convierte un trabajo bien hecho en ERROR.
+
+    `git worktree remove --force` falla con exit 255 en Windows cuando el
+    árbol tiene handles recién cerrados (Defender u otro lector escaneando):
+    medido 2026-10-18 con `-n auto`, dos tests verdes morían en el `finally`.
+    Reintenta, y si el registro sigue atascado poda y borra el directorio —
+    un worktree colgado en `.git/worktrees` apuntando a un tmp que ya no
+    existe ensuciaría la lista de worktrees del repo.
+    """
+    def quitar():
+        return subprocess.run(
+            ["git", "worktree", "remove", "--force", str(destino)],
+            cwd=ROOT, capture_output=True, check=False,
+        )
+
+    intento = quitar()
+    if intento.returncode != 0:
+        time.sleep(1.0)
+        intento = quitar()
+    if intento.returncode != 0:
+        shutil.rmtree(destino, ignore_errors=True)
+        subprocess.run(["git", "worktree", "prune"], cwd=ROOT, capture_output=True, check=False)
 
 
 def test_ap44_la_copia_trae_los_ficheros_nuevos_sin_los_ignorados(tmp_path):
@@ -79,10 +105,7 @@ def repo_temporal(tmp_path, monkeypatch):
         monkeypatch.setenv("VAULT_STRICT_ROOT", "1")
         yield destino
     finally:
-        subprocess.run(
-            ["git", "worktree", "remove", "--force", str(destino)],
-            cwd=ROOT, capture_output=True, check=True,
-        )
+        _quitar_worktree(destino)
 
 
 def test_los_pasos_en_el_orden_canonico():

@@ -37,15 +37,17 @@ the standard, `python scripts/vault_onboard.py …` takes the same arguments.
 
 ## Arguments
 
-`--project` and `--path` are required; the rest have defaults, and the
-tool's own help owns them. This table must list exactly the flags of
-the argparse — `tests/test_skills_versionadas.py` fails otherwise.
+`--project` and `--path` are required — except in `--heal-legacy` mode, which
+operates on `VAULT_ROOT` alone. The rest have defaults, and the tool's own help
+owns them. This table must list exactly the flags of the argparse —
+`tests/test_skills_versionadas.py` fails otherwise.
 
 | Argument | Description |
 |---|---|
 | `--project` | Project name — becomes the slug under each section |
 | `--path` | Path to the code repository. **Read-only**: the tool never writes there |
 | `--dry-run` | Show the plan without writing |
+| `--heal-legacy` | Maintenance pass: walks the whole vault and heals legacy frontmatter (quotes `title:` values containing `:`, fills required `status`/`tags`/`updatedAt`). Use it after upgrading a vault from an older standard version |
 | `--no-git` | Skip git archaeology entirely |
 | `--git-phases` | Maximum number of development phases reconstructed from the commit history |
 | `--depth` | How deep to walk the source tree for the module map |

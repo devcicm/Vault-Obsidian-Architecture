@@ -44,7 +44,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from vault_errors import emit_error, wrap_main
 from vault_entorno import agente_por_defecto
 from vault_lib import slugify_strict, utcnow
-from vault_io import assert_within_vault, atomic_write_text, normalize_stem
+from vault_io import assert_within_vault, atomic_write_text, is_snapshot_path, normalize_stem
 from vault_norms_catalog import compute_norm_refs
 from vault_registry import ORDERED_SECTIONS
 from vault_write import tipo_por_carpeta
@@ -1014,7 +1014,8 @@ def _verificar_releyendo(vault_path: Path) -> None:
         raise ValueError(f"{vault_path.name}: frontmatter ilegible para YAML: {exc}")
     if not isinstance(fm, dict):
         raise ValueError(f"{vault_path.name}: el frontmatter no es un mapa YAML")
-    faltan = [c for c in ("title", "type", "status", "tags", "updatedAt") if not fm.get(c)]
+    faltan = [c for c in ("title", "type", "status", "tags", "updatedAt")
+              if fm.get(c) is None]
     if faltan:
         raise ValueError(f"{vault_path.name}: frontmatter sin {faltan}")
 
@@ -1023,6 +1024,13 @@ def _merge_stub(vault_path: Path, new_content: str, dry_run: bool) -> str:
     """
     Create the file if missing. If it exists, append only missing ## sections.
     Returns: 'created' | 'merged' | 'skipped' | 'dry_run'
+
+    Cross-version: si la nota ya existe y le faltan campos requeridos por el
+    contrato vigente (`status`, `tags` — introducidos como requeridos en v41),
+    se rellenan con valores por defecto antes de la fusión. Sin esto, un vault
+    de v34 o v35 no puede recibir la fusión de `vault_onboard` y la operación
+    completa aborta con `frontmatter sin ['status', 'tags']`. Medido 2026-10-18
+    contra el vault real de SMART POS CR (v34, 158 notas).
     """
     if dry_run:
         return "dry_run"
@@ -1049,12 +1057,118 @@ def _merge_stub(vault_path: Path, new_content: str, dry_run: bool) -> str:
             to_add.append(section.strip())
 
     if not to_add:
+        # Cross-version: aunque no haya secciones que añadir, si el
+        # frontmatter existente es legacy (sin `status`/`tags`, o con un
+        # `title:` sin citar que rompe el YAML), lo curamos ahora. Sin este
+        # camino, un vault v34–v40 nunca recibe la migración del contrato
+        # v41 porque el skip ocurre antes de tocar la nota.
+        if not dry_run:
+            existing_healed = _rellenar_frontmatter_legacy(existing)
+            if existing_healed != existing:
+                atomic_write_text(vault_path, existing_healed)
         return "skipped"
+
+    # Fusión cross-version: si el frontmatter existente no parsea o le faltan
+    # campos requeridos por el contrato vigente, se rellena con valores por
+    # defecto antes de escribir el merge. No se inventa contenido: solo se
+    # añaden los campos que el escritor del merge declara como obligatorios.
+    existing = _rellenar_frontmatter_legacy(existing)
 
     merged = existing.rstrip() + "\n\n" + "\n\n".join(to_add) + "\n"
     atomic_write_text(vault_path, merged)
     _verificar_releyendo(vault_path)
     return "merged"
+
+
+def _rellenar_frontmatter_legacy(contenido: str) -> str:
+    """Completa el frontmatter de una nota legacy con los campos que el
+    contrato vigente exige y el escritor no trae.
+
+    Cross-version (medido 2026-10-18 contra un vault real de v34): una nota
+    escrita por una versión anterior puede tener (a) frontmatter válido pero
+    sin `status`/`tags`/`updatedAt` — los requiere v41, no existían en v34;
+    (b) frontmatter con título sin citar — `title: Overview: X` no parsea
+    como YAML porque el `:` divide el mapeo. En (a) se rellena con valores
+    por defecto usando el mismo `yaml_scalar` que el resto del estándar
+    (AP-44: criterio del consumidor). En (b) se cita el título; si después
+    de citar no parsea, se devuelve sin tocar y `_verificar_releyendo`
+    fallará ruidosamente — un bloque roto necesita diagnóstico humano, no
+    una reescritura silenciosa.
+    """
+    m = re.match(r"^(---\n)(.*?)(\n---)", contenido, re.DOTALL)
+    if not m:
+        return contenido
+    import yaml
+    bloque = m.group(2)
+    rescued = False
+    try:
+        fm = yaml.safe_load(bloque)
+    except (yaml.YAMLError, RecursionError, ValueError):
+        # Intento de rescate: citar el `title:` desnudo si el error es de
+        # mapeo por un `:` en su valor. Si eso parsea, seguimos con el
+        # camino normal. Si no, devolvemos sin tocar.
+        fm = _intentar_citar_title(bloque)
+        if fm is None:
+            return contenido
+        rescued = True
+
+    if not isinstance(fm, dict):
+        return contenido
+
+    cambiado = rescued
+    if "status" not in fm:
+        fm["status"] = "active"
+        cambiado = True
+    if "tags" not in fm:
+        fm["tags"] = []
+        cambiado = True
+    if "updatedAt" not in fm:
+        from datetime import datetime, timezone
+        fm["updatedAt"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        cambiado = True
+    # Si la curación vino por un `title:` roto (rescate citado), también hay
+    # que re-renderizar para que el bloque en disco quede con el título citado.
+    if rescued:
+        cambiado = True
+
+    if not cambiado:
+        return contenido
+
+    from vault.kernel.frontmatter_parsing import yaml_scalar
+    lineas = ["---"]
+    for clave, valor in fm.items():
+        lineas.append(f"{clave}: {yaml_scalar(valor)}")
+    lineas.append("---")
+
+    cuerpo = contenido[m.end():]
+    return "\n".join(lineas) + ("\n" if cuerpo.startswith("\n") else "\n\n") + cuerpo.lstrip("\n")
+
+
+def _intentar_citar_title(bloque: str):
+    """Si el bloque falla por un `title:` con `:` en el valor, lo cita y
+    reintenta. Devuelve el mapeo si ahora parsea, o None si no."""
+    import re as _re
+    import yaml
+    # Captura la línea `title: ...` (puede no ser la primera del bloque).
+    m = _re.search(r"^title:\s*(.+?)\s*$", bloque, _re.MULTILINE)
+    if not m:
+        return None
+    valor = m.group(1)
+    if valor.startswith(('"', "'")):
+        return None  # ya estaba citado, no es este el caso
+    # Escapa barras y comillas en el valor, citando el resultado.
+    valor_escapado = valor.replace("\\", "\\\\").replace('"', '\\"')
+    nuevo_bloque = _re.sub(
+        r"^title:\s*.+?$",
+        f'title: "{valor_escapado}"',
+        bloque,
+        count=1,
+        flags=_re.MULTILINE,
+    )
+    try:
+        return yaml.safe_load(nuevo_bloque)
+    except (yaml.YAMLError, RecursionError, ValueError):
+        return None
 
 
 # ── Frontmatter ───────────────────────────────────────────────────────────────
@@ -1169,6 +1283,40 @@ def _errores_mermaid(diagrama: str) -> List[str]:
     ]
 
 
+def _omitir_diagrama_invalido(
+    project: str,
+    kind: str,
+    errores: List[str],
+) -> None:
+    """Registra un diagrama omitido por validación y devuelve el control.
+
+    Contrato del guard de diagramas en `vault_onboard`: TODO generador de
+    Mermaid en este tool debe llamar a este helper cuando `_errores_mermaid`
+    reporta errores — si el diagrama no valida, NO se escribe la nota, y el
+    motivo queda en `_SIN_EVIDENCIA` para que el envelope final lo reporte
+    en `skipped_no_evidence` (AP-45: una sección llena de stubs declara que
+    ya está; una vacía invita a llenarla).
+
+    `kind` identifica el tipo de diagrama (component, entity, sequence, ...)
+    para que el log distinga por dónde se omitió.
+
+    Medido 2026-10-18: centralizar este registro evita que cada generador nuevo
+    invente su propia variante de "no escribo pero no aviso" — el camino
+    silencioso que llenaba el vault de diagramas que Mermaid no dibuja.
+    """
+    # `errores` puede llegar vacío si un cambio futuro en `_errores_mermaid`
+    # deja de filtrar; defendemos el `errores[0]` para que el registro se
+    # complete en vez de explotar con IndexError.
+    motivo = errores[0] if errores else "el parser reportó 0 errores (fallo de instrumentación)"
+    _SIN_EVIDENCIA.append(
+        {
+            "path": f"06_Diagrams/{kind}/{_slug(project)}-{kind}.md",
+            "title": f"{project} — Diagrama de {kind}",
+            "reason": f"el diagrama generado no valida contra Mermaid: {motivo}",
+        }
+    )
+
+
 def _write(
     folder: str,
     filename: str,
@@ -1195,6 +1343,74 @@ def _write(
     full = fm + "\n\n" + body
     action = _merge_stub(path, full, dry_run)
     return rel, action
+
+
+def _heal_legacy_pass(dry_run: bool = False) -> Dict[str, Any]:
+    """Recorre el vault y cura el frontmatter legacy de cada nota.
+
+    Cross-version (medido 2026-10-18 contra SMART POS CR v34→v41.11):
+    - Notas con `title:` con `:` sin citar (YAML inválido).
+    - Notas sin `status`/`tags`/`updatedAt` (requeridos por v41).
+    No toca notas que ya cumplen el contrato, ni el cuerpo de la nota.
+
+    Pensado como mantenimiento posterior a `vault_standard_upgrade --to <v>`
+    o como pre-paso de `vault_audit` cuando un vault viejo entra al
+    estándar y la masa de notas todavía no fue onboardeada (las que no
+    pasaron por `vault_onboard` no reciben la cura del camino normal).
+    """
+    raiz = _raiz()
+    assert_within_vault(raiz, raiz)  # identidad; no-op
+    if not raiz.exists():
+        emit_error("vault_onboard", "FOLDER_NOT_FOUND", f"VAULT_ROOT no existe: {raiz}")
+        return {"ok": False, "raiz": str(raiz)}
+
+    escaneadas = 0
+    curadas = 0
+    saltadas = 0
+    problemas: List[Dict[str, str]] = []
+    secciones: Dict[str, int] = {}
+
+    for path in raiz.rglob("*.md"):
+        # Rutas donde el frontmatter roto es el dato, no el defecto: la
+        # instantánea la define su dueño (`vault_io.is_snapshot_path`, AP-57);
+        # la cuarentena se suma aquí a propósito — no es una instantánea, es
+        # contenido retenido sin destino seguro.
+        if is_snapshot_path(path) or "20_Quarantine" in path.parts:
+            continue
+        escaneadas += 1
+        try:
+            texto = path.read_text(encoding="utf-8", errors="replace")
+        except Exception as exc:
+            problemas.append({"path": str(path), "problema": f"LECTURA: {exc}"})
+            continue
+        curado = _rellenar_frontmatter_legacy(texto)
+        if curado == texto:
+            saltadas += 1
+            continue
+        if dry_run:
+            curadas += 1
+            continue
+        try:
+            atomic_write_text(path, curado)
+        except Exception as exc:
+            problemas.append({"path": str(path), "problema": f"ESCRITURA: {exc}"})
+            continue
+        curadas += 1
+        rel = str(path.relative_to(raiz)).replace("\\", "/")
+        sec = rel.split("/", 1)[0]
+        secciones[sec] = secciones.get(sec, 0) + 1
+
+    return {
+        "ok": not problemas,
+        "tool": "vault_onboard",
+        "modo": "heal-legacy" + ("-dry-run" if dry_run else ""),
+        "raiz": str(raiz),
+        "escaneadas": escaneadas,
+        "curadas": curadas,
+        "saltadas_sin_cambios": saltadas,
+        "errores": problemas,
+        "curadas_por_seccion": secciones,
+    }
 
 
 # ── Section strategies ────────────────────────────────────────────────────────
@@ -1808,15 +2024,11 @@ def _onboard_06_diagrams(
     # quien generó el texto. El diagrama que no valida NO se escribe: una nota
     # de `06_Diagrams` cuyo bloque no dibuja es peor que su ausencia, porque el
     # índice la cuenta como diagrama y quien la abre ve un error de sintaxis.
+    # El registro se centraliza en `_omitir_diagrama_invalido` (2.3): todos
+    # los generadores de Mermaid de este tool pasan por ahí.
     errores = _errores_mermaid(mermaid)
     if errores:
-        _SIN_EVIDENCIA.append(
-            {
-                "path": f"06_Diagrams/component/{_slug(project)}-architecture.md",
-                "title": f"{project} — Arquitectura de componentes",
-                "reason": f"el diagrama generado no valida contra Mermaid: {errores[0]}",
-            }
-        )
+        _omitir_diagrama_invalido(project, "component", errores)
         return []
 
     body = f"""# {project} — Arquitectura de componentes
@@ -2793,8 +3005,10 @@ Ejemplos:
 """,
         allow_abbrev=False,
     )
-    parser.add_argument("--project", required=True)
-    parser.add_argument("--path", required=True)
+    parser.add_argument("--project", required=False,
+                        help="Requerido salvo en modo --heal-legacy.")
+    parser.add_argument("--path", required=False,
+                        help="Requerido salvo en modo --heal-legacy.")
     parser.add_argument("--depth", type=int, default=3)
     parser.add_argument("--max-modules", dest="max_modules", type=int, default=20)
     parser.add_argument("--lang", dest="lang_hint")
@@ -2815,8 +3029,23 @@ Ejemplos:
     parser.add_argument("--git-phases", dest="git_phases", type=int, default=8)
     parser.add_argument("--max-commits", dest="max_commits", type=int, default=500)
     parser.add_argument("--no-git", action="store_true")
+    parser.add_argument(
+        "--heal-legacy", action="store_true",
+        help="Recorre el vault y cura el frontmatter legacy de cada nota "
+             "(cita titles con `:`, rellena `status`/`tags`/`updatedAt` si "
+             "faltan). No hace onboard; es una pasada de mantenimiento."
+    )
 
     args = parser.parse_args()
+
+    if args.heal_legacy:
+        result = _heal_legacy_pass(dry_run=args.dry_run)
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return 0 if result.get("ok") else 1
+
+    if not args.project or not args.path:
+        parser.error("--project y --path son obligatorios (o use --heal-legacy)")
+
     result = vault_onboard(
         project=args.project,
         path=args.path,

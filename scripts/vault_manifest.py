@@ -726,7 +726,12 @@ def _read_version() -> str:
     try:
         sv = _system_dir() / "standard-version.json"
         if sv.exists():
-            v = json.loads(sv.read_text(encoding="utf-8")).get("version", "unknown")
+            datos = json.loads(sv.read_text(encoding="utf-8"))
+            # El fichero sella `applied_version` (vault_init, vault_standard_upgrade).
+            # Se leía la clave `version`, que no existe en el formato actual: el
+            # manifiesto decía "unknown" siempre, en silencio (medido 2026-10-18).
+            # `version` numérica se acepta como formato anterior — no-derogación.
+            v = datos.get("applied_version") or datos.get("version", "unknown")
             return f"v{v}" if isinstance(v, int) else str(v)
     except (json.JSONDecodeError, UnicodeDecodeError, OSError) as exc:
         emit_error("vault_manifest", "VERSION_READ_ERROR", str(exc))

@@ -106,6 +106,32 @@ jobs:
           cd ..
           python scripts/vault_norms.py --list --type ap | python -c "import json,sys; d=json.load(sys.stdin); print(f'AP norms registered: {d[\"total\"]}')"
 
+      # El manifiesto público del estándar (`vault-obsidian-architecture.md`)
+      # debe pasar su propio AP-25. Sin este guard, el estándar puede publicar
+      # diagramas que rompen la métrica de cualquier hijo que los incluya en
+      # su raíz. `tests/test_manifiesto_pasa_ap25.py` corre dentro de la suite
+      # (más rápido, en cada PR); este paso lo cruza también por `vault_mermaid_check`
+      # para tener el camino del consumidor ejercitado de verdad.
+      - name: Manifiesto del estándar cumple AP-25
+        shell: bash
+        run: |
+          python -c "
+          import re, sys
+          sys.path.insert(0, 'vault')
+          from vault.kernel.mermaid_reglas import validate_mermaid
+          text = open('vault-obsidian-architecture.md', encoding='utf-8', errors='replace').read()
+          errores = []
+          for i, m in enumerate(re.finditer(r'\`\`\`mermaid\n(.*?)\n\`\`\`', text, re.DOTALL), 1):
+              for e in validate_mermaid(m.group(1)):
+                  if str(e.get('severity','error')).lower() == 'error':
+                      errores.append((i, e.get('type','?'), e.get('message','')))
+          if errores:
+              print('AP-25 roto en el manifiesto:')
+              for i, t, msg in errores: print(f'  bloque {i}: {t}: {msg}')
+              sys.exit(1)
+          print(f'OK: {len(re.findall(chr(96)*3+r\"mermaid\", text))} bloques validados')
+          "
+
   product-gates:
     name: Product gates (wheel)
     runs-on: ${{ matrix.os }}
