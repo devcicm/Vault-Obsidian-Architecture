@@ -70,7 +70,7 @@ build_py = "empaquetado.construir.BuildPy"
 [tool.setuptools.package-data]
 "vault.meta_toolkit" = ["tools-catalog.json"]
 "vault.ciclo_de_vida" = ["runtime-seed.json"]
-"vault_toolkit.mcp" = ["vault-mcp-server.mjs", "tools-catalog.json", "env-table.json"]
+"vault_toolkit.mcp" = ["vault-mcp-server.mjs", "tools-catalog.json", "env-table.json", "mmd_validate.mjs"]
 "vault_toolkit.normas" = ["*/norma.py", "*/porque.md", "*/guard.py", "*/heal.py"]
 # `recursos_distribucion.entra_al_wheel` la clasifica `bootstrap`: sin ella,
 # `vault_graph_merge` y `vault_init` funcionan sin ontología en la wheel.

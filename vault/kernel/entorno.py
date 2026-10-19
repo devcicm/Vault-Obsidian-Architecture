@@ -219,6 +219,18 @@ VARIABLES: Dict[str, Variable] = {
             "el cliente (clientInfo.name). Lo lee vault_model_profile y vault_context_pack "
             "para adaptar el budget al modelo.",
         ),
+        # v41.12: oráculo Mermaid. El único valor que influencia resultados es
+        # la RUTA (el pack con node_modules); no hay banderas on/off: resolver
+        # la ruta es el "off", y la degradación sin oráculo es declarada en el
+        # envelope (`oraculo.motivo`), no callada.
+        Variable(
+            "VOAS_MERMAID_ORACLE", "ruta", None, "kernel",
+            "Directorio con `node_modules` que trae `mermaid` + `jsdom` para el "
+            "oráculo del compilador real (`vault_mermaid_check`: "
+            "`mcp/nodejs/mmd_validate.mjs`). Útil con wheels instaladas, donde "
+            "el pack vive fuera del checkout. Si falta, el checker degrada al "
+            "parser heurístico y lo declara.",
+        ),
     ]
 }
 

@@ -147,6 +147,13 @@
       "default": "",
       "context": "consulta",
       "purpose": "Perfil de modelo LLM activo. Lo propaga el servidor MCP al detectar el cliente (clientInfo.name). Lo lee vault_model_profile y vault_context_pack para adaptar el budget al modelo."
+    },
+    {
+      "name": "VOAS_MERMAID_ORACLE",
+      "type": "ruta",
+      "default": null,
+      "context": "kernel",
+      "purpose": "Directorio con `node_modules` que trae `mermaid` + `jsdom` para el oráculo del compilador real (`vault_mermaid_check`: `mcp/nodejs/mmd_validate.mjs`). Útil con wheels instaladas, donde el pack vive fuera del checkout. Si falta, el checker degrada al parser heurístico y lo declara."
     }
   ]
 }

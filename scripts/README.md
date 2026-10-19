@@ -327,6 +327,8 @@ python vault_relation_add.py --project mi-api --from "ServiceA" --to "ServiceB" 
 ### `vault_mermaid_check.py`
 Valida la sintaxis de los bloques Mermaid del vault antes de que Obsidian los renderice rotos. `--fix` intenta la corrección automática de los errores reversibles.
 
+Cuando el oráculo está instalado, la sintaxis la valida el **compilador real de Mermaid** (`mermaid.parse` sobre jsdom, via `mcp/nodejs/mmd_validate.mjs`), que caza errores que el parser heurístico deja pasar (labels con paréntesis sin comillas, saltos `\n` literales, `<br/>(...)` antes del `]`) y refuta los falsos positivos de llaves/corchetes; las reglas semánticas del dominio (`undefined_class/entity/state`) siguen siendo del estándar. Sin oráculo degrada al heurístico **declarando la cobertura** en el envelope (`oraculo.disponible: false` + `motivo`). El oráculo requiere Node y `npm install mermaid jsdom` junto a `mmd_validate.mjs` (o un pack externo en `VOAS_MERMAID_ORACLE`).
+
 ```bash
 python vault_mermaid_check.py
 python vault_mermaid_check.py --path "06_Diagrams/foo.md"

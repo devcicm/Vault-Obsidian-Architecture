@@ -22,7 +22,9 @@ import pytest
 
 RAIZ = Path(__file__).resolve().parent.parent
 MCP = RAIZ / "mcp" / "nodejs"
-FICHEROS_DEL_SERVIDOR = ("vault-mcp-server.mjs", "tools-catalog.json", "env-table.json")
+# v41.12: `mmd_validate.mjs` entra como package data — es el oráculo del
+# compilador real de Mermaid que `vault_mermaid_check` consume via subprocess.
+FICHEROS_DEL_SERVIDOR = ("vault-mcp-server.mjs", "tools-catalog.json", "env-table.json", "mmd_validate.mjs")
 
 requiere_node = pytest.mark.skipif(
     shutil.which("node") is None, reason="el servidor MCP necesita Node en el PATH"
