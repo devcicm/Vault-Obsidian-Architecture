@@ -3,9 +3,9 @@
 """
 Vault Mermaid Check — Validación completa de diagramas Mermaid.
 
-Detecta errores de sintaxis en bloques ```mermaid``` y proporciona
-sugerencias de corrección. Soporta: flowchart, sequenceDiagram,
-classDiagram, stateDiagram, erDiagram, gantt, pie.
+Detecta errores de sintaxis en los bloques de código mermaid del vault
+y proporciona sugerencias de corrección. Soporta: flowchart,
+sequenceDiagram, classDiagram, stateDiagram, erDiagram, gantt, pie.
 
 Usage:
     python vault_mermaid_check.py
@@ -25,7 +25,18 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from vault_errors import emit_error, wrap_main, proyecto_registrado
-from vault_io import assert_within_vault, is_snapshot_path
+from vault_io import (
+    assert_within_vault,
+    escritura_atomica,
+    escrituras_en_lote,
+    file_lock,
+    guarda_secretos,
+    is_snapshot_path,
+    record_raw_write,
+    refrescar_grafo,
+    write_report,
+)
+from vault_lib import RE_BLOQUE_MERMAID  # noqa: E402 — el fence con dueño (AP-57)
 from vault_entorno import leer as leer_entorno  # noqa: E402 — AP-49: defaults declarados
 SCRIPTS_DIR = Path(__file__).parent
 
@@ -264,8 +275,8 @@ def check_file(
         result["errors"].append({"type": "read_error", "message": str(e)})
         return result
 
-    pattern = r"```mermaid\s*\n(.*?)```"
-    matches = re.findall(pattern, content, re.DOTALL)
+    pattern = RE_BLOQUE_MERMAID  # el fence con dueño — AP-57 (2026-10-19)
+    matches = pattern.findall(content)
 
     for idx, diagram in enumerate(matches):
         if diagramas is not None:
@@ -376,11 +387,22 @@ def scan_vault(
         "total_errors": total_errors,
         "oraculo": estado_oraculo,
         "results": results,
+        # AP-37: el indicador de trabajo se MIDE en el ledger, no se afirma.
+        # El scan de solo lectura lleva written: 0 — que enseña que NADA
+        # escribió, distinto de un campo ausente que obliga a leer el código.
+        **write_report(),
     }
 
 
 def fix_common_issues(diagram: str) -> Tuple[str, List[str]]:
-    """Intenta corregir errores comunes automáticamente."""
+    """Intenta corregir errores comunes automáticamente.
+
+    superseded_by: los `SANADORES_MERMAID` de este módulo + oráculo (2026-10-19).
+    Era un colapso ciego de llaves/corchetes anidados sin criterio de
+    aceptación: cambiaba el diagrama sin comprobar si el resultado parsea.
+    Se conserva por no-derogación; la sanación vigente es `sanar_bloques`,
+    donde el compilador de Mermaid aprueba cada cambio antes de escribirlo.
+    """
     fixes = []
     result = diagram
 
@@ -395,6 +417,376 @@ def fix_common_issues(diagram: str) -> Tuple[str, List[str]]:
         fixes.append("Colapsó corchetes anidados")
 
     return result, fixes
+
+
+# ============================================================================
+# Sanación con oráculo (2026-10-19): el ciclo síntoma → norma → guard + audit +
+# heal → test se cierra aquí. AP-25 ya tenía guard (`vault_diagram_save`) y
+# audit (esta tool); le faltaba el heal. Los sanadores son transformaciones
+# mecánicas clase-a-clase, medidas contra los 6 bloques reales de un vault
+# ajeno (SMART POS CR, 2026-10-19). El criterio de aceptación NO es el regex:
+# cada propuesta la aprueba el compilador real (`mermaid.parse`) — un bloque
+# con varios defectos exige COMPOSICIONES, porque la propuesta parcial de un
+# solo sanador sigue parseando mal y el compilador la rechaza.
+# ============================================================================
+
+
+def _san_saltos_literales(diagram: str) -> Optional[str]:
+    r"""`\n`/`\t`/`\r\n` literales a saltos reales (bug del generador Python)."""
+    if "\\n" not in diagram and "\\t" not in diagram:
+        return None
+    propuesto = (
+        diagram.replace("\\r\\n", "\n").replace("\\n", "\n").replace("\\t", "\t")
+    )
+    return propuesto if propuesto != diagram else None
+
+
+def _san_edge_label_especial(diagram: str) -> Optional[str]:
+    r"""Edge label con `()` o `,` sin citar: `-->|false (default)|` → `-->|"false (default)"|`."""
+    def cita(m: "re.Match[str]") -> str:
+        label = m.group(1)
+        if '"' in label:
+            return m.group(0)
+        if "(" in label or ")" in label or "," in label:
+            return f'|"{label}"|'
+        return m.group(0)
+
+    propuesto = re.sub(r"\|([^|\n]*)\|", cita, diagram)
+    return propuesto if propuesto != diagram else None
+
+
+def _san_er_etiqueta(diagram: str) -> Optional[str]:
+    r"""Relación ER con etiqueta ubicada antes de ` : `:
+    `user }o--|| tenant "pertenece a"` → `user }o--|| tenant : "pertenece a"`."""
+    primera = next((l for l in diagram.splitlines() if l.strip()), "")
+    if not primera.lstrip().startswith("erDiagram"):
+        return None
+    patron = r"^(\s*[\w-]+\s+[\}|o<>-]+--+[\}|o<>-]+\s+[\w-]+)\s+\"([^\"]+)\"[^\S\n]*$"
+    propuesto = re.sub(patron, lambda m: f'{m.group(1)} : "{m.group(2)}"', diagram, flags=re.M)
+    return propuesto if propuesto != diagram else None
+
+
+def _san_label_especial(diagram: str) -> Optional[str]:
+    r"""Label de nodo con `()<>{}:,'` sin citar: `A[foo<br/>(bar)]` → `A["foo<br/>(bar)"]`.
+
+    Solo corchetes cuadrados `[...]` — el diamante `A{...}` y demás formas no
+    se tocan. Un label que YA tiene comillas no se re-encierra: si una
+    comilla aparece antes del cierre, no hay match que envolver.
+
+    Escaneo lineal, no un regex: el equivalente `\[([^"\]\n]*)\]` con un
+    callback era cuadrático con tiradas de `[` sin cierre — 4.162 ms con
+    20.000 caracteres hostiles, contra un umbral de 50 ms
+    (tests/test_filtro_de_expresiones_regulares). El razonamiento es el
+    mismo del patrón, posición a posición; cambia el mecanismo, no lo que
+    se decide y no lo que envuelve.
+    """
+    primera = next((l for l in diagram.splitlines() if l.strip()), "")
+    if primera.lstrip().startswith("erDiagram"):
+        return None  # en ER los corchetes son atributos de entidad, no labels
+
+    especiales = "()<>{}:,"
+    cambio = False
+    salida: List[str] = []
+    for linea in diagram.split("\n"):
+        trozos: List[str] = []
+        i = 0
+        while True:
+            abre = linea.find("[", i)
+            if abre == -1:
+                trozos.append(linea[i:])
+                break
+            trozos.append(linea[i:abre])
+            # La etiqueta acaba en el primer cierre posterior; una comilla
+            # antes del cierre excluye el match (la clase del patrón también
+            # excluye ambas). Un `\n` no entra: es por línea.
+            cierra = linea.find("]", abre + 1)
+            comilla = linea.find('"', abre + 1)
+            if (cierra == -1 and comilla == -1) or (
+                comilla != -1 and (cierra == -1 or comilla < cierra)
+            ):
+                # Cerrado por comillas o sin cierre eventual: el siguiente
+                # candidato es otro `[` (el match del patrón tampoco pudo
+                # empezar en este).
+                i = abre + 1
+                continue
+            label = linea[abre + 1: cierra]
+            if any(c in label for c in especiales):
+                trozos.append(f'["{label}"]')
+                cambio = True
+            else:
+                trozos.append(linea[abre: cierra + 1])
+            i = cierra + 1
+        salida.append("".join(trozos))
+    return "\n".join(salida) if cambio else None
+
+
+def _san_corchete_abierto(diagram: str) -> Optional[str]:
+    r"""Nodo con label abierto al fin de línea: `B[Label2` → `B[Label2]`."""
+    lineas = diagram.split("\n")
+    cambio = False
+    salida = []
+    for linea in lineas:
+        rstrip = linea.rstrip()
+        if rstrip.rfind("[") > rstrip.rfind("]"):
+            salida.append(rstrip + "]")
+            cambio = True
+        else:
+            salida.append(linea)
+    return "\n".join(salida) if cambio else None
+
+
+#: El registro de sanadores, con la norma que sostienen. El nombre de la tool
+#: está en `SANADORES` de `vault/kernel/norms_catalog.py`; el par lo sostiene
+#: este módulo nombrando AP-25 en el docstring de `sanar_bloques` (AP-55).
+SANADORES_MERMAID: List[Tuple[str, Any]] = [
+    ("saltos_literales", _san_saltos_literales),
+    ("edge_label_especial", _san_edge_label_especial),
+    ("er_etiqueta", _san_er_etiqueta),
+    ("label_especial", _san_label_especial),
+    ("corchete_abierto", _san_corchete_abierto),
+]
+
+_PATRON_BLOQUE = RE_BLOQUE_MERMAID  # el fence con dueño — AP-57 (2026-10-19)
+
+
+def curar_bloques(
+    rotos: Dict[str, str], verificar: Any
+) -> Tuple[Dict[str, Tuple[str, List[str]]], List[str]]:
+    """Sana los bloques que el compilador rechaza, con el compilador de árbitro.
+
+    `rotos`: `{id_del_bloque: code}`; `verificar`: callable que recibe una
+    lista de códigos y devuelve un `ok` booleano alineado por posición (el
+    oráculo en batch). Devuelve `(sanados, no_salvables)`: `sanados[id]` es
+    `(code_curado, sanadores_aplicados)`; `no_salvables` son los ids que ni
+    con todas las composiciones de sanadores el compilador aprueba — y esos
+    NO se escriben: una cura no verificada es un defecto nuevo (AP-25).
+    """
+    import itertools
+
+    sanados: Dict[str, Tuple[str, List[str]]] = {}
+    actual = dict(rotos)
+    for _ronda in range(6):
+        propuestas: List[Tuple[str, str, List[str]]] = []
+        for id_bloque, code in actual.items():
+            fns = [
+                (nombre, fn)
+                for nombre, fn in SANADORES_MERMAID
+                if fn(code) is not None and fn(code) != code
+            ]
+            if not fns:
+                continue
+            # Composiciones por tamaño creciente: el compilador aprueba la
+            # más pequeña que deje el bloque parseando — mínimo cambio que
+            # cura (y preferencia de sanadores en orden canónico).
+            for tam in range(1, len(fns) + 1):
+                for combo in itertools.combinations(fns, tam):
+                    candidato = code
+                    for _nombre, fn in combo:
+                        candidato = fn(candidato)
+                    if candidato != code:
+                        nombres = [nombre for nombre, _fn in combo]
+                        propuestas.append((id_bloque, candidato, nombres))
+        if not propuestas:
+            break
+        veredictos = verificar([p[1] for p in propuestas])
+        for (id_bloque, candidato, nombres), ok in zip(propuestas, veredictos):
+            if ok and id_bloque not in sanados:
+                sanados[id_bloque] = (candidato, nombres)
+        actual = {k: v for k, v in actual.items() if k not in sanados}
+    no_salvables = list(actual)
+    return sanados, no_salvables
+
+
+def sanar_bloques(
+    diagnostico: Dict[str, Any], dry_run: bool = False
+) -> Dict[str, Any]:
+    """Sana los bloques que el compilador rechaza en el vault señalado. AP-25.
+
+    Ciclo completo del heal: toma el diagnóstico de esta corrida (cada
+    bloque con `parse_error` del compilador), propone composiciones de
+    sanadores mecánicos y las VERIFICA con el compilador antes de escribir
+    (AP-44: el criterio es el renderer real, no el regex). Solo se escribe
+    lo que el compilador aprueba; lo no salvable queda declarado intacto.
+
+    Escritura por la puerta de exactitud del estándar: `file_lock` →
+    `record_raw_write` (ledger AP-37) → `escritura_atomica` con
+    `guarda_secretos` en guardas (escaneo I1/I5 sin el saneado, que aplicaría
+    mutaciones después del criterio de aceptación) → `refrescar_grafo` fuera
+    del lock. `--dry-run` propone y reporta sin tocar un byte.
+    """
+    def id_de(file: str, index: int) -> str:
+        return f"{file}#{index}"
+
+    # Los rotos con su code: re-lectura fresca del mismo patrón que usó el
+    # diagnóstico (misma corrida, el contenido no cambió en medio).
+    results = diagnostico.get("results") or []
+    if not results and diagnostico.get("file"):
+        results = [diagnostico]
+    rotos: Dict[str, str] = {}
+    errores_rotos: Dict[str, str] = {}
+    for result in results:
+        if result.get("valid", True):
+            continue
+        archivo = result["file"]
+        try:
+            texto = Path(archivo).read_text(encoding="utf-8", errors="ignore")
+        except OSError as exc:
+            errores_rotos[f"{archivo}:read"] = str(exc)
+            continue
+        codigos = {m.start(): m.group(1) for m in _PATRON_BLOQUE.finditer(texto)}
+        indices = sorted(codigos)
+        for block in result.get("blocks", []):
+            if block.get("valid", True):
+                continue
+            if not any(e.get("type") == "parse_error" for e in block.get("errors", [])):
+                continue  # solo lo que el compilador rechaza: el resto es del audit
+            index_sp = block.get("index", 0)
+            if index_sp >= len(indices):
+                continue
+            id_bloque = id_de(archivo, index_sp)
+            rotos[id_bloque] = codigos[indices[index_sp]]
+            errores_rotos[id_bloque] = next(
+                (
+                    e.get("message", "")
+                    for e in block.get("errors", [])
+                    if e.get("type") == "parse_error"
+                ),
+                "",
+            )
+
+    if not rotos:
+        return {
+            "ok": True,
+            "healed": 0,
+            "clean": len(results),
+            "sanados": [],
+            "no_salvables": [],
+            "escritos": [],
+            "motivo": None,
+            "dry_run": dry_run,
+            **write_report(),
+        }
+    oraculo = diagnostico.get("oraculo") or {}
+    if not oraculo.get("disponible"):
+        return {
+            "ok": False,
+            "healed": 0,
+            "rotos": len(rotos),
+            "sanados": [],
+            "no_salvables": [],
+            "escritos": [],
+            "motivo": (
+                "hay bloques que el compilador rechaza pero el oráculo no corrió: "
+                f"sin criterio de aceptación no se escribe ({oraculo.get('motivo')})"
+            ),
+            "dry_run": dry_run,
+            **write_report(),
+        }
+
+    def verificar(codigos: List[str]) -> List[bool]:
+        entrada = [{"id": f"b{i}", "file": "x", "code": c} for i, c in enumerate(codigos)]
+        veredicto, _ = oraculo_validar(entrada)
+        if not veredicto:
+            # El oráculo se campanó a mitad del heal: sin veredicto NO se
+            # aprueba nada — vacío que simula salud sería AP-51.
+            return [False] * len(codigos)
+        return [bool(r.get("ok")) for r in veredicto.get("results", [])]
+
+    sanados, no_salvables = curar_bloques(rotos, verificar)
+
+    # Agrupa los reemplazos por archivo y reconstruye el texto completo.
+    por_archivo: Dict[str, Dict[int, str]] = {}
+    for id_bloque, (curado, _nombres) in sanados.items():
+        archivo, _, index = id_bloque.rpartition("#")
+        por_archivo.setdefault(archivo, {})[int(index)] = curado
+
+    escritos: List[str] = []
+    cambios_fallidos: List[Dict[str, str]] = []
+    if not dry_run and por_archivo:
+        # El bloque llegó AQUÍ solo si el compilador lo aprobó. `atomic_write_text`
+        # es el escritor canónico de notas, pero aplica `sanitize_content`
+        # (NFC, comillas tipográficas, guiones) DESPUÉS de lo que el compilador
+        # aprobó: la mutación no verificada invalidaría el criterio de
+        # aceptación. Por eso la escritura va por la puerta de exactitud del
+        # estándar: `record_raw_write` (ledger AP-37) + `escritura_atomica` con
+        # `guarda_secretos` en guardas (escaneo I1/I5 sin saneado) +
+        # `file_lock`, y el grafo refrescado una vez por el cierre del lote
+        # (AP-47: con 500 diagramas rotos, un refresco de grafo por nota era
+        # el 55 % del tiempo en la medida de `vault_frontmatter_completar`).
+        # Segundo motivo válido del write en crudo, documentado en
+        # `vault.kernel.ledger.record_raw_write`.
+        vroot = _raiz()
+        with escrituras_en_lote():
+            for archivo, reemplazos in por_archivo.items():
+                path = Path(archivo)
+                try:
+                    texto = path.read_text(encoding="utf-8", errors="ignore")
+                    nuevo = _recomponer_texto(texto, reemplazos)
+                    assert_within_vault(path, vroot)
+                    with file_lock(path):
+                        record_raw_write(path, nuevo)
+                        escritura_atomica(path, nuevo, guardas=[guarda_secretos])
+                    refrescar_grafo(path)
+                    escritos.append(archivo)
+                except (OSError, ValueError) as exc:
+                    cambios_fallidos.append({"file": archivo, "motivo": str(exc)[:200]})
+
+    sanados_lista = [
+        {
+            "id": id_bloque,
+            **({"file": id_bloque.rpartition("#")[0]} if "#" in id_bloque else {}),
+            **({"bloque": int(id_bloque.rpartition("#")[2])} if "#" in id_bloque else {}),
+            "sanadores": nombres,
+            "error_original": errores_rotos.get(id_bloque, ""),
+            "code_curado": curado if dry_run else None,
+        }
+        for id_bloque, (curado, nombres) in sorted(sanados.items())
+    ]
+    no_salvables_lista = [
+        {
+            "id": id_bloque,
+            "error_activo": errores_rotos.get(id_bloque, ""),
+            "detalle": (
+                "ninguna composición de sanadores mecánicos deja el bloque "
+                "parseando; se corrige a mano o se declara no salvable"
+            ),
+        }
+        for id_bloque in no_salvables
+    ]
+    return {
+        "ok": not no_salvables and not cambios_fallidos,
+        "healed": len(sanados) if not dry_run else 0,
+        "propuestos": len(sanados) if dry_run else None,
+        "sanados": sanados_lista,
+        "no_salvables": no_salvables_lista,
+        "escritos": escritos,
+        "fallidos": cambios_fallidos,
+        "motivo": None,
+        "dry_run": dry_run,
+        **write_report(),
+    }
+
+
+def _recomponer_texto(texto: str, reemplazos: Dict[int, str]) -> str:
+    """Reemplaza los bloques del mapa por índice, sin tocar el resto del texto.
+
+    El fence se reconstruye DESDE EL PROPIO match (posiciones del span): se
+    conserva la forma original del archivo —fence, espacios, salto— y el
+    único byte que cambia es el cuerpo del bloque que el compilador aprobó.
+    """
+    partes: List[str] = []
+    ultimo = 0
+    for idx, m in enumerate(_PATRON_BLOQUE.finditer(texto)):
+        partes.append(texto[ultimo: m.start()])
+        if idx in reemplazos:
+            partes.append(
+                texto[m.start(): m.start(1)] + reemplazos[idx] + texto[m.end(1): m.end()]
+            )
+        else:
+            partes.append(m.group(0))
+        ultimo = m.end()
+    partes.append(texto[ultimo:])
+    return "".join(partes)
 
 
 def main():
@@ -414,10 +806,80 @@ Ejemplos:
 
     parser.add_argument("--path", type=str, help="Archivo específico a verificar")
     parser.add_argument("--project", type=proyecto_registrado("vault_mermaid_check"), help="Proyecto a verificar")
-    parser.add_argument("--fix", action="store_true", help="Intentar auto-corrección")
+    parser.add_argument("--fix", action="store_true", help="Sanar los bloques que el compilador rechaza (requiere el oráculo)")
+    parser.add_argument("--dry-run", action="store_true", help="Con --fix: propone y reporta sin escribir")
     parser.add_argument("--json", action="store_true", help="Salida JSON")
 
     args = parser.parse_args()
+
+    # ── heal de AP-25: diagnosticar → sanar → re-diagnosticar ──
+    if args.fix:
+
+        def _diagnosticar() -> Dict[str, Any]:
+            if args.path:
+                # La misma guardia de lectura del modo verificación.
+                try:
+                    path = assert_within_vault(_raiz() / args.path, _raiz())
+                except ValueError as exc:
+                    print(json.dumps(emit_error(
+                        "vault_mermaid_check", "INVALID_PATH", str(exc)
+                    ), ensure_ascii=False))
+                    raise SystemExit(1)
+                if not path.exists():
+                    print(json.dumps(emit_error(
+                        "vault_mermaid_check", "FILE_NOT_FOUND", f"Archivo no encontrado: {args.path}"
+                    ), ensure_ascii=False))
+                    raise SystemExit(1)
+                diagramas: List[Dict[str, Any]] = []
+                result = check_file(path, diagramas=diagramas)
+                _veredicto, _motivo = (
+                    oraculo_validar(
+                        [{"id": f"{path}#{d['index']}", "file": str(path), "code": d["code"]}
+                         for d in diagramas]
+                    ) if diagramas else (None, None)
+                )
+                if _veredicto:
+                    _fusionar_veredictos(
+                        result, _veredicto,
+                        {d["index"]: f"{path}#{d['index']}" for d in diagramas},
+                    )
+                result["oraculo"] = {
+                    "disponible": _veredicto is not None,
+                    "parser": _NOMBRE_ORACULO if _veredicto else "heuristico",
+                    "bloques_comprobados": len(_veredicto.get("results", [])) if _veredicto else 0,
+                    "helper": str(_helper_oraculo()),
+                    "pack": str(_pack_oraculo()) if _pack_oraculo() else None,
+                    "motivo": None if _veredicto or not diagramas else _motivo,
+                }
+                return result
+            if args.project:
+                return scan_vault(project=args.project)
+            return scan_vault()
+
+        antes = _diagnosticar()
+        sanacion = sanar_bloques(antes, dry_run=args.dry_run)
+        despues = _diagnosticar()  # el estado del vault tras el intento
+        despues["sanacion"] = sanacion
+        # AP-37: el indicador del ledger entra por los returns de `scan_vault`
+        # y `sanar_bloques` (el spread de `write_report()`), no se re-monta aquí.
+
+        if args.json:
+            print(json.dumps(despues, indent=2, ensure_ascii=False))
+        else:
+            sanados = sanacion.get("sanados") or []
+            no_salv = sanacion.get("no_salvables") or []
+            if sanacion.get("dry_run"):
+                print(f"⏺ Dry-run: {len(sanados)} bloque(s) se sanarían, {len(no_salv)} no salvable(s) — nada se escribió")
+            else:
+                print(f"⏺ Sanación: {sanacion.get('healed', 0)} bloque(s) sanado(s), {len(no_salv)} no salvable(s)")
+            for s in sanados:
+                print(f"  ✓ {s['id']} — {', '.join(s['sanadores'])}")
+            for s in no_salv:
+                print(f"  ✗ {s['id']} — {s.get('error_activo', '')[:120]}")
+            total_errores = despues.get("total_errors", sum(len(r.get("errors", [])) for r in despues.get("results", [])) if "results" in despues else len(despues.get("errors", [])))
+            if total_errores:
+                print(f"  (persisten {total_errores} error(es) en el vault tras la sanación)")
+        return 0 if (sanacion.get("ok") and despues.get("ok", True)) else 1
 
     if args.path:
         # AP-36: el catálogo declara `within_vault` sobre --path; sin esto

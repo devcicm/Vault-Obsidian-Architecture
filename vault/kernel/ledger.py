@@ -65,10 +65,18 @@ def write_report() -> Dict[str, int]:
 def record_raw_write(path: Path, text: str, encoding: str = "utf-8") -> str:
     """Registra una escritura que NO pasa por `atomic_write_text`, a propósito.
 
-    Hay exactamente un motivo válido para escribir en crudo: `vault_section_index`
-    genera índices con `Path.write_text` porque `atomic_write_text` dispara
-    `_auto_section_index`, y el generador escribiéndose a sí mismo sería una
-    recursión infinita. Esas escrituras son trabajo real y tienen que contar.
+    Hay dos motivos válidos para escribir en crudo, y ambos están declarados:
+
+    1. `vault_section_index` genera índices con `Path.write_text` porque
+       `atomic_write_text` dispara `_auto_section_index`, y el generador
+       escribiéndose a sí mismo sería una recursión infinita.
+    2. `vault_mermaid_check --fix` escribe el contenido EXACTO que el
+       compilador de Mermaid aprobó (2026-10-19): `atomic_write_text` aplica
+       `sanitize_content` DESPUÉS del criterio de aceptación, y una mutación
+       no verificada (NFC, comillas tipográficas) invalidaría la cura. El
+       La ruta conserva el escaneo de secretos vía `guarda_secretos` en las
+       `guardas` de `escritura_atomica` — el saneado es lo único que se
+       omite, con nombre y motivo.
 
     Llamar a esto NO escribe: solo clasifica. Se invoca junto al `write_text`.
     """

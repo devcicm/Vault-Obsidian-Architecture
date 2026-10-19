@@ -325,14 +325,18 @@ python vault_relation_add.py --project mi-api --from "ServiceA" --to "ServiceB" 
 ---
 
 ### `vault_mermaid_check.py`
-Valida la sintaxis de los bloques Mermaid del vault antes de que Obsidian los renderice rotos. `--fix` intenta la corrección automática de los errores reversibles.
+Valida la sintaxis de los bloques Mermaid del vault antes de que Obsidian los renderice rotos. `--fix` sana los bloques que el compilador rechaza: el heal de AP-25 (guard en `vault_diagram_save`, audit aquí).
 
 Cuando el oráculo está instalado, la sintaxis la valida el **compilador real de Mermaid** (`mermaid.parse` sobre jsdom, via `mcp/nodejs/mmd_validate.mjs`), que caza errores que el parser heurístico deja pasar (labels con paréntesis sin comillas, saltos `\n` literales, `<br/>(...)` antes del `]`) y refuta los falsos positivos de llaves/corchetes; las reglas semánticas del dominio (`undefined_class/entity/state`) siguen siendo del estándar. Sin oráculo degrada al heurístico **declarando la cobertura** en el envelope (`oraculo.disponible: false` + `motivo`). El oráculo requiere Node y `npm install mermaid jsdom` junto a `mmd_validate.mjs` (o un pack externo en `VOAS_MERMAID_ORACLE`).
+
+La sanación también exige el compilador: cada bloque roto recibe composiciones de sanadores mecánicos (`saltos_literales`, `edge_label_especial`, `er_etiqueta`, `label_especial`, `corchete_abierto`) y **solo se escribe la propuesta que el compilador aprueba** — un bloque con varios defectos exige la composición, porque la propuesta parcial sigue parseando mal. Lo no salvable queda declarado intacto con el error activo. El escaneo de secretos se conserva (`guarda_secretos` en guardas); el saneado de `atomic_write_text` se omite a propósito: mutaría los bytes que el compilador aprobó. `--dry-run` propone y reporta sin escribir.
 
 ```bash
 python vault_mermaid_check.py
 python vault_mermaid_check.py --path "06_Diagrams/foo.md"
 python vault_mermaid_check.py --project "mi-api"
+python vault_mermaid_check.py --fix --dry-run   # la propuesta, sin escribir
+python vault_mermaid_check.py --fix             # sanea y re-diagnostica
 python vault_mermaid_check.py --fix --json
 ```
 

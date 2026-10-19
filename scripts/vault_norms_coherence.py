@@ -229,6 +229,7 @@ SANACION_EN_LOTE: Dict[str, tuple] = {
     "vault_project": ("vault_project.py", "--heal", "--apply"),
     "vault_norms_engine": ("vault_norms.py", "--heal-ap46", "--apply-heal", "--root", "{root}"),
     "vault_graph_fix": ("vault_graph_fix.py", "--root", "{root}", "--apply", "--auto-fix-safe"),
+    "vault_mermaid_check": ("vault_mermaid_check.py", "--fix", "--json"),
 }
 #: C8. Los sanadores sin modo de lote, con el motivo escrito.
 SANADORES_SIN_LOTE: Dict[str, str] = {

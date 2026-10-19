@@ -218,6 +218,7 @@ SIN_ESCRITURA_DECLARADA: Dict[str, str] = {
     "vault_history_compact": "la copia no tiene .history/ con versiones que compactar",
     "vault_merge": "--detect es de solo lectura y la línea de fusión cita el marcador /path/to/other-vault, que no existe",
     "vault_migrate_docs": "el ejemplo corre en dry-run: informa del plan de migración sin aplicarlo",
+    "vault_mermaid_check": "el sandbox no tiene diagramas rotos: --fix concluye en healed 0 sin tocar nada, --dry-run nunca escribe y el scan es de solo lectura",
     "vault_migrate_rollback": "no hay informe de una migración previa que deshacer",
     "vault_propagate": "--queue-report solo lee la cola de propagación",
     "vault_restore": "la copia no tiene backups; sin --confirm true la tool rehúsa (CONFIRMACION_REQUERIDA)",

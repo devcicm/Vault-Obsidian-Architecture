@@ -12,4 +12,5 @@ GUARD = [
     'scripts/vault_audit.py::vault_audit',
     'scripts/vault_mermaid_check.py::check_file',
     'scripts/vault_mermaid_check.py::scan_vault',
+    'scripts/vault_mermaid_check.py::main',
 ]

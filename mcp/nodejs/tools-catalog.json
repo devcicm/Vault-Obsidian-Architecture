@@ -3569,7 +3569,7 @@
     },
     "vault_mermaid_check": {
       "name": "vault_mermaid_check",
-      "description": "Valida diagramas Mermaid y detecta errores de sintaxis.",
+      "description": "Valida diagramas Mermaid con el compilador real (oráculo) y sana los bloques que rechaza con sanadores mecánicos verificados.",
       "group": "Diagramas",
       "script": "vault_mermaid_check.py",
       "inputSchema": {
@@ -3585,7 +3585,11 @@
           },
           "fix": {
             "type": "boolean",
-            "description": "Auto-corregir errores"
+            "description": "Sanar los bloques que el compilador rechaza (requiere oráculo)"
+          },
+          "dry-run": {
+            "type": "boolean",
+            "description": "Con --fix: propone y reporta sin escribir"
           },
           "json": {
             "type": "boolean",
@@ -3595,7 +3599,9 @@
         "additionalProperties": false
       },
       "guards": [],
-      "side_effects": [],
+      "side_effects": [
+        "Con --fix (sin --dry-run): reescribe los .md cuyo bloque el compilador señala, SOLO si una propuesta es aprobada por el compilador; escritura por el patrón canónico (file_lock + record_raw_write + escritura_atomica + refrescar_grafo)"
+      ],
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_mermaid_check",

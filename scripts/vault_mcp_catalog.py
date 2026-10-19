@@ -1109,7 +1109,10 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "name": "vault_mermaid_check",
         "script": "vault_mermaid_check.py",
         "group": "Diagramas",
-        "purpose": "Valida diagramas Mermaid y detecta errores de sintaxis.",
+        "purpose": (
+            "Valida diagramas Mermaid con el compilador real (oráculo) y sana "
+            "los bloques que rechaza con sanadores mecánicos verificados."
+        ),
         "params": {
             "path": {
                 "type": "string",
@@ -1126,7 +1129,13 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "fix": {
                 "type": "boolean",
                 "required": False,
-                "description": "Auto-corregir errores",
+                "description": "Sanar los bloques que el compilador rechaza (requiere oráculo)",
+                "validators": [],
+            },
+            "dry_run": {
+                "type": "boolean",
+                "required": False,
+                "description": "Con --fix: propone y reporta sin escribir",
                 "validators": [],
             },
             "json": {
@@ -1137,8 +1146,13 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             },
         },
         "guards": [],
-        "side_effects": [],
-        "example": 'python vault_mermaid_check.py\npython vault_mermaid_check.py --path "06_Diagrams/foo.md"\npython vault_mermaid_check.py --fix',
+        "side_effects": [
+            "Con --fix (sin --dry-run): reescribe los .md cuyo bloque el compilador "
+            "señala, SOLO si una propuesta es aprobada por el compilador; escritura "
+            "por el patrón canónico (file_lock + record_raw_write + escritura_atomica "
+            "+ refrescar_grafo)",
+        ],
+        "example": 'python vault_mermaid_check.py\npython vault_mermaid_check.py --path "06_Diagrams/foo.md"\npython vault_mermaid_check.py --fix --dry-run\npython vault_mermaid_check.py --fix',
         "related": ["vault_diagram_save", "vault_write"],
     },
     "vault_diagram_export": {

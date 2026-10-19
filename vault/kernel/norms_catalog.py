@@ -307,6 +307,7 @@ SANADORES: Dict[str, tuple] = {
     "vault_project": ("AP-63",),
     "vault_norms_engine": ("AP-46",),
     "vault_graph_fix": ("AP-14", "AP-21"),
+    "vault_mermaid_check": ("AP-25",),
 }
 
 

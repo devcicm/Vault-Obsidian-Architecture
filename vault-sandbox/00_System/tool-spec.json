@@ -2569,7 +2569,8 @@
         "files_with_diagrams",
         "ok",
         "results",
-        "total_errors"
+        "total_errors",
+        "written"
       ],
       "dq": {
         "dq_dimensions": [

@@ -6,5 +6,8 @@ cuerpo. `vault_norms --check-framework` falla si esto deja de ser lo que
 sale de derivarlo.
 """
 
-HEAL = None
-MOTIVO = 'ninguna tool de vault_norms_catalog.SANADORES repara AP-25.'
+HEAL = [
+    'scripts/vault_mermaid_check.py::check_file',
+    'scripts/vault_mermaid_check.py::scan_vault',
+    'scripts/vault_mermaid_check.py::main',
+]

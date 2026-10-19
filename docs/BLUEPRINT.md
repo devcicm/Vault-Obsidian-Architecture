@@ -106,7 +106,7 @@ rojo, y una puerta en rojo se desactiva.
 | **PAT-5** — Frontmatter as provenance chain | recommended | — | `test_context_memory.py` |
 | **AP-23** — Note complexity ceiling — nota demasiado larga | audit | `framework` | — |
 | **AP-24** — Bracket imbalance — corchetes sin pareja, anidados o invertidos | guard+audit | — | `test_normas_caras.py`, `test_norms_coherence.py`, `test_vault_norms.py` |
-| **AP-25** — Mermaid diagram syntax errors — nodos/tipos no definidos | audit | — | `test_manifiesto_pasa_ap25.py`, `test_skills_catalogo.py`, `test_vault_norms.py` |
+| **AP-25** — Mermaid diagram syntax errors — nodos/tipos no definidos | audit | — | `test_manifiesto_pasa_ap25.py`, `test_mermaid_sanacion.py`, `test_skills_catalogo.py`, `test_vault_norms.py` |
 | **AP-26** — Missing tags — nota de contenido sin tags | guard+audit | — | `test_context_memory.py` |
 | **AP-27** — Missing type field — nota sin tipo declarado | guard+audit | — | `test_capa4_audit_ejercitada.py` |
 | **AP-28** — Missing frontmatter — nota sin bloque YAML | audit | — | `test_ap56_frontmatter_heal.py` |
@@ -424,7 +424,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 4 | ≤ 2 para 2027-03-31 · cada 90 d · meta_toolkit — vault_kernel → **en_plazo** | 5 → 6 → 6 → 5 → 4 → 4 (encoge, Δ-1) |
 | `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_norms_distincion → **cumple** | 57 → 0 → 0 → 0 (encoge, Δ-57) |
 | `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_norms_coherence → **cumple** | 47 → 0 → 0 (encoge, Δ-47) |
-| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1426 | — *no aplica*: No es deuda: es el contrato de campos estables con los repos consumidores y crece por diseño cada vez que una tool publica un campo nuevo (1334 → 1410 entre 2026-08-30 y 2026-10-08). Lo que la puerta vigila es que ningún campo desaparezca sin `superseded_fields`, no su tamaño. Declarado el 2026-10-09 con la deuda #8. | 1389 → 1410 → 1410 → 1424 → 1424 → 1426 (crece, Δ+148) |
+| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1427 | — *no aplica*: No es deuda: es el contrato de campos estables con los repos consumidores y crece por diseño cada vez que una tool publica un campo nuevo (1334 → 1410 entre 2026-08-30 y 2026-10-08). Lo que la puerta vigila es que ningún campo desaparezca sin `superseded_fields`, no su tamaño. Declarado el 2026-10-09 con la deuda #8. | 1410 → 1410 → 1424 → 1424 → 1426 → 1427 (crece, Δ+149) |
 | `scripts/excepcion-declarada-baseline.json` | AP-61 — la excepción declarada no es la que escapa | 0 | ≤ 0 para 2027-06-30 · cada 180 d · gobernanza → **cumple** | 0 → 0 (plana, Δ+0) |
 | `scripts/recursos-baseline.json` | AP-62 — el consumidor cruza para leer un recurso y paga el fan-out | 2 | ≤ 0 para 2027-03-31 · cada 90 d · meta_toolkit — vault_recursos → **en_plazo** | 2 → 2 (plana, Δ+0) |
 

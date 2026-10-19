@@ -42,6 +42,17 @@ UNICODE_BRACKETS = set(UNICODE_OPEN_BRACKETS + UNICODE_CLOSE_BRACKETS)
 RE_NESTED_OPEN_3 = re.compile(r"\[\[\[+")  # [[[, [[[[, etc
 RE_NESTED_CLOSE_3 = re.compile(r"\]\]\]+")  # ]]], ]]]], etc
 
+# ── El fence de código mermaid: un dueño (AP-57, 2026-10-19) ────────────────
+#
+# El literal del fence ya tenía dueño funcional (`strip_code_blocks`, que
+# convierte código en prosa para contar wikilinks). El extractor INVERSO —
+# saca los bloques de código del texto, que es lo que `vault_mermaid_check`
+# necesita para leer cada diagrama y, saneando, reestructurar el archivo
+# sin tocar byte a byte el resto — vive aquí para decidir el
+# fence en UN sitio: quien extrae y quien desecha usan la misma forma, y un
+# cambio de fence no puede divergir entre los dos caminos.
+RE_BLOQUE_MERMAID = re.compile(r"```mermaid\s*\n(.*?)```", re.DOTALL)
+
 # Anomalías mixtas (orden invertido)
 # Los ejemplos van descritos, no literales. Escritos como `# ][[` el compilador
 # emite `FutureWarning: Possible nested set` —lee los corchetes del comentario—
