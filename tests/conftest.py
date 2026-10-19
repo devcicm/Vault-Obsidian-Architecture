@@ -129,31 +129,3 @@ def _raiz_de_vault_limpia():
     import vault_io
 
     vault_io.reset_vault_root()
-
-
-def pytest_collection_modifyitems(config, items):
-    """Agrupa los tests marcados `@pytest.mark.serial` en un grupo xdist
-    dedicado, para que corran sin intercalarse con otros tests que escriben
-    en el vault-sandbox compartido.
-
-    Medido 2026-10-18: `test_durabilidad_caracterizacion.py::test_el_backup_no_se_copia_a_si_mismo`
-    y `::test_dos_copias_de_un_vault_intacto_comparten_merkle_root` comparan el
-    `merkle_file_count` entre dos llamadas consecutivas a `vault_backup`.
-    Pasan 17/17 en aislamiento, pero bajo `-n auto` otro worker escribe un
-    archivo en el sandbox entre las dos llamadas y el conteo deriva por 1.
-    Sin esta serialización, los dos tests fallan con flake bajo paralelismo
-    a pesar de que el código bajo prueba es correcto (verificado en CI sin
-    paralelismo). El grupo xdist los ejecuta en un único worker, donde no
-    hay intercalación posible.
-
-    Los nombres se aplican por **identificación**, no por edición del test
-    body — el docstring del fichero de caracterización prohíbe ajustar el
-    test; el marker se cuelga desde aquí.
-    """
-    backup_tests = {
-        "test_el_backup_no_se_copia_a_si_mismo",
-        "test_dos_copias_de_un_vault_intacto_comparten_merkle_root",
-    }
-    for item in items:
-        if item.name in backup_tests:
-            item.add_marker(pytest.mark.xdist_group("serial_backup"))
