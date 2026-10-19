@@ -30,7 +30,16 @@ from .enumeracion import notas_en_disco
 # Alias-wikilink dentro de celda de tabla — formato prohibido en índices:
 # combina identidad y título en una celda, confunde a agentes (crean notas en
 # blanco a partir del alias) y dispara falsos positivos de sintaxis.
-RE_ALIAS_EN_TABLA = re.compile(r"^\|\s*\[\[[^\]|]+\|[^\]]+\]\]", re.MULTILINE)
+#
+# El ancla `^|` exige que la línea EMPIECE por `|` (línea de tabla, no de
+# lista ni de blockquote). Medido 2026-10-18: el `re.MULTILINE` previo no
+# cazaba la fila de Subcarpetas del 01_Projects/index.md de SMART POS CR
+# porque el wikilink estaba en la 2ª columna, no al inicio de la línea, y
+# el heal (`heal_indexes`) no la encontraba: el `vault_section_index` se
+# ejecutaba, regeneraba el index con el MISMO bug (línea 262 de este
+# mismo módulo producía el patrón), y el heal creía haberlo arreglado.
+# La corrección del regex + del generador cierran el ciclo.
+RE_ALIAS_EN_TABLA = re.compile(r"^\|.*\[\[[^\]|]+\|[^\]]+\]\]", re.MULTILINE)
 
 #: Caracteres del resumen en la tabla del índice: lo bastante para decidir si
 #: se abre la nota, no tanto como para que la tabla deje de leerse.
@@ -252,6 +261,18 @@ class RenderizadorDeIndice:
         # subcarpeta salía en código y la fila de abajo pedía abrir
         # `{folder}/{subcarpeta}/index.md` a mano — con las llaves sin
         # sustituir, porque la cadena no era un f-string.
+        #
+        # Medido 2026-10-18: la v41.10 emitía aquí `[[path/index|índice]]`,
+        # con el alias DENTRO de la celda "Índice" de la tabla de Subcarpetas.
+        # La `|` del alias actuaba como separador de columna, partiendo la
+        # fila en 4 columnas y dejando `índice]]` huérfano en "Propósito".
+        # El `RE_ALIAS_EN_TABLA` no lo cazaba (regex incompleto, anclaba al
+        # inicio de línea) y el heal (`heal_indexes`) no lo regeneraba
+        # porque la fila regenerada producía el MISMO bug. La cura:
+        # wikilink SIN alias en celdas de tabla — el destino se muestra
+        # como el stem, que es lo que Obsidian resuelve sin ambigüedad.
+        # Las listas de navegación (cabecera, migaja) sí conservan alias
+        # porque no están en una celda.
         if subcarpetas:
             lineas += ["## Subcarpetas", ""]
             lineas += ["| Carpeta | Índice | Propósito |", "|---|---|---|"]
@@ -259,7 +280,9 @@ class RenderizadorDeIndice:
                 sub_clave = sub.replace("\\", "/")
                 ruta_indice = f"{sub_clave}/index.md"
                 if self._indice_disponible is not None and self._indice_disponible(ruta_indice):
-                    enlace = f"[[{sub_clave}/index|índice]]"
+                    # Sin alias: el destino se muestra como el stem. Un
+                    # alias aquí reintroduce el bug que rompe la tabla.
+                    enlace = f"[[{ruta_indice}]]"
                 else:
                     enlace = f"`{ruta_indice}`"
                 lineas.append(

@@ -273,7 +273,11 @@ PUERTAS: List[Dict[str, Any]] = [
 # --ejecutado --strict` (AP-37): mide 92 tools contra una copia del vault y en
 # Windows tarda unos cinco minutos, así que la corrida agregada la daba por
 # roja por timeout mientras en directo pasaba en verde (medido 2026-10-18).
-LIMITE_POR_PUERTA = 420.0
+# Medido 2026-10-19: con la suite actual (5911 tests), el noop se acerca a los
+# 700s porque el barrido de tests/*.py crece con cada test nuevo. 600s
+# (10 min) le da margen sin pasar de "la puerta más pesada cabe en su
+# límite"; 420s empezó a quedarse corto cuando la suite cruzó ~5900 tests.
+LIMITE_POR_PUERTA = 600.0
 
 
 def limite_total() -> int:

@@ -71,10 +71,16 @@ def test_el_hub_enlaza_el_indice_de_cada_seccion_y_el_maestro(vault):
 
 def test_el_maestro_y_las_migajas_enlazan_y_las_subcarpetas_tambien(vault):
     maestro = _leer(vault, "99_Index/index.md")
-    assert "[[02_Observability/index|índice]]" in maestro
+    # El enlace al indice de seccion en el maestro va SIN alias en la celda
+    # de la tabla (el alias `|indice` parte la fila; ver el fix en
+    # `vault/indices/maestro.py`).
+    assert "[[02_Observability/index.md]]" in maestro
     seccion = _leer(vault, "02_Observability/index.md")
     assert "[[99_Index/index|Índice maestro]]" in seccion
-    assert "| `02_Observability/errors/` | [[02_Observability/errors/index|índice]] |" in seccion
+    # Sin alias en la celda de tabla: el alias `|índice` dentro de una
+    # celda actúa como separador de columna y parte la fila (medido
+    # 2026-10-18 en el 01_Projects/index.md de SMART POS CR).
+    assert "| `02_Observability/errors/` | [[02_Observability/errors/index.md]] |" in seccion
     assert "{folder}" not in seccion and "{subcarpeta}" not in seccion
     sub = _leer(vault, "02_Observability/errors/index.md")
     assert "[[02_Observability/index|02_Observability]]" in sub

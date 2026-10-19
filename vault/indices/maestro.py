@@ -70,9 +70,16 @@ class ServicioIndiceMaestro:
         for r in resultados:
             seccion = r["section"]
             # Recién escrito por `_indexar`: el enlace resuelve. La ruta entera
-            # es la que fija cuál de los `index` es (AP-21 precisado); el alias
-            # no abre la fila (RE_ALIAS_EN_TABLA).
-            enlace = f"[[{seccion}/index|índice]]" if r["ok"] else "_(vacía)_"
+            # es la que fija cuál de los `index` es (AP-21 precisado). El alias
+            # `|índice` dentro de la celda "Índice" de la tabla rompía la fila:
+            # la `|` actúa como separador de columna (medido 2026-10-18 en
+            # 99_Index/index.md de SMART POS CR — 23 filas afectadas). Mismo
+            # arreglo que `vault/indices/seccion.py`: wikilink SIN alias en
+            # celdas de tabla. El destino se muestra como el stem.
+            if r["ok"]:
+                enlace = f"[[{seccion}/index.md]]"
+            else:
+                enlace = "_(vacía)_"
             lineas.append(
                 f"| `{seccion}` | {self._describir(seccion)} | {r['noteCount']} "
                 f"| {enlace} |"
