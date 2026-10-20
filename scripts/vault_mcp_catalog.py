@@ -126,7 +126,9 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "name": "vault_read",
         "script": "vault_read.py",
         "group": "Core",
-        "purpose": "Lee una nota del vault por ruta relativa o por título.",
+        "purpose": ("Lee una nota del vault por ruta relativa o por nombre "
+                    "(stem o alias: el criterio con el que Obsidian resuelve; "
+                    "`title:` no es clave de resolución)."),
         "params": {
             "path": {
                 "type": "string",
@@ -220,7 +222,12 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             },
         },
         "guards": [],
-        "side_effects": [],
+        # O2: el registro decía que añadir texto no tenía efecto. Lo tiene y
+        # no es solo el texto: la nota cambia y queda anotada en la bitácora.
+        "side_effects": [
+            "Añade contenido a la nota existente y refresca su updatedAt",
+            "Anota el cambio en el change-log (F8, no repudio)",
+        ],
         "example": 'python vault_append.py --path "01_Projects/mi-api/changelog.md" --content "## v1.2\\n\\nFix deploy"',
         "related": ["vault_write", "vault_read"],
     },

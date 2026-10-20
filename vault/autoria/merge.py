@@ -46,6 +46,7 @@ from typing import Any, Dict, List, Optional
 
 
 from vault_io import atomic_write_text, get_vault_root, normalize_stem, tomar_lock, write_report
+from vault_registry import es_artefacto_derivado
 from vault_undo import _guardar_version_actual
 
 from vault_lib import campos_de_texto, separar_frontmatter
@@ -226,11 +227,23 @@ def _action_dedup() -> Dict[str, Any]:
         if ".history" in str(note) or note.name.startswith("_"):
             continue
 
+        # O2: los artefactos derivados no son duplicados entre sí. Medido en
+        # una copia del sandbox: los 23 `index.md` de sección comparten stem y
+        # `dedup` los fusionaba todos en uno y borraba los otros 22 — daño del
+        # mismo tipo que `vault_append` ya rechaza con el dueño del criterio
+        # (`vault.kernel.registry.es_artefacto_derivado`).
+        relativa = note.relative_to(get_vault_root()).as_posix()
+
+        if es_artefacto_derivado(relativa):
+            continue
+
         key = _normalize(note.stem)
 
         buckets.setdefault(key, []).append(note)
 
     merged_count = 0
+
+    locked: List[str] = []
 
     for key, paths in buckets.items():
         if len(paths) < 2:
@@ -244,29 +257,55 @@ def _action_dedup() -> Dict[str, Any]:
 
         others = paths[1:]
 
-        canonical_content = _read_note(canonical)
+        # Lock del canónico ANTES de borrar nada: hasta v41.12 el borrado de
+        # las duplicadas y la escritura del canónico no tomaban lock, así que
+        # un escritor concurrente podía perder la fusión o el canónico quedar
+        # sin actualizar con las otras ya borradas (recuperables solo por
+        # .history). Misma espera que `vault_write` y `vault_undo`.
+        lock = tomar_lock(canonical, _LOCK_TIMEOUT)
 
-        for other in others:
-            body = _read_note(other)
+        if lock is None:
+            locked.append(canonical.relative_to(get_vault_root()).as_posix())
 
-            # Strip frontmatter from the non-canonical note
+            continue
 
-            body = separar_frontmatter(body)[1]
+        with lock:
+            canonical_content = _read_note(canonical)
 
-            canonical_content += "\n\n---\n\n" + body.strip()
+            for other in others:
+                body = _read_note(other)
 
-            other.unlink()
+                # Strip frontmatter from the non-canonical note
 
-            merged_count += 1
+                body = separar_frontmatter(body)[1]
 
-        atomic_write_text(canonical, canonical_content)
+                canonical_content += "\n\n---\n\n" + body.strip()
 
-    return {
+                # La promesa del catálogo («Crea backups antes de modificar»)
+                # se cumplía solo en la rama overwrite de `_action_merge`:
+                # `dedup` borraba la nota duplicada sin dejar versión. El dueño
+                # del historial es `vault_undo` — el mismo que usa la otra rama.
+                _guardar_version_actual(other)
+
+                other.unlink()
+
+                merged_count += 1
+
+            _guardar_version_actual(canonical)
+
+            atomic_write_text(canonical, canonical_content)
+
+    resultado: Dict[str, Any] = {
         "ok": True,
         **write_report(),
         "action": "dedup",
         "merged": merged_count,
     }
+
+    if locked:
+        resultado["locked"] = locked
+
+    return resultado
 
 
 # ── public API ────────────────────────────────────────────────────────────────

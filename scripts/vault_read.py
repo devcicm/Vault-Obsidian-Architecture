@@ -33,7 +33,7 @@ import sys
 from vault_errors import emit_error, wrap_main
 from vault_lib import parse_frontmatter_with_body as _parse_frontmatter_with_body
 
-from vault_io import assert_within_vault
+from vault_io import assert_within_vault, is_snapshot_path
 from vault_encoding import decode_safely, normalize_to_nfc
 from vault_regex import extract_wiki_links_strict
 from datetime import datetime
@@ -108,6 +108,22 @@ def get_history_versions(note_path: Path) -> List[str]:
     return [v["filename"] for v in historia.versiones(_history_dir(), rel)][:10]
 
 
+def _resolver_por_nombre(nombre: str):
+    """`(ruta, candidatos)` resolviendo `nombre` como destino de Obsidian.
+
+    La promesa del catálogo es «por ruta relativa o por título», y el criterio
+    con el que Obsidian resuelve un nombre es **stem y `aliases:`** —nunca
+    `title:`— (AP-44). El dueño del criterio es `vault_lib`, el mismo que usan
+    el write path y los índices: aquí no se reimplementa (AP-57).
+    """
+    from vault_lib import indice_de_nombres, inventario_de_nombres, resolver_wikilink
+
+    relativas, aliases = inventario_de_nombres(_raiz(), is_snapshot_path)
+    indice = indice_de_nombres(relativas, aliases)
+    ruta, candidatos = resolver_wikilink(nombre, None, indice)
+    return (_raiz() / ruta if ruta else None), candidatos
+
+
 def vault_read(path: str) -> Dict[str, Any]:
     """
 
@@ -133,7 +149,22 @@ def vault_read(path: str) -> Dict[str, Any]:
         return {"ok": False, "error_code": "INVALID_PATH", "error": str(exc)}
 
     if not note_path.exists():
-        return {**emit_error("vault_read", "NOTE_NOT_FOUND", f"Note not found: {path}"), "path": path}
+        # «Por ruta relativa o por título»: si la ruta no existe, el nombre se
+        # resuelve como un destino de Obsidian antes de darlo por ausente.
+        resuelta, candidatos = _resolver_por_nombre(path)
+        if resuelta is not None:
+            note_path = resuelta
+            resuelta_desde = path
+        elif candidatos:
+            return {**emit_error(
+                "vault_read", "NOTE_NOT_FOUND",
+                f"Name '{path}' matches {len(candidatos)} notes: "
+                f"{', '.join(candidatos)}; give the path to pick one"),
+                "path": path, "candidates": candidatos}
+        else:
+            return {**emit_error("vault_read", "NOTE_NOT_FOUND", f"Note not found: {path}"), "path": path}
+    else:
+        resuelta_desde = None
 
     # AP-51: un directorio no es una nota. Hasta 2026-10-10 su lectura salía
     # como PERMISSION_DENIED (el PermissionError de Windows), y el agente
@@ -185,6 +216,10 @@ def vault_read(path: str) -> Dict[str, Any]:
             "links": len(wiki_links),
         },
     }
+    if resuelta_desde is not None:
+        # El nombre pedido no era una ruta: se dice por qué se resolvió, para
+        # que el agente no crea que `path` es el eco de su petición (AP-51).
+        result["resolved_from"] = resuelta_desde
     if not legible:
         result["frontmatter_error"] = causa
     return result

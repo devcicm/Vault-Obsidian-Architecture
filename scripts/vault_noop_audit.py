@@ -80,6 +80,10 @@ BASELINE_PATH = Path(__file__).resolve().parent / "noop-baseline.json"
 WORK_INDICATORS = {
     "added",
     "applied",
+    # O2: `vault_append` devuelve cuántos caracteres añadió; el contenido vacío
+    # se rechaza antes, así que un cero no es "no hice nada" sino imposible.
+    # Es un recuento del trabajo, no una bandera: mismo patrón que `total`.
+    "appendedLength",
     "changed",
     # Plural del anterior. Lo introdujo `vault_changelog_check --fijar-hash`,
     # que no devuelve un contador sino el detalle de lo que tocó (hash antes y
@@ -222,6 +226,10 @@ SIN_ESCRITURA_DECLARADA: Dict[str, str] = {
     "vault_migrate_rollback": "no hay informe de una migración previa que deshacer",
     "vault_propagate": "--queue-report solo lee la cola de propagación",
     "vault_restore": "la copia no tiene backups; sin --confirm true la tool rehúsa (CONFIRMACION_REQUERIDA)",
+    # O2: declaraba `side_effects` vacío y no se medía; ahora declara lo que
+    # hace y el banco no puede reproducirlo porque la nota del ejemplo no
+    # existe en la copia (la tool rehúsa con NOTE_NOT_FOUND).
+    "vault_append": "la nota del ejemplo (el changelog del proyecto mi-api) no existe en la copia del banco; sin nota existente la tool rehúsa con NOTE_NOT_FOUND",
     # v41.12 (O1): regenerar un índice al día YA no escribe — mismo cuerpo ⇒
     # mismo documento, y la conservación de la marca deja el fichero tal cual.
     # El índice desfasado sí se reescribe: el trabajo existe cuando hay cambio.
