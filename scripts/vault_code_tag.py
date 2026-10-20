@@ -51,6 +51,7 @@ from typing import Any, Dict, List, Optional
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
+from vault.kernel.escritura import escribir_json_si_cambia  # noqa: E402
 from vault.grafo.enlace_codigo import (  # noqa: E402
     COMMENT_STYLES as _stable_comment_styles,
     VAULT_TAG_PATTERN as _stable_vault_tag_pattern,
@@ -139,7 +140,13 @@ def _save_registry(reg: Dict[str, Any]) -> None:
     from datetime import datetime, timezone
     reg["updated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
     _code_tag_registry().parent.mkdir(parents=True, exist_ok=True)
-    atomic_write_json(_code_tag_registry(), reg)
+    # Mismo cuerpo ⇒ mismo documento (v41.12): `updated_at` es sello, no
+    # contenido — re-definir el mismo tag no mueve el registro (el C3 del
+    # auditor lo medía por hash).
+    escribir_json_si_cambia(
+        atomic_write_json, _code_tag_registry(), reg,
+        claves_de_sello=frozenset({"updated_at"}),
+    )
 
 
 #: Profundidad de reentrada del lock del registro, por hilo.

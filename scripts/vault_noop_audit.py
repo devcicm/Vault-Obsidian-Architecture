@@ -222,6 +222,10 @@ SIN_ESCRITURA_DECLARADA: Dict[str, str] = {
     "vault_migrate_rollback": "no hay informe de una migración previa que deshacer",
     "vault_propagate": "--queue-report solo lee la cola de propagación",
     "vault_restore": "la copia no tiene backups; sin --confirm true la tool rehúsa (CONFIRMACION_REQUERIDA)",
+    # v41.12 (O1): regenerar un índice al día YA no escribe — mismo cuerpo ⇒
+    # mismo documento, y la conservación de la marca deja el fichero tal cual.
+    # El índice desfasado sí se reescribe: el trabajo existe cuando hay cambio.
+    "vault_section_index": "el índice de la sección ya está al día: la conservación de la marca deja el fichero tal cual, que es el contrato de idempotencia que la tool declara",
     "vault_standard_upgrade": "el sandbox ya está en la versión vigente del estándar: no hay nada que subir",
     "vault_undo": "la copia no tiene historial de cambios que deshacer",
 }

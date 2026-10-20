@@ -37,11 +37,26 @@ from vault_escaneo_grafo import escanear_wikilinks  # el único escaneo del graf
 from vault_lib import clave_de_nombre  # dueño único de la identidad por nombre (AP-57, AP-17)
 from vault_registry import ORDERED_SECTIONS
 
+# Mismo cuerpo ⇒ mismo documento (v41.12, C3): el enriquecido se reescribe
+# solo si su contenido cambió. Son SELLOS, no contenido: las lecturas de reloj
+# sobre el fichero que se está escribiendo (`graph_enriched_hours_old` y
+# compañía) nunca convergen (0.0h → 0.2h → …), y `merged_at` hereda el
+# `rebuiltAt` del grafo fuente — que este mismo ciclo refresca, así que
+# arrastrarlo al cuerpo haría que cada corrida reescribiera el fichero con un
+# instante nuevo sin que el grafo cambiara.
+SELLOS_AUTOREFERENCIALES = frozenset({
+    "graph_enriched_exists",
+    "graph_enriched_hours_old",
+    "graph_enriched_stale",
+    "merged_at",
+})
+
 ONTOLOGY_FILE = Path(__file__).parent / "vault_ontology.json"
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.grafo.aristas import consolidar_aristas  # noqa: E402
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
+from vault.kernel.escritura import escribir_json_si_cambia  # noqa: E402
 from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 from vault.kernel.enumeracion import notas_en_disco  # noqa: E402
 
@@ -801,7 +816,10 @@ def vault_graph_merge(
     }
 
     _enriched_file().parent.mkdir(parents=True, exist_ok=True)
-    atomic_write_json(_enriched_file(), enriched)
+    escribir_json_si_cambia(
+        atomic_write_json, _enriched_file(), enriched,
+        claves_de_sello=SELLOS_AUTOREFERENCIALES,
+    )
 
     next_actions = []
     if ontology_source == "ausente":

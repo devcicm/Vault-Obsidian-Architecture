@@ -15,8 +15,9 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
+from ..kernel.escritura import escribir_json_si_cambia  # noqa: E402
 from ..kernel.frontmatter_parsing import separar_frontmatter
 from .enumeracion import es_nota_indexable, notas_en_disco
 from .repositorio import RepositorioIndices
@@ -24,6 +25,13 @@ from .repositorio import RepositorioIndices
 #: Longitud del extracto que se guarda por nota. Va al índice, así que es
 #: contrato con quien lo lee: recortarlo cambia lo que el agente ve al buscar.
 PREVIO = 200
+
+#: Claves de sello temporal de los índices que este servicio reconstruye. No
+#: son contenido: dicen CUÁNDO se reconstruyó, y reconstruir lo mismo desde el
+#: mismo vault no es un hecho nuevo. El mecanismo vive en el kernel
+#: (`vault.kernel.escritura.escribir_json_si_cambia`); qué claves SON sello en
+#: ESTOS ficheros lo declara este módulo, que es su dueño.
+CLAVES_DE_SELLO = frozenset({"rebuiltAt", "snapshot_at"})
 
 
 def _previo(contenido: str) -> str:
@@ -90,10 +98,19 @@ class ServicioReindex:
                 indice = {}
             notas = [n for n in indice.get("notes", []) if n.get("path") not in rutas]
             notas.extend(entradas)
+            # Orden canónico por ruta (v41.12): la reconstrucción inserta en
+            # orden alfabético, pero el refresco hacía remove+append y el orden
+            # final dependía de qué gancho corrió último — el mismo índice con
+            # las mismas filas en otra posición era un diff entero en cada
+            # corrida (el C3 lo medía por hash). Con orden canónico, refrescar
+            # lo ya refrescado no cambia bytes.
+            notas.sort(key=lambda n: str(n.get("path", "")))
             indice["notes"] = notas
             if "totalNotes" in indice:
                 indice["totalNotes"] = len(notas)
-            repo.ctx.escritor.escribir_json(destino, indice)
+            escribir_json_si_cambia(
+                repo.ctx.escritor.escribir_json, destino, indice,
+                claves_de_sello=CLAVES_DE_SELLO)
         return {"ok": True, "refreshed": True, "path": entradas[0]["path"],
                 "paths": [e["path"] for e in entradas]}
 
@@ -129,12 +146,17 @@ class ServicioReindex:
 
         if not dry_run:
             repo.dir_indices.mkdir(parents=True, exist_ok=True)
-            repo.ctx.escritor.escribir_json(
+            escribir = repo.ctx.escritor.escribir_json
+            escribir_json_si_cambia(
+                escribir,
                 repo.indice_busqueda,
                 {"notes": notas, "rebuiltAt": ahora, "totalNotes": len(notas)},
+                claves_de_sello=CLAVES_DE_SELLO,
             )
-            repo.ctx.escritor.escribir_json(
-                repo.indice_hashes, {"snapshot_at": ahora, "notes": hashes}
+            escribir_json_si_cambia(
+                escribir,
+                repo.indice_hashes, {"snapshot_at": ahora, "notes": hashes},
+                claves_de_sello=CLAVES_DE_SELLO,
             )
 
         return {

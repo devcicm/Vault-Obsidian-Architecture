@@ -130,6 +130,7 @@ PLACEHOLDER_PATTERNS = [
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
+from vault.kernel.escritura import escribir_json_si_cambia  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 # AP-57: el nombre de índice lo decide su dueño; sin copia de respaldo, que
 # era la segunda declaración que envejece en silencio.
@@ -633,7 +634,14 @@ def vault_quality_check(
         _system_dir().mkdir(parents=True, exist_ok=True)
         try:
             with file_lock(_quality_index(), timeout=30.0):
-                atomic_write_json(_quality_index(), index_data)
+                # Mismo cuerpo ⇒ mismo documento (v41.12): `generated_at` es
+                # sello, no contenido — puntuar lo mismo desde el mismo vault
+                # no es un hecho nuevo. Sin esto cada corrida movía el JSON
+                # y el C3 del auditor lo daba por reescritura.
+                escribir_json_si_cambia(
+                    atomic_write_json, _quality_index(), index_data,
+                    claves_de_sello=frozenset({"generated_at"}),
+                )
         except TimeoutError:
             pass
 

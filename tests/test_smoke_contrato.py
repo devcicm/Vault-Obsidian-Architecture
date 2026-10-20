@@ -41,9 +41,20 @@ def vs():
 
 def test_un_envelope_que_no_cubre_nada_de_su_contrato_es_hueco(vs, monkeypatch):
     monkeypatch.setattr(vs, "_contrato_de", lambda t: {"path", "total"})
-    hueco = vs.contract_gap({"tool": "x", "returned": ["ok", "tool"]})
+    hueco = vs.contract_gap({"tool": "x", "tool_ok": True,
+                             "returned": ["ok", "tool"]})
     assert hueco is not None
     assert hueco["problem"] == "el envelope no cubre ningún campo de su contrato"
+
+
+def test_un_envelope_de_error_no_debe_cubrir_el_contrato_de_exito(vs, monkeypatch):
+    """v41.12 (la ola O1 del auditor): un `ok: false` promete el contrato de
+    errores y nada más. Exigirle `healthIndex` sin haber auditado nada es
+    pedir el número inventado que AP-37 prohíbe; el rechazo ya sale como
+    pérdida suya y el gap era marcarlo dos veces."""
+    monkeypatch.setattr(vs, "_contrato_de", lambda t: {"path", "total"})
+    assert vs.contract_gap({"tool": "x", "tool_ok": False,
+                            "returned": ["ok", "error_code", "message"]}) is None
 
 
 def test_cubrir_un_solo_campo_basta(vs, monkeypatch):

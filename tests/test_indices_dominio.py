@@ -17,6 +17,17 @@ from pathlib import Path
 
 import pytest
 
+from vault.indices.reconstruccion import (  # noqa: E402
+    ServicioReindex,
+    escribir_json_si_cambia,
+)
+from vault.indices.seccion import (  # noqa: E402
+    MARCA_DE_GENERADO,
+    con_marca_de,
+    conservar_marca_de_generado,
+    texto_semantico,
+)
+
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -24,7 +35,6 @@ from vault.indices.carpetas import ServicioCarpetas  # noqa: E402
 from vault.kernel.fallos import FalloDeDominio  # noqa: E402
 from vault.indices.coherencia import coherencia_indice  # noqa: E402
 from vault.indices.enumeracion import es_nota_indexable, notas_en_disco  # noqa: E402
-from vault.indices.reconstruccion import ServicioReindex  # noqa: E402
 from vault.indices.repositorio import RepositorioIndices  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 
@@ -354,3 +364,113 @@ def test_una_raiz_con_punto_no_vacia_la_seccion(tmp_path):
         raiz, raiz / "07_Knowledge", ["07_Knowledge"], True, lambda c: {}
     )
     assert [n["path"] for n in notas] == ["real.md"]
+
+
+# ── Mismo cuerpo ⇒ mismo documento (v41.12, el C3 del auditor) ──────────────
+
+
+def test_texto_semantico_quita_la_linea_de_marca():
+    """El sello de tiempo NO es contenido: dos generaciones del mismo cuerpo
+    comparten texto semántico aunque el reloj haya avanzado."""
+    cuerpo = "# 99_Index\n\n| Sección | Notas |\n|---|---|\n"
+    previo = cuerpo + f"\n> {MARCA_DE_GENERADO} · 2026-10-20T09:00:00.000Z · 5 nota(s)\n"
+    nuevo = cuerpo + f"\n> {MARCA_DE_GENERADO} · 2026-10-20T10:00:00.000Z · 5 nota(s)\n"
+    assert texto_semantico(previo) == texto_semantico(nuevo)
+
+
+def test_con_marca_de_conserva_el_sello_si_el_cuerpo_no_cambia():
+    """Regenerar lo mismo no produce documento nuevo: se devuelve el texto
+    previo y el disco queda tal cual — el `unchanged` del ledger sale honesto."""
+    previo = f"# Índice\n\n> {MARCA_DE_GENERADO} · viejo · 5 nota(s)\n\ncuerpo\n"
+    nuevo = f"# Índice\n\n> {MARCA_DE_GENERADO} · nuevo · 5 nota(s)\n\ncuerpo\n"
+    assert con_marca_de(previo, nuevo) == previo
+
+
+def test_con_marca_de_a_cuerpo_nuevo_le_toca_sello_nuevo():
+    """Si el cuerpo cambió, el texto nuevo va entero: contenido nuevo, sello
+    nuevo. Conservar aquí sería congelar un índice desfasado."""
+    previo = f"# Índice\n\n> {MARCA_DE_GENERADO} · viejo · 5 nota(s)\n\n5 filas\n"
+    nuevo = f"# Índice\n\n> {MARCA_DE_GENERADO} · nuevo · 6 nota(s)\n\n6 filas\n"
+    assert con_marca_de(previo, nuevo) == nuevo
+
+
+def test_con_marca_de_no_toca_un_indice_escrito_a_mano(tmp_path):
+    """Un `index.md` sin la marca es AJENO (AP-25): ni se conserva ni se
+    compara — el llamador decide si le toca reescritura, y a eso viene."""
+    ajeno = tmp_path / "index.md"
+    ajeno.write_text("# Escrito a mano\n\n- [[una-nota]]\n", encoding="utf-8")
+    nuevo = f"# Índice\n\n> {MARCA_DE_GENERADO} · nuevo\n"
+    assert conservar_marca_de_generado(ajeno, nuevo) == nuevo
+
+
+def test_la_reconstruccion_del_mismo_vault_no_reescribe_los_json(tmp_path, monkeypatch):
+    """Reconstruir dos veces el mismo vault es UNA escritura (v41.12).
+
+    Cada corrida sellaba `rebuiltAt`/`snapshot_at` con el reloj y el diff de
+    bytes daba por trabajo una regeneración que no cambió nada — el gemelo JSON
+    del parpadeo de los índices .md que el auditor midió en O1."""
+    raiz = _vault(tmp_path / "v", ["07_Knowledge/a.md", "11_Code/b.md"])
+    repo = _repo(raiz)
+    servicio = ServicioReindex(repo, _parse)
+    servicio.reconstruir()
+    antes = repo.indice_busqueda.read_bytes()
+
+    llamadas = []
+    original = type(repo.ctx.escritor).escribir_json
+
+    def espia(self, ruta, datos):
+        llamadas.append(Path(ruta).name)
+        original(self, ruta, datos)
+
+    monkeypatch.setattr(type(repo.ctx.escritor), "escribir_json", espia)
+    servicio.reconstruir()
+    # La segunda pasada no escribe NINGUNO de los dos índices: el cuerpo es
+    # igual y solo los sellos movían.
+    assert llamadas == [], llamadas
+    assert repo.indice_busqueda.read_bytes() == antes
+
+
+def test_la_reconstruccion_tras_un_cambio_si_reescribe(tmp_path):
+    """La dedup no congelan el índice: a nota nueva le toca fila nueva."""
+    raiz = _vault(tmp_path / "v", ["07_Knowledge/a.md"])
+    repo = _repo(raiz)
+    servicio = ServicioReindex(repo, _parse)
+    servicio.reconstruir()
+    antes = repo.indice_busqueda.read_bytes()
+
+    (raiz / "07_Knowledge" / "b.md").write_text(
+        "---\ntitle: b\n---\n# b\n", encoding="utf-8")
+    servicio.reconstruir()
+    despues = repo.indice_busqueda.read_bytes()
+    assert despues != antes
+    assert "b.md" in despues.decode("utf-8")
+
+
+def test_escribir_json_si_cambia_excluye_sellos_del_llamador(tmp_path):
+    """Las claves de sello propias del llamador entran por parámetro — el caso
+    de `vault_graph_merge`, cuyas lecturas de reloj sobre sí mismo nunca
+    convergen (0.0h → 0.2h → …): son sello, no contenido."""
+    ruta = tmp_path / "enriquecido.json"
+    escritos = []
+
+    def escritor(r, datos):
+        escritos.append(r.name)
+        ruta.write_text(__import__("json").dumps(datos), encoding="utf-8")
+
+    def cuerpo(horas):
+        return {"stats": {"nodos": 3},
+                "diagnostics": {"silo_flags": {
+                    "graph_enriched_hours_old": horas,
+                    "graph_enriched_stale": horas > 24}}}
+
+    sellos = frozenset({"graph_enriched_hours_old", "graph_enriched_stale"})
+    assert escribir_json_si_cambia(escritor, ruta, cuerpo(0.0),
+                                   claves_de_sello=sellos) is True
+    # Mismo cuerpo con otra edad: sin escritura.
+    assert escribir_json_si_cambia(escritor, ruta, cuerpo(0.3),
+                                   claves_de_sello=sellos) is False
+    assert escritos == ["enriquecido.json"]
+    # Cuerpo nuevo: escritura.
+    assert escribir_json_si_cambia(escritor, ruta, {"stats": {"nodos": 4}},
+                                   claves_de_sello=sellos) is True
+    assert escritos == ["enriquecido.json", "enriquecido.json"]

@@ -9,11 +9,12 @@ durabilidad opt-in para consumidores instalados y adaptadores legacy.
 from __future__ import annotations
 
 import errno
+import json
 import os
 import time
 import uuid
 from pathlib import Path
-from typing import Callable, Sequence
+from typing import Any, Callable, Optional, Sequence
 
 from .bloqueo import comprobar_toma
 
@@ -136,3 +137,56 @@ def apartar_ilegible(path: Path) -> Path:
     destino = path.with_name(f"{path.name}.ilegible-{sello}-{uuid.uuid4().hex[:6]}")
     os.replace(path, destino)
     return destino
+
+
+# ── Mismo cuerpo ⇒ mismo documento (v41.12, el C3 del auditor) ──────────────
+
+
+def _sin_sellos(datos: Any, sellos: frozenset) -> Any:
+    """El cuerpo de un JSON sin sus claves de sello: lo que identifica el doc.
+
+    Recurre en dicts y listas: los sellos pueden vivir anidados (los de
+    `vault_graph_merge` cuelgan de `diagnostics.silo_flags`). Los JSON del
+    dominio no tienen ciclos, así que la recursión es segura.
+    """
+    if isinstance(datos, dict):
+        return {k: _sin_sellos(v, sellos) for k, v in datos.items()
+                if k not in sellos}
+    if isinstance(datos, list):
+        return [_sin_sellos(v, sellos) for v in datos]
+    return datos
+
+
+def escribir_json_si_cambia(
+    escribir_json: Callable[[Path, dict], None],
+    ruta: Path,
+    datos: dict,
+    claves_de_sello: frozenset = frozenset(),
+) -> bool:
+    """Escribe `datos` solo si el cuerpo (sin sellos) difiere del disco.
+
+    Devuelve True si escribió. Sin esto, cada regeneración de un índice o
+    registro movía su sello de tiempo (`rebuiltAt`, `updated_at`, …) y el
+    diff de bytes daba por trabajo una regeneración que no cambió nada — el
+    parpadeo que el C3 del auditor midió por hash de contenido en la ola O1.
+
+    Vive en el kernel porque lo llaman tres contextos distintos (Índices,
+    Grafo, Gobernanza) y un cruce hacia Índices solo para traer esta función
+    era deuda de arquitectura sin motivo. ES del kernel lo genérico: el
+    mecanismo de comparar contra disco y decidir. Lo del dominio —qué claves
+    son sello en SUS ficheros— lo declara cada llamador en `claves_de_sello`;
+    el kernel no conoce ni `rebuiltAt` ni `updated_at`.
+
+    `escribir_json` es la función del canal (bound method del puerto o
+    `atomic_write_json`): el que compara pide la escritura, no la implementa.
+    """
+    sellos = frozenset(claves_de_sello or frozenset())
+    cuerpo = _sin_sellos(datos, sellos)
+    try:
+        previo = json.loads(ruta.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        previo = None
+    if isinstance(previo, dict) and _sin_sellos(previo, sellos) == cuerpo:
+        return False
+    escribir_json(ruta, datos)
+    return True

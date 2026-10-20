@@ -79,6 +79,37 @@ def merkle_de(carpeta: Path, algo: int = MERKLE_ALGO) -> tuple[str, int]:
     return raiz_merkle(hojas), len(hojas)
 
 
+def merkle_vivo(raiz: Path, algo: int = MERKLE_ALGO) -> tuple[str, int]:
+    """La huella del vault TAL COMO entraría en un snapshot, sin copiarlo.
+
+    Existe para la dedup de `crear`: si el vault vivo tiene la misma raíz
+    Merkle que el último snapshot, no hay nada nuevo que respaldar. Comparte
+    con `merkle_de` la regla `algo`, los `VOLATILES` y el manifiesto; añade
+    los filtros de la copia (dotfiles y `NO_COPIAR` de primer nivel), porque
+    el vault vivo tiene directorios que un snapshot nunca lleva — empezando
+    por `vault-backups`, donde viven las copias mismas (AP-36). Sin ese
+    filtro, la huella incluiría el backup anterior y jamás coincidiría con él:
+    la dedup sería imposible por construcción.
+    """
+    hojas: list[str] = []
+    for fichero in sorted(raiz.rglob("*")):
+        if not fichero.is_file():
+            continue
+        rel_pos = fichero.relative_to(raiz)
+        if rel_pos.parts[0].startswith(".") or rel_pos.parts[0] in NO_COPIAR:
+            continue
+        if fichero.name == FICHERO_MANIFIESTO:
+            continue
+        rel = str(rel_pos).replace("\\", "/")
+        if algo >= 2 and rel in VOLATILES:
+            continue
+        try:
+            hojas.append(_hoja(rel, fichero.read_bytes()))
+        except (PermissionError, OSError):
+            continue
+    return raiz_merkle(hojas), len(hojas)
+
+
 # ── Inventario del snapshot ──────────────────────────────────────────────────
 
 def _contar(carpeta: Path) -> tuple[int, int, int]:
@@ -147,7 +178,41 @@ class ServicioSnapshot:
         adaptador. Lo que sí sale de aquí es `files_copied`, que es el trabajo
         de esta operación y no lo veía nadie —`shutil` no pasa por el ledger, y
         un backup de 196 ficheros reportaba `written: 1` (AP-37).
+
+        Si el vault vivo tiene la misma huella Merkle que el último snapshot
+        (misma regla `merkle_algo`), no copia nada: declara `unchanged` con el
+        nombre del backup vigente. El contrato declaraba idempotencia y cada
+        corrida abría un directorio nuevo — dos copias idénticas por gesto del
+        agente, y el C3 del auditor lo medía por hash (v41.12). A contenido
+        nuevo le toca snapshot nuevo: el dedup solo cierra el caso «no cambió
+        nada desde la última copia».
         """
+        raiz_viva, _ = merkle_vivo(self._ctx.raiz)
+        ultimo = (self._repo.registro_crudo().get("backups") or [None])[0]
+        if ultimo and ultimo.get("name"):
+            manifiesto_previo = (self._repo.ruta_de(ultimo["name"])
+                                 / FICHERO_MANIFIESTO)
+            try:
+                previo = json.loads(
+                    manifiesto_previo.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                previo = None
+            if (isinstance(previo, dict)
+                    and previo.get("merkle_algo") == MERKLE_ALGO
+                    and previo.get("merkle_root") == raiz_viva):
+                ruta_previa = self._repo.ruta_de(ultimo["name"])
+                return {
+                    "unchanged": True,
+                    "name": ultimo["name"],
+                    "path": str(ruta_previa.relative_to(
+                        self._ctx.raiz)).replace("\\", "/") + "/",
+                    "manifest": previo.get("vault", {}),
+                    "merkle_root": raiz_viva,
+                    "merkle_file_count": previo.get("merkle_file_count", 0),
+                    "merkle_algo": MERKLE_ALGO,
+                    "files_copied": 0,
+                }
+
         slug = slug_de_etiqueta(etiqueta)
         marca = self._ctx.reloj.ahora().strftime("%Y-%m-%d-%H%M%S")
         nombre = f"vault-{marca}" + (f"-{slug}" if slug else "")

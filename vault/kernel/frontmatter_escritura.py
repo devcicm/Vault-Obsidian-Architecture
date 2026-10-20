@@ -18,6 +18,7 @@ escapado (`yaml_scalar`, `es_instante`)— ya era del núcleo desde v40.34
 from __future__ import annotations
 
 import re
+from pathlib import Path
 from typing import Any, Iterable, List, Tuple
 
 from .frontmatter_parsing import es_instante, yaml_scalar
@@ -176,3 +177,49 @@ class Frontmatter:
 
     def __str__(self) -> str:  # pragma: no cover - conveniencia
         return self.render()
+
+
+# ── Mismo cuerpo ⇒ misma nota (v41.12, el C3 del auditor) ───────────────────
+
+#: Campos de identidad y reloj que cada llamada fabrica nueva (`uuid4`,
+#: `createdAt`/`updatedAt`) y que NO describen el suceso. El dueño del criterio
+#: es este módulo porque son campos del frontmatter que este escritor emite; la
+#: regla es la misma que en `seccion.con_marca_de` y `log_error`: re-guardar lo
+#: idéntico no es escribir una nota nueva.
+CAMPOS_POR_LLAMADA = ("id", "createdAt", "updatedAt")
+
+
+def texto_estable(texto: str, campos: Iterable[str] = (),
+                  patrones_cuerpo: Iterable[str] = ()) -> str:
+    """La nota sin sus campos de identidad y reloj por llamada.
+
+    `campos` suma nombres de campo propios del llamador (p. ej. `accessed_at`
+    en Bibliografía) y `patrones_cuerpo` líneas del cuerpo que también son de
+    reloj (`**Consultado:** …`). El conjunto por defecto es el de este
+    escritor; lo demás lo declara quien llama, porque son SUS campos.
+    """
+    activos = "|".join((*CAMPOS_POR_LLAMADA, *campos))
+    partes = [rf"^(?:{activos}): .*$", *patrones_cuerpo]
+    return re.sub(r"(?:" + "|".join(partes) + r")", "", texto, flags=re.M)
+
+
+def conservar_nota_generada(ruta, texto_nuevo: str, campos: Iterable[str] = (),
+                            patrones_cuerpo: Iterable[str] = ()) -> str:
+    """Devuelve el texto que deja el disco al guardar `texto_nuevo` en `ruta`.
+
+    Si ya hay una nota con el mismo cuerpo estable (todo salvo id y sellos),
+    se devuelve el texto previo: reescribirla con id y `updatedAt` nuevos
+    mueve el fichero sin que el contenido cambiara, y el C3 del auditor —que
+    mide por hash de contenido— lo daba por reescritura en cada re-guardada
+    de los `*_save`. A contenido distinto le toca nota nueva, con su id y sus
+    sellos nuevos.
+    """
+    ruta = Path(ruta)
+    try:
+        previo = ruta.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return texto_nuevo
+    if (texto_estable(previo, campos, patrones_cuerpo)
+            == texto_estable(texto_nuevo, campos, patrones_cuerpo)):
+        return previo
+    return texto_nuevo

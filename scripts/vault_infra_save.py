@@ -52,6 +52,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 from vault.kernel.contenido import con_titulo  # noqa: E402
+from vault.kernel.frontmatter_escritura import conservar_nota_generada  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
@@ -269,7 +270,14 @@ def save_infra_map(
 
     cuerpo = "\n## Network Map\n\n```mermaid\n" + mermaid_content + "\n```\n"
 
-    atomic_write_text(map_path, frontmatter.render() + "\n\n" + con_titulo("Infrastructure Map", cuerpo))
+    # Mismo cuerpo ⇒ mismo documento (v41.12): el mapa derivado de los mismos
+    # componentes no mueve el fichero por mover su `updatedAt`.
+    texto_mapa = conservar_nota_generada(
+        map_path,
+        frontmatter.render() + "\n\n" + con_titulo("Infrastructure Map", cuerpo),
+        campos=("createdAt",),
+    )
+    atomic_write_text(map_path, texto_mapa)
 
     return map_path
 
@@ -445,6 +453,11 @@ def vault_infra_save(
 
     folder.mkdir(parents=True, exist_ok=True)
 
+    # Mismo cuerpo ⇒ misma nota (v41.12): re-guardar el mismo componente no
+    # fabrica id ni sellos nuevos.
+    final_content = conservar_nota_generada(note_path, final_content,
+                                            campos=("createdAt",))
+
     atomic_write_text(note_path, final_content)
 
     # El lock abarca desde la lectura hasta la escritura, no solo la
@@ -467,7 +480,17 @@ def vault_infra_save(
 
         for i, comp in enumerate(index["components"]):
             if slugify(comp["name"]) == safe_name:
-                index["components"][i] = new_component
+                # La identidad del componente es estable (v41.12): re-guardar
+                # lo idéntico no fabrica id nuevo ni mueve `updatedAt` — el
+                # C3 del auditor media la reescritura del índice como trabajo.
+                nuevo = {**new_component, "id": comp.get("id") or new_component["id"]}
+                previo = {k: v for k, v in comp.items() if k != "updatedAt"}
+                nuevo_sin_sello = {k: v for k, v in nuevo.items()
+                                   if k != "updatedAt"}
+                if previo != nuevo_sin_sello:
+                    index["components"][i] = nuevo
+                else:
+                    index["components"][i] = comp
 
                 break
 

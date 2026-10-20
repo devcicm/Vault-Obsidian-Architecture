@@ -14,6 +14,7 @@ from __future__ import annotations
 from typing import Any, Callable, Dict, List, Sequence
 
 from .repositorio import RepositorioIndices
+from .seccion import con_marca_de
 
 
 class ServicioIndiceMaestro:
@@ -33,6 +34,18 @@ class ServicioIndiceMaestro:
         resultados: List[Dict[str, Any]] = []
         total = 0
 
+        # El previo del maestro se lee ANTES de la cascada (v41.12): su propia
+        # indexación de la sección `99_Index` reescribe este MISMO fichero en
+        # formato de sección, y leerlo después compararía contra el destrozo,
+        # no contra el maestro que ya había — el sello se movería en cada
+        # corrida sin que nada semántico cambiara (el C3 lo medía por hash).
+        previo: Optional[str] = None
+        try:
+            previo = repo.indice_maestro.read_text(encoding="utf-8",
+                                                    errors="replace")
+        except OSError:
+            previo = None
+
         for seccion in secciones:
             if not (repo.raiz / seccion).exists():
                 resultados.append({"section": seccion, "noteCount": 0, "ok": False})
@@ -46,7 +59,14 @@ class ServicioIndiceMaestro:
 
         lineas = self._componer(resultados, total, len(secciones))
         repo.dir_indices.mkdir(parents=True, exist_ok=True)
-        repo.ctx.escritor.escribir(repo.indice_maestro, "\n".join(lineas))
+        # Mismo cuerpo ⇒ mismo documento: el sello de la marca se conserva;
+        # a cuerpo nuevo le toca sello nuevo. La comparación corre sobre la
+        # FORMA DE DISCO: escribir sanea (NFC, em-dash→`--`), y contrastar el
+        # texto crudo contra el fichero saneado reescribe en cada corrida.
+        texto_nuevo = repo.ctx.escritor.sanear("\n".join(lineas))
+        texto = con_marca_de(previo, texto_nuevo)
+        repo.ctx.escritor.escribir(repo.indice_maestro, texto)
+        repo.ctx.escritor.escribir(repo.indice_maestro, texto)
 
         return {
             "path": repo.relativa(repo.indice_maestro),

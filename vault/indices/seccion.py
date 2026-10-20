@@ -187,6 +187,63 @@ def es_indice_generado(texto: str) -> bool:
     return not texto.strip() or MARCA_DE_GENERADO in texto
 
 
+#: La línea de marca con su sello de tiempo, para lo que sigue. El momento de la
+#: generación es información de frescura, no contenido del índice: regenerar el
+#: mismo cuerpo desde el mismo estado del vault no produce un documento nuevo.
+RE_LINEA_DE_MARCA = re.compile(
+    r"^\s*>?\s*" + re.escape(MARCA_DE_GENERADO) + r"\s*·.*$", re.M)
+
+
+def texto_semantico(texto: str) -> str:
+    """El índice sin sus líneas de marca: lo que identifica el documento.
+
+    Quitar la marca y comparar el resto es lo que permite que la regeneración
+    de un índice cuyo cuerpo no cambió deje el fichero en disco tal cual
+    (AP-53 lo exige a quién declara idempotencia; C3 lo mide por hash de
+    contenido). Sin esto, cada regeneración movía el sello de tiempo y el
+    bytes-diff daba por trabajo lo que no lo era — el parpadeo que el auditor
+    midió en v41.12 entre corridas que caían en el mismo segundo.
+    """
+    return RE_LINEA_DE_MARCA.sub("", texto)
+
+
+def conservar_marca_de_generado(ruta: Path, texto_nuevo: str) -> str:
+    """Mismo cuerpo ⇒ mismo documento: devuelve el texto que deja el disco.
+
+    Si `ruta` ya tiene un índice generado con el mismo cuerpo que
+    `texto_nuevo`, se devuelve el texto previo (con su sello de tiempo
+    original): reescribirlo con un sello nuevo movería el fichero sin haber
+    hecho nada — exactamente lo que `_record_write` del ledger llama
+    `unchanged` y lo que el C3 del auditor ya no verá como reescritura.
+
+    Si el cuerpo cambió, o no había fichero legible, devuelve `texto_nuevo`
+    tal cual: a contenido nuevo le toca sello nuevo.
+    """
+    try:
+        previo = ruta.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return texto_nuevo
+    return con_marca_de(previo, texto_nuevo)
+
+
+def con_marca_de(previo: Optional[str], texto_nuevo: str) -> Optional[str]:
+    """El núcleo de `conservar_marca_de_generado`, sin leer disco.
+
+    Existe porque el maestro tiene un motivo para no usar `ruta`: su propia
+    cascada (`vault_section_index` sobre la sección `99_Index`) reescribe el
+    MISMO fichero en formato de sección antes de que el maestro componga el
+    suyo, así que leer `ruta` en ese momento devuelve el destrozo, no el
+    índice maestro previo. El maestro lee su previo ANTES de indexar secciones
+    y le pasa aquí ese texto: si el cuerpo que quería escribir es el mismo que
+    el que ya había al empezar la corrida, conserva su sello y el disco queda
+    tal cual.
+    """
+    if previo and es_indice_generado(previo) and (
+            texto_semantico(previo) == texto_semantico(texto_nuevo)):
+        return previo
+    return texto_nuevo
+
+
 def indice_de_la_carpeta(carpeta: Path) -> Optional[Path]:
     """El índice que ya hay en `carpeta`, sea `index.md`, `INDEX.md` o `Index.md`.
 

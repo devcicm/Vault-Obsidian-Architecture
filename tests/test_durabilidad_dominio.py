@@ -233,3 +233,47 @@ def test_el_adaptador_no_decide_nada():
     assert "dumps" in llamadas
 
     assert "VAULT_ROOT" not in fuente, "AP-49: el adaptador congeló la raíz"
+
+
+# ── La dedup del snapshot (v41.12, el C3 del auditor) ────────────────────────
+
+
+def _vault_con_nota(raiz: Path, texto: str) -> None:
+    seccion = raiz / "07_Knowledge"
+    seccion.mkdir(parents=True, exist_ok=True)
+    (seccion / "a.md").write_text(
+        f"---\ntitle: a\n---\n# a\n\n{texto}\n", encoding="utf-8")
+
+
+def test_snapshot_de_un_vault_sin_cambios_devuelve_unchanged(tmp_path):
+    """El contrato declara `unchanged`; antes cada corrida abría un directorio
+    nuevo con la misma copia (v41.12). Ahora la segunda llamada no copia: dice
+    `unchanged` con el nombre del snapshot vigente."""
+    from vault.durabilidad.snapshot import ServicioSnapshot
+
+    _vault_con_nota(tmp_path, "v1")
+    servicio = ServicioSnapshot(construir(tmp_path))
+    primero = servicio.crear("primera")
+    assert primero["files_copied"] > 0
+
+    segundo = servicio.crear("segunda")
+    assert segundo["unchanged"] is True
+    assert segundo["name"] == primero["name"]
+    assert segundo["files_copied"] == 0
+    # La carpeta del snapshot rechazado no existe: solo hay una copia.
+    backups = list((tmp_path / "vault-backups").glob("vault-*"))
+    assert len(backups) == 1
+
+
+def test_snapshot_tras_un_cambio_si_copia(tmp_path):
+    """La dedup no congelar el respaldo: a contenido nuevo, snapshot nuevo."""
+    from vault.durabilidad.snapshot import ServicioSnapshot
+
+    servicio = ServicioSnapshot(construir(tmp_path))
+    _vault_con_nota(tmp_path, "v1")
+    primero = servicio.crear("uno")
+    _vault_con_nota(tmp_path, "v2 — contenido que cambió")
+    segundo = servicio.crear("dos")
+    assert "unchanged" not in segundo or segundo.get("unchanged") is not True
+    assert segundo["name"] != primero["name"]
+    assert segundo["files_copied"] > 0

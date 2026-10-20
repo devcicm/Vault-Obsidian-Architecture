@@ -335,6 +335,14 @@ def contract_gap(resultado: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     tool = resultado["tool"]
     if resultado.get("skipped") or "returned" not in resultado:
         return None
+    # El contrato promete los modos de ÉXITO; un envelope de error promete el
+    # contrato de errores (`_SOLO_EN_ERROR`) y nada más. Exigirle campos del
+    # contrato de éxito era medir dos veces el mismo rechazo: la corrida ya
+    # sale como pérdida si la tool rechazó, y un `ok: false` estructuralmente
+    # no puede cubrir `healthIndex` sin fabricar un número que no calculó
+    # (AP-37: el indicador inventado es el fallo, no su ausencia).
+    if resultado.get("tool_ok") is not True:
+        return None
     declarados = _contrato_de(tool) - _SOLO_EN_ERROR
     if not declarados:
         return None

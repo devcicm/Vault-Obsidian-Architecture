@@ -268,10 +268,11 @@ def main() -> int:
     )
     args = parser.parse_args()
     result = vault_quality_dashboard(check_only=args.check)
-    if args.check:
-        print(result["content"])
-    else:
-        print(json.dumps(result, indent=2, ensure_ascii=False))
+    # El contrato del toolkit es que toda tool habla JSON (AP-42): el markdown
+    # del dashboard viaja DENTRO del envelope (`content`), no como stdout
+    # desnudo — un consumidor que parsea la salida no puede distinguir un
+    # dashboard de un mensaje de error en prosa.
+    print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0 if result.get("ok") else 1
 
 

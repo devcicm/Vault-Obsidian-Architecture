@@ -105,9 +105,18 @@ def test_un_fichero_de_test_cambiado_se_incluye_a_si_mismo(tmp_path):
 
 
 def test_ficheros_cambiados_lee_git(tmp_path, monkeypatch):
-    # El working tree de ESTE repo tiene al menos este archivo de test como nueva.
-    cambiados = scope.ficheros_cambiados(repo_root=REPO)
-    assert any("test_vault_test_scope" in c for c in cambiados)
+    # No puede depender de que ESTE fichero esté sucio: la ola anterior lo
+    # dejó de estar al commitearse, y el test empezó a mentir (AP-44: el
+    # criterio es el estado real del árbol, no el recuerdo de cómo nació el
+    # test). Una sonda sin trackear dentro del repo es el estado que mide;
+    # `ficheros_cambiados` lista solo `.py`, así que la sonda lo es.
+    sonda = REPO / "tests" / "_sonda_ficheros_cambiados.py"
+    sonda.write_text("SONDA = True\n", encoding="utf-8")
+    try:
+        cambiados = scope.ficheros_cambiados(repo_root=REPO)
+        assert any("_sonda_ficheros_cambiados" in c for c in cambiados)
+    finally:
+        sonda.unlink(missing_ok=True)
 
 
 def test_mapa_no_se_muere_sin_catalogo(tmp_path):

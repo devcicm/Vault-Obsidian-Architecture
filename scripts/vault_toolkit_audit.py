@@ -177,12 +177,24 @@ def c0_superficie(nombre: str, entrada: Dict[str, Any]) -> Dict[str, Any]:
     return {"estado": "OK", "lineas": len(lineas)}
 
 
+def _es_solo_lectura(linea: str) -> bool:
+    """¿La línea lleva alguna flag de solo lectura, por TOKEN y no por trozo?
+
+    El `flag in line` por substring clasificaba `--priority must-have` como
+    `--list` (la `-h` vive dentro de `must-have`) y `--host` como `--help`:
+    tres tools honestas salían como DEFECTO/MEJORA porque su ejemplo decía
+    algo que CONTENÍA la flag sin llevarla (AP-44: el criterio del que mide,
+    no el del argv real, que va por tokens).
+    """
+    tokens = set(linea.split())
+    return any(flag in tokens for flag in FLAGS_DE_SOLO_LECTURA)
+
+
 def c1_cobertura(nombre: str, entrada: Dict[str, Any],
                  lineas_python: List[str]) -> Dict[str, Any]:
     if not lineas_python:
         return {"estado": "OK", "nota": "sin lines `python` en el example (C0 lo declara)"}
-    utiles = [line for line in lineas_python
-              if not any(flag in line for flag in FLAGS_DE_SOLO_LECTURA)]
+    utiles = [line for line in lineas_python if not _es_solo_lectura(line)]
     side_effects = entrada.get("side_effects") or []
     if not utiles and side_effects:
         return {"estado": "DEFECTO",

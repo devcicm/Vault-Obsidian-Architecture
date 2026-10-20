@@ -2,25 +2,7 @@
  "norm": "AP-42",
  "note": "deuda congelada: tools con veredicto DEFECTO pendiente de solución planeada. Solo encoge; crecer exige --freeze --admitir-nuevos.",
  "failing": [
-  "vault_audit",
-  "vault_backup",
-  "vault_bibliography_save",
-  "vault_changelog_check",
-  "vault_code_tag",
-  "vault_esquema",
-  "vault_gate",
-  "vault_graph_merge",
-  "vault_infra_save",
-  "vault_init",
-  "vault_knowledge_save",
-  "vault_log_error",
-  "vault_master_index",
-  "vault_metricas",
-  "vault_quality_check",
-  "vault_quality_dashboard",
-  "vault_requirement_save",
-  "vault_section_index",
-  "vault_smoke"
+  "vault_changelog_check"
  ],
  "objetivo": {
   "tamano": 0,

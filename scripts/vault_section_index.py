@@ -25,6 +25,7 @@ from vault_lib import (
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from vault_encoding import sanitize_content  # noqa: E402
 from vault_io import (
     assert_within_vault,
     escritura_atomica,
@@ -49,10 +50,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.indices.seccion import (  # noqa: E402
     RE_ALIAS_EN_TABLA,
     RenderizadorDeIndice,
+    conservar_marca_de_generado,
     es_indice_generado,
     indice_de_la_carpeta,
     migaja,
     recolectar_notas,
+)
+from vault.indices.repositorio import (  # noqa: E402
+    CARPETA_INDICES,
+    FICHERO_INDICE_MAESTRO,
 )
 from vault.indices.reconstruccion import ServicioReindex  # noqa: E402
 from vault.indices.repositorio import RepositorioIndices  # noqa: E402
@@ -477,6 +483,21 @@ def vault_section_index(
     preservados: List[str] = []
     creados: List[str] = []
 
+    # `99_Index/index.md` es EL ÍNDICE MAESTRO (`CARPETA_INDICES` +
+    # `FICHERO_INDICE_MAESTRO`): un mismo fichero, dos compositores. Escribirlo
+    # en formato de sección era el destrozo que el índice maestro subsanaba al
+    # reescribirse — pero la cascada del maestro (`_indexar('99_Index')`) y la
+    # de `vault_standard_upgrade --init` hacen esa reescritura INTERMEDIA, y el
+    # maestro quedaba leyendo el destrozo como su propio sello: se reescribía
+    # en cada corrida sin haber cambiado nada (C3 del auditor, v41.12). El
+    # fichero del maestro lo escribe su dueño (`vault_master_index`); aquí se
+    # cuenta y no se toca — el envelope lo dice por `indice_ajeno_preservado`.
+    ruta_es_el_maestro = (
+        folder.replace("\\", "/") == CARPETA_INDICES
+        # La colisión es del fichero `99_Index/index.md`: el index.md de la
+        # carpeta de índices ES el índice maestro (`FICHERO_INDICE_MAESTRO`).
+    )
+
     # Discover immediate subdirectories (for subdir listing in index)
     subdir_folders: List[str] = []
     subdir_indexes: List[str] = []
@@ -515,6 +536,13 @@ def vault_section_index(
                 )
                 if not sub_index.exists():
                     creados.append(str(sub_index.relative_to(vroot)).replace("\\", "/"))
+                # Mismo cuerpo ⇒ mismo documento: el sello de tiempo de la
+                # marca no es contenido (v41.12, el C3 lo mide por hash). La
+                # comparación corre sobre la FORMA DE DISCO: `escritura_atomica`
+                # sanea lo que graba (NFC, em-dash→`--`, BOM), y contrastar el
+                # texto crudo contra un fichero ya saneado reescribe en bucle.
+                sub_contenido, _ = sanitize_content(sub_contenido, dry_run=False)
+                sub_contenido = conservar_marca_de_generado(sub_index, sub_contenido)
                 record_raw_write(sub_index, sub_contenido)
                 escritura_atomica(sub_index, sub_contenido)
             subdir_indexes.append(
@@ -525,6 +553,10 @@ def vault_section_index(
     index_path = _indice_a_escribir(section_path)
     if index_path is None:
         index_path = indice_de_la_carpeta(section_path)
+        preservados.append(str(index_path.relative_to(vroot)).replace("\\", "/"))
+    elif ruta_es_el_maestro:
+        # El fichero es el índice maestro: lo escribe su dueño. Aquí solo se
+        # declara preservado — mismo envelope, cero escrituras.
         preservados.append(str(index_path.relative_to(vroot)).replace("\\", "/"))
     else:
         assert_within_vault(index_path, vroot)
@@ -537,6 +569,10 @@ def vault_section_index(
             )
             if not index_path.exists():
                 creados.append(str(index_path.relative_to(vroot)).replace("\\", "/"))
+            # Idem: regenerar sin cambiar el cuerpo no cambia bytes; la forma
+            # de comparación es la de disco (ver la nota en los sub-índices).
+            contenido, _ = sanitize_content(contenido, dry_run=False)
+            contenido = conservar_marca_de_generado(index_path, contenido)
             record_raw_write(index_path, contenido)
             escritura_atomica(index_path, contenido)
 

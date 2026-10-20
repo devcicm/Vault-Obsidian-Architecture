@@ -37,6 +37,9 @@ import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from vault.kernel.frontmatter_escritura import conservar_nota_generada  # noqa: E402
+
 
 SOURCE_TYPES = ["web", "paper", "docs", "api", "book"]
 
@@ -188,6 +191,14 @@ def vault_bibliography_save(
     body += summary + "\n"
 
     content = frontmatter_lines.render() + body
+
+    # Mismo cuerpo ⇒ misma nota (v41.12): el re-guardado idéntico solo movía
+    # sellos (`accessed_at`, `**Consultado:**`) y el C3 lo daba por escritura.
+    content = conservar_nota_generada(
+        note_path, content,
+        campos=("accessed_at",),
+        patrones_cuerpo=(r"^\*\*Consultado:\*\* .*$",),
+    )
 
     atomic_write_text(note_path, content)
 

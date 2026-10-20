@@ -20,6 +20,7 @@ from ..kernel.bloqueo import adquirir, rutas_de_lock, soltar
 from ..kernel.contenido import con_titulo
 from ..kernel.errores import construir_error
 from ..kernel.escritura import escritura_atomica
+from ..kernel.frontmatter_escritura import conservar_nota_generada
 from ..kernel.frontmatter_parsing import (
     FrontmatterParseError,
     parse_frontmatter_robust as _canon_parse_fm,
@@ -255,6 +256,9 @@ def guardar_conocimiento(
         text = _render(category, title, content, project, tags, related,
                        existing_id=existing_id, existing_createdAt=existing_createdAt,
                        agent=agent, tipo=tipo)
+        # Mismo cuerpo ⇒ misma nota (v41.12): el re-guardado idéntico solo
+        # movía `updatedAt`, y el C3 del auditor lo daba por reescritura.
+        text = conservar_nota_generada(path, text)
 
         try:
             (writer or _atomic_write)(path, text)

@@ -225,8 +225,14 @@ def test_list_respeta_el_limite(vault):
     ejemplo documentado decía `--limit 5`. El `argparse` no tenía un solo
     argumento: esa línea del ejemplo moría en `unrecognized arguments`. No lo
     cazó nadie porque `vault_smoke` ejecuta la primera línea del ejemplo.
+
+    v41.12: cada copia va precedida de una escritura porque el backup deduplica
+    — un vault sin cambios devuelve `unchanged` y no abre snapshot (el contrato
+    declarado, que antes no cumplía). Tres copias reales exigen tres estados.
     """
     for i in range(3):
+        (vault / "01_Projects" / f"nota-paginacion-{i}.md").write_text(
+            f"# nota {i}\n", encoding="utf-8")
         _run(vault, "vault_backup.py", "--label", f"n{i}")
     env = _run(vault, "vault_backup_list.py", "--limit", "2")
     assert len(env["backups"]) == 2

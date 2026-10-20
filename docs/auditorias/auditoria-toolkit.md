@@ -1,8 +1,8 @@
 # Auditoría funcional del toolkit
 
-Corrida en **2026-10-20T09:56:08Z** — derivada de `scripts/toolkit-audit-last.json` y de `scripts/toolkit-audit-baseline.json`. No se edita a mano: la regenera `vault_toolkit_audit --doc`.
+Corrida en **2026-10-20T15:09:06Z** — derivada de `scripts/toolkit-audit-last.json` y de `scripts/toolkit-audit-baseline.json`. No se edita a mano: la regenera `vault_toolkit_audit --doc`.
 
-**Resumen** — 100 OK · 3 MEJORA · 19 DEFECTO · 3 NO-VERIFICABLE
+**Resumen** — 120 OK · 1 MEJORA · 1 DEFECTO · 3 NO-VERIFICABLE
 
 | Tool | Grupo | Capacidad | Veredicto | Motivos |
 |---|---|---|---|---|
@@ -10,23 +10,23 @@ Corrida en **2026-10-20T09:56:08Z** — derivada de `scripts/toolkit-audit-last.
 | vault_append | 1 | escritura_a_gobernanza | **OK** | — |
 | vault_arch | 35 | gobernanza_del_estandar | **OK** | — |
 | vault_arquitectura_en | 34 | consulta_a_contexto | **OK** | — |
-| vault_audit | 6 | escritura_a_gobernanza | **DEFECTO** | c2 |
-| vault_backup | 13 | escritura_a_gobernanza | **DEFECTO** | c3: declara idempotencia y la segunda corrida reescribió el vault |
+| vault_audit | 6 | escritura_a_gobernanza | **OK** | — |
+| vault_backup | 13 | escritura_a_gobernanza | **OK** | — |
 | vault_backup_base64 | 13 | escritura_a_gobernanza | **NO-VERIFICABLE** | c0: runtime node: su despacho lo ejercita el servidor MCP, no un smoke de CLI (vault_smoke.run_one lo exime por lo que es); c2: runtime node: su despacho lo ejercita el servidor MCP, no un smoke de CLI (vault_smoke.run_one lo exime por lo que es) |
 | vault_backup_list | 13 | escritura_a_gobernanza | **OK** | — |
-| vault_bibliography_save | 16 | escritura_a_gobernanza | **DEFECTO** | c3: declara idempotencia y la segunda corrida reescribió el vault |
+| vault_bibliography_save | 16 | escritura_a_gobernanza | **OK** | — |
 | vault_blame_audit | 35 | gobernanza_del_estandar | **OK** | — |
 | vault_blueprint | 35 | gobernanza_del_estandar | **OK** | — |
 | vault_bug_save | 36 | escritura_a_gobernanza | **OK** | — |
 | vault_change_log | 23 | escritura_a_gobernanza | **OK** | — |
-| vault_changelog_check | 35 | gobernanza_del_estandar | **DEFECTO** | c1: declara side effects y el ejemplo completo es de solo lectura; c2 |
+| vault_changelog_check | 35 | gobernanza_del_estandar | **DEFECTO** | c2 |
 | vault_ciclos | 35 | gobernanza_del_estandar | **OK** | — |
 | vault_code_map | 12 | escritura_a_gobernanza | **OK** | — |
 | vault_code_module | 12 | escritura_a_gobernanza | **OK** | — |
 | vault_code_query | 12 | escritura_a_gobernanza | **OK** | — |
 | vault_code_relation | 12 | escritura_a_gobernanza | **OK** | — |
 | vault_code_sync | 12 | escritura_a_gobernanza | **OK** | — |
-| vault_code_tag | 35 | gobernanza_del_estandar | **DEFECTO** | c1: declara side effects y el ejemplo completo es de solo lectura |
+| vault_code_tag | 35 | gobernanza_del_estandar | **OK** | — |
 | vault_context_pack | 34 | consulta_a_contexto | **OK** | — |
 | vault_criterios | 35 | gobernanza_del_estandar | **OK** | — |
 | vault_delete | 23 | escritura_a_gobernanza | **OK** | — |
@@ -41,7 +41,7 @@ Corrida en **2026-10-20T09:56:08Z** — derivada de `scripts/toolkit-audit-last.
 | vault_env_matrix | 8 | escritura_a_gobernanza | **OK** | — |
 | vault_env_save | 8 | escritura_a_gobernanza | **OK** | — |
 | vault_error_contract | 35 | gobernanza_del_estandar | **OK** | — |
-| vault_esquema | 35 | gobernanza_del_estandar | **DEFECTO** | c2 |
+| vault_esquema | 35 | gobernanza_del_estandar | **OK** | — |
 | vault_excepcion_declarada | 35 | gobernanza_del_estandar | **OK** | — |
 | vault_fix_all | 35 | gobernanza_del_estandar | **OK** | — |
 | vault_fix_brackets | 33 | escritura_a_gobernanza | **OK** | — |
@@ -52,35 +52,35 @@ Corrida en **2026-10-20T09:56:08Z** — derivada de `scripts/toolkit-audit-last.
 | vault_frontmatter_heal | 33 | escritura_a_gobernanza | **OK** | — |
 | vault_fuente_unica | 6 | escritura_a_gobernanza | **OK** | — |
 | vault_fundamentals | 24 | escritura_a_gobernanza | **OK** | — |
-| vault_gate | 35 | gobernanza_del_estandar | **DEFECTO** | c2 |
+| vault_gate | 35 | gobernanza_del_estandar | **OK** | — |
 | vault_gobernanza | 6 | escritura_a_gobernanza | **NO-VERIFICABLE** | c0: sin script propio: invocada por __module__ desde el servidor MCP; c2: sin script propio: invocada por __module__ desde el servidor MCP |
 | vault_graph | 6 | escritura_a_gobernanza | **OK** | — |
 | vault_graph_fix | 33 | escritura_a_gobernanza | **OK** | — |
 | vault_graph_inspect | 6 | escritura_a_gobernanza | **OK** | — |
-| vault_graph_merge | 6 | escritura_a_gobernanza | **DEFECTO** | c3: declara idempotencia y la segunda corrida reescribió el vault |
+| vault_graph_merge | 6 | escritura_a_gobernanza | **OK** | — |
 | vault_history_compact | 22 | escritura_a_gobernanza | **OK** | — |
 | vault_impact | 25 | escritura_a_gobernanza | **OK** | — |
 | vault_incident_save | 28 | escritura_a_gobernanza | **OK** | — |
 | vault_infra_map | 8 | escritura_a_gobernanza | **OK** | — |
-| vault_infra_save | 8 | escritura_a_gobernanza | **DEFECTO** | c3: declara idempotencia y la segunda corrida reescribió el vault |
+| vault_infra_save | 8 | escritura_a_gobernanza | **OK** | — |
 | vault_ingest | 34 | consulta_a_contexto | **OK** | — |
-| vault_init | 31 | escritura_a_gobernanza | **DEFECTO** | c3: declara idempotencia y la segunda corrida reescribió el vault |
+| vault_init | 31 | escritura_a_gobernanza | **OK** | — |
 | vault_kernel | 35 | gobernanza_del_estandar | **OK** | — |
 | vault_knowledge_get | 5 | escritura_a_gobernanza | **OK** | — |
-| vault_knowledge_save | 5 | escritura_a_gobernanza | **DEFECTO** | c3: declara idempotencia y la segunda corrida reescribió el vault |
+| vault_knowledge_save | 5 | escritura_a_gobernanza | **OK** | — |
 | vault_list | 1 | escritura_a_gobernanza | **OK** | — |
-| vault_log_error | 2 | escritura_a_gobernanza | **DEFECTO** | c3: declara idempotencia y la segunda corrida reescribió el vault |
-| vault_master_index | 15 | escritura_a_gobernanza | **DEFECTO** | c3: declara idempotencia y la segunda corrida reescribió el vault |
+| vault_log_error | 2 | escritura_a_gobernanza | **OK** | — |
+| vault_master_index | 15 | escritura_a_gobernanza | **OK** | — |
 | vault_merge | 1 | escritura_a_gobernanza | **OK** | — |
 | vault_mermaid_check | 4 | escritura_a_gobernanza | **OK** | — |
-| vault_metricas | 35 | gobernanza_del_estandar | **DEFECTO** | c2 |
+| vault_metricas | 35 | gobernanza_del_estandar | **OK** | — |
 | vault_migrate_docs | 9 | escritura_a_gobernanza | **OK** | — |
 | vault_migrate_rollback | 9 | escritura_a_gobernanza | **OK** | — |
 | vault_model_profile | 34 | consulta_a_contexto | **OK** | — |
 | vault_move | 1 | escritura_a_gobernanza | **OK** | — |
 | vault_ncr_save | 30 | escritura_a_gobernanza | **OK** | — |
 | vault_noop_audit | 35 | gobernanza_del_estandar | **OK** | — |
-| vault_norms | 35 | gobernanza_del_estandar | **MEJORA** | c1: el ejemplo solo mira; ninguna línea hace el trabajo que la tool declara |
+| vault_norms | 35 | gobernanza_del_estandar | **OK** | — |
 | vault_norms_coherence | 35 | gobernanza_del_estandar | **OK** | — |
 | vault_onboard | 31 | escritura_a_gobernanza | **OK** | — |
 | vault_pattern_list | 3 | escritura_a_gobernanza | **OK** | — |
@@ -93,8 +93,8 @@ Corrida en **2026-10-20T09:56:08Z** — derivada de `scripts/toolkit-audit-last.
 | vault_project_status | 11 | escritura_a_gobernanza | **OK** | — |
 | vault_propagate | 25 | escritura_a_gobernanza | **OK** | — |
 | vault_qa_save | 20 | escritura_a_gobernanza | **OK** | — |
-| vault_quality_check | 24 | escritura_a_gobernanza | **DEFECTO** | c3: declara idempotencia y la segunda corrida reescribió el vault |
-| vault_quality_dashboard | 20 | escritura_a_gobernanza | **DEFECTO** | c2 |
+| vault_quality_check | 24 | escritura_a_gobernanza | **OK** | — |
+| vault_quality_dashboard | 20 | escritura_a_gobernanza | **OK** | — |
 | vault_quarantine | 36 | escritura_a_gobernanza | **OK** | — |
 | vault_query_parse | 34 | consulta_a_contexto | **OK** | — |
 | vault_read | 1 | escritura_a_gobernanza | **OK** | — |
@@ -102,7 +102,7 @@ Corrida en **2026-10-20T09:56:08Z** — derivada de `scripts/toolkit-audit-last.
 | vault_reindex | 15 | escritura_a_gobernanza | **OK** | — |
 | vault_relation_add | 4 | escritura_a_gobernanza | **OK** | — |
 | vault_release_save | 29 | escritura_a_gobernanza | **OK** | — |
-| vault_requirement_save | 19 | escritura_a_gobernanza | **DEFECTO** | c1: declara side effects y el ejemplo completo es de solo lectura |
+| vault_requirement_save | 19 | escritura_a_gobernanza | **OK** | — |
 | vault_restore | 13 | escritura_a_gobernanza | **OK** | — |
 | vault_restore_base64 | 13 | escritura_a_gobernanza | **NO-VERIFICABLE** | c0: runtime node: su despacho lo ejercita el servidor MCP, no un smoke de CLI (vault_smoke.run_one lo exime por lo que es); c2: runtime node: su despacho lo ejercita el servidor MCP, no un smoke de CLI (vault_smoke.run_one lo exime por lo que es) |
 | vault_risk_save | 30 | escritura_a_gobernanza | **OK** | — |
@@ -112,11 +112,11 @@ Corrida en **2026-10-20T09:56:08Z** — derivada de `scripts/toolkit-audit-last.
 | vault_sdd_init | 37 | escritura_a_gobernanza | **OK** | — |
 | vault_search | 1 | escritura_a_gobernanza | **OK** | — |
 | vault_section | 32 | escritura_a_gobernanza | **OK** | — |
-| vault_section_index | 15 | escritura_a_gobernanza | **DEFECTO** | c3: declara idempotencia y la segunda corrida reescribió el vault |
+| vault_section_index | 15 | escritura_a_gobernanza | **OK** | — |
 | vault_security_scan | 14 | escritura_a_gobernanza | **OK** | — |
 | vault_servicio | 35 | gobernanza_del_estandar | **OK** | — |
 | vault_slo_save | 28 | escritura_a_gobernanza | **OK** | — |
-| vault_smoke | 35 | gobernanza_del_estandar | **DEFECTO** | c2 |
+| vault_smoke | 35 | gobernanza_del_estandar | **OK** | — |
 | vault_standard_upgrade | 22 | escritura_a_gobernanza | **OK** | — |
 | vault_subgraph | 34 | consulta_a_contexto | **OK** | — |
 | vault_supersede | 33 | escritura_a_gobernanza | **OK** | — |
@@ -124,7 +124,7 @@ Corrida en **2026-10-20T09:56:08Z** — derivada de `scripts/toolkit-audit-last.
 | vault_test_save | 20 | escritura_a_gobernanza | **OK** | — |
 | vault_timeline | 10 | escritura_a_gobernanza | **OK** | — |
 | vault_token_counter | 26 | consulta_a_contexto | **OK** | — |
-| vault_token_service | 26 | consulta_a_contexto | **MEJORA** | c1: el ejemplo solo mira; ninguna línea hace el trabajo que la tool declara |
+| vault_token_service | 26 | consulta_a_contexto | **OK** | — |
 | vault_tokens | 26 | consulta_a_contexto | **OK** | — |
 | vault_toolkit_audit | 35 | gobernanza_del_estandar | **OK** | — |
 | vault_undo | 22 | escritura_a_gobernanza | **OK** | — |
@@ -134,22 +134,4 @@ Corrida en **2026-10-20T09:56:08Z** — derivada de `scripts/toolkit-audit-last.
 
 ## Deuda congelada (baseline que solo encoge)
 
-- vault_audit
-- vault_backup
-- vault_bibliography_save
 - vault_changelog_check
-- vault_code_tag
-- vault_esquema
-- vault_gate
-- vault_graph_merge
-- vault_infra_save
-- vault_init
-- vault_knowledge_save
-- vault_log_error
-- vault_master_index
-- vault_metricas
-- vault_quality_check
-- vault_quality_dashboard
-- vault_requirement_save
-- vault_section_index
-- vault_smoke

@@ -1,6 +1,6 @@
 {
   "norm": "AP-55",
-  "description": "Afirmaciones de cobertura de NORM_CATALOG que ninguna línea de código respalda nombrando la norma. Solo puede encoger. Nació con 47 en v40.10 y quedó en cero en v40.11, saldada afirmación a afirmación: reatribuyendo la que se aplicaba en otra tool, nombrando la norma en la función que la cumple, o retirando la cobertura y declarando `cobertura_descubierta` con el motivo escrito. La lista vacía se conserva a propósito: es lo que distingue una deuda saldada de una medida retirada.",
+  "description": "Afirmaciones de cobertura de NORM_CATALOG que ninguna línea de código respalda nombrando la norma. Solo puede encoger.",
   "claims": [],
   "objetivo": {
     "tamano": 0,

@@ -60,6 +60,43 @@ TYPE_FOLDERS = {
 }
 
 
+#: Lo que una nota de error lleva de reloj e identidad por llamada (`uuid4`,
+#: `createdAt`/`updatedAt`, la línea `**Fecha:**` del cuerpo) y NO es contenido
+#: del suceso. Loggear dos veces el mismo error no es dos errores: si el cuerpo
+#: semántico coincide con la nota que ya hay, se conserva la nota (v41.12 — el
+#: C3 del auditor lo mide por hash de contenido y antes cada re-loggear movía
+#: id y sellos). El dueño del criterio es este módulo: son SUS campos.
+RE_VOLATIL_DE_ERROR = re.compile(
+    r"^(id|createdAt|updatedAt): .*$"
+    r"|^\*\*Fecha:\*\* .*$",
+    re.M,
+)
+
+
+def texto_estable_de_error(texto: str) -> str:
+    """La nota de error sin sus campos de reloj e identidad por llamada."""
+    return RE_VOLATIL_DE_ERROR.sub("", texto)
+
+
+def conservar_nota_de_error(ruta: Path, texto_nuevo: str) -> str:
+    """Mismo suceso ⇒ misma nota: devuelve el texto que deja el disco.
+
+    Si `ruta` ya tiene una nota con el mismo cuerpo semántico, se devuelve el
+    texto previo tal cual (con su id y sus sellos originales): escribir uno
+    nuevo movería el fichero sin que el suceso cambiara. Si el cuerpo difiere
+    —otra descripción, otro contexto— es un suceso distinto y le toca sello
+    nuevo: a contenido nuevo, nota nueva.
+    """
+    try:
+        previo = ruta.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return texto_nuevo
+    if (texto_estable_de_error(previo)
+            == texto_estable_de_error(texto_nuevo)):
+        return previo
+    return texto_nuevo
+
+
 # El vocabulario se declara una vez y se consume, no se copia. Ver
 # `vault_vocabulario.py` para el registro y su contexto dueño.
 from vault_vocabulario import opciones as _opciones
@@ -362,7 +399,9 @@ def vault_log_error(
     fm.set("agent", "system")
     frontmatter = fm.render() + "\n\n\n"
 
-    atomic_write_text(file_path, frontmatter + content)
+    texto_final = conservar_nota_de_error(
+        file_path, frontmatter + content)
+    atomic_write_text(file_path, texto_final)
 
     return {
         "ok": True,

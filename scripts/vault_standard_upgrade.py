@@ -895,13 +895,23 @@ def vault_standard_upgrade(
                 f"(se espera vNN o vNN.M; la vigente es {CURRENT_VERSION})",
                 args={"init_version": init_version},
             )
-        data = {
-            "applied_version": init_version,
-            "applied_at": utcnow(),
-            "applied_by": agent,
-            "migrations_applied": [],
-        }
-        _write_version_file(data)
+        # Re-init de la versión ya aplicada (v41.12, C3): estampar de nuevo
+        # `applied_at` movía el fichero sin haber hecho nada — mismas carpetas,
+        # mismos índices, misma versión. La firma del vault se escribió la
+        # primera vez y conserva su momento; el envelope sigue siendo
+        # `action: init`, pero el disco queda como estaba. (Un init a OTRA
+        # versión sí reventa el sello: ahí el estado cambia de verdad.)
+        previo = _read_version_file()
+        if previo.get("applied_version") == init_version:
+            data = previo
+        else:
+            data = {
+                "applied_version": init_version,
+                "applied_at": utcnow(),
+                "applied_by": agent,
+                "migrations_applied": [],
+            }
+            _write_version_file(data)
 
         # Create the 17 base section folders so the container is self-bootstrapping.
         # Without this, --init only writes the version file and the consumer is left

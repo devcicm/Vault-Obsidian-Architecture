@@ -415,17 +415,17 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 |---|---|---|---|---|
 | `scripts/arch-baseline.json` | cruces entre contextos | 37 | ≤ 30 para 2027-03-31 · cada 90 d · meta_toolkit — vault_arch → **en_plazo** | 37 → 37 → 37 → 37 → 37 → 37 (plana, Δ+0) |
 | `scripts/arch-baseline.json` | cruces fuera de puerto | 8 | ≤ 4 para 2027-03-31 · cada 90 d · meta_toolkit — vault_arch → **en_plazo** | 8 → 8 → 8 → 8 → 8 → 8 (plana, Δ+0) |
-| `scripts/blame-baseline.json` | AP-51 | 30 | ≤ 20 para 2027-03-31 · cada 90 d · meta_toolkit — vault_blame_audit → **en_plazo** | 45 → 33 → 33 → 33 → 31 → 30 (encoge, Δ-56) |
+| `scripts/blame-baseline.json` | AP-51 | 30 | ≤ 20 para 2027-03-31 · cada 90 d · meta_toolkit — vault_blame_audit → **en_plazo** | 33 → 33 → 33 → 31 → 30 → 30 (encoge, Δ-56) |
 | `scripts/error-contract-baseline.json` | AP-52 | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_error_contract → **cumple** | 110 → 110 → 0 → 9 → 0 → 0 (encoge, Δ-158) |
 | `scripts/noop-baseline.json` | AP-37 | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_noop_audit → **cumple** | 0 → 0 → 0 → 0 (plana, Δ+0) |
 | `scripts/smoke-baseline.json` | AP-42 | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_smoke → **cumple** | 0 → 0 (plana, Δ+0) |
-| `scripts/toolkit-audit-baseline.json` | AP-42 — pero tool por tool: el ejemplo debe ejercitar la función declarada | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_toolkit_audit → **cumple** | — *1 muestra* |
+| `scripts/toolkit-audit-baseline.json` | AP-42 — pero tool por tool: el ejemplo debe ejercitar la función declarada | 1 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_toolkit_audit → **en_plazo** | 0 → 19 → 1 (crece, Δ+1) |
 | `scripts/blueprint-baseline.json` | capa 4 — norma sin puerta ni test | 0 | ≤ 4 para 2027-03-31 · cada 90 d · meta_toolkit — vault_blueprint → **cumple** | 13 → 8 → 8 → 3 → 1 → 0 (encoge, Δ-16) |
-| `scripts/criterios-baseline.json` | AP-57 | 9 | ≤ 6 para 2027-03-31 · cada 90 d · meta_toolkit — vault_criterios → **en_plazo** | 10 → 9 → 9 → 9 → 9 (encoge, Δ-1) |
+| `scripts/criterios-baseline.json` | AP-57 | 7 | ≤ 6 para 2027-03-31 · cada 90 d · meta_toolkit — vault_criterios → **en_plazo** | 10 → 9 → 9 → 9 → 9 → 7 (encoge, Δ-3) |
 | `scripts/ciclos-baseline.json` | AP-58 — ciclo esquivado con import diferido | 5 | ≤ 2 para 2027-03-31 · cada 90 d · meta_toolkit — vault_ciclos → **en_plazo** | 30 → 15 → 14 → 7 → 5 → 5 (encoge, Δ-25) |
 | `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 4 | ≤ 2 para 2027-03-31 · cada 90 d · meta_toolkit — vault_kernel → **en_plazo** | 5 → 6 → 6 → 5 → 4 → 4 (encoge, Δ-1) |
 | `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_norms_distincion → **cumple** | 57 → 0 → 0 → 0 (encoge, Δ-57) |
-| `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_norms_coherence → **cumple** | 47 → 0 → 0 (encoge, Δ-47) |
+| `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_norms_coherence → **cumple** | 47 → 0 → 0 → 0 (encoge, Δ-47) |
 | `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1435 | — *no aplica*: No es deuda: es el contrato de campos estables con los repos consumidores y crece por diseño cada vez que una tool publica un campo nuevo (1334 → 1410 entre 2026-08-30 y 2026-10-08). Lo que la puerta vigila es que ningún campo desaparezca sin `superseded_fields`, no su tamaño. Declarado el 2026-10-09 con la deuda #8. | 1410 → 1424 → 1424 → 1426 → 1427 → 1435 (crece, Δ+157) |
 | `scripts/excepcion-declarada-baseline.json` | AP-61 — la excepción declarada no es la que escapa | 0 | ≤ 0 para 2027-06-30 · cada 180 d · gobernanza → **cumple** | 0 → 0 (plana, Δ+0) |
 | `scripts/recursos-baseline.json` | AP-62 — el consumidor cruza para leer un recurso y paga el fan-out | 2 | ≤ 0 para 2027-03-31 · cada 90 d · meta_toolkit — vault_recursos → **en_plazo** | 2 → 2 (plana, Δ+0) |

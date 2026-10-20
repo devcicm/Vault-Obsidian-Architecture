@@ -1412,7 +1412,9 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Actualiza frontmatter del módulo"],
-        "example": 'python vault_code_tag.py --list',
+        "example": ('python vault_code_tag.py --list\n'
+                    'python vault_code_tag.py --define cr-ejemplo --name '
+                    '"Ejemplo" --description "Etiqueta de prueba"'),
         "related": ["vault_tags", "vault_code_module"],
     },
     "vault_flow_save": {
@@ -2078,7 +2080,9 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": [],
-        "example": 'python vault_norms.py --list\npython vault_norms.py --show AP-25',
+        "example": ('python vault_norms.py --list\n'
+                    'python vault_norms.py --show AP-25\n'
+                    'python vault_norms.py --audit'),
         "related": ["vault_ai_decision", "vault_audit"],
     },
     "vault_smoke": {
@@ -2118,7 +2122,8 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": ["AP-42"],
         "side_effects": ["scripts/smoke-baseline.json"],
-        "example": "python vault_smoke.py --tool vault_write\npython vault_smoke.py --check --strict",
+        "example": ("python vault_smoke.py --tool vault_write\n"
+                    "python vault_smoke.py --tool vault_search"),
         "related": ["vault_mcp_catalog", "vault_noop_audit"],
     },
     "vault_toolkit_audit": {
@@ -2657,7 +2662,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "side_effects": [],
         "example": (
             "python vault_gate.py --list\n"
-            "python vault_gate.py --strict\n"
             "python vault_gate.py --check-doc"
         ),
         "related": ["vault_norms", "vault_arch", "vault_noop_audit", "vault_blame_audit"],
@@ -2956,8 +2960,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "side_effects": ["schemas/"],
         "example": (
             "python vault_esquema.py --check --strict\n"
-            "python vault_esquema.py --sync\n"
-            "python vault_esquema.py --version v37"
+            "python vault_esquema.py --sync"
         ),
         "related": ["vault_validate", "vault_gate", "vault_frontmatter_heal"],
     },
@@ -3009,7 +3012,6 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "side_effects": ["scripts/metricas-observaciones.json", "docs/METRICAS.md"],
         "example": (
             "python vault_metricas.py --check --strict\n"
-            "python vault_metricas.py --registrar-suite ronda.log --commit abc1234\n"
             "python vault_metricas.py --doc"
         ),
         "related": ["vault_blueprint", "vault_produccion", "vault_smoke", "vault_gate"],

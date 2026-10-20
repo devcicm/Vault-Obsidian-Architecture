@@ -44,6 +44,17 @@ class Escritor(Protocol):
     def bloquear(self, objetivo: Path, timeout: float = 30.0) -> Iterator[Path]:
         """Bloqueo de directorio junto al objetivo, para índices compartidos."""
 
+    def sanear(self, texto: str) -> str:
+        """El texto tal como quedaría en disco tras el saneo de escritura.
+
+        Nadie fuera del canal de escritura debe reimplementar el saneo (AP-57):
+        un comparador que contraste su texto compuesto contra un fichero ya en
+        disco necesita la MISMA forma que ese fichero recibió. El pleg
+        em-dash→`--` es el ejemplo: un índice regenerado que compone `—` y
+        compara contra el disco (`--`) nunca será "igual" y reescribe en
+        cada corrida sin haber cambiado nada.
+        """
+
 
 @runtime_checkable
 class Lector(Protocol):

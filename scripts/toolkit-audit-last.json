@@ -1,10 +1,10 @@
 {
- "timestamp": "2026-10-20T10:06:01Z",
+ "timestamp": "2026-10-20T15:09:06Z",
  "resumen": {
-  "OK": 101,
-  "DEFECTO": 18,
+  "OK": 120,
   "NO-VERIFICABLE": 3,
-  "MEJORA": 3
+  "DEFECTO": 1,
+  "MEJORA": 1
  },
  "results": [
   {
@@ -121,8 +121,8 @@
     "corridas": [
      {
       "argv": "--check --strict",
-      "exit": 0,
-      "envelope_ok": true,
+      "exit": 1,
+      "envelope_ok": false,
       "cambiadas": []
      },
      {
@@ -161,7 +161,7 @@
    },
    "c1": {
     "estado": "OK",
-    "lineas_utiles": 1
+    "lineas_utiles": 2
    },
    "c4": {
     "estado": "OK"
@@ -198,10 +198,8 @@
    "tool": "vault_audit",
    "grupo_id": 6,
    "capacidad": "escritura_a_gobernanza",
-   "veredicto": "DEFECTO",
-   "motivos": [
-    "c2"
-   ],
+   "veredicto": "OK",
+   "motivos": [],
    "c0": {
     "estado": "OK",
     "lineas": 2
@@ -214,10 +212,8 @@
     "estado": "OK"
    },
    "c2": {
-    "estado": "DEFECTO",
-    "perdidas": [
-     "contrato: el envelope no cubre ningún campo de su contrato"
-    ],
+    "estado": "OK",
+    "perdidas": [],
     "corridas": [
      {
       "argv": "",
@@ -229,8 +225,7 @@
       "argv": "--project mi-proyecto",
       "exit": 1,
       "envelope_ok": false,
-      "cambiadas": [],
-      "perdida": "contrato: el envelope no cubre ningún campo de su contrato"
+      "cambiadas": []
      }
     ]
    },
@@ -248,10 +243,8 @@
    "tool": "vault_backup",
    "grupo_id": 13,
    "capacidad": "escritura_a_gobernanza",
-   "veredicto": "DEFECTO",
-   "motivos": [
-    "c3: declara idempotencia y la segunda corrida reescribió el vault"
-   ],
+   "veredicto": "OK",
+   "motivos": [],
    "c0": {
     "estado": "OK",
     "lineas": 2
@@ -273,120 +266,122 @@
       "envelope_ok": true,
       "cambiadas": [
        "vault-backups/.backup-registry.json",
-       "vault-backups/vault-2026-10-20-095707/.manifest.json",
-       "vault-backups/vault-2026-10-20-095707/00_System/.change-log.json",
-       "vault-backups/vault-2026-10-20-095707/00_System/.gitkeep",
-       "vault-backups/vault-2026-10-20-095707/00_System/.voice-counter",
-       "vault-backups/vault-2026-10-20-095707/00_System/change-log.md",
-       "vault-backups/vault-2026-10-20-095707/00_System/data-framework.json",
-       "vault-backups/vault-2026-10-20-095707/00_System/data-framework.md",
-       "vault-backups/vault-2026-10-20-095707/00_System/data-fundamentals.json",
-       "vault-backups/vault-2026-10-20-095707/00_System/index.md",
-       "vault-backups/vault-2026-10-20-095707/00_System/norm-registry.json",
-       "vault-backups/vault-2026-10-20-095707/00_System/quality-index.json",
-       "vault-backups/vault-2026-10-20-095707/00_System/standard-version.json",
-       "vault-backups/vault-2026-10-20-095707/00_System/tag-registry.json",
-       "vault-backups/vault-2026-10-20-095707/00_System/tool-contracts.json",
-       "vault-backups/vault-2026-10-20-095707/00_System/tool-contracts.md",
-       "vault-backups/vault-2026-10-20-095707/00_System/tool-spec.json",
-       "vault-backups/vault-2026-10-20-095707/00_System/vault-commands.md",
-       "vault-backups/vault-2026-10-20-095707/00_System/vault-hub.md",
-       "vault-backups/vault-2026-10-20-095707/00_System/vault-ontology.json",
-       "vault-backups/vault-2026-10-20-095707/01_Projects/.gitkeep",
-       "vault-backups/vault-2026-10-20-095707/01_Projects/00-01_projects-primer.md",
-       "vault-backups/vault-2026-10-20-095707/01_Projects/index.md",
-       "vault-backups/vault-2026-10-20-095707/02_Observability/.gitkeep",
-       "vault-backups/vault-2026-10-20-095707/02_Observability/00-02_observability-primer.md",
-       "vault-backups/vault-2026-10-20-095707/02_Observability/index.md",
-       "vault-backups/vault-2026-10-20-095707/03_Decisions/.gitkeep",
-       "vault-backups/vault-2026-10-20-095707/03_Decisions/00-03_decisions-primer.md",
-       "vault-backups/vault-2026-10-20-095707/03_Decisions/adr-001-mcp-transport.md",
-       "vault-backups/vault-2026-10-20-095707/03_Decisions/index.md",
-       "vault-backups/vault-2026-10-20-095707/03_Decisions/mcp-transport-contract.md",
-       "vault-backups/vault-2026-10-20-095707/03_Decisions/mcp-transport-operations.md",
-       "vault-backups/vault-2026-10-20-095707/03_Decisions/mcp-transport-provenance.md",
-       "vault-backups/vault-2026-10-20-095707/04_Sessions/.gitkeep",
-       "vault-backups/vault-2026-10-20-095707/04_Sessions/00-04_sessions-primer.md",
-       "vault-backups/vault-2026-10-20-095707/04_Sessions/index.md",
-       "vault-backups/vault-2026-10-20-095707/05_Patterns/.gitkeep",
-       "vault-backups/vault-2026-10-20-095707/05_Patterns/00-05_patterns-primer.md",
-       "vault-backups/vault-2026-10-20-095707/05_Patterns/index.md",
-       "vault-backups/vault-2026-10-20-095707/06_Diagrams/.gitkeep",
-       "vault-backups/vault-2026-10-20-095707/06_Diagrams/00-06_diagrams-primer.md",
-       "vault-backups/vault-2026-10-20-095707/06_Diagrams/entity/index.md",
-       "vault-backups/vault-2026-10-20-095707/06_Diagrams/entity/test-relations.json",
-       "vault-backups/vault-2026-10-20-095707/06_Diagrams/index.md",
-       "vault-backups/vault-2026-10-20-095707/07_Knowledge/.gitkeep",
-       "vault-backups/vault-2026-10-20-095707/07_Knowledge/00-07_knowledge-primer.md",
-       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-incomplete-00.md",
-       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-incomplete-01.md",
-       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-incomplete-02.md",
-       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-incomplete-03.md",
-       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-incomplete-04.md",
-       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-incomplete-05.md",
-       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-incomplete-06.md",
-       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-incomplete-07.md",
-       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-incomplete-08.md",
-       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-incomplete-09.md",
-       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-raw-00.md",
-       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-raw-01.md",
-       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-raw-02.md",
-       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-raw-03.md",
-       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-raw-04.md",
-       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-raw-05.md",
-       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-raw-06.md",
-       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-raw-07.md",
-       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-raw-08.md",
-       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-raw-09.md",
-       "vault-backups/vault-2026-10-20-095707/07_Knowledge/index.md",
-       "vault-backups/vault-2026-10-20-095707/07_Knowledge/parser-evidence.md",
-       "vault-backups/vault-2026-10-20-095707/08_Runbooks/.gitkeep",
-       "vault-backups/vault-2026-10-20-095707/08_Runbooks/00-08_runbooks-primer.md",
-       "vault-backups/vault-2026-10-20-095707/08_Runbooks/index.md",
-       "vault-backups/vault-2026-10-20-095707/09_Infrastructure/.gitkeep",
-       "vault-backups/vault-2026-10-20-095707/09_Infrastructure/00-09_infrastructure-primer.md",
-       "vault-backups/vault-2026-10-20-095707/09_Infrastructure/index.md",
-       "vault-backups/vault-2026-10-20-095707/10_Migrated/.gitkeep",
-       "vault-backups/vault-2026-10-20-095707/10_Migrated/00-10_migrated-primer.md",
-       "vault-backups/vault-2026-10-20-095707/10_Migrated/index.md",
-       "vault-backups/vault-2026-10-20-095707/11_Code/.gitkeep",
-       "vault-backups/vault-2026-10-20-095707/11_Code/00-11_code-primer.md",
-       "vault-backups/vault-2026-10-20-095707/11_Code/index.md",
-       "vault-backups/vault-2026-10-20-095707/12_Bibliography/.gitkeep",
-       "vault-backups/vault-2026-10-20-095707/12_Bibliography/00-12_bibliography-primer.md",
-       "vault-backups/vault-2026-10-20-095707/12_Bibliography/index.md",
-       "vault-backups/vault-2026-10-20-095707/13_Flows/.gitkeep",
-       "vault-backups/vault-2026-10-20-095707/13_Flows/00-13_flows-primer.md",
-       "vault-backups/vault-2026-10-20-095707/13_Flows/index.md",
-       "vault-backups/vault-2026-10-20-095707/14_Requirements/.gitkeep",
-       "vault-backups/vault-2026-10-20-095707/14_Requirements/00-14_requirements-primer.md",
-       "vault-backups/vault-2026-10-20-095707/14_Requirements/index.md",
-       "vault-backups/vault-2026-10-20-095707/15_Tests/.gitkeep",
-       "vault-backups/vault-2026-10-20-095707/15_Tests/00-15_tests-primer.md",
-       "vault-backups/vault-2026-10-20-095707/15_Tests/index.md",
-       "vault-backups/vault-2026-10-20-095707/16_AI_Governance/.gitkeep",
-       "vault-backups/vault-2026-10-20-095707/16_AI_Governance/00-16_ai_governance-primer.md",
-       "vault-backups/vault-2026-10-20-095707/16_AI_Governance/index.md",
-       "vault-backups/vault-2026-10-20-095707/17_Preferences/.gitkeep",
-       "vault-backups/vault-2026-10-20-095707/17_Preferences/00-17_preferences-primer.md",
-       "vault-backups/vault-2026-10-20-095707/17_Preferences/index.md",
-       "vault-backups/vault-2026-10-20-095707/17_Preferences/model_profile.active",
-       "vault-backups/vault-2026-10-20-095707/18_Bugs/.gitkeep",
-       "vault-backups/vault-2026-10-20-095707/18_Bugs/index.md",
-       "vault-backups/vault-2026-10-20-095707/19_Audits/.gitkeep",
-       "vault-backups/vault-2026-10-20-095707/19_Audits/index.md",
-       "vault-backups/vault-2026-10-20-095707/19_Audits/vocabulary/tag-ledger.json",
-       "vault-backups/vault-2026-10-20-095707/20_Quarantine/.gitkeep",
-       "vault-backups/vault-2026-10-20-095707/20_Quarantine/index.md",
-       "vault-backups/vault-2026-10-20-095707/21_QA/.gitkeep",
-       "vault-backups/vault-2026-10-20-095707/21_QA/index.md",
-       "vault-backups/vault-2026-10-20-095707/99_Index/.gitkeep",
-       "vault-backups/vault-2026-10-20-095707/99_Index/00-99_index-primer.md",
-       "vault-backups/vault-2026-10-20-095707/99_Index/graph.json",
-       "vault-backups/vault-2026-10-20-095707/99_Index/hash-index.json",
-       "vault-backups/vault-2026-10-20-095707/99_Index/index.md",
-       "vault-backups/vault-2026-10-20-095707/99_Index/search-index.json",
-       "vault-backups/vault-2026-10-20-095707/99_Index/tag-index.md"
+       "vault-backups/vault-2026-10-20-150320/.manifest.json",
+       "vault-backups/vault-2026-10-20-150320/00_System/.change-log.json",
+       "vault-backups/vault-2026-10-20-150320/00_System/.gitkeep",
+       "vault-backups/vault-2026-10-20-150320/00_System/.voice-counter",
+       "vault-backups/vault-2026-10-20-150320/00_System/change-log.md",
+       "vault-backups/vault-2026-10-20-150320/00_System/data-framework.json",
+       "vault-backups/vault-2026-10-20-150320/00_System/data-framework.md",
+       "vault-backups/vault-2026-10-20-150320/00_System/data-fundamentals.json",
+       "vault-backups/vault-2026-10-20-150320/00_System/index.md",
+       "vault-backups/vault-2026-10-20-150320/00_System/norm-registry.json",
+       "vault-backups/vault-2026-10-20-150320/00_System/quality-index.json",
+       "vault-backups/vault-2026-10-20-150320/00_System/standard-version.json",
+       "vault-backups/vault-2026-10-20-150320/00_System/tag-registry.json",
+       "vault-backups/vault-2026-10-20-150320/00_System/tool-contracts.json",
+       "vault-backups/vault-2026-10-20-150320/00_System/tool-contracts.md",
+       "vault-backups/vault-2026-10-20-150320/00_System/tool-spec.json",
+       "vault-backups/vault-2026-10-20-150320/00_System/vault-commands.md",
+       "vault-backups/vault-2026-10-20-150320/00_System/vault-hub.md",
+       "vault-backups/vault-2026-10-20-150320/00_System/vault-ontology.json",
+       "vault-backups/vault-2026-10-20-150320/01_Projects/.gitkeep",
+       "vault-backups/vault-2026-10-20-150320/01_Projects/00-01_projects-primer.md",
+       "vault-backups/vault-2026-10-20-150320/01_Projects/index.md",
+       "vault-backups/vault-2026-10-20-150320/02_Observability/.gitkeep",
+       "vault-backups/vault-2026-10-20-150320/02_Observability/00-02_observability-primer.md",
+       "vault-backups/vault-2026-10-20-150320/02_Observability/errors/2026-10-20-nullpointerexception.md",
+       "vault-backups/vault-2026-10-20-150320/02_Observability/errors/index.md",
+       "vault-backups/vault-2026-10-20-150320/02_Observability/index.md",
+       "vault-backups/vault-2026-10-20-150320/03_Decisions/.gitkeep",
+       "vault-backups/vault-2026-10-20-150320/03_Decisions/00-03_decisions-primer.md",
+       "vault-backups/vault-2026-10-20-150320/03_Decisions/adr-001-mcp-transport.md",
+       "vault-backups/vault-2026-10-20-150320/03_Decisions/index.md",
+       "vault-backups/vault-2026-10-20-150320/03_Decisions/mcp-transport-contract.md",
+       "vault-backups/vault-2026-10-20-150320/03_Decisions/mcp-transport-operations.md",
+       "vault-backups/vault-2026-10-20-150320/03_Decisions/mcp-transport-provenance.md",
+       "vault-backups/vault-2026-10-20-150320/04_Sessions/.gitkeep",
+       "vault-backups/vault-2026-10-20-150320/04_Sessions/00-04_sessions-primer.md",
+       "vault-backups/vault-2026-10-20-150320/04_Sessions/index.md",
+       "vault-backups/vault-2026-10-20-150320/05_Patterns/.gitkeep",
+       "vault-backups/vault-2026-10-20-150320/05_Patterns/00-05_patterns-primer.md",
+       "vault-backups/vault-2026-10-20-150320/05_Patterns/index.md",
+       "vault-backups/vault-2026-10-20-150320/06_Diagrams/.gitkeep",
+       "vault-backups/vault-2026-10-20-150320/06_Diagrams/00-06_diagrams-primer.md",
+       "vault-backups/vault-2026-10-20-150320/06_Diagrams/entity/index.md",
+       "vault-backups/vault-2026-10-20-150320/06_Diagrams/entity/test-relations.json",
+       "vault-backups/vault-2026-10-20-150320/06_Diagrams/index.md",
+       "vault-backups/vault-2026-10-20-150320/07_Knowledge/.gitkeep",
+       "vault-backups/vault-2026-10-20-150320/07_Knowledge/00-07_knowledge-primer.md",
+       "vault-backups/vault-2026-10-20-150320/07_Knowledge/fixture-incomplete-00.md",
+       "vault-backups/vault-2026-10-20-150320/07_Knowledge/fixture-incomplete-01.md",
+       "vault-backups/vault-2026-10-20-150320/07_Knowledge/fixture-incomplete-02.md",
+       "vault-backups/vault-2026-10-20-150320/07_Knowledge/fixture-incomplete-03.md",
+       "vault-backups/vault-2026-10-20-150320/07_Knowledge/fixture-incomplete-04.md",
+       "vault-backups/vault-2026-10-20-150320/07_Knowledge/fixture-incomplete-05.md",
+       "vault-backups/vault-2026-10-20-150320/07_Knowledge/fixture-incomplete-06.md",
+       "vault-backups/vault-2026-10-20-150320/07_Knowledge/fixture-incomplete-07.md",
+       "vault-backups/vault-2026-10-20-150320/07_Knowledge/fixture-incomplete-08.md",
+       "vault-backups/vault-2026-10-20-150320/07_Knowledge/fixture-incomplete-09.md",
+       "vault-backups/vault-2026-10-20-150320/07_Knowledge/fixture-raw-00.md",
+       "vault-backups/vault-2026-10-20-150320/07_Knowledge/fixture-raw-01.md",
+       "vault-backups/vault-2026-10-20-150320/07_Knowledge/fixture-raw-02.md",
+       "vault-backups/vault-2026-10-20-150320/07_Knowledge/fixture-raw-03.md",
+       "vault-backups/vault-2026-10-20-150320/07_Knowledge/fixture-raw-04.md",
+       "vault-backups/vault-2026-10-20-150320/07_Knowledge/fixture-raw-05.md",
+       "vault-backups/vault-2026-10-20-150320/07_Knowledge/fixture-raw-06.md",
+       "vault-backups/vault-2026-10-20-150320/07_Knowledge/fixture-raw-07.md",
+       "vault-backups/vault-2026-10-20-150320/07_Knowledge/fixture-raw-08.md",
+       "vault-backups/vault-2026-10-20-150320/07_Knowledge/fixture-raw-09.md",
+       "vault-backups/vault-2026-10-20-150320/07_Knowledge/index.md",
+       "vault-backups/vault-2026-10-20-150320/07_Knowledge/parser-evidence.md",
+       "vault-backups/vault-2026-10-20-150320/08_Runbooks/.gitkeep",
+       "vault-backups/vault-2026-10-20-150320/08_Runbooks/00-08_runbooks-primer.md",
+       "vault-backups/vault-2026-10-20-150320/08_Runbooks/index.md",
+       "vault-backups/vault-2026-10-20-150320/09_Infrastructure/.gitkeep",
+       "vault-backups/vault-2026-10-20-150320/09_Infrastructure/00-09_infrastructure-primer.md",
+       "vault-backups/vault-2026-10-20-150320/09_Infrastructure/index.md",
+       "vault-backups/vault-2026-10-20-150320/10_Migrated/.gitkeep",
+       "vault-backups/vault-2026-10-20-150320/10_Migrated/00-10_migrated-primer.md",
+       "vault-backups/vault-2026-10-20-150320/10_Migrated/index.md",
+       "vault-backups/vault-2026-10-20-150320/11_Code/.gitkeep",
+       "vault-backups/vault-2026-10-20-150320/11_Code/00-11_code-primer.md",
+       "vault-backups/vault-2026-10-20-150320/11_Code/index.md",
+       "vault-backups/vault-2026-10-20-150320/12_Bibliography/.gitkeep",
+       "vault-backups/vault-2026-10-20-150320/12_Bibliography/00-12_bibliography-primer.md",
+       "vault-backups/vault-2026-10-20-150320/12_Bibliography/index.md",
+       "vault-backups/vault-2026-10-20-150320/13_Flows/.gitkeep",
+       "vault-backups/vault-2026-10-20-150320/13_Flows/00-13_flows-primer.md",
+       "vault-backups/vault-2026-10-20-150320/13_Flows/index.md",
+       "vault-backups/vault-2026-10-20-150320/14_Requirements/.gitkeep",
+       "vault-backups/vault-2026-10-20-150320/14_Requirements/00-14_requirements-primer.md",
+       "vault-backups/vault-2026-10-20-150320/14_Requirements/index.md",
+       "vault-backups/vault-2026-10-20-150320/15_Tests/.gitkeep",
+       "vault-backups/vault-2026-10-20-150320/15_Tests/00-15_tests-primer.md",
+       "vault-backups/vault-2026-10-20-150320/15_Tests/index.md",
+       "vault-backups/vault-2026-10-20-150320/16_AI_Governance/.gitkeep",
+       "vault-backups/vault-2026-10-20-150320/16_AI_Governance/00-16_ai_governance-primer.md",
+       "vault-backups/vault-2026-10-20-150320/16_AI_Governance/index.md",
+       "vault-backups/vault-2026-10-20-150320/17_Preferences/.gitkeep",
+       "vault-backups/vault-2026-10-20-150320/17_Preferences/00-17_preferences-primer.md",
+       "vault-backups/vault-2026-10-20-150320/17_Preferences/index.md",
+       "vault-backups/vault-2026-10-20-150320/17_Preferences/model_profile.active",
+       "vault-backups/vault-2026-10-20-150320/18_Bugs/.gitkeep",
+       "vault-backups/vault-2026-10-20-150320/18_Bugs/index.md",
+       "vault-backups/vault-2026-10-20-150320/19_Audits/.gitkeep",
+       "vault-backups/vault-2026-10-20-150320/19_Audits/index.md",
+       "vault-backups/vault-2026-10-20-150320/19_Audits/vocabulary/tag-ledger.json",
+       "vault-backups/vault-2026-10-20-150320/20_Quarantine/.gitkeep",
+       "vault-backups/vault-2026-10-20-150320/20_Quarantine/index.md",
+       "vault-backups/vault-2026-10-20-150320/21_QA/.gitkeep",
+       "vault-backups/vault-2026-10-20-150320/21_QA/index.md",
+       "vault-backups/vault-2026-10-20-150320/99_Index/.gitkeep",
+       "vault-backups/vault-2026-10-20-150320/99_Index/00-99_index-primer.md",
+       "vault-backups/vault-2026-10-20-150320/99_Index/graph.json",
+       "vault-backups/vault-2026-10-20-150320/99_Index/hash-index.json",
+       "vault-backups/vault-2026-10-20-150320/99_Index/index.md",
+       "vault-backups/vault-2026-10-20-150320/99_Index/search-index.json",
+       "vault-backups/vault-2026-10-20-150320/99_Index/tag-index.md"
       ]
      },
      {
@@ -395,153 +390,148 @@
       "envelope_ok": true,
       "cambiadas": [
        "vault-backups/.backup-registry.json",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/.manifest.json",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/.change-log.json",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/.gitkeep",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/.voice-counter",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/change-log.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/data-framework.json",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/data-framework.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/data-fundamentals.json",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/index.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/norm-registry.json",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/quality-index.json",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/standard-version.json",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/tag-registry.json",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/tool-contracts.json",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/tool-contracts.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/tool-spec.json",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/vault-commands.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/vault-hub.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/vault-ontology.json",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/01_Projects/.gitkeep",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/01_Projects/00-01_projects-primer.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/01_Projects/index.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/02_Observability/.gitkeep",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/02_Observability/00-02_observability-primer.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/02_Observability/index.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/03_Decisions/.gitkeep",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/03_Decisions/00-03_decisions-primer.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/03_Decisions/adr-001-mcp-transport.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/03_Decisions/index.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/03_Decisions/mcp-transport-contract.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/03_Decisions/mcp-transport-operations.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/03_Decisions/mcp-transport-provenance.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/04_Sessions/.gitkeep",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/04_Sessions/00-04_sessions-primer.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/04_Sessions/index.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/05_Patterns/.gitkeep",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/05_Patterns/00-05_patterns-primer.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/05_Patterns/index.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/06_Diagrams/.gitkeep",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/06_Diagrams/00-06_diagrams-primer.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/06_Diagrams/entity/index.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/06_Diagrams/entity/test-relations.json",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/06_Diagrams/index.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/.gitkeep",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/00-07_knowledge-primer.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-incomplete-00.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-incomplete-01.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-incomplete-02.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-incomplete-03.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-incomplete-04.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-incomplete-05.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-incomplete-06.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-incomplete-07.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-incomplete-08.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-incomplete-09.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-raw-00.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-raw-01.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-raw-02.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-raw-03.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-raw-04.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-raw-05.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-raw-06.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-raw-07.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-raw-08.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-raw-09.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/index.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/parser-evidence.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/08_Runbooks/.gitkeep",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/08_Runbooks/00-08_runbooks-primer.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/08_Runbooks/index.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/09_Infrastructure/.gitkeep",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/09_Infrastructure/00-09_infrastructure-primer.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/09_Infrastructure/index.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/10_Migrated/.gitkeep",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/10_Migrated/00-10_migrated-primer.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/10_Migrated/index.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/11_Code/.gitkeep",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/11_Code/00-11_code-primer.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/11_Code/index.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/12_Bibliography/.gitkeep",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/12_Bibliography/00-12_bibliography-primer.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/12_Bibliography/index.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/13_Flows/.gitkeep",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/13_Flows/00-13_flows-primer.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/13_Flows/index.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/14_Requirements/.gitkeep",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/14_Requirements/00-14_requirements-primer.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/14_Requirements/index.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/15_Tests/.gitkeep",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/15_Tests/00-15_tests-primer.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/15_Tests/index.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/16_AI_Governance/.gitkeep",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/16_AI_Governance/00-16_ai_governance-primer.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/16_AI_Governance/index.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/17_Preferences/.gitkeep",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/17_Preferences/00-17_preferences-primer.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/17_Preferences/index.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/17_Preferences/model_profile.active",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/18_Bugs/.gitkeep",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/18_Bugs/index.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/19_Audits/.gitkeep",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/19_Audits/index.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/19_Audits/vocabulary/tag-ledger.json",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/20_Quarantine/.gitkeep",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/20_Quarantine/index.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/21_QA/.gitkeep",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/21_QA/index.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/99_Index/.gitkeep",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/99_Index/00-99_index-primer.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/99_Index/graph.json",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/99_Index/hash-index.json",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/99_Index/index.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/99_Index/search-index.json",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/99_Index/tag-index.md"
+       "vault-backups/vault-2026-10-20-150321-pre-migration/.manifest.json",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/00_System/.change-log.json",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/00_System/.gitkeep",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/00_System/.voice-counter",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/00_System/change-log.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/00_System/data-framework.json",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/00_System/data-framework.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/00_System/data-fundamentals.json",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/00_System/index.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/00_System/norm-registry.json",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/00_System/quality-index.json",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/00_System/standard-version.json",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/00_System/tag-registry.json",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/00_System/tool-contracts.json",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/00_System/tool-contracts.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/00_System/tool-spec.json",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/00_System/vault-commands.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/00_System/vault-hub.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/00_System/vault-ontology.json",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/01_Projects/.gitkeep",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/01_Projects/00-01_projects-primer.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/01_Projects/index.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/02_Observability/.gitkeep",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/02_Observability/00-02_observability-primer.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/02_Observability/errors/2026-10-20-nullpointerexception.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/02_Observability/errors/index.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/02_Observability/index.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/03_Decisions/.gitkeep",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/03_Decisions/00-03_decisions-primer.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/03_Decisions/adr-001-mcp-transport.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/03_Decisions/index.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/03_Decisions/mcp-transport-contract.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/03_Decisions/mcp-transport-operations.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/03_Decisions/mcp-transport-provenance.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/04_Sessions/.gitkeep",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/04_Sessions/00-04_sessions-primer.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/04_Sessions/index.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/05_Patterns/.gitkeep",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/05_Patterns/00-05_patterns-primer.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/05_Patterns/index.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/06_Diagrams/.gitkeep",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/06_Diagrams/00-06_diagrams-primer.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/06_Diagrams/entity/index.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/06_Diagrams/entity/test-relations.json",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/06_Diagrams/index.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/07_Knowledge/.gitkeep",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/07_Knowledge/00-07_knowledge-primer.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/07_Knowledge/fixture-incomplete-00.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/07_Knowledge/fixture-incomplete-01.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/07_Knowledge/fixture-incomplete-02.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/07_Knowledge/fixture-incomplete-03.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/07_Knowledge/fixture-incomplete-04.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/07_Knowledge/fixture-incomplete-05.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/07_Knowledge/fixture-incomplete-06.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/07_Knowledge/fixture-incomplete-07.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/07_Knowledge/fixture-incomplete-08.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/07_Knowledge/fixture-incomplete-09.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/07_Knowledge/fixture-raw-00.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/07_Knowledge/fixture-raw-01.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/07_Knowledge/fixture-raw-02.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/07_Knowledge/fixture-raw-03.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/07_Knowledge/fixture-raw-04.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/07_Knowledge/fixture-raw-05.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/07_Knowledge/fixture-raw-06.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/07_Knowledge/fixture-raw-07.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/07_Knowledge/fixture-raw-08.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/07_Knowledge/fixture-raw-09.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/07_Knowledge/index.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/07_Knowledge/parser-evidence.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/08_Runbooks/.gitkeep",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/08_Runbooks/00-08_runbooks-primer.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/08_Runbooks/index.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/09_Infrastructure/.gitkeep",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/09_Infrastructure/00-09_infrastructure-primer.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/09_Infrastructure/index.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/10_Migrated/.gitkeep",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/10_Migrated/00-10_migrated-primer.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/10_Migrated/index.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/11_Code/.gitkeep",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/11_Code/00-11_code-primer.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/11_Code/index.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/12_Bibliography/.gitkeep",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/12_Bibliography/00-12_bibliography-primer.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/12_Bibliography/index.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/13_Flows/.gitkeep",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/13_Flows/00-13_flows-primer.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/13_Flows/index.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/14_Requirements/.gitkeep",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/14_Requirements/00-14_requirements-primer.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/14_Requirements/index.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/15_Tests/.gitkeep",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/15_Tests/00-15_tests-primer.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/15_Tests/index.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/16_AI_Governance/.gitkeep",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/16_AI_Governance/00-16_ai_governance-primer.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/16_AI_Governance/index.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/17_Preferences/.gitkeep",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/17_Preferences/00-17_preferences-primer.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/17_Preferences/index.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/17_Preferences/model_profile.active",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/18_Bugs/.gitkeep",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/18_Bugs/index.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/19_Audits/.gitkeep",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/19_Audits/index.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/19_Audits/vocabulary/tag-ledger.json",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/20_Quarantine/.gitkeep",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/20_Quarantine/index.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/21_QA/.gitkeep",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/21_QA/index.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/99_Index/.gitkeep",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/99_Index/00-99_index-primer.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/99_Index/graph.json",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/99_Index/hash-index.json",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/99_Index/index.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/99_Index/search-index.json",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/99_Index/tag-index.md"
       ]
      }
     ]
    },
    "c3": {
-    "estado": "DEFECTO",
-    "motivo": "declara idempotencia y la segunda corrida reescribió el vault",
+    "estado": "OK",
+    "declarada": true,
     "corridas": [
      {
       "corrida": 1,
       "exit": 0,
-      "reescritas": 115,
+      "reescritas": 117,
       "rutas": [
-       "vault-backups/vault-2026-10-20-095708-pre-migration/99_Index/search-index.json",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/vault-hub.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/05_Patterns/00-05_patterns-primer.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/03_Decisions/mcp-transport-contract.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/01_Projects/00-01_projects-primer.md",
-       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/data-fundamentals.json"
+       "vault-backups/vault-2026-10-20-150321-pre-migration/03_Decisions/mcp-transport-provenance.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/05_Patterns/00-05_patterns-primer.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/00_System/.change-log.json",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/12_Bibliography/.gitkeep",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/03_Decisions/mcp-transport-operations.md",
+       "vault-backups/vault-2026-10-20-150321-pre-migration/06_Diagrams/index.md"
       ]
      },
      {
       "corrida": 2,
       "exit": 0,
-      "reescritas": 115,
-      "rutas": [
-       "vault-backups/vault-2026-10-20-095709-pre-migration/00_System/tool-contracts.json",
-       "vault-backups/vault-2026-10-20-095709-pre-migration/08_Runbooks/.gitkeep",
-       "vault-backups/vault-2026-10-20-095709-pre-migration/09_Infrastructure/.gitkeep",
-       "vault-backups/vault-2026-10-20-095709-pre-migration/99_Index/.gitkeep",
-       "vault-backups/vault-2026-10-20-095709-pre-migration/00_System/change-log.md",
-       "vault-backups/vault-2026-10-20-095709-pre-migration/07_Knowledge/parser-evidence.md"
-      ]
+      "reescritas": 0,
+      "rutas": []
      }
     ]
    },
@@ -632,10 +622,8 @@
    "tool": "vault_bibliography_save",
    "grupo_id": 16,
    "capacidad": "escritura_a_gobernanza",
-   "veredicto": "DEFECTO",
-   "motivos": [
-    "c3: declara idempotencia y la segunda corrida reescribió el vault"
-   ],
+   "veredicto": "OK",
+   "motivos": [],
    "c0": {
     "estado": "OK",
     "lineas": 1
@@ -666,31 +654,26 @@
     ]
    },
    "c3": {
-    "estado": "DEFECTO",
-    "motivo": "declara idempotencia y la segunda corrida reescribió el vault",
+    "estado": "OK",
+    "declarada": true,
     "corridas": [
      {
       "corrida": 1,
       "exit": 0,
       "reescritas": 5,
       "rutas": [
-       "12_Bibliography/books/index.md",
-       "12_Bibliography/index.md",
        "99_Index/search-index.json",
+       "12_Bibliography/index.md",
        "99_Index/graph.json",
-       "12_Bibliography/books/clean-code.md"
+       "12_Bibliography/books/clean-code.md",
+       "12_Bibliography/books/index.md"
       ]
      },
      {
       "corrida": 2,
       "exit": 0,
-      "reescritas": 4,
-      "rutas": [
-       "12_Bibliography/books/index.md",
-       "12_Bibliography/index.md",
-       "99_Index/search-index.json",
-       "12_Bibliography/books/clean-code.md"
-      ]
+      "reescritas": 0,
+      "rutas": []
      }
     ]
    },
@@ -907,7 +890,6 @@
    "capacidad": "gobernanza_del_estandar",
    "veredicto": "DEFECTO",
    "motivos": [
-    "c1: declara side effects y el ejemplo completo es de solo lectura",
     "c2"
    ],
    "c0": {
@@ -915,12 +897,8 @@
     "lineas": 3
    },
    "c1": {
-    "estado": "DEFECTO",
-    "motivo": "declara side effects y el ejemplo completo es de solo lectura",
-    "side_effects": [
-     "Con --fijar-hash reescribe la entrada de la versión en curso",
-     "Con --freeze escribe scripts/changelog-baseline.json"
-    ]
+    "estado": "OK",
+    "lineas_utiles": 1
    },
    "c4": {
     "estado": "OK"
@@ -1276,20 +1254,15 @@
    "tool": "vault_code_tag",
    "grupo_id": 35,
    "capacidad": "gobernanza_del_estandar",
-   "veredicto": "DEFECTO",
-   "motivos": [
-    "c1: declara side effects y el ejemplo completo es de solo lectura"
-   ],
+   "veredicto": "OK",
+   "motivos": [],
    "c0": {
     "estado": "OK",
-    "lineas": 1
+    "lineas": 2
    },
    "c1": {
-    "estado": "DEFECTO",
-    "motivo": "declara side effects y el ejemplo completo es de solo lectura",
-    "side_effects": [
-     "Actualiza frontmatter del módulo"
-    ]
+    "estado": "OK",
+    "lineas_utiles": 1
    },
    "c4": {
     "estado": "OK"
@@ -1303,6 +1276,14 @@
       "exit": 0,
       "envelope_ok": true,
       "cambiadas": []
+     },
+     {
+      "argv": "--define cr-ejemplo --name Ejemplo --description Etiqueta de prueba",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "00_System/code-tag-registry.json"
+      ]
      }
     ]
    },
@@ -1313,8 +1294,10 @@
      {
       "corrida": 1,
       "exit": 0,
-      "reescritas": 0,
-      "rutas": []
+      "reescritas": 1,
+      "rutas": [
+       "00_System/code-tag-registry.json"
+      ]
      },
      {
       "corrida": 2,
@@ -2003,26 +1986,22 @@
    "tool": "vault_esquema",
    "grupo_id": 35,
    "capacidad": "gobernanza_del_estandar",
-   "veredicto": "DEFECTO",
-   "motivos": [
-    "c2"
-   ],
+   "veredicto": "OK",
+   "motivos": [],
    "c0": {
     "estado": "OK",
-    "lineas": 3
+    "lineas": 2
    },
    "c1": {
     "estado": "OK",
-    "lineas_utiles": 2
+    "lineas_utiles": 1
    },
    "c4": {
     "estado": "OK"
    },
    "c2": {
-    "estado": "DEFECTO",
-    "perdidas": [
-     "JSON sin campo `ok`: ['$defs', '$id', '$schema', 'additionalProperties', 'description', 'properties', 'required', 'title']"
-    ],
+    "estado": "OK",
+    "perdidas": [],
     "corridas": [
      {
       "argv": "--check --strict",
@@ -2035,13 +2014,6 @@
       "exit": 0,
       "envelope_ok": true,
       "cambiadas": []
-     },
-     {
-      "argv": "--version v37",
-      "exit": null,
-      "envelope_ok": null,
-      "cambiadas": null,
-      "perdida": "JSON sin campo `ok`: ['$defs', '$id', '$schema', 'additionalProperties', 'description', 'properties', 'required', 'title']"
      }
     ]
    },
@@ -2581,13 +2553,11 @@
    "tool": "vault_gate",
    "grupo_id": 35,
    "capacidad": "gobernanza_del_estandar",
-   "veredicto": "DEFECTO",
-   "motivos": [
-    "c2"
-   ],
+   "veredicto": "OK",
+   "motivos": [],
    "c0": {
     "estado": "OK",
-    "lineas": 3
+    "lineas": 2
    },
    "c1": {
     "estado": "OK",
@@ -2597,23 +2567,14 @@
     "estado": "OK"
    },
    "c2": {
-    "estado": "DEFECTO",
-    "perdidas": [
-     "timeout: no terminó en 90s"
-    ],
+    "estado": "OK",
+    "perdidas": [],
     "corridas": [
      {
       "argv": "--list",
       "exit": 0,
       "envelope_ok": true,
       "cambiadas": []
-     },
-     {
-      "argv": "--strict",
-      "exit": null,
-      "envelope_ok": null,
-      "cambiadas": null,
-      "perdida": "timeout: no terminó en 90s"
      },
      {
       "argv": "--check-doc",
@@ -2745,6 +2706,7 @@
       "envelope_ok": true,
       "cambiadas": [
        "00_System/.graph-fixes/2026-10-20.json",
+       "02_Observability/index.md",
        "06_Diagrams/entity/index.md",
        "06_Diagrams/index.md",
        "99_Index/search-index.json"
@@ -2811,10 +2773,8 @@
    "tool": "vault_graph_merge",
    "grupo_id": 6,
    "capacidad": "escritura_a_gobernanza",
-   "veredicto": "DEFECTO",
-   "motivos": [
-    "c3: declara idempotencia y la segunda corrida reescribió el vault"
-   ],
+   "veredicto": "OK",
+   "motivos": [],
    "c0": {
     "estado": "OK",
     "lineas": 1
@@ -2841,8 +2801,8 @@
     ]
    },
    "c3": {
-    "estado": "DEFECTO",
-    "motivo": "declara idempotencia y la segunda corrida reescribió el vault",
+    "estado": "OK",
+    "declarada": true,
     "corridas": [
      {
       "corrida": 1,
@@ -2855,10 +2815,8 @@
      {
       "corrida": 2,
       "exit": 0,
-      "reescritas": 1,
-      "rutas": [
-       "99_Index/graph-enriched.json"
-      ]
+      "reescritas": 0,
+      "rutas": []
      }
     ]
    },
@@ -2924,7 +2882,7 @@
    },
    "c1": {
     "estado": "OK",
-    "lineas_utiles": 1
+    "lineas_utiles": 2
    },
    "c4": {
     "estado": "OK"
@@ -3065,10 +3023,8 @@
    "tool": "vault_infra_save",
    "grupo_id": 8,
    "capacidad": "escritura_a_gobernanza",
-   "veredicto": "DEFECTO",
-   "motivos": [
-    "c3: declara idempotencia y la segunda corrida reescribió el vault"
-   ],
+   "veredicto": "OK",
+   "motivos": [],
    "c0": {
     "estado": "OK",
     "lineas": 1
@@ -3101,34 +3057,27 @@
     ]
    },
    "c3": {
-    "estado": "DEFECTO",
-    "motivo": "declara idempotencia y la segunda corrida reescribió el vault",
+    "estado": "OK",
+    "declarada": true,
     "corridas": [
      {
       "corrida": 1,
       "exit": 0,
       "reescritas": 7,
       "rutas": [
-       "09_Infrastructure/servers/prod-cluster.md",
-       "09_Infrastructure/.infra-index.json",
        "99_Index/search-index.json",
+       "09_Infrastructure/servers/index.md",
+       "09_Infrastructure/servers/prod-cluster.md",
+       "09_Infrastructure/index.md",
        "99_Index/graph.json",
-       "09_Infrastructure/infra-map.md",
-       "09_Infrastructure/servers/index.md"
+       "09_Infrastructure/.infra-index.json"
       ]
      },
      {
       "corrida": 2,
       "exit": 0,
-      "reescritas": 6,
-      "rutas": [
-       "09_Infrastructure/servers/prod-cluster.md",
-       "09_Infrastructure/.infra-index.json",
-       "99_Index/search-index.json",
-       "09_Infrastructure/infra-map.md",
-       "09_Infrastructure/servers/index.md",
-       "09_Infrastructure/index.md"
-      ]
+      "reescritas": 0,
+      "rutas": []
      }
     ]
    },
@@ -3186,10 +3135,8 @@
    "tool": "vault_init",
    "grupo_id": 31,
    "capacidad": "escritura_a_gobernanza",
-   "veredicto": "DEFECTO",
-   "motivos": [
-    "c3: declara idempotencia y la segunda corrida reescribió el vault"
-   ],
+   "veredicto": "OK",
+   "motivos": [],
    "c0": {
     "estado": "OK",
     "lineas": 2
@@ -3211,9 +3158,7 @@
       "envelope_ok": true,
       "cambiadas": [
        "00_System/index.md",
-       "00_System/standard-version.json",
        "01_Projects/index.md",
-       "02_Observability/index.md",
        "03_Decisions/index.md",
        "04_Sessions/index.md",
        "05_Patterns/index.md",
@@ -3247,7 +3192,6 @@
        "00_System/index.md",
        "00_System/standard-version.json",
        "01_Projects/index.md",
-       "02_Observability/index.md",
        "03_Decisions/index.md",
        "04_Sessions/index.md",
        "05_Patterns/index.md",
@@ -3276,34 +3220,27 @@
     ]
    },
    "c3": {
-    "estado": "DEFECTO",
-    "motivo": "declara idempotencia y la segunda corrida reescribió el vault",
+    "estado": "OK",
+    "declarada": true,
     "corridas": [
      {
       "corrida": 1,
       "exit": 0,
-      "reescritas": 27,
+      "reescritas": 26,
       "rutas": [
-       "16_AI_Governance/index.md",
-       "06_Diagrams/index.md",
-       "04_Sessions/index.md",
-       "13_Flows/index.md",
-       "01_Projects/index.md",
-       "99_Index/index.md"
+       "99_Index/index.md",
+       "07_Knowledge/index.md",
+       "99_Index/search-index.json",
+       "21_QA/index.md",
+       "15_Tests/index.md",
+       "16_AI_Governance/index.md"
       ]
      },
      {
       "corrida": 2,
       "exit": 0,
-      "reescritas": 27,
-      "rutas": [
-       "16_AI_Governance/index.md",
-       "06_Diagrams/index.md",
-       "04_Sessions/index.md",
-       "13_Flows/index.md",
-       "01_Projects/index.md",
-       "99_Index/index.md"
-      ]
+      "reescritas": 0,
+      "rutas": []
      }
     ]
    },
@@ -3412,10 +3349,8 @@
    "tool": "vault_knowledge_save",
    "grupo_id": 5,
    "capacidad": "escritura_a_gobernanza",
-   "veredicto": "DEFECTO",
-   "motivos": [
-    "c3: declara idempotencia y la segunda corrida reescribió el vault"
-   ],
+   "veredicto": "OK",
+   "motivos": [],
    "c0": {
     "estado": "OK",
     "lineas": 1
@@ -3447,17 +3382,17 @@
     ]
    },
    "c3": {
-    "estado": "DEFECTO",
-    "motivo": "declara idempotencia y la segunda corrida reescribió el vault",
+    "estado": "OK",
+    "declarada": true,
     "corridas": [
      {
       "corrida": 1,
       "exit": 0,
       "reescritas": 6,
       "rutas": [
-       "19_Audits/vocabulary/tag-ledger.json",
        "07_Knowledge/index.md",
        "99_Index/search-index.json",
+       "19_Audits/vocabulary/tag-ledger.json",
        "07_Knowledge/concepts/index.md",
        "99_Index/graph.json",
        "07_Knowledge/concepts/clean-architecture.md"
@@ -3466,13 +3401,8 @@
      {
       "corrida": 2,
       "exit": 0,
-      "reescritas": 4,
-      "rutas": [
-       "07_Knowledge/index.md",
-       "99_Index/search-index.json",
-       "07_Knowledge/concepts/index.md",
-       "07_Knowledge/concepts/clean-architecture.md"
-      ]
+      "reescritas": 0,
+      "rutas": []
      }
     ]
    },
@@ -3530,10 +3460,8 @@
    "tool": "vault_log_error",
    "grupo_id": 2,
    "capacidad": "escritura_a_gobernanza",
-   "veredicto": "DEFECTO",
-   "motivos": [
-    "c3: declara idempotencia y la segunda corrida reescribió el vault"
-   ],
+   "veredicto": "OK",
+   "motivos": [],
    "c0": {
     "estado": "OK",
     "lineas": 1
@@ -3557,40 +3485,31 @@
        "02_Observability/errors/2026-10-20-nullpointerexception.md",
        "02_Observability/errors/index.md",
        "02_Observability/index.md",
-       "19_Audits/vocabulary/tag-ledger.json",
-       "99_Index/graph.json",
        "99_Index/search-index.json"
       ]
      }
     ]
    },
    "c3": {
-    "estado": "DEFECTO",
-    "motivo": "declara idempotencia y la segunda corrida reescribió el vault",
+    "estado": "OK",
+    "declarada": true,
     "corridas": [
      {
       "corrida": 1,
       "exit": 0,
-      "reescritas": 6,
+      "reescritas": 4,
       "rutas": [
-       "02_Observability/errors/2026-10-20-nullpointerexception.md",
-       "02_Observability/errors/index.md",
-       "19_Audits/vocabulary/tag-ledger.json",
        "99_Index/search-index.json",
-       "99_Index/graph.json",
-       "02_Observability/index.md"
+       "02_Observability/errors/index.md",
+       "02_Observability/index.md",
+       "02_Observability/errors/2026-10-20-nullpointerexception.md"
       ]
      },
      {
       "corrida": 2,
       "exit": 0,
-      "reescritas": 4,
-      "rutas": [
-       "02_Observability/errors/2026-10-20-nullpointerexception.md",
-       "02_Observability/errors/index.md",
-       "99_Index/search-index.json",
-       "02_Observability/index.md"
-      ]
+      "reescritas": 0,
+      "rutas": []
      }
     ]
    },
@@ -3603,10 +3522,8 @@
    "tool": "vault_master_index",
    "grupo_id": 15,
    "capacidad": "escritura_a_gobernanza",
-   "veredicto": "DEFECTO",
-   "motivos": [
-    "c3: declara idempotencia y la segunda corrida reescribió el vault"
-   ],
+   "veredicto": "OK",
+   "motivos": [],
    "c0": {
     "estado": "OK",
     "lineas": 1
@@ -3629,7 +3546,6 @@
       "cambiadas": [
        "00_System/index.md",
        "01_Projects/index.md",
-       "02_Observability/index.md",
        "03_Decisions/index.md",
        "04_Sessions/index.md",
        "05_Patterns/index.md",
@@ -3656,34 +3572,27 @@
     ]
    },
    "c3": {
-    "estado": "DEFECTO",
-    "motivo": "declara idempotencia y la segunda corrida reescribió el vault",
+    "estado": "OK",
+    "declarada": true,
     "corridas": [
      {
       "corrida": 1,
       "exit": 0,
-      "reescritas": 24,
+      "reescritas": 23,
       "rutas": [
+       "99_Index/index.md",
+       "07_Knowledge/index.md",
+       "21_QA/index.md",
+       "15_Tests/index.md",
        "16_AI_Governance/index.md",
-       "06_Diagrams/index.md",
-       "04_Sessions/index.md",
-       "13_Flows/index.md",
-       "01_Projects/index.md",
-       "99_Index/index.md"
+       "03_Decisions/index.md"
       ]
      },
      {
       "corrida": 2,
       "exit": 0,
-      "reescritas": 24,
-      "rutas": [
-       "16_AI_Governance/index.md",
-       "06_Diagrams/index.md",
-       "04_Sessions/index.md",
-       "13_Flows/index.md",
-       "01_Projects/index.md",
-       "99_Index/index.md"
-      ]
+      "reescritas": 0,
+      "rutas": []
      }
     ]
    },
@@ -3813,39 +3722,28 @@
    "tool": "vault_metricas",
    "grupo_id": 35,
    "capacidad": "gobernanza_del_estandar",
-   "veredicto": "DEFECTO",
-   "motivos": [
-    "c2"
-   ],
+   "veredicto": "OK",
+   "motivos": [],
    "c0": {
     "estado": "OK",
-    "lineas": 3
+    "lineas": 2
    },
    "c1": {
     "estado": "OK",
-    "lineas_utiles": 2
+    "lineas_utiles": 1
    },
    "c4": {
     "estado": "OK"
    },
    "c2": {
-    "estado": "DEFECTO",
-    "perdidas": [
-     "el ejemplo lo rechaza la propia tool: FileNotFoundError: [Errno 2] No such file or directory: 'ronda.log'"
-    ],
+    "estado": "OK",
+    "perdidas": [],
     "corridas": [
      {
       "argv": "--check --strict",
       "exit": 0,
       "envelope_ok": true,
       "cambiadas": []
-     },
-     {
-      "argv": "--registrar-suite ronda.log --commit abc1234",
-      "exit": 1,
-      "envelope_ok": null,
-      "cambiadas": null,
-      "perdida": "el ejemplo lo rechaza la propia tool: FileNotFoundError: [Errno 2] No such file or directory: 'ronda.log'"
      },
      {
       "argv": "--doc",
@@ -4180,17 +4078,15 @@
    "tool": "vault_norms",
    "grupo_id": 35,
    "capacidad": "gobernanza_del_estandar",
-   "veredicto": "MEJORA",
-   "motivos": [
-    "c1: el ejemplo solo mira; ninguna línea hace el trabajo que la tool declara"
-   ],
+   "veredicto": "OK",
+   "motivos": [],
    "c0": {
     "estado": "OK",
-    "lineas": 2
+    "lineas": 3
    },
    "c1": {
-    "estado": "MEJORA",
-    "motivo": "el ejemplo solo mira; ninguna línea hace el trabajo que la tool declara"
+    "estado": "OK",
+    "lineas_utiles": 1
    },
    "c4": {
     "estado": "OK"
@@ -4207,6 +4103,12 @@
      },
      {
       "argv": "--show AP-25",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--audit",
       "exit": 0,
       "envelope_ok": true,
       "cambiadas": []
@@ -4892,10 +4794,8 @@
    "tool": "vault_quality_dashboard",
    "grupo_id": 20,
    "capacidad": "escritura_a_gobernanza",
-   "veredicto": "DEFECTO",
-   "motivos": [
-    "c2"
-   ],
+   "veredicto": "OK",
+   "motivos": [],
    "c0": {
     "estado": "OK",
     "lineas": 2
@@ -4908,10 +4808,8 @@
     "estado": "OK"
    },
    "c2": {
-    "estado": "DEFECTO",
-    "perdidas": [
-     "la salida no es JSON: *Para detalle por nota, ejecutar `python scripts/vault_quality_check.py --min-score 0.7`*"
-    ],
+    "estado": "OK",
+    "perdidas": [],
     "corridas": [
      {
       "argv": "",
@@ -4929,9 +4827,8 @@
      {
       "argv": "--check",
       "exit": 0,
-      "envelope_ok": null,
-      "cambiadas": null,
-      "perdida": "la salida no es JSON: *Para detalle por nota, ejecutar `python scripts/vault_quality_check.py --min-score 0.7`*"
+      "envelope_ok": true,
+      "cambiadas": []
      }
     ]
    },
@@ -5160,7 +5057,6 @@
       "cambiadas": [
        "00_System/index.md",
        "01_Projects/index.md",
-       "02_Observability/index.md",
        "03_Decisions/index.md",
        "04_Sessions/index.md",
        "05_Patterns/index.md",
@@ -5312,20 +5208,15 @@
    "tool": "vault_requirement_save",
    "grupo_id": 19,
    "capacidad": "escritura_a_gobernanza",
-   "veredicto": "DEFECTO",
-   "motivos": [
-    "c1: declara side effects y el ejemplo completo es de solo lectura"
-   ],
+   "veredicto": "OK",
+   "motivos": [],
    "c0": {
     "estado": "OK",
     "lineas": 1
    },
    "c1": {
-    "estado": "DEFECTO",
-    "motivo": "declara side effects y el ejemplo completo es de solo lectura",
-    "side_effects": [
-     "Crea nota en 01_Projects/{project}/requirements/"
-    ]
+    "estado": "OK",
+    "lineas_utiles": 1
    },
    "c4": {
     "estado": "OK"
@@ -5828,10 +5719,8 @@
    "tool": "vault_section_index",
    "grupo_id": 15,
    "capacidad": "escritura_a_gobernanza",
-   "veredicto": "DEFECTO",
-   "motivos": [
-    "c3: declara idempotencia y la segunda corrida reescribió el vault"
-   ],
+   "veredicto": "OK",
+   "motivos": [],
    "c0": {
     "estado": "OK",
     "lineas": 1
@@ -5858,8 +5747,8 @@
     ]
    },
    "c3": {
-    "estado": "DEFECTO",
-    "motivo": "declara idempotencia y la segunda corrida reescribió el vault",
+    "estado": "OK",
+    "declarada": true,
     "corridas": [
      {
       "corrida": 1,
@@ -5872,10 +5761,8 @@
      {
       "corrida": 2,
       "exit": 0,
-      "reescritas": 1,
-      "rutas": [
-       "01_Projects/index.md"
-      ]
+      "reescritas": 0,
+      "rutas": []
      }
     ]
    },
@@ -6049,26 +5936,22 @@
    "tool": "vault_smoke",
    "grupo_id": 35,
    "capacidad": "gobernanza_del_estandar",
-   "veredicto": "DEFECTO",
-   "motivos": [
-    "c2"
-   ],
+   "veredicto": "OK",
+   "motivos": [],
    "c0": {
     "estado": "OK",
     "lineas": 2
    },
    "c1": {
     "estado": "OK",
-    "lineas_utiles": 1
+    "lineas_utiles": 2
    },
    "c4": {
     "estado": "OK"
    },
    "c2": {
-    "estado": "DEFECTO",
-    "perdidas": [
-     "timeout: no terminó en 90s"
-    ],
+    "estado": "OK",
+    "perdidas": [],
     "corridas": [
      {
       "argv": "--tool vault_write",
@@ -6077,11 +5960,10 @@
       "cambiadas": []
      },
      {
-      "argv": "--check --strict",
-      "exit": null,
-      "envelope_ok": null,
-      "cambiadas": null,
-      "perdida": "timeout: no terminó en 90s"
+      "argv": "--tool vault_search",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
      }
     ]
    },
@@ -6158,7 +6040,7 @@
    },
    "c1": {
     "estado": "OK",
-    "lineas_utiles": 1
+    "lineas_utiles": 2
    },
    "c4": {
     "estado": "OK"
@@ -6427,17 +6309,15 @@
    "tool": "vault_token_service",
    "grupo_id": 26,
    "capacidad": "consulta_a_contexto",
-   "veredicto": "MEJORA",
-   "motivos": [
-    "c1: el ejemplo solo mira; ninguna línea hace el trabajo que la tool declara"
-   ],
+   "veredicto": "OK",
+   "motivos": [],
    "c0": {
     "estado": "OK",
     "lineas": 1
    },
    "c1": {
-    "estado": "MEJORA",
-    "motivo": "el ejemplo solo mira; ninguna línea hace el trabajo que la tool declara"
+    "estado": "OK",
+    "lineas_utiles": 1
    },
    "c4": {
     "estado": "OK"
@@ -6731,24 +6611,7 @@
   }
  ],
  "deuda_congelada": [
-  "vault_audit",
-  "vault_backup",
-  "vault_bibliography_save",
-  "vault_changelog_check",
-  "vault_code_tag",
-  "vault_esquema",
-  "vault_gate",
-  "vault_graph_merge",
-  "vault_infra_save",
-  "vault_init",
-  "vault_knowledge_save",
-  "vault_log_error",
-  "vault_master_index",
-  "vault_metricas",
-  "vault_quality_dashboard",
-  "vault_requirement_save",
-  "vault_section_index",
-  "vault_smoke"
+  "vault_changelog_check"
  ],
- "segundos": 564.8
+ "segundos": 376.6
 }

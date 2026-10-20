@@ -49,6 +49,20 @@ class EscritorAtomico:
         with io.file_lock(objetivo, timeout=timeout) as lock:
             yield lock
 
+    def sanear(self, texto: str) -> str:
+        """El mismo saneo que `atomic_write_text` aplica antes de grabar.
+
+        Delegar, no copiar (AP-57): el canal es el dueño de qué toca el texto
+        (BOM, NFC, comillas, guiones largos, newlines); el que compara contra
+        disco pide aquí la forma canónica.
+        """
+        io = _kernel()
+        if not texto:
+            return texto
+        texto, _ = io.strip_bom(texto)
+        texto, _ = io.sanitize_content(texto, dry_run=False)
+        return texto
+
 
 class LectorDisco:
     def leer(self, ruta: Path) -> str:
