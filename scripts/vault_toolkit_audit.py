@@ -584,6 +584,11 @@ def main() -> int:
 
     cache = {
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        # El alcance viaja CON el dato: un last-run de un `--tools` acotado
+        # no puede leerse como el estado del catálogo (le pasó dos veces al
+        # cierre de ola: `--doc` se negaba, pero el JSON quedaba sin decirlo).
+        "alcance": {"total": len(tools_pedidas),
+                    "herramientas": sorted(tools_pedidas)},
         "resumen": dict(resumen),
         "results": resultados,
         "deuda_congelada": sorted(congelados & set(defectos)),

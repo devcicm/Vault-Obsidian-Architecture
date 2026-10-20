@@ -225,6 +225,8 @@ def vault_project_status(
 
     return {
         "ok": True,
+        # Indicador de trabajo (AP-37): escribió estos dos ficheros.
+        "written": 2,
         "project": project,
         "status": status,
         "path": str(status_file.relative_to(get_vault_root())).replace("\\", "/"),

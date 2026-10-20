@@ -262,6 +262,11 @@ def vault_change_log_add(
         "id": entry["id"],
         "action": action,
         "path": path,
+        # Indicador de trabajo (AP-37, O3): la entrada queda en los DOS
+        # registros del changelog — el .md legible y el .json del que lee el
+        # índice. Sin este contador, "anoté la entrada" y "no hice nada"
+        # devolvían la misma forma de envelope.
+        "written": 2,
         "log_md": str(_log_md().relative_to(_raiz())).replace("\\", "/"),
         "log_json": str(_log_json().relative_to(_raiz())).replace("\\", "/"),
     }

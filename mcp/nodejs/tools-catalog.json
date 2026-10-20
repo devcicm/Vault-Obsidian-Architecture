@@ -724,7 +724,9 @@
         "additionalProperties": false
       },
       "guards": [],
-      "side_effects": [],
+      "side_effects": [
+        "Registra el cambio en el changelog del vault (con --propagate encola la propagación)"
+      ],
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_change_log",
@@ -2485,7 +2487,9 @@
         "additionalProperties": false
       },
       "guards": [],
-      "side_effects": [],
+      "side_effects": [
+        "Con --framework/--doc escribe el marco de datos y la documentación derivada (en el checkout del estándar)"
+      ],
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_fundamentals",
@@ -4176,7 +4180,10 @@
         "additionalProperties": false
       },
       "guards": [],
-      "side_effects": [],
+      "side_effects": [
+        "Con --apply/--apply-heal edita las notas de norma del vault",
+        "Con --rebuild/--audit escribe el registro de normas y sus artefactos derivados"
+      ],
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -4876,7 +4883,7 @@
     },
     "vault_project_status": {
       "name": "vault_project_status",
-      "description": "Muestra estado actual de un proyecto.",
+      "description": "Actualiza el estado de un proyecto: escribe status.md y anota el cambio en su changelog.md (--status y --summary obligatorios).",
       "group": "Vista del Proyecto",
       "script": "vault_project_status.py",
       "inputSchema": {
@@ -4918,7 +4925,9 @@
         "additionalProperties": false
       },
       "guards": [],
-      "side_effects": [],
+      "side_effects": [
+        "Con --status/--summary escribe el status del proyecto y anota la entrada en su changelog"
+      ],
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_project_status",
@@ -6879,7 +6888,9 @@
         "additionalProperties": false
       },
       "guards": [],
-      "side_effects": [],
+      "side_effects": [
+        "Sirve la API HTTP local y escribe los flujos de tokens y los ficheros de estado del servicio"
+      ],
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": "vault_toolkit.operations.vault_token_service",

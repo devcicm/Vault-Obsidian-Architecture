@@ -100,6 +100,29 @@ def test_ok_a_secas_no_cuenta_como_indicador():
         )
 
 
+def test_notes_scanned_es_indicador_de_trabajo():
+    """O3: el alcance del audit de normas es un recuento, no una bandera."""
+    assert "notes_scanned" in vna.WORK_INDICATORS
+
+
+def test_el_demonio_esta_exento_con_motivo_escrito():
+    """O3: `vault_token_service` sirve por petición; su envelope de arranque
+    no puede contar trabajo que aún no ocurrió. La exención es declarada."""
+    assert "vault_token_service" in vna.SIN_INDICADOR_DECLARADO
+    assert vna.SIN_INDICADOR_DECLARADO["vault_token_service"].strip()
+    assert "vault_token_service" not in {
+        o["tool"] for o in vna.offenders()}
+
+
+def test_toda_exencion_de_indicador_es_una_tool_con_side_effects():
+    """Una exención de una tool que ya no escribe es deuda muerta: se revisa."""
+    for tool in vna.SIN_INDICADOR_DECLARADO:
+        entrada = vault_mcp_catalog.TOOLS_CATALOG.get(tool)
+        assert entrada is not None, f"{tool} exenta pero fuera del catálogo"
+        assert entrada.get("side_effects"), (
+            f"{tool} sigue exenta de indicador pero ya no declara side effects")
+
+
 def test_las_tools_nuevas_de_v39_cumplen_ap37():
     """Una norma que su propio autor no cumple no es una norma."""
     baseline = set(vna.load_baseline())

@@ -1859,7 +1859,9 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "purpose": "Métricas fundamentales del vault.",
         "params": {},
         "guards": [],
-        "side_effects": [],
+        "side_effects": [
+            "Con --framework/--doc escribe el marco de datos y la documentación derivada (en el checkout del estándar)",
+        ],
         "example": "python vault_fundamentals.py",
         "related": ["vault_audit", "vault_quality_check"],
     },
@@ -1893,7 +1895,10 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "name": "vault_project_status",
         "script": "vault_project_status.py",
         "group": "Vista del Proyecto",
-        "purpose": "Muestra estado actual de un proyecto.",
+        "purpose": (
+            "Actualiza el estado de un proyecto: escribe status.md y anota el "
+            "cambio en su changelog.md (--status y --summary obligatorios)."
+        ),
         "params": {
             "project": {
                 "type": "string",
@@ -1903,7 +1908,9 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             },
         },
         "guards": [],
-        "side_effects": [],
+        "side_effects": [
+            "Con --status/--summary escribe el status del proyecto y anota la entrada en su changelog",
+        ],
         "example": 'python vault_project_status.py --project "mi-api" --status "en_desarrollo" --summary "Sprint 3 en curso"',
         "related": ["vault_project_overview", "vault_audit"],
     },
@@ -1996,8 +2003,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "name": "vault_change_log",
         "script": "vault_change_log.py",
         "group": "Change Log",
-        "purpose": "Genera registro de cambios del vault.",
-        "params": {
+        "purpose": "Genera registro de cambios del vault.",        "params": {
             "project": {
                 "type": "string",
                 "required": False,
@@ -2006,7 +2012,9 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             },
         },
         "guards": [],
-        "side_effects": [],
+        "side_effects": [
+            "Registra el cambio en el changelog del vault (con --propagate encola la propagación)",
+        ],
         "example": 'python vault_change_log.py --query --last 10\npython vault_change_log.py --action "updated" --path "01_Projects/mi-api/overview.md" --summary "Revision"',
         "related": ["vault_timeline", "vault_audit"],
     },
@@ -2086,7 +2094,10 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "params": {
         },
         "guards": [],
-        "side_effects": [],
+        "side_effects": [
+            "Con --apply/--apply-heal edita las notas de norma del vault",
+            "Con --rebuild/--audit escribe el registro de normas y sus artefactos derivados",
+        ],
         "example": ('python vault_norms.py --list\n'
                     'python vault_norms.py --show AP-25\n'
                     'python vault_norms.py --audit'),
@@ -3509,7 +3520,9 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "params": {
         },
         "guards": [],
-        "side_effects": [],
+        "side_effects": [
+            "Sirve la API HTTP local y escribe los flujos de tokens y los ficheros de estado del servicio",
+        ],
         "example": 'python vault_token_service.py --host "127.0.0.1" --port "8899"',
         "related": ["vault_tokens", "vault_token_counter"],
     },

@@ -410,7 +410,8 @@
         "log_md",
         "path",
         "returned",
-        "total"
+        "total",
+        "written"
       ],
       "dq": {
         "dq_dimensions": [
@@ -3155,7 +3156,8 @@
         "ok",
         "path",
         "project",
-        "status"
+        "status",
+        "written"
       ],
       "dq": {
         "dq_dimensions": [

@@ -103,6 +103,9 @@ WORK_INDICATORS = {
     "indexed",
     "migrations_applied",
     "modified",
+    # O3: `vault_norms --audit` cuenta las notas medidas; es el alcance del
+    # audit, no una bandera — cero solo si el vault está vacío.
+    "notes_scanned",
     "no_op",
     "removed",
     "skipped",
@@ -122,6 +125,17 @@ def _tool_spec() -> Dict:
     return json.loads(Path(path).read_text(encoding="utf-8")).get("tools", {})
 
 
+#: Tools con side effects cuyo trabajo NO cabe en un indicador del envelope,
+#: con el motivo escrito. Una exención silenciosa es el fallo que AP-37
+#: persigue; una declarada con su porqué es deuda visible y revisable.
+SIN_INDICADOR_DECLARADO: Dict[str, str] = {
+    "vault_token_service": (
+        "daemon: atiende por petición hasta que se le pide parar; su envelope "
+        "de arranque (host/port/running) no puede contar trabajo que aún no "
+        "ocurrió, y un contador por petición no lo lee nadie después"),
+}
+
+
 def offenders() -> List[Dict]:
     """Tools con side effects declarados y sin indicador de trabajo."""
     import vault_mcp_catalog
@@ -130,6 +144,8 @@ def offenders() -> List[Dict]:
     out = []
     for name, entry in sorted(vault_mcp_catalog.TOOLS_CATALOG.items()):
         if not entry.get("side_effects"):
+            continue
+        if name in SIN_INDICADOR_DECLARADO:
             continue
         contrato = spec.get(name)
         if contrato is None:
@@ -234,6 +250,7 @@ SIN_ESCRITURA_DECLARADA: Dict[str, str] = {
     # mismo documento, y la conservación de la marca deja el fichero tal cual.
     # El índice desfasado sí se reescribe: el trabajo existe cuando hay cambio.
     "vault_section_index": "el índice de la sección ya está al día: la conservación de la marca deja el fichero tal cual, que es el contrato de idempotencia que la tool declara",
+    "vault_token_service": "el ejemplo levanta el servidor HTTP y nada más: no escribe hasta recibir una petición, y el banco no le manda ninguna",
     "vault_standard_upgrade": "el sandbox ya está en la versión vigente del estándar: no hay nada que subir",
     "vault_undo": "la copia no tiene historial de cambios que deshacer",
 }
