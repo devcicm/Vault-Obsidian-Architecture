@@ -1,9 +1,6637 @@
 {
- "timestamp": "2026-10-20T08:11:33Z",
+ "timestamp": "2026-10-20T10:06:01Z",
  "resumen": {
-  "OK": 1
+  "OK": 101,
+  "DEFECTO": 18,
+  "NO-VERIFICABLE": 3,
+  "MEJORA": 3
  },
  "results": [
+  {
+   "tool": "vault_ai_decision",
+   "grupo_id": 21,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--project mi-api --title Elegir PostgreSQL --decision_type architectural --description Motor de datos del servicio --rationale Garantias ACID",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_append",
+   "grupo_id": 1,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--path 01_Projects/mi-api/changelog.md --content ## v1.2\\n\\nFix deploy",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_arch",
+   "grupo_id": 35,
+   "capacidad": "gobernanza_del_estandar",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 3
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--check --strict",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--map vault_backup",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--blueprint",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_arquitectura_en",
+   "grupo_id": 34,
+   "capacidad": "consulta_a_contexto",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--fecha 2026-05-03",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--desde v1.0 --hasta v1.5 --project demo",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_audit",
+   "grupo_id": 6,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "DEFECTO",
+   "motivos": [
+    "c2"
+   ],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "DEFECTO",
+    "perdidas": [
+     "contrato: el envelope no cubre ningún campo de su contrato"
+    ],
+    "corridas": [
+     {
+      "argv": "",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--project mi-proyecto",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": [],
+      "perdida": "contrato: el envelope no cubre ningún campo de su contrato"
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_backup",
+   "grupo_id": 13,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "DEFECTO",
+   "motivos": [
+    "c3: declara idempotencia y la segunda corrida reescribió el vault"
+   ],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "vault-backups/.backup-registry.json",
+       "vault-backups/vault-2026-10-20-095707/.manifest.json",
+       "vault-backups/vault-2026-10-20-095707/00_System/.change-log.json",
+       "vault-backups/vault-2026-10-20-095707/00_System/.gitkeep",
+       "vault-backups/vault-2026-10-20-095707/00_System/.voice-counter",
+       "vault-backups/vault-2026-10-20-095707/00_System/change-log.md",
+       "vault-backups/vault-2026-10-20-095707/00_System/data-framework.json",
+       "vault-backups/vault-2026-10-20-095707/00_System/data-framework.md",
+       "vault-backups/vault-2026-10-20-095707/00_System/data-fundamentals.json",
+       "vault-backups/vault-2026-10-20-095707/00_System/index.md",
+       "vault-backups/vault-2026-10-20-095707/00_System/norm-registry.json",
+       "vault-backups/vault-2026-10-20-095707/00_System/quality-index.json",
+       "vault-backups/vault-2026-10-20-095707/00_System/standard-version.json",
+       "vault-backups/vault-2026-10-20-095707/00_System/tag-registry.json",
+       "vault-backups/vault-2026-10-20-095707/00_System/tool-contracts.json",
+       "vault-backups/vault-2026-10-20-095707/00_System/tool-contracts.md",
+       "vault-backups/vault-2026-10-20-095707/00_System/tool-spec.json",
+       "vault-backups/vault-2026-10-20-095707/00_System/vault-commands.md",
+       "vault-backups/vault-2026-10-20-095707/00_System/vault-hub.md",
+       "vault-backups/vault-2026-10-20-095707/00_System/vault-ontology.json",
+       "vault-backups/vault-2026-10-20-095707/01_Projects/.gitkeep",
+       "vault-backups/vault-2026-10-20-095707/01_Projects/00-01_projects-primer.md",
+       "vault-backups/vault-2026-10-20-095707/01_Projects/index.md",
+       "vault-backups/vault-2026-10-20-095707/02_Observability/.gitkeep",
+       "vault-backups/vault-2026-10-20-095707/02_Observability/00-02_observability-primer.md",
+       "vault-backups/vault-2026-10-20-095707/02_Observability/index.md",
+       "vault-backups/vault-2026-10-20-095707/03_Decisions/.gitkeep",
+       "vault-backups/vault-2026-10-20-095707/03_Decisions/00-03_decisions-primer.md",
+       "vault-backups/vault-2026-10-20-095707/03_Decisions/adr-001-mcp-transport.md",
+       "vault-backups/vault-2026-10-20-095707/03_Decisions/index.md",
+       "vault-backups/vault-2026-10-20-095707/03_Decisions/mcp-transport-contract.md",
+       "vault-backups/vault-2026-10-20-095707/03_Decisions/mcp-transport-operations.md",
+       "vault-backups/vault-2026-10-20-095707/03_Decisions/mcp-transport-provenance.md",
+       "vault-backups/vault-2026-10-20-095707/04_Sessions/.gitkeep",
+       "vault-backups/vault-2026-10-20-095707/04_Sessions/00-04_sessions-primer.md",
+       "vault-backups/vault-2026-10-20-095707/04_Sessions/index.md",
+       "vault-backups/vault-2026-10-20-095707/05_Patterns/.gitkeep",
+       "vault-backups/vault-2026-10-20-095707/05_Patterns/00-05_patterns-primer.md",
+       "vault-backups/vault-2026-10-20-095707/05_Patterns/index.md",
+       "vault-backups/vault-2026-10-20-095707/06_Diagrams/.gitkeep",
+       "vault-backups/vault-2026-10-20-095707/06_Diagrams/00-06_diagrams-primer.md",
+       "vault-backups/vault-2026-10-20-095707/06_Diagrams/entity/index.md",
+       "vault-backups/vault-2026-10-20-095707/06_Diagrams/entity/test-relations.json",
+       "vault-backups/vault-2026-10-20-095707/06_Diagrams/index.md",
+       "vault-backups/vault-2026-10-20-095707/07_Knowledge/.gitkeep",
+       "vault-backups/vault-2026-10-20-095707/07_Knowledge/00-07_knowledge-primer.md",
+       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-incomplete-00.md",
+       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-incomplete-01.md",
+       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-incomplete-02.md",
+       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-incomplete-03.md",
+       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-incomplete-04.md",
+       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-incomplete-05.md",
+       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-incomplete-06.md",
+       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-incomplete-07.md",
+       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-incomplete-08.md",
+       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-incomplete-09.md",
+       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-raw-00.md",
+       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-raw-01.md",
+       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-raw-02.md",
+       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-raw-03.md",
+       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-raw-04.md",
+       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-raw-05.md",
+       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-raw-06.md",
+       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-raw-07.md",
+       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-raw-08.md",
+       "vault-backups/vault-2026-10-20-095707/07_Knowledge/fixture-raw-09.md",
+       "vault-backups/vault-2026-10-20-095707/07_Knowledge/index.md",
+       "vault-backups/vault-2026-10-20-095707/07_Knowledge/parser-evidence.md",
+       "vault-backups/vault-2026-10-20-095707/08_Runbooks/.gitkeep",
+       "vault-backups/vault-2026-10-20-095707/08_Runbooks/00-08_runbooks-primer.md",
+       "vault-backups/vault-2026-10-20-095707/08_Runbooks/index.md",
+       "vault-backups/vault-2026-10-20-095707/09_Infrastructure/.gitkeep",
+       "vault-backups/vault-2026-10-20-095707/09_Infrastructure/00-09_infrastructure-primer.md",
+       "vault-backups/vault-2026-10-20-095707/09_Infrastructure/index.md",
+       "vault-backups/vault-2026-10-20-095707/10_Migrated/.gitkeep",
+       "vault-backups/vault-2026-10-20-095707/10_Migrated/00-10_migrated-primer.md",
+       "vault-backups/vault-2026-10-20-095707/10_Migrated/index.md",
+       "vault-backups/vault-2026-10-20-095707/11_Code/.gitkeep",
+       "vault-backups/vault-2026-10-20-095707/11_Code/00-11_code-primer.md",
+       "vault-backups/vault-2026-10-20-095707/11_Code/index.md",
+       "vault-backups/vault-2026-10-20-095707/12_Bibliography/.gitkeep",
+       "vault-backups/vault-2026-10-20-095707/12_Bibliography/00-12_bibliography-primer.md",
+       "vault-backups/vault-2026-10-20-095707/12_Bibliography/index.md",
+       "vault-backups/vault-2026-10-20-095707/13_Flows/.gitkeep",
+       "vault-backups/vault-2026-10-20-095707/13_Flows/00-13_flows-primer.md",
+       "vault-backups/vault-2026-10-20-095707/13_Flows/index.md",
+       "vault-backups/vault-2026-10-20-095707/14_Requirements/.gitkeep",
+       "vault-backups/vault-2026-10-20-095707/14_Requirements/00-14_requirements-primer.md",
+       "vault-backups/vault-2026-10-20-095707/14_Requirements/index.md",
+       "vault-backups/vault-2026-10-20-095707/15_Tests/.gitkeep",
+       "vault-backups/vault-2026-10-20-095707/15_Tests/00-15_tests-primer.md",
+       "vault-backups/vault-2026-10-20-095707/15_Tests/index.md",
+       "vault-backups/vault-2026-10-20-095707/16_AI_Governance/.gitkeep",
+       "vault-backups/vault-2026-10-20-095707/16_AI_Governance/00-16_ai_governance-primer.md",
+       "vault-backups/vault-2026-10-20-095707/16_AI_Governance/index.md",
+       "vault-backups/vault-2026-10-20-095707/17_Preferences/.gitkeep",
+       "vault-backups/vault-2026-10-20-095707/17_Preferences/00-17_preferences-primer.md",
+       "vault-backups/vault-2026-10-20-095707/17_Preferences/index.md",
+       "vault-backups/vault-2026-10-20-095707/17_Preferences/model_profile.active",
+       "vault-backups/vault-2026-10-20-095707/18_Bugs/.gitkeep",
+       "vault-backups/vault-2026-10-20-095707/18_Bugs/index.md",
+       "vault-backups/vault-2026-10-20-095707/19_Audits/.gitkeep",
+       "vault-backups/vault-2026-10-20-095707/19_Audits/index.md",
+       "vault-backups/vault-2026-10-20-095707/19_Audits/vocabulary/tag-ledger.json",
+       "vault-backups/vault-2026-10-20-095707/20_Quarantine/.gitkeep",
+       "vault-backups/vault-2026-10-20-095707/20_Quarantine/index.md",
+       "vault-backups/vault-2026-10-20-095707/21_QA/.gitkeep",
+       "vault-backups/vault-2026-10-20-095707/21_QA/index.md",
+       "vault-backups/vault-2026-10-20-095707/99_Index/.gitkeep",
+       "vault-backups/vault-2026-10-20-095707/99_Index/00-99_index-primer.md",
+       "vault-backups/vault-2026-10-20-095707/99_Index/graph.json",
+       "vault-backups/vault-2026-10-20-095707/99_Index/hash-index.json",
+       "vault-backups/vault-2026-10-20-095707/99_Index/index.md",
+       "vault-backups/vault-2026-10-20-095707/99_Index/search-index.json",
+       "vault-backups/vault-2026-10-20-095707/99_Index/tag-index.md"
+      ]
+     },
+     {
+      "argv": "--label pre-migration",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "vault-backups/.backup-registry.json",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/.manifest.json",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/.change-log.json",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/.gitkeep",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/.voice-counter",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/change-log.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/data-framework.json",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/data-framework.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/data-fundamentals.json",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/index.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/norm-registry.json",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/quality-index.json",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/standard-version.json",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/tag-registry.json",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/tool-contracts.json",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/tool-contracts.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/tool-spec.json",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/vault-commands.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/vault-hub.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/vault-ontology.json",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/01_Projects/.gitkeep",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/01_Projects/00-01_projects-primer.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/01_Projects/index.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/02_Observability/.gitkeep",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/02_Observability/00-02_observability-primer.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/02_Observability/index.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/03_Decisions/.gitkeep",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/03_Decisions/00-03_decisions-primer.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/03_Decisions/adr-001-mcp-transport.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/03_Decisions/index.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/03_Decisions/mcp-transport-contract.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/03_Decisions/mcp-transport-operations.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/03_Decisions/mcp-transport-provenance.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/04_Sessions/.gitkeep",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/04_Sessions/00-04_sessions-primer.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/04_Sessions/index.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/05_Patterns/.gitkeep",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/05_Patterns/00-05_patterns-primer.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/05_Patterns/index.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/06_Diagrams/.gitkeep",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/06_Diagrams/00-06_diagrams-primer.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/06_Diagrams/entity/index.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/06_Diagrams/entity/test-relations.json",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/06_Diagrams/index.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/.gitkeep",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/00-07_knowledge-primer.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-incomplete-00.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-incomplete-01.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-incomplete-02.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-incomplete-03.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-incomplete-04.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-incomplete-05.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-incomplete-06.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-incomplete-07.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-incomplete-08.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-incomplete-09.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-raw-00.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-raw-01.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-raw-02.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-raw-03.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-raw-04.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-raw-05.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-raw-06.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-raw-07.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-raw-08.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/fixture-raw-09.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/index.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/07_Knowledge/parser-evidence.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/08_Runbooks/.gitkeep",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/08_Runbooks/00-08_runbooks-primer.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/08_Runbooks/index.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/09_Infrastructure/.gitkeep",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/09_Infrastructure/00-09_infrastructure-primer.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/09_Infrastructure/index.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/10_Migrated/.gitkeep",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/10_Migrated/00-10_migrated-primer.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/10_Migrated/index.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/11_Code/.gitkeep",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/11_Code/00-11_code-primer.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/11_Code/index.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/12_Bibliography/.gitkeep",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/12_Bibliography/00-12_bibliography-primer.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/12_Bibliography/index.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/13_Flows/.gitkeep",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/13_Flows/00-13_flows-primer.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/13_Flows/index.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/14_Requirements/.gitkeep",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/14_Requirements/00-14_requirements-primer.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/14_Requirements/index.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/15_Tests/.gitkeep",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/15_Tests/00-15_tests-primer.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/15_Tests/index.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/16_AI_Governance/.gitkeep",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/16_AI_Governance/00-16_ai_governance-primer.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/16_AI_Governance/index.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/17_Preferences/.gitkeep",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/17_Preferences/00-17_preferences-primer.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/17_Preferences/index.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/17_Preferences/model_profile.active",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/18_Bugs/.gitkeep",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/18_Bugs/index.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/19_Audits/.gitkeep",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/19_Audits/index.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/19_Audits/vocabulary/tag-ledger.json",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/20_Quarantine/.gitkeep",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/20_Quarantine/index.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/21_QA/.gitkeep",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/21_QA/index.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/99_Index/.gitkeep",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/99_Index/00-99_index-primer.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/99_Index/graph.json",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/99_Index/hash-index.json",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/99_Index/index.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/99_Index/search-index.json",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/99_Index/tag-index.md"
+      ]
+     }
+    ]
+   },
+   "c3": {
+    "estado": "DEFECTO",
+    "motivo": "declara idempotencia y la segunda corrida reescribió el vault",
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 0,
+      "reescritas": 115,
+      "rutas": [
+       "vault-backups/vault-2026-10-20-095708-pre-migration/99_Index/search-index.json",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/vault-hub.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/05_Patterns/00-05_patterns-primer.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/03_Decisions/mcp-transport-contract.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/01_Projects/00-01_projects-primer.md",
+       "vault-backups/vault-2026-10-20-095708-pre-migration/00_System/data-fundamentals.json"
+      ]
+     },
+     {
+      "corrida": 2,
+      "exit": 0,
+      "reescritas": 115,
+      "rutas": [
+       "vault-backups/vault-2026-10-20-095709-pre-migration/00_System/tool-contracts.json",
+       "vault-backups/vault-2026-10-20-095709-pre-migration/08_Runbooks/.gitkeep",
+       "vault-backups/vault-2026-10-20-095709-pre-migration/09_Infrastructure/.gitkeep",
+       "vault-backups/vault-2026-10-20-095709-pre-migration/99_Index/.gitkeep",
+       "vault-backups/vault-2026-10-20-095709-pre-migration/00_System/change-log.md",
+       "vault-backups/vault-2026-10-20-095709-pre-migration/07_Knowledge/parser-evidence.md"
+      ]
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_backup_base64",
+   "grupo_id": 13,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "NO-VERIFICABLE",
+   "motivos": [
+    "c0: runtime node: su despacho lo ejercita el servidor MCP, no un smoke de CLI (vault_smoke.run_one lo exime por lo que es)",
+    "c2: runtime node: su despacho lo ejercita el servidor MCP, no un smoke de CLI (vault_smoke.run_one lo exime por lo que es)"
+   ],
+   "c0": {
+    "estado": "NO-VERIFICABLE",
+    "motivo": "runtime node: su despacho lo ejercita el servidor MCP, no un smoke de CLI (vault_smoke.run_one lo exime por lo que es)"
+   },
+   "c1": {
+    "estado": "OK",
+    "nota": "sin lines `python` en el example (C0 lo declara)"
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "NO-VERIFICABLE",
+    "motivo": "runtime node: su despacho lo ejercita el servidor MCP, no un smoke de CLI (vault_smoke.run_one lo exime por lo que es)"
+   },
+   "c3": {
+    "estado": "OK",
+    "nota": "sin líneas que repetir"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin script que escanear"
+   }
+  },
+  {
+   "tool": "vault_backup_list",
+   "grupo_id": 13,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--limit 5",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_bibliography_save",
+   "grupo_id": 16,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "DEFECTO",
+   "motivos": [
+    "c3: declara idempotencia y la segunda corrida reescribió el vault"
+   ],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--title Clean Code --url https://example.com/clean-code --summary Guia de estilo de codigo --source_type book",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "12_Bibliography/books/clean-code.md",
+       "12_Bibliography/books/index.md",
+       "12_Bibliography/index.md",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
+     }
+    ]
+   },
+   "c3": {
+    "estado": "DEFECTO",
+    "motivo": "declara idempotencia y la segunda corrida reescribió el vault",
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 0,
+      "reescritas": 5,
+      "rutas": [
+       "12_Bibliography/books/index.md",
+       "12_Bibliography/index.md",
+       "99_Index/search-index.json",
+       "99_Index/graph.json",
+       "12_Bibliography/books/clean-code.md"
+      ]
+     },
+     {
+      "corrida": 2,
+      "exit": 0,
+      "reescritas": 4,
+      "rutas": [
+       "12_Bibliography/books/index.md",
+       "12_Bibliography/index.md",
+       "99_Index/search-index.json",
+       "12_Bibliography/books/clean-code.md"
+      ]
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_blame_audit",
+   "grupo_id": 35,
+   "capacidad": "gobernanza_del_estandar",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 3
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--check",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--check --strict",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--freeze",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_blueprint",
+   "grupo_id": 35,
+   "capacidad": "gobernanza_del_estandar",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 3
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--blueprint",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--check --strict",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--freeze",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_bug_save",
+   "grupo_id": 36,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--project mi-api --title Token numérico coercionado --symptom El literal 0.5 llega al CSS como 0.5px --severity high --agent claude",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_change_log",
+   "grupo_id": 23,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--query --last 10",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--action updated --path 01_Projects/mi-api/overview.md --summary Revision",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "00_System/.change-log.json",
+       "00_System/change-log.md"
+      ]
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_changelog_check",
+   "grupo_id": 35,
+   "capacidad": "gobernanza_del_estandar",
+   "veredicto": "DEFECTO",
+   "motivos": [
+    "c1: declara side effects y el ejemplo completo es de solo lectura",
+    "c2"
+   ],
+   "c0": {
+    "estado": "OK",
+    "lineas": 3
+   },
+   "c1": {
+    "estado": "DEFECTO",
+    "motivo": "declara side effects y el ejemplo completo es de solo lectura",
+    "side_effects": [
+     "Con --fijar-hash reescribe la entrada de la versión en curso",
+     "Con --freeze escribe scripts/changelog-baseline.json"
+    ]
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "DEFECTO",
+    "perdidas": [
+     "el ejemplo lo rechaza la propia tool: No hay una entrada `### v41.12 — … `git: pending`` en el changelog"
+    ],
+    "corridas": [
+     {
+      "argv": "--check --strict",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--list",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--fijar-hash --dry-run",
+      "exit": 0,
+      "envelope_ok": null,
+      "cambiadas": null,
+      "perdida": "el ejemplo lo rechaza la propia tool: No hay una entrada `### v41.12 — … `git: pending`` en el changelog"
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_ciclos",
+   "grupo_id": 35,
+   "capacidad": "gobernanza_del_estandar",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 3
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--check",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--check --strict",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--freeze",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_code_map",
+   "grupo_id": 12,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--project mi-api",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_code_module",
+   "grupo_id": 12,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--project mi-api --file_path src/auth.py --description Modulo de autenticacion --language python",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_code_query",
+   "grupo_id": 12,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--project mi-api --list",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     },
+     {
+      "argv": "--project mi-api --class AuthService --deps",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_code_relation",
+   "grupo_id": 12,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--project mi-api --from_file auth.py --to_file user.py --relation_type imports",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_code_sync",
+   "grupo_id": 12,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--project mi-api",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     },
+     {
+      "argv": "--project mi-api --dry-run",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_code_tag",
+   "grupo_id": 35,
+   "capacidad": "gobernanza_del_estandar",
+   "veredicto": "DEFECTO",
+   "motivos": [
+    "c1: declara side effects y el ejemplo completo es de solo lectura"
+   ],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "DEFECTO",
+    "motivo": "declara side effects y el ejemplo completo es de solo lectura",
+    "side_effects": [
+     "Actualiza frontmatter del módulo"
+    ]
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--list",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 0,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 0,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_context_pack",
+   "grupo_id": 34,
+   "capacidad": "consulta_a_contexto",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "que decidimos sobre el transporte MCP --budget 2000",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_criterios",
+   "grupo_id": 35,
+   "capacidad": "gobernanza_del_estandar",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 3
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--check",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--check --strict",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--freeze",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_delete",
+   "grupo_id": 23,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--path 07_Knowledge/old.md --reason Duplicate of glossary/jwt.md",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_delta",
+   "grupo_id": 27,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--snapshot",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "99_Index/hash-index.json"
+      ]
+     },
+     {
+      "argv": "",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "99_Index/hash-index.json"
+      ]
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_diagram_export",
+   "grupo_id": 4,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--path 06_Diagrams/foo.md --zoom 2.0 --json",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     },
+     {
+      "argv": "--project mi-api --output export/ --json",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_diagram_save",
+   "grupo_id": 4,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--project mi-api --title User Flow --diagram_type mermaid --category flow --content graph TD\\n  A --> B",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_diff",
+   "grupo_id": 1,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--path 01_Projects/mi-api/overview.md",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_doc_counts",
+   "grupo_id": 35,
+   "capacidad": "gobernanza_del_estandar",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 3
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--list",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--check --strict",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--fix",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_doc_staleness",
+   "grupo_id": 35,
+   "capacidad": "gobernanza_del_estandar",
+   "veredicto": "MEJORA",
+   "motivos": [
+    "c1: el ejemplo solo mira; ninguna línea hace el trabajo que la tool declara"
+   ],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "MEJORA",
+    "motivo": "el ejemplo solo mira; ninguna línea hace el trabajo que la tool declara"
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--check",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--check --strict",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_doc_sync",
+   "grupo_id": 35,
+   "capacidad": "gobernanza_del_estandar",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--check --strict",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--fix",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_drift_detect",
+   "grupo_id": 17,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--path src/ --project mi-api --mode snapshot",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     },
+     {
+      "argv": "--path src/ --project mi-api --mode status",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_env_matrix",
+   "grupo_id": 8,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--project mi-api --env prod",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_env_save",
+   "grupo_id": 8,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--project mi-api --environment prod --vars [{\"name\": \"DB_HOST\", \"default\": \"localhost\"}]",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_error_contract",
+   "grupo_id": 35,
+   "capacidad": "gobernanza_del_estandar",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 3
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--check",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--check --strict",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--freeze",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_esquema",
+   "grupo_id": 35,
+   "capacidad": "gobernanza_del_estandar",
+   "veredicto": "DEFECTO",
+   "motivos": [
+    "c2"
+   ],
+   "c0": {
+    "estado": "OK",
+    "lineas": 3
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "DEFECTO",
+    "perdidas": [
+     "JSON sin campo `ok`: ['$defs', '$id', '$schema', 'additionalProperties', 'description', 'properties', 'required', 'title']"
+    ],
+    "corridas": [
+     {
+      "argv": "--check --strict",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--sync",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--version v37",
+      "exit": null,
+      "envelope_ok": null,
+      "cambiadas": null,
+      "perdida": "JSON sin campo `ok`: ['$defs', '$id', '$schema', 'additionalProperties', 'description', 'properties', 'required', 'title']"
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_excepcion_declarada",
+   "grupo_id": 35,
+   "capacidad": "gobernanza_del_estandar",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 3
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--check",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--check --strict",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--freeze",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_fix_all",
+   "grupo_id": 35,
+   "capacidad": "gobernanza_del_estandar",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--dry-run",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_fix_brackets",
+   "grupo_id": 33,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 3
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 3
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--apply",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--path 02_Observability/errors/foo.md",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_flow_save",
+   "grupo_id": 18,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--project mi-api --name User Registration --type workflow --description Full process --mermaid flowchart TD\\n  A --> B",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_folder_registry",
+   "grupo_id": 32,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 3
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 3
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--json",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--scan --json",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "00_System/custom-folders.json"
+      ]
+     },
+     {
+      "argv": "--add 11_Code/tests --json",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "00_System/custom-folders.json"
+      ]
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_foreign_check",
+   "grupo_id": 35,
+   "capacidad": "gobernanza_del_estandar",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 3
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 3
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--root D:/vaults/notas",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     },
+     {
+      "argv": "--root D:/vaults/notas --report informe.json",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     },
+     {
+      "argv": "--self-test",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_frontmatter_completar",
+   "grupo_id": 33,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 3
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 3
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "",
+      "exit": 0,
+      "envelope_ok": false,
+      "cambiadas": []
+     },
+     {
+      "argv": "--apply",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "03_Decisions/adr-001-mcp-transport.md",
+       "03_Decisions/index.md",
+       "03_Decisions/mcp-transport-contract.md",
+       "03_Decisions/mcp-transport-operations.md",
+       "03_Decisions/mcp-transport-provenance.md",
+       "07_Knowledge/fixture-incomplete-00.md",
+       "07_Knowledge/fixture-incomplete-01.md",
+       "07_Knowledge/fixture-incomplete-02.md",
+       "07_Knowledge/fixture-incomplete-03.md",
+       "07_Knowledge/fixture-incomplete-04.md",
+       "07_Knowledge/fixture-incomplete-05.md",
+       "07_Knowledge/fixture-incomplete-06.md",
+       "07_Knowledge/fixture-incomplete-07.md",
+       "07_Knowledge/fixture-incomplete-08.md",
+       "07_Knowledge/fixture-incomplete-09.md",
+       "07_Knowledge/fixture-raw-00.md",
+       "07_Knowledge/fixture-raw-01.md",
+       "07_Knowledge/fixture-raw-02.md",
+       "07_Knowledge/fixture-raw-03.md",
+       "07_Knowledge/fixture-raw-04.md",
+       "07_Knowledge/fixture-raw-05.md",
+       "07_Knowledge/fixture-raw-06.md",
+       "07_Knowledge/fixture-raw-07.md",
+       "07_Knowledge/fixture-raw-08.md",
+       "07_Knowledge/fixture-raw-09.md",
+       "07_Knowledge/index.md",
+       "07_Knowledge/parser-evidence.md",
+       "99_Index/search-index.json"
+      ]
+     },
+     {
+      "argv": "--path 07_Knowledge/x.md --apply",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_frontmatter_heal",
+   "grupo_id": 33,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--apply",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_fuente_unica",
+   "grupo_id": 6,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 3
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--check",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--report",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--check --strict",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_fundamentals",
+   "grupo_id": 24,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "00_System/data-fundamentals.json"
+      ]
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_gate",
+   "grupo_id": 35,
+   "capacidad": "gobernanza_del_estandar",
+   "veredicto": "DEFECTO",
+   "motivos": [
+    "c2"
+   ],
+   "c0": {
+    "estado": "OK",
+    "lineas": 3
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "DEFECTO",
+    "perdidas": [
+     "timeout: no terminó en 90s"
+    ],
+    "corridas": [
+     {
+      "argv": "--list",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--strict",
+      "exit": null,
+      "envelope_ok": null,
+      "cambiadas": null,
+      "perdida": "timeout: no terminó en 90s"
+     },
+     {
+      "argv": "--check-doc",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_gobernanza",
+   "grupo_id": 6,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "NO-VERIFICABLE",
+   "motivos": [
+    "c0: sin script propio: invocada por __module__ desde el servidor MCP",
+    "c2: sin script propio: invocada por __module__ desde el servidor MCP"
+   ],
+   "c0": {
+    "estado": "NO-VERIFICABLE",
+    "motivo": "sin script propio: invocada por __module__ desde el servidor MCP"
+   },
+   "c1": {
+    "estado": "OK",
+    "nota": "sin lines `python` en el example (C0 lo declara)"
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "NO-VERIFICABLE",
+    "motivo": "sin script propio: invocada por __module__ desde el servidor MCP"
+   },
+   "c3": {
+    "estado": "OK",
+    "nota": "sin líneas que repetir"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin script que escanear"
+   }
+  },
+  {
+   "tool": "vault_graph",
+   "grupo_id": 6,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 0,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 0,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_graph_fix",
+   "grupo_id": 33,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--apply --threshold 0.7 --json",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "00_System/.graph-fixes/2026-10-20.json",
+       "06_Diagrams/entity/index.md",
+       "06_Diagrams/index.md",
+       "99_Index/search-index.json"
+      ]
+     },
+     {
+      "argv": "--only brackets --json",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_graph_inspect",
+   "grupo_id": 6,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--json",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_graph_merge",
+   "grupo_id": 6,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "DEFECTO",
+   "motivos": [
+    "c3: declara idempotencia y la segunda corrida reescribió el vault"
+   ],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "99_Index/graph-enriched.json"
+      ]
+     }
+    ]
+   },
+   "c3": {
+    "estado": "DEFECTO",
+    "motivo": "declara idempotencia y la segunda corrida reescribió el vault",
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 0,
+      "reescritas": 1,
+      "rutas": [
+       "99_Index/graph-enriched.json"
+      ]
+     },
+     {
+      "corrida": 2,
+      "exit": 0,
+      "reescritas": 1,
+      "rutas": [
+       "99_Index/graph-enriched.json"
+      ]
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_history_compact",
+   "grupo_id": 22,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--apply",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--apply --keep 5",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_impact",
+   "grupo_id": 25,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--changed 01_Projects/mi-api/overview.md --max-hops 2",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--since 2026-01-01 --min-risk high",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_incident_save",
+   "grupo_id": 28,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--project mi-api --title API caida --severity P1",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_infra_map",
+   "grupo_id": 8,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--project mi-api --location cloud-aws",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_infra_save",
+   "grupo_id": 8,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "DEFECTO",
+   "motivos": [
+    "c3: declara idempotencia y la segunda corrida reescribió el vault"
+   ],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--name prod-cluster --type server --description Cluster productivo --config {\"region\": \"us-east-1\"}",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "09_Infrastructure/.infra-index.json",
+       "09_Infrastructure/index.md",
+       "09_Infrastructure/infra-map.md",
+       "09_Infrastructure/servers/index.md",
+       "09_Infrastructure/servers/prod-cluster.md",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
+     }
+    ]
+   },
+   "c3": {
+    "estado": "DEFECTO",
+    "motivo": "declara idempotencia y la segunda corrida reescribió el vault",
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 0,
+      "reescritas": 7,
+      "rutas": [
+       "09_Infrastructure/servers/prod-cluster.md",
+       "09_Infrastructure/.infra-index.json",
+       "99_Index/search-index.json",
+       "99_Index/graph.json",
+       "09_Infrastructure/infra-map.md",
+       "09_Infrastructure/servers/index.md"
+      ]
+     },
+     {
+      "corrida": 2,
+      "exit": 0,
+      "reescritas": 6,
+      "rutas": [
+       "09_Infrastructure/servers/prod-cluster.md",
+       "09_Infrastructure/.infra-index.json",
+       "99_Index/search-index.json",
+       "09_Infrastructure/infra-map.md",
+       "09_Infrastructure/servers/index.md",
+       "09_Infrastructure/index.md"
+      ]
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_ingest",
+   "grupo_id": 34,
+   "capacidad": "consulta_a_contexto",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--file notas.md --section 07_Knowledge",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     },
+     {
+      "argv": "--file notas.md --section 07_Knowledge --commit",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_init",
+   "grupo_id": 31,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "DEFECTO",
+   "motivos": [
+    "c3: declara idempotencia y la segunda corrida reescribió el vault"
+   ],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "00_System/index.md",
+       "00_System/standard-version.json",
+       "01_Projects/index.md",
+       "02_Observability/index.md",
+       "03_Decisions/index.md",
+       "04_Sessions/index.md",
+       "05_Patterns/index.md",
+       "06_Diagrams/entity/index.md",
+       "06_Diagrams/index.md",
+       "07_Knowledge/index.md",
+       "08_Runbooks/index.md",
+       "09_Infrastructure/index.md",
+       "10_Migrated/index.md",
+       "11_Code/index.md",
+       "12_Bibliography/index.md",
+       "13_Flows/index.md",
+       "14_Requirements/index.md",
+       "15_Tests/index.md",
+       "16_AI_Governance/index.md",
+       "17_Preferences/index.md",
+       "18_Bugs/index.md",
+       "19_Audits/index.md",
+       "20_Quarantine/index.md",
+       "21_QA/index.md",
+       "99_Index/hash-index.json",
+       "99_Index/index.md",
+       "99_Index/search-index.json"
+      ]
+     },
+     {
+      "argv": "--target v34",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "00_System/index.md",
+       "00_System/standard-version.json",
+       "01_Projects/index.md",
+       "02_Observability/index.md",
+       "03_Decisions/index.md",
+       "04_Sessions/index.md",
+       "05_Patterns/index.md",
+       "06_Diagrams/entity/index.md",
+       "06_Diagrams/index.md",
+       "07_Knowledge/index.md",
+       "08_Runbooks/index.md",
+       "09_Infrastructure/index.md",
+       "10_Migrated/index.md",
+       "11_Code/index.md",
+       "12_Bibliography/index.md",
+       "13_Flows/index.md",
+       "14_Requirements/index.md",
+       "15_Tests/index.md",
+       "16_AI_Governance/index.md",
+       "17_Preferences/index.md",
+       "18_Bugs/index.md",
+       "19_Audits/index.md",
+       "20_Quarantine/index.md",
+       "21_QA/index.md",
+       "99_Index/hash-index.json",
+       "99_Index/index.md",
+       "99_Index/search-index.json"
+      ]
+     }
+    ]
+   },
+   "c3": {
+    "estado": "DEFECTO",
+    "motivo": "declara idempotencia y la segunda corrida reescribió el vault",
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 0,
+      "reescritas": 27,
+      "rutas": [
+       "16_AI_Governance/index.md",
+       "06_Diagrams/index.md",
+       "04_Sessions/index.md",
+       "13_Flows/index.md",
+       "01_Projects/index.md",
+       "99_Index/index.md"
+      ]
+     },
+     {
+      "corrida": 2,
+      "exit": 0,
+      "reescritas": 27,
+      "rutas": [
+       "16_AI_Governance/index.md",
+       "06_Diagrams/index.md",
+       "04_Sessions/index.md",
+       "13_Flows/index.md",
+       "01_Projects/index.md",
+       "99_Index/index.md"
+      ]
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_kernel",
+   "grupo_id": 35,
+   "capacidad": "gobernanza_del_estandar",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 3
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--check",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--check --strict",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--trace vault_context_pack",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_knowledge_get",
+   "grupo_id": 5,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--query architecture",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--query clean",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_knowledge_save",
+   "grupo_id": 5,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "DEFECTO",
+   "motivos": [
+    "c3: declara idempotencia y la segunda corrida reescribió el vault"
+   ],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--category concept --title Clean Architecture --content # Clean Architecture --tags architecture clean",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "07_Knowledge/concepts/clean-architecture.md",
+       "07_Knowledge/concepts/index.md",
+       "07_Knowledge/index.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
+     }
+    ]
+   },
+   "c3": {
+    "estado": "DEFECTO",
+    "motivo": "declara idempotencia y la segunda corrida reescribió el vault",
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 0,
+      "reescritas": 6,
+      "rutas": [
+       "19_Audits/vocabulary/tag-ledger.json",
+       "07_Knowledge/index.md",
+       "99_Index/search-index.json",
+       "07_Knowledge/concepts/index.md",
+       "99_Index/graph.json",
+       "07_Knowledge/concepts/clean-architecture.md"
+      ]
+     },
+     {
+      "corrida": 2,
+      "exit": 0,
+      "reescritas": 4,
+      "rutas": [
+       "07_Knowledge/index.md",
+       "99_Index/search-index.json",
+       "07_Knowledge/concepts/index.md",
+       "07_Knowledge/concepts/clean-architecture.md"
+      ]
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_list",
+   "grupo_id": 1,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--folder 01_Projects",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_log_error",
+   "grupo_id": 2,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "DEFECTO",
+   "motivos": [
+    "c3: declara idempotencia y la segunda corrida reescribió el vault"
+   ],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--type error --title NullPointerException --description ... --severity high",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "02_Observability/errors/2026-10-20-nullpointerexception.md",
+       "02_Observability/errors/index.md",
+       "02_Observability/index.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
+     }
+    ]
+   },
+   "c3": {
+    "estado": "DEFECTO",
+    "motivo": "declara idempotencia y la segunda corrida reescribió el vault",
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 0,
+      "reescritas": 6,
+      "rutas": [
+       "02_Observability/errors/2026-10-20-nullpointerexception.md",
+       "02_Observability/errors/index.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/search-index.json",
+       "99_Index/graph.json",
+       "02_Observability/index.md"
+      ]
+     },
+     {
+      "corrida": 2,
+      "exit": 0,
+      "reescritas": 4,
+      "rutas": [
+       "02_Observability/errors/2026-10-20-nullpointerexception.md",
+       "02_Observability/errors/index.md",
+       "99_Index/search-index.json",
+       "02_Observability/index.md"
+      ]
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_master_index",
+   "grupo_id": 15,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "DEFECTO",
+   "motivos": [
+    "c3: declara idempotencia y la segunda corrida reescribió el vault"
+   ],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "00_System/index.md",
+       "01_Projects/index.md",
+       "02_Observability/index.md",
+       "03_Decisions/index.md",
+       "04_Sessions/index.md",
+       "05_Patterns/index.md",
+       "06_Diagrams/entity/index.md",
+       "06_Diagrams/index.md",
+       "07_Knowledge/index.md",
+       "08_Runbooks/index.md",
+       "09_Infrastructure/index.md",
+       "10_Migrated/index.md",
+       "11_Code/index.md",
+       "12_Bibliography/index.md",
+       "13_Flows/index.md",
+       "14_Requirements/index.md",
+       "15_Tests/index.md",
+       "16_AI_Governance/index.md",
+       "17_Preferences/index.md",
+       "18_Bugs/index.md",
+       "19_Audits/index.md",
+       "20_Quarantine/index.md",
+       "21_QA/index.md",
+       "99_Index/index.md"
+      ]
+     }
+    ]
+   },
+   "c3": {
+    "estado": "DEFECTO",
+    "motivo": "declara idempotencia y la segunda corrida reescribió el vault",
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 0,
+      "reescritas": 24,
+      "rutas": [
+       "16_AI_Governance/index.md",
+       "06_Diagrams/index.md",
+       "04_Sessions/index.md",
+       "13_Flows/index.md",
+       "01_Projects/index.md",
+       "99_Index/index.md"
+      ]
+     },
+     {
+      "corrida": 2,
+      "exit": 0,
+      "reescritas": 24,
+      "rutas": [
+       "16_AI_Governance/index.md",
+       "06_Diagrams/index.md",
+       "04_Sessions/index.md",
+       "13_Flows/index.md",
+       "01_Projects/index.md",
+       "99_Index/index.md"
+      ]
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_merge",
+   "grupo_id": 1,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--action detect",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--source /path/to/other-vault --action merge",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_mermaid_check",
+   "grupo_id": 4,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 4
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 4
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--json",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--path 06_Diagrams/foo.md --json",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     },
+     {
+      "argv": "--fix --dry-run --json",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--fix --json",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "sin": [
+     "VOAS_MERMAID_ORACLE"
+    ]
+   }
+  },
+  {
+   "tool": "vault_metricas",
+   "grupo_id": 35,
+   "capacidad": "gobernanza_del_estandar",
+   "veredicto": "DEFECTO",
+   "motivos": [
+    "c2"
+   ],
+   "c0": {
+    "estado": "OK",
+    "lineas": 3
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "DEFECTO",
+    "perdidas": [
+     "el ejemplo lo rechaza la propia tool: FileNotFoundError: [Errno 2] No such file or directory: 'ronda.log'"
+    ],
+    "corridas": [
+     {
+      "argv": "--check --strict",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--registrar-suite ronda.log --commit abc1234",
+      "exit": 1,
+      "envelope_ok": null,
+      "cambiadas": null,
+      "perdida": "el ejemplo lo rechaza la propia tool: FileNotFoundError: [Errno 2] No such file or directory: 'ronda.log'"
+     },
+     {
+      "argv": "--doc",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_migrate_docs",
+   "grupo_id": 9,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--source_path ./docs --project mi-api --dry_run true",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_migrate_rollback",
+   "grupo_id": 9,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--report_path 19_Audits/migrations/2026-06-24-001.json",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     },
+     {
+      "argv": "--report_path 19_Audits/migrations/2026-06-24-001.json --confirm true",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_model_profile",
+   "grupo_id": 34,
+   "capacidad": "consulta_a_contexto",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 3
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--list",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--set claude",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "17_Preferences/model_profile.active"
+      ]
+     },
+     {
+      "argv": "--auto claude-desktop",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_move",
+   "grupo_id": 1,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--from 01_Projects/foo.md --to 03_Decisions/foo.md --json",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     },
+     {
+      "argv": "--folder 01_Projects/old --to-folder 01_Projects/new --json",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_ncr_save",
+   "grupo_id": 30,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--project mi-api --title Missing validation --severity major --detected_by audit",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_noop_audit",
+   "grupo_id": 35,
+   "capacidad": "gobernanza_del_estandar",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 3
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--check",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--check --strict",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--freeze",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_norms",
+   "grupo_id": 35,
+   "capacidad": "gobernanza_del_estandar",
+   "veredicto": "MEJORA",
+   "motivos": [
+    "c1: el ejemplo solo mira; ninguna línea hace el trabajo que la tool declara"
+   ],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "MEJORA",
+    "motivo": "el ejemplo solo mira; ninguna línea hace el trabajo que la tool declara"
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--list",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--show AP-25",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_norms_coherence",
+   "grupo_id": 35,
+   "capacidad": "gobernanza_del_estandar",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 3
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--check",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--check --strict",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--freeze",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_onboard",
+   "grupo_id": 31,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--project mi-api --path ../mi-api",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     },
+     {
+      "argv": "--project mi-api --path ../mi-api --dry-run",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_pattern_list",
+   "grupo_id": 3,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     },
+     {
+      "argv": "--type architecture",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_pattern_save",
+   "grupo_id": 3,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--project mi-api --name Repository --type architecture --status implementado --description Abstraccion de acceso a datos",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_preferences",
+   "grupo_id": 34,
+   "capacidad": "consulta_a_contexto",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--set --category constraints --title No mover tools --statement No propagar scripts a otros repos --strength must",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "17_Preferences/constraints/index.md",
+       "17_Preferences/constraints/no-mover-tools.md",
+       "17_Preferences/index.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
+     },
+     {
+      "argv": "--context",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 0,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 0,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_privacy_save",
+   "grupo_id": 30,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--project mi-api --title Emails de usuario --purpose Notificaciones --legal_basis consent",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_produccion",
+   "grupo_id": 35,
+   "capacidad": "gobernanza_del_estandar",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 3
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--check",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--check --strict",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--guia",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_project",
+   "grupo_id": 11,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 3
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 3
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--add ans --title ANS --alias ans-api",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "01_Projects/ans/index.md",
+       "01_Projects/ans/project.md",
+       "01_Projects/index.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
+     },
+     {
+      "argv": "--resolve ANS API",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     },
+     {
+      "argv": "--audit",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_project_overview",
+   "grupo_id": 11,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--project mi-api --description REST API --runtime Node.js 20",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_project_status",
+   "grupo_id": 11,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--project mi-api --status en_desarrollo --summary Sprint 3 en curso",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_propagate",
+   "grupo_id": 25,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--changed 01_Projects/mi-api/overview.md --queue-report",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 0,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 0,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_qa_save",
+   "grupo_id": 20,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--project mi-api --type test-plan --title Plan de Pruebas v2 --description Plan de pruebas de la API para la v2",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_quality_check",
+   "grupo_id": 24,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "00_System/quality-index.json"
+      ]
+     },
+     {
+      "argv": "--min-score 0.7",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "00_System/quality-index.json"
+      ]
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 0,
+      "reescritas": 1,
+      "rutas": [
+       "00_System/quality-index.json"
+      ]
+     },
+     {
+      "corrida": 2,
+      "exit": 0,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_quality_dashboard",
+   "grupo_id": 20,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "DEFECTO",
+   "motivos": [
+    "c2"
+   ],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "DEFECTO",
+    "perdidas": [
+     "la salida no es JSON: *Para detalle por nota, ejecutar `python scripts/vault_quality_check.py --min-score 0.7`*"
+    ],
+    "corridas": [
+     {
+      "argv": "",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "02_Observability/index.md",
+       "02_Observability/qa/index.md",
+       "02_Observability/qa/quality-dashboard.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
+     },
+     {
+      "argv": "--check",
+      "exit": 0,
+      "envelope_ok": null,
+      "cambiadas": null,
+      "perdida": "la salida no es JSON: *Para detalle por nota, ejecutar `python scripts/vault_quality_check.py --min-score 0.7`*"
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_quarantine",
+   "grupo_id": 36,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--add 07_Knowledge/rara.md --reason Sin frontmatter y origen desconocido --agent claude",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     },
+     {
+      "argv": "--list",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 0,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 0,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_query_parse",
+   "grupo_id": 34,
+   "capacidad": "consulta_a_contexto",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "que decidimos la semana pasada sobre MCP --explain",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_read",
+   "grupo_id": 1,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--path 01_Projects/mi-api/overview.md",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_recursos",
+   "grupo_id": 35,
+   "capacidad": "gobernanza_del_estandar",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 3
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--check",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--ranking",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--check --strict",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_reindex",
+   "grupo_id": 15,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "00_System/index.md",
+       "01_Projects/index.md",
+       "02_Observability/index.md",
+       "03_Decisions/index.md",
+       "04_Sessions/index.md",
+       "05_Patterns/index.md",
+       "06_Diagrams/entity/index.md",
+       "06_Diagrams/index.md",
+       "07_Knowledge/index.md",
+       "08_Runbooks/index.md",
+       "09_Infrastructure/index.md",
+       "10_Migrated/index.md",
+       "11_Code/index.md",
+       "12_Bibliography/index.md",
+       "13_Flows/index.md",
+       "14_Requirements/index.md",
+       "15_Tests/index.md",
+       "16_AI_Governance/index.md",
+       "17_Preferences/index.md",
+       "18_Bugs/index.md",
+       "19_Audits/index.md",
+       "20_Quarantine/index.md",
+       "21_QA/index.md",
+       "99_Index/hash-index.json",
+       "99_Index/index.md",
+       "99_Index/search-index.json"
+      ]
+     },
+     {
+      "argv": "--graph --check",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_relation_add",
+   "grupo_id": 4,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--project mi-api --from User --to Order --relation_type has_many --cardinality 1:N",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_release_save",
+   "grupo_id": 29,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--project mi-api --version 1.2.0 --type minor",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_requirement_save",
+   "grupo_id": 19,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "DEFECTO",
+   "motivos": [
+    "c1: declara side effects y el ejemplo completo es de solo lectura"
+   ],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "DEFECTO",
+    "motivo": "declara side effects y el ejemplo completo es de solo lectura",
+    "side_effects": [
+     "Crea nota en 01_Projects/{project}/requirements/"
+    ]
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--project mi-api --title Auth --description Login de usuario --type functional --priority must-have",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_restore",
+   "grupo_id": 13,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--backup_name 2026-06-24_120000 --confirm true",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_restore_base64",
+   "grupo_id": 13,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "NO-VERIFICABLE",
+   "motivos": [
+    "c0: runtime node: su despacho lo ejercita el servidor MCP, no un smoke de CLI (vault_smoke.run_one lo exime por lo que es)",
+    "c2: runtime node: su despacho lo ejercita el servidor MCP, no un smoke de CLI (vault_smoke.run_one lo exime por lo que es)"
+   ],
+   "c0": {
+    "estado": "NO-VERIFICABLE",
+    "motivo": "runtime node: su despacho lo ejercita el servidor MCP, no un smoke de CLI (vault_smoke.run_one lo exime por lo que es)"
+   },
+   "c1": {
+    "estado": "OK",
+    "nota": "sin lines `python` en el example (C0 lo declara)"
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "NO-VERIFICABLE",
+    "motivo": "runtime node: su despacho lo ejercita el servidor MCP, no un smoke de CLI (vault_smoke.run_one lo exime por lo que es)"
+   },
+   "c3": {
+    "estado": "OK",
+    "nota": "sin líneas que repetir"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin script que escanear"
+   }
+  },
+  {
+   "tool": "vault_risk_save",
+   "grupo_id": 30,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--project mi-api --title Caida de la base --likelihood 3 --impact 4",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_runbook_log",
+   "grupo_id": 7,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--path 08_Runbooks/deploy.md --outcome success",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_runbook_save",
+   "grupo_id": 7,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--project mi-api --title Deploy --trigger manual --category deploy --steps [{\"step\": \"Build\"}, {\"step\": \"Publicar\"}]",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_sanacion",
+   "grupo_id": 37,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--phase 8",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_sdd_init",
+   "grupo_id": 37,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 3
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--bilingual",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "docs/sdd/00-principles.md",
+       "docs/sdd/01-state-machines.md",
+       "docs/sdd/02-implementation.md",
+       "docs/sdd/03-usage.md",
+       "docs/sdd/04-antipatterns.md",
+       "docs/sdd/05-reference-matrix.md",
+       "docs/sdd/06-documentation-methodology.md",
+       "docs/sdd/07-process-antipatterns.md",
+       "docs/sdd/08-roadmap.md",
+       "docs/sdd/09-metrics.md",
+       "docs/sdd/10-appendices.md",
+       "docs/sdd/README.md",
+       "docs/sdd/gaps.md",
+       "docs/sdd/integrity-report.json"
+      ]
+     },
+     {
+      "argv": "--check",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     },
+     {
+      "argv": "--bilingual --force",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "docs/sdd/00-principles.md",
+       "docs/sdd/01-state-machines.md",
+       "docs/sdd/02-implementation.md",
+       "docs/sdd/03-usage.md",
+       "docs/sdd/04-antipatterns.md",
+       "docs/sdd/05-reference-matrix.md",
+       "docs/sdd/06-documentation-methodology.md",
+       "docs/sdd/07-process-antipatterns.md",
+       "docs/sdd/08-roadmap.md",
+       "docs/sdd/09-metrics.md",
+       "docs/sdd/10-appendices.md",
+       "docs/sdd/README.md",
+       "docs/sdd/gaps.md",
+       "docs/sdd/integrity-report.json"
+      ]
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_search",
+   "grupo_id": 1,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--query circuit breaker",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--query deploy --folder 01_Projects",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_section",
+   "grupo_id": 32,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--list --json",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--add 22_Scripts --documentacion referencia --description Scripts de despliegue --json",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "00_System/secciones.json"
+      ]
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_section_index",
+   "grupo_id": 15,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "DEFECTO",
+   "motivos": [
+    "c3: declara idempotencia y la segunda corrida reescribió el vault"
+   ],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--folder 01_Projects",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "01_Projects/index.md"
+      ]
+     }
+    ]
+   },
+   "c3": {
+    "estado": "DEFECTO",
+    "motivo": "declara idempotencia y la segunda corrida reescribió el vault",
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 0,
+      "reescritas": 1,
+      "rutas": [
+       "01_Projects/index.md"
+      ]
+     },
+     {
+      "corrida": 2,
+      "exit": 0,
+      "reescritas": 1,
+      "rutas": [
+       "01_Projects/index.md"
+      ]
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_security_scan",
+   "grupo_id": 14,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--path src/ --project mi-api",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     },
+     {
+      "argv": "--path src/ --project mi-api --categories secrets command_injection --save_findings false",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_servicio",
+   "grupo_id": 35,
+   "capacidad": "gobernanza_del_estandar",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 3
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--list",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--trace",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--check --strict",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_slo_save",
+   "grupo_id": 28,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--project mi-api --service api --slo_type availability --target 99.9",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_smoke",
+   "grupo_id": 35,
+   "capacidad": "gobernanza_del_estandar",
+   "veredicto": "DEFECTO",
+   "motivos": [
+    "c2"
+   ],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "DEFECTO",
+    "perdidas": [
+     "timeout: no terminó en 90s"
+    ],
+    "corridas": [
+     {
+      "argv": "--tool vault_write",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--check --strict",
+      "exit": null,
+      "envelope_ok": null,
+      "cambiadas": null,
+      "perdida": "timeout: no terminó en 90s"
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_standard_upgrade",
+   "grupo_id": 22,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 3
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--check",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--to v34",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--report",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_subgraph",
+   "grupo_id": 34,
+   "capacidad": "consulta_a_contexto",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--seeds 03_Decisions/adr-001.md --hops 2",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     },
+     {
+      "argv": "--seeds mcp-protocol --format mermaid",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_supersede",
+   "grupo_id": 33,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--path 10_Migrated/GUIA.md --by guia",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     },
+     {
+      "argv": "--path 10_Migrated/GUIA.md --by [[guia]] --apply",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_tags",
+   "grupo_id": 27,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "00_System/tag-registry.json",
+       "99_Index/graph.json",
+       "99_Index/tag-index.md"
+      ]
+     },
+     {
+      "argv": "--ledger",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_test_save",
+   "grupo_id": 20,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--project mi-api --title Login --test_type unit --description Verifica el login",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_timeline",
+   "grupo_id": 10,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--project mi-api --limit 20",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_token_counter",
+   "grupo_id": 26,
+   "capacidad": "consulta_a_contexto",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "self-test",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "00_System/token-usage/flows/self-test.json"
+      ]
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_token_service",
+   "grupo_id": 26,
+   "capacidad": "consulta_a_contexto",
+   "veredicto": "MEJORA",
+   "motivos": [
+    "c1: el ejemplo solo mira; ninguna línea hace el trabajo que la tool declara"
+   ],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "MEJORA",
+    "motivo": "el ejemplo solo mira; ninguna línea hace el trabajo que la tool declara"
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--host 127.0.0.1 --port 8899",
+      "exit": null,
+      "envelope_ok": null,
+      "cambiadas": null
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_tokens",
+   "grupo_id": 26,
+   "capacidad": "consulta_a_contexto",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 2
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--summary",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--since 2026-01-01 --top 10",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_toolkit_audit",
+   "grupo_id": 35,
+   "capacidad": "gobernanza_del_estandar",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--tools vault_voice",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_undo",
+   "grupo_id": 22,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--list 01_Projects/ans/status.md",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     },
+     {
+      "argv": "--restore 01_Projects/ans/status.md --force",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
+  {
+   "tool": "vault_validate",
+   "grupo_id": 6,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--path 01_Projects/mi-api/overview.md",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  },
   {
    "tool": "vault_voice",
    "grupo_id": 35,
@@ -48,8 +6676,79 @@
     "estado": "OK",
     "nota": "sin `VOAS_*` declarada en su código"
    }
+  },
+  {
+   "tool": "vault_write",
+   "grupo_id": 1,
+   "capacidad": "escritura_a_gobernanza",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 1
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--folder 01_Projects/mi-api --title Overview --content @file:overview.md --tags api backend --agent mi-agente",
+      "exit": 1,
+      "envelope_ok": false,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": true,
+    "corridas": [
+     {
+      "corrida": 1,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     },
+     {
+      "corrida": 2,
+      "exit": 1,
+      "reescritas": 0,
+      "rutas": []
+     }
+    ]
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
   }
  ],
- "deuda_congelada": [],
- "segundos": 0.7
+ "deuda_congelada": [
+  "vault_audit",
+  "vault_backup",
+  "vault_bibliography_save",
+  "vault_changelog_check",
+  "vault_code_tag",
+  "vault_esquema",
+  "vault_gate",
+  "vault_graph_merge",
+  "vault_infra_save",
+  "vault_init",
+  "vault_knowledge_save",
+  "vault_log_error",
+  "vault_master_index",
+  "vault_metricas",
+  "vault_quality_dashboard",
+  "vault_requirement_save",
+  "vault_section_index",
+  "vault_smoke"
+ ],
+ "segundos": 564.8
 }
