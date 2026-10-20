@@ -1,0 +1,12 @@
+{
+ "norm": "AP-42",
+ "note": "deuda congelada: tools con veredicto DEFECTO pendiente de solución planeada. Solo encoge; crecer exige --freeze --admitir-nuevos.",
+ "failing": [],
+ "objetivo": {
+  "tamano": 0,
+  "fecha_limite": "2027-06-30",
+  "cadencia_dias": 180,
+  "dueno": "meta_toolkit — vault_toolkit_audit",
+  "por_que": "El ejemplo documentado debe ejercitar la función declarada: 0 es el estado de partida de v41.12 y el objetivo es que no deje de serlo."
+ }
+}

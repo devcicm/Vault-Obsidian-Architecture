@@ -18,6 +18,10 @@ RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ / "scripts"))
 
 import vault_arch  # noqa: E402
+import pytest
+
+pytestmark = pytest.mark.slow  # carril rápido (-m "not slow"): el perfil de la suite del 2026-10-20 midió aquí llamadas > 25 s
+
 
 
 def _tipos(codigo: str) -> list[str]:

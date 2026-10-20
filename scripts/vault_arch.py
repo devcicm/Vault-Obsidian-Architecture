@@ -585,6 +585,10 @@ CONTEXTS: dict[str, dict] = {
             # Genera adaptadores de operaciones desde registros canónicos.
             # Meta-toolkit por sujeto: genera artefactos para la distribución.
             "vault_distribution_sync",
+            # v41.12 — el auditor tool por tool (C0–C5) y su selector de
+            # alcance. Meta-toolkit por el mismo motivo que `vault_smoke`:
+            # su sujeto es el catálogo de este repo, no una nota de nadie.
+            "vault_toolkit_audit", "vault_test_scope",
         ],
     },
     # v40.30 — el contexto que faltaba, y el hueco que su ausencia abría.

@@ -1698,6 +1698,7 @@ _BASELINES = [
     ("error-contract-baseline.json", "sites", "AP-52"),
     ("noop-baseline.json", "tools", "AP-37"),
     ("smoke-baseline.json", "failing", "AP-42"),
+    ("toolkit-audit-baseline.json", "failing", "AP-42 — pero tool por tool: el ejemplo debe ejercitar la función declarada"),
     ("blueprint-baseline.json", "uncovered_norms", "capa 4 — norma sin puerta ni test"),
     ("criterios-baseline.json", "sitios", "AP-57"),
     ("ciclos-baseline.json", "sitios", "AP-58 — ciclo esquivado con import diferido"),

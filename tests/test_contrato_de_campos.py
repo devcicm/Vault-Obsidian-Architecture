@@ -22,6 +22,7 @@ con él.
 """
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -37,21 +38,33 @@ from vault_io import resolve_tool_spec  # noqa: E402
 
 
 @pytest.fixture
-def spec_editable():
-    """Deja tocar el tool-spec y lo restaura pase lo que pase."""
-    ruta = resolve_tool_spec()
-    original = ruta.read_bytes()
+def spec_editable(tmp_path, monkeypatch):
+    """Deja tocar el tool-spec en un vault ajeno temporal, subprocess inclusive.
+
+    Editar el fichero canónico corría bajo xdist contra los lectores de otros
+    workers — la ventana mutada los cruzaba y un JSON a medias llegó a
+    congelarse en la baseline de campos. Un vault raíz temporal con el mismo
+    tejido da a cada prueba su spec sin tocar el árbol: in-process va por el
+    dueño (`set_vault_root`/`reset_vault_root`) y el subprocess hereda el env.
+    """
+    import vault_io
+
+    root = tmp_path / "vault-spec-editable"
+    (root / "00_System").mkdir(parents=True)
+    spec = root / "00_System" / "tool-spec.json"
+    spec.write_bytes(resolve_tool_spec().read_bytes())
+    monkeypatch.setenv("VAULT_ROOT", str(root))
+    vault_io.set_vault_root(str(root))
 
     def escribir(mutar):
-        datos = json.loads(original.decode("utf-8"))
+        datos = json.loads(spec.read_text(encoding="utf-8"))
         mutar(datos)
-        ruta.write_text(
-            json.dumps(datos, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        spec.write_text(
+            json.dumps(datos, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8")
 
-    try:
-        yield escribir
-    finally:
-        ruta.write_bytes(original)
+    yield escribir
+    vault_io.reset_vault_root()
 
 
 # ── La tabla ─────────────────────────────────────────────────────────────────

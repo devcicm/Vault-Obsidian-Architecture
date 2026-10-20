@@ -12,6 +12,8 @@ import shutil
 import pytest
 
 import banco_agente as banco
+pytestmark = pytest.mark.slow  # carril rápido (-m "not slow"): el perfil de la suite del 2026-10-20 midió aquí llamadas > 25 s
+
 
 pytestmark = pytest.mark.skipif(
     shutil.which("node") is None, reason="el banco habla con el servidor MCP por Node"

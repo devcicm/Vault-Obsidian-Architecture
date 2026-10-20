@@ -118,6 +118,8 @@ VOLATILES = [
 ]
 
 import vault_grafo_import as gi  # noqa: E402
+pytestmark = pytest.mark.slow  # carril rápido (-m "not slow"): el perfil de la suite del 2026-10-20 midió aquí llamadas > 25 s
+
 
 
 def _estable(texto: str, raiz: Path) -> str:

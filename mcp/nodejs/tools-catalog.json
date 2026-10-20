@@ -6928,6 +6928,71 @@
         "vault_token_service"
       ]
     },
+    "vault_toolkit_audit": {
+      "name": "vault_toolkit_audit",
+      "description": "Verificación funcional del toolkit, tool por tool: que el ejemplo documentado ejercite la función declarada. Ejecuta TODAS las líneas `python` del `example` contra copia desechable del sandbox (incluida la de escritura, que el smoke no corre), contrasta el envelope con el contrato y con el exit code, mide idempotencia donde se declara, reparte los hallazgos de paridad CLI↔MCP de los dueños (check_params/check_sync) y mira cómo falla una `VOAS_*` sin su variable. Baseline que solo encoge; --doc regenera el informe derivado.",
+      "group": "Normas",
+      "script": "vault_toolkit_audit.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "todo": {
+            "type": "boolean",
+            "description": "Barrido completo del catálogo"
+          },
+          "tools": {
+            "type": "string",
+            "description": "Lista separada por comas de tools a auditar"
+          },
+          "grupo": {
+            "type": "array",
+            "description": "Número(s) de grupo según scripts/README.md (una ola)",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "check": {
+            "type": "boolean",
+            "description": "Exit 1 con deuda nueva no congelada"
+          },
+          "strict": {
+            "type": "boolean",
+            "description": "junto a --check: la deuda congelada aún en rojo también falla"
+          },
+          "freeze": {
+            "type": "boolean",
+            "description": "Recongela la baseline con el veredicto de esta corrida"
+          },
+          "admitir-nuevos": {
+            "type": "boolean",
+            "description": "junto a --freeze: admisión explícita (y listado) de deuda nueva"
+          },
+          "doc": {
+            "type": "boolean",
+            "description": "Regenera docs/auditorias/auditoria-toolkit.md desde el last-run"
+          }
+        },
+        "additionalProperties": false
+      },
+      "guards": [
+        "AP-42",
+        "AP-37",
+        "AP-47"
+      ],
+      "side_effects": [
+        "scripts/toolkit-audit-baseline.json",
+        "scripts/toolkit-audit-last.json"
+      ],
+      "status": "active",
+      "exposed_via_mcp": false,
+      "execution_module": null,
+      "related": [
+        "vault_smoke",
+        "vault_noop_audit",
+        "vault_mcp_catalog",
+        "vault_baseline"
+      ]
+    },
     "vault_undo": {
       "name": "vault_undo",
       "description": "Recupera una nota desde .history/. Lista versiones y restaura sin sobreescribir (por defecto).",
@@ -7284,6 +7349,7 @@
       "vault_doc_staleness",
       "vault_noop_audit",
       "vault_smoke",
+      "vault_toolkit_audit",
       "vault_voice",
       "vault_servicio",
       "vault_blueprint",
@@ -7352,7 +7418,7 @@
     "vault_backup_base64",
     "vault_restore_base64"
   ],
-  "standard_version": "v41.11",
+  "standard_version": "v41.12",
   "errors": {
     "AP17_DUPLICATE_TITLE": {
       "category": "governance",
@@ -7431,6 +7497,16 @@
         "action": "manual",
         "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
         "docs": null
+      }
+    },
+    "AUDIT_STILL_RED": {
+      "category": "governance",
+      "severity": "error",
+      "message": "La deuda congelada sigue en rojo: el gate estricto no la perdona aunque esté declarada.",
+      "recovery": {
+        "action": "manual",
+        "hint": "Saldar la deuda congelada (fix en la tool) o caerla de la baseline con la corrida que ya no la reporta (--freeze tras verificar).",
+        "docs": "AGENTS.md §Trabajar con las baselines"
       }
     },
     "AUTO_INDEX_ERROR": {

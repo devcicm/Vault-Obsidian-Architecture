@@ -708,6 +708,21 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": "AGENTS.md §Trabajar con las baselines",
         },
     },
+    # v41.12: una baseline puede estar al día y aun así tener deuda congelada
+    # todavía en rojo — el gate estricto no la perdona aunque esté declarada.
+    "AUDIT_STILL_RED": {
+        "category": "governance",
+        "severity": "error",
+        "message": "La deuda congelada sigue en rojo: el gate estricto no la perdona aunque esté declarada.",
+        "recovery": {
+            "action": "manual",
+            "hint": (
+                "Saldar la deuda congelada (fix en la tool) o caerla de la baseline "
+                "con la corrida que ya no la reporta (--freeze tras verificar)."
+            ),
+            "docs": "AGENTS.md §Trabajar con las baselines",
+        },
+    },
     "CONTRACT_FIELD_REMOVED": {
         "category": "governance",
         "severity": "error",

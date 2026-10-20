@@ -13,6 +13,8 @@ from pathlib import Path
 import pytest
 
 from test_mcp_runner import SERVER, SesionMCP, _init_vault
+pytestmark = pytest.mark.slow  # carril rápido (-m "not slow"): el perfil de la suite del 2026-10-20 midió aquí llamadas > 25 s
+
 
 TRAZA = ".mcp-trace-log.json"
 

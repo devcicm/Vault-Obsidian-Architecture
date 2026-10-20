@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vault-obsidian-architecture"
-version = "41.11"
+version = "41.12"
 description = "Spec-Driven Development vault toolkit — persistent documental memory for LLM agents"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -82,6 +82,12 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v --tb=short --timeout=300"
+# Carril rápido: `python -m pytest -m "not slow"` corre la suite sin los 23
+# módulos que el perfil del 2026-10-20 midió con llamadas > 25 s. El carril no
+# sustituye al cierre: el checklist manda `python -m pytest tests/ -q -n auto`.
+markers = [
+    "slow: llamada de larga duración según el perfil de la suite (desmarcado del carril rápido)",
+]
 
 [tool.setuptools.exclude-package-data]
 "*" = ["*.bak-*", "scripts.bak-*", ".history/*", "vault-backups/*"]

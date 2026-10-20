@@ -109,7 +109,11 @@ NATURALEZAS: Dict[str, Dict[str, Any]] = {
             # Mide el proceso y el producto de este repo; no abre ningún vault.
             "vault_metricas",
             "vault_servicio",
+            # AP-42: ejecuta el ejemplo de cada tool una vez contra copia.
             "vault_smoke", "vault_voice",
+            # Ejercita TODAS las líneas del ejemplo y mide idempotencia, paridad
+            # CLI↔MCP y degradación: es el paso que sigue al smoke (v41.11).
+            "vault_toolkit_audit",
             # v40.34. Infraestructura de mantenimiento del propio estándar:
             # regenera los artefactos derivados en el orden correcto.
             "vault_fix_all",

@@ -31,6 +31,8 @@ if str(SCRIPTS) not in sys.path:
 import vault_section_index  # noqa: E402
 from vault.meta_toolkit.resolucion_producto import INSTALLED, resolver_producto  # noqa: E402
 from vault_registry import SECTIONS, comando_de_tool  # noqa: E402
+pytestmark = pytest.mark.slow  # carril rápido (-m "not slow"): el perfil de la suite del 2026-10-20 midió aquí llamadas > 25 s
+
 
 RECHAZO_DE_FORMA = {"INVALID_ARGS", "INVALID_VALUE", "MISSING_ARGUMENT"}
 

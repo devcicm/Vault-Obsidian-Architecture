@@ -33,6 +33,8 @@ import vault_error_contract as vec  # noqa: E402
 import vault_gate  # noqa: E402
 import vault_mcp_catalog  # noqa: E402
 import vault_norms  # noqa: E402
+pytestmark = pytest.mark.slow  # carril rápido (-m "not slow"): el perfil de la suite del 2026-10-20 midió aquí llamadas > 25 s
+
 
 SPEC = json.loads(
     (REPO_ROOT / "vault-sandbox" / "00_System" / "tool-spec.json").read_text(

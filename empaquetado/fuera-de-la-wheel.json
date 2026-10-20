@@ -29,6 +29,7 @@
     "vault_recursos",
     "vault_servicio",
     "vault_smoke",
+    "vault_toolkit_audit",
     "vault_voice"
   ]
 }

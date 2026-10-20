@@ -1,5 +1,5 @@
 {
-  "version": "v41.11",
+  "version": "v41.12",
   "schema": "1.0",
   "generated_at": "2026-06-25T02:00:00.000Z",
   "description": "Spec-driven tool contracts. Editar este archivo ANTES de implementar una nueva tool. Validar con: python vault_spec_validate.py. v36.0: Added naming convention with explicit suffixes (-runtime, -config, -client, -db, etc.) to eliminate ambiguity. Added detect_ambiguity() and suggest_suffix() functions to vault_migrate.py. Updated manifest with complete disambiguation rules for terms like redis, postgres, nginx, docker, kubernetes, etc.",
@@ -4674,13 +4674,67 @@
       },
       "fundamentals": [],
       "reason": "Librería del gancho de secretos del write path (vault_write_hook); su CLI es de diagnóstico para escanear un .md o un directorio y no es un camino de acceso del agente."
+    },
+    "vault_toolkit_audit": {
+      "group": "Normas",
+      "group_id": 35,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "alcance",
+        "defectos",
+        "deuda_congelada",
+        "deuda_nueva",
+        "results",
+        "segundos",
+        "spec",
+        "total"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "completeness",
+          "validity"
+        ],
+        "cia_scope": [
+          "integrity",
+          "accountability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F7"
+      ]
+    },
+    "vault_test_scope": {
+      "group": "meta",
+      "group_id": 0,
+      "status": "internal",
+      "required_args": [],
+      "declared_returns": [
+        "command",
+        "n",
+        "objetivos",
+        "tests"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "completeness"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [],
+      "reason": "Arnés de desarrollo: el alcance de tests que toca un cambio, para cerrar sin arrastrar la suite entera. Mantiene el toolkit, no el vault: no se publica en el catálogo MCP."
     }
   },
   "_counts": {
-    "active": 124,
-    "internal": 16,
+    "active": 125,
+    "internal": 17,
     "archived": 5,
-    "total": 145,
+    "total": 147,
     "active_groups": 37,
     "schema_version": "1.0"
   }

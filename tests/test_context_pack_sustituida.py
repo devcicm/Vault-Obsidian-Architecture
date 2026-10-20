@@ -23,6 +23,8 @@ sys.path.insert(0, str(SCRIPTS))
 
 import vault_context_pack as pack  # noqa: E402
 from vault_norms_catalog import STATUS_VOCAB  # noqa: E402
+pytestmark = pytest.mark.slow  # carril rápido (-m "not slow"): el perfil de la suite del 2026-10-20 midió aquí llamadas > 25 s
+
 
 CUERPO = "\n".join(f"El libro blanco de arquitectura describe la capa {i} del sistema."
                    for i in range(4))

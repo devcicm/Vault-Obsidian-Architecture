@@ -3,6 +3,10 @@
 from pathlib import Path
 
 from sandbox_fixture import DERIVED_FILES, bootstrap, clean, ready
+import pytest
+
+pytestmark = pytest.mark.slow  # carril rápido (-m "not slow"): el perfil de la suite del 2026-10-20 midió aquí llamadas > 25 s
+
 
 
 def test_el_fixture_nace_desde_cero_en_una_raiz_ajena(tmp_path):

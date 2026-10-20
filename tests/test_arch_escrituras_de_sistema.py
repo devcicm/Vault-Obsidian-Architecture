@@ -30,6 +30,10 @@ def _subrutas(fuente: str) -> set[str]:
 def test_el_analizador_ve_las_formas_de_ruta_que_usa_el_repo():
     fuente = '''
 from pathlib import Path
+import pytest
+
+pytestmark = pytest.mark.slow  # carril rápido (-m "not slow"): el perfil de la suite del 2026-10-20 midió aquí llamadas > 25 s
+
 def _system_dir():
     return root / "00_System"
 def a(root):

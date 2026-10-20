@@ -10,9 +10,9 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | Ruta | Qué es |
 |---|---|
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~12.000 líneas). Fuente normativa. |
-| `scripts/*.py` | ~162 scripts, 124 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
+| `scripts/*.py` | ~164 scripts, 125 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (5943 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (5984 tests). Toda norma con guard debe tener test. |
 | `normas/` | Normas como paquete (`normas/<código>/`: `norma.py`, `porque.md`, `guard.py`, `heal.py`, `test_*.py`). Las carga `vault_norms_catalog` en su sitio del catálogo; la forma la vigila `--check-framework`. Desde m186 toda norma vive aquí (cuántas, `NORMAS_EN_PAQUETE`). `guard.py`/`heal.py` son derivados —apuntan a la función dueña; los sanadores salen de `vault_norms_catalog.SANADORES`— y se regeneran con `vault_norms_engine.escribir_caras_derivadas`, no a mano. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
@@ -136,13 +136,16 @@ Si necesitas un dato de estos, léelo del registro — no lo redefinas ni lo cop
 # Instalar (una vez): git config core.hooksPath .githooks
 # Automáticamente ejecuta vault_fix_all antes de cada commit.
 
-# Suite completa — debe quedar en verde antes de cerrar cualquier cambio
-python -m pytest tests/ --tb=short
+# Suite completa — debe quedar en verde antes de cerrar cualquier cambio.
+# La forma canónica es la paralela (xdist): toda la suite en unos 17 min en
+# local, contra las ~6 h de la serie. La serie queda para re-verificar un fallo
+# que solo aparezca con `-n auto` (AP-44: un rojo de la corrida no es real
+# hasta que la serie lo dice) y para el carril de depuración.
+python -m pytest tests/ -q -n auto --tb=short
 
-# Suite completa en paralelo — forma canónica en local (xdist): la misma
-# suite, una fracción del tiempo. Un fallo que solo aparece con `-n auto`
-# se re-verifica en serie antes de darlo por real.
-python -m pytest tests/ -q -n auto
+# Carril rápido — los 23 módulos que el perfil midió con llamadas > 25 s
+# quedan fuera; es para iterar. NO sustituye al cierre de arriba.
+python -m pytest tests/ -q -n auto -m "not slow" --tb=short
 
 # Normas y marco de datos
 python scripts/vault_norms.py --audit --root vault-sandbox   # audita el vault contra las normas
@@ -173,7 +176,7 @@ drift se cierra en cada commit sin intervención manual.
 
 - [ ] Pre-commit hook instalado: `git config core.hooksPath .githooks`
 - [ ] `python scripts/vault_gate.py --strict` → todas verdes.
-- [ ] `python -m pytest tests/ --tb=short` en verde.
+- [ ] `python -m pytest tests/ -q -n auto --tb=short` en verde.
 - [ ] `git diff --stat vault-obsidian-architecture.md` sin borrados netos de contenido.
 - [ ] Si tocaste una versión: banner del manifiesto, tabla de versiones, entrada de
       changelog con hash real, badge del `README.md` y `version` de `pyproject.toml`.

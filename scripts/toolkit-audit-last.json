@@ -1,0 +1,55 @@
+{
+ "timestamp": "2026-10-20T08:11:33Z",
+ "resumen": {
+  "OK": 1
+ },
+ "results": [
+  {
+   "tool": "vault_voice",
+   "grupo_id": 35,
+   "capacidad": "gobernanza_del_estandar",
+   "veredicto": "OK",
+   "motivos": [],
+   "c0": {
+    "estado": "OK",
+    "lineas": 2
+   },
+   "c1": {
+    "estado": "OK",
+    "lineas_utiles": 1
+   },
+   "c4": {
+    "estado": "OK"
+   },
+   "c2": {
+    "estado": "OK",
+    "perdidas": [],
+    "corridas": [
+     {
+      "argv": "--tool vault_write",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--coverage",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     }
+    ]
+   },
+   "c3": {
+    "estado": "OK",
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
+   },
+   "c5": {
+    "estado": "OK",
+    "nota": "sin `VOAS_*` declarada en su código"
+   }
+  }
+ ],
+ "deuda_congelada": [],
+ "segundos": 0.7
+}

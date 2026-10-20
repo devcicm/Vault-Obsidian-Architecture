@@ -25,6 +25,8 @@ sys.path.insert(0, str(ROOT))
 
 from vault.kernel.errores import problemas_de_forma  # noqa: E402
 from vault.kernel import bloqueo  # noqa: E402
+pytestmark = pytest.mark.slow  # carril rápido (-m "not slow"): el perfil de la suite del 2026-10-20 midió aquí llamadas > 25 s
+
 
 
 def _mover(raiz: Path, *argv: str) -> dict:

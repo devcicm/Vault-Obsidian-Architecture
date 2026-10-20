@@ -24,6 +24,8 @@ sys.path.insert(0, str(ROOT))
 import vault_arch  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 from vault.meta_toolkit.repositorio import RepositorioMetaToolkit  # noqa: E402
+pytestmark = pytest.mark.slow  # carril rápido (-m "not slow"): el perfil de la suite del 2026-10-20 midió aquí llamadas > 25 s
+
 
 
 # ── El repositorio ────────────────────────────────────────────────────────────

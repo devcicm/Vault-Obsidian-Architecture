@@ -2,9 +2,9 @@
 
 Vault Obsidian Architecture es un estándar abierto con un toolkit para dar a agentes LLM memoria documental persistente, auditable y gobernada sobre Markdown plano.
 
-[![Version](https://img.shields.io/badge/version-v41.11-blue)](./vault-obsidian-architecture.md)
-[![Tools](https://img.shields.io/badge/tools-124_active-green)](./scripts/)
-[![Scripts](https://img.shields.io/badge/scripts-162_total-lightblue)](./scripts/)
+[![Version](https://img.shields.io/badge/version-v41.12-blue)](./vault-obsidian-architecture.md)
+[![Tools](https://img.shields.io/badge/tools-125_active-green)](./scripts/)
+[![Scripts](https://img.shields.io/badge/scripts-164_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
 
@@ -265,7 +265,7 @@ python scripts/vault_audit.py
 
 ## CLI consolidada — `vault`
 
-Las 124 tools bajo un único punto de entrada, con búsqueda, planificación de
+Las 125 tools bajo un único punto de entrada, con búsqueda, planificación de
 concurrencia y guardas de seguridad:
 
 ```bash
@@ -466,7 +466,7 @@ python scripts/vault_norms.py --check-framework    # guard anti-drift registro �
 
 ---
 
-## Las 124 tools activas — 37 grupos
+## Las 125 tools activas — 37 grupos
 
 | Grupo | Tools |
 |---|---|
@@ -594,7 +594,7 @@ Sistema de control de asistencia con autenticación biométrica.
 
 Contiene:
 - 8 principios de diseño
-- 124 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
+- 125 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
 - 80 normas: 66 antipatrones (AP-01–AP-66), 6 patrones (PAT-1–PAT-6), 4 SP, 4 CN
 - norm_refs auto-embebido en frontmatter + vault_code_tag para etiquetas en código fuente
 - 8 Fundamentos de Datos (F1–F8) con trazabilidad a tools
@@ -623,7 +623,7 @@ Contiene:
 ## Scripts — estructura del repositorio
 
 ```
-scripts/                    ← 162 archivos Python (124 tools del catálogo + 8 archivadas en _archived/ + internas/meta)
+scripts/                    ← 164 archivos Python (125 tools del catálogo + 8 archivadas en _archived/ + internas/meta)
 ├── vault_io.py             — I/O base: _detect_vault_root, assert_within_vault, atomic_write_text/json, file_lock
 ├── vault_errors.py         — wrap_main (timeout 60s), emit_ok, trace log
 ├── vault_write.py          — tool principal de escritura (guards AP-20, AP-21, norm_refs auto-embed)

@@ -60,7 +60,14 @@ DEPRECATED_TOOLS: Dict[str, Dict[str, str]] = {
     "vault_render":     {"replaced_by": "vault_diagram_save",    "since": "v22", "reason": "vault_diagram_save generates Mermaid diagrams with ERD support"},
 }
 
-INTERNAL_TOOLS: List[str] = ["vault_dataset", "vault_index", "vault_io", "vault_link_safety"]
+INTERNAL_TOOLS: List[str] = ["vault_dataset", "vault_index", "vault_io",
+                            "vault_link_safety",
+                            # v41.12: arnés de alcance de tests. No es tool del
+                            # catálogo — su consumidor es quien cierra un cambio
+                            # aquí, no un vault— pero el repo exige clasificar
+                            # todo script con CLI propia (AP-57: nada sin
+                            # contrato) y `internal` es el estado con motivo.
+                            "vault_test_scope"]
 
 # DQ/CIA metadata per tool (v27+). data_fundamentals is DERIVED from
 # vault_fundamentals.FUNDAMENTALS registry (single source of truth).
@@ -594,6 +601,20 @@ def _bootstrap_spec() -> Dict[str, Any]:
             "Validar con: python vault_spec_validate.py"
         ),
         "tools": tools,
+        # La cabecera sale de las entradas, nunca de una cifra escrita a mano
+        # (v40.16 la mintió tres versiones: `active: 75` eran 103). Derivarla
+        # aquí hace que un nuevo bootstrap no vuelva a mentir.
+        "_counts": {
+            "active": sum(1 for e in tools.values() if e["status"] == "active"),
+            "internal": sum(1 for e in tools.values() if e["status"] == "internal"),
+            "archived": sum(1 for e in tools.values() if e["status"] == "archived"),
+            "total": len(tools),
+            "active_groups": len({
+                e.get("group_id") for e in tools.values()
+                if e["status"] == "active" and e.get("group_id")
+            }),
+            "schema_version": "1.0",
+        },
     }
 
 

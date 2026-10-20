@@ -17,6 +17,8 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_doc_sync as vds  # noqa: E402
 import vault_mcp_catalog  # noqa: E402
+pytestmark = pytest.mark.slow  # carril rápido (-m "not slow"): el perfil de la suite del 2026-10-20 midió aquí llamadas > 25 s
+
 
 
 @pytest.fixture

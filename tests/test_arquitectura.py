@@ -23,6 +23,8 @@ sys.path.insert(0, str(REPO_ROOT))
 
 import vault_arch as arch  # noqa: E402
 from vault.kernel import VaultContext, construir  # noqa: E402
+pytestmark = pytest.mark.slow  # carril rápido (-m "not slow"): el perfil de la suite del 2026-10-20 midió aquí llamadas > 25 s
+
 
 
 # ── El registro y su guard ───────────────────────────────────────────────────

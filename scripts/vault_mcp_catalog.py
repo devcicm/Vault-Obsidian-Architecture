@@ -2121,6 +2121,78 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "example": "python vault_smoke.py --tool vault_write\npython vault_smoke.py --check --strict",
         "related": ["vault_mcp_catalog", "vault_noop_audit"],
     },
+    "vault_toolkit_audit": {
+        "name": "vault_toolkit_audit",
+        "script": "vault_toolkit_audit.py",
+        "group": "Normas",
+        "purpose": (
+            "Verificación funcional del toolkit, tool por tool: que el ejemplo "
+            "documentado ejercite la función declarada. Ejecuta TODAS las líneas "
+            "`python` del `example` contra copia desechable del sandbox (incluida "
+            "la de escritura, que el smoke no corre), contrasta el envelope con "
+            "el contrato y con el exit code, mide idempotencia donde se declara, "
+            "reparte los hallazgos de paridad CLI↔MCP de los dueños (check_params/"
+            "check_sync) y mira cómo falla una `VOAS_*` sin su variable. "
+            "Baseline que solo encoge; --doc regenera el informe derivado."
+        ),
+        "params": {
+            "todo": {
+                "type": "boolean",
+                "required": False,
+                "description": "Barrido completo del catálogo",
+                "validators": [],
+            },
+            "tools": {
+                "type": "string",
+                "required": False,
+                "description": "Lista separada por comas de tools a auditar",
+                "validators": [],
+            },
+            "grupo": {
+                "type": "array",
+                "required": False,
+                "description": "Número(s) de grupo según scripts/README.md (una ola)",
+                "validators": [],
+            },
+            "check": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit 1 con deuda nueva no congelada",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "junto a --check: la deuda congelada aún en rojo también falla",
+                "validators": [],
+            },
+            "freeze": {
+                "type": "boolean",
+                "required": False,
+                "description": "Recongela la baseline con el veredicto de esta corrida",
+                "validators": [],
+            },
+            "admitir-nuevos": {
+                "type": "boolean",
+                "required": False,
+                "description": "junto a --freeze: admisión explícita (y listado) de deuda nueva",
+                "validators": [],
+            },
+            "doc": {
+                "type": "boolean",
+                "required": False,
+                "description": "Regenera docs/auditorias/auditoria-toolkit.md desde el last-run",
+                "validators": [],
+            },
+        },
+        "guards": ["AP-42", "AP-37", "AP-47"],
+        "side_effects": [
+            "scripts/toolkit-audit-baseline.json",
+            "scripts/toolkit-audit-last.json",
+        ],
+        "example": "python vault_toolkit_audit.py --tools vault_voice",
+        "related": ["vault_smoke", "vault_noop_audit", "vault_mcp_catalog", "vault_baseline"],
+    },
     "vault_voice": {
         "name": "vault_voice",
         "script": "vault_voice.py",
@@ -4327,6 +4399,7 @@ GROUPS: Dict[str, List[str]] = {
         "vault_doc_staleness",
         "vault_noop_audit",
         "vault_smoke",
+        "vault_toolkit_audit",
         "vault_voice",
         "vault_servicio",
         "vault_blueprint",
