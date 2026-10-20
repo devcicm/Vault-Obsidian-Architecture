@@ -3736,7 +3736,6 @@
         "ok",
         "outcome",
         "path",
-        "unchanged",
         "updated",
         "written"
       ],
@@ -3752,7 +3751,13 @@
       },
       "fundamentals": [
         "F8"
-      ]
+      ],
+      "superseded_fields": {
+        "unchanged": {
+          "superseded_by": "executionNumber",
+          "why": "La bitacora registra EJECUCIONES: cada llamada suma una y anade su linea (executionNumber es el indicador de trabajo). Declarar unchanged prometia una idempotencia que el contrato de una bitacora no puede cumplir; el C3 de la ola O4 lo midio."
+        }
+      }
     },
     "vault_runbook_save": {
       "group": "Runbooks",

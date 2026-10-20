@@ -58,8 +58,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 from vault.kernel.contenido import con_titulo  # noqa: E402
+from vault.kernel.frontmatter_escritura import conservar_nota_generada  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
+
+from vault_encoding import sanitize_content  # noqa: E402
 
 def _raiz() -> Path:
     """La raiz del vault, resuelta al usarse."""
@@ -164,15 +167,35 @@ def vault_requirement_save(
 
         project_reqs = [r for r in index["requirements"] if es_del(r.get("project"))]
 
-        req_number = len(project_reqs) + 1
+        # Identidad del requerimiento (O4): proyecto + slug del título. Antes
+        # CADA llamada reservaba el correlativo siguiente, así que re-guardar
+        # el mismo requerimiento abría req-002 con el mismo título y el
+        # contrato declaraba `unchanged`: el C3 lo midió al ejecutarse por fin
+        # el ejemplo (el barrido anterior simulaba su rechazo). Es la misma
+        # identidad que `vault_knowledge_save` ya aplica.
+        existente = next(
+            (r for r in project_reqs
+             if slugify_strict(str(r.get("title") or "")) == title_slug),
+            None,
+        )
 
-        req_id = f"REQ-{req_number:03d}"
+        if existente is not None:
+            req_id = str(existente.get("req_id") or "")
+            note_id = str(existente.get("docId") or "") or str(uuid.uuid4())
+            rel_previo = str(existente.get("relPath") or "")
+            note_path = _raiz() / rel_previo if rel_previo else (
+                _req_dir() / safe_project / f"req-{req_id[-3:]}-{title_slug}.md")
+            filename = note_path.name
+        else:
+            req_number = len(project_reqs) + 1
 
-        note_id = str(uuid.uuid4())
+            req_id = f"REQ-{req_number:03d}"
 
-        filename = f"req-{req_number:03d}-{title_slug}.md"
+            note_id = str(uuid.uuid4())
 
-        note_path = _req_dir() / safe_project / filename
+            filename = f"req-{req_number:03d}-{title_slug}.md"
+
+            note_path = _req_dir() / safe_project / filename
 
         try:
             assert_within_vault(note_path, _raiz())
@@ -254,32 +277,61 @@ def vault_requirement_save(
 
         final_content = frontmatter.render() + "\n\n" + con_titulo(title, "\n\n".join(body_sections))
 
-        note_path.parent.mkdir(parents=True, exist_ok=True)
+        previo = ""
+        if note_path.exists():
+            try:
+                previo = note_path.read_text(encoding="utf-8")
+            except OSError:
+                previo = ""
 
-        atomic_write_text(note_path, final_content)
+        # Mismo cuerpo ⇒ misma nota: id, `req_id` y sellos no son el
+        # requerimiento. Re-guardar lo idéntico no toca la nota (ni dispara la
+        # cascada de índices y grafo).
+        final_content = conservar_nota_generada(
+            note_path, sanitize_content(final_content, dry_run=False)[0])
 
-        entry = {
-            "docId": note_id,
-            "req_id": req_id,
-            "project": project,
-            "title": title,
-            "req_type": req_type,
-            "priority": priority,
-            "status": status,
-            "relPath": str(note_path.relative_to(_raiz())).replace("\\", "/"),
-            "related_code": related_code or [],
-            "updatedAt": now,
-        }
+        sin_cambio = bool(previo) and final_content == previo
 
-        index["requirements"].append(entry)
+        if not sin_cambio:
+            note_path.parent.mkdir(parents=True, exist_ok=True)
 
+            atomic_write_text(note_path, final_content)
+
+            entry = {
+                "docId": note_id,
+                "req_id": req_id,
+                "project": project,
+                "title": title,
+                "req_type": req_type,
+                "priority": priority,
+                "status": status,
+                "relPath": str(note_path.relative_to(_raiz())).replace("\\", "/"),
+                "related_code": related_code or [],
+                "updatedAt": now,
+            }
+
+            if existente is not None:
+                for i, r in enumerate(index["requirements"]):
+                    if r is existente:
+                        index["requirements"][i] = entry
+                        break
+            else:
+                index["requirements"].append(entry)
+
+
+    if sin_cambio:
+        accion = "unchanged"
+    elif existente is not None:
+        accion = "updated"
+    else:
+        accion = "created"
 
     return {
         "ok": True,
         **write_report(),
         "path": str(note_path.relative_to(_raiz())).replace("\\", "/"),
         "req_id": req_id,
-        "action": "created",
+        "action": accion,
     }
 
 

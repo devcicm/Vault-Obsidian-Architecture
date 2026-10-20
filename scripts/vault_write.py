@@ -116,7 +116,10 @@ from vault.kernel import construir  # noqa: E402
 from vault.kernel import historia  # noqa: E402
 from vault.kernel.contenido import con_titulo  # noqa: E402
 from vault.kernel.errores import completar_envelope  # noqa: E402
-from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
+from vault.kernel.frontmatter_escritura import (  # noqa: E402
+    Frontmatter,
+    conservar_nota_generada,
+)
 from vault.kernel.indices_structural import describir_reserva, es_nombre_reservado  # noqa: E402
 
 
@@ -1141,18 +1144,12 @@ def vault_write(
     # If note exists, backup to history
 
     if vault_path.exists():
-        # El nombre sale del fichero, no de `slugify(title)`: una nota heredada
-        # (`_nota_heredada`) tiene otro stem, y su versión quedaba donde ni
-        # `vault_undo` ni `vault_diff` la buscan. Y dos escrituras en el mismo
-        # segundo ya no se pisan (v41.3, `vault.kernel.historia`).
-        history_path = historia.nombre_libre(
-            _history_dir(), vault_path.relative_to(_raiz()).as_posix())
-
-        _history_dir().mkdir(parents=True, exist_ok=True)
-
+        # La versión previa se lee aquí; el respaldo a `.history/` se escribe
+        # JUSTO ANTES de sobrescribir (más abajo), y solo si de verdad hay
+        # escritura: reescribir el mismo contenido no debe dejar una versión
+        # falsa en el historial (O4: el C3 lo midió al ejecutarse por fin el
+        # ejemplo con su `@file:` preparado).
         existing_content = vault_path.read_text(encoding="utf-8")
-
-        atomic_write_text(history_path, existing_content)
 
         # AP-41 — la identidad de la nota se lee AQUÍ, en la rama en la que la
         # nota existe.
@@ -1322,7 +1319,38 @@ def vault_write(
     # inducía una sección — «cómo funciona X» devolvía un paquete vacío.
     rel_path = vault_path.relative_to(_raiz()).as_posix()
 
+    # Mismo cuerpo ⇒ misma nota (O4, el criterio del resto de escritores): el
+    # id, `createdAt` y `updatedAt` son campos que cada llamada compone, no el
+    # contenido. Re-escribir lo idéntico dejaba versión falsa en `.history/`
+    # (gastando el historial), movía search-index e índices de sección y
+    # anotaba una entrada de bitácora que no correspondía a ningún cambio.
+    if vault_path.exists():
+        final_content = conservar_nota_generada(vault_path, final_content)
+        if final_content == existing_content:
+            return {
+                "ok": True,
+                **write_report(),
+                "path": rel_path,
+                "id": nota_id,
+                "filename": filename,
+                "tags": tags,
+                "wikiLinks": wiki_links,
+                "norm_refs": norm_refs,
+                "created": False,
+                "unchanged": True,
+                "message": "Note unchanged (same content)",
+            }
+
     with file_lock(vault_path, timeout=10.0):
+        if vault_path.exists():
+            # El nombre sale del fichero, no de `slugify(title)`: una nota
+            # heredada (`_nota_heredada`) tiene otro stem, y su versión quedaba
+            # donde ni `vault_undo` ni `vault_diff` la buscan. Y dos escrituras
+            # en el mismo segundo ya no se pisan (v41.3, `vault.kernel.historia`).
+            history_path = historia.nombre_libre(_history_dir(), rel_path)
+            _history_dir().mkdir(parents=True, exist_ok=True)
+            atomic_write_text(history_path, existing_content)
+
         atomic_write_text(vault_path, final_content)
 
         # Update search index (inside lock for consistency)

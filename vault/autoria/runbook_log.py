@@ -49,6 +49,8 @@ OUTCOMES = ["success", "failed", "partial"]
 OUTCOME_ICONS = {"success": "✅", "failed": "❌", "partial": "⚠️"}
 
 
+from ..kernel.frontmatter_escritura import conservar_nota_generada
+
 def parse_frontmatter(content: str) -> Dict[str, Any]:
     """Frontmatter de una nota. Delega en el dueño canónico (AP-44/AP-57).
 
@@ -170,7 +172,7 @@ def _registrar_bajo_lock(
     # atomic_write_* y no `open(..., "w")`: el escaneo de secretos, el
     # saneado de encoding y el temp+replace viven ahí. Escribir en crudo los
     # esquivaba los tres (AP-36) y dejaba la nota a medias si el proceso moría.
-    atomic_write_text(note_path, content)
+    atomic_write_text(note_path, conservar_nota_generada(note_path, content))
 
     return {
         "ok": True,

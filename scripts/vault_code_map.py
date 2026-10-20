@@ -41,6 +41,9 @@ from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 
 
+
+from vault.kernel.frontmatter_escritura import conservar_nota_generada  # noqa: E402
+
 def _raiz() -> Path:
     """La raiz del vault, resuelta al usarse."""
     return _repo().raiz
@@ -177,7 +180,7 @@ def vault_code_map(project: str) -> Dict[str, Any]:
     # atomic_write_* y no `open(..., "w")`: el escaneo de secretos, el saneado de
     # encoding y el temp+replace viven ahí. Escribir en crudo los esquivaba los
     # tres (AP-36) y dejaba la nota a medias si el proceso moría a mitad.
-    atomic_write_text(map_path, "\n".join(frontmatter))
+    atomic_write_text(map_path, conservar_nota_generada(map_path, "\n".join(frontmatter)))
 
     modules = [
         m

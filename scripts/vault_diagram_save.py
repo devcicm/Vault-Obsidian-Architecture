@@ -72,6 +72,9 @@ from vault.kernel.contenido import con_titulo  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
+
+from vault.kernel.frontmatter_escritura import conservar_nota_generada  # noqa: E402
+
 def _raiz() -> Path:
     """La raiz del vault, resuelta al usarse."""
     return _repo().raiz
@@ -246,7 +249,7 @@ def vault_diagram_save(
 
     diagram_path.parent.mkdir(parents=True, exist_ok=True)
 
-    atomic_write_text(diagram_path, final_content)
+    atomic_write_text(diagram_path, conservar_nota_generada(diagram_path, final_content))
 
     return {
         "ok": True,

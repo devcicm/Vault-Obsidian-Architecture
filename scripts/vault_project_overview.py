@@ -35,6 +35,9 @@ from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 from vault.autoria.frontmatter import firmante as _agente  # noqa: E402
 
 
+
+from vault.kernel.frontmatter_escritura import conservar_nota_generada  # noqa: E402
+
 def _raiz() -> Path:
     """La raiz del vault, resuelta al usarse."""
     return _repo().raiz
@@ -312,7 +315,7 @@ def vault_project_overview(
 
     final_content = "\n".join(frontmatter) + "\n\n" + "\n\n".join(body_sections)
 
-    atomic_write_text(overview_path, final_content)
+    atomic_write_text(overview_path, conservar_nota_generada(overview_path, final_content))
 
     return {
         "ok": True,

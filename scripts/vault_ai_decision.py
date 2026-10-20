@@ -87,6 +87,11 @@ from vault.autoria.frontmatter import firmante as _agente  # noqa: E402
 EVALUACION_EXIGIDA = niveles_de_impacto_exigidos(_opciones("severidad"))
 
 
+
+from vault.kernel.frontmatter_escritura import conservar_nota_generada  # noqa: E402
+
+from vault_encoding import sanitize_content  # noqa: E402
+
 def estado_de_evaluacion(impact_level: str, affected: Optional[List[str]]) -> str:
     """El estado de `impact_assessment` con la escala de este módulo (AP-65)."""
     return _estado_de_evaluacion(impact_level, affected, EVALUACION_EXIGIDA)
@@ -191,15 +196,28 @@ def vault_ai_decision(
 
         project_decisions = [d for d in index["decisions"] if es_del(d.get("project"))]
 
-        decision_number = len(project_decisions) + 1
-
-        decision_id = f"AID-{decision_number:03d}"
-
-        note_id = str(uuid.uuid4())
-
+        # O4: identidad por ruta (proyecto+título). Antes cada llamada anexaba
+        # una entrada y el correlativo se recalculaba desde la longitud del
+        # registro: re-guardar la misma decisión dejaba AID-002 apuntando a la
+        # nota de AID-001 (medido: .decisions-log.json 1 → 2).
         filename = f"{safe_project}-{title_slug}.md"
 
         note_path = _decisions_dir() / filename
+
+        rel_previsto = str(note_path.relative_to(_raiz())).replace("\\", "/")
+
+        existente = next((d for d in index["decisions"]
+                          if d.get("relPath") == rel_previsto), None)
+
+        if existente is not None:
+            decision_id = str(existente.get("decision_id") or "")
+            note_id = str(existente.get("docId") or "") or str(uuid.uuid4())
+        else:
+            decision_number = len(project_decisions) + 1
+
+            decision_id = f"AID-{decision_number:03d}"
+
+            note_id = str(uuid.uuid4())
 
         try:
             assert_within_vault(note_path, _raiz())
@@ -307,7 +325,19 @@ def vault_ai_decision(
 
         note_path.parent.mkdir(parents=True, exist_ok=True)
 
-        atomic_write_text(note_path, final_content)
+        contenido = conservar_nota_generada(
+            note_path,
+            sanitize_content(final_content, dry_run=False)[0],
+            campos=("decision_id",),
+        )
+        previo = ""
+        if note_path.exists():
+            try:
+                previo = note_path.read_text(encoding="utf-8")
+            except OSError:
+                previo = ""
+        sin_cambio = bool(previo) and contenido == previo
+        atomic_write_text(note_path, contenido)
 
         entry = {
             "docId": note_id,
@@ -323,7 +353,11 @@ def vault_ai_decision(
             "updatedAt": now,
         }
 
-        index["decisions"].append(entry)
+        if existente is not None:
+            if not sin_cambio:
+                index["decisions"][index["decisions"].index(existente)] = entry
+        else:
+            index["decisions"].append(entry)
 
 
     return {
@@ -337,7 +371,8 @@ def vault_ai_decision(
             f"Impacto {impact_level} sin --affected: la evaluación de impacto "
             "queda pendiente (ISO/IEC 42005, AP-65). Añade a quién afecta."
         )} if evaluacion == "pendiente" else {}),
-        "action": "created",
+        "action": ("unchanged" if existente is not None and sin_cambio else
+                   ("updated" if existente is not None else "created")),
     }
 
 

@@ -59,6 +59,11 @@ from vault.kernel.contenido import con_titulo  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
+
+from vault.kernel.frontmatter_escritura import conservar_nota_generada  # noqa: E402
+
+from vault_encoding import sanitize_content  # noqa: E402
+
 def _raiz() -> Path:
     """La raiz del vault, resuelta al usarse."""
     return _repo().raiz
@@ -162,15 +167,28 @@ def vault_test_save(
 
         project_tests = [t for t in index["tests"] if es_del(t.get("project"))]
 
-        test_number = len(project_tests) + 1
-
-        test_id = f"TEST-{test_number:03d}"
-
-        note_id = str(uuid.uuid4())
-
+        # O4: identidad por ruta (proyecto+título). Antes el correlativo se
+        # recalculaba desde la longitud del registro y cada llamada anexaba una
+        # entrada: re-guardar el mismo caso dejaba TEST-002 apuntando a la nota
+        # de TEST-001. Con la nota ya conservada, la entrada tampoco se toca.
         filename = f"{safe_project}-{title_slug}.md"
 
         note_path = _tests_dir() / test_type / filename
+
+        rel_previsto = str(note_path.relative_to(_raiz())).replace("\\", "/")
+
+        existente = next((t for t in index["tests"]
+                          if t.get("relPath") == rel_previsto), None)
+
+        if existente is not None:
+            test_id = str(existente.get("test_id") or "")
+            note_id = str(existente.get("docId") or "") or str(uuid.uuid4())
+        else:
+            test_number = len(project_tests) + 1
+
+            test_id = f"TEST-{test_number:03d}"
+
+            note_id = str(uuid.uuid4())
 
         try:
             assert_within_vault(note_path, _raiz())
@@ -265,7 +283,20 @@ def vault_test_save(
 
         note_path.parent.mkdir(parents=True, exist_ok=True)
 
-        atomic_write_text(note_path, final_content)
+        contenido = conservar_nota_generada(
+            note_path,
+            sanitize_content(final_content, dry_run=False)[0],
+            campos=("test_id",),
+        )
+        previo = ""
+        if note_path.exists():
+            try:
+                previo = note_path.read_text(encoding="utf-8")
+            except OSError:
+                previo = ""
+        sin_cambio = bool(previo) and contenido == previo
+
+        atomic_write_text(note_path, contenido)
 
         entry = {
             "docId": note_id,
@@ -279,7 +310,11 @@ def vault_test_save(
             "updatedAt": now,
         }
 
-        index["tests"].append(entry)
+        if existente is not None:
+            if not sin_cambio:
+                index["tests"][index["tests"].index(existente)] = entry
+        else:
+            index["tests"].append(entry)
 
 
     return {
@@ -287,7 +322,8 @@ def vault_test_save(
         **write_report(),
         "path": str(note_path.relative_to(_raiz())).replace("\\", "/"),
         "test_id": test_id,
-        "action": "created",
+        "action": ("unchanged" if existente is not None and sin_cambio else
+                   ("updated" if existente is not None else "created")),
     }
 
 

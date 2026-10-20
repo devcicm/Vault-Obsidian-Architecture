@@ -52,6 +52,11 @@ RELEASE_TYPES: Dict[str, str] = {
 VALID_STATUS = ["planned", "in_progress", "deployed", "rolled_back", "cancelled"]
 
 
+
+from vault.kernel.frontmatter_escritura import conservar_nota_generada  # noqa: E402
+
+from vault_encoding import sanitize_content  # noqa: E402
+
 def _slug(text: str) -> str:
     # Delega en el slug canónico (`vault_lib.slugify`). La copia que había
     # aquí divergía del resto: unas borraban los acentos, otras los dejaban
@@ -214,7 +219,10 @@ def vault_release_save(
     path = get_vault_root() / RELEASE_FOLDER / filename
     path.parent.mkdir(parents=True, exist_ok=True)
     assert_within_vault(path, get_vault_root())
-    atomic_write_text(path, full)
+    atomic_write_text(path, conservar_nota_generada(path, sanitize_content(full, dry_run=False)[0],
+                                         campos=("deploy_at",),
+                                         patrones_cuerpo=(
+                                             r"^\| \*\*Deploy planificado\*\* \| .*$",)))
 
     # Update project changelog
     changelog_rel = CHANGELOG_PATH.format(project=project)

@@ -103,7 +103,7 @@ def test_no_verificable_gana_a_mejora():
 def _smoke_sano(monkeypatch):
     import vault_smoke
 
-    def run_one(tool, arbol=False, argv=None):
+    def run_one(tool, arbol=False, argv=None, preparar=None, origen=None):
         resultado = {"tool": tool, "ok": True, "tool_ok": True,
                      "exit_code": 0, "returned": ["ok", "created"]}
         if arbol:
@@ -132,7 +132,7 @@ def test_auditar_completo_con_run_one_sano(monkeypatch):
 def test_auditar_envelope_ok_con_exit_1_es_defecto(monkeypatch):
     import vault_smoke
 
-    def run_one(tool, arbol=False, argv=None):
+    def run_one(tool, arbol=False, argv=None, preparar=None, origen=None):
         resultado = {"tool": tool, "ok": True, "tool_ok": True,
                      "exit_code": 1, "returned": ["ok"]}
         if arbol:
@@ -152,7 +152,7 @@ def test_auditar_envelope_ok_con_exit_1_es_defecto(monkeypatch):
 def test_auditar_gap_de_contrato_es_defecto(monkeypatch):
     import vault_smoke
 
-    def run_one(tool, arbol=False, argv=None):
+    def run_one(tool, arbol=False, argv=None, preparar=None, origen=None):
         resultado = {"tool": tool, "ok": True, "tool_ok": True,
                      "exit_code": 0, "returned": ["ok", "diferentes"]}
         if arbol:

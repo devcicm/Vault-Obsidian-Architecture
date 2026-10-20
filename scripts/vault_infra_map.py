@@ -39,6 +39,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
+
+from vault.kernel.frontmatter_escritura import conservar_nota_generada  # noqa: E402
+
 def utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
@@ -262,7 +265,7 @@ def vault_infra_map(
     # Escritura atómica: era el único sitio que escribía una nota con
     # `open(..., "w")` directo — sin saneado de encoding, sin temp+replace y
     # sin quedar registrada en el ledger de AP-37.
-    atomic_write_text(map_path, "\n\n".join(frontmatter))
+    atomic_write_text(map_path, conservar_nota_generada(map_path, "\n\n".join(frontmatter)))
 
     return {
         "ok": True,

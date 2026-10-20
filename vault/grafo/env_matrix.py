@@ -100,6 +100,8 @@ SECRET_PREFIXES = (
 _slug = slugify_strict
 
 
+from ..kernel.frontmatter_escritura import conservar_nota_generada
+
 def _classify_var(var_name: str) -> str:
     upper = var_name.upper()
     if any(upper.startswith(p) or p in upper for p in SECRET_PREFIXES):
@@ -273,7 +275,7 @@ _Documentar qué es diferente en este entorno vs producción: datos, escala, ser
     path = get_vault_root() / FOLDER / filename
     path.parent.mkdir(parents=True, exist_ok=True)
     assert_within_vault(path, get_vault_root())
-    atomic_write_text(path, full)
+    atomic_write_text(path, conservar_nota_generada(path, full))
 
     update_section_index("09_Infrastructure")
 

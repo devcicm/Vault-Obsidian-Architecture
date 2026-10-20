@@ -127,6 +127,9 @@ SLO_TYPES: Dict[str, Dict[str, str]] = {
 VALID_WINDOWS = {"7d": 7, "14d": 14, "30d": 30, "60d": 60, "90d": 90, "1y": 365}
 
 
+
+from vault.kernel.frontmatter_escritura import conservar_nota_generada  # noqa: E402
+
 def _slug(text: str) -> str:
     # Delega en el slug canónico (`vault_lib.slugify`). La copia que había
     # aquí divergía del resto: unas borraban los acentos, otras los dejaban
@@ -308,7 +311,7 @@ def vault_slo_save(
     path = get_vault_root() / FOLDER / filename
     path.parent.mkdir(parents=True, exist_ok=True)
     assert_within_vault(path, get_vault_root())
-    atomic_write_text(path, full)
+    atomic_write_text(path, conservar_nota_generada(path, full))
 
     # El indice de seccion lo dispara el write path del kernel
     # (`vault_io._auto_section_index`) en cuanto se escribe la nota. La

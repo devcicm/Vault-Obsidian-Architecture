@@ -509,6 +509,33 @@ def atomic_write_text(
     # `updated` en escrituras que el saneado deja idénticas.
     _record_write(path, text, encoding)
 
+    # Mismo cuerpo ⇒ mismo documento (v41.12/O4), en el canal: si lo que se va
+    # a grabar (ya saneado) es lo que hay en disco, no se escribe y no se
+    # dispara la cascada. Dos comparaciones, en este orden:
+    #
+    # 1. Byte a byte: cubre los escritores que comparaban su texto COMPUESTO
+    #    contra el disco, que no sirve — el saneado pliega em-dash→`--`, y
+    #    reescribían en cada corrida sin haber cambiado nada.
+    # 2. Semántica, con la regla del dueño (`texto_estable`: `id`, `createdAt`
+    #    y `updatedAt` no son el documento). Cubre a quien compone un id o un
+    #    sello nuevo por llamada: eso tampoco es un cambio. La importación es
+    #    tardía y guardada porque este módulo tiene que poder copiarse suelto.
+    if text:
+        try:
+            actual = path.read_text(encoding=encoding, errors="replace")
+        except OSError:
+            actual = None
+        if actual is not None:
+            if actual == text:
+                return
+            try:
+                from vault.kernel.frontmatter_escritura import texto_estable
+            except ImportError:  # copia suelta de vault_io: sin el dueño, sin regla
+                texto_estable = None
+            if texto_estable is not None and (
+                    texto_estable(actual) == texto_estable(text)):
+                return
+
     # El mecanismo —temporal, fsync opcional, os.replace y limpieza del huérfano
     # si algo falla— está en `vault_fs.escritura_atomica`. Las guardas ya se han
     # ejecutado arriba, así que aquí no se pasa ninguna: esta función las quiere

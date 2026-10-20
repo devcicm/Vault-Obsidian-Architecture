@@ -50,6 +50,9 @@ from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 
 
+
+from vault.kernel.frontmatter_escritura import conservar_nota_generada  # noqa: E402
+
 def _raiz() -> Path:
     """La raiz del vault, resuelta al usarse."""
     return _repo().raiz
@@ -222,7 +225,7 @@ def save_code_map(project: str, mermaid_content: str) -> Path:
     frontmatter.append(f"```mermaid\n{mermaid_content}\n```\n")
 
     # Ver nota en save_index(): el write path canónico, no `open(..., "w")`.
-    atomic_write_text(map_path, "\n".join(frontmatter))
+    atomic_write_text(map_path, conservar_nota_generada(map_path, "\n".join(frontmatter)))
 
     return map_path
 
@@ -262,18 +265,22 @@ def vault_code_relation(
 
                 break
 
-        index["relations"].append(
-            {
-                "id": str(uuid.uuid4()),
-                "from": from_file,
-                "to": to_file,
-                "type": relation_type,
-                "cardinality": cardinality,
-                "label": label,
-                "project": project,
-                "addedAt": utcnow(),
-            }
-        )
+        # O4: la detección existía y no se usaba — cada llamada añadía otra vez
+        # la MISMA relación (medido: relations 1 → 2 en la segunda corrida). El
+        # registro es un conjunto por (from, to, type), no un log.
+        if not already_existed:
+            index["relations"].append(
+                {
+                    "id": str(uuid.uuid4()),
+                    "from": from_file,
+                    "to": to_file,
+                    "type": relation_type,
+                    "cardinality": cardinality,
+                    "label": label,
+                    "project": project,
+                    "addedAt": utcnow(),
+                }
+            )
 
 
     modules = get_module_nodes(index, project)

@@ -2448,7 +2448,8 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "side_effects": [],
         "example": (
             "python vault_doc_staleness.py --check\n"
-            "python vault_doc_staleness.py --check --strict"
+            "python vault_doc_staleness.py --check --strict\n"
+            "python vault_doc_staleness.py --regenerar"
         ),
         "related": ["vault_doc_counts", "vault_doc_sync", "vault_compact_contracts"],
     },

@@ -99,6 +99,15 @@ def test_ap44_en_modo_texto_las_fechas_conservan_lo_escrito():
 
 
 def test_ap44_flow_save_no_reescribe_las_comillas_de_created_at(tmp_path):
+    """Re-guardar lo idéntico no toca el fichero; cambiar algo conserva identidad.
+
+    v41.12/O4: antes este test pedía que el re-guardado CANONICALIZARA la
+    comilla de `createdAt` (devolverla a timestamp plano). Con el criterio
+    «mismo cuerpo ⇒ mismo documento» el fichero ni se abre a escribir: la
+    forma que escribió la persona se queda como está — que es la lectura
+    literal del nombre del test. Lo que sigue siendo contrato: al cambiar de
+    verdad, el `id` y el `createdAt` NO se regeneran.
+    """
     import vault_flow_save
     import vault_io
 
@@ -114,14 +123,20 @@ def test_ap44_flow_save_no_reescribe_las_comillas_de_created_at(tmp_path):
     texto = nota.read_text(encoding="utf-8")
     bloque, _ = separar_frontmatter(texto)
     original = yaml.safe_load(bloque)
-    nota.write_text(texto.replace(
+    con_comillas = texto.replace(
         f"createdAt: {bloque.split('createdAt: ')[1].splitlines()[0]}",
-        f'createdAt: "{original["createdAt"]}"', 1), encoding="utf-8")
+        f'createdAt: "{original["createdAt"]}"', 1)
+    nota.write_text(con_comillas, encoding="utf-8")
 
+    # 1. Mismo cuerpo: el fichero queda byte a byte como estaba.
     assert vault_flow_save.vault_flow_save(**args)["ok"]
+    assert nota.read_text(encoding="utf-8") == con_comillas
+
+    # 2. Cambio real: se reescribe, pero la identidad (id, createdAt) sobrevive.
+    assert vault_flow_save.vault_flow_save(**{**args, "description": "otra"})["ok"]
     despues = yaml.safe_load(separar_frontmatter(nota.read_text(encoding="utf-8"))[0])
-    assert despues["createdAt"] == original["createdAt"]
     assert despues["id"] == original["id"]
+    assert despues["createdAt"] == original["createdAt"]
 
 
 def test_ap57_un_lector_a_mano_se_detecta(tmp_path):

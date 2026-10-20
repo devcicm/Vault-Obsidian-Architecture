@@ -61,7 +61,7 @@
     },
     {
       "firma": "vault_io.py::_auto_tag_ledger::a36080b0",
-      "visto_en": "vault_io.py:815"
+      "visto_en": "vault_io.py:842"
     },
     {
       "firma": "vault_io.py::_registrar_escaner_degradado::a36080b0",
@@ -73,7 +73,7 @@
     },
     {
       "firma": "vault_io.py::update_section_index::a36080b0",
-      "visto_en": "vault_io.py:997"
+      "visto_en": "vault_io.py:1024"
     },
     {
       "firma": "vault_quality_check.py::_compute_ap18::6f345a10",

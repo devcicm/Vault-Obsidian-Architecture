@@ -84,6 +84,11 @@ from vault.kernel.contenido import con_titulo  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
+
+from vault.kernel.frontmatter_escritura import conservar_nota_generada  # noqa: E402
+
+from vault_encoding import sanitize_content  # noqa: E402
+
 def _raiz() -> Path:
     """La raiz del vault, resuelta al usarse."""
     return _repo().raiz
@@ -261,20 +266,58 @@ def vault_bug_save(
         cuerpo.append(f"## Ciclo\n\n{fases}")
 
         note_path.parent.mkdir(parents=True, exist_ok=True)
-        atomic_write_text(note_path, frontmatter.render() + "\n\n" + con_titulo(title, "\n\n".join(cuerpo)))
+        contenido = conservar_nota_generada(
+            note_path,
+            sanitize_content(
+                frontmatter.render() + "\n\n" + con_titulo(title, "\n\n".join(cuerpo)),
+                dry_run=False,
+            )[0],
+            campos=("bug_id",),
+        )
+        previo = ""
+        if note_path.exists():
+            try:
+                previo = note_path.read_text(encoding="utf-8")
+            except OSError:
+                previo = ""
+        sin_cambio = bool(previo) and contenido == previo
+        atomic_write_text(note_path, contenido)
 
         rel = str(note_path.relative_to(_raiz())).replace("\\", "/")
-        index["bugs"].append({
-            "docId": note_id,
-            "bug_id": bug_id,
-            "project": project,
-            "title": title,
-            "phase": phase,
-            "status": status,
-            "severity": severity,
-            "relPath": rel,
-            "updatedAt": now,
-        })
+        # O4: identidad por ruta (proyecto+título). Antes el registro ANEXABA
+        # una entrada por llamada y el correlativo se recalculaba desde su
+        # longitud: re-guardar el mismo defecto dejaba BUG-002 apuntando a la
+        # nota de BUG-001 (medido: .bugs-index.json 1 → 2). Si la nota no
+        # cambió, la entrada tampoco se toca.
+        existente = next((b for b in index["bugs"]
+                          if b.get("relPath") == rel), None)
+        if existente is not None:
+            bug_id = str(existente.get("bug_id") or bug_id)
+            note_id = str(existente.get("docId") or note_id)
+            if not sin_cambio:
+                index["bugs"][index["bugs"].index(existente)] = {
+                    "docId": note_id,
+                    "bug_id": bug_id,
+                    "project": project,
+                    "title": title,
+                    "phase": phase,
+                    "status": status,
+                    "severity": severity,
+                    "relPath": rel,
+                    "updatedAt": now,
+                }
+        else:
+            index["bugs"].append({
+                "docId": note_id,
+                "bug_id": bug_id,
+                "project": project,
+                "title": title,
+                "phase": phase,
+                "status": status,
+                "severity": severity,
+                "relPath": rel,
+                "updatedAt": now,
+            })
         _bugs_dir().mkdir(parents=True, exist_ok=True)
 
     return {
@@ -283,7 +326,8 @@ def vault_bug_save(
         "path": rel,
         "bug_id": bug_id,
         "phase": phase,
-        "action": "created",
+        "action": "unchanged" if existente is not None and not sin_cambio else (
+            "updated" if existente is not None else "created"),
     }
 
 

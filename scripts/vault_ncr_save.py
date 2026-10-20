@@ -75,6 +75,11 @@ DETECTED_BY = [
 VALID_STATUS = ["open", "in_progress", "pending_verification", "closed", "cancelled"]
 
 
+
+from vault.kernel.frontmatter_escritura import conservar_nota_generada  # noqa: E402
+
+from vault_encoding import sanitize_content  # noqa: E402
+
 def _slug(text: str) -> str:
     # Delega en el slug canónico (`vault_lib.slugify`). La copia que había
     # aquí divergía del resto: unas borraban los acentos, otras los dejaban
@@ -250,7 +255,11 @@ _¿Qué cambio sistémico previene esta categoría de no conformidad en el futur
     path = get_vault_root() / FOLDER / filename
     path.parent.mkdir(parents=True, exist_ok=True)
     assert_within_vault(path, get_vault_root())
-    atomic_write_text(path, full)
+    atomic_write_text(path, conservar_nota_generada(path, sanitize_content(full, dry_run=False)[0],
+                                         campos=("ncr_id",),
+                                         patrones_cuerpo=(
+                                             r"^> \*\*NCR-.*$",
+                                             r"^\| \*\*ID\*\* \| .*$",)))
     # El indice de seccion lo dispara el write path del kernel
     # (`vault_io._auto_section_index`) en cuanto se escribe la nota. La
     # llamada explicita que habia aqui lo regeneraba una segunda vez con

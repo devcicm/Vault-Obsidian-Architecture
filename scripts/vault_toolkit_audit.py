@@ -206,13 +206,46 @@ def c1_cobertura(nombre: str, entrada: Dict[str, Any],
     return {"estado": "OK", "lineas_utiles": len(utiles)}
 
 
-def c2_ejecucion(nombre: str, lineas: List[Any]) -> Dict[str, Any]:
+_ORIGEN_CACHE: Optional[Path] = None
+
+
+def _origen_con_proyecto() -> Optional[Path]:
+    """Copia del sandbox con el proyecto del ejemplo de alta, una por corrida.
+
+    La misma preparación que ya usan `vault_noop_audit` y los tests de
+    escritores: sin `mi-api`, quince ejemplos de `*_save` salían con
+    `PROJECT_NOT_FOUND` y el C3 daba por buena la idempotencia de un camino
+    que no llegó a ejecutarse. El criterio y la lista son del noop (AP-57):
+    aquí solo se reutiliza.
+    """
+    global _ORIGEN_CACHE
+    if _ORIGEN_CACHE is not None:
+        return _ORIGEN_CACHE or None
+    import vault_noop_audit as noop
+    if not noop.PROYECTO_DEL_EJEMPLO:
+        _ORIGEN_CACHE = Path()
+        return None
+    base = Path(tempfile.mkdtemp(prefix="tka-origen-"))
+    _ORIGEN_CACHE = noop._sandbox_con_proyecto(base)
+    return _ORIGEN_CACHE
+
+
+def _preparar_de(nombre: str):
+    """Los ficheros que el ejemplo de `nombre` da por existentes (dueño: noop)."""
+    import vault_noop_audit as noop
+    return noop._preparar(nombre)
+
+
+def c2_ejecucion(nombre: str, lineas: List[Any],
+                 origen: Optional[Path] = None) -> Dict[str, Any]:
     """Cada línea corre contra una copia desechable; el envelope se contrasta."""
     import vault_smoke
 
     corridas: List[Dict[str, Any]] = []
     for argv in lineas:
-        resultado = vault_smoke.run_one(nombre, arbol=True, argv=argv)
+        resultado = vault_smoke.run_one(nombre, arbol=True, argv=argv,
+                                        preparar=_preparar_de(nombre),
+                                        origen=origen)
         corrida: Dict[str, Any] = {
             "argv": " ".join(argv[2:])[:200],
             "exit": resultado.get("exit_code"),
@@ -252,7 +285,8 @@ def _arbol_local(raiz: Path) -> Dict[str, str]:
     return out
 
 
-def c3_bis(nombre: str, entrada: Dict[str, Any], lineas: List[Any]) -> Dict[str, Any]:
+def c3_bis(nombre: str, entrada: Dict[str, Any], lineas: List[Any],
+           origen: Optional[Path] = None) -> Dict[str, Any]:
     """C3 real: dos corridas EN LA MISMA copia (no dos copias frescas).
 
     Correr dos veces contra copias frescas mide duplicación, no idempotencia:
@@ -269,12 +303,19 @@ def c3_bis(nombre: str, entrada: Dict[str, Any], lineas: List[Any]) -> Dict[str,
 
     destino = Path(tempfile.mkdtemp(prefix="tka-idem-"))
     vault = destino / "vault"
+    fuente = origen if (origen is not None and origen.is_dir()) else SANDBOX
+    cwd_de_la_corrida = str(SCRIPTS_DIR)
     try:
-        if SANDBOX.is_dir():
-            shutil.copytree(SANDBOX, vault,
+        if fuente.is_dir():
+            shutil.copytree(fuente, vault,
                             ignore=shutil.ignore_patterns(".locks"))
         else:
             vault.mkdir(parents=True)
+        preparar = _preparar_de(nombre)
+        if preparar:
+            trabajo = preparar(vault, destino)
+            if trabajo:
+                cwd_de_la_corrida = str(trabajo)
         env = dict(os.environ)
         env.update({"VAULT_ROOT": str(vault), "VAULT_AGENT": "tka-idem",
                     "VAULT_VOICE": "0"})
@@ -285,7 +326,7 @@ def c3_bis(nombre: str, entrada: Dict[str, Any], lineas: List[Any]) -> Dict[str,
             try:
                 proc = subprocess.run(argv, capture_output=True, text=True,
                                       env=env, encoding="utf-8", errors="replace",
-                                      cwd=str(SCRIPTS_DIR), timeout=120)
+                                      cwd=cwd_de_la_corrida, timeout=120)
             except subprocess.TimeoutExpired:
                 procesos.append({"corrida": numero_corrida, "perdida": "timeout"})
                 continue
@@ -363,6 +404,7 @@ def _veredicto_de(chequeos: Dict[str, Dict[str, Any]]) -> Tuple[str, List[str]]:
 
 
 def auditar(nombre: str, entrada: Dict[str, Any], gid: int, capacidad: str,
+            origen: Optional[Path] = None,
  ) -> Dict[str, Any]:
     import vault_smoke
 
@@ -376,8 +418,8 @@ def auditar(nombre: str, entrada: Dict[str, Any], gid: int, capacidad: str,
     }
     if c0["estado"] == "OK":
         lineas = vault_smoke.invocations(nombre)
-        chequeos["c2"] = c2_ejecucion(nombre, lineas)
-        chequeos["c3"] = c3_bis(nombre, entrada, lineas)
+        chequeos["c2"] = c2_ejecucion(nombre, lineas, origen=origen)
+        chequeos["c3"] = c3_bis(nombre, entrada, lineas, origen=origen)
         chequeos["c5"] = c5_degradacion(nombre, entrada, lineas)
     else:
         chequeos["c2"] = {"estado": c0["estado"], "motivo": c0.get("motivo")}
@@ -552,8 +594,10 @@ def main() -> int:
     c4 = repartir_c4(set(tools_pedidas))
 
     pulso = time.time()
+    origen = _origen_con_proyecto()
     resultados = [auditar(nombre, mc.TOOLS_CATALOG.get(nombre, {}),
-                          gid_map.get(nombre, 0), cap_map.get(nombre, ""))
+                          gid_map.get(nombre, 0), cap_map.get(nombre, ""),
+                          origen=origen)
                   for nombre in tools_pedidas]
     segundos = round(time.time() - pulso, 1)
 

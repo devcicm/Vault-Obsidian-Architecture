@@ -1,8 +1,8 @@
 # Auditoría funcional del toolkit
 
-Corrida en **2026-10-20T20:11:00Z** — derivada de `scripts/toolkit-audit-last.json` y de `scripts/toolkit-audit-baseline.json`. No se edita a mano: la regenera `vault_toolkit_audit --doc`.
+Corrida en **2026-10-20T20:56:59Z** — derivada de `scripts/toolkit-audit-last.json` y de `scripts/toolkit-audit-baseline.json`. No se edita a mano: la regenera `vault_toolkit_audit --doc`.
 
-**Resumen** — 120 OK · 1 MEJORA · 1 DEFECTO · 3 NO-VERIFICABLE
+**Resumen** — 121 OK · 0 MEJORA · 1 DEFECTO · 3 NO-VERIFICABLE
 
 | Tool | Grupo | Capacidad | Veredicto | Motivos |
 |---|---|---|---|---|
@@ -35,7 +35,7 @@ Corrida en **2026-10-20T20:11:00Z** — derivada de `scripts/toolkit-audit-last.
 | vault_diagram_save | 4 | escritura_a_gobernanza | **OK** | — |
 | vault_diff | 1 | escritura_a_gobernanza | **OK** | — |
 | vault_doc_counts | 35 | gobernanza_del_estandar | **OK** | — |
-| vault_doc_staleness | 35 | gobernanza_del_estandar | **MEJORA** | c1: el ejemplo solo mira; ninguna línea hace el trabajo que la tool declara |
+| vault_doc_staleness | 35 | gobernanza_del_estandar | **OK** | — |
 | vault_doc_sync | 35 | gobernanza_del_estandar | **OK** | — |
 | vault_drift_detect | 17 | escritura_a_gobernanza | **OK** | — |
 | vault_env_matrix | 8 | escritura_a_gobernanza | **OK** | — |

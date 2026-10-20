@@ -40,6 +40,9 @@ from vault.kernel.contenido import con_titulo  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 
 
+
+from vault.kernel.frontmatter_escritura import conservar_nota_generada  # noqa: E402
+
 def _raiz() -> Path:
     """La raiz del vault, resuelta al usarse."""
     return _repo().raiz
@@ -429,7 +432,15 @@ def vault_code_module(
     final_content = "\n".join(frontmatter) + "\n\n" + con_titulo(Path(file_path).name, "\n\n".join(body_sections))
 
     note_path.parent.mkdir(parents=True, exist_ok=True)
-    atomic_write_text(note_path, final_content)
+    contenido = conservar_nota_generada(note_path, final_content)
+    previo = ""
+    if note_path.exists():
+        try:
+            previo = note_path.read_text(encoding="utf-8")
+        except OSError:
+            previo = ""
+    sin_cambio = bool(previo) and contenido == previo
+    atomic_write_text(note_path, contenido)
 
     # El tramo exclusivo abarca desde la lectura hasta la escritura: sin el,
     # dos ejecuciones concurrentes leen el mismo indice, cada una anade su
@@ -457,7 +468,11 @@ def vault_code_module(
 
         for i, m in enumerate(index["modules"]):
             if m["filePath"] == file_path:
-                index["modules"][i] = module_entry
+                # O4: la entrada solo se reescribe si la nota cambió; el
+                # `updatedAt: now` de una re-guardada idéntica era el unico
+                # byte que se movia (medido: .code-index.json en la corrida 2).
+                if not sin_cambio:
+                    index["modules"][i] = module_entry
                 break
         else:
             index["modules"].append(module_entry)

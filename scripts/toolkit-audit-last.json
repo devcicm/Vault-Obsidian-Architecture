@@ -1,5 +1,5 @@
 {
- "timestamp": "2026-10-20T20:11:00Z",
+ "timestamp": "2026-10-20T20:56:59Z",
  "alcance": {
   "total": 125,
   "herramientas": [
@@ -131,10 +131,9 @@
   ]
  },
  "resumen": {
-  "OK": 120,
+  "OK": 121,
   "NO-VERIFICABLE": 3,
-  "DEFECTO": 1,
-  "MEJORA": 1
+  "DEFECTO": 1
  },
  "results": [
   {
@@ -160,9 +159,17 @@
     "corridas": [
      {
       "argv": "--project mi-api --title Elegir PostgreSQL --decision_type architectural --description Motor de datos del servicio --rationale Garantias ACID",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "16_AI_Governance/.decisions-log.json",
+       "16_AI_Governance/decisions/index.md",
+       "16_AI_Governance/decisions/mi-api-elegir-postgresql.md",
+       "16_AI_Governance/index.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -172,13 +179,20 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
-      "reescritas": 0,
-      "rutas": []
+      "exit": 0,
+      "reescritas": 7,
+      "rutas": [
+       "16_AI_Governance/.decisions-log.json",
+       "99_Index/search-index.json",
+       "99_Index/graph.json",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "16_AI_Governance/decisions/mi-api-elegir-postgresql.md",
+       "16_AI_Governance/index.md"
+      ]
      },
      {
       "corrida": 2,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      }
@@ -396,136 +410,138 @@
       "envelope_ok": true,
       "cambiadas": [
        "vault-backups/.backup-registry.json",
-       "vault-backups/vault-2026-10-20-200113/.manifest.json",
-       "vault-backups/vault-2026-10-20-200113/00_System/.change-log.json",
-       "vault-backups/vault-2026-10-20-200113/00_System/.gitkeep",
-       "vault-backups/vault-2026-10-20-200113/00_System/.voice-counter",
-       "vault-backups/vault-2026-10-20-200113/00_System/change-log.md",
-       "vault-backups/vault-2026-10-20-200113/00_System/data-framework.json",
-       "vault-backups/vault-2026-10-20-200113/00_System/data-framework.md",
-       "vault-backups/vault-2026-10-20-200113/00_System/data-fundamentals.json",
-       "vault-backups/vault-2026-10-20-200113/00_System/index.md",
-       "vault-backups/vault-2026-10-20-200113/00_System/norm-registry.json",
-       "vault-backups/vault-2026-10-20-200113/00_System/quality-index.json",
-       "vault-backups/vault-2026-10-20-200113/00_System/standard-version.json",
-       "vault-backups/vault-2026-10-20-200113/00_System/tag-registry.json",
-       "vault-backups/vault-2026-10-20-200113/00_System/tool-contracts.json",
-       "vault-backups/vault-2026-10-20-200113/00_System/tool-contracts.md",
-       "vault-backups/vault-2026-10-20-200113/00_System/tool-spec.json",
-       "vault-backups/vault-2026-10-20-200113/00_System/vault-commands.md",
-       "vault-backups/vault-2026-10-20-200113/00_System/vault-hub.md",
-       "vault-backups/vault-2026-10-20-200113/00_System/vault-ontology.json",
-       "vault-backups/vault-2026-10-20-200113/01_Projects/.gitkeep",
-       "vault-backups/vault-2026-10-20-200113/01_Projects/00-01_projects-primer.md",
-       "vault-backups/vault-2026-10-20-200113/01_Projects/index.md",
-       "vault-backups/vault-2026-10-20-200113/02_Observability/.gitkeep",
-       "vault-backups/vault-2026-10-20-200113/02_Observability/00-02_observability-primer.md",
-       "vault-backups/vault-2026-10-20-200113/02_Observability/errors/2026-10-20-nullpointerexception.md",
-       "vault-backups/vault-2026-10-20-200113/02_Observability/errors/index.md",
-       "vault-backups/vault-2026-10-20-200113/02_Observability/index.md",
-       "vault-backups/vault-2026-10-20-200113/03_Decisions/.gitkeep",
-       "vault-backups/vault-2026-10-20-200113/03_Decisions/00-03_decisions-primer.md",
-       "vault-backups/vault-2026-10-20-200113/03_Decisions/adr-001-mcp-transport.md",
-       "vault-backups/vault-2026-10-20-200113/03_Decisions/index.md",
-       "vault-backups/vault-2026-10-20-200113/03_Decisions/mcp-transport-contract.md",
-       "vault-backups/vault-2026-10-20-200113/03_Decisions/mcp-transport-operations.md",
-       "vault-backups/vault-2026-10-20-200113/03_Decisions/mcp-transport-provenance.md",
-       "vault-backups/vault-2026-10-20-200113/04_Sessions/.gitkeep",
-       "vault-backups/vault-2026-10-20-200113/04_Sessions/00-04_sessions-primer.md",
-       "vault-backups/vault-2026-10-20-200113/04_Sessions/index.md",
-       "vault-backups/vault-2026-10-20-200113/05_Patterns/.gitkeep",
-       "vault-backups/vault-2026-10-20-200113/05_Patterns/00-05_patterns-primer.md",
-       "vault-backups/vault-2026-10-20-200113/05_Patterns/index.md",
-       "vault-backups/vault-2026-10-20-200113/06_Diagrams/.gitkeep",
-       "vault-backups/vault-2026-10-20-200113/06_Diagrams/00-06_diagrams-primer.md",
-       "vault-backups/vault-2026-10-20-200113/06_Diagrams/entity/index.md",
-       "vault-backups/vault-2026-10-20-200113/06_Diagrams/entity/test-relations.json",
-       "vault-backups/vault-2026-10-20-200113/06_Diagrams/index.md",
-       "vault-backups/vault-2026-10-20-200113/07_Knowledge/.gitkeep",
-       "vault-backups/vault-2026-10-20-200113/07_Knowledge/00-07_knowledge-primer.md",
-       "vault-backups/vault-2026-10-20-200113/07_Knowledge/fixture-incomplete-00.md",
-       "vault-backups/vault-2026-10-20-200113/07_Knowledge/fixture-incomplete-01.md",
-       "vault-backups/vault-2026-10-20-200113/07_Knowledge/fixture-incomplete-02.md",
-       "vault-backups/vault-2026-10-20-200113/07_Knowledge/fixture-incomplete-03.md",
-       "vault-backups/vault-2026-10-20-200113/07_Knowledge/fixture-incomplete-04.md",
-       "vault-backups/vault-2026-10-20-200113/07_Knowledge/fixture-incomplete-05.md",
-       "vault-backups/vault-2026-10-20-200113/07_Knowledge/fixture-incomplete-06.md",
-       "vault-backups/vault-2026-10-20-200113/07_Knowledge/fixture-incomplete-07.md",
-       "vault-backups/vault-2026-10-20-200113/07_Knowledge/fixture-incomplete-08.md",
-       "vault-backups/vault-2026-10-20-200113/07_Knowledge/fixture-incomplete-09.md",
-       "vault-backups/vault-2026-10-20-200113/07_Knowledge/fixture-raw-00.md",
-       "vault-backups/vault-2026-10-20-200113/07_Knowledge/fixture-raw-01.md",
-       "vault-backups/vault-2026-10-20-200113/07_Knowledge/fixture-raw-02.md",
-       "vault-backups/vault-2026-10-20-200113/07_Knowledge/fixture-raw-03.md",
-       "vault-backups/vault-2026-10-20-200113/07_Knowledge/fixture-raw-04.md",
-       "vault-backups/vault-2026-10-20-200113/07_Knowledge/fixture-raw-05.md",
-       "vault-backups/vault-2026-10-20-200113/07_Knowledge/fixture-raw-06.md",
-       "vault-backups/vault-2026-10-20-200113/07_Knowledge/fixture-raw-07.md",
-       "vault-backups/vault-2026-10-20-200113/07_Knowledge/fixture-raw-08.md",
-       "vault-backups/vault-2026-10-20-200113/07_Knowledge/fixture-raw-09.md",
-       "vault-backups/vault-2026-10-20-200113/07_Knowledge/index.md",
-       "vault-backups/vault-2026-10-20-200113/07_Knowledge/parser-evidence.md",
-       "vault-backups/vault-2026-10-20-200113/08_Runbooks/.gitkeep",
-       "vault-backups/vault-2026-10-20-200113/08_Runbooks/00-08_runbooks-primer.md",
-       "vault-backups/vault-2026-10-20-200113/08_Runbooks/index.md",
-       "vault-backups/vault-2026-10-20-200113/09_Infrastructure/.gitkeep",
-       "vault-backups/vault-2026-10-20-200113/09_Infrastructure/00-09_infrastructure-primer.md",
-       "vault-backups/vault-2026-10-20-200113/09_Infrastructure/index.md",
-       "vault-backups/vault-2026-10-20-200113/10_Migrated/.gitkeep",
-       "vault-backups/vault-2026-10-20-200113/10_Migrated/00-10_migrated-primer.md",
-       "vault-backups/vault-2026-10-20-200113/10_Migrated/index.md",
-       "vault-backups/vault-2026-10-20-200113/11_Code/.gitkeep",
-       "vault-backups/vault-2026-10-20-200113/11_Code/00-11_code-primer.md",
-       "vault-backups/vault-2026-10-20-200113/11_Code/index.md",
-       "vault-backups/vault-2026-10-20-200113/12_Bibliography/.gitkeep",
-       "vault-backups/vault-2026-10-20-200113/12_Bibliography/00-12_bibliography-primer.md",
-       "vault-backups/vault-2026-10-20-200113/12_Bibliography/index.md",
-       "vault-backups/vault-2026-10-20-200113/13_Flows/.gitkeep",
-       "vault-backups/vault-2026-10-20-200113/13_Flows/00-13_flows-primer.md",
-       "vault-backups/vault-2026-10-20-200113/13_Flows/index.md",
-       "vault-backups/vault-2026-10-20-200113/14_Requirements/.gitkeep",
-       "vault-backups/vault-2026-10-20-200113/14_Requirements/00-14_requirements-primer.md",
-       "vault-backups/vault-2026-10-20-200113/14_Requirements/index.md",
-       "vault-backups/vault-2026-10-20-200113/15_Tests/.gitkeep",
-       "vault-backups/vault-2026-10-20-200113/15_Tests/00-15_tests-primer.md",
-       "vault-backups/vault-2026-10-20-200113/15_Tests/index.md",
-       "vault-backups/vault-2026-10-20-200113/16_AI_Governance/.gitkeep",
-       "vault-backups/vault-2026-10-20-200113/16_AI_Governance/00-16_ai_governance-primer.md",
-       "vault-backups/vault-2026-10-20-200113/16_AI_Governance/index.md",
-       "vault-backups/vault-2026-10-20-200113/17_Preferences/.gitkeep",
-       "vault-backups/vault-2026-10-20-200113/17_Preferences/00-17_preferences-primer.md",
-       "vault-backups/vault-2026-10-20-200113/17_Preferences/index.md",
-       "vault-backups/vault-2026-10-20-200113/17_Preferences/model_profile.active",
-       "vault-backups/vault-2026-10-20-200113/18_Bugs/.gitkeep",
-       "vault-backups/vault-2026-10-20-200113/18_Bugs/index.md",
-       "vault-backups/vault-2026-10-20-200113/19_Audits/.gitkeep",
-       "vault-backups/vault-2026-10-20-200113/19_Audits/index.md",
-       "vault-backups/vault-2026-10-20-200113/19_Audits/vocabulary/tag-ledger.json",
-       "vault-backups/vault-2026-10-20-200113/20_Quarantine/.gitkeep",
-       "vault-backups/vault-2026-10-20-200113/20_Quarantine/index.md",
-       "vault-backups/vault-2026-10-20-200113/21_QA/.gitkeep",
-       "vault-backups/vault-2026-10-20-200113/21_QA/index.md",
-       "vault-backups/vault-2026-10-20-200113/99_Index/.gitkeep",
-       "vault-backups/vault-2026-10-20-200113/99_Index/00-99_index-primer.md",
-       "vault-backups/vault-2026-10-20-200113/99_Index/graph.json",
-       "vault-backups/vault-2026-10-20-200113/99_Index/hash-index.json",
-       "vault-backups/vault-2026-10-20-200113/99_Index/index.md",
-       "vault-backups/vault-2026-10-20-200113/99_Index/search-index.json",
-       "vault-backups/vault-2026-10-20-200113/99_Index/tag-index.md",
-       "vault-backups/vault-2026-10-20-200113/docs/sdd/00-principles.md",
-       "vault-backups/vault-2026-10-20-200113/docs/sdd/01-state-machines.md",
-       "vault-backups/vault-2026-10-20-200113/docs/sdd/02-implementation.md",
-       "vault-backups/vault-2026-10-20-200113/docs/sdd/03-usage.md",
-       "vault-backups/vault-2026-10-20-200113/docs/sdd/04-antipatterns.md",
-       "vault-backups/vault-2026-10-20-200113/docs/sdd/05-reference-matrix.md",
-       "vault-backups/vault-2026-10-20-200113/docs/sdd/06-documentation-methodology.md",
-       "vault-backups/vault-2026-10-20-200113/docs/sdd/07-process-antipatterns.md",
-       "vault-backups/vault-2026-10-20-200113/docs/sdd/08-roadmap.md",
-       "vault-backups/vault-2026-10-20-200113/docs/sdd/09-metrics.md",
-       "vault-backups/vault-2026-10-20-200113/docs/sdd/10-appendices.md",
-       "vault-backups/vault-2026-10-20-200113/docs/sdd/README.md",
-       "vault-backups/vault-2026-10-20-200113/docs/sdd/gaps.md",
-       "vault-backups/vault-2026-10-20-200113/docs/sdd/integrity-report.json"
+       "vault-backups/vault-2026-10-20-205019/.manifest.json",
+       "vault-backups/vault-2026-10-20-205019/00_System/.change-log.json",
+       "vault-backups/vault-2026-10-20-205019/00_System/.gitkeep",
+       "vault-backups/vault-2026-10-20-205019/00_System/.voice-counter",
+       "vault-backups/vault-2026-10-20-205019/00_System/change-log.md",
+       "vault-backups/vault-2026-10-20-205019/00_System/data-framework.json",
+       "vault-backups/vault-2026-10-20-205019/00_System/data-framework.md",
+       "vault-backups/vault-2026-10-20-205019/00_System/data-fundamentals.json",
+       "vault-backups/vault-2026-10-20-205019/00_System/index.md",
+       "vault-backups/vault-2026-10-20-205019/00_System/norm-registry.json",
+       "vault-backups/vault-2026-10-20-205019/00_System/quality-index.json",
+       "vault-backups/vault-2026-10-20-205019/00_System/standard-version.json",
+       "vault-backups/vault-2026-10-20-205019/00_System/tag-registry.json",
+       "vault-backups/vault-2026-10-20-205019/00_System/tool-contracts.json",
+       "vault-backups/vault-2026-10-20-205019/00_System/tool-contracts.md",
+       "vault-backups/vault-2026-10-20-205019/00_System/tool-spec.json",
+       "vault-backups/vault-2026-10-20-205019/00_System/vault-commands.md",
+       "vault-backups/vault-2026-10-20-205019/00_System/vault-hub.md",
+       "vault-backups/vault-2026-10-20-205019/00_System/vault-ontology.json",
+       "vault-backups/vault-2026-10-20-205019/01_Projects/.gitkeep",
+       "vault-backups/vault-2026-10-20-205019/01_Projects/00-01_projects-primer.md",
+       "vault-backups/vault-2026-10-20-205019/01_Projects/index.md",
+       "vault-backups/vault-2026-10-20-205019/01_Projects/mi-api/index.md",
+       "vault-backups/vault-2026-10-20-205019/01_Projects/mi-api/project.md",
+       "vault-backups/vault-2026-10-20-205019/02_Observability/.gitkeep",
+       "vault-backups/vault-2026-10-20-205019/02_Observability/00-02_observability-primer.md",
+       "vault-backups/vault-2026-10-20-205019/02_Observability/errors/2026-10-20-nullpointerexception.md",
+       "vault-backups/vault-2026-10-20-205019/02_Observability/errors/index.md",
+       "vault-backups/vault-2026-10-20-205019/02_Observability/index.md",
+       "vault-backups/vault-2026-10-20-205019/03_Decisions/.gitkeep",
+       "vault-backups/vault-2026-10-20-205019/03_Decisions/00-03_decisions-primer.md",
+       "vault-backups/vault-2026-10-20-205019/03_Decisions/adr-001-mcp-transport.md",
+       "vault-backups/vault-2026-10-20-205019/03_Decisions/index.md",
+       "vault-backups/vault-2026-10-20-205019/03_Decisions/mcp-transport-contract.md",
+       "vault-backups/vault-2026-10-20-205019/03_Decisions/mcp-transport-operations.md",
+       "vault-backups/vault-2026-10-20-205019/03_Decisions/mcp-transport-provenance.md",
+       "vault-backups/vault-2026-10-20-205019/04_Sessions/.gitkeep",
+       "vault-backups/vault-2026-10-20-205019/04_Sessions/00-04_sessions-primer.md",
+       "vault-backups/vault-2026-10-20-205019/04_Sessions/index.md",
+       "vault-backups/vault-2026-10-20-205019/05_Patterns/.gitkeep",
+       "vault-backups/vault-2026-10-20-205019/05_Patterns/00-05_patterns-primer.md",
+       "vault-backups/vault-2026-10-20-205019/05_Patterns/index.md",
+       "vault-backups/vault-2026-10-20-205019/06_Diagrams/.gitkeep",
+       "vault-backups/vault-2026-10-20-205019/06_Diagrams/00-06_diagrams-primer.md",
+       "vault-backups/vault-2026-10-20-205019/06_Diagrams/entity/index.md",
+       "vault-backups/vault-2026-10-20-205019/06_Diagrams/entity/test-relations.json",
+       "vault-backups/vault-2026-10-20-205019/06_Diagrams/index.md",
+       "vault-backups/vault-2026-10-20-205019/07_Knowledge/.gitkeep",
+       "vault-backups/vault-2026-10-20-205019/07_Knowledge/00-07_knowledge-primer.md",
+       "vault-backups/vault-2026-10-20-205019/07_Knowledge/fixture-incomplete-00.md",
+       "vault-backups/vault-2026-10-20-205019/07_Knowledge/fixture-incomplete-01.md",
+       "vault-backups/vault-2026-10-20-205019/07_Knowledge/fixture-incomplete-02.md",
+       "vault-backups/vault-2026-10-20-205019/07_Knowledge/fixture-incomplete-03.md",
+       "vault-backups/vault-2026-10-20-205019/07_Knowledge/fixture-incomplete-04.md",
+       "vault-backups/vault-2026-10-20-205019/07_Knowledge/fixture-incomplete-05.md",
+       "vault-backups/vault-2026-10-20-205019/07_Knowledge/fixture-incomplete-06.md",
+       "vault-backups/vault-2026-10-20-205019/07_Knowledge/fixture-incomplete-07.md",
+       "vault-backups/vault-2026-10-20-205019/07_Knowledge/fixture-incomplete-08.md",
+       "vault-backups/vault-2026-10-20-205019/07_Knowledge/fixture-incomplete-09.md",
+       "vault-backups/vault-2026-10-20-205019/07_Knowledge/fixture-raw-00.md",
+       "vault-backups/vault-2026-10-20-205019/07_Knowledge/fixture-raw-01.md",
+       "vault-backups/vault-2026-10-20-205019/07_Knowledge/fixture-raw-02.md",
+       "vault-backups/vault-2026-10-20-205019/07_Knowledge/fixture-raw-03.md",
+       "vault-backups/vault-2026-10-20-205019/07_Knowledge/fixture-raw-04.md",
+       "vault-backups/vault-2026-10-20-205019/07_Knowledge/fixture-raw-05.md",
+       "vault-backups/vault-2026-10-20-205019/07_Knowledge/fixture-raw-06.md",
+       "vault-backups/vault-2026-10-20-205019/07_Knowledge/fixture-raw-07.md",
+       "vault-backups/vault-2026-10-20-205019/07_Knowledge/fixture-raw-08.md",
+       "vault-backups/vault-2026-10-20-205019/07_Knowledge/fixture-raw-09.md",
+       "vault-backups/vault-2026-10-20-205019/07_Knowledge/index.md",
+       "vault-backups/vault-2026-10-20-205019/07_Knowledge/parser-evidence.md",
+       "vault-backups/vault-2026-10-20-205019/08_Runbooks/.gitkeep",
+       "vault-backups/vault-2026-10-20-205019/08_Runbooks/00-08_runbooks-primer.md",
+       "vault-backups/vault-2026-10-20-205019/08_Runbooks/index.md",
+       "vault-backups/vault-2026-10-20-205019/09_Infrastructure/.gitkeep",
+       "vault-backups/vault-2026-10-20-205019/09_Infrastructure/00-09_infrastructure-primer.md",
+       "vault-backups/vault-2026-10-20-205019/09_Infrastructure/index.md",
+       "vault-backups/vault-2026-10-20-205019/10_Migrated/.gitkeep",
+       "vault-backups/vault-2026-10-20-205019/10_Migrated/00-10_migrated-primer.md",
+       "vault-backups/vault-2026-10-20-205019/10_Migrated/index.md",
+       "vault-backups/vault-2026-10-20-205019/11_Code/.gitkeep",
+       "vault-backups/vault-2026-10-20-205019/11_Code/00-11_code-primer.md",
+       "vault-backups/vault-2026-10-20-205019/11_Code/index.md",
+       "vault-backups/vault-2026-10-20-205019/12_Bibliography/.gitkeep",
+       "vault-backups/vault-2026-10-20-205019/12_Bibliography/00-12_bibliography-primer.md",
+       "vault-backups/vault-2026-10-20-205019/12_Bibliography/index.md",
+       "vault-backups/vault-2026-10-20-205019/13_Flows/.gitkeep",
+       "vault-backups/vault-2026-10-20-205019/13_Flows/00-13_flows-primer.md",
+       "vault-backups/vault-2026-10-20-205019/13_Flows/index.md",
+       "vault-backups/vault-2026-10-20-205019/14_Requirements/.gitkeep",
+       "vault-backups/vault-2026-10-20-205019/14_Requirements/00-14_requirements-primer.md",
+       "vault-backups/vault-2026-10-20-205019/14_Requirements/index.md",
+       "vault-backups/vault-2026-10-20-205019/15_Tests/.gitkeep",
+       "vault-backups/vault-2026-10-20-205019/15_Tests/00-15_tests-primer.md",
+       "vault-backups/vault-2026-10-20-205019/15_Tests/index.md",
+       "vault-backups/vault-2026-10-20-205019/16_AI_Governance/.gitkeep",
+       "vault-backups/vault-2026-10-20-205019/16_AI_Governance/00-16_ai_governance-primer.md",
+       "vault-backups/vault-2026-10-20-205019/16_AI_Governance/index.md",
+       "vault-backups/vault-2026-10-20-205019/17_Preferences/.gitkeep",
+       "vault-backups/vault-2026-10-20-205019/17_Preferences/00-17_preferences-primer.md",
+       "vault-backups/vault-2026-10-20-205019/17_Preferences/index.md",
+       "vault-backups/vault-2026-10-20-205019/17_Preferences/model_profile.active",
+       "vault-backups/vault-2026-10-20-205019/18_Bugs/.gitkeep",
+       "vault-backups/vault-2026-10-20-205019/18_Bugs/index.md",
+       "vault-backups/vault-2026-10-20-205019/19_Audits/.gitkeep",
+       "vault-backups/vault-2026-10-20-205019/19_Audits/index.md",
+       "vault-backups/vault-2026-10-20-205019/19_Audits/vocabulary/tag-ledger.json",
+       "vault-backups/vault-2026-10-20-205019/20_Quarantine/.gitkeep",
+       "vault-backups/vault-2026-10-20-205019/20_Quarantine/index.md",
+       "vault-backups/vault-2026-10-20-205019/21_QA/.gitkeep",
+       "vault-backups/vault-2026-10-20-205019/21_QA/index.md",
+       "vault-backups/vault-2026-10-20-205019/99_Index/.gitkeep",
+       "vault-backups/vault-2026-10-20-205019/99_Index/00-99_index-primer.md",
+       "vault-backups/vault-2026-10-20-205019/99_Index/graph.json",
+       "vault-backups/vault-2026-10-20-205019/99_Index/hash-index.json",
+       "vault-backups/vault-2026-10-20-205019/99_Index/index.md",
+       "vault-backups/vault-2026-10-20-205019/99_Index/search-index.json",
+       "vault-backups/vault-2026-10-20-205019/99_Index/tag-index.md",
+       "vault-backups/vault-2026-10-20-205019/docs/sdd/00-principles.md",
+       "vault-backups/vault-2026-10-20-205019/docs/sdd/01-state-machines.md",
+       "vault-backups/vault-2026-10-20-205019/docs/sdd/02-implementation.md",
+       "vault-backups/vault-2026-10-20-205019/docs/sdd/03-usage.md",
+       "vault-backups/vault-2026-10-20-205019/docs/sdd/04-antipatterns.md",
+       "vault-backups/vault-2026-10-20-205019/docs/sdd/05-reference-matrix.md",
+       "vault-backups/vault-2026-10-20-205019/docs/sdd/06-documentation-methodology.md",
+       "vault-backups/vault-2026-10-20-205019/docs/sdd/07-process-antipatterns.md",
+       "vault-backups/vault-2026-10-20-205019/docs/sdd/08-roadmap.md",
+       "vault-backups/vault-2026-10-20-205019/docs/sdd/09-metrics.md",
+       "vault-backups/vault-2026-10-20-205019/docs/sdd/10-appendices.md",
+       "vault-backups/vault-2026-10-20-205019/docs/sdd/README.md",
+       "vault-backups/vault-2026-10-20-205019/docs/sdd/gaps.md",
+       "vault-backups/vault-2026-10-20-205019/docs/sdd/integrity-report.json"
       ]
      },
      {
@@ -534,136 +550,138 @@
       "envelope_ok": true,
       "cambiadas": [
        "vault-backups/.backup-registry.json",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/.manifest.json",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/00_System/.change-log.json",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/00_System/.gitkeep",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/00_System/.voice-counter",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/00_System/change-log.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/00_System/data-framework.json",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/00_System/data-framework.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/00_System/data-fundamentals.json",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/00_System/index.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/00_System/norm-registry.json",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/00_System/quality-index.json",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/00_System/standard-version.json",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/00_System/tag-registry.json",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/00_System/tool-contracts.json",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/00_System/tool-contracts.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/00_System/tool-spec.json",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/00_System/vault-commands.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/00_System/vault-hub.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/00_System/vault-ontology.json",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/01_Projects/.gitkeep",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/01_Projects/00-01_projects-primer.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/01_Projects/index.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/02_Observability/.gitkeep",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/02_Observability/00-02_observability-primer.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/02_Observability/errors/2026-10-20-nullpointerexception.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/02_Observability/errors/index.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/02_Observability/index.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/03_Decisions/.gitkeep",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/03_Decisions/00-03_decisions-primer.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/03_Decisions/adr-001-mcp-transport.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/03_Decisions/index.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/03_Decisions/mcp-transport-contract.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/03_Decisions/mcp-transport-operations.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/03_Decisions/mcp-transport-provenance.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/04_Sessions/.gitkeep",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/04_Sessions/00-04_sessions-primer.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/04_Sessions/index.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/05_Patterns/.gitkeep",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/05_Patterns/00-05_patterns-primer.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/05_Patterns/index.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/06_Diagrams/.gitkeep",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/06_Diagrams/00-06_diagrams-primer.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/06_Diagrams/entity/index.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/06_Diagrams/entity/test-relations.json",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/06_Diagrams/index.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/07_Knowledge/.gitkeep",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/07_Knowledge/00-07_knowledge-primer.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/07_Knowledge/fixture-incomplete-00.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/07_Knowledge/fixture-incomplete-01.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/07_Knowledge/fixture-incomplete-02.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/07_Knowledge/fixture-incomplete-03.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/07_Knowledge/fixture-incomplete-04.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/07_Knowledge/fixture-incomplete-05.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/07_Knowledge/fixture-incomplete-06.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/07_Knowledge/fixture-incomplete-07.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/07_Knowledge/fixture-incomplete-08.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/07_Knowledge/fixture-incomplete-09.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/07_Knowledge/fixture-raw-00.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/07_Knowledge/fixture-raw-01.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/07_Knowledge/fixture-raw-02.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/07_Knowledge/fixture-raw-03.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/07_Knowledge/fixture-raw-04.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/07_Knowledge/fixture-raw-05.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/07_Knowledge/fixture-raw-06.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/07_Knowledge/fixture-raw-07.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/07_Knowledge/fixture-raw-08.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/07_Knowledge/fixture-raw-09.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/07_Knowledge/index.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/07_Knowledge/parser-evidence.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/08_Runbooks/.gitkeep",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/08_Runbooks/00-08_runbooks-primer.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/08_Runbooks/index.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/09_Infrastructure/.gitkeep",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/09_Infrastructure/00-09_infrastructure-primer.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/09_Infrastructure/index.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/10_Migrated/.gitkeep",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/10_Migrated/00-10_migrated-primer.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/10_Migrated/index.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/11_Code/.gitkeep",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/11_Code/00-11_code-primer.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/11_Code/index.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/12_Bibliography/.gitkeep",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/12_Bibliography/00-12_bibliography-primer.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/12_Bibliography/index.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/13_Flows/.gitkeep",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/13_Flows/00-13_flows-primer.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/13_Flows/index.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/14_Requirements/.gitkeep",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/14_Requirements/00-14_requirements-primer.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/14_Requirements/index.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/15_Tests/.gitkeep",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/15_Tests/00-15_tests-primer.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/15_Tests/index.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/16_AI_Governance/.gitkeep",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/16_AI_Governance/00-16_ai_governance-primer.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/16_AI_Governance/index.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/17_Preferences/.gitkeep",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/17_Preferences/00-17_preferences-primer.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/17_Preferences/index.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/17_Preferences/model_profile.active",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/18_Bugs/.gitkeep",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/18_Bugs/index.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/19_Audits/.gitkeep",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/19_Audits/index.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/19_Audits/vocabulary/tag-ledger.json",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/20_Quarantine/.gitkeep",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/20_Quarantine/index.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/21_QA/.gitkeep",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/21_QA/index.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/99_Index/.gitkeep",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/99_Index/00-99_index-primer.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/99_Index/graph.json",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/99_Index/hash-index.json",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/99_Index/index.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/99_Index/search-index.json",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/99_Index/tag-index.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/docs/sdd/00-principles.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/docs/sdd/01-state-machines.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/docs/sdd/02-implementation.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/docs/sdd/03-usage.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/docs/sdd/04-antipatterns.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/docs/sdd/05-reference-matrix.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/docs/sdd/06-documentation-methodology.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/docs/sdd/07-process-antipatterns.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/docs/sdd/08-roadmap.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/docs/sdd/09-metrics.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/docs/sdd/10-appendices.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/docs/sdd/README.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/docs/sdd/gaps.md",
-       "vault-backups/vault-2026-10-20-200114-pre-migration/docs/sdd/integrity-report.json"
+       "vault-backups/vault-2026-10-20-205020-pre-migration/.manifest.json",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/00_System/.change-log.json",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/00_System/.gitkeep",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/00_System/.voice-counter",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/00_System/change-log.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/00_System/data-framework.json",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/00_System/data-framework.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/00_System/data-fundamentals.json",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/00_System/index.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/00_System/norm-registry.json",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/00_System/quality-index.json",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/00_System/standard-version.json",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/00_System/tag-registry.json",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/00_System/tool-contracts.json",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/00_System/tool-contracts.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/00_System/tool-spec.json",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/00_System/vault-commands.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/00_System/vault-hub.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/00_System/vault-ontology.json",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/01_Projects/.gitkeep",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/01_Projects/00-01_projects-primer.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/01_Projects/index.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/01_Projects/mi-api/index.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/01_Projects/mi-api/project.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/02_Observability/.gitkeep",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/02_Observability/00-02_observability-primer.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/02_Observability/errors/2026-10-20-nullpointerexception.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/02_Observability/errors/index.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/02_Observability/index.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/03_Decisions/.gitkeep",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/03_Decisions/00-03_decisions-primer.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/03_Decisions/adr-001-mcp-transport.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/03_Decisions/index.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/03_Decisions/mcp-transport-contract.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/03_Decisions/mcp-transport-operations.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/03_Decisions/mcp-transport-provenance.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/04_Sessions/.gitkeep",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/04_Sessions/00-04_sessions-primer.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/04_Sessions/index.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/05_Patterns/.gitkeep",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/05_Patterns/00-05_patterns-primer.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/05_Patterns/index.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/06_Diagrams/.gitkeep",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/06_Diagrams/00-06_diagrams-primer.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/06_Diagrams/entity/index.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/06_Diagrams/entity/test-relations.json",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/06_Diagrams/index.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/07_Knowledge/.gitkeep",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/07_Knowledge/00-07_knowledge-primer.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/07_Knowledge/fixture-incomplete-00.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/07_Knowledge/fixture-incomplete-01.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/07_Knowledge/fixture-incomplete-02.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/07_Knowledge/fixture-incomplete-03.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/07_Knowledge/fixture-incomplete-04.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/07_Knowledge/fixture-incomplete-05.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/07_Knowledge/fixture-incomplete-06.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/07_Knowledge/fixture-incomplete-07.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/07_Knowledge/fixture-incomplete-08.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/07_Knowledge/fixture-incomplete-09.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/07_Knowledge/fixture-raw-00.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/07_Knowledge/fixture-raw-01.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/07_Knowledge/fixture-raw-02.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/07_Knowledge/fixture-raw-03.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/07_Knowledge/fixture-raw-04.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/07_Knowledge/fixture-raw-05.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/07_Knowledge/fixture-raw-06.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/07_Knowledge/fixture-raw-07.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/07_Knowledge/fixture-raw-08.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/07_Knowledge/fixture-raw-09.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/07_Knowledge/index.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/07_Knowledge/parser-evidence.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/08_Runbooks/.gitkeep",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/08_Runbooks/00-08_runbooks-primer.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/08_Runbooks/index.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/09_Infrastructure/.gitkeep",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/09_Infrastructure/00-09_infrastructure-primer.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/09_Infrastructure/index.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/10_Migrated/.gitkeep",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/10_Migrated/00-10_migrated-primer.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/10_Migrated/index.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/11_Code/.gitkeep",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/11_Code/00-11_code-primer.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/11_Code/index.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/12_Bibliography/.gitkeep",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/12_Bibliography/00-12_bibliography-primer.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/12_Bibliography/index.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/13_Flows/.gitkeep",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/13_Flows/00-13_flows-primer.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/13_Flows/index.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/14_Requirements/.gitkeep",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/14_Requirements/00-14_requirements-primer.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/14_Requirements/index.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/15_Tests/.gitkeep",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/15_Tests/00-15_tests-primer.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/15_Tests/index.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/16_AI_Governance/.gitkeep",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/16_AI_Governance/00-16_ai_governance-primer.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/16_AI_Governance/index.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/17_Preferences/.gitkeep",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/17_Preferences/00-17_preferences-primer.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/17_Preferences/index.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/17_Preferences/model_profile.active",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/18_Bugs/.gitkeep",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/18_Bugs/index.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/19_Audits/.gitkeep",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/19_Audits/index.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/19_Audits/vocabulary/tag-ledger.json",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/20_Quarantine/.gitkeep",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/20_Quarantine/index.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/21_QA/.gitkeep",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/21_QA/index.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/99_Index/.gitkeep",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/99_Index/00-99_index-primer.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/99_Index/graph.json",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/99_Index/hash-index.json",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/99_Index/index.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/99_Index/search-index.json",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/99_Index/tag-index.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/docs/sdd/00-principles.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/docs/sdd/01-state-machines.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/docs/sdd/02-implementation.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/docs/sdd/03-usage.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/docs/sdd/04-antipatterns.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/docs/sdd/05-reference-matrix.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/docs/sdd/06-documentation-methodology.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/docs/sdd/07-process-antipatterns.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/docs/sdd/08-roadmap.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/docs/sdd/09-metrics.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/docs/sdd/10-appendices.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/docs/sdd/README.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/docs/sdd/gaps.md",
+       "vault-backups/vault-2026-10-20-205020-pre-migration/docs/sdd/integrity-report.json"
       ]
      }
     ]
@@ -675,14 +693,14 @@
      {
       "corrida": 1,
       "exit": 0,
-      "reescritas": 131,
+      "reescritas": 133,
       "rutas": [
-       "vault-backups/vault-2026-10-20-200116-pre-migration/08_Runbooks/.gitkeep",
-       "vault-backups/vault-2026-10-20-200116-pre-migration/07_Knowledge/fixture-incomplete-03.md",
-       "vault-backups/vault-2026-10-20-200116-pre-migration/99_Index/00-99_index-primer.md",
-       "vault-backups/vault-2026-10-20-200116-pre-migration/07_Knowledge/fixture-raw-02.md",
-       "vault-backups/vault-2026-10-20-200116-pre-migration/docs/sdd/08-roadmap.md",
-       "vault-backups/vault-2026-10-20-200116-pre-migration/18_Bugs/.gitkeep"
+       "vault-backups/vault-2026-10-20-205021-pre-migration/07_Knowledge/fixture-incomplete-02.md",
+       "vault-backups/vault-2026-10-20-205021-pre-migration/07_Knowledge/fixture-incomplete-08.md",
+       "vault-backups/vault-2026-10-20-205021-pre-migration/99_Index/index.md",
+       "vault-backups/vault-2026-10-20-205021-pre-migration/09_Infrastructure/00-09_infrastructure-primer.md",
+       "vault-backups/vault-2026-10-20-205021-pre-migration/00_System/index.md",
+       "vault-backups/vault-2026-10-20-205021-pre-migration/99_Index/hash-index.json"
       ]
      },
      {
@@ -820,11 +838,11 @@
       "exit": 0,
       "reescritas": 5,
       "rutas": [
-       "99_Index/graph.json",
        "99_Index/search-index.json",
-       "12_Bibliography/index.md",
+       "99_Index/graph.json",
+       "12_Bibliography/books/clean-code.md",
        "12_Bibliography/books/index.md",
-       "12_Bibliography/books/clean-code.md"
+       "12_Bibliography/index.md"
       ]
      },
      {
@@ -965,9 +983,17 @@
     "corridas": [
      {
       "argv": "--project mi-api --title Token numérico coercionado --symptom El literal 0.5 llega al CSS como 0.5px --severity high --agent claude",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "18_Bugs/.bugs-index.json",
+       "18_Bugs/index.md",
+       "18_Bugs/open/index.md",
+       "18_Bugs/open/mi-api-token-numerico-coercionado.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -977,13 +1003,20 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
-      "reescritas": 0,
-      "rutas": []
+      "exit": 0,
+      "reescritas": 7,
+      "rutas": [
+       "18_Bugs/index.md",
+       "99_Index/search-index.json",
+       "99_Index/graph.json",
+       "18_Bugs/open/index.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "18_Bugs/.bugs-index.json"
+      ]
      },
      {
       "corrida": 2,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      }
@@ -1172,9 +1205,15 @@
     "corridas": [
      {
       "argv": "--project mi-api",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "11_Code/index.md",
+       "11_Code/mi-api/code-map.md",
+       "11_Code/mi-api/index.md",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -1184,13 +1223,19 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
-      "reescritas": 0,
-      "rutas": []
+      "exit": 0,
+      "reescritas": 5,
+      "rutas": [
+       "99_Index/search-index.json",
+       "99_Index/graph.json",
+       "11_Code/mi-api/code-map.md",
+       "11_Code/mi-api/index.md",
+       "11_Code/index.md"
+      ]
      },
      {
       "corrida": 2,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      }
@@ -1224,9 +1269,17 @@
     "corridas": [
      {
       "argv": "--project mi-api --file_path src/auth.py --description Modulo de autenticacion --language python",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "11_Code/.code-index.json",
+       "11_Code/index.md",
+       "11_Code/mi-api/auth.md",
+       "11_Code/mi-api/index.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -1236,13 +1289,20 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
-      "reescritas": 0,
-      "rutas": []
+      "exit": 0,
+      "reescritas": 7,
+      "rutas": [
+       "99_Index/search-index.json",
+       "99_Index/graph.json",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "11_Code/mi-api/index.md",
+       "11_Code/.code-index.json",
+       "11_Code/mi-api/auth.md"
+      ]
      },
      {
       "corrida": 2,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      }
@@ -1276,8 +1336,8 @@
     "corridas": [
      {
       "argv": "--project mi-api --list",
-      "exit": 1,
-      "envelope_ok": false,
+      "exit": 0,
+      "envelope_ok": true,
       "cambiadas": []
      },
      {
@@ -1321,9 +1381,16 @@
     "corridas": [
      {
       "argv": "--project mi-api --from_file auth.py --to_file user.py --relation_type imports",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "11_Code/.code-index.json",
+       "11_Code/index.md",
+       "11_Code/mi-api/code-map.md",
+       "11_Code/mi-api/index.md",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -1333,13 +1400,20 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
-      "reescritas": 0,
-      "rutas": []
+      "exit": 0,
+      "reescritas": 6,
+      "rutas": [
+       "99_Index/search-index.json",
+       "99_Index/graph.json",
+       "11_Code/mi-api/code-map.md",
+       "11_Code/mi-api/index.md",
+       "11_Code/.code-index.json",
+       "11_Code/index.md"
+      ]
      },
      {
       "corrida": 2,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      }
@@ -1373,14 +1447,14 @@
     "corridas": [
      {
       "argv": "--project mi-api",
-      "exit": 1,
-      "envelope_ok": false,
+      "exit": 0,
+      "envelope_ok": true,
       "cambiadas": []
      },
      {
       "argv": "--project mi-api --dry-run",
-      "exit": 1,
-      "envelope_ok": false,
+      "exit": 0,
+      "envelope_ok": true,
       "cambiadas": []
      }
     ]
@@ -1391,13 +1465,13 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      },
      {
       "corrida": 2,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      }
@@ -1583,9 +1657,14 @@
     "corridas": [
      {
       "argv": "--path 07_Knowledge/old.md --reason Duplicate of glossary/jwt.md",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       ".history/07_Knowledge__old-2026-10-20T20-51-27.md",
+       "00_System/.change-log.json",
+       "00_System/change-log.md",
+       "07_Knowledge/old.md"
+      ]
      }
     ]
    },
@@ -1671,14 +1750,14 @@
     "corridas": [
      {
       "argv": "--path 06_Diagrams/foo.md --zoom 2.0 --json",
-      "exit": 1,
-      "envelope_ok": false,
+      "exit": 0,
+      "envelope_ok": true,
       "cambiadas": []
      },
      {
       "argv": "--project mi-api --output export/ --json",
-      "exit": 1,
-      "envelope_ok": false,
+      "exit": 0,
+      "envelope_ok": true,
       "cambiadas": []
      }
     ]
@@ -1689,13 +1768,13 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      },
      {
       "corrida": 2,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      }
@@ -1729,9 +1808,16 @@
     "corridas": [
      {
       "argv": "--project mi-api --title User Flow --diagram_type mermaid --category flow --content graph TD\\n  A --> B",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "06_Diagrams/flow/index.md",
+       "06_Diagrams/flow/mi-api-user-flow.md",
+       "06_Diagrams/index.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -1741,13 +1827,20 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
-      "reescritas": 0,
-      "rutas": []
+      "exit": 0,
+      "reescritas": 6,
+      "rutas": [
+       "99_Index/search-index.json",
+       "99_Index/graph.json",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "06_Diagrams/index.md",
+       "06_Diagrams/flow/mi-api-user-flow.md",
+       "06_Diagrams/flow/index.md"
+      ]
      },
      {
       "corrida": 2,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      }
@@ -1852,17 +1945,15 @@
    "tool": "vault_doc_staleness",
    "grupo_id": 35,
    "capacidad": "gobernanza_del_estandar",
-   "veredicto": "MEJORA",
-   "motivos": [
-    "c1: el ejemplo solo mira; ninguna línea hace el trabajo que la tool declara"
-   ],
+   "veredicto": "OK",
+   "motivos": [],
    "c0": {
     "estado": "OK",
-    "lineas": 2
+    "lineas": 3
    },
    "c1": {
-    "estado": "MEJORA",
-    "motivo": "el ejemplo solo mira; ninguna línea hace el trabajo que la tool declara"
+    "estado": "OK",
+    "lineas_utiles": 1
    },
    "c4": {
     "estado": "OK"
@@ -1879,6 +1970,12 @@
      },
      {
       "argv": "--check --strict",
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": []
+     },
+     {
+      "argv": "--regenerar",
       "exit": 0,
       "envelope_ok": true,
       "cambiadas": []
@@ -1963,9 +2060,11 @@
     "corridas": [
      {
       "argv": "--path src/ --project mi-api --mode snapshot",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "00_System/.session-snapshot.json"
+      ]
      },
      {
       "argv": "--path src/ --project mi-api --mode status",
@@ -2008,9 +2107,16 @@
     "corridas": [
      {
       "argv": "--project mi-api --env prod",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "09_Infrastructure/env-matrix/index.md",
+       "09_Infrastructure/env-matrix/mi-api-prod.md",
+       "09_Infrastructure/index.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -2020,13 +2126,20 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
-      "reescritas": 0,
-      "rutas": []
+      "exit": 0,
+      "reescritas": 6,
+      "rutas": [
+       "99_Index/search-index.json",
+       "99_Index/graph.json",
+       "09_Infrastructure/env-matrix/index.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "09_Infrastructure/index.md",
+       "09_Infrastructure/env-matrix/mi-api-prod.md"
+      ]
      },
      {
       "corrida": 2,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      }
@@ -2060,9 +2173,15 @@
     "corridas": [
      {
       "argv": "--project mi-api --environment prod --vars [{\"name\": \"DB_HOST\", \"default\": \"localhost\"}]",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "01_Projects/index.md",
+       "01_Projects/mi-api/envs.md",
+       "01_Projects/mi-api/index.md",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -2072,13 +2191,19 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
-      "reescritas": 0,
-      "rutas": []
+      "exit": 0,
+      "reescritas": 5,
+      "rutas": [
+       "99_Index/search-index.json",
+       "99_Index/graph.json",
+       "01_Projects/mi-api/envs.md",
+       "01_Projects/index.md",
+       "01_Projects/mi-api/index.md"
+      ]
      },
      {
       "corrida": 2,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      }
@@ -2313,14 +2438,21 @@
       "exit": 0,
       "envelope_ok": true,
       "cambiadas": [
+       "02_Observability/errors/foo.md",
+       "02_Observability/errors/index.md",
+       "02_Observability/index.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json",
        "docs/sdd/04-antipatterns.md",
-       "vault-backups/.vault-fix-backup-20261020-200522/docs/sdd/04-antipatterns.md"
+       "vault-backups/.vault-fix-backup-20261020-205248/02_Observability/errors/foo.md",
+       "vault-backups/.vault-fix-backup-20261020-205248/docs/sdd/04-antipatterns.md"
       ]
      },
      {
       "argv": "--path 02_Observability/errors/foo.md",
-      "exit": 1,
-      "envelope_ok": false,
+      "exit": 0,
+      "envelope_ok": true,
       "cambiadas": []
      }
     ]
@@ -2358,9 +2490,16 @@
     "corridas": [
      {
       "argv": "--project mi-api --name User Registration --type workflow --description Full process --mermaid flowchart TD\\n  A --> B",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "13_Flows/index.md",
+       "13_Flows/workflow/index.md",
+       "13_Flows/workflow/mi-api-user-registration.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -2370,13 +2509,20 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
-      "reescritas": 0,
-      "rutas": []
+      "exit": 0,
+      "reescritas": 6,
+      "rutas": [
+       "99_Index/search-index.json",
+       "13_Flows/index.md",
+       "99_Index/graph.json",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "13_Flows/workflow/mi-api-user-registration.md",
+       "13_Flows/workflow/index.md"
+      ]
      },
      {
       "corrida": 2,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      }
@@ -2596,14 +2742,20 @@
      {
       "argv": "",
       "exit": 0,
-      "envelope_ok": true,
+      "envelope_ok": false,
       "cambiadas": []
      },
      {
       "argv": "--apply",
       "exit": 0,
       "envelope_ok": true,
-      "cambiadas": []
+      "cambiadas": [
+       "07_Knowledge/escalar-sin-escapar.md",
+       "07_Knowledge/index.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -2812,7 +2964,9 @@
       "argv": "",
       "exit": 0,
       "envelope_ok": true,
-      "cambiadas": []
+      "cambiadas": [
+       "99_Index/graph.json"
+      ]
      }
     ]
    },
@@ -2823,8 +2977,10 @@
      {
       "corrida": 1,
       "exit": 0,
-      "reescritas": 0,
-      "rutas": []
+      "reescritas": 1,
+      "rutas": [
+       "99_Index/graph.json"
+      ]
      },
      {
       "corrida": 2,
@@ -2866,6 +3022,7 @@
       "envelope_ok": true,
       "cambiadas": [
        "00_System/.graph-fixes/2026-10-20.json",
+       "01_Projects/index.md",
        "02_Observability/index.md",
        "06_Diagrams/index.md",
        "docs/sdd/03-usage.md",
@@ -3098,9 +3255,16 @@
     "corridas": [
      {
       "argv": "--project mi-api --title API caida --severity P1",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "02_Observability/incidents/index.md",
+       "02_Observability/incidents/mi-api-2026-10-20-api-caida.md",
+       "02_Observability/index.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -3110,13 +3274,20 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
-      "reescritas": 0,
-      "rutas": []
+      "exit": 0,
+      "reescritas": 6,
+      "rutas": [
+       "99_Index/search-index.json",
+       "99_Index/graph.json",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "02_Observability/incidents/index.md",
+       "02_Observability/incidents/mi-api-2026-10-20-api-caida.md",
+       "02_Observability/index.md"
+      ]
      },
      {
       "corrida": 2,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      }
@@ -3150,9 +3321,14 @@
     "corridas": [
      {
       "argv": "--project mi-api --location cloud-aws",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "09_Infrastructure/index.md",
+       "09_Infrastructure/infra-map.md",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -3162,13 +3338,18 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
-      "reescritas": 0,
-      "rutas": []
+      "exit": 0,
+      "reescritas": 4,
+      "rutas": [
+       "99_Index/search-index.json",
+       "99_Index/graph.json",
+       "09_Infrastructure/index.md",
+       "09_Infrastructure/infra-map.md"
+      ]
      },
      {
       "corrida": 2,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      }
@@ -3225,12 +3406,12 @@
       "exit": 0,
       "reescritas": 7,
       "rutas": [
-       "09_Infrastructure/infra-map.md",
-       "09_Infrastructure/.infra-index.json",
-       "99_Index/graph.json",
        "99_Index/search-index.json",
+       "99_Index/graph.json",
        "09_Infrastructure/servers/index.md",
-       "09_Infrastructure/servers/prod-cluster.md"
+       "09_Infrastructure/index.md",
+       "09_Infrastructure/infra-map.md",
+       "09_Infrastructure/.infra-index.json"
       ]
      },
      {
@@ -3269,15 +3450,21 @@
     "corridas": [
      {
       "argv": "--file notas.md --section 07_Knowledge",
-      "exit": 1,
-      "envelope_ok": false,
+      "exit": 0,
+      "envelope_ok": true,
       "cambiadas": []
      },
      {
       "argv": "--file notas.md --section 07_Knowledge --commit",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "07_Knowledge/index.md",
+       "07_Knowledge/texto-del-ejemplo.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -3316,14 +3503,23 @@
       "argv": "",
       "exit": 0,
       "envelope_ok": true,
-      "cambiadas": []
+      "cambiadas": [
+       "99_Index/graph.json",
+       "99_Index/hash-index.json",
+       "99_Index/index.md",
+       "99_Index/search-index.json"
+      ]
      },
      {
       "argv": "--target v34",
       "exit": 0,
       "envelope_ok": true,
       "cambiadas": [
-       "00_System/standard-version.json"
+       "00_System/standard-version.json",
+       "99_Index/graph.json",
+       "99_Index/hash-index.json",
+       "99_Index/index.md",
+       "99_Index/search-index.json"
       ]
      }
     ]
@@ -3335,9 +3531,13 @@
      {
       "corrida": 1,
       "exit": 0,
-      "reescritas": 1,
+      "reescritas": 5,
       "rutas": [
-       "00_System/standard-version.json"
+       "99_Index/search-index.json",
+       "99_Index/graph.json",
+       "00_System/standard-version.json",
+       "99_Index/index.md",
+       "99_Index/hash-index.json"
       ]
      },
      {
@@ -3494,11 +3694,11 @@
       "exit": 0,
       "reescritas": 6,
       "rutas": [
-       "07_Knowledge/concepts/clean-architecture.md",
-       "99_Index/graph.json",
-       "07_Knowledge/concepts/index.md",
        "99_Index/search-index.json",
+       "99_Index/graph.json",
        "19_Audits/vocabulary/tag-ledger.json",
+       "07_Knowledge/concepts/index.md",
+       "07_Knowledge/concepts/clean-architecture.md",
        "07_Knowledge/index.md"
       ]
      },
@@ -3603,9 +3803,9 @@
       "exit": 0,
       "reescritas": 4,
       "rutas": [
-       "02_Observability/errors/2026-10-20-nullpointerexception.md",
        "99_Index/search-index.json",
        "02_Observability/errors/index.md",
+       "02_Observability/errors/2026-10-20-nullpointerexception.md",
        "02_Observability/index.md"
       ]
      },
@@ -3647,7 +3847,9 @@
       "argv": "",
       "exit": 0,
       "envelope_ok": true,
-      "cambiadas": []
+      "cambiadas": [
+       "99_Index/index.md"
+      ]
      }
     ]
    },
@@ -3658,8 +3860,10 @@
      {
       "corrida": 1,
       "exit": 0,
-      "reescritas": 0,
-      "rutas": []
+      "reescritas": 1,
+      "rutas": [
+       "99_Index/index.md"
+      ]
      },
      {
       "corrida": 2,
@@ -3859,8 +4063,8 @@
     "corridas": [
      {
       "argv": "--source_path ./docs --project mi-api --dry_run true",
-      "exit": 1,
-      "envelope_ok": false,
+      "exit": 0,
+      "envelope_ok": true,
       "cambiadas": []
      }
     ]
@@ -3871,13 +4075,13 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      },
      {
       "corrida": 2,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      }
@@ -4009,15 +4213,31 @@
     "corridas": [
      {
       "argv": "--from 01_Projects/foo.md --to 03_Decisions/foo.md --json",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "00_System/.trash/foo-20261020-205436.md.bak",
+       "00_System/move-log.json",
+       "01_Projects/foo.md",
+       "01_Projects/index.md",
+       "01_Projects/old/index.md",
+       "03_Decisions/foo.md",
+       "03_Decisions/index.md",
+       "99_Index/graph.json"
+      ]
      },
      {
       "argv": "--folder 01_Projects/old --to-folder 01_Projects/new --json",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "00_System/move-log.json",
+       "01_Projects/index.md",
+       "01_Projects/new/index.md",
+       "01_Projects/new/nota.md",
+       "01_Projects/old/nota.md",
+       "99_Index/graph.json"
+      ]
      }
     ]
    },
@@ -4027,9 +4247,16 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
-      "reescritas": 0,
-      "rutas": []
+      "exit": 0,
+      "reescritas": 6,
+      "rutas": [
+       "01_Projects/new/index.md",
+       "99_Index/graph.json",
+       "01_Projects/index.md",
+       "01_Projects/old/nota.md",
+       "01_Projects/new/nota.md",
+       "00_System/move-log.json"
+      ]
      },
      {
       "corrida": 2,
@@ -4067,9 +4294,16 @@
     "corridas": [
      {
       "argv": "--project mi-api --title Missing validation --severity major --detected_by audit",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "02_Observability/index.md",
+       "02_Observability/quality/index.md",
+       "02_Observability/quality/mi-api-2026-10-missing-validation.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -4079,13 +4313,20 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
-      "reescritas": 0,
-      "rutas": []
+      "exit": 0,
+      "reescritas": 6,
+      "rutas": [
+       "99_Index/search-index.json",
+       "99_Index/graph.json",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "02_Observability/quality/index.md",
+       "02_Observability/quality/mi-api-2026-10-missing-validation.md",
+       "02_Observability/index.md"
+      ]
      },
      {
       "corrida": 2,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      }
@@ -4272,14 +4513,26 @@
     "corridas": [
      {
       "argv": "--project mi-api --path ../mi-api",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "01_Projects/index.md",
+       "01_Projects/mi-api/index.md",
+       "01_Projects/mi-api/overview.md",
+       "06_Diagrams/component/index.md",
+       "06_Diagrams/component/mi-api-architecture.md",
+       "06_Diagrams/index.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/hash-index.json",
+       "99_Index/index.md",
+       "99_Index/search-index.json"
+      ]
      },
      {
       "argv": "--project mi-api --path ../mi-api --dry-run",
-      "exit": 1,
-      "envelope_ok": false,
+      "exit": 0,
+      "envelope_ok": true,
       "cambiadas": []
      }
     ]
@@ -4362,9 +4615,16 @@
     "corridas": [
      {
       "argv": "--project mi-api --name Repository --type architecture --status implementado --description Abstraccion de acceso a datos",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "05_Patterns/architecture/index.md",
+       "05_Patterns/architecture/mi-api-repository.md",
+       "05_Patterns/index.json",
+       "05_Patterns/index.md",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -4374,9 +4634,16 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
-      "reescritas": 0,
-      "rutas": []
+      "exit": 0,
+      "reescritas": 6,
+      "rutas": [
+       "99_Index/search-index.json",
+       "05_Patterns/index.json",
+       "99_Index/graph.json",
+       "05_Patterns/architecture/index.md",
+       "05_Patterns/index.md",
+       "05_Patterns/architecture/mi-api-repository.md"
+      ]
      },
      {
       "corrida": 2,
@@ -4479,9 +4746,16 @@
     "corridas": [
      {
       "argv": "--project mi-api --title Emails de usuario --purpose Notificaciones --legal_basis consent",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "09_Infrastructure/index.md",
+       "09_Infrastructure/privacy/index.md",
+       "09_Infrastructure/privacy/mi-api-emails-de-usuario.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -4491,13 +4765,20 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
-      "reescritas": 0,
-      "rutas": []
+      "exit": 0,
+      "reescritas": 6,
+      "rutas": [
+       "99_Index/search-index.json",
+       "99_Index/graph.json",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "09_Infrastructure/index.md",
+       "09_Infrastructure/privacy/mi-api-emails-de-usuario.md",
+       "09_Infrastructure/privacy/index.md"
+      ]
      },
      {
       "corrida": 2,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      }
@@ -4588,6 +4869,7 @@
        "01_Projects/ans/index.md",
        "01_Projects/ans/project.md",
        "01_Projects/index.md",
+       "01_Projects/mi-api/index.md",
        "19_Audits/vocabulary/tag-ledger.json",
        "99_Index/graph.json",
        "99_Index/search-index.json"
@@ -4640,9 +4922,16 @@
     "corridas": [
      {
       "argv": "--project mi-api --description REST API --runtime Node.js 20",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "01_Projects/index.md",
+       "01_Projects/mi-api/index.md",
+       "01_Projects/mi-api/overview.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -4652,13 +4941,20 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
-      "reescritas": 0,
-      "rutas": []
+      "exit": 0,
+      "reescritas": 6,
+      "rutas": [
+       "99_Index/search-index.json",
+       "99_Index/graph.json",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "01_Projects/index.md",
+       "01_Projects/mi-api/overview.md",
+       "01_Projects/mi-api/index.md"
+      ]
      },
      {
       "corrida": 2,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      }
@@ -4692,9 +4988,17 @@
     "corridas": [
      {
       "argv": "--project mi-api --status en_desarrollo --summary Sprint 3 en curso",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "01_Projects/index.md",
+       "01_Projects/mi-api/changelog.md",
+       "01_Projects/mi-api/index.md",
+       "01_Projects/mi-api/status.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -4783,9 +5087,17 @@
     "corridas": [
      {
       "argv": "--project mi-api --type test-plan --title Plan de Pruebas v2 --description Plan de pruebas de la API para la v2",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "19_Audits/vocabulary/tag-ledger.json",
+       "21_QA/.qa-index.json",
+       "21_QA/index.md",
+       "21_QA/test-plan/index.md",
+       "21_QA/test-plan/mi-api-plan-de-pruebas-v2.md",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -4824,13 +5136,17 @@
       "argv": "",
       "exit": 0,
       "envelope_ok": true,
-      "cambiadas": []
+      "cambiadas": [
+       "00_System/quality-index.json"
+      ]
      },
      {
       "argv": "--min-score 0.7",
       "exit": 0,
       "envelope_ok": true,
-      "cambiadas": []
+      "cambiadas": [
+       "00_System/quality-index.json"
+      ]
      }
     ]
    },
@@ -4841,8 +5157,10 @@
      {
       "corrida": 1,
       "exit": 0,
-      "reescritas": 0,
-      "rutas": []
+      "reescritas": 1,
+      "rutas": [
+       "00_System/quality-index.json"
+      ]
      },
      {
       "corrida": 2,
@@ -4932,9 +5250,18 @@
     "corridas": [
      {
       "argv": "--add 07_Knowledge/rara.md --reason Sin frontmatter y origen desconocido --agent claude",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "07_Knowledge/rara.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "20_Quarantine/.quarantine-ledger.json",
+       "20_Quarantine/index.md",
+       "20_Quarantine/unclassified/index.md",
+       "20_Quarantine/unclassified/rara.md",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      },
      {
       "argv": "--list",
@@ -5121,7 +5448,11 @@
       "argv": "",
       "exit": 0,
       "envelope_ok": true,
-      "cambiadas": []
+      "cambiadas": [
+       "99_Index/hash-index.json",
+       "99_Index/index.md",
+       "99_Index/search-index.json"
+      ]
      },
      {
       "argv": "--graph --check",
@@ -5164,9 +5495,16 @@
     "corridas": [
      {
       "argv": "--project mi-api --from User --to Order --relation_type has_many --cardinality 1:N",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "06_Diagrams/entity/index.md",
+       "06_Diagrams/entity/mi-api-erd.md",
+       "06_Diagrams/entity/mi-api-relations.json",
+       "06_Diagrams/index.md",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -5176,13 +5514,20 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
-      "reescritas": 0,
-      "rutas": []
+      "exit": 0,
+      "reescritas": 6,
+      "rutas": [
+       "99_Index/search-index.json",
+       "99_Index/graph.json",
+       "06_Diagrams/entity/mi-api-erd.md",
+       "06_Diagrams/entity/index.md",
+       "06_Diagrams/entity/mi-api-relations.json",
+       "06_Diagrams/index.md"
+      ]
      },
      {
       "corrida": 2,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      }
@@ -5216,9 +5561,19 @@
     "corridas": [
      {
       "argv": "--project mi-api --version 1.2.0 --type minor",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "01_Projects/index.md",
+       "01_Projects/mi-api/changelog.md",
+       "01_Projects/mi-api/index.md",
+       "08_Runbooks/deploy/index.md",
+       "08_Runbooks/deploy/mi-api-release-120.md",
+       "08_Runbooks/index.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -5228,13 +5583,20 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
-      "reescritas": 0,
-      "rutas": []
+      "exit": 0,
+      "reescritas": 9,
+      "rutas": [
+       "99_Index/search-index.json",
+       "99_Index/graph.json",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "01_Projects/index.md",
+       "08_Runbooks/deploy/index.md",
+       "08_Runbooks/deploy/mi-api-release-120.md"
+      ]
      },
      {
       "corrida": 2,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      }
@@ -5268,9 +5630,17 @@
     "corridas": [
      {
       "argv": "--project mi-api --title Auth --description Login de usuario --type functional --priority must-have",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "14_Requirements/.requirements-index.json",
+       "14_Requirements/index.md",
+       "14_Requirements/mi-api/index.md",
+       "14_Requirements/mi-api/req-001-auth.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -5280,13 +5650,20 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
-      "reescritas": 0,
-      "rutas": []
+      "exit": 0,
+      "reescritas": 7,
+      "rutas": [
+       "99_Index/search-index.json",
+       "14_Requirements/index.md",
+       "99_Index/graph.json",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "14_Requirements/.requirements-index.json",
+       "14_Requirements/mi-api/index.md"
+      ]
      },
      {
       "corrida": 2,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      }
@@ -5405,9 +5782,16 @@
     "corridas": [
      {
       "argv": "--project mi-api --title Caida de la base --likelihood 3 --impact 4",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "02_Observability/index.md",
+       "02_Observability/risks/index.md",
+       "02_Observability/risks/mi-api-caida-de-la-base.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -5417,13 +5801,20 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
-      "reescritas": 0,
-      "rutas": []
+      "exit": 0,
+      "reescritas": 6,
+      "rutas": [
+       "02_Observability/risks/mi-api-caida-de-la-base.md",
+       "99_Index/search-index.json",
+       "99_Index/graph.json",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "02_Observability/risks/index.md",
+       "02_Observability/index.md"
+      ]
      },
      {
       "corrida": 2,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      }
@@ -5457,29 +5848,22 @@
     "corridas": [
      {
       "argv": "--path 08_Runbooks/deploy.md --outcome success",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "08_Runbooks/deploy.md",
+       "08_Runbooks/index.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
    "c3": {
     "estado": "OK",
-    "declarada": true,
-    "corridas": [
-     {
-      "corrida": 1,
-      "exit": 1,
-      "reescritas": 0,
-      "rutas": []
-     },
-     {
-      "corrida": 2,
-      "exit": 1,
-      "reescritas": 0,
-      "rutas": []
-     }
-    ]
+    "declarada": false,
+    "nota": "sin contrato de idempotencia: no se hipoteca nada"
    },
    "c5": {
     "estado": "OK",
@@ -5509,9 +5893,16 @@
     "corridas": [
      {
       "argv": "--project mi-api --title Deploy --trigger manual --category deploy --steps [{\"step\": \"Build\"}, {\"step\": \"Publicar\"}]",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "08_Runbooks/deploy/index.md",
+       "08_Runbooks/deploy/mi-api-deploy.md",
+       "08_Runbooks/index.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -5521,13 +5912,20 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
-      "reescritas": 0,
-      "rutas": []
+      "exit": 0,
+      "reescritas": 6,
+      "rutas": [
+       "99_Index/search-index.json",
+       "99_Index/graph.json",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "08_Runbooks/deploy/index.md",
+       "08_Runbooks/deploy/mi-api-deploy.md",
+       "08_Runbooks/index.md"
+      ]
      },
      {
       "corrida": 2,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      }
@@ -5807,14 +6205,22 @@
     "corridas": [
      {
       "argv": "--path src/ --project mi-api",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "02_Observability/index.md",
+       "02_Observability/vulnerabilities/C002-c002-command-injection-2026-10-20.md",
+       "02_Observability/vulnerabilities/S002-s002-secrets-2026-10-20.md",
+       "02_Observability/vulnerabilities/index.md",
+       "02_Observability/vulnerabilities/security-scan-mi-api-2026-10-20.md",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      },
      {
       "argv": "--path src/ --project mi-api --categories secrets command_injection --save_findings false",
-      "exit": 1,
-      "envelope_ok": false,
+      "exit": 0,
+      "envelope_ok": true,
       "cambiadas": []
      }
     ]
@@ -5825,13 +6231,13 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      },
      {
       "corrida": 2,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      }
@@ -5916,9 +6322,16 @@
     "corridas": [
      {
       "argv": "--project mi-api --service api --slo_type availability --target 99.9",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "02_Observability/index.md",
+       "02_Observability/slos/index.md",
+       "02_Observability/slos/mi-api-api-availability.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -5928,13 +6341,20 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
-      "reescritas": 0,
-      "rutas": []
+      "exit": 0,
+      "reescritas": 6,
+      "rutas": [
+       "99_Index/search-index.json",
+       "99_Index/graph.json",
+       "02_Observability/slos/mi-api-api-availability.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "02_Observability/slos/index.md",
+       "02_Observability/index.md"
+      ]
      },
      {
       "corrida": 2,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      }
@@ -6109,15 +6529,21 @@
     "corridas": [
      {
       "argv": "--path 10_Migrated/GUIA.md --by guia",
-      "exit": 1,
-      "envelope_ok": false,
+      "exit": 0,
+      "envelope_ok": true,
       "cambiadas": []
      },
      {
       "argv": "--path 10_Migrated/GUIA.md --by [[guia]] --apply",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "10_Migrated/GUIA.md",
+       "10_Migrated/index.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -6203,9 +6629,17 @@
     "corridas": [
      {
       "argv": "--project mi-api --title Login --test_type unit --description Verifica el login",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "15_Tests/.tests-index.json",
+       "15_Tests/index.md",
+       "15_Tests/unit/index.md",
+       "15_Tests/unit/mi-api-login.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -6215,13 +6649,20 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
-      "reescritas": 0,
-      "rutas": []
+      "exit": 0,
+      "reescritas": 7,
+      "rutas": [
+       "99_Index/search-index.json",
+       "15_Tests/.tests-index.json",
+       "99_Index/graph.json",
+       "15_Tests/index.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "15_Tests/unit/index.md"
+      ]
      },
      {
       "corrida": 2,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      }
@@ -6261,8 +6702,8 @@
      },
      {
       "argv": "--project mi-api --limit 20",
-      "exit": 1,
-      "envelope_ok": false,
+      "exit": 0,
+      "envelope_ok": true,
       "cambiadas": []
      }
     ]
@@ -6593,9 +7034,18 @@
     "corridas": [
      {
       "argv": "--folder 01_Projects/mi-api --title Overview --content @file:overview.md --tags api backend --agent mi-agente",
-      "exit": 1,
-      "envelope_ok": false,
-      "cambiadas": []
+      "exit": 0,
+      "envelope_ok": true,
+      "cambiadas": [
+       "00_System/.change-log.json",
+       "00_System/change-log.md",
+       "01_Projects/index.md",
+       "01_Projects/mi-api/index.md",
+       "01_Projects/mi-api/overview.md",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "99_Index/graph.json",
+       "99_Index/search-index.json"
+      ]
      }
     ]
    },
@@ -6605,13 +7055,20 @@
     "corridas": [
      {
       "corrida": 1,
-      "exit": 1,
-      "reescritas": 0,
-      "rutas": []
+      "exit": 0,
+      "reescritas": 8,
+      "rutas": [
+       "99_Index/search-index.json",
+       "99_Index/graph.json",
+       "19_Audits/vocabulary/tag-ledger.json",
+       "01_Projects/index.md",
+       "00_System/.change-log.json",
+       "01_Projects/mi-api/overview.md"
+      ]
      },
      {
       "corrida": 2,
-      "exit": 1,
+      "exit": 0,
       "reescritas": 0,
       "rutas": []
      }
@@ -6626,5 +7083,5 @@
  "deuda_congelada": [
   "vault_changelog_check"
  ],
- "segundos": 662.7
+ "segundos": 431.9
 }
