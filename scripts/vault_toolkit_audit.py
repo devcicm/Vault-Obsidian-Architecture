@@ -446,7 +446,8 @@ def doc_actualizado() -> bool:
     return all((not f.is_file()) or f.stat().st_mtime <= nuevo for f in fuentes)
 
 
-def _doc_de(cache: Dict[str, Any]) -> str:
+def _doc_de(cache: Dict[str, Any], cubiertas: Optional[int] = None,
+            total: Optional[int] = None) -> str:
     resumen = cache.get("resumen", {})
     lineas = [
         "# Auditoría funcional del toolkit",
@@ -455,6 +456,15 @@ def _doc_de(cache: Dict[str, Any]) -> str:
         "`scripts/toolkit-audit-last.json` y de `scripts/toolkit-audit-baseline.json`. "
         "No se edita a mano: la regenera `vault_toolkit_audit --doc`.",
         "",
+    ]
+    if cubiertas is not None and total is not None and cubiertas < total:
+        # El informe declara su alcance: un doc acotado no puede leerse como
+        # el estado de las 125 tools.
+        lineas += [
+            f"**Alcance parcial** — {cubiertas} de {total} tools "
+            "(corrida acotada con `--tools`/`--grupo`)", "",
+        ]
+    lineas += [
         f"**Resumen** — {resumen.get('OK', 0)} OK · {resumen.get('MEJORA', 0)} MEJORA · "
         f"{resumen.get('DEFECTO', 0)} DEFECTO · {resumen.get('NO-VERIFICABLE', 0)} NO-VERIFICABLE",
         "",
@@ -501,6 +511,9 @@ def main() -> int:
                         help="junto a --freeze: permiso explícito (y visible) para estrenar deuda")
     parser.add_argument("--doc", action="store_true",
                         help="regenera docs/auditorias/auditoria-toolkit.md desde el last-run")
+    parser.add_argument("--parcial", action="store_true",
+                        help="junto a --doc: permite publicar el informe aunque el "
+                             "last-run no cubra el catálogo entero (lo declara)")
     args = parser.parse_args()
 
     if args.doc:
@@ -510,12 +523,26 @@ def main() -> int:
             return _salir_con_error(
                 "STALE_REPORT",
                 "sin last-run: correr la auditoría antes de regenerar el doc")
+        cache = json.loads(LAST_RUN_PATH.read_text(encoding="utf-8"))
+        # O2: `--tools`/`--grupo` pisan el last-run con esa corrida acotada.
+        # Regenerar el informe desde ahí lo encogía a 8 filas sin que nada
+        # lo dijera — le pasó a la propia ola O2 al cerrar. El doc completo
+        # se deriva de un barrido completo, o se declara parcial.
+        import vault_mcp_catalog as mc
+        cubiertas = len(cache.get("results") or [])
+        total = len(mc.TOOLS_CATALOG)
+        if cubiertas < total and not args.parcial:
+            return _salir_con_error(
+                "STALE_REPORT",
+                f"el last-run cubre {cubiertas} de {total} tools: corre --todo "
+                "antes de --doc (o pasa --parcial para publicar un informe acotado)")
         desfasado = DOC_PATH.is_file() and not doc_actualizado()
         DOC_PATH.parent.mkdir(parents=True, exist_ok=True)
-        cache = json.loads(LAST_RUN_PATH.read_text(encoding="utf-8"))
-        DOC_PATH.write_text(_doc_de(cache), encoding="utf-8")
+        DOC_PATH.write_text(
+            _doc_de(cache, cubiertas=cubiertas, total=total), encoding="utf-8")
         return _emitir(True, {"action": "doc",
                               "path": str(DOC_PATH.relative_to(REPO_ROOT)),
+                              "tools_en_el_informe": cubiertas,
                               "estaba_desfasado": desfasado})
 
     import vault_mcp_catalog as mc

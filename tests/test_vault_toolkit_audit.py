@@ -285,3 +285,65 @@ def test_sanidad_gana_y_capacidad_convergen_sobre_el_catalogo_real():
     gid, cap = tka.gid_y_capacidad()
     assert gid.get("vault_gate") == 35
     assert cap.get("vault_gate") == "gobernanza_del_estandar"
+
+
+# ————————————————————————————————————————— alcance del informe (O2) ———————————
+
+def _cache_dos_tools() -> dict:
+    return {
+        "timestamp": "2026-10-20T12:00:00Z",
+        "resumen": {"OK": 2, "MEJORA": 0, "DEFECTO": 0, "NO-VERIFICABLE": 0},
+        "results": [
+            {"tool": "vault_a", "grupo_id": 1, "capacidad": "x",
+             "veredicto": "OK", "motivos": []},
+            {"tool": "vault_b", "grupo_id": 1, "capacidad": "x",
+             "veredicto": "OK", "motivos": []},
+        ],
+        "deuda_congelada": [],
+    }
+
+
+def test_el_informe_declara_alcance_parcial():
+    """Un doc derivado de una corrida acotada no puede leerse como el estado
+    de las 125 tools: lo dice en su cabecera (O2 — el cierre de la ola encogió
+    el informe a 8 filas sin que nada lo dijera)."""
+    texto = tka._doc_de(_cache_dos_tools(), cubiertas=2, total=125)
+    assert "Alcance parcial" in texto
+    assert "2 de 125" in texto
+
+
+def test_el_informe_completo_no_se_declara_parcial():
+    texto = tka._doc_de(_cache_dos_tools(), cubiertas=125, total=125)
+    assert "Alcance parcial" not in texto
+
+
+def test_doc_se_niega_con_last_run_parcial(tmp_path, monkeypatch, capsys):
+    last = tmp_path / "last.json"
+    last.write_text(json.dumps(_cache_dos_tools()), encoding="utf-8")
+    doc = tmp_path / "doc.md"
+    monkeypatch.setattr(tka, "LAST_RUN_PATH", last)
+    monkeypatch.setattr(tka, "DOC_PATH", doc)
+    monkeypatch.setattr(tka, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(sys, "argv", ["vault_toolkit_audit.py", "--doc"])
+    codigo_salida = tka.main()
+    assert codigo_salida == 1
+    salida = capsys.readouterr().out
+    assert "STALE_REPORT" in salida
+    assert "--todo" in salida
+    assert not doc.exists(), "el informe parcial no se escribió"
+
+
+def test_doc_con_parcial_publica_y_lo_declara(tmp_path, monkeypatch, capsys):
+    last = tmp_path / "last.json"
+    last.write_text(json.dumps(_cache_dos_tools()), encoding="utf-8")
+    doc = tmp_path / "doc.md"
+    monkeypatch.setattr(tka, "LAST_RUN_PATH", last)
+    monkeypatch.setattr(tka, "DOC_PATH", doc)
+    monkeypatch.setattr(tka, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(sys, "argv",
+                        ["vault_toolkit_audit.py", "--doc", "--parcial"])
+    tka.main()
+    assert doc.exists()
+    texto = doc.read_text(encoding="utf-8")
+    assert "Alcance parcial" in texto
+    capsys.readouterr()

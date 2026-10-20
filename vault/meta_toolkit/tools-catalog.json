@@ -6973,6 +6973,10 @@
           "doc": {
             "type": "boolean",
             "description": "Regenera docs/auditorias/auditoria-toolkit.md desde el last-run"
+          },
+          "parcial": {
+            "type": "boolean",
+            "description": "junto a --doc: permite publicar el informe aunque el last-run no cubra el catálogo entero (lo declara)"
           }
         },
         "additionalProperties": false
