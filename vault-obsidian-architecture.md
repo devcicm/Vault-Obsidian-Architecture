@@ -8084,7 +8084,7 @@ temp/
 
 ---
 
-### v41.12 — 2026-10-20 `git: pending`
+### v41.12 — 2026-10-20 `git: 3061ed0`
 
 **El toolkit se audita tool por tool, y cerrar un cambio ya no exige correr la suite entera.**
 
