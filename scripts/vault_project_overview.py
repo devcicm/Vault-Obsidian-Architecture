@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
+from vault_encoding import sanitize_content
 from vault_io import atomic_write_text, safe_wikilink, write_report
 
 
@@ -315,7 +316,7 @@ def vault_project_overview(
 
     final_content = "\n".join(frontmatter) + "\n\n" + "\n\n".join(body_sections)
 
-    atomic_write_text(overview_path, conservar_nota_generada(overview_path, final_content))
+    atomic_write_text(overview_path, conservar_nota_generada(overview_path, sanitize_content(final_content, dry_run=False)[0]))
 
     return {
         "ok": True,

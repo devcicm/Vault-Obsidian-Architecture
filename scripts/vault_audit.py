@@ -36,7 +36,7 @@ import sys
 from vault_entorno import leer as _env
 
 from vault_registry import SECTIONS as _REGISTRO_DE_SECCIONES, es_andamio
-from vault_errors import emit_error, wrap_main, proyecto_registrado
+from vault_errors import presupuesto_de_vault, emit_error, wrap_main, proyecto_registrado
 
 from collections import defaultdict
 
@@ -3056,4 +3056,4 @@ Notas:
 
 
 if __name__ == "__main__":
-    sys.exit(wrap_main(main, "vault_audit"))
+    sys.exit(wrap_main(main, "vault_audit", timeout=presupuesto_de_vault()))

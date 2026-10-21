@@ -36,7 +36,7 @@ import json
 
 import sys
 
-from vault_errors import emit_error, wrap_main
+from vault_errors import presupuesto_de_vault, emit_error, wrap_main
 
 from datetime import datetime, timezone
 
@@ -420,4 +420,4 @@ Notas:
 
 
 if __name__ == "__main__":
-    sys.exit(wrap_main(main, "vault_merge"))
+    sys.exit(wrap_main(main, "vault_merge", timeout=presupuesto_de_vault()))

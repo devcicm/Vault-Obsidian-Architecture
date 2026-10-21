@@ -58,7 +58,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import yaml
 
-from vault_errors import emit_error, wrap_main
+from vault_errors import presupuesto_de_vault, emit_error, wrap_main
 from vault_io import (atomic_write_text, escrituras_en_lote, file_lock,
                       get_vault_root, is_snapshot_path)
 from vault_lib import separar_frontmatter, yaml_scalar
@@ -356,4 +356,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(wrap_main(main, "vault_frontmatter_heal"))
+    sys.exit(wrap_main(main, "vault_frontmatter_heal", timeout=presupuesto_de_vault()))

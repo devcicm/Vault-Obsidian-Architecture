@@ -64,15 +64,43 @@ def test_el_canal_compara_la_forma_de_disco(vault):
     assert _mtime(nota) == antes
 
 
-def test_el_canal_calla_ante_solo_sellos(vault):
-    """Cambiar solo `id`/`createdAt`/`updatedAt` no es cambiar el documento."""
+def test_el_canal_salta_ante_texto_identico(vault):
+    """Byte a byte: si lo que se graba es lo que hay, no se escribe.
+
+    Y SOLO eso: qué campos son "el documento" lo decide el dueño de cada
+    documento, no el canal (v41.12/O8: en un índice generado el `updatedAt`
+    ES el contenido — dice cuándo se generó — y saltárselo dejaba el índice
+    con el sello viejo mientras el contador decía 2 escrituras).
+    """
     nota = vault / "07_Knowledge" / "z.md"
-    atomic_write_text(nota, "---\nid: a\ncreatedAt: 2026-01-01\n"
-                            "updatedAt: 2026-01-01\n---\n\n# Z\n")
+    atomic_write_text(nota, "# Z\n\ncuerpo\n")
     antes = _mtime(nota)
     time.sleep(0.02)
-    atomic_write_text(nota, "---\nid: b\ncreatedAt: 2026-01-02\n"
-                            "updatedAt: 2026-01-02\n---\n\n# Z\n")
+    atomic_write_text(nota, "# Z\n\ncuerpo\n")
+    assert _mtime(nota) == antes
+
+
+def test_los_sellos_los_decide_el_dueno_de_la_nota(vault):
+    """`id`/`createdAt`/`updatedAt` no son el contenido de una NOTA: eso lo
+    declara su dueño (`frontmatter_escritura.texto_estable`), y el canal
+    obedece el texto que le llega."""
+    from vault.kernel.frontmatter_escritura import (
+        conservar_nota_generada,
+        texto_estable,
+    )
+
+    nota = vault / "07_Knowledge" / "s.md"
+    previo = "---\nid: a\ncreatedAt: 2026-01-01\nupdatedAt: 2026-01-01\n---\n\n# S\n"
+    nuevo = "---\nid: b\ncreatedAt: 2026-01-02\nupdatedAt: 2026-01-02\n---\n\n# S\n"
+    nota.write_text(previo, encoding="utf-8")
+
+    assert texto_estable(previo) == texto_estable(nuevo)
+    # El dueño conserva: el canal recibe el texto previo y no hay escritura.
+    conservado = conservar_nota_generada(nota, nuevo)
+    assert conservado == previo
+    antes = _mtime(nota)
+    time.sleep(0.02)
+    atomic_write_text(nota, conservado)
     assert _mtime(nota) == antes
 
 

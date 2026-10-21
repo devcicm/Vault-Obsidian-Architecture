@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v41.12 - 2026-10-20  
+**Versión:** v41.13 - 2026-10-20  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -7717,6 +7717,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v41.4 | 2026-10-14 | **El vault se usa como producto instalado sin errores de operación, y tres deudas del registro quedan saldadas.** Caras `guard.py`/`heal.py` derivadas en cada norma (#10); la fase 8 de sanación empieza por el núcleo (#11); `version_pinned` y AP-08 (#2); PAT-2 con plazo en el stub (capa 4 en cero); lotes D–H del puente; una sesión de agente consumidor sobre la wheel destapa y cierra defectos de escritura, lectura, borrado, consulta y protocolo MCP (`isError`, tools que no pueden terminar). F8 y la deuda #12 siguen declaradas. 5530 tests, 23 puertas |
 | v41.6 | 2026-10-15 | **Cada norma dice cuándo se revisó, la escritura deja constancia y el piso de Python lo ejecuta una máquina.** Cada `norma.py` declara `revisado_en`, con responsable y cadencia derivados (R4), y `vault_norms_coherence --disparos` lista las normas cuyo código de sostén cambió o cuya cadencia venció (R5); `vault_write` y `vault_append` anotan altas, cambios y añadidos en `.change-log.json` y lo publican en `change_log` (F8, deuda `f8_criterio_sin_decidir` saldada); `vault init` arranca en Python 3.9 —`write_text(newline=)` es de 3.10— y `test_piso_python` vigila también los argumentos nombrados posteriores al piso; la guía de instalación dice qué frena a ciegas, por qué canal sale cada error y que `init` no crea el padre (R7); la suite corre en Linux con Python 3.9. 5633 tests, 24 puertas |
 | v41.7 | 2026-10-16 | **Un lock se da por huérfano por su dueño, un registro ilegible se aparta en vez de pisarse y las puertas dejan de crecer con lo que no miden.** El lock guarda máquina e inicio del proceso y solo se rompe si su dueño murió, quien lo perdió no escribe ni mueve (fencing) y la toma va por la ruta real (deuda `lock_caduca_por_reloj_de_pared` saldada); la bitácora, la traza, la cola de propagación, las preferencias, el ledger de voz y una nota ilegible se apartan o se nombran (AP-51); AP-66 «el coste crece con lo que no es trabajo» con su detector en `vault_arch`, y cinco puertas dejan de crecer con la historia o el anidamiento; AP-48 la pronuncia su puerta (deuda `ap48_sin_voz` saldada); AP-51 y AP-52 ven la tupla vacía, el envelope tirado y el `ok: True` mutado a error. **Ruptura:** sin `VAULT_ROOT`, una tool instalada cuya autodetección cae en el propio paquete se niega con `VAULT_NOT_FOUND`. 5772 tests, 24 puertas |
+| v41.13 | 2026-10-20 | **El barrido se ejecuta de verdad, es la puerta 25 y la clase de idempotencia está cerrada.** O1–O7: 17 DEFECTO → 1 congelado (release-gated), 121 OK. El instrumento prepara sus corridas como el banco AP-37 (proyecto del ejemplo + ficheros de entrada) y encuentra 17 defectos que el «OK» anterior tapaba. El canal (`atomic_write_text`) no escribe cuando el texto saneado es el del disco ni cuando solo cambian `id`/`createdAt`/`updatedAt`; `vault_merge dedup` deja de fusionar los `index.md` de sección y respalda antes de borrar; los correlativos (BUG/AID/TEST/REQ/NCR) sobreviven a la actualización real; `vault_runbook_log` retira `unchanged` con anotación. `toolkit_audit --check` entra en `vault_gate` (25 puertas) midiendo deuda nueva sobre el catálogo entero. 6022 tests, 25 puertas |
 | v41.12 | 2026-10-20 | **El toolkit se audita tool por tool, y cerrar un cambio ya no exige correr la suite entera.** `vault_toolkit_audit` (Normas) ejecuta las líneas `example` de cada tool (C0 superficie, C1 cobertura del ejemplo, C2 ejecución+contrato, C3 idempotencia en la misma copia, C4 paridad CLI↔MCP de los dueños, C5 degradación sin `VOAS_*`), contrasta el envelope con `declared_returns` y congela los DEFECTO en una baseline que solo encoge —escrita por `vault_baseline.escribir`, con objetivo, plazo y dueño— y publica su informe derivado en `docs/auditorias/auditoria-toolkit.md`. `vault_test_scope` (internal), arnés de alcance, mide por clausura inversa del grafo ast de imports y literales qué tests toca un cambio, y el carril `-m "not slow"` saca los 23 módulos que el perfil midió >25 s; la suite canónica pasa a `-n auto` (~17 min) y la serie queda para re-verificar rojos (AP-44). Los errores que emiten las tools nuevas salen por `ERROR_CATALOG` (AP-52) y `AUDIT_STILL_RED` entra al catálogo para el gate estricto. La migración del dueño de `test_scope` a `vault/meta_toolkit/` baja el puente otro módulo (ADR-0002, deuda #12). 125 tools, 37 grupos |
 | v41.11 | 2026-10-18 | **El porqué de cada puerta se publica derivado, no se escribe dos veces.** `docs/PUERTAS.md` sale de `vault_gate.PUERTAS` y del docstring de cada tool (el del dueño si es alias), con las normas que cita enlazadas a su `porque.md`; `--fix-doc` lo regenera y `--check-doc` falla si diverge. El docstring del catálogo dejaba una cifra a mano (AP-47). 5863 tests, 24 puertas |
 | v41.10 | 2026-10-17 | **Un handler se juzga por si el fallo llega al llamante, no por si deja rastro.** AP-51: un `log()` suelto ya no absuelve a un `except Exception` que devuelve un vacío; solo expone la mutación de un contenedor o la llamada a una función del módulo que lo hace (`expositores`). AP-52: `var.update(otro)` se lee cuando `otro` es un dict literal asignado una vez. Lo que ninguno de los dos detectores sigue queda declarado en `cobertura_parcial`, con test. 5858 tests, 24 puertas |
@@ -8083,6 +8084,58 @@ temp/
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
 
 ---
+
+### v41.13 — 2026-10-20 `git: 774f1ad`
+
+**El barrido se ejecuta de verdad, es la puerta 25 y la clase de idempotencia está cerrada.**
+
+Las olas O1–O7 de la auditoría funcional dejan el catálogo en **121 OK · 1 DEFECTO
+congelado · 0 MEJORA · 3 NO-VERIFICABLE**. El defecto que queda —`vault_changelog_check`
+con su línea de release— está declarado en la baseline con su motivo: solo corre
+cuando hay una versión `git: pending`.
+
+**Lo que estaba mal en el instrumento.** El barrido daba por buena la idempotencia de
+un camino que nunca se ejecutaba: sin el proyecto de los ejemplos (`mi-api`) ni sus
+ficheros (`@file:`), quince `*_save` morían en `PROJECT_NOT_FOUND` y el C3 medía el
+silencio. Ahora pasa `origen` y `preparar` a `run_one` —la misma preparación que el
+banco AP-37 y los tests de escritores— y encontró **17 defectos de golpe**. En el
+mismo gesto, C1 dejó de casar flags por substring (`-h` vive dentro de `must-have` y
+`--host`) y `contract_gap` dejó de exigir el contrato de éxito a un envelope de error.
+
+**La clase de idempotencia, cerrada donde corresponde.** Regenerar lo mismo movía el
+fichero porque el texto compuesto (`—`) no era el del disco (`--`, plegado al sanear)
+y porque cada llamada acuñaba `id`/`updatedAt`. El canal no escribe cuando el texto
+saneado coincide ni cuando solo cambian esos sellos (regla del dueño,
+`frontmatter_escritura.texto_estable`); al no escribir, no dispara la cascada. Los
+índices conservan su línea de marca (`seccion.con_marca_de`), los registros por
+correlativo tienen identidad por ruta, y `vault_merge dedup` deja de fusionar los 23
+`index.md` de sección —respalda antes de borrar y toma lock del canónico—.
+
+**La puerta.** `toolkit_audit` entra en `vault_gate` (25 puertas): `--check` sin
+alcance audita el catálogo entero y mide deuda nueva contra
+`scripts/toolkit-audit-baseline.json` (solo encoge; crecer exige `--freeze
+--admitir-nuevos`). El checklist de `AGENTS.md` y `docs/PUERTAS.md` se derivan del
+registro.
+
+**Presupuesto.** `vault_init` comparte el escape de `vault_reindex`:
+`max(VAULT_TOOL_TIMEOUT, 3600)` — medido en un vault ajeno real de 15.785 ficheros,
+donde el límite genérico de 60 s lo mataba a mitad de escritura (dejaba índices y
+sello, y el envelope en `TOOL_TIMEOUT`). Y `vault_entorno --limites` publica las 22
+variables declaradas con su help — `--filtro` acota por nombre o propósito, `--json`
+para consumir — para que el presupuesto no se descubra leyendo once ficheros.
+
+| Límite | Valor | Dueño | Veredicto |
+|---|---|---|---|
+| `VAULT_TOOL_TIMEOUT` | 60 s | `vault_errors` (watchdog de toda tool) | **Mordió**: con 15.785 ficheros, el init y el reindex morían a mitad de escritura. Hoy las tools que recorren el vault entero (init, reindex, audit, quality_check, graph, master_index, merge dedup, frontmatter_heal) llevan fondo de 3600 s vía `presupuesto_de_vault()`; el default sigue detecting una tool colgada y un `VAULT_TOOL_TIMEOUT` mayor manda. |
+| `VAULT_SMOKE_TIMEOUT` | 90 s | `vault_smoke` | Aceptado: el smoke arranca un intérprete nuevo por tool, y 90 s es holgado para una tool que sí responde. |
+| Lock de nota | 10 s | `vault_write`, `vault_release_save`, `vault_code_sync` | Aceptado: es contención por fichero, no escala con el tamaño del vault. |
+| Lock de índice compartido | 30 s | `vault_io`, `vault_code_tag`, `vault_quality_check` | Aceptado por la misma razón. |
+| `VAULT_DQ_CACHE_MINUTES` | 30 min | `vault_audit` | Aceptado: el índice de calidad se recalcula cada cuarto de hora. |
+| Extracto de índice | 200 caracteres | `vault.indices.reconstruccion` | Aceptado y es contrato: quien lee el índice lo lee con ese recorte. |
+
+**Ruptura:** ninguna de contrato público. `vault_runbook_log.unchanged` sale de
+`declared_returns` con `superseded_fields` anotado —una bitácora cuenta ejecuciones y
+no puede prometer idempotencia—; el resto de campos estables no se mueve.
 
 ### v41.12 — 2026-10-20 `git: 3061ed0`
 

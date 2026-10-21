@@ -46,6 +46,7 @@ def utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
+from vault_encoding import sanitize_content
 from vault_io import atomic_write_text, write_report
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -265,7 +266,7 @@ def vault_infra_map(
     # Escritura atómica: era el único sitio que escribía una nota con
     # `open(..., "w")` directo — sin saneado de encoding, sin temp+replace y
     # sin quedar registrada en el ledger de AP-37.
-    atomic_write_text(map_path, conservar_nota_generada(map_path, "\n\n".join(frontmatter)))
+    atomic_write_text(map_path, conservar_nota_generada(map_path, sanitize_content("\n\n".join(frontmatter), dry_run=False)[0]))
 
     return {
         "ok": True,

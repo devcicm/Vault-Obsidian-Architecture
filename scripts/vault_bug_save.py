@@ -326,7 +326,7 @@ def vault_bug_save(
         "path": rel,
         "bug_id": bug_id,
         "phase": phase,
-        "action": "unchanged" if existente is not None and not sin_cambio else (
+        "action": "unchanged" if existente is not None and sin_cambio else (
             "updated" if existente is not None else "created"),
     }
 

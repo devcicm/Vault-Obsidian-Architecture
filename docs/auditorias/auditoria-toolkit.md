@@ -1,6 +1,6 @@
 # Auditoría funcional del toolkit
 
-Corrida en **2026-10-20T20:56:59Z** — derivada de `scripts/toolkit-audit-last.json` y de `scripts/toolkit-audit-baseline.json`. No se edita a mano: la regenera `vault_toolkit_audit --doc`.
+Corrida en **2026-10-21T03:49:28Z** — derivada de `scripts/toolkit-audit-last.json` y de `scripts/toolkit-audit-baseline.json`. No se edita a mano: la regenera `vault_toolkit_audit --doc`.
 
 **Resumen** — 121 OK · 0 MEJORA · 1 DEFECTO · 3 NO-VERIFICABLE
 

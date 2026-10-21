@@ -55,6 +55,24 @@ from vault.kernel.errores import MAPA_DE_FALLOS as _MAPA_DE_FALLOS, traducir_fal
 TOOL_TIMEOUT_SECONDS: int = _env("VAULT_TOOL_TIMEOUT")
 
 
+def presupuesto_de_vault() -> int:
+    """Presupuesto de las herramientas que recorren el vault ENTERO (init,
+    reindex, audit, quality_check, graph, master_index, merge dedup,
+    frontmatter_heal). El default de 60 s existe para detectar una tool
+    COLGADA, no para acotar trabajo legítimo: medido en un vault ajeno real de
+    15.785 ficheros, el init y el reindex lo superaban y morían a mitad de
+    escritura.
+
+    Función y no constante por la misma razón que `leer()`: se resuelve AL
+    LLAMARSE (AP-49) — una constante evaluada al importar congelaría el
+    presupuesto y un `VAULT_TOOL_TIMEOUT` exportado después no mandaría.
+
+    `max()` con el declarado: un `VAULT_TOOL_TIMEOUT` mayor sigue mandando
+    (AP-49, se resuelve al llamarse).
+    """
+    return max(TOOL_TIMEOUT_SECONDS, 3600)
+
+
 class VaultWriteError(Exception):
     """Error de escritura con código de catálogo conocido.
 

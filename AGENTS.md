@@ -12,7 +12,7 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~12.000 líneas). Fuente normativa. |
 | `scripts/*.py` | ~164 scripts, 125 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (6021 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (6030 tests). Toda norma con guard debe tener test. |
 | `normas/` | Normas como paquete (`normas/<código>/`: `norma.py`, `porque.md`, `guard.py`, `heal.py`, `test_*.py`). Las carga `vault_norms_catalog` en su sitio del catálogo; la forma la vigila `--check-framework`. Desde m186 toda norma vive aquí (cuántas, `NORMAS_EN_PAQUETE`). `guard.py`/`heal.py` son derivados —apuntan a la función dueña; los sanadores salen de `vault_norms_catalog.SANADORES`— y se regeneran con `vault_norms_engine.escribir_caras_derivadas`, no a mano. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
@@ -157,6 +157,11 @@ python scripts/vault_fundamentals.py --matrix                # matriz concepto �
 python scripts/vault_mcp_catalog.py --check                  # falla si Python y JSON divergen
 python scripts/vault_mcp_catalog.py --sync                   # regenera el JSON
 
+# Presupuesto y variables de entorno (el registro canónico, con su help)
+python scripts/vault_entorno.py --limites                    # tabla: default, valor actual, propósito
+python scripts/vault_entorno.py --filtro timeout             # solo los presupuestos
+python scripts/vault_entorno.py --json --filtro VAULT_ROOT   # para consumir
+
 # Salud del vault de pruebas — sin `--root`: solo lo aceptan las tools que
 # nombra la regla 1, y en este repo la autodetección ya resuelve `vault-sandbox/`.
 # Para forzar otro destino, `VAULT_ROOT`.
@@ -208,6 +213,9 @@ abajo, en «Cuatro cosas que el registro no puede decirte».
 - [ ] `python scripts/vault_doc_sync.py --check --strict`
       Toda tool tiene sección en scripts/README.md y el índice una fila por grupo.
       *Se arregla con:* python scripts/vault_doc_sync.py --fix  (solo el índice; las secciones se escriben a mano)
+- [ ] `python scripts/vault_toolkit_audit.py --check`
+      AP-42 — el ejemplo documentado de cada tool ejercita la función que declara: corre de verdad (con el proyecto y los ficheros que el propio ejemplo da por existentes), su envelope cubre el contrato y, si promete idempotencia, la segunda corrida no reescribe nada. La puerta mide DEUDA NUEVA: la congelada en scripts/toolkit-audit-baseline.json está declarada y revisada (solo encoge; crecer exige --freeze --admitir-nuevos).
+      *Se arregla con:* reparar la tool o su ejemplo; el freeze del auditor solo encoge y crecer exige --freeze --admitir-nuevos
 - [ ] `python scripts/vault_noop_audit.py --check --ejecutado --strict`
       AP-37 — ninguna tool con side effects devuelve ok: true sin indicador de trabajo, en lo declarado y en lo que el ejemplo emite al ejecutarse.
       *Se arregla con:* saldar la deuda y luego --freeze

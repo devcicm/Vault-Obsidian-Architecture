@@ -287,6 +287,24 @@ def test_sanidad_gana_y_capacidad_convergen_sobre_el_catalogo_real():
     assert cap.get("vault_gate") == "gobernanza_del_estandar"
 
 
+def test_check_sin_alcance_mide_el_catalogo_entero():
+    """La puerta de `vault_gate` corre `--check` sin alcance (O7).
+
+    Un check sobre un subconjunto certificaría el resto por omisión; por eso
+    `--check`/`--strict` sin `--todo`/`--grupo`/`--tools` auditan todo.
+    """
+    import vault_mcp_catalog as mc
+
+    class Args:
+        todo = False
+        tools = None
+        grupo = None
+        check = True
+        strict = False
+
+    assert sorted(tka._seleccionar(Args())) == sorted(mc.TOOLS_CATALOG)
+
+
 # ————————————————————————————————————————— alcance del informe (O2) ———————————
 
 def _cache_dos_tools() -> dict:

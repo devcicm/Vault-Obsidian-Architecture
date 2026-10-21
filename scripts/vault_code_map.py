@@ -33,6 +33,7 @@ from typing import Any, Dict
 
 
 from vault_io import atomic_write_text, write_report
+from vault_encoding import sanitize_content
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -180,7 +181,7 @@ def vault_code_map(project: str) -> Dict[str, Any]:
     # atomic_write_* y no `open(..., "w")`: el escaneo de secretos, el saneado de
     # encoding y el temp+replace viven ahí. Escribir en crudo los esquivaba los
     # tres (AP-36) y dejaba la nota a medias si el proceso moría a mitad.
-    atomic_write_text(map_path, conservar_nota_generada(map_path, "\n".join(frontmatter)))
+    atomic_write_text(map_path, conservar_nota_generada(map_path, sanitize_content("\n".join(frontmatter), dry_run=False)[0]))
 
     modules = [
         m

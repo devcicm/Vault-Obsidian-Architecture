@@ -98,6 +98,22 @@ PUERTAS: List[Dict[str, Any]] = [
                "secciones se escriben a mano)",
     },
     {
+        "id": "toolkit_audit",
+        "cmd": ["vault_toolkit_audit.py", "--check"],
+        "mide": "AP-42 — el ejemplo documentado de cada tool ejercita la función "
+                "que declara: corre de verdad (con el proyecto y los ficheros que "
+                "el propio ejemplo da por existentes), su envelope cubre el "
+                "contrato y, si promete idempotencia, la segunda corrida no "
+                "reescribe nada. La puerta mide DEUDA NUEVA: la congelada en "
+                "scripts/toolkit-audit-baseline.json está declarada y revisada "
+                "(solo encoge; crecer exige --freeze --admitir-nuevos)",
+        "fix": "reparar la tool o su ejemplo; el freeze del auditor solo encoge y "
+               "crecer exige --freeze --admitir-nuevos",
+        # El barrido copia el sandbox por cada línea de ejemplo de las 125
+        # tools: medido en 850 s, muy por encima del presupuesto genérico.
+        "timeout": 2400,
+    },
+    {
         "id": "noop",
         "cmd": ["vault_noop_audit.py", "--check", "--ejecutado", "--strict"],
         "mide": "AP-37 — ninguna tool con side effects devuelve ok: true sin "
@@ -282,7 +298,7 @@ LIMITE_POR_PUERTA = 600.0
 
 def limite_total() -> int:
     """Lo que puede tardar la corrida completa sin que nadie la mate antes."""
-    return int(len(PUERTAS) * LIMITE_POR_PUERTA) + 60
+    return int(sum(float(p.get("timeout", LIMITE_POR_PUERTA)) for p in PUERTAS)) + 60
 
 
 def _etiquetar_normas(envelope: Any) -> None:
@@ -307,7 +323,13 @@ def _correr(puerta: Dict[str, Any], timeout: float = LIMITE_POR_PUERTA) -> Dict[
     rompe con los acentos de los envelopes, y un `UnicodeDecodeError` aquí se
     leería como "la puerta falló" — un fallo del corredor presentado como
     fallo del medido, que es AP-51.
+
+    Una puerta puede declarar su propio `timeout`: el barrido del toolkit
+    audita las 125 tools de verdad (copia el sandbox por línea) y se pasó del
+    presupuesto genérico de 600 s —medido: 850 s—, así que el corredor lo
+    mataba y la puerta reportaba un fallo que no era del medido.
     """
+    timeout = float(puerta.get("timeout", timeout))
     inicio = time.monotonic()
     try:
         proc = subprocess.run(

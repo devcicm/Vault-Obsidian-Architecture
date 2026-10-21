@@ -43,6 +43,7 @@ import sys
 from vault_errors import emit_error, wrap_main, proyecto_registrado
 from vault_lib import yaml_scalar, slugify_strict, utcnow, campos_de_texto
 from datetime import datetime, timezone
+from vault_encoding import sanitize_content
 from vault_io import atomic_write_text, assert_within_vault, write_report
 import uuid
 
@@ -242,7 +243,7 @@ def vault_flow_save(
 
     flow_dir.mkdir(parents=True, exist_ok=True)
 
-    atomic_write_text(note_path, conservar_nota_generada(note_path, final_content))
+    atomic_write_text(note_path, conservar_nota_generada(note_path, sanitize_content(final_content, dry_run=False)[0]))
 
     return {
         "ok": True,

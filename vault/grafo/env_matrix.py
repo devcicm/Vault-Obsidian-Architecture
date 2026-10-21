@@ -29,6 +29,7 @@ from typing import Any, Dict, List, Optional
 from vault_errors import wrap_main, proyecto_registrado
 from vault.kernel.entorno import agente_por_defecto
 from vault_lib import slugify_strict, utcnow
+from vault_encoding import sanitize_content
 from vault_io import assert_within_vault, atomic_write_text, get_vault_root, update_section_index, write_report
 from vault_norms_catalog import compute_norm_refs
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
@@ -275,7 +276,7 @@ _Documentar qué es diferente en este entorno vs producción: datos, escala, ser
     path = get_vault_root() / FOLDER / filename
     path.parent.mkdir(parents=True, exist_ok=True)
     assert_within_vault(path, get_vault_root())
-    atomic_write_text(path, conservar_nota_generada(path, full))
+    atomic_write_text(path, conservar_nota_generada(path, sanitize_content(full, dry_run=False)[0]))
 
     update_section_index("09_Infrastructure")
 

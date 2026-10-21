@@ -38,6 +38,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 
+from vault_encoding import sanitize_content
 from vault_io import atomic_write_text, get_vault_root, tomar_lock, write_report
 
 #: Espera máxima por el lock de la nota; la misma que vault_write y vault_append.
@@ -172,7 +173,7 @@ def _registrar_bajo_lock(
     # atomic_write_* y no `open(..., "w")`: el escaneo de secretos, el
     # saneado de encoding y el temp+replace viven ahí. Escribir en crudo los
     # esquivaba los tres (AP-36) y dejaba la nota a medias si el proceso moría.
-    atomic_write_text(note_path, conservar_nota_generada(note_path, content))
+    atomic_write_text(note_path, conservar_nota_generada(note_path, sanitize_content(content, dry_run=False)[0]))
 
     return {
         "ok": True,

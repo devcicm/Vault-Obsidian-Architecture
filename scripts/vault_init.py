@@ -33,7 +33,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict
 
-from vault_errors import emit_error, wrap_main
+from vault_errors import presupuesto_de_vault, emit_error, wrap_main
 from vault_standard_upgrade import version_conocida
 from vault_io import atomic_write_text, write_report
 from vault_lib import utcnow
@@ -488,4 +488,13 @@ Notas:
 
 
 if __name__ == "__main__":
-    sys.exit(wrap_main(main, "vault_init"))
+    # O8, medido en un vault ajeno real de 15.785 ficheros: el presupuesto
+    # genérico de 60 s mataba el init a mitad de escritura (dejaba índices
+    # y sello escritos y el envelope en TOOL_TIMEOUT). Es la misma clase que
+    # `vault_reindex` ya resolvió: el init recorre el vault entero, así que
+    # su presupuesto es max(VAULT_TOOL_TIMEOUT, 3600) — el default sigue
+    # detectando una tool colgada, y un `VAULT_TOOL_TIMEOUT` mayor manda.
+    import vault_errors
+
+    sys.exit(wrap_main(main, "vault_init",
+                       timeout=vault_errors.presupuesto_de_vault()))

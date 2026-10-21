@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
+from vault_encoding import sanitize_content
 from vault_io import (
     atomic_write_text,
     atomic_write_json,
@@ -432,7 +433,7 @@ def vault_code_module(
     final_content = "\n".join(frontmatter) + "\n\n" + con_titulo(Path(file_path).name, "\n\n".join(body_sections))
 
     note_path.parent.mkdir(parents=True, exist_ok=True)
-    contenido = conservar_nota_generada(note_path, final_content)
+    contenido = conservar_nota_generada(note_path, sanitize_content(final_content, dry_run=False)[0])
     previo = ""
     if note_path.exists():
         try:

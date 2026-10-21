@@ -44,7 +44,7 @@ from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from vault_errors import wrap_main
+from vault_errors import presupuesto_de_vault, wrap_main
 from vault_lib import (cargar_bloque_tolerante, indice_de_destinos, read_frontmatter,
                        resolver_destino_wikilink, separar_frontmatter, utcnow)
 from vault_io import SNAPSHOT_DIRS, atomic_write_json, file_lock, is_snapshot_path, write_report
@@ -730,4 +730,4 @@ Notas:
 
 
 if __name__ == "__main__":
-    sys.exit(wrap_main(main, "vault_quality_check"))
+    sys.exit(wrap_main(main, "vault_quality_check", timeout=presupuesto_de_vault()))

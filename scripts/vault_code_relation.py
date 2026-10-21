@@ -36,6 +36,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
+from vault_encoding import sanitize_content
 from vault_io import (
     atomic_write_text,
     atomic_write_json,
@@ -225,7 +226,7 @@ def save_code_map(project: str, mermaid_content: str) -> Path:
     frontmatter.append(f"```mermaid\n{mermaid_content}\n```\n")
 
     # Ver nota en save_index(): el write path canónico, no `open(..., "w")`.
-    atomic_write_text(map_path, conservar_nota_generada(map_path, "\n".join(frontmatter)))
+    atomic_write_text(map_path, conservar_nota_generada(map_path, sanitize_content("\n".join(frontmatter), dry_run=False)[0]))
 
     return map_path
 

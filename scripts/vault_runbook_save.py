@@ -30,6 +30,7 @@ import sys
 
 from vault_errors import emit_error, wrap_main, proyecto_registrado
 from vault_lib import yaml_scalar, utcnow, slugify
+from vault_encoding import sanitize_content
 from vault_io import atomic_write_text, assert_within_vault, safe_wikilink, write_report
 from vault_registry import section_default_type
 from vault_norms_catalog import status_frontmatter_lines
@@ -188,7 +189,7 @@ def vault_runbook_save(
 
     folder.mkdir(parents=True, exist_ok=True)
 
-    atomic_write_text(note_path, conservar_nota_generada(note_path, final_content))
+    atomic_write_text(note_path, conservar_nota_generada(note_path, sanitize_content(final_content, dry_run=False)[0]))
 
     return {
         "ok": True,

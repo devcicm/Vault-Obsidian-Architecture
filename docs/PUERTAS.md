@@ -5,7 +5,7 @@
 > falla si diverge. Lo escrito a mano aquí se pierde: el porqué se corrige
 > en el docstring de la tool.
 
-Puertas: 24. Verde en todas no es verde en la suite.
+Puertas: 25. Verde en todas no es verde en la suite.
 
 ## `framework`
 
@@ -72,6 +72,17 @@ Ninguna cifra que describa el estándar debe escribirse a mano. Cada número en 
 **vault_doc_sync — guard anti-drift de NOMBRES entre el registro y scripts/README.md.**
 
 `vault_doc_counts` vigila las cifras; esta tool vigila los nombres, que es la otra mitad del mismo problema. El síntoma que la originó, medido en v39:
+
+## `toolkit_audit`
+
+- **Comando:** `python scripts/vault_toolkit_audit.py --check`
+- **Mide:** AP-42 — el ejemplo documentado de cada tool ejercita la función que declara: corre de verdad (con el proyecto y los ficheros que el propio ejemplo da por existentes), su envelope cubre el contrato y, si promete idempotencia, la segunda corrida no reescribe nada. La puerta mide DEUDA NUEVA: la congelada en scripts/toolkit-audit-baseline.json está declarada y revisada (solo encoge; crecer exige --freeze --admitir-nuevos).
+- **Se arregla con:** reparar la tool o su ejemplo; el freeze del auditor solo encoge y crecer exige --freeze --admitir-nuevos
+- **Normas:** [AP-42](../normas/AP-42/porque.md)
+
+**vault_toolkit_audit — verificación funcional del toolkit, tool por tool.**
+
+`vault_smoke` (AP-42) mide que la herramienta corre y que su envelope tiene `ok`. Esta script mide lo que nadie más mide: que el ejemplo documentado **ejercice la función declarada** — y lo hace sobre la maquinaria ya pagada, sin substituir a ningún guard:
 
 ## `noop`
 

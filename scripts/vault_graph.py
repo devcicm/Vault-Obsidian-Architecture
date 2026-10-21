@@ -23,7 +23,7 @@ import json
 
 import sys
 
-from vault_errors import emit_fallo, wrap_main
+from vault_errors import presupuesto_de_vault, emit_fallo, wrap_main
 
 
 from pathlib import Path
@@ -378,4 +378,4 @@ Notas:
 
 
 if __name__ == "__main__":
-    sys.exit(wrap_main(main, "vault_graph"))
+    sys.exit(wrap_main(main, "vault_graph", timeout=presupuesto_de_vault()))

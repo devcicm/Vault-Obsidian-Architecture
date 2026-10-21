@@ -20,7 +20,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict
 
-from vault_errors import wrap_main
+from vault_errors import presupuesto_de_vault, wrap_main
 from vault_io import write_report
 from vault_registry import section_description
 
@@ -85,4 +85,4 @@ Notas:
 
 
 if __name__ == "__main__":
-    sys.exit(wrap_main(main, "vault_master_index"))
+    sys.exit(wrap_main(main, "vault_master_index", timeout=presupuesto_de_vault()))

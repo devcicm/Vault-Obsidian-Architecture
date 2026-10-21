@@ -22,3 +22,14 @@ if _repo_root and str(_repo_root) not in sys.path:
 import vault.kernel.entorno as _dueno  # noqa: E402
 
 sys.modules[__name__] = _dueno
+
+
+if __name__ == "__main__":
+    # O8 — el comando que publica presupuesto y help de cada variable (AP-05:
+    # el registro es la fuente; esto es presentación). `--filtro` acota por
+    # nombre o propósito; `--json` para consumir. El parser vive en el DUEÑO
+    # (como el resto de alias, ADR-0002), y la puerta de documentación lee
+    # los flags de ahí.
+    import vault.kernel.entorno as _dueno_cli
+
+    sys.exit(_dueno_cli.main())

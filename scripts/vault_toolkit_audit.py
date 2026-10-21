@@ -151,6 +151,11 @@ def _seleccionar(args: argparse.Namespace) -> List[str]:
                 f"ninguna tool en el grupo(s) {args.grupo}")
             raise SystemExit(1)
         return elegidas
+    # O7: `--check` sin alcance es la PUERTA (vault_gate): mide el catálogo
+    # entero. Un check sobre un subconjunto certificaría el resto por
+    # omisión, y una puerta que no mide lo que dice es peor que no tenerla.
+    if getattr(args, "check", False) or getattr(args, "strict", False):
+        return todas
     _salir_con_error(
         "INVALID_ARGS",
         "pide --todo, --grupo o --tools (el barrido completo no es gratis)")

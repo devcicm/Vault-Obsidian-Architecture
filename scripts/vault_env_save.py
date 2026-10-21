@@ -31,7 +31,9 @@ import sys
 from vault_errors import emit_error, wrap_main, proyecto_registrado
 from vault_lib import yaml_scalar, slugify_strict, utcnow, campos_de_texto
 from datetime import datetime, timezone
+from vault_encoding import sanitize_content
 from vault_io import atomic_write_text, assert_within_vault, write_report
+from vault.kernel.frontmatter_escritura import conservar_nota_generada  # noqa: E402
 
 from pathlib import Path
 
@@ -238,7 +240,18 @@ def vault_env_save(
 
         body.append("")
 
-    atomic_write_text(envs_path, frontmatter.render() + "\n\n" + "\n".join(body))
+    # Mismo cuerpo ⇒ mismo documento (v41.12/O4): el registro de variables es
+    # un documento generado, y su `updatedAt` es la hora de generación. La
+    # comparación va en forma de disco (el saneado pliega em-dash→`--`), que es
+    # como lo landea el canal.
+    atomic_write_text(
+        envs_path,
+        conservar_nota_generada(
+            envs_path,
+            sanitize_content(frontmatter.render() + "\n\n" + "\n".join(body),
+                             dry_run=False)[0],
+        ),
+    )
 
     return {
         "ok": True,

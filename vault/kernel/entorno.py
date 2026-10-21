@@ -27,8 +27,9 @@ rompía con un `ModuleNotFoundError`.
 from __future__ import annotations
 
 import os
+import sys
 from dataclasses import dataclass
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, List, Optional
 
 
 @dataclass(frozen=True)
@@ -288,3 +289,79 @@ def tabla() -> list[dict]:
         }
         for v in VARIABLES.values()
     ]
+
+
+def main(argv: Optional[List[str]] = None) -> int:
+    """Publica el registro: nombre, tipo, default, valor actual y qué gobierna.
+
+    Vive en el dueño porque el dueño es el parser que corre (ADR-0002: el
+    alias `scripts/vault_entorno.py` lo delega) y porque la puerta de
+    documentación lee los flags del dueño, no del alias.
+
+    `--filtro` acota por nombre o propósito; `--json` lo hace consumible. El
+    valor actual se resuelve AL LLAMARSE (AP-49): lo que ves es lo que vería
+    una tool lanzada desde esta misma shell.
+    """
+    import argparse
+    import json
+
+    parser = argparse.ArgumentParser(
+        description=("Variables de entorno del estándar: nombre, tipo, default, "
+                     "valor actual, quién las lee y qué gobierna cada una. "
+                     "Sin --filtro publica la tabla completa."),
+        allow_abbrev=False,
+    )
+    parser.add_argument("--filtro", help="Subcadena a buscar en nombre o propósito")
+    parser.add_argument("--limites", action="store_true",
+                        help="Solo los presupuestos operativos (segundos y "
+                             "minutos: watchdog, smoke, cachés)")
+    parser.add_argument("--json", action="store_true",
+                        help="Salida como JSON (para consumir, no para leer)")
+    args = parser.parse_args(argv)
+
+    def es_limite(nombre: str, proposito: str) -> bool:
+        texto = (nombre + " " + proposito).lower()
+        return any(k in texto for k in (
+            "timeout", "segundos", "minutos", "minutes", "segundo por tool"))
+
+    filas = []
+    for nombre, v in sorted(VARIABLES.items()):
+        if args.limites and not es_limite(nombre, v.proposito):
+            continue
+        if args.filtro and args.filtro.lower() not in (
+                nombre + " " + v.proposito).lower():
+            continue
+        filas.append({
+            "variable": nombre,
+            "tipo": v.tipo,
+            "default": v.default,
+            "valor_actual": leer(nombre),
+            "contexto": v.contexto,
+            "proposito": v.proposito,
+        })
+
+    # La consola Windows puede estar en cp1252: los propósitos traen flechas y
+    # acentos que `print` no sabe encodear ahí.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
+    if args.json:
+        print(json.dumps(filas, ensure_ascii=False, indent=2))
+        return 0
+
+    if not filas:
+        print(f"sin variables que coincidan con {args.filtro!r}")
+        return 1
+    for f in filas:
+        print(f"{f['variable']}  [{f['tipo']}]  default={f['default']!r}  "
+              f"valor_actual={f['valor_actual']!r}")
+        print(f"    contexto: {f['contexto']}")
+        print(f"    {f['proposito']}")
+        print()
+    print(f"{len(filas)} variable(s). El valor actual se resuelve al llamarse "
+          "(AP-49); cámbialo en el entorno de la llamada, no aquí.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

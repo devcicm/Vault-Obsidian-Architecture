@@ -31,6 +31,7 @@ import sys
 from vault_errors import emit_error, wrap_main, proyecto_registrado
 from vault_registry import section_default_type
 from vault_lib import yaml_scalar, slugify_strict, utcnow
+from vault_encoding import sanitize_content
 from vault_io import atomic_write_text, assert_within_vault, write_report
 from vault.kernel.mermaid_reglas import validate_mermaid
 
@@ -249,7 +250,7 @@ def vault_diagram_save(
 
     diagram_path.parent.mkdir(parents=True, exist_ok=True)
 
-    atomic_write_text(diagram_path, conservar_nota_generada(diagram_path, final_content))
+    atomic_write_text(diagram_path, conservar_nota_generada(diagram_path, sanitize_content(final_content, dry_run=False)[0]))
 
     return {
         "ok": True,

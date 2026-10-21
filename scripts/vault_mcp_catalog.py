@@ -1784,7 +1784,8 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Actualiza notas relacionadas"],
-        "example": 'python vault_propagate.py --changed "01_Projects/mi-api/overview.md" --queue-report',
+        "example": ('python vault_propagate.py --changed "01_Projects/mi-api/overview.md" --queue-report\n'
+                    'python vault_propagate.py --changed "01_Projects/mi-api/overview.md" --action notify'),
         "related": ["vault_impact", "vault_write"],
     },
     "vault_qa_save": {
@@ -4236,7 +4237,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": ["Requiere 99_Index/graph.json o graph-enriched.json"],
         "side_effects": [],
-        "example": 'python vault_subgraph.py --seeds "03_Decisions/adr-001.md" --hops 2\npython vault_subgraph.py --seeds mcp-protocol --format mermaid',
+        "example": 'python vault_subgraph.py --seeds "vault-hub" --hops 1',
         "related": ["vault_impact", "vault_graph", "vault_context_pack"],
     },
     "vault_query_parse": {

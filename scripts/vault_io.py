@@ -510,31 +510,24 @@ def atomic_write_text(
     _record_write(path, text, encoding)
 
     # Mismo cuerpo ⇒ mismo documento (v41.12/O4), en el canal: si lo que se va
-    # a grabar (ya saneado) es lo que hay en disco, no se escribe y no se
-    # dispara la cascada. Dos comparaciones, en este orden:
+    # a grabar (ya saneado) es byte a byte lo que hay en disco, no se escribe y
+    # no se dispara la cascada. Cubre a los escritores que comparaban su texto
+    # COMPUESTO contra el disco, que no sirve — el saneado pliega em-dash→`--`,
+    # y reescribían en cada corrida sin haber cambiado nada.
     #
-    # 1. Byte a byte: cubre los escritores que comparaban su texto COMPUESTO
-    #    contra el disco, que no sirve — el saneado pliega em-dash→`--`, y
-    #    reescribían en cada corrida sin haber cambiado nada.
-    # 2. Semántica, con la regla del dueño (`texto_estable`: `id`, `createdAt`
-    #    y `updatedAt` no son el documento). Cubre a quien compone un id o un
-    #    sello nuevo por llamada: eso tampoco es un cambio. La importación es
-    #    tardía y guardada porque este módulo tiene que poder copiarse suelto.
+    # Solo byte a byte: QUÉ campos son "el documento" lo decide el dueño de
+    # cada documento (`frontmatter_escritura.texto_estable` para las notas,
+    # donde `id`/`createdAt`/`updatedAt` no son el contenido). El canal no
+    # puede saberlo: en un índice GENERADO el `updatedAt` ES el contenido (dice
+    # cuándo se generó) y saltárselo dejaba el índice con el sello viejo
+    # (medido en `vault_tags`: el rebuild contaba 2 escrituras y el disco movía
+    # 1 — el contador mentía sobre lo que pasó).
     if text:
         try:
-            actual = path.read_text(encoding=encoding, errors="replace")
+            if path.read_text(encoding=encoding, errors="replace") == text:
+                return
         except OSError:
-            actual = None
-        if actual is not None:
-            if actual == text:
-                return
-            try:
-                from vault.kernel.frontmatter_escritura import texto_estable
-            except ImportError:  # copia suelta de vault_io: sin el dueño, sin regla
-                texto_estable = None
-            if texto_estable is not None and (
-                    texto_estable(actual) == texto_estable(text)):
-                return
+            pass
 
     # El mecanismo —temporal, fsync opcional, os.replace y limpieza del huérfano
     # si algo falla— está en `vault_fs.escritura_atomica`. Las guardas ya se han

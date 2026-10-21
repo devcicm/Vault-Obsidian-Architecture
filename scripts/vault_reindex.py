@@ -29,7 +29,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
-from vault_errors import TOOL_TIMEOUT_SECONDS, wrap_main
+from vault_errors import presupuesto_de_vault, TOOL_TIMEOUT_SECONDS, wrap_main
 from vault_fs import file_lock
 from vault_lib import parse_frontmatter
 
@@ -223,4 +223,4 @@ if __name__ == "__main__":
     # el límite por defecto (60 s) la cortaba a mitad de escritura, dejando
     # el índice a medias y un lock que no caduca hasta 120 s después. Mismo
     # criterio que vault_smoke; un VAULT_TOOL_TIMEOUT mayor sigue mandando.
-    sys.exit(wrap_main(main, "vault_reindex", timeout=max(TOOL_TIMEOUT_SECONDS, 3600)))
+    sys.exit(wrap_main(main, "vault_reindex", timeout=presupuesto_de_vault()))
