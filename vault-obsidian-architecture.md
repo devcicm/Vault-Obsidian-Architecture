@@ -8085,7 +8085,7 @@ temp/
 
 ---
 
-### v41.13 — 2026-10-20 `git: 774f1ad`
+### v41.13 — 2026-10-20 `git: b22926b`
 
 **El barrido se ejecuta de verdad, es la puerta 25 y la clase de idempotencia está cerrada.**
 
