@@ -26,27 +26,30 @@ AP-37 bank prepares it) and asks six questions per tool:
 ## Usage
 
 ```bash
-# Full sweep — the catalog, every tool (this is the slow one: it copies the
-# sandbox once per example line)
-vault run vault_toolkit_audit --todo
+# From a checkout of the standard — this is where it runs
+python scripts/vault_toolkit_audit.py --todo
 
 # One group, or a suspect tool
-vault run vault_toolkit_audit --grupo 15
-vault run vault_toolkit_audit --tools vault_write,vault_read
+python scripts/vault_toolkit_audit.py --grupo 15
+python scripts/vault_toolkit_audit.py --tools vault_write,vault_read
 
 # Gate: exit 1 if the last sweep found debt that is not frozen
-vault run vault_toolkit_audit --check
+python scripts/vault_toolkit_audit.py --check
 
 # Re-freeze the baseline with this sweep's verdicts
-vault run vault_toolkit_audit --todo --freeze
+python scripts/vault_toolkit_audit.py --todo --freeze
 
 # Regenerate the published report from the last sweep
-vault run vault_toolkit_audit --doc
+python scripts/vault_toolkit_audit.py --doc
 ```
 
-`vault run vault_toolkit_audit …` is the installed CLI (the wheel). From a
-checkout of the standard, `python scripts/vault_toolkit_audit.py …` takes the
-same arguments.
+**Not `vault run`, and that is deliberate.** The installed runtime refuses
+this tool with `INVALID_ACTION` and the reason *"mantenimiento del estándar,
+no operación sobre un vault"*: it audits the standard itself (the catalog and
+the contracts in this repository), so it belongs to a checkout, not to a vault
+consumer. `vault run` dispatches the operations on a vault; this one operates
+on the repo. The other three skills (`vault-sdd-init`, `vault-sanacion`,
+`vault-onboard`) do run through `vault run`, because they act on a vault.
 
 ## Arguments
 
