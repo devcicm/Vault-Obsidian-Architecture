@@ -8122,7 +8122,7 @@ temp/
 
 ---
 
-### v41.14 — 2026-10-21 `git: pending`
+### v41.14 — 2026-10-21 `git: 588f964`
 
 **El audit deja de medir el ruido ajeno, y medir el toolkit pasa de actividad de
 una persona a procedimiento escrito.**
