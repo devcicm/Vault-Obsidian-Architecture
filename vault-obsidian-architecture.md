@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v41.13 - 2026-10-20  
+**Versión:** v41.14 - 2026-10-21  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -1344,6 +1344,23 @@ Audita la salud completa del vault y retorna un reporte con score.
 > `score -= min(...)` escritas a mano: nadie podía sumar los topes sin leerse la
 > función, y agrupar por familia exigía copiarlos a un segundo sitio (AP-05).
 
+> **Qué audita: las notas del vault, no cada `.md` que hay en el disco.**
+> Los chequeos de contenido —frontmatter, contrato, huérfanas, obsoletas, AP-24,
+> sombra canónica, duplicados— se aplican a las **notas del vault**, y la clase de
+> cada fichero la decide el contrato (`vault_contrato_nota.clase_de_nota`:
+> `contenido`, `derivada`, `sistema`, `sin_seccion`). El material que vive fuera de
+> toda sección —el proyecto de un repositorio dentro del vault, un
+> `node_modules`— **no es una nota**: es material ajeno (**AP-15**), y su
+> veredicto no es de metadatos. Lo que sí resuelve es el barrido crudo, porque
+> ese es el criterio de Obsidian: un enlace a un fichero fuera de las secciones
+> resuelve y no es un enlace roto.
+>
+> Medido en un vault ajeno real (15.614 ficheros), antes y después: `healthScore`
+> 13 → **91**, sin frontmatter 78 → 0, AP-24 25 → 0, huérfanas 78 → 0, sombras
+> canónicas 110 → 0. Lo que queda son los hallazgos reales. La carpeta que no es
+> sección no desaparece del reporte: se informa en `issues.carpetasFueraDeSeccion`,
+> **una fila por carpeta y sin penalización**.
+
 **Retorna:**
 ```json
 {
@@ -1359,7 +1376,8 @@ Audita la salud completa del vault y retorna un reporte con score.
     "staleProjects":        [...],
     "brokenLinks":          [{ "from": "...", "link": "..." }],
     "canonicalShadow":      [{ "noteA": "...", "noteB": "...", "titleA": "...", "titleB": "...", "similarity": 0.91 }],
-    "crossFolderDuplicates":[{ "hash": "md5hex", "files": ["...", "..."] }]
+    "crossFolderDuplicates":[{ "hash": "md5hex", "files": ["...", "..."] }],
+    "carpetasFueraDeSeccion":[{ "folder": "Plataforma", "files": 18102 }]
   },
   "summary": "Score: 87/100 · 42 notas · 3 huerfanas · 1 link roto · 2 pares AP-17"
 }
@@ -3995,7 +4013,7 @@ Lo ingerido entra con `status: draft` y `cia_integrity: low`, de modo que el rer
 
 > **Propósito:** dar contrato ejecutable a la capa por la que un agente **descubre** el estándar. Las 89 tools de los grupos 1–34 se invocan cuando alguien ya sabe que existen; una skill es lo que hace que las encuentre sin que se lo digan.
 
-Una skill vive en `.claude/skills/<nombre>/SKILL.md` y se descubre por convención de ruta, sin paso de instalación. Su punto de entrada es `scripts/<nombre con guiones bajos>.py`. Esa convención es justamente el problema que este grupo cierra: **descubrirse por ruta no es estar publicada**. Durante cuatro versiones `vault-sdd-init` tuvo definición, documentación en `docs/SKILLS.md` y tests de contrato propios, y no tenía entrada ni en `tools-catalog.json` ni en `00_System/tool-spec.json`. `--check-contracts` verifica catálogo → contrato, así que lo que falta en los dos no lo echa en falta nadie: **AP-42 sobre la puerta de entrada de los agentes**.
+Una skill vive en `agent/skills/<nombre>/SKILL.md` y se descubre por convención de ruta, sin paso de instalación. Su punto de entrada es `scripts/<nombre con guiones bajos>.py`. Esa convención es justamente el problema que este grupo cierra: **descubrirse por ruta no es estar publicada**. Durante cuatro versiones `vault-sdd-init` tuvo definición, documentación en `docs/SKILLS.md` y tests de contrato propios, y no tenía entrada ni en `tools-catalog.json` ni en `00_System/tool-spec.json`. `--check-contracts` verifica catálogo → contrato, así que lo que falta en los dos no lo echa en falta nadie: **AP-42 sobre la puerta de entrada de los agentes**.
 
 El criterio de qué merece skill: hay skill donde hay un **procedimiento que un agente tiene que decidir**, no donde hay una tool que ejecutar. Una tool que se llama con tres parámetros y devuelve un envelope no necesita una; un recorrido de doce fases en el que la mitad de las decisiones no las toma ninguna tool, sí.
 
@@ -4020,6 +4038,24 @@ Dos cosas que solo salieron al ejecutarla. `unknown` **no es** `clean`: el prime
 Contrastada contra un vault ajeno al estándar (regla 7): 232 notas, 199 violaciones de norma, 146 enlaces rotos, 4 secciones sin carpeta, `index_stale` con 311 en disco y 290 indexadas — y la fase 9 limpia. Que **discrimine** es la única evidencia de que mide algo.
 
 **Retorna:** `{ ok, tool, vault_root, vault_root_origin, phases, phases_apply, phases_unknown, writes, next }`
+
+#### `vault_toolkit_audit(todo?, grupo?, tools?, check?, strict?, freeze?, admitir-nuevos?, doc?, parcial?)`
+
+El barrido del catálogo: ejecuta la línea `example` de cada tool **de verdad** (en
+una copia desechable del sandbox, preparada como prepara el banco AP-37) y la
+mide contra lo que declara —C0 superficie, C1 cobertura del ejemplo, C2
+ejecución y contrato del envelope, C3 idempotencia en la misma copia, C4 paridad
+CLI↔MCP del dueño, C5 degradación sin dependencias opcionales—. Los DEFECTO se
+congelan en una baseline que **solo encoge** (`scripts/toolkit-audit-baseline.json`);
+crecerla exige `--freeze --admitir-nuevos`, que enumera los nuevos. El informe
+publicado (`docs/auditorias/auditoria-toolkit.md`) es derivado: se regenera con
+`--doc` y declara su propio alcance —un barrido parcial no se publica como el
+estado del catálogo—.
+
+Es la **puerta 25** de `vault_gate`, y desde v41.14 tiene skill propia
+(`vault-toolkit-audit`): medir el catálogo es un procedimiento —qué se corre, qué
+es un veredicto, qué se congela y por qué— y un procedimiento que solo existe en
+prosa se ejecuta distinto cada vez.
 
 ---
 
@@ -7718,6 +7754,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v41.6 | 2026-10-15 | **Cada norma dice cuándo se revisó, la escritura deja constancia y el piso de Python lo ejecuta una máquina.** Cada `norma.py` declara `revisado_en`, con responsable y cadencia derivados (R4), y `vault_norms_coherence --disparos` lista las normas cuyo código de sostén cambió o cuya cadencia venció (R5); `vault_write` y `vault_append` anotan altas, cambios y añadidos en `.change-log.json` y lo publican en `change_log` (F8, deuda `f8_criterio_sin_decidir` saldada); `vault init` arranca en Python 3.9 —`write_text(newline=)` es de 3.10— y `test_piso_python` vigila también los argumentos nombrados posteriores al piso; la guía de instalación dice qué frena a ciegas, por qué canal sale cada error y que `init` no crea el padre (R7); la suite corre en Linux con Python 3.9. 5633 tests, 24 puertas |
 | v41.7 | 2026-10-16 | **Un lock se da por huérfano por su dueño, un registro ilegible se aparta en vez de pisarse y las puertas dejan de crecer con lo que no miden.** El lock guarda máquina e inicio del proceso y solo se rompe si su dueño murió, quien lo perdió no escribe ni mueve (fencing) y la toma va por la ruta real (deuda `lock_caduca_por_reloj_de_pared` saldada); la bitácora, la traza, la cola de propagación, las preferencias, el ledger de voz y una nota ilegible se apartan o se nombran (AP-51); AP-66 «el coste crece con lo que no es trabajo» con su detector en `vault_arch`, y cinco puertas dejan de crecer con la historia o el anidamiento; AP-48 la pronuncia su puerta (deuda `ap48_sin_voz` saldada); AP-51 y AP-52 ven la tupla vacía, el envelope tirado y el `ok: True` mutado a error. **Ruptura:** sin `VAULT_ROOT`, una tool instalada cuya autodetección cae en el propio paquete se niega con `VAULT_NOT_FOUND`. 5772 tests, 24 puertas |
 | v41.13 | 2026-10-20 | **El barrido se ejecuta de verdad, es la puerta 25 y la clase de idempotencia está cerrada.** O1–O7: 17 DEFECTO → 1 congelado (release-gated), 121 OK. El instrumento prepara sus corridas como el banco AP-37 (proyecto del ejemplo + ficheros de entrada) y encuentra 17 defectos que el «OK» anterior tapaba. El canal (`atomic_write_text`) no escribe cuando el texto saneado es el del disco ni cuando solo cambian `id`/`createdAt`/`updatedAt`; `vault_merge dedup` deja de fusionar los `index.md` de sección y respalda antes de borrar; los correlativos (BUG/AID/TEST/REQ/NCR) sobreviven a la actualización real; `vault_runbook_log` retira `unchanged` con anotación. `toolkit_audit --check` entra en `vault_gate` (25 puertas) midiendo deuda nueva sobre el catálogo entero. 6022 tests, 25 puertas |
+| v41.14 | 2026-10-21 | **El audit deja de medir el ruido ajeno y medir el toolkit pasa de actividad de una persona a procedimiento escrito.** O9: los chequeos de contenido son de las NOTAS del vault —la clase la decide el contrato, `clase_de_nota`—, y el barrido crudo sigue siendo el que resuelve enlaces (el criterio de Obsidian). Medido en un vault ajeno real de 15.614 ficheros: `healthScore` 13 → 91, sin frontmatter 78 → 0, AP-24 25 → 0, huérfanas 78 → 0, sombras canónicas 110 → 0; quedan los hallazgos reales (7 notas desfasadas, 1 enlace roto). La carpeta ajena se informa en `issues.carpetasFueraDeSeccion`, una fila por carpeta y sin penalización; AP-15 lo sigue detectando `vault_norms --audit`. Cuarta skill: `vault-toolkit-audit` v1.0 —el barrido del catálogo como procedimiento escrito—. 6042 tests, 25 puertas |
 | v41.12 | 2026-10-20 | **El toolkit se audita tool por tool, y cerrar un cambio ya no exige correr la suite entera.** `vault_toolkit_audit` (Normas) ejecuta las líneas `example` de cada tool (C0 superficie, C1 cobertura del ejemplo, C2 ejecución+contrato, C3 idempotencia en la misma copia, C4 paridad CLI↔MCP de los dueños, C5 degradación sin `VOAS_*`), contrasta el envelope con `declared_returns` y congela los DEFECTO en una baseline que solo encoge —escrita por `vault_baseline.escribir`, con objetivo, plazo y dueño— y publica su informe derivado en `docs/auditorias/auditoria-toolkit.md`. `vault_test_scope` (internal), arnés de alcance, mide por clausura inversa del grafo ast de imports y literales qué tests toca un cambio, y el carril `-m "not slow"` saca los 23 módulos que el perfil midió >25 s; la suite canónica pasa a `-n auto` (~17 min) y la serie queda para re-verificar rojos (AP-44). Los errores que emiten las tools nuevas salen por `ERROR_CATALOG` (AP-52) y `AUDIT_STILL_RED` entra al catálogo para el gate estricto. La migración del dueño de `test_scope` a `vault/meta_toolkit/` baja el puente otro módulo (ADR-0002, deuda #12). 125 tools, 37 grupos |
 | v41.11 | 2026-10-18 | **El porqué de cada puerta se publica derivado, no se escribe dos veces.** `docs/PUERTAS.md` sale de `vault_gate.PUERTAS` y del docstring de cada tool (el del dueño si es alias), con las normas que cita enlazadas a su `porque.md`; `--fix-doc` lo regenera y `--check-doc` falla si diverge. El docstring del catálogo dejaba una cifra a mano (AP-47). 5863 tests, 24 puertas |
 | v41.10 | 2026-10-17 | **Un handler se juzga por si el fallo llega al llamante, no por si deja rastro.** AP-51: un `log()` suelto ya no absuelve a un `except Exception` que devuelve un vacío; solo expone la mutación de un contenedor o la llamada a una función del módulo que lo hace (`expositores`). AP-52: `var.update(otro)` se lee cuando `otro` es un dict literal asignado una vez. Lo que ninguno de los dos detectores sigue queda declarado en `cobertura_parcial`, con test. 5858 tests, 24 puertas |
@@ -8084,6 +8121,66 @@ temp/
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
 
 ---
+
+### v41.14 — 2026-10-21 `git: pending`
+
+**El audit deja de medir el ruido ajeno, y medir el toolkit pasa de actividad de
+una persona a procedimiento escrito.**
+
+**El defecto.** `vault_audit` pedía el contrato de una nota a *todo* `.md` que
+encontraba en el disco. Medido en un vault ajeno real (15.614 ficheros): 78
+«notas sin frontmatter» —75 de ellas READMEs de `node_modules`—, 25 corchetes
+malformados de dependencias (AP-24), 78 huérfanas y 110 sombras canónicas. El
+`healthScore` de ese vault era **13**, y los hallazgos reales —7 notas
+desfasadas y un enlace roto— quedaban debajo del ruido. No era un problema de
+la métrica: era que el audit medía un conjunto que no era el suyo.
+
+**El arreglo, con su dueño.** La clase de una nota ya la decidía el contrato
+(`vault_contrato_nota.clase_de_nota`): `contenido`, `derivada`, `sistema` o
+`sin_seccion`. El audit la usaba solo para pedir la CIA. Ahora la usa para
+decidir **el conjunto**: los chequeos de contenido —frontmatter, contrato,
+huérfanas, obsoletas, AP-24, sombra canónica, duplicados— son de las **notas
+del vault**, y el material ajeno a las secciones deja de contarlas. Lo que
+queda —el barrido crudo— sigue resolviendo enlaces, porque ese es el criterio
+de Obsidian: un enlace a `Plataforma/README.md` resuelve y no es un enlace
+roto. El enlace roto se mide donde el enlace vive; la nota se mide donde la
+nota vive.
+
+**Lo que no se perdió.** El veredicto de lo ajeno no desaparece: cambia de
+sitio y de dueño. **AP-15** (material ajeno en la raíz) lo detecta
+`vault_norms --audit` —así lo declara la norma— y la carpeta que no es sección
+se informa en `issues.carpetasFueraDeSeccion`: **una fila por carpeta, sin
+penalización**, porque un vault puede llevar dentro el proyecto del que se
+documentó y la estructura la weigh con su propio criterio.
+
+**Medición, en el vault ajeno.** `healthScore` 13 → **91**; `healthIndex` 78 →
+97; notas contadas 107 → 29 (las que hay); sin frontmatter 78 → 0; AP-24 25 →
+0; huérfanas 78 → 0; sombras canónicas 110 → 0. Lo que queda son los hallazgos
+reales: 7 notas desfasadas y 1 enlace roto.
+
+**La deuda del barrido, saldada.** El DEFECTO que quedaba congelado desde
+v41.12 —`vault_changelog_check`— no era un defecto de la tool: era **la línea de
+release en curso** (el changelog publicaba `git: pending` de una versión que
+todavía no era la vigente, y el check trata eso como error hasta que
+`--fijar-hash` la cierra). Congelar el reloj no es congelar un defecto. Con la
+entrada escrita, el veredicto pasó a OK y `scripts/toolkit-audit-baseline.json`
+queda **vacía por primera vez**: 122 OK, 3 NO-VERIFICABLE, 0 DEFECTO sobre 125
+tools. La deuda no se borra: pasa a `saldada` en la capa 7 del plano, con la
+versión que la cerró y el motivo por el que reaparece (barrer el catálogo
+dentro de la ventana de release).
+
+**La cuarta skill.** `vault-toolkit-audit` (v1.0) convierte el barrido del
+catálogo en un procedimiento escrito: qué mide cada control (C0–C5), cómo se
+corre (completo, por grupo, por tools), qué es un veredicto (DEFECTO, MEJORA,
+NO-VERIFICABLE), por qué la baseline solo encoge y cómo se publica el informe
+derivado. El criterio no es nuevo: **hay skill donde hay un procedimiento que
+un agente tiene que decidir**. Medir el catálogo exigía decidir qué congelar y
+cuándo recongelar, y eso se hacía de una manera cada vez.
+
+**Corrección de una ruta que no existía.** El manifiesto decía que una skill
+vive en `.claude/skills/<nombre>/SKILL.md`. Esa carpeta se renombró a `agent/`
+hace tiempo (commit `67319bd`) y el texto se quedó: dos sitios del documento
+normativo apuntaban a una ruta que no está. Corregido en v41.14.
 
 ### v41.13 — 2026-10-20 `git: b22926b`
 
@@ -10646,7 +10743,7 @@ La investigación que abre esta versión preguntaba si la CLI, las tools y el MC
 
 **Corregido**
 
-- **Grupo 37 — Skills, y AP-42 sobre la puerta de entrada.** Una skill vive en `.claude/skills/<nombre>/SKILL.md` y se descubre por convención de ruta, sin instalación. Eso es exactamente lo que la dejó fuera: durante cuatro versiones `vault-sdd-init` tuvo definición, entrada en `docs/SKILLS.md` y tests de contrato propios, y ninguna entrada en `tools-catalog.json` ni en `00_System/tool-spec.json`. `--check-contracts` verifica catálogo → contrato, de modo que lo que falta en ambos no lo echa en falta nadie. El grupo publica las skills como cualquier otra tool, y `tests/test_skills_catalogo.py` fija la regla en las dos direcciones: toda skill del directorio tiene entrada en el catálogo, y toda entrada tiene contrato.
+- **Grupo 37 — Skills, y AP-42 sobre la puerta de entrada.** Una skill vive en `agent/skills/<nombre>/SKILL.md` y se descubre por convención de ruta, sin instalación. Eso es exactamente lo que la dejó fuera: durante cuatro versiones `vault-sdd-init` tuvo definición, entrada en `docs/SKILLS.md` y tests de contrato propios, y ninguna entrada en `tools-catalog.json` ni en `00_System/tool-spec.json`. `--check-contracts` verifica catálogo → contrato, de modo que lo que falta en ambos no lo echa en falta nadie. El grupo publica las skills como cualquier otra tool, y `tests/test_skills_catalogo.py` fija la regla en las dos direcciones: toda skill del directorio tiene entrada en el catálogo, y toda entrada tiene contrato.
 - **AP-47 sobre la documentación del propio estándar.** `docs/sdd/` se genera derivando el rango de antipatrones de `NORM_CATALOG` en cada ejecución, así que el fichero recién escrito nunca miente — y por eso nadie miraba el de la ejecución anterior, que es el que se commitea. Medido al añadir la puerta: `04-antipatterns.md` anunciaba `AP-01..AP-35` y el índice del `README.md` `AP-01..AP-25`, con el registro en `AP-01..AP-47`. Un mes de desfase y tres releases. `vault_sdd_init --check` compara disco contra registro leyendo la etiqueta **con la misma expresión que la escribe** (AP-44) y devuelve 1 si difieren; un test lo corre sobre el artefacto real que se commitea, no sobre uno sintético.
 - **`--force` pisaba el único documento escrito a mano.** Lo descubrió la regeneración que la puerta anterior forzó: `git diff --stat` acusó 104 líneas borradas en `docs/sdd/gaps.md` —85 hallazgos redactados a mano, la tabla de estado de FASE 0 y las de prioridades—. `gaps.md` es el único de los 14 declarado *manual fill*, y su preservación estaba condicionada a `and not args.force`. La restricción publicada («no pisa documentación manual») no tenía excepción escrita; el código sí la tenía, y las dos cosas se leen igual de bien hasta que alguien usa la bandera. `--force` levanta la **idempotencia de lo generado**, no el permiso para pisar lo escrito a mano. El test se hace sobre el fuente y no sobre el comportamiento, porque el defecto es de condición: afirma que la línea que decide no menciona `force`.
 - **`vault_sanacion` — el plan de 12 fases, medido.** `docs/MODO-AGENTICO-SANACION.md` describe el recorrido, pero la decisión de qué fase aplica se tomaba leyendo el documento y mirando el vault a ojo, sin quedar escrita en ningún sitio. Ahora sale con veredicto, evidencia, tool que la ejecuta y la decisión que ninguna tool toma. Dos defectos salieron solo al ejecutarla: (1) `issues.*` del audit son **listas de hallazgos, no cifras** — el primer intento exigía `int` y dejó siete de las doce fases en `unknown` sin que nada fallara, de ahí que `phases_unknown` vaya en el envelope y disjunto de `phases_apply`: una fase que no se pudo medir es una fase que sigues debiendo; (2) la fase 5 es encoding roto, no normalización tipográfica — contar comillas tipográficas y em-dash, que este estándar escribe a propósito, daba 106 notas «afectadas» de 111, y una fase que siempre aplica es una fase que nadie lee.

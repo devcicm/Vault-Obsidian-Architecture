@@ -30,16 +30,19 @@ def _vault(tmp_path: Path) -> Path:
     import vault_io
 
     root = tmp_path / "v"
-    for sec in ("00_System", "05_Patterns", "06_Decisions", "99_Index"):
+    for sec in ("00_System", "05_Patterns", "03_Decisions", "99_Index"):
         (root / sec).mkdir(parents=True)
     (root / "05_Patterns" / "centro.md").write_text(
         "---\nstatus: draft\ntype: reference\ntags: [x]\naliases: [El Centro]\n---\n\n# C\n",
         encoding="utf-8")
     (root / "05_Patterns" / "lateral.md").write_text(FM + "# L\n", encoding="utf-8")
+    # La carpeta tiene que ser una seccion CANONICA: desde O9 una nota fuera
+    # de toda seccion es material ajeno (`sin_seccion`) y no cuenta como nota
+    # del vault, ni para el fan-in del nucleo.
     for i in range(6):
         # La mitad cita por alias: el criterio es el de Obsidian, no el nombre.
         destino = "[[El Centro]]" if i % 2 else "[[centro#C]]"
-        (root / "06_Decisions" / f"d{i}.md").write_text(
+        (root / "03_Decisions" / f"d{i}.md").write_text(
             FM + f"# D{i}\n\n{destino} [[lateral]]\n" if i == 0 else FM + f"# D{i}\n\n{destino}\n",
             encoding="utf-8")
     # Un índice que enumera todo no hace núcleo: enumerar no es citar.

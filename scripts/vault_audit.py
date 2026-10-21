@@ -1760,13 +1760,65 @@ def _frontmatter_de(bloque: str) -> Dict[str, Any]:
     }
 
 
+def _carpetas_fuera_de_seccion() -> List[Dict[str, Any]]:
+    """Carpetas de primer nivel que no son sección (CN-02, informativo).
+
+    No penalizan: un vault puede llevar dentro el proyecto del que se
+    documentó —medido en un vault ajeno real con 15.614 ficheros—. Lo que no
+    puede es que el CONTENIDO de esas carpetas se audite como si fueran notas
+    del vault: 75 READMEs de `node_modules` contaban como notas sin frontmatter
+    y 25 corchetes de dependencias como AP-24 (O9).
+
+    Las normas que traigan el caso las tienen: **AP-15** es el material ajeno
+    depositado en la raíz, y su detector es `vault_norms --audit` (así lo dice
+    la norma: `tools_detecting`), no este audit; **CN-02** es la nota colocada
+    en una carpeta que no toca, y aquí no hay nota: hay una carpeta. Por eso
+    esto se INFORMA y no se penaliza —la penalización de la estructura la
+    weigh con su propio criterio—.
+
+    El criterio es del registro: las secciones son las canónicas más las
+    propias declaradas (`secciones_del_vault`), y las carpetas de primer nivel
+    que legítimamente no son sección las declara
+    `vault_registry.NON_SECTION_ROOT_FOLDERS` (`docs`, `vault-backups`…).
+    """
+    from vault_registry import NON_SECTION_ROOT_FOLDERS, secciones_del_vault
+
+    secciones = set(secciones_del_vault(_raiz()))
+    permitidas = set(NON_SECTION_ROOT_FOLDERS)
+    fuera: List[Dict[str, Any]] = []
+    try:
+        entradas = sorted(_raiz().iterdir())
+    except OSError:
+        return fuera
+    for item in entradas:
+        if not item.is_dir() or item.name.startswith("."):
+            continue
+        if item.name in secciones or item.name in permitidas:
+            continue
+        try:
+            ficheros = sum(1 for p in item.rglob("*") if p.is_file())
+        except OSError:
+            ficheros = 0
+        fuera.append({"folder": item.name, "files": ficheros})
+    return fuera
+
+
 def _falta_al_contrato(raw: str, rel: str) -> Optional[Dict[str, Any]]:
     """Lo que el contrato exige y la nota no lleva, o `None` si no le falta nada.
 
     Un bloque que no parsea no se adivina: sale con `illegible` y lo repara
     `vault_frontmatter_heal`. Un derivado no tiene contrato.
     """
-    if clase_de_nota(rel) == "derivada":
+    if clase_de_nota(rel, _raiz()) in ("derivada", "sin_seccion"):
+        # `derivada`: un artefacto generado no tiene contrato de nota.
+        # `sin_seccion`: material ajeno a las secciones (el proyecto de un
+        # repositorio dentro del vault, un `node_modules`): no es una nota y su
+        # veredicto es estructural, no de metadatos. O9, medido en un vault
+        # ajeno real: 75 READMEs de `node_modules` contaban como notas sin
+        # frontmatter y como contratos incumplidos. La norma que trae el
+        # caso es AP-15 (material ajeno), y su detector declarado es
+        # `vault_norms --audit`: aquí lo único que corresponde es NO medirlo
+        # como nota.
         return None
     try:
         datos, cuerpo = parse_frontmatter_with_body(raw)
@@ -2359,23 +2411,38 @@ def vault_audit(
     all_notes = _get_active_notes(project, include_structural=True,
                                   barrido=barrido)
 
+    # O9: los CHEQUEOS DE CONTENIDO son de las notas del vault; el BARRIDO CRUDO
+    # sigue siendo el que resuelve enlaces (el criterio de Obsidian: un enlace a
+    # `Plataforma/README.md` resuelve, así que no es un enlace roto). Lo que vive
+    # fuera de toda sección —el proyecto de un repositorio dentro del vault, un
+    # `node_modules`— no es una nota: su veredicto es estructural (CN-02), y
+    # pedirle contrato de nota lo convertía en ruido. Medido en un vault ajeno
+    # real: 75 READMEs de dependencias contaban como notas sin frontmatter y
+    # 25 corchetes de `node_modules` como AP-24.
+    notas_del_vault = [
+        p for p in content_notes
+        if clase_de_nota(str(p.relative_to(_raiz())).replace("\\", "/"),
+                         _raiz()) != "sin_seccion"
+    ]
+    carpetas_fuera = _carpetas_fuera_de_seccion()
+
     # Indexes construidos desde all_notes para que index.md contribuya backlinks
 
     backlinks, all_stems = _build_indexes(all_notes, barrido=barrido)
 
-    orphans = _detect_orphans(content_notes, backlinks)
+    orphans = _detect_orphans(notas_del_vault, backlinks)
 
-    no_integradas = _detect_no_integradas(content_notes, backlinks, all_notes)
+    no_integradas = _detect_no_integradas(notas_del_vault, backlinks, all_notes)
 
-    nucleo = _nucleo_del_vault(content_notes, all_stems, barrido=barrido)
+    nucleo = _nucleo_del_vault(notas_del_vault, all_stems, barrido=barrido)
 
-    cn01_no_kebab, cn04_sin_titulo = _detect_convenciones_cn01_cn04(content_notes)
+    cn01_no_kebab, cn04_sin_titulo = _detect_convenciones_cn01_cn04(notas_del_vault)
 
-    stale = _detect_stale(content_notes)
+    stale = _detect_stale(notas_del_vault)
 
-    stuck_patterns = _detect_stuck_patterns(content_notes)
+    stuck_patterns = _detect_stuck_patterns(notas_del_vault)
 
-    stale_projects = _detect_stale_projects(content_notes)
+    stale_projects = _detect_stale_projects(notas_del_vault)
 
     # broken_links en all_notes: index.md roto también importa (fix 2026-06-21: scope bug — antes pasaba content_notes)
 
@@ -2385,13 +2452,13 @@ def vault_audit(
 
     canonical_shadow_resuelto: List[Dict[str, Any]] = []
     canonical_shadow, canonical_shadow_identidad = _separar_por_peso(
-        _detect_canonical_shadow(content_notes, resueltos=canonical_shadow_resuelto))
+        _detect_canonical_shadow(notas_del_vault, resueltos=canonical_shadow_resuelto))
 
-    cross_folder_dupes = _detect_cross_folder_duplicates(content_notes)
+    cross_folder_dupes = _detect_cross_folder_duplicates(notas_del_vault)
 
-    same_folder_versions = _detect_same_folder_versions(content_notes)
+    same_folder_versions = _detect_same_folder_versions(notas_del_vault)
 
-    malformed_wikilinks = _detect_malformed_wikilinks(all_notes)
+    malformed_wikilinks = _detect_malformed_wikilinks(notas_del_vault)
 
     empty_indexes = _detect_empty_indexes(barrido=barrido)
 
@@ -2399,7 +2466,7 @@ def vault_audit(
 
     mermaid_errors = _detect_mermaid_errors()
 
-    meta_issues = _detect_missing_metadata(content_notes)
+    meta_issues = _detect_missing_metadata(notas_del_vault)
     missing_tags = meta_issues["missing_tags"]
     missing_agent = meta_issues["missing_agent"]
     missing_type = meta_issues["missing_type"]
@@ -2454,7 +2521,7 @@ def vault_audit(
         "missing_frontmatter": len(missing_frontmatter),
         # Ya vienen resueltas por su detector: la unidad es el punto, no la
         # ocurrencia. El tope del registro las sigue acotando igual.
-        "cia_penalty": _cia_score_penalty(content_notes, stale, propagation_pending),
+        "cia_penalty": _cia_score_penalty(notas_del_vault, stale, propagation_pending),
         "ap31": ap31_penalty,
         "ap34": ap34_count,
         "ap35": 1 if ap35_silo_flags.get("graph_enriched_stale", False) else 0,
@@ -2464,12 +2531,12 @@ def vault_audit(
 
     by_folder: Dict[str, int] = defaultdict(int)
 
-    for n in content_notes:
+    for n in notas_del_vault:
         parts = n.relative_to(_raiz()).parts
 
         by_folder[parts[0] if parts else "root"] += 1
 
-    summary_parts = [f"Score: {score}/100", f"{len(content_notes)} notas"]
+    summary_parts = [f"Score: {score}/100", f"{len(notas_del_vault)} notas"]
 
     if orphans:
         summary_parts.append(f"{len(orphans)} huerfanas")
@@ -2559,7 +2626,7 @@ def vault_audit(
         # `PENALIZACIONES`. Ver `_nucleo_del_vault`.
         "vaultCore": nucleo,
         "stats": {
-            "total": len(content_notes),
+            "total": len(notas_del_vault),
             "byFolder": dict(sorted(by_folder.items())),
             # Recomendada, sin penalización: ver `_detect_no_integradas`.
             "notIntegrated": len(no_integradas),
@@ -2609,6 +2676,10 @@ def vault_audit(
                 {"norm_code": "AP-22", **e} for e in malformed_wikilinks
             ],
             "emptyIndexes": empty_indexes,
+        # O9: carpetas de primer nivel que no son sección. No penalizan
+        # (CN-02 lo informa); lo que no puede es que su contenido se
+        # audite como notas del vault.
+        "carpetasFueraDeSeccion": carpetas_fuera,
             "stubsSinPlazo": stubs_sin_plazo,
             "mermaidErrors": mermaid_errors,
             "missingTags": missing_tags,
@@ -2658,6 +2729,29 @@ def vault_audit(
     # Esto convierte el audit de "diagnóstico" a "agente prescriptivo" — el
     # usuario (o un agente LLM leyendo el output) sabe exactamente qué ejecutar.
     next_actions: List[Dict[str, Any]] = []
+
+    # O9: la carpeta ajena no es ruido: es una carpeta que el registro no
+    # declara. Se informa con su pista (declararla como sección propia o
+    # sacarla del vault), sin penalizacion: el veredicto de estructura
+    # pesa con su propio criterio.
+    for carpeta in carpetas_fuera:
+        next_actions.append({
+            "priority": "medium",
+            "category": "carpeta_fuera_de_seccion",
+            "path": carpeta["folder"],
+            "description": (
+                f"La carpeta {carpeta['folder']}/ no es una seccion del "
+                f"estandar ni una declarada por este vault "
+                f"({carpeta['files']} ficheros). Su contenido no se "
+                f"audita como notas del vault."),
+            "remediation_options": [
+                f"Declararla como seccion propia: python scripts/vault_section.py "
+                f"--add {carpeta['folder']} <documentacion>",
+                f"Sacarla del vault: muevela fuera de la raiz del vault",
+            ],
+            "norm": "CN-02",
+        })
+
 
     # Empty sections: sugerir el comando del tool owner
     for e in empty_indexes:
@@ -2896,7 +2990,7 @@ def vault_audit(
     if score >= 100:
         # Detectar secciones que aún tienen solo el primer scaffold
         # para sugerir reemplazo por contenido real
-        scaffold_reminders = _detect_scaffold_only_sections(content_notes)
+        scaffold_reminders = _detect_scaffold_only_sections(notas_del_vault)
         for sec in scaffold_reminders:
             next_actions.append(
                 {
@@ -2910,7 +3004,7 @@ def vault_audit(
             )
         if not next_actions:
             # Vault is at 100/100 and fully populated — provide a roadmap
-            next_actions.extend(_get_roadmap_for_populated_vault(content_notes))
+            next_actions.extend(_get_roadmap_for_populated_vault(notas_del_vault))
 
     if next_actions:
         result["nextActions"] = next_actions

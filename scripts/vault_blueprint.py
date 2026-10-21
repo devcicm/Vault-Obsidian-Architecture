@@ -82,6 +82,35 @@ ESTADOS_DE_DEUDA = ("pendiente", "saldada")
 #: deja de servir para nada.
 DEUDA_DECLARADA: List[Dict[str, Any]] = [
     {
+        "id": "barrido_del_toolkit_con_deuda_congelada",
+        "estado": "saldada",
+        "saldada_en": "v41.14",
+        "sostenida_por": [
+            "tests/test_toolkit_audit_deuda_saldada.py::test_la_deuda_del_barrido_esta_saldada",
+        ],
+        "desde": "v41.12",
+        "capa": "4",
+        "que": (
+            "La primera corrida del barrido del catálogo (v41.12) dejó un DEFECTO "
+            "congelado: `vault_changelog_check`. No era un defecto de la tool, era "
+            "**la línea de release en curso**: el changelog publicaba `git: pending` "
+            "de una versión que todavía no era la vigente, y el check trata eso como "
+            "error hasta que `--fijar-hash` la cierra. Congelarlo era medir el "
+            "momento del release, no la tool — y una baseline que congela el reloj no "
+            "congela un defecto. Con la entrada escrita (la versión en curso es "
+            "v41.14) el veredicto pasó a OK: `scripts/toolkit-audit-baseline.json` "
+            "queda **vacía por primera vez**, con 122 OK y 3 NO-VERIFICABLE sobre 125 "
+            "tools. El motivo se conserva porque es el que reaparece: barrer el "
+            "catálogo dentro de la ventana de release vuelve a medir la línea en "
+            "curso."
+        ),
+        "por_que_no_ahora": (
+            "No es una deuda viva: está saldada, y lo que se guarda es la explicación "
+            "de por qué apareció —una tool se declara DEFECTO por estar en plena "
+            "línea de release—, no la obligación de arreglarla."
+        ),
+    },
+    {
         "id": "envelopes_del_dominio_sin_error_code",
         "estado": "saldada",
         "saldada_en": "v40.29",

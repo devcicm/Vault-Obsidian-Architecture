@@ -1,8 +1,8 @@
 # Auditoría funcional del toolkit
 
-Corrida en **2026-10-21T03:49:28Z** — derivada de `scripts/toolkit-audit-last.json` y de `scripts/toolkit-audit-baseline.json`. No se edita a mano: la regenera `vault_toolkit_audit --doc`.
+Corrida en **2026-10-21T08:20:03Z** — derivada de `scripts/toolkit-audit-last.json` y de `scripts/toolkit-audit-baseline.json`. No se edita a mano: la regenera `vault_toolkit_audit --doc`.
 
-**Resumen** — 121 OK · 0 MEJORA · 1 DEFECTO · 3 NO-VERIFICABLE
+**Resumen** — 122 OK · 0 MEJORA · 0 DEFECTO · 3 NO-VERIFICABLE
 
 | Tool | Grupo | Capacidad | Veredicto | Motivos |
 |---|---|---|---|---|
@@ -19,7 +19,7 @@ Corrida en **2026-10-21T03:49:28Z** — derivada de `scripts/toolkit-audit-last.
 | vault_blueprint | 35 | gobernanza_del_estandar | **OK** | — |
 | vault_bug_save | 36 | escritura_a_gobernanza | **OK** | — |
 | vault_change_log | 23 | escritura_a_gobernanza | **OK** | — |
-| vault_changelog_check | 35 | gobernanza_del_estandar | **DEFECTO** | c2 |
+| vault_changelog_check | 35 | gobernanza_del_estandar | **OK** | — |
 | vault_ciclos | 35 | gobernanza_del_estandar | **OK** | — |
 | vault_code_map | 12 | escritura_a_gobernanza | **OK** | — |
 | vault_code_module | 12 | escritura_a_gobernanza | **OK** | — |
@@ -131,7 +131,3 @@ Corrida en **2026-10-21T03:49:28Z** — derivada de `scripts/toolkit-audit-last.
 | vault_validate | 6 | escritura_a_gobernanza | **OK** | — |
 | vault_voice | 35 | gobernanza_del_estandar | **OK** | — |
 | vault_write | 1 | escritura_a_gobernanza | **OK** | — |
-
-## Deuda congelada (baseline que solo encoge)
-
-- vault_changelog_check

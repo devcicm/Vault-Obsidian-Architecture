@@ -1,9 +1,7 @@
 {
  "norm": "AP-42",
  "note": "deuda congelada: tools con veredicto DEFECTO pendiente de solución planeada. Solo encoge; crecer exige --freeze --admitir-nuevos.",
- "failing": [
-  "vault_changelog_check"
- ],
+ "failing": [],
  "objetivo": {
   "tamano": 0,
   "fecha_limite": "2027-06-30",

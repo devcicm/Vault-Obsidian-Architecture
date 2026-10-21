@@ -27,15 +27,23 @@ LLM) puede invocar. Cada skill tiene:
 | `vault-sdd-init` | v2.0 | `agent/skills/vault-sdd-init/SKILL.md` | `agent/skills/vault-sdd-init/SKILL-v1.0.md` | `scripts/vault_sdd_init.py` | Inicializa el SDD (Spec-Driven Development documentation) de un vault |
 | `vault-sanacion` | v2.0 | `agent/skills/vault-sanacion/SKILL.md` | `agent/skills/vault-sanacion/SKILL-v1.0.md` | `scripts/vault_sanacion.py` | Diagnostica un vault preexistente y devuelve el plan de 12 fases con veredicto y evidencia. **No escribe** |
 | `vault-onboard` | v2.0 | `agent/skills/vault-onboard/SKILL.md` | `agent/skills/vault-onboard/SKILL-v1.0.md` | `scripts/vault_onboard.py` | Puebla un vault desde un proyecto de código que no tiene ninguno |
+| `vault-toolkit-audit` | v1.0 | `agent/skills/vault-toolkit-audit/SKILL.md` | — | `scripts/vault_toolkit_audit.py` | Mide el toolkit tool por tool contra lo que declara y deja la medición registrada |
 
-Las tres están en la wheel: instalado el paquete, se invocan como
+Las cuatro están en la wheel: instalado el paquete, se invocan como
 `vault run vault_<nombre> …` con los mismos argumentos que el script.
 
-Las tres cubren los tres recorridos que el estándar reconoce, y ese es el
-criterio para que exista una skill y no solo una tool: **hay skill donde hay un
-procedimiento que un agente tiene que decidir**, no donde hay un comando que
-ejecutar. `vault-onboard` pobla desde cero, `vault-sanacion` toma un vault que
-ya existe, `vault-sdd-init` documenta el estándar sobre el que se apoyan.
+Las tres primeras cubren los tres recorridos que el estándar reconoce —poblar
+un vault, sanar uno que ya existe, documentar el estándar sobre el que se
+apoyan—, y ese es el criterio para que exista una skill y no solo una tool:
+**hay skill donde hay un procedimiento que un agente tiene que decidir**, no
+donde hay un comando que ejecutar.
+
+La cuarta (`vault-toolkit-audit`) es un recorrido de otro tipo: el que decide
+**si el toolkit hace lo que declara**. Sin ella, medir el catálogo era una
+actividad de una persona —leer el informe, decidir qué congelar, cuándo
+recongelar— que cada vez se hacía de otra manera; con ella, el procedimiento
+—barrido completo, veredicto por tool, baseline que solo encoge, informe
+derivado— queda escrito y es el mismo para quien lo ejecute.
 
 Durante cuatro versiones hubo una sola —`vault-sdd-init`, la periférica— mientras
 los dos recorridos centrales vivían en `docs/MODO-AGENTICO-SANACION.md` y

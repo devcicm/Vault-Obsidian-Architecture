@@ -2,7 +2,7 @@
 
 Vault Obsidian Architecture es un estándar abierto con un toolkit para dar a agentes LLM memoria documental persistente, auditable y gobernada sobre Markdown plano.
 
-[![Version](https://img.shields.io/badge/version-v41.13-blue)](./vault-obsidian-architecture.md)
+[![Version](https://img.shields.io/badge/version-v41.14-blue)](./vault-obsidian-architecture.md)
 [![Tools](https://img.shields.io/badge/tools-125_active-green)](./scripts/)
 [![Scripts](https://img.shields.io/badge/scripts-164_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)

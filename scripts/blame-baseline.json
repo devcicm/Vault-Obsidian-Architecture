@@ -21,7 +21,7 @@
     },
     {
       "firma": "vault_audit.py::_read_propagation_pending::08d90f38",
-      "visto_en": "vault_audit.py:2150"
+      "visto_en": "vault_audit.py:2202"
     },
     {
       "firma": "vault_encoding.py::log_encoding_fixes::a36080b0",
