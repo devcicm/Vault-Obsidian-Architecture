@@ -1983,6 +1983,21 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "group": "Índices",
         "purpose": "Genera índice de una sección del vault.",
         "params": {
+            # `--folder` es obligatorio salvo `--heal`. El servidor Node
+            # impone el `required` del schema (L1240), así que NO puede ir
+            # `required: true`: la vía condicional es del propio runtime
+            # (`--folder es requerido (o usar --heal)`) y aquí solo se
+            # publica. La obligatoriedad condicional la declara
+            # `required_args` de la spec, y la vigila
+            # `tests/test_spec_required_es_verdad.py` por conducta.
+            "folder": {
+                "type": "string",
+                "required": False,
+                "description": (
+                    "Sección a indexar (requerida salvo con --heal)"
+                ),
+                "validators": [],
+            },
         },
         "guards": [],
         "side_effects": ["Genera {section}/index.md"],

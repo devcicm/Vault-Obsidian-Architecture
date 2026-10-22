@@ -6157,7 +6157,7 @@
         "properties": {
           "folder": {
             "type": "string",
-            "description": "Section folder relative to vault root"
+            "description": "Sección a indexar (requerida salvo con --heal)"
           },
           "no-subdirs": {
             "type": "boolean",
@@ -7454,7 +7454,7 @@
     "vault_backup_base64",
     "vault_restore_base64"
   ],
-  "standard_version": "v41.15",
+  "standard_version": "v41.16",
   "errors": {
     "AP17_DUPLICATE_TITLE": {
       "category": "governance",

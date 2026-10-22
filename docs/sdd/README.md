@@ -25,8 +25,8 @@
 
 ### Metadata
 
-- **Vault version:** v41.15
-- **Generated at:** 2026-10-22T02:25:14.000Z
+- **Vault version:** v41.16
+- **Generated at:** 2026-10-22T05:06:44.000Z
 - **Skill:** vault-sdd-init v2.0
 - **Total documents:** 14
 
@@ -52,7 +52,7 @@
 
 ### Metadata
 
-- **Vault version:** v41.15
-- **Generated at:** 2026-10-22T02:25:14.000Z
+- **Vault version:** v41.16
+- **Generated at:** 2026-10-22T05:06:44.000Z
 - **Skill:** vault-sdd-init v2.0
 - **Total documents:** 14
