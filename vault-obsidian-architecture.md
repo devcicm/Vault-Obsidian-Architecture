@@ -8232,7 +8232,7 @@ temp/
 
 ---
 
-### v41.15 — 2026-10-21 `git: pending`
+### v41.15 — 2026-10-21 `git: 76c9387`
 
 **El vault sabe qué material se operó, y lo que entra entra por las tools.**
 
