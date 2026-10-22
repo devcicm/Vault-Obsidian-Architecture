@@ -54,6 +54,18 @@ Export `VAULT_STRICT_ROOT=1` so an unsafe detection fails instead of falling
 back to the repo root. The envelope reports `vault_root` and
 `vault_root_origin`; read them before trusting the verdicts.
 
+
+**Where a vault lives.** The user's vaults live in a house —
+`~/.vault-master/<nombre>/` on Linux and macOS,
+`%USERPROFILE%\.vault-master\<nombre>\` on Windows — each with its own git
+repository. `python scripts/vault_init.py --list` shows the ones that are
+there; `VAULT_MASTER` moves the house.
+
+Auto-detection follows the client: the vault the client is standing in
+(`client_cwd`), and the vault the repository declares in its `.vault-path`
+(`puntero_repo` — the file is written by the person, and the tools only read
+it). `VAULT_ROOT` overrides both.
+
 ## Output
 
 An envelope with all 12 phases. Each carries a `verdict` — `applies`, `clean`

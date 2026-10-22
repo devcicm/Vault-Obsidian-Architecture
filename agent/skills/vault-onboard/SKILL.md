@@ -21,8 +21,12 @@ ignored.
 # Always start here — writes nothing, shows what it would create
 vault run vault_onboard --project mi-api --path /ruta/al/repo --dry-run
 
+# The vault's home: create it once, with its own git history
+python scripts/vault_init.py --name mi-api   # ~/.vault-master/mi-api/ (Windows: %USERPROFILE%\.vault-master\mi-api\)
+python scripts/vault_init.py --list          # the vaults of the home
+
 # For real, into the vault VAULT_ROOT points at
-VAULT_ROOT=/ruta/al/vault-nuevo vault run vault_onboard \
+VAULT_ROOT=$HOME/.vault-master/mi-api vault run vault_onboard \
     --project mi-api --path /ruta/al/repo
 
 # Bound the git window explicitly; the cap is reported, never silent

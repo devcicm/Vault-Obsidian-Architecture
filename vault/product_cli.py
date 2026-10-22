@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from .kernel.errores import construir_error
+from .kernel.version import CURRENT_VERSION
 from .kernel import proyectos as _proyectos
 from .kernel.adaptadores import NormasDelCatalogo
 from .ciclo_de_vida.producto import (
@@ -88,12 +89,37 @@ def _gobernanza() -> Any:
     )
 
 
+def _clave_de_version(version: str):
+    """Comparable: `41.13` > `41.9`, y lo que no es número se va al final."""
+    partes = []
+    for trozo in version.split("."):
+        digitos = "".join(c for c in trozo if c.isdigit())
+        partes.append(int(digitos) if digitos else -1)
+    return tuple(partes)
+
+
 def toolkit_version() -> str:
-    """Versión de la distribución instalada, no del estándar de runtime."""
+    """La versión del toolkit que se está ejecutando.
+
+    Del metadata de la distribución instalada **y** del código, y se queda
+    con la mayor. El metadata de una instalación editable se congela en el
+    momento de instalar: medido el 2026-10-21, `vault --version` decia 41.12
+    con el estándar en 41.15, porque el bump no reescribe el metadata. El
+    código que corre es la verdad; el metadata solo dice qué se instaló.
+
+    Esto **no** es la versión del estándar de runtime (la del vault sobre el
+    que se opera): esa la dice `vault doctor`, y son dos cosas distintas.
+    """
+    # El estándar va con el toolkit (misma distribución): el import del
+    # código no se envuelve en un `except Exception` que trague lo que sea.
+    # Por eso la lista nunca nace vacía: si la distribución no está
+    # instalada, la versión que corre —el código— es igualmente la verdad.
+    versiones = [CURRENT_VERSION.lstrip("v")]
     try:
-        return metadata.version(DIST_NAME)
+        versiones.append(metadata.version(DIST_NAME))
     except metadata.PackageNotFoundError:
-        return "0.0.0.dev0+source"
+        pass
+    return max(versiones, key=_clave_de_version)
 
 
 def _emit(payload: dict[str, Any], *, stream: Any = None) -> None:

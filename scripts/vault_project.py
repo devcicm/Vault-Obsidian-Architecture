@@ -34,6 +34,7 @@ Ejemplos:
     python vault_project.py --resolve "VCloud SaaS"
     python vault_project.py --add ans --title "ANS" --alias ans-api
     python vault_project.py --link ans --path ../ans
+    python vault_project.py --link ans --path ../ans --vault ~/.vault-master/ans
     python vault_project.py --sync-status ans
     python vault_project.py --audit
     python vault_project.py --heal            # dry-run
@@ -332,8 +333,12 @@ def registrar(slug: str, titulo: Optional[str], alias: List[str], status: str) -
             "ficha": ficha.relative_to(_raiz()).as_posix(), **write_report()}
 
 
-def enlazar(nombre: str, ruta: str) -> Dict[str, Any]:
-    """La ruta local va a `00_System/.local/`, que git ignora desde dentro."""
+def enlazar(nombre: str, ruta: str, vault: Optional[str] = None) -> Dict[str, Any]:
+    """La ruta local va a `00_System/.local/`, que git ignora desde dentro.
+
+    Con `vault` (o con el puntero `.vault-path` del repositorio) queda
+    declarado tambien donde vive el vault de este proyecto (v41.15).
+    """
     try:
         slug = _registro().resolver(nombre)
     except FalloDeDominio as fallo:
@@ -363,9 +368,23 @@ def enlazar(nombre: str, ruta: str) -> Dict[str, Any]:
     rama = rama.split("/", 1)[1] if rama and "/" in rama else _git(destino, "branch", "--show-current")
     ficha = proyectos.anotar_repo(_raiz(), slug, atomic_write_text,
                                   remote=remoto, default_branch=rama)
+    # Donde vive el vault de este proyecto: lo que se le pasa, o el puntero
+    # que el repositorio declara (`.vault-path`). Es una declaracion, no una
+    # escritura fuera del vault: el puntero lo escribe la persona.
+    vault_declarado = vault
+    if vault_declarado is None:
+        from vault_raiz import leer_puntero
+
+        puntero = leer_puntero(destino)
+        if puntero is not None:
+            vault_declarado = str(puntero)
+    vault_guardado = None
+    if vault_declarado:
+        vault_guardado = proyectos.anotar_vault(_raiz(), slug, vault_declarado)
     return {"ok": True, "tool": TOOL, "action": "link", "project": slug,
             "file": RUTAS_LOCALES.as_posix(), "ficha": ficha,
-            "repo": proyectos.repo_de(_raiz(), slug), **write_report()}
+            "repo": proyectos.repo_de(_raiz(), slug),
+            "vault": vault_guardado, **write_report()}
 
 
 def _git(ruta: Path, *args: str) -> Optional[str]:
@@ -450,6 +469,16 @@ def main() -> int:
     ap.add_argument("--status", default="in-progress", choices=sorted(STATUS_VOCAB),
                     help="Estado de la ficha nueva (con --add)")
     ap.add_argument("--path", help="Ruta local del repositorio (con --link)")
+    ap.add_argument(
+        "--vault",
+        help=(
+            "Ruta del vault de este proyecto (con --link). Vive en el "
+            "registro local de la maquina, no en git: cada maquina puede "
+            "tener el vault en un sitio. El repositorio tambien puede "
+            "declararlo con un fichero `.vault-path` en su raiz, que las "
+            "tools solo leen."
+        ),
+    )
     args = ap.parse_args()
 
     if args.link and not args.path:
@@ -463,7 +492,7 @@ def main() -> int:
     elif args.add is not None:
         r = registrar(args.add, args.title, args.alias, args.status)
     elif args.link:
-        r = enlazar(args.link, args.path)
+        r = enlazar(args.link, args.path, args.vault)
     elif args.sync_status:
         r = estado_sync(args.sync_status)
     elif args.heal:

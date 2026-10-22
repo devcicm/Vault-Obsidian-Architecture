@@ -518,7 +518,7 @@ SCHEMA_POR_TIPO: Dict[str, dict] = {
         "prometido": ("id", "title", "status", "coverage"),
         "escribe": ("agent", "cia_availability", "cia_integrity", "cia_sensitivity",
                     "createdAt", "id", "project", "status", "tags", "test_id",
-                    "test_result", "test_type", "title", "updatedAt"),
+                    "test_result", "test_type", "title", "type", "updatedAt"),
     },
     "Runbook": {
         "escritor": "vault_runbook_save",

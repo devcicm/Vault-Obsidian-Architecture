@@ -9,6 +9,9 @@ ejecutar. Movida tal cual desde `NORM_CATALOG` el 2026-10-09; las caras están e
 NORMA = {
     "code": "AP-15",
     "distinguido_de": {
+        "AP-67": (
+            "AP-15 es material ajeno **dentro** de la raiz del vault. AP-67 es material **fuera** del vault que el agente opera y del que no hay ninguna nota. Aqui el material esta de mas; alla lo que falta es la nota que lo apunta."
+        ),
         "AP-36": (
             "AP-15 es material ajeno depositado dentro del vault. AP-36 es lo "
             "contrario: side-effects de las tools que salen del vault o no quedan "

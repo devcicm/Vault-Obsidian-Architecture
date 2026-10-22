@@ -9,6 +9,9 @@ ejecutar. Movida tal cual desde `NORM_CATALOG` el 2026-10-09; las caras están e
 NORMA = {
     "code": "AP-05",
     "distinguido_de": {
+        "AP-67": (
+            "AP-05 es el dato repetido en dos sitios. AP-67 es el dato que no esta en ninguno: el vault declara un proyecto y no tiene ni una nota de su codigo. Son las dos direcciones del mismo encargo: una sola fuente de verdad."
+        ),
         "AP-63": (
             "AP-05 compara valores dentro de un ámbito; AP-63 es el nombre que "
             "decide el ámbito. Con el nombre del proyecto bifurcado, dos notas "

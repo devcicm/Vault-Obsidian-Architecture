@@ -258,6 +258,8 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     _desde_paquete("AP-64"),
     _desde_paquete("AP-65"),
     _desde_paquete("AP-66"),
+    # ── Anti-patrón AP-67 ──────────────────────────────────────────────────────
+    _desde_paquete("AP-67"),
     # ── Patrón PAT-6 ───────────────────────────────────────────────────────────
     _desde_paquete("PAT-6"),
     # ── Protocolo de sesión SP-XX ──────────────────────────────────────────────

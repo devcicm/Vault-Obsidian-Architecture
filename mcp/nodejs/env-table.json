@@ -9,6 +9,13 @@
       "purpose": "Fuerza la raíz del vault en vez de autodetectarla. Es la costura declarada para apuntar las tools a un destino concreto."
     },
     {
+      "name": "VAULT_MASTER",
+      "type": "ruta",
+      "default": null,
+      "context": "kernel",
+      "purpose": "La casa de los vaults: donde se crean por defecto (vault_init --name) y donde se listan (vault_init --list). Por defecto ~/.vault-master (Windows: %USERPROFILE%\\.vault-master). Cambiarla mueve la casa entera; el valor de la variable no se escribe a mano en la documentacion, se lee de aqui."
+    },
+    {
       "name": "VAULT_STRICT_ROOT",
       "type": "bandera",
       "default": false,

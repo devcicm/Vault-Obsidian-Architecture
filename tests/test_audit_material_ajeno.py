@@ -89,3 +89,28 @@ def test_un_enlace_al_material_ajeno_no_es_roto(tmp_path, monkeypatch):
     # El enlace por ruta completa RESUELVE: el fichero existe, aunque viva
     # fuera de las secciones (criterio de Obsidian: lo que hay, resuelve).
     assert "Plataforma/node_modules/axios/README" not in rotos, rotos
+
+
+def test_un_artefacto_derivado_no_cuenta_como_nota(tmp_path, monkeypatch):
+    """Lo que escribe una tool como salida no es una nota: no es huérfana.
+
+    `vault_registry.es_artefacto_derivado` es el dueño: los `index.md` de
+    cualquier sección y los artefactos declarados (`99_Index/tag-index.md`).
+    Medido en un vault real el 2026-10-21: `99_Index/tag-index.md` salía como
+    la única nota huérfana de un vault sano.
+    """
+    import vault_audit
+
+    raiz = _vault(tmp_path)
+    (raiz / "99_Index").mkdir(parents=True, exist_ok=True)
+    (raiz / "99_Index" / "tag-index.md").write_text(
+        "# Tag Index\n\n| tag | notas |\n|---|---|\n| tts | 5 |\n", encoding="utf-8")
+    vault_io.set_vault_root(raiz)
+    monkeypatch.setenv("VAULT_ROOT", str(raiz))
+    try:
+        env = vault_audit.vault_audit()
+    finally:
+        vault_io.reset_vault_root()
+
+    huerfanas = [o.get("path") for o in env["issues"].get("orphans", [])]
+    assert "99_Index/tag-index.md" not in huerfanas, huerfanas

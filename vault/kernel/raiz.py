@@ -29,6 +29,7 @@ módulos que hacen `from vault_io import VAULT_ROOT, get_vault_root` siguen
 funcionando sin tocarse (no-derogación).
 """
 
+import os
 from pathlib import Path
 from typing import List, Optional
 
@@ -81,12 +82,56 @@ def client_cwd() -> Path:
     return Path.cwd()
 
 
+#: El fichero que declara, dentro de un repositorio, donde vive su vault
+#: (v41.15). Lo escribe la persona: una tool que escribiera fuera del vault
+#: romperia la contencion de AP-36. Las tools solo lo leen.
+PUNTER_VAULT = ".vault-path"
+
+
+def leer_puntero(directorio: "str | Path") -> Optional[Path]:
+    """La ruta del vault declarada en `<directorio>/.vault-path`, o `None`.
+
+    Una linea, con o sin BOM. Una ruta **relativa** se resuelve contra el
+    directorio que guarda el puntero, no contra el directorio de trabajo: asi
+    el puntero puede viajar en el repositorio sin llevar la ruta de una
+    maquina dentro. Se devuelve aunque el vault todavia no exista: quien lo
+    declaro puede apuntar a uno que aun no se ha creado.
+    """
+    fichero = Path(directorio) / PUNTER_VAULT
+    try:
+        texto = fichero.read_text(encoding="utf-8-sig").strip()
+    except (OSError, UnicodeDecodeError):
+        return None
+    if not texto or texto.startswith("#"):
+        return None
+    ruta = Path(texto).expanduser()
+    if not ruta.is_absolute():
+        ruta = Path(directorio) / ruta
+    # Normalizada: `proyecto/../casa/agente` y `casa/agente` son el mismo sitio,
+    # y quien compara punteros (o los guarda) los compara como rutas.
+    try:
+        return ruta.resolve()
+    except OSError:
+        return ruta
+
+
 def _detect_vault_root() -> Path:
     """Auto-detect vault root.
 
     Priority order:
     1. VAULT_ROOT env var (explicit override)
-    2. vault-* subdirectory beside scripts/ (consumer repo layout):
+    2. The vault the client is standing in (v41.15): walk up from the
+       client's working directory and take the first directory that has vault
+       structure. This is the rule that makes the installed CLI usable: the
+       rules below are anchored on the program's directory (site-packages),
+       which says nothing about where the user's vault is. `cd` into
+       `~/.vault-master/<vault>` and the tools find it.
+    3. The pointer of the repository (v41.15): `.vault-path` in the client's
+       directory (or the repository it belongs to) names the vault. The
+       pointer is written by the person, not by a tool: a tool writing
+       outside the vault breaks AP-36's containment. It is read, never
+       written.
+    4. vault-* subdirectory beside scripts/ (consumer repo layout):
        - First pass: prefer dirs that already have 00_System/, 99_Index/ or .obsidian
        - Second pass: accept any vault-* dir (fresh install, nothing initialized yet)
        vault-backups* AND vault-sandbox* dirs are excluded from both passes
@@ -121,10 +166,11 @@ def _detect_vault_root() -> Path:
         raiz = Path(env).resolve()
         _VAULT_ROOT_ORIGIN = "env" if raiz.is_dir() else "env_inexistente"
         return raiz
-    project_root = vault_grafo_import.DIRECTORIO.parent.resolve()
+    # v41.15 — el vault donde esta el cliente, y el puntero del repositorio.
+    # Las reglas de antes estan ancladas en el directorio del programa, que con
+    # la wheel instalada es site-packages: de ahi no se deduce donde esta el
+    # vault del usuario. Estas dos si lo saben.
     _MARKERS = {"00_System", "99_Index", ".obsidian"}
-    # Strong vault structure marker — at least 2 of these folders must exist
-    # at the root level for the directory to be considered a vault.
     _VAULT_MARKERS = {
         "00_System",
         "01_Projects",
@@ -133,6 +179,27 @@ def _detect_vault_root() -> Path:
         "99_Index",
         ".obsidian",
     }
+
+    cliente = Path(_env("VAULT_CLIENT_CWD") or os.getcwd())
+    for candidato in (cliente, *cliente.parents):
+        try:
+            marcadores = sum(1 for m in _VAULT_MARKERS if (candidato / m).exists())
+        except OSError:
+            continue
+        if marcadores >= 2:
+            _VAULT_ROOT_ORIGIN = "client_cwd"
+            return candidato
+
+    # El puntero que el repositorio original declara (`.vault-path`). Se lee
+    # en el directorio del cliente y en sus padres: un repo puede estar en un
+    # subdirectorio de la carpeta de trabajo.
+    for candidato in (cliente, *cliente.parents):
+        declarado = leer_puntero(candidato)
+        if declarado is not None:
+            _VAULT_ROOT_ORIGIN = "puntero_repo"
+            return declarado
+
+    project_root = vault_grafo_import.DIRECTORIO.parent.resolve()
     # Exclude vault-sandbox and *.bak from candidates — they're side-effects
     # of the spec-repo fallback or backups, not real vaults. Excluding them
     # prevents a chicken-and-egg situation where the old detection created

@@ -2419,10 +2419,16 @@ def vault_audit(
     # pedirle contrato de nota lo convertía en ruido. Medido en un vault ajeno
     # real: 75 READMEs de dependencias contaban como notas sin frontmatter y
     # 25 corchetes de `node_modules` como AP-24.
+    #
+    # Lo `derivada` tampoco es nota: lo escribe una tool como salida
+    # (`vault_registry.es_artefacto_derivado` —los `index.md` y los tres
+    # artefactos declarados—). Contarlos como notas hacía que
+    # `99_Index/tag-index.md` saliera como huérfana en un vault real
+    # (medido el 2026-10-21): un índice generado no es una nota que nadie cita.
     notas_del_vault = [
         p for p in content_notes
         if clase_de_nota(str(p.relative_to(_raiz())).replace("\\", "/"),
-                         _raiz()) != "sin_seccion"
+                         _raiz()) not in ("sin_seccion", "derivada")
     ]
     carpetas_fuera = _carpetas_fuera_de_seccion()
 

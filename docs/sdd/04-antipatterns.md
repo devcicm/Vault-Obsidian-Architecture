@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-66 más
-> las familias PAT, SP y CN. Por familia: AP 66, CN 4, PAT 6, SP 4.
-> Bilingual document. Full norm catalog: antipatterns AP-01..AP-66 plus the PAT,
-> SP and CN families. By family: AP 66, CN 4, PAT 6, SP 4.
+> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-67 más
+> las familias PAT, SP y CN. Por familia: AP 67, CN 4, PAT 6, SP 4.
+> Bilingual document. Full norm catalog: antipatterns AP-01..AP-67 plus the PAT,
+> SP and CN families. By family: AP 67, CN 4, PAT 6, SP 4.
 
 ---
 
 ## ES
 
-Total de normas registradas: 80 (AP 66, CN 4, PAT 6, SP 4)
+Total de normas registradas: 81 (AP 67, CN 4, PAT 6, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -783,6 +783,16 @@ Una tool cuyo tiempo crece con algo distinto de lo que mide: la historia del rep
 
 Límites declarados: el detector no ve la repetición dinámica --reparsear lo mismo en cada llamada, una caché que no acierta-- ni un bucle sobre los ficheros del repo que lanza un proceso por fichero, que es lineal en lo medido y a veces legítimo. Esos casos los vigilan los tests de trabajo de cada arreglo, no la puerta.
 
+### AP-67: El material que el agente opera, sin nota que lo apunte
+
+- **Severidad:** high
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_code_sync
+
+El agente opera material que vive fuera del vault --el código del proyecto, sus scripts de prueba, sus prompts, sus artefactos-- y el vault no tiene ninguna nota que lo apunte. El trabajo se pierde al cerrar la sesión: la memoria no sabe qué se tocó, ni qué se probó, ni qué se decidió, y el material sigue fuera sin que ninguna puerta lo advierta. Medido el 2026-10-21 en un vault real: se ejecutaron cinco scripts de prueba del TTS y se documentaron sus resultados en el vault; los scripts quedaron fuera, sin nota que los apuntara, y el proyecto estaba enlazado al vault con cero notas de código. El caso es también el del acomodo: lo que entra al vault tiene que entrar por las tools --que son las que dejan el registro-- y lo que queda fuera, enlazado.
+
+**Prevención:** El proyecto se declara (`vault_project --add` y `--link`), y su material se documenta con las tools que dejan rastro: `vault_code_module` (nota de módulo con `source_file:`), `vault_test_save` (técnica de prueba), `vault_write` (concepto), `vault_move` (lo que se reubica, que deja `move-log.json`). El enlace va en los dos sentidos: la nota declara `source_file:` y el fichero lleva su `@vault:` -- `vault_code_sync --fix` inyecta la mitad que falta. Lo que entra al vault entra por una tool; lo que sale, con ella.
+
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
 - **Severidad:** high
@@ -927,7 +937,7 @@ El transporte HTTP/SSE del servidor MCP acepta sesiones sin token, responde con 
 
 ## EN
 
-Total registered norms: 80 (AP 66, CN 4, PAT 6, SP 4)
+Total registered norms: 81 (AP 67, CN 4, PAT 6, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -1700,6 +1710,16 @@ Una tool cuyo tiempo crece con algo distinto de lo que mide: la historia del rep
 **Prevention:** Un proceso por lote y no por elemento (`git cat-file --batch` en vez de un `git show` por commit); una pasada por árbol con su resultado memorizado; y, para la repetición que solo existe en ejecución, un test que cuente el trabajo --procesos lanzados, árboles recorridos-- y no el tiempo, que depende de la máquina.
 
 Límites declarados: el detector no ve la repetición dinámica --reparsear lo mismo en cada llamada, una caché que no acierta-- ni un bucle sobre los ficheros del repo que lanza un proceso por fichero, que es lineal en lo medido y a veces legítimo. Esos casos los vigilan los tests de trabajo de cada arreglo, no la puerta.
+
+### AP-67: El material que el agente opera, sin nota que lo apunte
+
+- **Severity:** high
+- **Enforcement:** guard+audit
+- **Detected by:** vault_code_sync
+
+El agente opera material que vive fuera del vault --el código del proyecto, sus scripts de prueba, sus prompts, sus artefactos-- y el vault no tiene ninguna nota que lo apunte. El trabajo se pierde al cerrar la sesión: la memoria no sabe qué se tocó, ni qué se probó, ni qué se decidió, y el material sigue fuera sin que ninguna puerta lo advierta. Medido el 2026-10-21 en un vault real: se ejecutaron cinco scripts de prueba del TTS y se documentaron sus resultados en el vault; los scripts quedaron fuera, sin nota que los apuntara, y el proyecto estaba enlazado al vault con cero notas de código. El caso es también el del acomodo: lo que entra al vault tiene que entrar por las tools --que son las que dejan el registro-- y lo que queda fuera, enlazado.
+
+**Prevention:** El proyecto se declara (`vault_project --add` y `--link`), y su material se documenta con las tools que dejan rastro: `vault_code_module` (nota de módulo con `source_file:`), `vault_test_save` (técnica de prueba), `vault_write` (concepto), `vault_move` (lo que se reubica, que deja `move-log.json`). El enlace va en los dos sentidos: la nota declara `source_file:` y el fichero lleva su `@vault:` -- `vault_code_sync --fix` inyecta la mitad que falta. Lo que entra al vault entra por una tool; lo que sale, con ella.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 

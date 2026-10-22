@@ -82,6 +82,14 @@ VARIABLES: Dict[str, Variable] = {
             "declarada para apuntar las tools a un destino concreto.",
         ),
         Variable(
+            "VAULT_MASTER", "ruta", None, "kernel",
+            "La casa de los vaults: donde se crean por defecto (vault_init "
+            "--name) y donde se listan (vault_init --list). Por defecto "
+            "~/.vault-master (Windows: %USERPROFILE%\\.vault-master). "
+            "Cambiarla mueve la casa entera; el valor de la variable no se "
+            "escribe a mano en la documentacion, se lee de aqui.",
+        ),
+        Variable(
             "VAULT_STRICT_ROOT", "bandera", False, "kernel",
             "Hace fallar una detección insegura en vez de caer a la raíz del "
             "repo. Basta con estar definida (comportamiento heredado).",

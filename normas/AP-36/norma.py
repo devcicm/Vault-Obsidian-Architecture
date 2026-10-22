@@ -9,6 +9,9 @@ ejecutar. Movida tal cual desde `NORM_CATALOG` el 2026-10-09; las caras están e
 NORMA = {
     "code": "AP-36",
     "distinguido_de": {
+        "AP-67": (
+            "AP-36 mide los efectos de una tool: que no salgan del vault o que no quede rastro. AP-67 mide el conocimiento: que el vault no sepa que material existe. Una tool puede tener los efectos bien contenidos y registrados y aun asi dejar la memoria a ciegas."
+        ),
         "AP-15": (
             "AP-15 es material ajeno depositado dentro del vault. AP-36 es lo "
             "contrario: side-effects de las tools que salen del vault o no quedan "

@@ -15,6 +15,26 @@ from typing import Any, Dict, List, Literal, Mapping, Optional, TypedDict
 
 ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
     # ── Infrastructure ────────────────────────────────────────────────────────
+    "VAULT_EXISTS": {
+        "category": "validation",
+        "severity": "error",
+        "message": "El destino del vault ya existe y no esta vacio.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Elegir otro nombre con vault_init --name, o apuntar a un directorio vacio; un vault no se pisa y un vault medio poblado no se re-inicializa.",
+            "docs": "vault-obsidian-architecture.md §La casa de los vaults",
+        },
+    },
+    "INVALID_NAME": {
+        "category": "validation",
+        "severity": "error",
+        "message": "El nombre del vault no es un nombre válido.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "El nombre es una carpeta de la casa: kebab-case, sin rutas, sin `..` y sin empezar por punto.",
+            "docs": "vault-obsidian-architecture.md §La casa de los vaults",
+        },
+    },
     "VAULT_NOT_FOUND": {
         "category": "infrastructure",
         "severity": "critical",

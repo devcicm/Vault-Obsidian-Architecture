@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v41.14 - 2026-10-21  
+**Versión:** v41.15 - 2026-10-21  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -722,7 +722,7 @@ vault-backups/
 
 > **Convención de parámetro `project`:** en todas las tools, `project` es siempre un **slug kebab-case** del nombre del proyecto (ej: `"mi-api"`, `"vault-ans"`, `"ecommerce-backend"`). Nunca usar el nombre con espacios ni mayúsculas. El slug es el identificador canónico que determina las rutas de carpeta en el vault.
 
-> **Cambios v34 — Detección de vault + nextActions + scaffolds:** `vault_init` (Grupo 32) es la nueva entry point que crea las 18 carpetas, aplica migraciones, auto-indexa cada sección, agrega un scaffold primer con contenido real en cada sección vacía (marcado `scaffold: true` para reemplazo posterior), y reporta el health score inicial. `vault_audit` ahora incluye un bloque `nextActions` prescriptivo que lista exactamente qué comandos ejecutar para mantener o recuperar 100/100 — el audit deja de ser solo diagnóstico y se vuelve una lista de tareas ejecutable. `_detect_vault_root` se hizo robusto para layouts consumer-repo donde el vault contiene el spec file como referencia, y excluye `vault-sandbox/` y `*.bak` para evitar el chicken-and-egg donde la detección creaba un side-effect que luego se confundía con el vault real.
+> **Cambios v34 — Detección de vault + nextActions + scaffolds:** `vault_init` (Grupo 32) es la nueva entry point que crea las 18 carpetas `vault_init --name <nombre>` crea el vault en la casa (`~/.vault-master/<nombre>`, con su repositorio git) y `--list` lista los que hay., aplica migraciones, auto-indexa cada sección, agrega un scaffold primer con contenido real en cada sección vacía (marcado `scaffold: true` para reemplazo posterior), y reporta el health score inicial. `vault_audit` ahora incluye un bloque `nextActions` prescriptivo que lista exactamente qué comandos ejecutar para mantener o recuperar 100/100 — el audit deja de ser solo diagnóstico y se vuelve una lista de tareas ejecutable. `_detect_vault_root` se hizo robusto para layouts consumer-repo donde el vault contiene el spec file como referencia, y excluye `vault-sandbox/` y `*.bak` para evitar el chicken-and-egg donde la detección creaba un side-effect que luego se confundía con el vault real.
 
 ---
 
@@ -2486,6 +2486,21 @@ Audita la trazabilidad bidireccional entre notas del vault (`11_Code/{project}/`
 | `no_source_ref` | Nota en `11_Code/` sin frontmatter `source_file` — no auditada |
 | `orphan_vault_ref` | Archivo fuente tiene `@vault:` a nota que no existe en el vault |
 
+**Hallazgos de AP-67 (v41.15).** Los cinco estados de arriba miran **una
+dirección**: la nota que declara el fichero. Los dos de abajo miran la otra, y
+son los que faltaban:
+
+| Hallazgo | Condición | ¿Rompe el veredicto? |
+|---|---|---|
+| `proyecto_sin_conocimiento` | El proyecto está enlazado al vault (`vault_project --link`) y no tiene **ninguna** nota de su código | **Sí**: `status` pasa a `gaps_found` |
+| `fuente_sin_nota` | Ficheros del repositorio que ninguna nota apunta (recuento y muestra de 25) | No: es un número que informa de cuánto se documentó, no una deuda |
+
+`fuente_sin_nota` no es una lista de deudas: en un repositorio real hay miles
+de ficheros y la mayoría no merecen nota. Lo que tiene que estar en la
+memoria es **lo que el agente operó**, y eso se decide con criterio, no con
+un automático. Lo que sí es automático es la otra mitad del enlace:
+`vault_code_sync --fix` inyecta el `@vault:` que falta en el fichero.
+
 **Parámetros:**
 | Parámetro | Tipo | Default | Descripción |
 |---|---|---|---|
@@ -2508,13 +2523,17 @@ Audita la trazabilidad bidireccional entre notas del vault (`11_Code/{project}/`
     "missing_file": 0,
     "no_source_ref": 0,
     "orphan_vault_refs": 0,
-    "fix_applied": 2
+    "fix_applied": 2,
+    "proyecto_sin_conocimiento": 0,
+    "fuente_sin_nota": 17
   },
   "complete": [{ "note": "11_Code/mi-api/auth.md", "source_file": "src/auth.ts" }],
   "missing_tag": [{ "note": "11_Code/mi-api/routes.md", "source_file": "src/routes.ts", "fix_applied": true }],
   "missing_file": [],
   "no_source_ref": [],
-  "orphan_vault_refs": []
+  "orphan_vault_refs": [],
+  "proyecto_sin_conocimiento": [],
+  "fuente_sin_nota": [{ "source_file": "/repo/src/perfil.py" }]
 }
 ```
 
@@ -2523,6 +2542,7 @@ Audita la trazabilidad bidireccional entre notas del vault (`11_Code/{project}/`
 - Backfill en proyectos existentes: `vault_code_sync --project {slug} --fix`
 - Detectar refs huérfanas cuando se eliminó o renombró una nota vault
 - CI gate: `python scripts/vault_code_sync.py --project {slug}` — retorna exit 0 si `status: clean`
+- Saber cuánto del proyecto está en la memoria: `fuente_sin_nota` en el `summary`
 - Antes de sincronizar al equipo: confirmar trazabilidad completa con `--report`
 
 ---
@@ -3197,6 +3217,13 @@ Guarda un requerimiento en `14_Requirements/{project}/req-{n}-{slug}.md` con ID 
 
 Guarda un caso de prueba en `15_Tests/{test_type}/{project}-{slug}.md` con ID secuencial auto-generado.
 
+La nota lleva **dos** campos de tipo, y no es redundancia: `type: test` es el
+canónico de la sección (`vault_registry.SECTION_TYPES`) y el que exige el
+contrato —una nota de `15_Tests/` sin `type` sale incumplida y el audit la
+cuenta como `missing_type` (AP-27)—; `test_type` es la granularidad fina
+(`unit`, `integration`, …) y va en el nombre de la carpeta. Hasta v41.15 la
+tool escribía solo el segundo.
+
 **Parámetros:**
 | Parámetro | Tipo | Default | Descripción |
 |---|---|---|---|
@@ -3562,7 +3589,7 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **80 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **81 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -7094,6 +7121,49 @@ Esos casos los vigilan los tests de trabajo de cada arreglo, no la puerta. La no
 código de este repo y no notas, así que la regla 7 no tiene aquí vault ajeno contra el que
 contrastarla.
 
+
+### AP-67 — El material que el agente opera, sin nota que lo apunte
+
+**Enforcement:** `guard+audit` · **Severidad:** high · **Introducido:** v41.15
+**Guard:** `python scripts/vault_code_sync.py --project <p>` (`proyecto_sin_conocimiento`, `fuente_sin_nota`)
+
+**Síntoma.** El agente opera material que vive fuera del vault —el código del
+proyecto, sus scripts de prueba, sus prompts, sus artefactos— y el vault no
+tiene ninguna nota que lo apunte. El trabajo se pierde al cerrar la sesión: la
+memoria no sabe qué se tocó, ni qué se probó, ni qué se decidió.
+
+**Por qué importa.** Es el reverso de AP-05, no su gemelo: AP-05 es el dato
+repetido en dos sitios, AP-67 es el dato que no está en ninguno. Un vault puede
+estar «limpio» y no saber nada —las cuatro comprobaciones que existían miraban
+solo lo que ya estaba enlazado—. El caso medido el 2026-10-21 en un vault real:
+se ejecutaron cinco scripts de prueba del motor TTS y sus resultados acabarían
+en el vault, pero los scripts quedaban fuera sin nota, y el proyecto estaba
+enlazado (`vault_project --link`) con **cero** notas de código: un enlace que
+no llevaba a ninguna parte.
+
+**Señal.** `vault_code_sync` informa dos hallazgos nuevos:
+`proyecto_sin_conocimiento` (un proyecto enlazado sin una sola nota de su
+código) y `fuente_sin_nota` (los ficheros del repositorio que ninguna nota
+apunta, con recuento y muestra). El primero es decidible y vuelve el veredicto
+`gaps_found`; el segundo es informativo: en un repositorio real hay miles de
+ficheros y la mayoría no merecen nota —lo que tiene que estar en la memoria es
+**lo que el agente operó**—.
+
+**Prevención.** El proyecto se declara (`vault_project --add` y `--link`) y su
+material se documenta con las tools que dejan rastro: `vault_code_module`
+(nota de módulo con `source_file:`), `vault_test_save` (técnica de prueba),
+`vault_write` (concepto), `vault_move` (lo que se reubica, que deja
+`move-log.json`). El enlace va en los dos sentidos —la nota declara
+`source_file:` y el fichero lleva su `@vault:`—, y `vault_code_sync --fix`
+inyecta la mitad que falta. **Lo que entra al vault entra por una tool; lo que
+sale, con ella.**
+
+**Lo que la norma no dice.** No dice que el repositorio entero tenga que estar
+documentado: eso convertiría el vault en una copia del proyecto. Dice que el
+vault tiene que saber qué material existe y se operó, y que la puerta para
+saberlo es el enlace en los dos sentidos. Lo que está fuera del vault y no se
+opera, no es deuda: es el proyecto.
+
 ---
 
 ### PAT-6 — Semantic graph enrichment: enriquecimiento periódico del grafo
@@ -7601,6 +7671,53 @@ El estándar es agnóstico al LLM y al harness. Para adoptar en un harness exist
 
 ---
 
+## La casa de los vaults
+
+Los vaults del usuario viven en una carpeta fija, y cada uno con su propio
+repositorio git:
+
+| Sistema | Ruta |
+|---|---|
+| Windows | `%USERPROFILE%\.vault-master\<nombre>\` |
+| Linux y macOS | `~/.vault-master/<nombre>/` |
+
+La casa se cambia con `VAULT_MASTER` (la publica `vault_entorno`) y
+se lista con `python scripts/vault_init.py --list`. Un vault se crea ahí con
+`python scripts/vault_init.py --name <nombre>`: la inicialización y su
+repositorio git, de una vez.
+
+**Por qué una casa y no «donde cada uno lo ponga».** Medido en un vault real
+(2026-10-21): el vault era una carpeta suelta dentro del repositorio del
+proyecto. Las siete notas del proyecto absorbidas quedaron **borradas** del
+repo del proyecto y sin versionar en ninguna parte —la memoria del agente sin
+historia—, y las tools solo la encontraban con `VAULT_ROOT` puesto a mano,
+porque las reglas de autodetección estaban ancladas en el directorio del
+programa (site-packages, con la wheel instalada). Con la casa, el vault tiene
+sitio fijo, nombre y versión propia; y con su repo, su historia.
+
+**Y el vault personalizado de un proyecto.** Puede declararse de dos maneras,
+que no se excluyen:
+
+- **Dentro del repositorio original**, con un fichero `.vault-path` en su raíz
+  que dice dónde está el vault. Lo escribe la persona, no una tool: una tool
+  que escribiera fuera del vault rompería la contención de AP-36. Las tools
+  solo lo leen.
+- **Por ruta, en el comando del proyecto**: `vault_project --link <proyecto>
+  --vault <ruta>` lo deja en el registro local de la máquina
+  (`00_System/.local/vault-paths.json`, fuera de git, como la ruta del
+  repositorio).
+
+Las dos reglas de autodetección que hacen que todo esto funcione sin
+`VAULT_ROOT`:
+
+| Regla | Qué encuentra | Origen |
+|---|---|---|
+| `client_cwd` | El vault en el que está el cliente, subiendo desde su directorio | El cliente está en su vault |
+| `puntero_repo` | El vault que declara el `.vault-path` del repositorio en el que está el cliente | Lo escribió la persona |
+
+`VAULT_ROOT` sigue siendo la costura que manda sobre todo lo demás: si está
+puesta, gana.
+
 ## Configuración de VAULT_ROOT en los scripts
 
 Todos los scripts Python del vault calculan la ruta raíz del vault mediante la constante `VAULT_ROOT`. Su valor correcto depende de **dónde están ubicados los scripts** respecto al vault.
@@ -7755,6 +7872,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v41.7 | 2026-10-16 | **Un lock se da por huérfano por su dueño, un registro ilegible se aparta en vez de pisarse y las puertas dejan de crecer con lo que no miden.** El lock guarda máquina e inicio del proceso y solo se rompe si su dueño murió, quien lo perdió no escribe ni mueve (fencing) y la toma va por la ruta real (deuda `lock_caduca_por_reloj_de_pared` saldada); la bitácora, la traza, la cola de propagación, las preferencias, el ledger de voz y una nota ilegible se apartan o se nombran (AP-51); AP-66 «el coste crece con lo que no es trabajo» con su detector en `vault_arch`, y cinco puertas dejan de crecer con la historia o el anidamiento; AP-48 la pronuncia su puerta (deuda `ap48_sin_voz` saldada); AP-51 y AP-52 ven la tupla vacía, el envelope tirado y el `ok: True` mutado a error. **Ruptura:** sin `VAULT_ROOT`, una tool instalada cuya autodetección cae en el propio paquete se niega con `VAULT_NOT_FOUND`. 5772 tests, 24 puertas |
 | v41.13 | 2026-10-20 | **El barrido se ejecuta de verdad, es la puerta 25 y la clase de idempotencia está cerrada.** O1–O7: 17 DEFECTO → 1 congelado (release-gated), 121 OK. El instrumento prepara sus corridas como el banco AP-37 (proyecto del ejemplo + ficheros de entrada) y encuentra 17 defectos que el «OK» anterior tapaba. El canal (`atomic_write_text`) no escribe cuando el texto saneado es el del disco ni cuando solo cambian `id`/`createdAt`/`updatedAt`; `vault_merge dedup` deja de fusionar los `index.md` de sección y respalda antes de borrar; los correlativos (BUG/AID/TEST/REQ/NCR) sobreviven a la actualización real; `vault_runbook_log` retira `unchanged` con anotación. `toolkit_audit --check` entra en `vault_gate` (25 puertas) midiendo deuda nueva sobre el catálogo entero. 6022 tests, 25 puertas |
 | v41.14 | 2026-10-21 | **El audit deja de medir el ruido ajeno y medir el toolkit pasa de actividad de una persona a procedimiento escrito.** O9: los chequeos de contenido son de las NOTAS del vault —la clase la decide el contrato, `clase_de_nota`—, y el barrido crudo sigue siendo el que resuelve enlaces (el criterio de Obsidian). Medido en un vault ajeno real de 15.614 ficheros: `healthScore` 13 → 91, sin frontmatter 78 → 0, AP-24 25 → 0, huérfanas 78 → 0, sombras canónicas 110 → 0; quedan los hallazgos reales (7 notas desfasadas, 1 enlace roto). La carpeta ajena se informa en `issues.carpetasFueraDeSeccion`, una fila por carpeta y sin penalización; AP-15 lo sigue detectando `vault_norms --audit`. Cuarta skill: `vault-toolkit-audit` v1.0 —el barrido del catálogo como procedimiento escrito—. 6042 tests, 25 puertas |
+| v41.15 | 2026-10-21 | **El vault sabe qué material se operó, lo que entra entra por las tools, y cada vault tiene su sitio y su historia.** `~/.vault-master/<nombre>/` (Windows: `%USERPROFILE%\.vault-master\`), cada vault con su repo git (`vault_init --name`, `VAULT_MASTER`); el vault personalizado se declara con `.vault-path` en el repo o con `vault_project --link <p> --vault <ruta>`, y dos reglas de autodetección nuevas (`client_cwd`, `puntero_repo`) hacen que las tools lo encuentren sin `VAULT_ROOT`. AP-67: el material que el agente opera —el código del proyecto, sus scripts de prueba, sus artefactos— tiene que estar enlazado desde la memoria, en los dos sentidos (`source_file:` en la nota, `@vault:` en el fichero). El caso que la destapó: cinco scripts de prueba del TTS ejecutados en un vault real, con los resultados en el vault pero los scripts fuera y el proyecto enlazado con cero notas de código. `vault_code_sync` gana dos hallazgos (`proyecto_sin_conocimiento`, `fuente_sin_nota`). En el camino: `vault_test_save` escribía `test_type` y ningún `type` (sus notas salían del contrato incumplido, AP-27) y el audit contaba un artefacto derivado como nota huérfana. 6051 tests, 25 puertas |
 | v41.12 | 2026-10-20 | **El toolkit se audita tool por tool, y cerrar un cambio ya no exige correr la suite entera.** `vault_toolkit_audit` (Normas) ejecuta las líneas `example` de cada tool (C0 superficie, C1 cobertura del ejemplo, C2 ejecución+contrato, C3 idempotencia en la misma copia, C4 paridad CLI↔MCP de los dueños, C5 degradación sin `VOAS_*`), contrasta el envelope con `declared_returns` y congela los DEFECTO en una baseline que solo encoge —escrita por `vault_baseline.escribir`, con objetivo, plazo y dueño— y publica su informe derivado en `docs/auditorias/auditoria-toolkit.md`. `vault_test_scope` (internal), arnés de alcance, mide por clausura inversa del grafo ast de imports y literales qué tests toca un cambio, y el carril `-m "not slow"` saca los 23 módulos que el perfil midió >25 s; la suite canónica pasa a `-n auto` (~17 min) y la serie queda para re-verificar rojos (AP-44). Los errores que emiten las tools nuevas salen por `ERROR_CATALOG` (AP-52) y `AUDIT_STILL_RED` entra al catálogo para el gate estricto. La migración del dueño de `test_scope` a `vault/meta_toolkit/` baja el puente otro módulo (ADR-0002, deuda #12). 125 tools, 37 grupos |
 | v41.11 | 2026-10-18 | **El porqué de cada puerta se publica derivado, no se escribe dos veces.** `docs/PUERTAS.md` sale de `vault_gate.PUERTAS` y del docstring de cada tool (el del dueño si es alias), con las normas que cita enlazadas a su `porque.md`; `--fix-doc` lo regenera y `--check-doc` falla si diverge. El docstring del catálogo dejaba una cifra a mano (AP-47). 5863 tests, 24 puertas |
 | v41.10 | 2026-10-17 | **Un handler se juzga por si el fallo llega al llamante, no por si deja rastro.** AP-51: un `log()` suelto ya no absuelve a un `except Exception` que devuelve un vacío; solo expone la mutación de un contenedor o la llamada a una función del módulo que lo hace (`expositores`). AP-52: `var.update(otro)` se lee cuando `otro` es un dict literal asignado una vez. Lo que ninguno de los dos detectores sigue queda declarado en `cobertura_parcial`, con test. 5858 tests, 24 puertas |
@@ -8099,15 +8217,7 @@ temp/
 
 **Markdown + carpetas numeradas + 53 tools especializadas** es el punto óptimo para agentes LLM:
 - Zero dependencias externas
-- Legible por humanos en cualquier editor
-- Compatible con Obsidian si el usuario quiere abrirlo visualmente
-- Versionable con git si el proyecto lo usa
-- Acceso controlado vía tools (harness pattern — nunca `fs.writeFile` directo)
-- Los diagramas ERD e infra se mantienen solos (auto-generados)
-- El contexto relevante se inyecta automáticamente (RAG sin embeddings)
-- Escala de 1 proyecto a 100 sin cambiar la arquitectura
-
----
+- Legible por humanos
 
 ## Changelog
 
@@ -8121,6 +8231,92 @@ temp/
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
 
 ---
+
+### v41.15 — 2026-10-21 `git: pending`
+
+**El vault sabe qué material se operó, y lo que entra entra por las tools.**
+
+**El caso de evento.** En un vault real se ejecutaron cinco scripts de prueba
+del motor TTS —`test-tts-simple.py`, `test-tts-streaming.ps1`,
+`test-tts-emoji.ps1`, `test-tts-fix.ps1`, `test-tts-warnings.js`— para
+comprobar la funcionalidad. Los **resultados** acabarían en el vault (tres
+notas en `02_Observability`); los **scripts** quedaron fuera, sin que ninguna
+nota los apuntara, y el proyecto estaba enlazado al vault con cero notas de
+código. El vault podía estar «limpio» y no saber nada: las cuatro
+comprobaciones que existían miraban solo lo que ya estaba enlazado.
+
+**La norma (AP-67).** *El material que el agente opera tiene que estar en la
+memoria.* Es el reverso de AP-05, no su gemelo: AP-05 es el dato repetido en
+dos sitios, AP-67 es el dato que no está en ninguno. Su señal es
+decidible —`vault_code_sync` gana dos hallazgos: `proyecto_sin_conocimiento`
+(un proyecto enlazado sin una sola nota de su código) y `fuente_sin_nota` (los
+ficheros del repositorio que ninguna nota apunta, con recuento y muestra)—, y
+su prevención es el procedimiento que ya existía: **lo que entra al vault
+entra por una tool**, que es la que deja el registro, y lo que sale, con ella.
+
+**Lo que la norma no dice.** No dice que el repositorio entero tenga que
+estar documentado —eso convertiría el vault en una copia del proyecto—. Dice
+que el vault tiene que saber qué material existe y se operó. Lo que está
+fuera y no se opera, no es deuda: es el proyecto.
+
+**La casa de los vaults.** Un vault del usuario vive en una carpeta fija —
+`~/.vault-master/<nombre>/` en Linux y macOS, `%USERPROFILE%\.vault-master\<nombre>\`
+en Windows — y **cada uno con su repositorio git**: la memoria del agente se
+versiona como lo que es. `vault_init --name <nombre>` la crea y la inicializa
+de una vez; `vault_init --list` dice qué hay en la casa; `VAULT_MASTER` mueve
+la casa. La ruta es multiplataforma porque la dice `Path.home()`, no una
+constante por sistema.
+
+**Y el vault personalizado de un proyecto** se declara de dos maneras que no se
+excluyen: dentro del repositorio original, con un `.vault-path` en su raíz
+(lo escribe la persona —una tool que escribiera fuera del vault rompería la
+contención de AP-36— y las tools solo lo leen), o por ruta, con
+`vault_project --link <proyecto> --vault <ruta>`, que lo deja en el registro
+local de la máquina, fuera de git.
+
+**Dos reglas de autodetección que hacen que todo esto sirva.** `client_cwd`: el
+vault en el que está el cliente, subiendo desde su directorio. `puntero_repo`:
+el vault que declara el `.vault-path` del repositorio en el que está. Las dos
+están **antes** que las viejas, que estaban ancladas en el directorio del
+programa —con la wheel instalada, site-packages—, así que sin `VAULT_ROOT` a
+mano las tools no encontraban nada. `VAULT_ROOT` sigue mandando sobre todo.
+
+**El contrato que no miente.** Tres cosas que la auditoría del repo
+encontró midiendo, no leyendo:
+
+- `vault --version` decia **41.12** con el estándar en 41.15: el metadata de
+  una instalación editable se congela en el momento de instalar, y la CLI lo
+  leía sin mirar el código que se estaba ejecutando. Ahora dice la mayor
+  entre el metadata y el código —el código que corre es la verdad—, y hay un
+  test que lo vigila.
+- `vault_move` imprimía **prosa** («Movido: …», «Error: …») salvo que se pasara
+  `--json`, mientras el resto de las tools imprimen el envelope siempre: un
+  consumidor que parsea stdout se llevaba texto donde el contrato publica un
+  envelope (AP-40). La bandera se conserva (no-derogación) y deja de decidir
+  el formato.
+- Dos tools **declaraban un side effect falso**: `vault_test_save` anunciaba
+  `01_Projects/{project}/tests/` y escribe en `15_Tests/{test_type}/`;
+  `vault_bibliography_save` anunciaba `07_Knowledge/bibliography/` y escribe en
+  `12_Bibliography/`. Y `vault_code_sync` no decía que `--fix` escribe **dentro
+  de los ficheros del proyecto** (fuera del vault): un side effect sin
+  declarar no se puede revisar (AP-36).
+
+**Dos defectos que el caso destapó de paso.** `vault_test_save` escribía
+`test_type` y ningún `type:` —sus notas salían del contrato incumplido
+(AP-27) y el audit las contaba como `missing_type`—: corregido, con test.
+Y el audit contaba `99_Index/tag-index.md` —un artefacto derivado— como nota
+huérfana: lo `derivada` no es nota, y ahora el conjunto lo decide el contrato
+(`clase_de_nota`), como en v41.14.
+
+**El acomodo, hecho con las tools.** En el vault real: el proyecto se registró
+y se enlazó (`vault_project --add`/`--link`), siete notas se renombraron a
+kebab-case con `vault_move` (que dejó su `move-log.json`), el material
+operado se documentó con `vault_code_module` y `vault_test_save`, la
+trazabilidad bidireccional se cerró con `vault_code_sync --fix` (que inyectó
+el `@vault:` en los cinco scripts), y el vocabulario se anotó con
+`vault_tags --backfill-ledger`. Resultado: `healthScore` 93 → **88 con 0
+huérfanas y 0 notas sin contrato**, y `vault_norms --audit` de 17
+violaciones a **1**.
 
 ### v41.14 — 2026-10-21 `git: 588f964`
 

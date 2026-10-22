@@ -31,11 +31,11 @@ import json
 import shutil
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from vault_errors import presupuesto_de_vault, emit_error, wrap_main
 from vault_standard_upgrade import version_conocida
-from vault_io import atomic_write_text, write_report
+from vault_io import atomic_write_text, set_vault_root, write_report
 from vault_lib import utcnow
 from vault_version import CURRENT_VERSION
 from vault_registry import (
@@ -476,15 +476,106 @@ Notas:
         action="store_true",
         help="Wipe existing vault content before init (DANGEROUS)",
     )
+    parser.add_argument(
+        "--name",
+        default=None,
+        help=(
+            "Crea el vault en la casa de los vaults: "
+            "~/.vault-master/<nombre> (Windows: %%USERPROFILE%%\\.vault-master\\<nombre>). "
+            "Es donde vive un vault con su propio repositorio git."
+        ),
+    )
+    parser.add_argument(
+        "--no-git",
+        action="store_true",
+        help="Con --name: no inicializa el repositorio git del vault.",
+    )
+    parser.add_argument(
+        "--list",
+        action="store_true",
+        help="Lista los vaults de la casa (nombre, version y si tienen git).",
+    )
     args = parser.parse_args()
+
+    if args.list:
+        print(json.dumps(_listar_vaults_de_la_casa(), indent=2, ensure_ascii=False))
+        return 0
+
+    destino = None
+    if args.name:
+        from vault.kernel.vault_home import vault_en_master
+
+        try:
+            destino = vault_en_master(args.name)
+        except ValueError as exc:
+            print(json.dumps(emit_error("vault_init", "INVALID_NAME", str(exc)),
+                             indent=2, ensure_ascii=False))
+            return 1
+        if destino.exists() and any(destino.iterdir()):
+            print(json.dumps(emit_error(
+                "vault_init", "VAULT_EXISTS",
+                f"'{destino}' ya existe y no esta vacio: no se pisa un vault."),
+                indent=2, ensure_ascii=False))
+            return 1
+        # La deteccion se resuelve al crearlo: el vault nuevo es el destino.
+        # El init rechaza una raiz que no existe (para no materializar un
+        # vault fantasma), asi que la crea quien ha pedido el vault por
+        # nombre: la carpeta vacia es el destino, y `--clean` no toca nada.
+        destino.mkdir(parents=True, exist_ok=True)
+        set_vault_root(destino)
 
     result = vault_init(
         target_version=args.target,
         run_audit=not args.no_audit,
         clean=args.clean,
     )
+    if args.name and result.get("ok") and not args.no_git:
+        result["git"] = _inicializar_git(destino)
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0 if result.get("ok") else 1
+
+
+def _inicializar_git(destino: Path) -> Dict[str, Any]:
+    """El vault de la casa nace con su repositorio (v41.15).
+
+    La memoria del agente se versiona como lo que es. Un vault suelto dentro
+    del repositorio del proyecto —medido en un vault real: las notas del
+    proyecto absorbidas quedaban borradas del repo del proyecto y sin
+    versionar en ninguna parte— pierde su historia en cuanto alguien clona el
+    proyecto. Con repo propio, la memoria tiene su historia.
+
+    Si git no esta configurado (sin user.name), el repo queda inicializado y
+    el commit se avisa: el commit lo hace quien tiene identidad.
+    """
+    import subprocess
+
+    def _git(*args: str) -> subprocess.CompletedProcess:
+        return subprocess.run(["git", *args], cwd=str(destino), capture_output=True,
+                              text=True, encoding="utf-8", errors="replace")
+
+    if not (destino / ".git").exists():
+        r = _git("init", "-b", "main")
+        if r.returncode != 0:
+            return {"ok": False, "motivo": r.stderr.strip()[:300]}
+    _git("add", "-A")
+    r = _git("commit", "-q", "-m", "vault: bootstrap del vault")
+    if r.returncode != 0:
+        return {"ok": False,
+                "motivo": "repo inicializado, sin commit: "
+                          + (r.stderr or r.stdout).strip()[:300],
+                "repo": str(destino / ".git")}
+    commit = _git("rev-parse", "--short", "HEAD").stdout.strip()
+    return {"ok": True, "repo": str(destino / ".git"), "commit": commit}
+
+
+def _listar_vaults_de_la_casa() -> Dict[str, Any]:
+    """Los vaults de la casa, con lo que se sabe de cada uno sin abrirlo."""
+    from vault.kernel.vault_home import listar_vaults_de_la_casa, master_home
+
+    casa = master_home()
+    vaults = listar_vaults_de_la_casa()
+    return {"ok": True, "tool": "vault_init", "action": "list", "casa": str(casa),
+            "total": len(vaults), "vaults": vaults}
 
 
 if __name__ == "__main__":

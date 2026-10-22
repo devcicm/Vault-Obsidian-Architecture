@@ -217,6 +217,14 @@ def vault_test_save(
 
         frontmatter.set("test_type", test_type)
 
+        # AP-27: el contrato de una nota de `15_Tests/` pide `type`, y el
+        # canonico de esa seccion es `test` (vault_registry.SECTION_TYPES).
+        # La tool escribia `test_type` y nada mas: sus notas salian del
+        # contrato incumplido, y el audit lo media como `missing_type`
+        # (medido en un vault real, 2026-10-21, al documentar con esta tool
+        # cincoscripts de prueba que el agente habia ejecutado).
+        frontmatter.set("type", "test")
+
         frontmatter.lineas(status_frontmatter_lines("vault_test_save", status))
 
         if related_requirement:

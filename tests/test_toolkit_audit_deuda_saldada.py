@@ -43,11 +43,10 @@ def test_la_deuda_del_barrido_esta_saldada():
     )
     assert deuda is not None, "la deuda del barrido no está declarada en el plano"
     assert deuda["estado"] == "saldada", deuda
-    # La versión se deriva, no se escribe a mano: la corriente dura una versión
-    # (`test_version_coherence` lo vigila en toda la suite).
-    from vault_version import CURRENT_VERSION
-
-    assert deuda["saldada_en"] == CURRENT_VERSION, deuda
+    # La versión que la cerró es una versión **histórica**: se escribe, y por
+    # eso aguanta los bumps. (La regla de `test_version_coherence` veta el
+    # literal de la versión *corriente* en la suite, no el de una cerrada.)
+    assert deuda["saldada_en"] == "v41.14", deuda
 
 
 def test_la_version_que_saldo_la_deuda_existe_en_el_changelog():

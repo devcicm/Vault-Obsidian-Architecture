@@ -426,7 +426,7 @@
       },
       "guards": [],
       "side_effects": [
-        "Crea nota en 07_Knowledge/bibliography/"
+        "Crea nota en 12_Bibliography/{project}-{slug}.md"
       ],
       "status": "active",
       "exposed_via_mcp": true,
@@ -1123,7 +1123,8 @@
       },
       "guards": [],
       "side_effects": [
-        "Actualiza 11_Code/{project}/index.json"
+        "Actualiza 11_Code/{project}/index.json",
+        "Con --fix: inyecta @vault: en los ficheros fuente del proyecto, FUERA del vault (AP-36: el side effect se declara para poder revisarlo)"
       ],
       "status": "active",
       "exposed_via_mcp": true,
@@ -3188,7 +3189,7 @@
         "properties": {
           "target": {
             "type": "string",
-            "description": "Versión objetivo (default: v34)"
+            "description": "Versión objetivo del estándar (por defecto, la vigente)"
           },
           "no-audit": {
             "type": "boolean",
@@ -3197,13 +3198,26 @@
           "clean": {
             "type": "boolean",
             "description": "Borrar contenido existente (DANGEROUS)"
+          },
+          "name": {
+            "type": "string",
+            "description": "Crea el vault en la casa (~/.vault-master/<nombre>) con su repositorio git"
+          },
+          "no-git": {
+            "type": "boolean",
+            "description": "Con --name: no le hace repositorio git al vault"
+          },
+          "list": {
+            "type": "boolean",
+            "description": "Lista los vaults de la casa con su version y su git"
           }
         },
         "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
-        "Crea carpetas, versiona, indexa, audit"
+        "Crea carpetas, versiona, indexa, audit",
+        "Con --name: crea el vault en la casa y le hace su repositorio git"
       ],
       "status": "active",
       "exposed_via_mcp": true,
@@ -4791,6 +4805,10 @@
           "path": {
             "type": "string",
             "description": "Ruta local del repositorio (con link)"
+          },
+          "vault": {
+            "type": "string",
+            "description": "Ruta del vault de este proyecto (con --link). Vive en el registro local de la maquina, no en git: cada maquina puede tener el vault en un sitio. El repositorio tambien puede declararlo con un fichero `.vault-path` en su raiz, que las tools solo leen."
           }
         },
         "additionalProperties": false
@@ -6734,7 +6752,7 @@
       },
       "guards": [],
       "side_effects": [
-        "Crea nota en 01_Projects/{project}/tests/"
+        "Crea nota en 15_Tests/{test_type}/{project}-{slug}.md"
       ],
       "status": "active",
       "exposed_via_mcp": true,
@@ -7436,7 +7454,7 @@
     "vault_backup_base64",
     "vault_restore_base64"
   ],
-  "standard_version": "v41.14",
+  "standard_version": "v41.15",
   "errors": {
     "AP17_DUPLICATE_TITLE": {
       "category": "governance",
@@ -8224,6 +8242,16 @@
         "docs": null
       }
     },
+    "INVALID_NAME": {
+      "category": "validation",
+      "severity": "error",
+      "message": "El nombre del vault no es un nombre válido.",
+      "recovery": {
+        "action": "fix_input",
+        "hint": "El nombre es una carpeta de la casa: kebab-case, sin rutas, sin `..` y sin empezar por punto.",
+        "docs": "vault-obsidian-architecture.md §La casa de los vaults"
+      }
+    },
     "INVALID_NCR_TYPE": {
       "category": "validation",
       "severity": "error",
@@ -9006,6 +9034,16 @@
         "action": "fix_input",
         "hint": "El detalle está en `invalid` (nota y motivo), `structure.missing` e `indexes.invalid`. Un frontmatter que no parsea se repara con vault_frontmatter_heal; los campos que faltan se completan con vault_frontmatter_completar (dry-run por defecto, --apply para escribir).",
         "docs": null
+      }
+    },
+    "VAULT_EXISTS": {
+      "category": "validation",
+      "severity": "error",
+      "message": "El destino del vault ya existe y no esta vacio.",
+      "recovery": {
+        "action": "fix_input",
+        "hint": "Elegir otro nombre con vault_init --name, o apuntar a un directorio vacio; un vault no se pisa y un vault medio poblado no se re-inicializa.",
+        "docs": "vault-obsidian-architecture.md §La casa de los vaults"
       }
     },
     "VAULT_NOT_FOUND": {

@@ -27,9 +27,20 @@ def _error(capsys):
     return json.loads(capsys.readouterr().err)
 
 
-def test_version_usa_la_metadata_de_la_distribucion(monkeypatch):
+def test_version_usa_la_metadata_cuando_es_la_mas_nueva(monkeypatch):
+    """Una instalacion normal: el metadata y el codigo dicen lo mismo."""
     _version(monkeypatch)
-    assert product_cli.toolkit_version() == "40.34"
+    monkeypatch.setattr(product_cli, "CURRENT_VERSION", "99.0")
+    assert product_cli.toolkit_version() == "99.0"
+
+
+def test_version_no_es_menor_que_la_del_codigo(monkeypatch):
+    """El metadata de una instalacion editable se congela al instalar: la CLI
+    no puede quedar announcing una version mas vieja que la que corre."""
+    import vault_version
+
+    _version(monkeypatch)   # metadata viejo, a proposito
+    assert product_cli.toolkit_version() == vault_version.CURRENT_VERSION.lstrip("v")
 
 
 def _runtime_sin_modulo() -> str:

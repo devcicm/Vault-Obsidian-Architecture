@@ -12,7 +12,7 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~12.000 líneas). Fuente normativa. |
 | `scripts/*.py` | ~164 scripts, 125 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (6042 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (6062 tests). Toda norma con guard debe tener test. |
 | `normas/` | Normas como paquete (`normas/<código>/`: `norma.py`, `porque.md`, `guard.py`, `heal.py`, `test_*.py`). Las carga `vault_norms_catalog` en su sitio del catálogo; la forma la vigila `--check-framework`. Desde m186 toda norma vive aquí (cuántas, `NORMAS_EN_PAQUETE`). `guard.py`/`heal.py` son derivados —apuntan a la función dueña; los sanadores salen de `vault_norms_catalog.SANADORES`— y se regeneran con `vault_norms_engine.escribir_caras_derivadas`, no a mano. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
@@ -146,6 +146,14 @@ python -m pytest tests/ -q -n auto --tb=short
 # Carril rápido — los 23 módulos que el perfil midió con llamadas > 25 s
 # quedan fuera; es para iterar. NO sustituye al cierre de arriba.
 python -m pytest tests/ -q -n auto -m "not slow" --tb=short
+
+# La casa de los vaults: donde viven, con su propio git
+python scripts/vault_init.py --name mi-vault   # crea ~/.vault-master/mi-vault/ (Windows: %USERPROFILE%\.vault-master\mi-vault\)
+python scripts/vault_init.py --list            # los vaults de la casa
+# La casa se cambia con VAULT_MASTER (lo publica `vault_entorno`).
+# Un vault personalizado puede declararse en el repositorio original con un
+# `.vault-path` en su raíz (lo escribe la persona; las tools solo lo leen) o
+# por ruta con `vault_project --link <proyecto> --vault <ruta>`.
 
 # Normas y marco de datos
 python scripts/vault_norms.py --audit --root vault-sandbox   # audita el vault contra las normas

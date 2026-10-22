@@ -257,6 +257,16 @@ def pertenencia_en(raiz: Path, nombre: str) -> Callable[[object], bool]:
 #: En una nota viajaría con cada copia del vault (`_sin_rutas_locales`).
 DIRECTORIO_LOCAL = Path("00_System") / ".local"
 RUTAS_LOCALES = DIRECTORIO_LOCAL / "project-paths.json"
+#: Las rutas de los **vaults** de cada proyecto (v41.15). Vive junto a
+#: `RUTAS_LOCALES` y tambien fuera de git: cada maquina puede tener el
+#: vault de un proyecto en un sitio distinto.
+RUTAS_DE_VAULT = Path("00_System") / ".local" / "vault-paths.json"
+
+#: Las rutas de los **vaults** de cada proyecto (v41.15). Vive junto a
+#: `RUTAS_LOCALES` y tambien fuera de git: cada maquina puede tener el
+#: vault de un proyecto en un sitio distinto.
+RUTAS_DE_VAULT = Path("00_System") / ".local" / "vault-paths.json"
+
 #: Lo portable de la relación con el repositorio, en la ficha bajo `repo:`.
 CAMPOS_REPO = ("remote", "default_branch", "synced_commit", "synced_at")
 
@@ -290,6 +300,92 @@ def repo_de(raiz: Path, slug: str) -> Dict[str, str]:
     if not isinstance(repo, dict):
         return {}
     return {k: str(repo[k]) for k in CAMPOS_REPO if repo.get(k) not in (None, "")}
+
+
+def ruta_de_vault(raiz: Path, slug: str) -> Optional[Path]:
+    """La ruta del vault de ese proyecto en esta maquina, o `None`.
+
+    La escribe `vault_project --link --vault <ruta>`, o el puntero
+    `.vault-path` que el repositorio declara (v41.15): son las dos formas de
+    decir donde vive el vault de un proyecto, y la segunda la escribe la
+    persona porque una tool que escribiera fuera del vault romperia la
+    contencion de AP-36.
+    """
+    fichero = Path(raiz) / RUTAS_DE_VAULT
+    try:
+        rutas = json.loads(fichero.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    valor = rutas.get(slug) if isinstance(rutas, dict) else None
+    return Path(valor) if isinstance(valor, str) and valor else None
+
+
+def anotar_vault(raiz: Path, slug: str, ruta: "str | Path") -> Optional[str]:
+    """Guarda la ruta del vault del proyecto en el registro local.
+
+    Devuelve la ruta guardada, o `None` si no se pudo escribir. No crea el
+    vault: esto declara donde esta, no lo hace.
+    """
+    destino = Path(ruta).expanduser()
+    fichero = Path(raiz) / RUTAS_DE_VAULT
+    rutas: Dict[str, str] = {}
+    if fichero.is_file():
+        try:
+            rutas = json.loads(fichero.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            rutas = {}
+    if not isinstance(rutas, dict):
+        rutas = {}
+    rutas[slug] = str(destino)
+    try:
+        escritura_atomica(fichero, json.dumps(dict(sorted(rutas.items())),
+                                               ensure_ascii=False, indent=1))
+    except OSError:
+        return None
+    return str(destino)
+
+
+def ruta_de_vault(raiz: Path, slug: str) -> Optional[Path]:
+    """La ruta del vault de ese proyecto en esta maquina, o `None`.
+
+    La escribe `vault_project --link --vault <ruta>`, o el puntero
+    `.vault-path` que el repositorio declara (v41.15): son las dos formas de
+    decir donde vive el vault de un proyecto, y la segunda la escribe la
+    persona porque una tool que escribiera fuera del vault romperia la
+    contencion de AP-36.
+    """
+    fichero = Path(raiz) / RUTAS_DE_VAULT
+    try:
+        rutas = json.loads(fichero.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    valor = rutas.get(slug) if isinstance(rutas, dict) else None
+    return Path(valor) if isinstance(valor, str) and valor else None
+
+
+def anotar_vault(raiz: Path, slug: str, ruta: "str | Path") -> Optional[str]:
+    """Guarda la ruta del vault del proyecto en el registro local.
+
+    Devuelve la ruta guardada, o `None` si no se pudo escribir. No crea el
+    vault: esto declara donde esta, no lo hace.
+    """
+    destino = Path(ruta).expanduser()
+    fichero = Path(raiz) / RUTAS_DE_VAULT
+    rutas: Dict[str, str] = {}
+    if fichero.is_file():
+        try:
+            rutas = json.loads(fichero.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            rutas = {}
+    if not isinstance(rutas, dict):
+        rutas = {}
+    rutas[slug] = str(destino)
+    try:
+        escritura_atomica(fichero, json.dumps(dict(sorted(rutas.items())),
+                                               ensure_ascii=False, indent=1))
+    except OSError:
+        return None
+    return str(destino)
 
 
 def anotar_repo(

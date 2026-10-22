@@ -2,7 +2,7 @@
 
 Vault Obsidian Architecture es un estándar abierto con un toolkit para dar a agentes LLM memoria documental persistente, auditable y gobernada sobre Markdown plano.
 
-[![Version](https://img.shields.io/badge/version-v41.14-blue)](./vault-obsidian-architecture.md)
+[![Version](https://img.shields.io/badge/version-v41.15-blue)](./vault-obsidian-architecture.md)
 [![Tools](https://img.shields.io/badge/tools-125_active-green)](./scripts/)
 [![Scripts](https://img.shields.io/badge/scripts-164_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)
@@ -328,7 +328,7 @@ Detalle completo en [Marco de Datos y Gobernanza](./vault-obsidian-architecture.
 | **Principios FAIR** | Findable, Accessible, Interoperable, Reusable — con el mecanismo concreto que ya los cumple | `vault_search`, `vault_master_index`, `.history/` |
 | **V's del Big Data** | Volumen, velocidad, variedad, veracidad, valor, variabilidad — cada V apunta a un número real | `vault_audit`, `vault_change_log`, `vault_delta` |
 | **Trazabilidad** | Cadena verificable `agent:` → `.change-log.json` → `.tool-trace.json` → `.history/` → manifiesto Merkle | `vault_audit --trace` |
-| **Gobernanza** | 80 normas AP/PAT/SP/CN, 0 con enforcement manual | `vault_norms --audit` |
+| **Gobernanza** | 81 normas AP/PAT/SP/CN, 0 con enforcement manual | `vault_norms --audit` |
 | **Alineación ISO** | 13 normas mapeadas cláusula → implementación → tool | `vault_fundamentals --framework` |
 
 ```bash
@@ -455,7 +455,7 @@ python scripts/vault_norms.py --check-framework    # guard anti-drift registro �
 - **AP-36** (critical): toda operación escribe solo dentro del vault, es idempotente
   y deja artefactos rastreables. Backups en `VAULT_ROOT/vault-backups/`, `.bak` de
   moves en `00_System/.trash/`, stubs de mantenimiento en `02_Observability/maintenance/stubs/`.
-- **0 normas con enforcement `manual`**: las 80 normas del catálogo tienen guard o audit.
+- **0 normas con enforcement `manual`**: las 81 normas del catálogo tienen guard o audit.
   `python scripts/vault_norms.py --audit [--root X]` audita AP-06/07/09/10/15/19/36, CN-02/03, SP-01.
 - **Saneamiento de índices**: tablas con `| [[stem]] | Título | ... |` (nunca alias en
   celda); `python scripts/vault_section_index.py --heal` cura índices legacy; escribir
@@ -595,7 +595,7 @@ Sistema de control de asistencia con autenticación biométrica.
 Contiene:
 - 8 principios de diseño
 - 125 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
-- 80 normas: 66 antipatrones (AP-01–AP-66), 6 patrones (PAT-1–PAT-6), 4 SP, 4 CN
+- 81 normas: 67 antipatrones (AP-01–AP-67), 6 patrones (PAT-1–PAT-6), 4 SP, 4 CN
 - norm_refs auto-embebido en frontmatter + vault_code_tag para etiquetas en código fuente
 - 8 Fundamentos de Datos (F1–F8) con trazabilidad a tools
 - CIA schema completo con semántica por tipo de nota

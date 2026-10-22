@@ -178,6 +178,13 @@ def vault_code_sync(
     missing_file: List[Dict] = []
     no_source_ref: List[Dict] = []
     orphan_vault_refs: List[Dict] = []
+    # AP-67: el material que el agente opera tiene que estar en la memoria.
+    # `proyecto_sin_conocimiento` es decidible (un proyecto enlazado sin una
+    # sola nota de su codigo); `fuente_sin_nota` es el recuento de lo que hay
+    # en el repositorio y ninguna nota apunta.
+    proyecto_sin_conocimiento: List[Dict] = []
+    fuente_sin_nota: List[Dict] = []
+    fuente_sin_nota_total = 0
     fixed = 0
 
     # ── Pass 1: vault notes → source files ───────────────────────────────────
@@ -273,6 +280,23 @@ def vault_code_sync(
         for p, _ in notes
     }
 
+    # Los ficheros que una nota ya declara: `source_file` puede venir
+    # absoluto o relativo al repo enlazado (las dos formas que escriben las
+    # tools), asi que se resuelven las dos.
+    ficheros_con_nota = set()
+    for _note_path, meta in notes:
+        declarado = meta.get("file_path") or meta.get("source_file") or ""
+        if not declarado:
+            continue
+        candidatos = [Path(declarado)]
+        if repo is not None and not Path(declarado).is_absolute():
+            candidatos.append(repo / declarado)
+        for candidato in candidatos:
+            try:
+                ficheros_con_nota.add(candidato.resolve())
+            except OSError:
+                continue
+
     for scan_root in scan_roots:
         for src_file in scan_root.rglob("*"):
             if src_file.suffix.lower() not in _CODE_EXTS:
@@ -286,6 +310,39 @@ def vault_code_sync(
                         "note": f"Vault note {ref}.md not found in {_code_dir().name}/",
                     }
                 )
+            elif not ref:
+                # AP-67: este fichero no lo apunta ninguna nota. No es un
+                # error: es conocimiento que el vault no tiene. Se cuenta
+                # entero y se muestran unos pocos, porque el numero es el
+                # que dice la verdad y la lista es la que orienta.
+                try:
+                    resuelto = src_file.resolve()
+                except OSError:
+                    resuelto = src_file
+                if resuelto not in ficheros_con_nota:
+                    fuente_sin_nota_total += 1
+                    if len(fuente_sin_nota) < 25:
+                        fuente_sin_nota.append(
+                            {"source_file": str(src_file), "norm": "AP-67"})
+
+    # AP-67: un proyecto enlazado al vault y sin una sola nota de su codigo
+    # es un proyecto que el vault declara conocer y no conoce. Es decidible:
+    # o hay notas que lo apuntan, o no las hay.
+    if repo is not None and not notes:
+        proyecto_sin_conocimiento.append(
+            {
+                "project": project or "(todos)",
+                "repo": str(repo),
+                # El hallazgo dice que norma lo exige: quien lo lee tiene que
+                # saber a que obedecer (y el resto del toolkit lo hace asi:
+                # `issues.*` lleva su `norm_code`).
+                "norm": "AP-67",
+                "detail": (
+                    "el repositorio esta enlazado al vault y no hay ninguna nota "
+                    "que lo apunte: su codigo no esta en la memoria"
+                ),
+            }
+        )
 
     summary = {
         "total_notes_checked": len(notes),
@@ -295,11 +352,14 @@ def vault_code_sync(
         "no_source_ref": len(no_source_ref),
         "orphan_vault_refs": len(orphan_vault_refs),
         "fix_applied": fixed,
+        "proyecto_sin_conocimiento": len(proyecto_sin_conocimiento),
+        "fuente_sin_nota": fuente_sin_nota_total,
     }
 
     status = (
         "clean"
         if not missing_tag and not missing_file and not orphan_vault_refs
+        and not proyecto_sin_conocimiento
         else "gaps_found"
     )
 
@@ -325,6 +385,9 @@ def vault_code_sync(
         "missing_file": missing_file,
         "no_source_ref": no_source_ref,
         "orphan_vault_refs": orphan_vault_refs,
+        "proyecto_sin_conocimiento": proyecto_sin_conocimiento,
+        "fuente_sin_nota": fuente_sin_nota,
+        "fuente_sin_nota_total": fuente_sin_nota_total,
     }
 
 
@@ -346,6 +409,8 @@ def _print_report(result: Dict[str, Any]) -> None:
         f"  Archivo ausente : {s['missing_file']}  (source_file no existe en disco)\n"
         f"  Sin source_file : {s['no_source_ref']}  (nota sin frontmatter source_file)\n"
         f"  Refs huérfanas  : {s['orphan_vault_refs']}  (@vault: apunta a nota inexistente)\n"
+        f"  Sin nota        : {s['fuente_sin_nota']}  (ficheros del repo que ninguna nota apunta)\n"
+        f"  Proyecto sin conocimiento: {s['proyecto_sin_conocimiento']}\n"
         f"  Fixes aplicados : {s['fix_applied']}"
     )
 

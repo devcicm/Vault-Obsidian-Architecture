@@ -680,7 +680,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "target": {
                 "type": "string",
                 "required": False,
-                "description": "Versión objetivo (default: v34)",
+                "description": "Versión objetivo del estándar (por defecto, la vigente)",
                 "validators": [],
             },
             "no-audit": {
@@ -695,10 +695,35 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Borrar contenido existente (DANGEROUS)",
                 "validators": [],
             },
+            "name": {
+                "type": "string",
+                "required": False,
+                "description": (
+                    "Crea el vault en la casa (~/.vault-master/<nombre>) con su "
+                    "repositorio git"
+                ),
+                "validators": [],
+            },
+            "no-git": {
+                "type": "boolean",
+                "required": False,
+                "description": "Con --name: no le hace repositorio git al vault",
+                "validators": [],
+            },
+            "list": {
+                "type": "boolean",
+                "required": False,
+                "description": "Lista los vaults de la casa con su version y su git",
+                "validators": [],
+            },
         },
         "guards": [],
-        "side_effects": ["Crea carpetas, versiona, indexa, audit"],
-        "example": "python vault_init.py\npython vault_init.py --target v34",
+        "side_effects": [
+            "Crea carpetas, versiona, indexa, audit",
+            "Con --name: crea el vault en la casa y le hace su repositorio git",
+        ],
+        "example": ("python vault_init.py\npython vault_init.py --name mi-vault\n"
+                    "python vault_init.py --list"),
         "related": ["vault_standard_upgrade", "vault_onboard", "vault_audit"],
     },
     "vault_onboard": {
@@ -1406,7 +1431,8 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             },
         },
         "guards": [],
-        "side_effects": ["Actualiza 11_Code/{project}/index.json"],
+        "side_effects": ["Actualiza 11_Code/{project}/index.json",
+        "Con --fix: inyecta @vault: en los ficheros fuente del proyecto, FUERA del vault (AP-36: el side effect se declara para poder revisarlo)"],
         "example": 'python vault_code_sync.py --project "mi-api"\npython vault_code_sync.py --project "mi-api" --dry-run',
         "related": ["vault_code_map", "vault_reindex"],
     },
@@ -3590,7 +3616,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             },
         },
         "guards": [],
-        "side_effects": ["Crea nota en 01_Projects/{project}/tests/"],
+        "side_effects": ["Crea nota en 15_Tests/{test_type}/{project}-{slug}.md"],
         "example": 'python vault_test_save.py --project "mi-api" --title "Login" --test_type "unit" --description "Verifica el login"',
         "related": ["vault_requirement_save", "vault_code_module"],
     },
@@ -3893,7 +3919,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             },
         },
         "guards": [],
-        "side_effects": ["Crea nota en 07_Knowledge/bibliography/"],
+        "side_effects": ["Crea nota en 12_Bibliography/{project}-{slug}.md"],
         "example": 'python vault_bibliography_save.py --title "Clean Code" --url "https://example.com/clean-code" --summary "Guia de estilo de codigo" --source_type "book"',
         "related": ["vault_knowledge_save", "vault_search"],
     },
