@@ -313,7 +313,9 @@ def c3_bis(nombre: str, entrada: Dict[str, Any], lineas: List[Any],
     try:
         if fuente.is_dir():
             shutil.copytree(fuente, vault,
-                            ignore=shutil.ignore_patterns(".locks"))
+                            # O1b: `.tmp.*` de los escritores atómicos fuera
+                            # de la copia — mismo criterio que vault_smoke.
+                            ignore=shutil.ignore_patterns(".locks", ".tmp.*"))
         else:
             vault.mkdir(parents=True)
         preparar = _preparar_de(nombre)
@@ -323,7 +325,11 @@ def c3_bis(nombre: str, entrada: Dict[str, Any], lineas: List[Any],
                 cwd_de_la_corrida = str(trabajo)
         env = dict(os.environ)
         env.update({"VAULT_ROOT": str(vault), "VAULT_AGENT": "tka-idem",
-                    "VAULT_VOICE": "0"})
+                    "VAULT_VOICE": "0",
+                    # O1b (v41.17): mismo cierre que en vault_smoke — un
+                    # ejemplo que toca la casa (`--name`) escribe adentro
+                    # del destino desechable, no en el del usuario.
+                    "VAULT_MASTER": str(destino / ".casa")})
         argv = list(lineas[-1])
         procesos: List[Dict[str, Any]] = []
         foto_antes = _arbol_local(vault)

@@ -59,14 +59,19 @@ def _foto(raiz: Path) -> dict:
 @pytest.mark.parametrize("tool", ESCRITORES)
 def test_la_nota_que_escribe_cumple_el_contrato_vigente(tool, tmp_path):
     vault = tmp_path / "vault"
-    shutil.copytree(REPO_ROOT / "vault-sandbox", vault, ignore=shutil.ignore_patterns(".locks"))
+    # `.tmp.*` también fuera de la copia: un escritor atómico concurrente
+    # (worker con -n auto) tiene uno entre mkdir y rename, y el copytree
+    # abortaba con WinError 2 midiéndose a sí mismo (v41.17, O1b).
+    shutil.copytree(REPO_ROOT / "vault-sandbox", vault,
+                    ignore=shutil.ignore_patterns(".locks", ".tmp.*"))
     antes = _foto(vault)
     argv = _invocacion(tool)
     assert argv and argv[-1] != "--help", f"{tool} sin ejemplo ejecutable en el catálogo"
     proceso = subprocess.run(
         argv, capture_output=True, text=True, encoding="utf-8", errors="replace",
         env=dict(os.environ, VAULT_ROOT=str(vault), VAULT_STRICT_ROOT="1",
-                 VAULT_AGENT="test", PYTHONIOENCODING="utf-8"),
+                 VAULT_AGENT="test", PYTHONIOENCODING="utf-8",
+                 VAULT_MASTER=str(tmp_path / ".casa")),
         cwd=str(tmp_path), timeout=120,
     )
     assert proceso.returncode == 0, proceso.stdout[-2000:] + proceso.stderr[-2000:]

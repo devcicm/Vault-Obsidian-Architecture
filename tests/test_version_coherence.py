@@ -73,6 +73,23 @@ def test_la_version_tiene_entrada_de_migracion_registrada():
     )
 
 
+def test_la_spec_declara_la_version_corriente():
+    """O1a (v41.17): el campo `version` de tool-spec.json ya no se toca a mano.
+
+    En cada release se ajustaba con una edición manual y con el bootstrap
+    entero (que además devolvía un literal "v32"). `--sync-version` es la
+    vía, y este guard la sostiene: si la spec declara otra versión, los
+    consumidores componen sus llamadas contra un contrato que la doc no
+    describe.
+    """
+    ruta = ROOT / "vault-sandbox" / "00_System" / "tool-spec.json"
+    spec = json.loads(ruta.read_text(encoding="utf-8"))
+    assert spec.get("version") == VERSION, (
+        f"la spec declara {spec.get('version')!r} y el estándar está en "
+        f"{VERSION!r}: sube el campo con `python scripts/vault_manifest.py "
+        "--sync-version`, no a mano")
+
+
 def test_ningun_test_compara_contra_la_version_corriente_escrita_a_mano():
     """AP-47 dentro de la suite: una cifra a mano que caduca en el bump.
 

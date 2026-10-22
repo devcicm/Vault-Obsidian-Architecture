@@ -83,7 +83,13 @@ def listar_vaults_de_la_casa() -> list:
         try:
             datos = json.loads(
                 (hijo / "00_System" / "standard-version.json").read_text(encoding="utf-8"))
-            version = str(datos.get("version") or datos.get("standard_version") or "")
+            # El sello escribe `applied_version` (vault_init,
+            # vault_standard_upgrade). Se leía `version`/`standard_version`,
+            # claves que el formato actual no tiene: el --list de la casa
+            # mostraba la versión vacía, en silencio (v41.17).
+            version = (str(datos.get("applied_version")
+                           or datos.get("version")
+                           or datos.get("standard_version") or ""))
         except (OSError, ValueError):
             version = ""
         vaults.append({

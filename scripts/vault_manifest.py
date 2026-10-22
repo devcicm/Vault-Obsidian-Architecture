@@ -591,7 +591,10 @@ def _bootstrap_spec() -> Dict[str, Any]:
         tools[name] = entry
 
     return {
-        "version":     "v32",
+        # La versión del contrato es la corriente del estándar, no un literal:
+        # era "v32", que ya no decía nada (el campo se ajustaba a mano en cada
+        # release). `CURRENT_VERSION` es su dueño.
+        "version":     CURRENT_VERSION,
         "generator_version": CURRENT_VERSION,
         "schema":      "1.0",
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -777,7 +780,19 @@ Ejemplos:
         allow_abbrev=False,
     )
     parser.add_argument("--bootstrap", action="store_true",
-                        help="Genera/actualiza <vault>/00_System/tool-spec.json desde datos hardcodeados + introspección")
+                        help="Genera tool-spec.json desde datos hardcodeados + introspección. "
+                             "Se niega a sobrescribir una spec existente salvo --force (v41.17): "
+                             "el bootstrap reescribe el contrato entero y las ediciones a mano "
+                             "se pierden — para el bump de versión está --sync-version.")
+    parser.add_argument("--sync-version", action="store_true",
+                        help="Sube SOLO el campo version de tool-spec.json a CURRENT_VERSION, "
+                             "sin regenerar los contratos. Es lo que un release necesita.")
+    parser.add_argument("--campo-version", dest="campo_version",
+                        help="Con --sync-version: la versión a escribir, en vez de "
+                             "CURRENT_VERSION. Es para la fábrica de release, que "
+                             "sube el número ANTES de que el registro lo muestre")
+    parser.add_argument("--force", action="store_true",
+                        help="Con --bootstrap: aceptar sobrescribir la spec existente.")
     parser.add_argument("--validate", action="store_true",
                         help="Valida conformidad implementación vs spec (delega a vault_spec_validate)")
     parser.add_argument("--check",  action="store_true", help="Mostrar manifiesto sin escribir")
@@ -788,10 +803,25 @@ Ejemplos:
 
     # ── Modo bootstrap ──────────────────────────────────────────────────────
     if args.bootstrap:
+        # v41.17: el bootstrap regenera el contratco entero a partir del
+        # catálogo + introspección — cualquier declared_returns / guard /
+        # nota escrita a mano en la spec se pierde. Sobre una spec que ya
+        # existe, la regla es la del manifiesto: no se sobrescribe salvo
+        # que quien lo invoca lo pida explícito (--force). Corollario del
+        # incidente del 2026-10-21: --bootstrap sin --force había borrado
+        # las required_args a mano y Creating un fantasma aplicable.
+        spec_file = tool_spec_path()
+        if spec_file.exists() and not args.force:
+            print(json.dumps(emit_error(
+                "vault_manifest", "INVALID_ARGS",
+                "tool-spec.json ya existe y --bootstrap lo reescribe entero; usa "
+                "--sync-version para subir la version, o --force si de verdad "
+                "regeneras el contrato desde cero",
+            ), ensure_ascii=False))
+            return 1
         spec = _bootstrap_spec()
         # v39/AP-36: el contrato vive en <vault>/00_System/ y se escribe de forma
         # atómica. Antes: scripts/tool-spec.json con write_text() directo.
-        spec_file = tool_spec_path()
         atomic_write_json(spec_file, spec)
         tool_count = len(spec["tools"])
         active = sum(1 for e in spec["tools"].values() if e["status"] == "active")
@@ -803,6 +833,52 @@ Ejemplos:
             "tools_active": active,
             "version": spec["version"],
             "next_step": "Commit tool-spec.json. Desde ahora editar spec ANTES de implementar.",
+        }, indent=2, ensure_ascii=False))
+        return 0
+
+    # ── Modo sync-version (v41.17) ─────────────────────────────────────────
+    # Lo que un release necesita del spec: SOLO el campo version y el
+    # generated_at, sin regenerar los contratos que la mano del contract-
+    # owner sostiene. El round-trip del escritor es byte-estable (verificado
+    # 2026-10-22), así que el diff de este modo es exactamente el campo.
+    if args.sync_version:
+        spec_file = tool_spec_path()
+        if not spec_file.exists():
+            print(json.dumps(emit_error(
+                "vault_manifest", "INVALID_ARGS",
+                "no hay tool-spec.json en el vault activo; --sync-version sube "
+                "el campo de una spec existente, no la crea. Se construye con "
+                "--bootstrap)",
+            ), ensure_ascii=False))
+            return 1
+        spec = json.loads(spec_file.read_text(encoding="utf-8"))
+        objetivo = args.campo_version or CURRENT_VERSION
+        if not re.fullmatch(r"v\d+\.\d+", objetivo or ""):
+            print(json.dumps(emit_error(
+                "vault_manifest", "INVALID_ARGS",
+                f"--campo-version debe ser vX.Y; llega {objetivo!r}",
+            ), ensure_ascii=False))
+            return 1
+        antes = str(spec.get("version"))
+        if antes == objetivo:
+            # Idempotencia: si ya manda la versión corriente, no se toca el
+            # fichero (ni el generated_at) — una re-corrida no es un diff.
+            print(json.dumps({
+                "ok": True, "tool": "vault_manifest", "action": "sync-version",
+                "version": objetivo, "written": False,
+                "spec_file": str(
+                    spec_file.relative_to(get_vault_root())).replace("\\", "/"),
+            }, indent=2, ensure_ascii=False))
+            return 0
+        spec["version"] = objetivo
+        spec["generated_at"] = datetime.now(timezone.utc).strftime(
+            "%Y-%m-%dT%H:%M:%SZ")
+        atomic_write_json(spec_file, spec)
+        print(json.dumps({
+            "ok": True, "tool": "vault_manifest", "action": "sync-version",
+            "version": {"antes": antes, "despues": objetivo},
+            "spec_file": str(
+                spec_file.relative_to(get_vault_root())).replace("\\", "/"),
         }, indent=2, ensure_ascii=False))
         return 0
 

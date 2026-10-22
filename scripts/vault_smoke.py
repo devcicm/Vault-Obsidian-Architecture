@@ -231,13 +231,18 @@ def run_one(tool: str, arbol: bool = False, argv: Optional[List[str]] = None,
     try:
         if origen.is_dir():
             # `.locks/` no se copia. Son directorios que `file_lock` crea y
-            # borra en milisegundos: si otra cosa está escribiendo en el
+            # bora en milisegundos: si otra cosa está escribiendo en el
             # sandbox mientras copiamos, `copytree` ve el lock al listar y ya
             # no está al abrirlo, y aborta con WinError 3. Copiar un candado
             # ajeno tampoco tendría sentido — el vault de destino es nuevo y
             # nadie lo tiene tomado.
+            #
+            # O1b (v41.17): y `.tmp.*` tampoco — los escritores atómicos
+            # crean esos ficheros temporales y los renombran; copiar el
+            # árbol entre los dos pasos aborta con WinError 2, veces que en
+            # `-n auto` cayó no sobre la tool sino sobre el test que copia.
             shutil.copytree(origen, vault,
-                            ignore=shutil.ignore_patterns(".locks"))
+                            ignore=shutil.ignore_patterns(".locks", ".tmp.*"))
         else:
             vault.mkdir(parents=True)
         cwd = (preparar(vault, destino) if preparar else None) or SCRIPTS_DIR
@@ -248,6 +253,12 @@ def run_one(tool: str, arbol: bool = False, argv: Optional[List[str]] = None,
             "VAULT_AGENT": "vault-smoke",
             "PYTHONIOENCODING": "utf-8",
             "VAULT_VOICE": "0",  # el refuerzo AP-43 no es lo que se mide aquí
+            # O1b (v41.17): el ejemplo de `vault_init --name X` escribe en la
+            # casa (VAULT_MASTER), no en VAULT_ROOT — sin esta variable el
+            # smoke de un ejemplo como el del propio `vault_init` creaba un
+            # vault en `%USERPROFILE%\.vault-master` del usuario real:
+            # medido 2026-10-21, el `mi-vault` de la casa nació aquí.
+            "VAULT_MASTER": str(destino / ".casa"),
         })
         try:
             proc = subprocess.run(argv, capture_output=True, text=True, env=env,

@@ -165,9 +165,12 @@ def vault_sonda(tmp_path_factory):
     """
     raiz = tmp_path_factory.mktemp("spec-verdad")
     casa = raiz / ".vault-master"
-    os.environ["VAULT_MASTER"] = str(casa)
-    env = dict(os.environ, VAULT_AGENT="test", VAULT_VOICE="0",
-               VAULT_STRICT_ROOT="1", PYTHONIOENCODING="utf-8")
+    # O1b: el VAULT_MASTER va en el env de los procesos, no en `os.environ`
+    # de este worker — en `-n auto` el mismo proceso correrá otros tests y
+    # una variable global suelta es la fuga hacia su casa real.
+    env = dict(os.environ, VAULT_MASTER=str(casa), VAULT_AGENT="test",
+               VAULT_VOICE="0", VAULT_STRICT_ROOT="1",
+               PYTHONIOENCODING="utf-8")
     r = subprocess.run(
         [sys.executable, str(ROOT / "scripts" / "vault_init.py"),
          "--name", "v", "--no-audit", "--no-git"],
