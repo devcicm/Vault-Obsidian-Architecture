@@ -35,7 +35,7 @@ from vault_registry import ORDERED_SECTIONS, es_artefacto_derivado, secciones_de
 from vault_encoding import strip_bom
 from vault_errors import emit_error, wrap_main
 
-from vault_io import assert_within_vault
+from vault_io import assert_within_vault, is_snapshot_path  # AP-57: dueño del criterio instantánea
 from vault.kernel.frontmatter_parsing import FrontmatterParseError, parse_frontmatter_with_body
 from vault_fundamentals_catalog import cia_valores
 from vault_contrato_nota import VERSIONES_CON_CONTRATO, contrato_de_version, errores_de_valor, faltantes
@@ -338,7 +338,7 @@ def _notas_del_alcance(folder: Optional[str]) -> List[Path]:
 
             for n in (_raiz() / seccion).rglob("*.md")
 
-            if ".history" not in str(n) and not n.name.startswith("_")
+            if not is_snapshot_path(n) and not n.name.startswith("_")
 
         ]
 

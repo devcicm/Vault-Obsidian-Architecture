@@ -43,7 +43,22 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from vault_io import get_vault_root, normalize_stem
+from vault_io import (
+    get_vault_root,
+    normalize_stem,
+)
+from vault_io import SNAPSHOT_DIRS as _SNAPSHOT_DIRS_DUENO
+
+
+#: AP-57 (v41.17): las instantáneas congeladas las dueñece `vault_io`
+#: (`is_snapshot_path` / `SNAPSHOT_DIRS`); lo que aquí quedaba era una
+#: copia de la escalera `.history`/`vault-backups`/`.trash` junto al
+#: motor del grafo, que divergía si el dueño cambiaba. Lo demás de esta
+#: lista (artefactos del vault y del editor) sí es decisión del crawl y
+#: aquí se queda declarada.
+_SKIP_DIRS = frozenset(_SNAPSHOT_DIRS_DUENO) | frozenset(
+    {"00_System", "99_Index", "vault-sandbox", ".obsidian"}
+)
 from vault_lib import indice_de_nombres, ruta_necesaria
 from vault_regex import (
     extract_wiki_links_strict,
@@ -54,18 +69,6 @@ from vault_regex import (
 )
 from vault_errors import emit_error, wrap_main
 
-
-_SKIP_DIRS = frozenset(
-    {
-        "00_System",
-        "99_Index",
-        ".history",
-        "vault-backups",
-        "vault-sandbox",
-        ".obsidian",
-        ".trash",
-    }
-)
 
 _MIGRATION_DIR = "10_Migrated"
 

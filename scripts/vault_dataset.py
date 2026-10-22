@@ -9,6 +9,7 @@ Vault Dataset - Gestión de keywords y búsqueda avanzada tipo LINQ
 import sys
 
 from vault_errors import emit_error, wrap_main
+from vault_io import is_snapshot_path  # AP-57: dueño del criterio instantánea
 
 import json
 
@@ -246,7 +247,11 @@ def extract_all(mode: str = "nltk", custom_keywords: list = None):
     notes = [
         n
         for n in _raiz().rglob("*.md")
-        if ".history" not in str(n) and not n.name.startswith("_")
+        # AP-57: el criterio de instantánea lo dueñece vault_io
+        # (is_snapshot_path); la copia con ".history" a mano daba falsos
+        # positivos de cadena —una nota "como-usar-vault-backups"— y
+        # dejaba caer .trash.
+        if not is_snapshot_path(n) and not n.name.startswith("_")
     ]
 
     for md in notes:

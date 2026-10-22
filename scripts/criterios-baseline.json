@@ -1,13 +1,8 @@
 {
   "description": "Copias de un criterio con dueño que ya estaban cuando nació AP-57. Solo puede encoger: una copia nueva se arregla, no se congela.",
   "sitios": [
-    "vault_dataset::que_es_una_instantanea",
     "vault_fix_brackets::que_es_documentacion_del_estandar",
-    "vault_graph_inspect::que_es_una_instantanea",
-    "vault_merge::que_es_una_instantanea",
-    "vault_move::que_es_una_instantanea",
-    "vault_norms_engine::que_es_documentacion_del_estandar",
-    "vault_validate::que_es_una_instantanea"
+    "vault_norms_engine::que_es_documentacion_del_estandar"
   ],
   "objetivo": {
     "tamano": 6,
@@ -15,5 +10,10 @@
     "cadencia_dias": 90,
     "dueno": "meta_toolkit — vault_criterios",
     "por_que": "Propuesta medida aprobada por el usuario el 2026-10-09. Medido: 9; estable desde 2026-08-12."
-  }
+  },
+  "salida_registrada_v41_17": [
+    "vault_dataset (is_snapshot_path importa al dueño vault_io, AP-57)",
+    "vault_move (las dos listas de notas)",
+    "vault_validate (notas de sección)"
+  ]
 }

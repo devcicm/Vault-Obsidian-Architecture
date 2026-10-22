@@ -27,8 +27,8 @@ from vault_regex import RE_WIKILINK  # dueño único del patrón (AP-50)
 
 from vault_errors import emit_error, fuera_de_sesion, mensaje_de, wrap_main
 from vault_io import (
-    assert_within_vault, atomic_write_text, file_lock, refrescar_grafo,
-    refrescar_indice_de_seccion, tomar_lock, write_report,
+    assert_within_vault, atomic_write_text, file_lock, is_snapshot_path,
+    refrescar_grafo, refrescar_indice_de_seccion, tomar_lock, write_report,
 )
 from vault_lib import indice_de_nombres, resolver_wikilink, utcnow
 from vault_registry import motivo_de_destino_invalido, section_types, type_misfiled_in
@@ -530,7 +530,10 @@ def _mover_nota(
     # enlace anclado, y con `\` el `[[carpeta/nota]]` no se reescribía nunca.
     old_rel = source.relative_to(_raiz()).as_posix()
     new_rel = destination.relative_to(_raiz()).as_posix()
-    notas = [md for md in _raiz().rglob("*.md") if ".history" not in md.parts]
+    # AP-57: el criterio de instantánea lo dueñece vault_io
+    # (is_snapshot_path): vault-backups y .trash también quedan fuera y la
+    # nota "como-usar-vault-backups" ya no sufre el falso positivo de cadena.
+    notas = [md for md in _raiz().rglob("*.md") if not is_snapshot_path(md)]
     universo = {md.relative_to(_raiz()).as_posix() for md in notas} - {new_rel} | {old_rel}
     indice = indice_de_nombres(sorted(universo))
 
@@ -771,7 +774,9 @@ def notas_que_enlazan(rel: str) -> List[str]:
     con ancla y alias, y enlace markdown. `vault_delete` lo lee para avisar de
     lo que deja roto; un criterio propio allí sería AP-57.
     """
-    notas = [md for md in _raiz().rglob("*.md") if ".history" not in md.parts]
+    # AP-57: dueño del criterio en vault_io.is_snapshot_path (igual que en
+    # la lista de notas del índice: una sola definición).
+    notas = [md for md in _raiz().rglob("*.md") if not is_snapshot_path(md)]
     indice = indice_de_nombres(sorted(md.relative_to(_raiz()).as_posix() for md in notas))
     enlazan = []
     for md in notas:

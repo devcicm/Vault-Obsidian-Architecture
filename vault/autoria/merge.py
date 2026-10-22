@@ -45,7 +45,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-from vault_io import atomic_write_text, get_vault_root, normalize_stem, tomar_lock, write_report
+from vault_io import atomic_write_text, get_vault_root, is_snapshot_path, normalize_stem, tomar_lock, write_report
 from vault_registry import es_artefacto_derivado
 from vault_undo import _guardar_version_actual
 
@@ -109,7 +109,10 @@ def _action_merge(source_dir: Path, conflict: str) -> Dict[str, Any]:
     notes = [
         n
         for n in source_dir.rglob("*.md")
-        if ".history" not in str(n) and not n.name.startswith("_")
+        # AP-57: el dueño del criterio es vault_io.is_snapshot_path —
+        # aquí quedaba la escalera ".history" a mano, que dejaba caer
+        # vault-backups y .trash dentro del merge.
+        if not is_snapshot_path(n) and not n.name.startswith("_")
     ]
 
     merged = skipped = conflicts = 0
@@ -199,7 +202,7 @@ def _action_detect() -> Dict[str, Any]:
     buckets: Dict[str, List[str]] = {}
 
     for note in get_vault_root().rglob("*.md"):
-        if ".history" in str(note) or note.name.startswith("_"):
+        if is_snapshot_path(note) or note.name.startswith("_"):  # AP-57: dueño vault_io
             continue
 
         key = _normalize(note.stem)
@@ -224,7 +227,7 @@ def _action_dedup() -> Dict[str, Any]:
     buckets: Dict[str, List[Path]] = {}
 
     for note in get_vault_root().rglob("*.md"):
-        if ".history" in str(note) or note.name.startswith("_"):
+        if is_snapshot_path(note) or note.name.startswith("_"):  # AP-57: dueño vault_io
             continue
 
         # O2: los artefactos derivados no son duplicados entre sí. Medido en
