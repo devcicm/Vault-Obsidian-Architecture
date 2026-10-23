@@ -314,7 +314,7 @@ python scripts/vault_sdd_init.py --bilingual --force
   conocidos —banner, badge, `pyproject`, sandbox, CLI— y `docs/` no era ninguno:
   alcance declarado más ancho que el recorrido, que es el defecto que
   `vault_produccion` existe para nombrar. Desde v40.32 lo barre un test.
-- `NORM_CATALOG` legible — **81 normas** hoy. El desglose por familia tampoco se
+- `NORM_CATALOG` legible — **82 normas** hoy. El desglose por familia tampoco se
   escribe aquí: se leía «37 AP + 6 PAT + 3 SP + 3 CN», que suma 49 y no 59, y
   las puertas lo dejaron pasar porque `vault_doc_counts` vigila el total y no
   el desglose. Ni el rango ni el conteo se codifican en la skill: se derivan

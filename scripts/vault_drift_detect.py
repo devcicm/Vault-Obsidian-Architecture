@@ -57,14 +57,13 @@ import re
 
 import subprocess
 
-import vault_subproceso
-
 import sys
 
 from vault_errors import emit_error, emit_fallo, wrap_main, proyecto_registrado
 from vault_contrato_nota import es_mapa_de_versiones
 from vault_lib import parse_frontmatter, slugify_strict, utcnow
 from vault_norms_catalog import normalize_status
+from vault.kernel import procesos_git
 from datetime import datetime, timezone
 
 from pathlib import Path
@@ -268,9 +267,9 @@ def slugify(text: str) -> str:
 
 def _has_git(path: Path) -> bool:
     try:
-        result = vault_subproceso.ejecutar(
-            ["git", "rev-parse", "--git-dir"],
-            cwd=str(path),
+        result = procesos_git.ejecutar_git(
+            path,
+            ["rev-parse", "--git-dir"],
             capture_output=True,
             timeout=5,
         )
@@ -283,9 +282,9 @@ def _has_git(path: Path) -> bool:
 
 def _git_head_commit(path: Path) -> Optional[str]:
     try:
-        result = vault_subproceso.ejecutar(
-            ["git", "rev-parse", "HEAD"],
-            cwd=str(path),
+        result = procesos_git.ejecutar_git(
+            path,
+            ["rev-parse", "HEAD"],
             capture_output=True,
             timeout=5,
         )
@@ -293,6 +292,24 @@ def _git_head_commit(path: Path) -> Optional[str]:
         return result.stdout.strip() if result.returncode == 0 else None
 
     except (FileNotFoundError, subprocess.TimeoutExpired):
+        return None
+
+
+def _ref_del_snapshot(valor: Optional[str]) -> Optional[str]:
+    """El `since_commit` del snapshot, si es una ref que git puede recibir.
+
+    El snapshot es un JSON escrito por esta misma tool, pero un JSON es un
+    fichero que cualquiera puede editar: si `since_commit` valiera
+    `--upload-pack=…` o `A...HEAD`, entraría en el argv de `git diff` como lo
+    que es —una opción, no una ref— (AP-68). Lo que no tiene forma de hash no
+    se le pasa a git: la comparación cae al backend de hashes, que es el
+    comportamiento que ya tenía cuando no había git.
+    """
+    if not valor:
+        return None
+    try:
+        return procesos_git.asegurar_hash(valor, campo="snapshot.since_commit")
+    except procesos_git.RefInvalida:
         return None
 
 
@@ -316,11 +333,13 @@ def _git_changed_since(path: Path, since_commit: Optional[str]) -> Dict[str, Lis
     try:
         # 1. Committed changes since snapshot
 
-        if since_commit:
-            log_cmd = ["git", "diff", "--name-status", f"{since_commit}...HEAD"]
+        ref = _ref_del_snapshot(since_commit)
 
-            log_result = vault_subproceso.ejecutar(
-                log_cmd, cwd=str(path), capture_output=True, timeout=10
+        if ref:
+            log_cmd = ["diff", "--name-status", f"{ref}...HEAD"]
+
+            log_result = procesos_git.ejecutar_git(
+                path, log_cmd, capture_output=True, timeout=10
             )
 
             for line in log_result.stdout.splitlines():
@@ -365,10 +384,10 @@ def _git_changed_since(path: Path, since_commit: Optional[str]) -> Dict[str, Lis
 
         # 2. Uncommitted changes (staged + unstaged vs HEAD)
 
-        diff_cmd = ["git", "diff", "--name-status", "HEAD"]
+        diff_cmd = ["diff", "--name-status", "HEAD"]
 
-        diff_result = vault_subproceso.ejecutar(
-            diff_cmd, cwd=str(path), capture_output=True, timeout=10
+        diff_result = procesos_git.ejecutar_git(
+            path, diff_cmd, capture_output=True, timeout=10
         )
 
         for line in diff_result.stdout.splitlines():
@@ -731,9 +750,9 @@ def _en_utc(dt: Optional[datetime]) -> Optional[datetime]:
 def _ultimo_cambio(repo: Path, ficheros: List[str]) -> Optional[Dict[str, str]]:
     """El commit más reciente que tocó alguno de `ficheros` en `repo`."""
     try:
-        r = vault_subproceso.ejecutar(
-            ["git", "log", "-1", "--format=%H%x09%cI", "--", *ficheros],
-            cwd=str(repo), capture_output=True, timeout=30,
+        r = procesos_git.ejecutar_git(
+            repo, ["log", "-1", "--format=%H%x09%cI", "--", *ficheros],
+            capture_output=True, timeout=30,
         )
     except (FileNotFoundError, subprocess.TimeoutExpired):
         return None

@@ -3077,6 +3077,53 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         ),
         "related": ["vault_blueprint", "vault_produccion", "vault_smoke", "vault_gate"],
     },
+    "vault_procesos_git": {
+        "name": "vault_procesos_git",
+        "script": "vault_procesos_git.py",
+        "group": "Normas",
+        "purpose": (
+            "AP-68: el toolkit lanza git desde 24 sitios, y la frontera de lo que "
+            "puede lanzar dependia del criterio de quien escribio cada linea. "
+            "Todos usaban verbos de lectura salvo el bootstrap de vault_init — "
+            "init/add/commit sobre un vault recien creado—, y todo eso estaba "
+            "solo en la inspeccion de quien lo miro, no en un guard. Esta tool "
+            "recorre por AST scripts/, cli/, vault/ y mcp/ y publica toda "
+            "llamada que levante git con el lexico 'git' primero, que tiene que "
+            "ser cero: el runtime lo aplica vault.kernel.procesos_git.ejecutar_git, "
+            "que rechaza verbo desconocido, mutador sin motivo escrito y el uso "
+            "mutador de los verbos ambiguos (branch -D, tag <nombre>, config k v, "
+            "stash apply, reflog expire)."
+        ),
+        "params": {
+            "check": {
+                "type": "boolean",
+                "required": False,
+                "description": "Lista los sitios que levantan git fuera del dueno",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit 1 si hay algun sitio fuera del dueno",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "Mide argv estaticos de scripts/, cli/, vault/ y mcp/: no ve un argv "
+            "armado con join/f-string ni un binario que lance git por su cuenta",
+            "Los tests/ quedan fuera del alcance, y por que: necesitan git crudo "
+            "para fabricar el repo con el que miden (AP-44)",
+            "No hay baseline: un sitio fuera del dueno es deuda nueva por "
+            "definicion; se salda moviendo la llamada al dueno, nunca "
+            "ampliando una lista de verbos",
+        ],
+        "side_effects": [],
+        "example": (
+            "python vault_procesos_git.py --check\n"
+            "python vault_procesos_git.py --check --strict"
+        ),
+        "related": ["vault_arch", "vault_norms", "vault_gate", "vault_blueprint", "vault_changelog_check"],
+    },
     "vault_produccion": {
         "name": "vault_produccion",
         "script": "vault_produccion.py",
@@ -4474,6 +4521,7 @@ GROUPS: Dict[str, List[str]] = {
         "vault_kernel",
         "vault_excepcion_declarada",
         "vault_recursos",
+        "vault_procesos_git",
         "vault_produccion",
         "vault_esquema",
         "vault_metricas",

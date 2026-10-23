@@ -25,6 +25,7 @@
     "vault_noop_audit",
     "vault_norms",
     "vault_norms_coherence",
+    "vault_procesos_git",
     "vault_produccion",
     "vault_recursos",
     "vault_servicio",

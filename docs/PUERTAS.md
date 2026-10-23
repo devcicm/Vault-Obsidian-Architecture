@@ -5,7 +5,7 @@
 > falla si diverge. Lo escrito a mano aquí se pierde: el porqué se corrige
 > en el docstring de la tool.
 
-Puertas: 25. Verde en todas no es verde en la suite.
+Puertas: 26. Verde en todas no es verde en la suite.
 
 ## `framework`
 
@@ -247,6 +247,17 @@ Este repo declaraba **cero ciclos de importación**, y era verdad leyendo solo l
 **vault_recursos — el consumidor paga el fan-out del productor (AP-62).**
 
 v40.27 quitó veinte de los sesenta y dos cruces de contexto con un solo movimiento, y el hallazgo que lo permitió no se buscó: se tropezó con él. De los veinticuatro importadores de `vault_norms`, veintiuno solo querían una tabla constante; entraban por una fachada que reexporta el motor y sus once dependencias, y por el camino convertían **leer un recurso** en **cruzar una frontera de negocio**.
+
+## `procesos_git`
+
+- **Comando:** `python scripts/vault_procesos_git.py --check --strict`
+- **Mide:** Ninguna tool ni módulo levanta git por su cuenta: el verbo lo juzga vault.kernel.procesos_git y un mutador solo existe si está autorizado con su motivo (AP-68).
+- **Se arregla con:** mover la llamada al dueño —ejecutar_git(repo, [...])—; si de verdad hace falta un mutador nuevo, autorizarlo en MUTADORES_AUTORIZADOS con su motivo escrito, que es el diff que lo revisa. No hay baseline: un sitio fuera del dueño es deuda nueva por definición
+- **Normas:** [AP-68](../normas/AP-68/porque.md)
+
+**vault_procesos_git — el git del toolkit pasa por un dueño, y el dueño mira (AP-68).**
+
+Auditoría del 2026-10-23 sobre la pregunta «¿ejecuta alguna tool git sin supervisión?». El veredicto fue que no —doce sitios de lectura, un único mutador acotado al bootstrap de `vault_init`, cero `shell=True`, cero `--force`— pero que **nadie lo verificaba**: la propiedad era verdad por inspección de una tarde, no por guard. Mañana un `git clean -fdx` en una tool entraría sin que ninguna puerta se pusoera roja.
 
 ## `produccion`
 

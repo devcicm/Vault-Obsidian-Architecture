@@ -35,7 +35,7 @@ Restricciones que son decisión de producto, no limitación pendiente:
 |---|---|---|---|
 | **Escritura → gobernanza** (`escritura_a_gobernanza`) | Lo que el agente captura queda escrito una sola vez, normalizado contra las normas, versionado y auditable después. | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 36, 37 | 88 |
 | **Consulta → contexto** (`consulta_a_contexto`) | Una pregunta del agente se convierte en un paquete de contexto acotado y presupuestado, recorriendo el grafo del vault sin índice externo. | 26, 34 | 10 |
-| **Gobernanza del estándar** (`gobernanza_del_estandar`) | El estándar cumple lo que publica: registro canónico primero, doc derivada, guard que falla si divergen. Ninguna de estas tools toca las notas de un usuario. | 35 | 27 |
+| **Gobernanza del estándar** (`gobernanza_del_estandar`) | El estándar cumple lo que publica: registro canónico primero, doc derivada, guard que falla si divergen. Ninguna de estas tools toca las notas de un usuario. | 35 | 28 |
 
 - **`consulta_a_contexto`** — El grupo 26 (Tokens) cae en el rango 1–33 que `AGENTS.md` atribuye al primer eje, pero sus tres tools viven en el contexto `consulta` y existen para que el paquete quepa en la ventana. El rango es cronológico, no clasificatorio.
 - **`gobernanza_del_estandar`** — Tercera capacidad que `AGENTS.md` no nombraba. Existía desde que se escribió la primera puerta; declararla es lo que impide que sus tools se cuenten como si sirvieran a la memoria del agente.
@@ -69,7 +69,7 @@ regenera.*
 
 *Registros: `vault_norms.NORM_CATALOG` + `vault_gate.PUERTAS` + `tests/`*
 
-80 de 81 normas tienen puerta o test que las nombre.
+81 de 82 normas tienen puerta o test que las nombre.
 **Es la única capa con baseline**, y por un motivo concreto: las demás se midieron
 en cero el día que se declararon porque sus datos ya existían y solo faltaba
 atarlos. Ésta no. Exigir cero aquí el primer día habría hecho nacer la puerta en
@@ -125,7 +125,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-41** — Máquina de estados declarada sin verificar | guard+audit | `framework` | `test_status_machine.py`, `test_voice.py` |
 | **AP-42** — Tool publicada sin haberse ejecutado nunca | guard+audit | `framework` | `test_smoke.py`, `test_vault_norms_audit.py`, `test_vault_toolkit_audit.py` |
 | **AP-43** — Norma sin refuerzo en el punto de uso | guard+audit | `framework` | `test_ap39_registro_en_el_write_path.py`, `test_vault_norms_audit.py`, `test_voice.py` |
-| **AP-44** — Verificación autoconsistente — la tool se certifica a sí misma | guard+audit | `framework` | `test_ap44_verificacion_autoconsistente.py`, `test_kernel.py`, `test_norms_coherence.py`, `test_puente_sin_hogar.py` |
+| **AP-44** — Verificación autoconsistente — la tool se certifica a sí misma | guard+audit | `framework` | `test_ap44_verificacion_autoconsistente.py`, `test_kernel.py`, `test_norms_coherence.py`, `test_procesos_git.py`, `test_puente_sin_hogar.py` |
 | **AP-45** — Cobertura sin evidencia — la nota existe para llenar la sección | guard+audit | `framework` | `test_ap45_cobertura_sin_evidencia.py` |
 | **AP-46** — Frontmatter a mano — cada tool es su propio escritor | guard+audit | `framework` | `test_ap46_escritores_migrados.py`, `test_ap46_interpolacion_cruda.py`, `test_ap46_write_path_unico.py`, `test_norms_coherence.py`, `test_vault_sanacion.py` |
 | **AP-47** — Artefacto derivado desfasado — el índice dejó de reflejar el disco | guard+audit | `framework` | `test_ap47_indice_refleja_disco.py`, `test_audit_acciones_de_movimiento.py`, `test_delete_no_borra_derivados.py`, `test_grafo_refresco.py`, `test_sanadores_sin_lote.py` |
@@ -149,6 +149,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-65** — Decisión de IA de impacto alto sin evaluación de impacto | audit | `framework` | `test_iso42005_impacto.py`, `test_normas_caras.py`, `test_normas_paquete.py` |
 | **AP-66** — El coste crece con lo que no es trabajo | guard | `arquitectura` | — |
 | **AP-67** — El material que el agente opera, sin nota que lo apunte | guard+audit | — | `test_ap67_conocimiento_del_material.py` |
+| **AP-68** — El git que ejecuta el toolkit, sin dueño | guard | `procesos_git` | `test_procesos_git.py` |
 | **PAT-6** — Semantic graph enrichment — enriquecimiento periodico del grafo | recommended | — | `test_capa4_audit_ejercitada.py` |
 | **SP-01** — Delete protocol — change_log obligatorio antes de eliminar | audit | `framework` | `test_mermaid_reglas_parsers.py`, `test_vault_norms.py` |
 | **SP-02** — Forward-link verification — buscar antes de linkar | guard | — | `test_normas_enlaces_sin_solape.py`, `test_vault_norms.py` |
@@ -165,7 +166,7 @@ Sin puerta ni test (1): `AP-04`.
 
 *Registros: `vault_mcp_catalog.TOOLS_CATALOG` + `<vault>/00_System/tool-spec.json`*
 
-125 tools activas en 37 grupos. Toda tool
+126 tools activas en 37 grupos. Toda tool
 del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 `status: archived | internal | orphan` — no se borra, se anota
 (`vault_mcp_catalog.py --check-contracts`).
@@ -191,7 +192,7 @@ del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 | Línea de Tiempo | 1 |
 | Memoria de Contexto | 7 |
 | Migración | 2 |
-| Normas | 27 |
+| Normas | 28 |
 | Observabilidad | 1 |
 | Patrones | 2 |
 | Producción/SRE | 2 |
@@ -301,6 +302,7 @@ falla — no se rellena con el valor más cercano.
 | `vault_pattern_save` | 3 — Patrones | escritura_a_gobernanza |
 | `vault_preferences` | 34 — Memoria de Contexto | consulta_a_contexto |
 | `vault_privacy_save` | 30 — Riesgos/Calidad | escritura_a_gobernanza |
+| `vault_procesos_git` | 35 — Normas | gobernanza_del_estandar |
 | `vault_produccion` | 35 — Normas | gobernanza_del_estandar |
 | `vault_project` | 11 — Vista del Proyecto | escritura_a_gobernanza |
 | `vault_project_overview` | 11 — Vista del Proyecto | escritura_a_gobernanza |
@@ -428,7 +430,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 4 | ≤ 2 para 2027-03-31 · cada 90 d · meta_toolkit — vault_kernel → **en_plazo** | 5 → 6 → 6 → 5 → 4 → 4 (encoge, Δ-1) |
 | `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_norms_distincion → **cumple** | 57 → 0 → 0 → 0 (encoge, Δ-57) |
 | `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_norms_coherence → **cumple** | 47 → 0 → 0 → 0 (encoge, Δ-47) |
-| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1436 | — *no aplica*: No es deuda: es el contrato de campos estables con los repos consumidores y crece por diseño cada vez que una tool publica un campo nuevo (1334 → 1410 entre 2026-08-30 y 2026-10-08). Lo que la puerta vigila es que ningún campo desaparezca sin `superseded_fields`, no su tamaño. Declarado el 2026-10-09 con la deuda #8. | 1424 → 1426 → 1427 → 1435 → 1437 → 1436 (crece, Δ+118) |
+| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1448 | — *no aplica*: No es deuda: es el contrato de campos estables con los repos consumidores y crece por diseño cada vez que una tool publica un campo nuevo (1334 → 1410 entre 2026-08-30 y 2026-10-08). Lo que la puerta vigila es que ningún campo desaparezca sin `superseded_fields`, no su tamaño. Declarado el 2026-10-09 con la deuda #8. | 1426 → 1427 → 1435 → 1437 → 1436 → 1448 (crece, Δ+114) |
 | `scripts/excepcion-declarada-baseline.json` | AP-61 — la excepción declarada no es la que escapa | 0 | ≤ 0 para 2027-06-30 · cada 180 d · gobernanza → **cumple** | 0 → 0 (plana, Δ+0) |
 | `scripts/recursos-baseline.json` | AP-62 — el consumidor cruza para leer un recurso y paga el fan-out | 2 | ≤ 0 para 2027-03-31 · cada 90 d · meta_toolkit — vault_recursos → **en_plazo** | 2 → 2 (plana, Δ+0) |
 
@@ -447,4 +449,4 @@ sobre la historia sin que git la respalde (AP-53).
 
 ---
 
-*25 puertas de cierre. Generado por `scripts/vault_blueprint.py`.*
+*26 puertas de cierre. Generado por `scripts/vault_blueprint.py`.*

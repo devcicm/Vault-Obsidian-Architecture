@@ -241,6 +241,18 @@ PUERTAS: List[Dict[str, Any]] = [
                "núcleo sin medirle el fan-out lo vería AP-59",
     },
     {
+        "id": "procesos_git",
+        "cmd": ["vault_procesos_git.py", "--check", "--strict"],
+        "mide": "Ninguna tool ni módulo levanta git por su cuenta: el verbo lo "
+                "juzga vault.kernel.procesos_git y un mutador solo existe si "
+                "está autorizado con su motivo (AP-68)",
+        "fix": "mover la llamada al dueño —ejecutar_git(repo, [...])—; si de "
+               "verdad hace falta un mutador nuevo, autorizarlo en "
+               "MUTADORES_AUTORIZADOS con su motivo escrito, que es el diff "
+               "que lo revisa. No hay baseline: un sitio fuera del dueño es "
+               "deuda nueva por definición",
+    },
+    {
         "id": "produccion",
         "cmd": ["vault_produccion.py", "--check", "--strict"],
         "mide": "Toda promesa hecha a quien instala esto —versión mínima, "

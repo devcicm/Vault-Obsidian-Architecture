@@ -52,6 +52,7 @@ from vault_io import (
     normalize_stem,
 )
 from vault_norms_catalog import compute_norm_refs
+from vault.kernel import procesos_git
 from vault_registry import ORDERED_SECTIONS
 from vault_write import tipo_por_carpeta
 
@@ -245,15 +246,25 @@ def _registrar_degradacion(paso: str, exc: BaseException) -> None:
 
 
 def _run_git(project_path: Path, args: List[str], timeout: int = 10) -> Optional[str]:
+    """Lee el repo del proyecto —que es de otra persona— y nunca lo escribe.
+
+    Desde AP-68 el argv pasa por `vault.kernel.procesos_git`, y eso convierte
+    la promesa de «solo lectura» en una propiedad que no depende de que
+    quien llama se acuerde: aquí solo se piden verbos de lectura
+    (`rev-parse`, `branch`, `log`, `reflog`, `stash list`, `tag -l`,
+    `rev-list`), y un verbo mutador subiría `GitProhibido` antes de tocar el
+    repo ajeno. El `-C` histórico desaparece porque el dueño recibe el repo
+    como cwd.
+    """
     try:
-        r = subprocess.run(
-            ["git", "-C", str(project_path)] + args,
+        r = procesos_git.ejecutar_git(
+            project_path, args,
             capture_output=True,
             timeout=timeout,
         )
         if r.returncode != 0:
             return None
-        return r.stdout.decode("utf-8", errors="replace").strip()
+        return r.stdout.strip()
     except Exception as exc:
         _registrar_degradacion("leer_git", exc)
         return None

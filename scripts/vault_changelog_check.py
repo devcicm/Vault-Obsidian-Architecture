@@ -57,7 +57,7 @@ import re
 import subprocess
 
 import vault_baseline
-import vault_subproceso
+from vault.kernel import procesos_git
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -111,17 +111,39 @@ def _git(*args: str) -> Optional[str]:
     responder» y «git respondió vacío» son cosas distintas, y quien llama
     decide. Un `except` que las fundiera haría pasar el fallo del guard por
     ausencia en el dato.
+
+    Desde AP-68 pasa por `vault.kernel.procesos_git.ejecutar_git`: el verbo
+    tiene que estar en la lista de lectura del dueño, y el hash —que aquí
+    sale del changelog, o sea de un fichero— se valida antes de entrar al
+    argv.
     """
     try:
-        r = vault_subproceso.ejecutar(
-            ["git", *args], cwd=str(REPO_ROOT),
+        r = procesos_git.ejecutar_git(
+            REPO_ROOT, list(args),
             capture_output=True, timeout=30,
         )
-    except (OSError, subprocess.SubprocessError):
+    except (OSError, subprocess.SubprocessError, procesos_git.GitProhibido):
         return None
     if r.returncode != 0:
         return None
     return r.stdout.strip()
+
+
+def _hashes_validos(hashes: List[str]) -> List[str]:
+    """Los hashes del changelog que pueden entrar al argv, y solo ellos.
+
+    Un changelog es un fichero que cualquiera puede editar a mano; un hash
+    ahí puede ser `pending`, un guion o algo que empiece por `--`. Antes de
+    pasárselo a git, `asegurar_hash` decide (AP-68): lo que no tiene forma
+    de hash no se le pregunta a git, se declara que no se le puede preguntar.
+    """
+    validos: List[str] = []
+    for h in hashes:
+        try:
+            validos.append(procesos_git.asegurar_hash(h, campo="changelog.hash"))
+        except procesos_git.RefInvalida:
+            continue
+    return validos
 
 
 def _tipos_de_hashes(hashes: List[str]) -> Dict[str, str]:
@@ -139,13 +161,16 @@ def _tipos_de_hashes(hashes: List[str]) -> Dict[str, str]:
     """
     if not hashes:
         return {}
+    validos = _hashes_validos(hashes)
+    if not validos:
+        return {}
     try:
-        r = vault_subproceso.ejecutar(
-            ["git", "cat-file", "--batch-check=%(objectname) %(objecttype)"],
-            cwd=str(REPO_ROOT), input="\n".join(hashes) + "\n",
+        r = procesos_git.ejecutar_git(
+            REPO_ROOT, ["cat-file", "--batch-check=%(objectname) %(objecttype)"],
+            input="\n".join(validos) + "\n",
             capture_output=True, timeout=30,
         )
-    except (OSError, subprocess.SubprocessError):
+    except (OSError, subprocess.SubprocessError, procesos_git.GitProhibido):
         return {}
     if r.returncode != 0:
         return {}
@@ -171,12 +196,15 @@ def _fechas_de_hashes(hashes: List[str]) -> Dict[str, str]:
     """
     if not hashes:
         return {}
+    validos = _hashes_validos(hashes)
+    if not validos:
+        return {}
     try:
-        r = vault_subproceso.ejecutar(
-            ["git", "show", "-s", "--format=%H %as", *hashes],
-            cwd=str(REPO_ROOT), capture_output=True, timeout=30,
+        r = procesos_git.ejecutar_git(
+            REPO_ROOT, ["show", "-s", "--format=%H %as", *validos],
+            capture_output=True, timeout=30,
         )
-    except (OSError, subprocess.SubprocessError):
+    except (OSError, subprocess.SubprocessError, procesos_git.GitProhibido):
         return {}
     if r.returncode != 0:
         return {}

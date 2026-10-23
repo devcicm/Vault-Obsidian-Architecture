@@ -54,6 +54,7 @@ import subprocess
 
 import vault_grafo_import
 import vault_subproceso
+from vault.kernel import procesos_git
 from datetime import date, datetime
 from pathlib import Path
 from typing import (Any, Dict, Iterable, List, Mapping, Optional, Sequence, Set,
@@ -406,9 +407,13 @@ def _blobs(revisiones: Sequence[str]) -> List[Optional[bytes]]:
     """
     if not revisiones:
         return []
-    salida = subprocess.run(["git", "cat-file", "--batch"], cwd=REPO_ROOT,
-                            input="".join(f"{r}\n" for r in revisiones).encode("utf-8"),
-                            capture_output=True, timeout=30, check=False)
+    salida = procesos_git.ejecutar_git(
+        REPO_ROOT, ["cat-file", "--batch"],
+        # binario=True: la cabecera da tamaños en bytes, y decodificarla antes
+        # de medir los blobs daría longitudes que no cuadran (ver docstring).
+        binario=True,
+        input="".join(f"{r}\n" for r in revisiones).encode("utf-8"),
+        capture_output=True, timeout=30, check=False)
     if salida.returncode != 0:
         raise subprocess.SubprocessError(
             salida.stderr.decode("utf-8", "replace").strip() or "git cat-file falló")
@@ -446,9 +451,9 @@ def _historias(rels: Sequence[str], ultimos: int) -> Dict[str, List[Tuple[str, s
     aporta punto a ninguna: es lo que hacía también `git log -- <ruta>` en
     esta historia, y el test lo compara contra la consulta de una en una.
     """
-    salida = vault_subproceso.ejecutar(
-        ["git", "log", "--format=%x01%H %cs", "--name-only", "--", *rels],
-        cwd=REPO_ROOT, capture_output=True, timeout=30, check=False)
+    salida = procesos_git.ejecutar_git(
+        REPO_ROOT, ["log", "--format=%x01%H %cs", "--name-only", "--", *rels],
+        capture_output=True, timeout=30, check=False)
     if salida.returncode != 0:
         raise subprocess.SubprocessError((salida.stderr or "git log falló").strip())
     historias: Dict[str, List[Tuple[str, str]]] = {rel: [] for rel in rels}

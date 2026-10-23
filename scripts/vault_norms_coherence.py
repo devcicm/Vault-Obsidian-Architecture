@@ -1034,15 +1034,19 @@ CAMPOS_QUE_SOSTIENEN = ("tools_enforcing", "tools_detecting", "tools_del_patron"
 
 def _fecha_git(ruta: Path) -> Optional[str]:
     """Fecha (AAAA-MM-DD) del último commit que tocó `ruta`, o `None` si git
-    no la da: sin git, fuera del repo o sin historia."""
+    no la da: sin git, fuera del repo o sin historia.
+
+    Desde AP-68 la llamada pasa por `vault.kernel.procesos_git`, que juzga el
+    verbo (`log`) y fija la codificación del hijo —el `text=True` a secas que
+    antes se corregía a mano aquí ya no existe en este repo.
+    """
     try:
-        # Por el dueño de la codificación: `text=True` a secas decodifica con
-        # la locale (lo vio test_portabilidad_v4030 en r41).
-        salida = vault_subproceso.ejecutar(
-            ["git", "-C", str(Path(ruta).parent), "log", "-1", "--format=%cs", "--", str(ruta)],
+        salida = procesos_git.ejecutar_git(
+            Path(ruta).parent,
+            ["log", "-1", "--format=%cs", "--", str(ruta)],
             capture_output=True, timeout=TOOL_TIMEOUT_SECONDS, check=False,
         )
-    except (OSError, subprocess.SubprocessError):
+    except (OSError, subprocess.SubprocessError, procesos_git.GitProhibido):
         return None
     fecha = salida.stdout.strip()
     return fecha if salida.returncode == 0 and len(fecha) == 10 else None

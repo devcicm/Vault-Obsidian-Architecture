@@ -38,6 +38,7 @@ from vault_standard_upgrade import version_conocida
 from vault_io import atomic_write_text, set_vault_root, write_report
 from vault_lib import utcnow
 from vault_version import CURRENT_VERSION
+from vault.kernel import procesos_git
 from vault_registry import (
     comando_de_tool,
     standard_folders,
@@ -546,18 +547,32 @@ def _inicializar_git(destino: Path) -> Dict[str, Any]:
 
     Si git no esta configurado (sin user.name), el repo queda inicializado y
     el commit se avisa: el commit lo hace quien tiene identidad.
-    """
-    import subprocess
 
-    def _git(*args: str) -> subprocess.CompletedProcess:
-        return subprocess.run(["git", *args], cwd=str(destino), capture_output=True,
-                              text=True, encoding="utf-8", errors="replace")
+    Desde AP-68 las tres órdenes pasan por `vault.kernel.procesos_git`, el
+    dueño único de git en el toolkit: `init`, `add` y `commit` son los tres
+    verbos mutadores que ese dueño autoriza, y están autorizados **solo**
+    porque este bootstrap es el único sitio que los usa, sobre un vault que
+    `vault_init` acaba de crear — un vault existente no vacío se rechaza
+    antes de llegar aquí. Un cuarto verbo mutador en el repo no entra por
+    esta puerta: lo veta el dueño y lo publica `vault_procesos_git`.
+    """
+    def _git(*args: str):
+        return procesos_git.ejecutar_git(destino, list(args),
+                                         capture_output=True)
 
     if not (destino / ".git").exists():
         r = _git("init", "-b", "main")
         if r.returncode != 0:
-            return {"ok": False, "motivo": r.stderr.strip()[:300]}
-    _git("add", "-A")
+            return {"ok": False, "motivo": (r.stderr or "").strip()[:300]}
+    r_add = _git("add", "-A")
+    if r_add.returncode != 0:
+        # Antes el `add` se lanzaba sin mirar su salida: un fallo de staging
+        # llegaba al commit, que a su vez fallaba, y el motivo que se
+        # reportaba era el del commit y no el del staging (AP-51).
+        return {"ok": False,
+                "motivo": "repo inicializado, sin staging: "
+                          + (r_add.stderr or r_add.stdout).strip()[:300],
+                "repo": str(destino / ".git")}
     r = _git("commit", "-q", "-m", "vault: bootstrap del vault")
     if r.returncode != 0:
         return {"ok": False,

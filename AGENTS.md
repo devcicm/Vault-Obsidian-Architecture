@@ -10,9 +10,9 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | Ruta | Qué es |
 |---|---|
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~12.000 líneas). Fuente normativa. |
-| `scripts/*.py` | ~166 scripts, 125 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
+| `scripts/*.py` | ~167 scripts, 126 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (6082 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (6102 tests). Toda norma con guard debe tener test. |
 | `normas/` | Normas como paquete (`normas/<código>/`: `norma.py`, `porque.md`, `guard.py`, `heal.py`, `test_*.py`). Las carga `vault_norms_catalog` en su sitio del catálogo; la forma la vigila `--check-framework`. Desde m186 toda norma vive aquí (cuántas, `NORMAS_EN_PAQUETE`). `guard.py`/`heal.py` son derivados —apuntan a la función dueña; los sanadores salen de `vault_norms_catalog.SANADORES`— y se regeneran con `vault_norms_engine.escribir_caras_derivadas`, no a mano. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
@@ -268,6 +268,9 @@ abajo, en «Cuatro cosas que el registro no puede decirte».
 - [ ] `python scripts/vault_recursos.py --check --strict`
       Ningún consumidor cruza una frontera de contexto para leer un recurso que no necesita el fan-out del productor (AP-62).
       *Se arregla con:* partir el productor en catálogo y motor y repuntar a los consumidores al dueño; partir el fichero solo no mueve la cifra —lo enseñó v40.27—, y reclasificar el productor al núcleo sin medirle el fan-out lo vería AP-59
+- [ ] `python scripts/vault_procesos_git.py --check --strict`
+      Ninguna tool ni módulo levanta git por su cuenta: el verbo lo juzga vault.kernel.procesos_git y un mutador solo existe si está autorizado con su motivo (AP-68).
+      *Se arregla con:* mover la llamada al dueño —ejecutar_git(repo, [...])—; si de verdad hace falta un mutador nuevo, autorizarlo en MUTADORES_AUTORIZADOS con su motivo escrito, que es el diff que lo revisa. No hay baseline: un sitio fuera del dueño es deuda nueva por definición
 - [ ] `python scripts/vault_produccion.py --check --strict`
       Toda promesa hecha a quien instala esto —versión mínima, dependencia, plataforma, superficie de red— tiene a alguien que la ejerza, y los huecos están declarados con su motivo.
       *Se arregla con:* añadir el ejecutor que falta, o declarar la promesa como descubierta con el motivo escrito; las demás puertas miden el repo contra sí mismo y en esa sala no está el consumidor, que es como >=3.9 pasó en verde sin que ninguna máquina ejecutara 3.9

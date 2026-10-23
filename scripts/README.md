@@ -1,13 +1,13 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture** (versión vigente: `vault_version.CURRENT_VERSION`). Implementan las 125 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture** (versión vigente: `vault_version.CURRENT_VERSION`). Implementan las 126 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **166 archivos Python** — 125 tools del catálogo MCP (123 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
+- **167 archivos Python** — 126 tools del catálogo MCP (124 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
 - **Saneamiento de índices (v38.1)** — `vault_section_index.py --heal [--root]` regenera índices con formato legacy `[[stem|alias]]` o ausentes; el auto-index post-write se auto-cura si un agente escribe `index.md` a mano
-- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 125 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
+- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 126 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault; requiere marcador de CONTENIDO (01_Projects/02_Observability/03_Decisions/.obsidian), no solo 00_System/99_Index (evita el ciclo auto-reforzado de detección); override runtime con `set_vault_root()`/env `VAULT_ROOT`
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -59,7 +59,7 @@ Scripts Python del estándar **Vault Obsidian Architecture** (versión vigente: 
 | [Grupo 32 — Gestión de Carpetas](#grupo-32--gestión-de-carpetas) | vault_folder_registry, vault_section |
 | [Grupo 33 — Corrección Automática](#grupo-33--corrección-automática) | vault_fix_brackets, vault_graph_fix, vault_frontmatter_heal, vault_frontmatter_completar, vault_supersede |
 | [Grupo 34 — Memoria de Contexto](#grupo-34--memoria-de-contexto) | vault_preferences, vault_model_profile, vault_query_parse, vault_subgraph, vault_context_pack, vault_ingest, vault_arquitectura_en |
-| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_changelog_check, vault_error_contract, vault_foreign_check, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_doc_staleness, vault_noop_audit, vault_smoke, vault_toolkit_audit, vault_voice, vault_servicio, vault_blueprint, vault_norms_coherence, vault_criterios, vault_ciclos, vault_kernel, vault_excepcion_declarada, vault_recursos, vault_produccion, vault_esquema, vault_metricas, vault_fix_all |
+| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_changelog_check, vault_error_contract, vault_foreign_check, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_doc_staleness, vault_noop_audit, vault_smoke, vault_toolkit_audit, vault_voice, vault_servicio, vault_blueprint, vault_norms_coherence, vault_criterios, vault_ciclos, vault_kernel, vault_excepcion_declarada, vault_recursos, vault_procesos_git, vault_produccion, vault_esquema, vault_metricas, vault_fix_all |
 | [Grupo 36 — Defectos y Cuarentena](#grupo-36--defectos-y-cuarentena) | vault_bug_save, vault_quarantine |
 | [Grupo 37 — Skills](#grupo-37--skills) | vault_sdd_init, vault_sanacion |
 | [Observabilidad de Tools](#observabilidad-de-tools) | vault_errors |
@@ -2154,7 +2154,7 @@ El vault expone sus herramientas como un **servidor MCP** que las IAs consumen d
 
 **Archivo:** `../mcp/nodejs/vault-mcp-server.mjs` (~1650 líneas, cero dependencias npm)  
 **Plan:** `../mcp/PLAN.md` — documento de evidencia con 8 fases de implementación
-**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (125 tools)
+**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (126 tools)
 
 Los parámetros que el catálogo publica **se derivan del `argparse` de cada script**,
 no se escriben a mano: el servidor compone `--<param>` literal, así que un param
@@ -2209,7 +2209,7 @@ VAULT_MCP_PERFIL=agente node mcp/nodejs/vault-mcp-server.mjs
 
 ### `vault_norms.py`
 
-Registro canónico de las 81 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
+Registro canónico de las 82 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
 
 **Desde v40.26 son tres ficheros y una sola tool.** Eran 5.158 líneas que hacían de catálogo, de motor y de fachada a la vez, con el 60% del fichero ocupado por una constante. Ahora `vault_norms_catalog.py` tiene los datos —`NORM_CATALOG` y el vocabulario de estado, sin leer el vault, sin escribir nada y sin importar ninguna tool—, `vault_norms_engine.py` tiene el motor de `--audit`, el drift del marco y el heal de AP-46, y este módulo se queda con la fachada de datos, la CLI y la **reexportación** de todo lo que el repo consumía antes. Esa reexportación es el punto: la superficie externa real son siete símbolos y los tests usan cinco privados más, así que reexportarlos hace que **ningún llamador se toque** y el diff se lea como movimiento puro. Recortar de paso la superficie que usan los tests habría mezclado dos cambios y hecho imposible saber cuál rompió qué.
 
@@ -2324,7 +2324,7 @@ python vault_doc_counts.py --check --no-slow  # omite el conteo de tests (lanza 
 
 **El changelog y la tabla de versiones quedan fuera del escaneo.** "76 tools" dentro de la entrada de v37 es historia correcta, no drift; reescribirla sería derogar el registro histórico. Los patrones son deliberadamente específicos por el mismo motivo: `"N normas"` a secas también casa con "las 14 normas manuales eliminadas", que es otro hecho. Un patrón laxo produce falsos positivos y el guard acaba desactivado — que es como mueren los guards.
 
-Fuera de esas secciones también hay historia: un censo hecho en una versión concreta («41 de las 125 tools del catálogo no se han ejecutado») casa con el patrón de tools activas, y `--fix` lo reescribió con cada tool nueva hasta que el censo dejó de decir lo que se midió. Una línea así lleva `<!-- cifra histórica: <motivo> -->`: exime solo esa línea, sin motivo no exime, y el envelope la publica en `historic_exempt` para que eximir no sea una forma callada de apagar el guard.
+Fuera de esas secciones también hay historia: un censo hecho en una versión concreta («41 de las 126 tools del catálogo no se han ejecutado») casa con el patrón de tools activas, y `--fix` lo reescribió con cada tool nueva hasta que el censo dejó de decir lo que se midió. Una línea así lleva `<!-- cifra histórica: <motivo> -->`: exime solo esa línea, sin motivo no exime, y el envelope la publica en `historic_exempt` para que eximir no sea una forma callada de apagar el guard.
 
 ### `vault_doc_sync.py`
 
@@ -2816,6 +2816,36 @@ Las que cumplen 1–3 y no la 4 se publican como `arrastre_intracontexto` sin co
 **Cómo se salda.** Dándole al recurso **un dueño con forma de hoja**: partir el productor en catálogo y motor, mudar el catálogo al núcleo si de verdad tiene fan-out cero, y repuntar a los consumidores al dueño. Lo que enseñó v40.27 y conviene repetir: **partir el fichero por sí solo no movió una sola cifra**. La arquitectura no cambió hasta que los importadores dejaron de entrar por la fachada. Y la corrección que **no** vale es copiar el recurso al consumidor — eso cambia un AP-62 por un AP-57.
 
 **El límite, y una trampa que esta tool ya pisó.** Mide `from X import y` y no `import X`, porque quien importa el módulo entero no declara qué usa. Decide la pureza por AST **a punto fijo**: un símbolo se contagia de acoplado si nombra a otro que ya lo está. La primera versión no iteraba y solo miraba referencias directas a los nombres importados — con ese criterio `vault_tags_backfill_ledger` salía «pura», siendo una función que recorre el vault entero a través de un helper local. Medir así es certificarse a uno mismo (AP-44) en la tool que nace precisamente para detectar que el consumidor no ve lo que paga. Aun con el punto fijo, una función que dependa de un global mutable del módulo pasará por pura, y las clases se dan por acopladas sin mirarlas.
+
+### `vault_procesos_git.py`
+
+**El git que ejecuta el toolkit, sin dueño (AP-68).** El toolkit lanza `git` —para contrastar el historial contra la verdad, que es lo que exige AP-53— y hasta v41.19 lo lanzaba **quien escribiera cada línea, con el criterio de esa línea**. Un `subprocess.run(["git", ...])` con un verbo mutador no activaba ninguna puerta: el riesgo no era que lo hubiera, era que nadie decidía qué podía haberlo.
+
+```bash
+python vault_procesos_git.py --check                    # lista los sitios fuera del dueño
+python vault_procesos_git.py --check --strict           # exit 1 si hay alguno (puerta 20)
+```
+
+**La auditoría que le dio nombre.** La pregunta era «¿ejecuta alguna tool git sin supervisión, o pasa comandos no autorizados, o sin idempotencia, o reescribiendo el git?». El veredicto fue que no —y que ese "no" no valía, porque no había nada detrás—:
+
+| | | |
+|---|---|---|
+| **24 sitios** | levantaban git sin dueño | doce lecturas reales y un mutador |
+| **1 mutador** | `vault_init`: `init -b main`, `add -A`, `commit` | sobre un vault recién creado; `vault_init` rechaza un vault existente no vacío, no configura `user.name` y nunca hace `push` |
+| **0** | `shell=True`, `--force`, `reflog apply`, `config` que escriba | en todo el repo |
+| **0** | tools de git en el catálogo MCP | el servidor lanza `python script.py --flag=value`, nunca git |
+
+Todo correcto, y todo **solo en la inspección de quien miró**. Al día siguiente un `git clean -fdx` habría entrado sin que nada se pusiera rojo: la única defensa era acordarse de mirar el verbo —el criterio reimplementado por persona y distribuido por cada línea, que es AP-57 aplicado al repo contra sí mismo.
+
+**Dónde vive el criterio.** `vault/kernel/procesos_git.py`, una hoja del núcleo (importa solo `ast`, `re`, `subprocess` y la otra hoja de su paquete). Él decide:
+
+- **que el verbo exista** —`VERBOS_LECTURA` (14 verbos puros), o `VERBOS_AMBIGUOS` (`branch`, `tag`, `config`, `stash`, `reflog`) cuyo uso se juzga por argumento: `branch -a` lee y `branch -D` destruye; `tag -l` lista y `tag v1` crea; `config --get` lee y `config k v` escribe— o `MUTADORES_AUTORIZADOS`, que hoy son `init`, `add` y `commit` **con el motivo escrito al lado**;
+- **que el argv sea lista** —sin shell, sin interpolación—;
+- **que la ref venga validada** —`asegurar_hash()` deja morir un valor que empieza por `--` nacido en un fichero: la inyección de opción muere antes del argv, y `vault_changelog_check`, `vault_metricas` y `vault_drift_detect` la aplican sobre los hashes que leen del changelog, de METRICAS y del snapshot.
+
+**Un verbo nuevo no se autoriza en la puerta: se autoriza en el código.** Añadir un mutador a `MUTADORES_AUTORIZADOS` es un diff que dice qué muta, dónde y por qué — esa es la revisión que la norma no daba. La puerta mide la cobertura del dueño: si alguien mete un `subprocess.run(["git", ...])` por la puerta de atrás, `sitios_git_fuera_del_dueno()` lo publica por AST (literal, concatenado o por variable) y el rojo es inmediato.
+
+**Lo que la puerta no ve, declarado.** Los `tests/` quedan fuera del alcance **y por qué**: un test necesita git crudo para fabricar el repositorio con el que va a medir, y medir una tool con su propio ejecutor sería certificarla a sí mismo (AP-44); los tests tampoco viajan en la wheel, donde no hay repo al que tocar. Tampoco ve un argv armado con `" ".join(...)` ni un binario que lance git por su cuenta — pero el runtime no depende del análisis estático: **aunque un sitio se escondiera del AST, su llamada seguiría sin poder ejecutarse sin pasar por el dueño.** Por eso la puerta es cobertura y el dueño es garantía.
 
 ### `vault_produccion.py`
 

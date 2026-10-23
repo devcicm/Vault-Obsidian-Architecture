@@ -66,6 +66,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.frontmatter import firmante  # noqa: E402
 from vault.kernel import proyectos  # noqa: E402
+from vault.kernel import procesos_git  # noqa: E402
 from vault.kernel.fallos import FalloDeDominio  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 from vault.kernel.frontmatter_parsing import parse_frontmatter_robust, separar_frontmatter  # noqa: E402
@@ -388,9 +389,14 @@ def enlazar(nombre: str, ruta: str, vault: Optional[str] = None) -> Dict[str, An
 
 
 def _git(ruta: Path, *args: str) -> Optional[str]:
-    """Salida de `git <args>` en ``ruta``, o ``None`` si no hay git o falla."""
+    """Salida de `git <args>` en ``ruta``, o ``None`` si no hay git o falla.
+
+    Desde AP-68 el verbo lo juzga `vault.kernel.procesos_git`: aquí se usan
+    `config --get` (leer el remoto, nunca escribirlo), `symbolic-ref`,
+    `branch --show-current`, `rev-parse`, `cat-file -e`, `rev-list` y `log`.
+    """
     try:
-        r = vault_subproceso.ejecutar(["git", *args], cwd=str(ruta),
+        r = procesos_git.ejecutar_git(ruta, list(args),
                                       capture_output=True, timeout=10)
     except (OSError, subprocess.TimeoutExpired):
         return None
@@ -401,7 +407,7 @@ def _git(ruta: Path, *args: str) -> Optional[str]:
 def _git_ok(ruta: Path, *args: str) -> bool:
     """`git <args>` terminó con 0 (para los que no imprimen nada)."""
     try:
-        return vault_subproceso.ejecutar(["git", *args], cwd=str(ruta),
+        return procesos_git.ejecutar_git(ruta, list(args),
                                          capture_output=True, timeout=10).returncode == 0
     except (OSError, subprocess.TimeoutExpired):
         return False

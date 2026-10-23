@@ -47,6 +47,7 @@ _REPO = next((p for p in Path(__file__).resolve().parents
               if (p / "vault" / "kernel" / "version.py").is_file()), None)
 sys.path.insert(0, str(_REPO))
 from vault.kernel.version import CURRENT_VERSION  # noqa: E402
+from vault.kernel import procesos_git  # noqa: E402
 
 
 def _numero(version: str) -> tuple:
@@ -186,9 +187,9 @@ def main() -> int:
         return 1
     protegidos = [str(p.relative_to(raiz)) for p in _protegidos(raiz)
                   if p.exists()]
-    sucio = subprocess.run(
-        ["git", "-C", str(raiz), "status", "--porcelain", "--", *protegidos],
-        capture_output=True, text=True, encoding="utf-8")
+    sucio = procesos_git.ejecutar_git(
+        raiz, ["status", "--porcelain", "--", *protegidos],
+        capture_output=True)
     if (sucio.stdout or "").strip():
         print(_envelope(
             ok=False, action="bump", escrito=False,

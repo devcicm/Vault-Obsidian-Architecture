@@ -3589,7 +3589,7 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **81 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **82 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -7163,6 +7163,55 @@ documentado: eso convertiría el vault en una copia del proyecto. Dice que el
 vault tiene que saber qué material existe y se operó, y que la puerta para
 saberlo es el enlace en los dos sentidos. Lo que está fuera del vault y no se
 opera, no es deuda: es el proyecto.
+
+---
+
+### AP-68 — El git que ejecuta el toolkit, sin dueño
+
+**Enforcement:** `guard` · **Severidad:** high · **Introducido:** v41.19
+**Guard:** `python scripts/vault_procesos_git.py --check --strict`
+
+**Síntoma.** Un proceso del toolkit lanza `git` sin que nadie decida qué puede
+lanzar. El síntoma no es el `git` —leer el historial es legítimo y lo hacen
+las tools que contrastan contra él—, sino que **la frontera depende del
+criterio de quien escribió la línea**.
+
+**Por qué importa.** La auditoría del 2026-10-22 encontró 24 sitios que
+levantaban git sin dueño: doce lecturas reales y un mutador —el bootstrap de
+`vault_init`, acotado a un vault recién creado, sin `push` ni identidad
+configurada—. Ni un `shell=True`, ni un `--force`, ni un reflog `apply`. Todo
+correcto, y todo **solo en la inspección de quien miró**: sin guard, un `git
+clean -fdx` en una tool habría entrado sin que ninguna puerta se pusiera roja.
+La única defensa era acordarse de mirar el verbo —el criterio
+reimplementado por persona y distribuido por cada línea, que es AP-57 aplicado
+al repo contra sí mismo—. Lo caro es que la propiedad «este repo no borra
+historia ajena» era un **saber de cabeza**, la forma más fácil de perder.
+
+**Señal.** Un `subprocess.run(["git", …])`, un `vault_subproceso.ejecutar(["git",
+…])` o cualquier equivalente en un módulo que no sea
+`vault/kernel/procesos_git.py`; un verbo mutador (`reset`, `checkout`,
+`clean`, `push`, `pull`, `gc`) sin motivo escrito; un hash leído de un fichero
+—changelog, snapshot, METRICAS— que entra al argv sin validar.
+
+**Prevención.** `vault_procesos_git --check --strict` recorre por AST
+`scripts/`, `cli/`, `vault/` y `mcp/` y publica toda llamada que levante git
+con el léxico `"git"` primero —literal, concatenado o por variable—, que tiene
+que ser cero. El runtime lo aplica `vault.kernel.procesos_git.ejecutar_git`, el
+dueño: rechaza verbo desconocido, verbo mutador sin motivo en
+`MUTADORES_AUTORIZADOS` (hoy: `init`, `add`, `commit`, los tres del bootstrap
+y solo por eso), el uso mutador de un verbo ambiguo (`branch -D`, `tag
+<nombre>`, `config k v`, `stash apply`, `reflog expire`) y todo argv que no sea
+lista. `asegurar_hash` cierra la inyección de opción: un valor que empieza por
+`--`, nacido en un fichero, muere antes de llegar al argv. Se salda **moviendo
+la llamada al dueño**, nunca ampliando una lista.
+
+**Lo que la norma no dice.** No dice que git sea prohibido —es la única forma de
+contrastar el historial contra la verdad, que es lo que exige AP-53—, ni que
+los tests passen por el dueño: un test necesita git crudo para fabricar el
+repositorio con el que mide, y medir una tool con su propio ejecutor sería
+certificarla a sí mismo (AP-44). La puerta no ve un argv armado con
+`" ".join(...)` ni un binario que lance git por su cuenta; lo que sí lo cubre
+para siempre es el runtime, porque sin pasar por el dueño no se ejecuta.
 
 ---
 

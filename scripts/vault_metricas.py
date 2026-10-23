@@ -55,6 +55,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 import vault_baseline
 from vault_errors import emit_error, wrap_main
+from vault.kernel import procesos_git
 from vault_io import atomic_write_text
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -166,12 +167,30 @@ METRICAS: List[Dict[str, Any]] = [
 # ── Calculadas ───────────────────────────────────────────────────────────────
 
 def _git(*args: str) -> Optional[str]:
+    """`git <args>` en el repo, o `None`. Desde AP-68 el verbo lo juzga el
+    dueño: aquí son `rev-list`, `show`, `cat-file -e` y `rev-parse` —nunca un
+    mutador— y los hashes que salen de METRICAS se validan antes del argv
+    (`_hash_o_none`)."""
     try:
-        r = subprocess.run(["git", *args], cwd=RAIZ, capture_output=True, text=True,
-                           encoding="utf-8", timeout=30)
-    except (OSError, subprocess.SubprocessError):
+        r = procesos_git.ejecutar_git(RAIZ, list(args),
+                                      capture_output=True, timeout=30)
+    except (OSError, subprocess.SubprocessError, procesos_git.GitProhibido):
         return None
     return r.stdout.strip() if r.returncode == 0 else None
+
+
+def _hash_o_none(valor: Any) -> Optional[str]:
+    """Un hash de METRICAS, o `None` si no tiene forma de hash (AP-68).
+
+    METRICAS es un fichero que una persona edita a mano; su columna `commit`
+    es una observación, no una confianza. Antes de ponerla en el argv de
+    `git show` o `git rev-list` —que un valor que empiece por `--` puede
+    alterar— se pasa por el dueño del criterio.
+    """
+    try:
+        return procesos_git.asegurar_hash(str(valor), campo="metricas.commit")
+    except procesos_git.RefInvalida:
+        return None
 
 
 def _estados_de_baselines() -> List[str]:
@@ -208,9 +227,18 @@ def _normas_vencidas() -> int:
 
 def _commits_ultima_version() -> int:
     ultima, previa = _dos_ultimas_versiones()
-    salida = _git("rev-list", "--count", f"{previa['hash']}..{ultima['hash']}")
+    # Los dos hashes salen del changelog leído como fichero; validados antes
+    # de componer el rango (AP-68).
+    h_previa = _hash_o_none(previa.get("hash"))
+    h_ultima = _hash_o_none(ultima.get("hash"))
+    if not h_previa or not h_ultima:
+        raise ValueError(
+            f"el changelog no declara hashes con forma de git: "
+            f"{previa.get('hash')!r}..{ultima.get('hash')!r}"
+        )
+    salida = _git("rev-list", "--count", f"{h_previa}..{h_ultima}")
     if salida is None:
-        raise ValueError(f"git no resuelve {previa['hash']}..{ultima['hash']}")
+        raise ValueError(f"git no resuelve {h_previa}..{h_ultima}")
     return int(salida)
 
 
@@ -317,7 +345,13 @@ def _observaciones_en_head() -> List[Dict[str, Any]]:
 
 
 def _commit_existe(h: str) -> bool:
-    return isinstance(h, str) and bool(h) and _git("cat-file", "-e", f"{h}^{{commit}}") is not None
+    # El hash viene del histórico declarado en METRICAS; sin forma de hash no
+    # se le pregunta a git (AP-68) —se responde que no existe, que es lo que
+    # una observación con un hash inventado merece.
+    valido = _hash_o_none(h)
+    if not valido:
+        return False
+    return _git("cat-file", "-e", f"{valido}^{{commit}}") is not None
 
 
 def _clave(o: Dict[str, Any]) -> str:

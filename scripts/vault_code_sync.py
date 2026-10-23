@@ -44,6 +44,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
 from vault.grafo.enlace_codigo import link_vault  # noqa: E402
 from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
+from vault.kernel import procesos_git  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -140,7 +141,7 @@ def _collect_code_notes(project: Optional[str]) -> List[Tuple[Path, Dict[str, st
 
 def _head(repo: Path) -> Optional[str]:
     try:
-        r = vault_subproceso.ejecutar(["git", "rev-parse", "HEAD"], cwd=str(repo),
+        r = procesos_git.ejecutar_git(repo, ["rev-parse", "HEAD"],
                                       capture_output=True, timeout=10)
     except (OSError, subprocess.TimeoutExpired):
         return None

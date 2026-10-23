@@ -4685,6 +4685,42 @@
         "vault_security_scan"
       ]
     },
+    "vault_procesos_git": {
+      "name": "vault_procesos_git",
+      "description": "AP-68: el toolkit lanza git desde 24 sitios, y la frontera de lo que puede lanzar dependia del criterio de quien escribio cada linea. Todos usaban verbos de lectura salvo el bootstrap de vault_init — init/add/commit sobre un vault recien creado—, y todo eso estaba solo en la inspeccion de quien lo miro, no en un guard. Esta tool recorre por AST scripts/, cli/, vault/ y mcp/ y publica toda llamada que levante git con el lexico 'git' primero, que tiene que ser cero: el runtime lo aplica vault.kernel.procesos_git.ejecutar_git, que rechaza verbo desconocido, mutador sin motivo escrito y el uso mutador de los verbos ambiguos (branch -D, tag <nombre>, config k v, stash apply, reflog expire).",
+      "group": "Normas",
+      "script": "vault_procesos_git.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "check": {
+            "type": "boolean",
+            "description": "Lista los sitios que levantan git fuera del dueno"
+          },
+          "strict": {
+            "type": "boolean",
+            "description": "Exit 1 si hay algun sitio fuera del dueno"
+          }
+        },
+        "additionalProperties": false
+      },
+      "guards": [
+        "Mide argv estaticos de scripts/, cli/, vault/ y mcp/: no ve un argv armado con join/f-string ni un binario que lance git por su cuenta",
+        "Los tests/ quedan fuera del alcance, y por que: necesitan git crudo para fabricar el repo con el que miden (AP-44)",
+        "No hay baseline: un sitio fuera del dueno es deuda nueva por definicion; se salda moviendo la llamada al dueno, nunca ampliando una lista de verbos"
+      ],
+      "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": false,
+      "execution_module": null,
+      "related": [
+        "vault_arch",
+        "vault_norms",
+        "vault_gate",
+        "vault_blueprint",
+        "vault_changelog_check"
+      ]
+    },
     "vault_produccion": {
       "name": "vault_produccion",
       "description": "Puede usar esto otra persona, y con que fiabilidad. Las demas puertas miden el repo contra si mismo —que el catalogo no diverja del JSON, que la baseline no crezca— y en esa sala no esta el consumidor. Esta tool registra cada promesa que se le hace a quien instala (version minima, dependencias, plataformas, superficie de red) junto a quien la ejerce de verdad, y falla cuando una promesa marcada como cubierta se queda sin ejecutor. Nacio de medir la pregunta en vez de opinarla: pyproject prometia >=3.9, la CI corria solo 3.11, y seis sitios rompian al IMPORTAR en 3.9 sin que nada lo viera.",
@@ -7395,6 +7431,7 @@
       "vault_kernel",
       "vault_excepcion_declarada",
       "vault_recursos",
+      "vault_procesos_git",
       "vault_produccion",
       "vault_esquema",
       "vault_metricas",

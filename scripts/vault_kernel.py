@@ -73,6 +73,8 @@ from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+from vault.kernel import procesos_git  # noqa: E402
+
 import vault_baseline
 import vault_grafo_import
 from vault_arch import (
@@ -107,8 +109,8 @@ def _hay_historia() -> bool:
     """Un clon de profundidad 1 —lo que hace `actions/checkout@v4` por defecto—
     daría un commit por fichero y K3 saldría verde por no haber mirado."""
     for args in (["rev-parse", "--git-dir"], ["rev-parse", "--is-shallow-repository"]):
-        r = vault_subproceso.ejecutar(["git", *args], cwd=RAIZ_REPO,
-                           capture_output=True)
+        r = procesos_git.ejecutar_git(RAIZ_REPO, list(args),
+                                      capture_output=True)
         if r.returncode != 0:
             return False
         if args[-1] == "--is-shallow-repository" and r.stdout.strip() == "true":
@@ -132,10 +134,9 @@ def _churn_de_todos() -> Optional[Dict[str, int]]:
     misma: se recorre la historia una vez pidiendo los ficheros tocados por cada
     commit y se cuenta.
     """
-    r = subprocess.run(
-        ["git", "log", "--format=%H", "--name-only", "--", "scripts"],
-        cwd=RAIZ_REPO, capture_output=True, text=True, encoding="utf-8",
-        errors="replace",
+    r = procesos_git.ejecutar_git(
+        RAIZ_REPO, ["log", "--format=%H", "--name-only", "--", "scripts"],
+        capture_output=True,
     )
     if r.returncode != 0:
         return None
@@ -254,10 +255,10 @@ def huella_de_comportamiento(fuente: bytes) -> str:
 
 def _cambios_de_todos() -> Optional[List[Tuple[str, str, str]]]:
     """`(módulo, blob_antes, blob_después)` por commit, de un solo `git log`."""
-    r = subprocess.run(
-        ["git", "log", "--format=%H", "--raw", "--no-abbrev", "--", "scripts"],
-        cwd=RAIZ_REPO, capture_output=True, text=True, encoding="utf-8",
-        errors="replace",
+    r = procesos_git.ejecutar_git(
+        RAIZ_REPO,
+        ["log", "--format=%H", "--raw", "--no-abbrev", "--", "scripts"],
+        capture_output=True,
     )
     if r.returncode != 0:
         return None
@@ -287,8 +288,12 @@ def _cambios_de_raw(salida: str) -> List[Tuple[str, str, str]]:
 def _leer_blobs(ids: Sequence[str]) -> Optional[Dict[str, bytes]]:
     """Todos los blobs por un único `git cat-file --batch`."""
     entrada = "".join(f"{i}\n" for i in ids).encode("ascii")
-    r = subprocess.run(["git", "cat-file", "--batch"], cwd=RAIZ_REPO,
-                       input=entrada, capture_output=True)
+    r = procesos_git.ejecutar_git(RAIZ_REPO, ["cat-file", "--batch"],
+                                 # binario=True: la cabecera da el tamaño en
+                                 # bytes y el cuerpo se mide en bytes; en modo
+                                 # texto el pipe no cuadra (ver procesos_git).
+                                 binario=True,
+                                 input=entrada, capture_output=True)
     if r.returncode != 0:
         return None
     salida, pos, blobs = r.stdout, 0, {}
@@ -325,8 +330,8 @@ def _ruta_huellas() -> Optional[Path]:
     No se versiona, desaparece con el clon y la comparten los worktrees
     (`--git-common-dir`). Sin git no hay historia que medir ni que guardar.
     """
-    r = vault_subproceso.ejecutar(["git", "rev-parse", "--git-common-dir"],
-                                  cwd=RAIZ_REPO, capture_output=True)
+    r = procesos_git.ejecutar_git(RAIZ_REPO, ["rev-parse", "--git-common-dir"],
+                                 capture_output=True)
     if r.returncode != 0 or not r.stdout.strip():
         return None
     base = Path(r.stdout.strip())
@@ -623,10 +628,10 @@ def medir() -> Dict[str, Any]:
 
 
 def _cambios_del_indice() -> Optional[List[Tuple[str, str, str]]]:
-    r = subprocess.run(
-        ["git", "diff", "--cached", "--raw", "--no-abbrev", "--", "scripts"],
-        cwd=RAIZ_REPO, capture_output=True, text=True, encoding="utf-8",
-        errors="replace",
+    r = procesos_git.ejecutar_git(
+        RAIZ_REPO,
+        ["diff", "--cached", "--raw", "--no-abbrev", "--", "scripts"],
+        capture_output=True,
     )
     if r.returncode != 0:
         return None
