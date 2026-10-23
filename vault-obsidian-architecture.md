@@ -8235,7 +8235,7 @@ temp/
 
 ---
 
-### v41.18 — 2026-10-22 `git: pending`
+### v41.18 — 2026-10-22 `git: 220d036`
 
 vault_onboard pasa a vault_io.escrituras_en_lote (AP-47 para el escritor masivo por excelencia: la 1.ª corrida baja de ~13 s a ~8 s en la medida local) y estrena test de la segunda corrida — todo skipped y los bytes idénticos, la idempotencia del merge deja de confiar en el informe (AP-42). scripts/README.md publica el contrato derivado. .archify/ queda versionado: los tres mapas standalone (contextos, cruces, onboarding) con candidatos y recibos, pinados a revisión y con la evidencia verificada por archify. Deuda declarada: el skip-path de la segunda corrida reindiza por diseño.
 
