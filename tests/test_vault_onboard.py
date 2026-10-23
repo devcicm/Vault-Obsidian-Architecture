@@ -264,3 +264,48 @@ def test_las_secciones_nuevas_se_pueblan_cuando_hay_evidencia(vault):
         "el proyecto declara lenguaje y gestor de paquetes: hay contexto estable "
         "que registrar"
     )
+
+
+# ── Idempotencia (AP-42): la promesa del docstring, verificada ────────────────
+
+
+def test_segunda_corrida_no_reescribe_nada(vault, proyecto):
+    """El docstring promete «Idempotencia: si el archivo ya existe → merge»; AP-42
+    añade la que nadie había verificado: la 2ª corrida efectivamente no reescribe
+    nada. Se comprueba en dos capas — lo que la tool declara (merge_stats todo
+    skipped) y lo que el vault muestra (los bytes de cada nota, idénticos).
+
+    Los bytes y no `ok:true`: la tool podría reescribir cada nota con el mismo
+    contenido y dar ok — el consumidor (el git del vault, el diff) vería el
+    cambio. Es el mismo criterio del test central: sobre el resultado, no sobre
+    el informe.
+
+    Solo nota `.md` de contenido: los índices regenerados (`index.md`,
+    `search-index.json`) no son el output del merge, y `99_Index` se reconstruye
+    en cada corrida por diseño.
+    """
+    v, primera = vault  # la fixture ya corrió la 1ª pasada
+    antes = {p: p.read_bytes() for p in v.rglob("*.md") if p.stem != "index"}
+
+    salida = _correr(
+        "vault_onboard.py", str(v),
+        "--project", "demo-api", "--path", str(proyecto),
+    )
+    stats = salida["merge_stats"]
+
+    assert stats["created"] == 0, f"la 2ª corrida creó notas: {stats}"
+    assert stats["merged"] == 0, f"la 2ª corrida reescribió: {stats}"
+    assert stats["skipped"] > 0, (
+        f"la 2ª corrida declara cero skipped: nada probó el merge, {stats}"
+    )
+    # Y el `skipped` de la 2ª cubre lo que la 1ª creó (la cota dura: no crece).
+    primera_stats = primera.get("merge_stats", {})
+    if primera_stats.get("created"):
+        assert stats["skipped"] >= primera_stats["created"], (primera_stats, stats)
+
+    despues = {p: p.read_bytes() for p in v.rglob("*.md") if p.stem != "index"}
+    assert antes.keys() == despues.keys(), (
+        f"la 2ª corrida creó o borró notas: {set(antes) ^ set(despues)}"
+    )
+    distintas = [p for p in antes if antes[p] != despues[p]]
+    assert not distintas, f"la 2ª corrida reescribió notas: {[str(d) for d in distintas]}"

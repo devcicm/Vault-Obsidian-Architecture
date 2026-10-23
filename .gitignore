@@ -74,6 +74,11 @@ vault_regex/
 # versionado en vez de quedar suelto e ignorado en la raíz.
 # PR_BODY.md
 
+# Capturas y snapshots del agente de navegador (playwright MCP): QA local.
+# No forman parte del estándar; las capturas que sobreviven a una revisión
+# viven en .archify/capturas/ con su recibo .visual-check.json.
+.playwright-mcp/
+
 # Analisis temporal generado durante revision
 # superseded_by: docs/auditorias/ (2026-10-01). Los análisis se archivan
 # versionados en vez de quedar sueltos e ignorados en la raíz.

@@ -1804,6 +1804,8 @@ Tres cosas que no hace, y son la parte que importa:
 - **No se cree su propia salida** (AP-44). Relee cada nota del disco y valida el frontmatter con `yaml.safe_load`; los diagramas pasan por `vault_mermaid_check` y el que no valide no se escribe.
 - **No puebla `18_Bugs`, `19_Audits` ni `20_Quarantine`.** Son secciones dirigidas por eventos: llenarlas al arrancar sería inventar bugs que no han pasado. La salida lo declara en `sections_left_empty_by_design` para que su vacío se lea como estado correcto y no como trabajo pendiente.
 
+**Poblarlo todo pasa por `vault_io.escrituras_en_lote()`** (AP-47): el onboard es el escritor masivo del catálogo — una sola corrida puede traer 26, 54 o más notas — y sin lote cada una regeneraba índice de sección, grafo y escaneo de secretos por su cuenta. Medido sobre un proyecto demo con git: la primera corrida baja de ~13 s a ~8 s; el resultado en disco es el de escribir nota a nota. La segunda corrida no se beneficia porque no escribe: el costo que queda es el reindizado, que corre por diseño en cada pasada. La idempotencia del merge — segunda corrida todo `skipped` y los bytes idénticos — la afirma `test_segunda_corrida_no_reescribe_nada` desde una corrida real.
+
 `--max-commits` acota la ventana de historia. Cuando se alcanza, la salida lo dice en `warnings`: el tope es un parámetro de la invocación, no un hecho del proyecto, y confundirlos convierte «500 commits» en un dato falso.
 
 Criterio de aceptación, verificado en `tests/test_vault_onboard.py` contra un repo con git real: **un vault recién onboardeado no necesita sanación**. Cero deuda de metadatos, cero violaciones de norma, Mermaid limpio.

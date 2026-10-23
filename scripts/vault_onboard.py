@@ -44,7 +44,13 @@ from typing import Any, Dict, List, Optional, Tuple
 from vault_errors import emit_error, wrap_main
 from vault_entorno import agente_por_defecto
 from vault_lib import slugify_strict, utcnow
-from vault_io import assert_within_vault, atomic_write_text, is_snapshot_path, normalize_stem
+from vault_io import (
+    assert_within_vault,
+    atomic_write_text,
+    escrituras_en_lote,
+    is_snapshot_path,
+    normalize_stem,
+)
 from vault_norms_catalog import compute_norm_refs
 from vault_registry import ORDERED_SECTIONS
 from vault_write import tipo_por_carpeta
@@ -2825,55 +2831,63 @@ def vault_onboard(
     infra = _detect_infra(project_path)
 
     # 4. Apply section strategies
-    if "01" not in skip:
-        _record(
-            _onboard_01_projects(project, meta, history, phases, agent, dry_run),
-            "overview",
-        )
-    if "04" not in skip:
-        _record(
-            _onboard_04_sessions(project, phases, history, agent, dry_run), "sessions"
-        )
-    if "03" not in skip:
-        _record(
-            _onboard_03_decisions(project, history, project_path, agent, dry_run),
-            "decisions",
-        )
-    if "02" not in skip:
-        _record(
-            _onboard_02_observability(project, project_path, modules, agent, dry_run),
-            "observability",
-        )
-    if "05" not in skip:
-        _record(_onboard_05_patterns(project, modules, agent, dry_run), "patterns")
-    if "06" not in skip:
-        _record(
-            _onboard_06_diagrams(project, project_path, meta, modules, agent, dry_run),
-            "diagrams",
-        )
-    if "07" not in skip:
-        _record(_onboard_07_knowledge(project, meta, agent, dry_run), "knowledge")
-    if "08" not in skip:
-        _record(
-            _onboard_08_runbooks(project, meta, project_path, agent, dry_run),
-            "runbooks",
-        )
-    if "09" not in skip:
-        _record(_onboard_09_infrastructure(project, infra, agent, dry_run), "infra")
-    if "11" not in skip:
-        _record(_onboard_11_code(project, modules, language, agent, dry_run), "modules")
-    if "13" not in skip:
-        _record(_onboard_13_flows(project, project_path, agent, dry_run), "flows")
-    if "14" not in skip:
-        _record(_onboard_14_requirements(project, project_path, meta, agent, dry_run), "requirements")
-    if "15" not in skip:
-        _record(_onboard_15_tests(project, project_path, meta, agent, dry_run), "tests")
-    if "16" not in skip:
-        _record(
-            _onboard_16_governance(project, meta, infra, agent, dry_run), "governance"
-        )
-    if "17" not in skip:
-        _record(_onboard_17_preferences(project, meta, agent, dry_run), "preferences")
+    # AP-47: el onboard es el escritor masivo por antonomasia — cada sección
+    # que pobla dispara varias notas, y sin lote cada una regenera índice de
+    # sección, grafo y escaneo de secretos por su cuenta. Dentro del lote se
+    # apuntan y, al cerrar, cada sección se regenera una vez y el grafo
+    # recibe todas las notas en una pasada. `_update_indexes` sigue después:
+    # las estrategias pueden no escribir en una sección cuyo index.md igual
+    # hay que regenerar, y el lote solo repasa lo que escribió.
+    with escrituras_en_lote():
+        if "01" not in skip:
+            _record(
+                _onboard_01_projects(project, meta, history, phases, agent, dry_run),
+                "overview",
+            )
+        if "04" not in skip:
+            _record(
+                _onboard_04_sessions(project, phases, history, agent, dry_run), "sessions"
+            )
+        if "03" not in skip:
+            _record(
+                _onboard_03_decisions(project, history, project_path, agent, dry_run),
+                "decisions",
+            )
+        if "02" not in skip:
+            _record(
+                _onboard_02_observability(project, project_path, modules, agent, dry_run),
+                "observability",
+            )
+        if "05" not in skip:
+            _record(_onboard_05_patterns(project, modules, agent, dry_run), "patterns")
+        if "06" not in skip:
+            _record(
+                _onboard_06_diagrams(project, project_path, meta, modules, agent, dry_run),
+                "diagrams",
+            )
+        if "07" not in skip:
+            _record(_onboard_07_knowledge(project, meta, agent, dry_run), "knowledge")
+        if "08" not in skip:
+            _record(
+                _onboard_08_runbooks(project, meta, project_path, agent, dry_run),
+                "runbooks",
+            )
+        if "09" not in skip:
+            _record(_onboard_09_infrastructure(project, infra, agent, dry_run), "infra")
+        if "11" not in skip:
+            _record(_onboard_11_code(project, modules, language, agent, dry_run), "modules")
+        if "13" not in skip:
+            _record(_onboard_13_flows(project, project_path, agent, dry_run), "flows")
+        if "14" not in skip:
+            _record(_onboard_14_requirements(project, project_path, meta, agent, dry_run), "requirements")
+        if "15" not in skip:
+            _record(_onboard_15_tests(project, project_path, meta, agent, dry_run), "tests")
+        if "16" not in skip:
+            _record(
+                _onboard_16_governance(project, meta, infra, agent, dry_run), "governance"
+            )
+        if "17" not in skip:
+            _record(_onboard_17_preferences(project, meta, agent, dry_run), "preferences")
 
     # 5. Update indexes
     sections_to_index = [
