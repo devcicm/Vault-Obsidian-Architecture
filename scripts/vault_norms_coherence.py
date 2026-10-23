@@ -170,6 +170,7 @@ import vault_io
 import vault_norms_catalog
 import vault_subproceso
 from vault_errors import TOOL_TIMEOUT_SECONDS, emit_error, wrap_main
+from vault.kernel import procesos_git
 from vault_version import CURRENT_VERSION
 from vault_vocabulario import mapa
 

@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-67 más
-> las familias PAT, SP y CN. Por familia: AP 67, CN 4, PAT 6, SP 4.
-> Bilingual document. Full norm catalog: antipatterns AP-01..AP-67 plus the PAT,
-> SP and CN families. By family: AP 67, CN 4, PAT 6, SP 4.
+> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-68 más
+> las familias PAT, SP y CN. Por familia: AP 68, CN 4, PAT 6, SP 4.
+> Bilingual document. Full norm catalog: antipatterns AP-01..AP-68 plus the PAT,
+> SP and CN families. By family: AP 68, CN 4, PAT 6, SP 4.
 
 ---
 
 ## ES
 
-Total de normas registradas: 81 (AP 67, CN 4, PAT 6, SP 4)
+Total de normas registradas: 82 (AP 68, CN 4, PAT 6, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -793,6 +793,24 @@ El agente opera material que vive fuera del vault --el código del proyecto, sus
 
 **Prevención:** El proyecto se declara (`vault_project --add` y `--link`), y su material se documenta con las tools que dejan rastro: `vault_code_module` (nota de módulo con `source_file:`), `vault_test_save` (técnica de prueba), `vault_write` (concepto), `vault_move` (lo que se reubica, que deja `move-log.json`). El enlace va en los dos sentidos: la nota declara `source_file:` y el fichero lleva su `@vault:` -- `vault_code_sync --fix` inyecta la mitad que falta. Lo que entra al vault entra por una tool; lo que sale, con ella.
 
+### AP-68: El git que ejecuta el toolkit, sin dueño
+
+- **Severidad:** high
+- **Enforcement:** guard
+- **Detectado por:** vault_procesos_git
+
+Un proceso del toolkit lanza `git` sin que nadie decida qué puede lanzar. El síntoma no es el `git` en sí --leer el historial es legítimo y lo hacen las tools que contrastan contra él-- sino que **la frontera depende del criterio de quien escribió la línea**: cualquiera puede escribir `subprocess.run(["git", ...])` con un verbo mutador, y lo que evita el daño es el ojo de quien revisa, no una norma.
+
+La auditoría del 2026-10-23 sobre "¿ejecuta alguna tool git sin supervisión?" dio un veredicto tranquilizador y, aun así,.sin sustento: de **24 sitios** que levantaban git, doce eran lecturas reales y uno --el bootstrap de `vault_init`-- el único mutador, acotado a un vault recién creado, sin `push` ni identidad configurada. Todo era verdad, y todo estaba **solo en la inspección** de quien miró. Al día siguiente un `git clean -fdx` en una tool habría entrado sin que ninguna puerta se pusiera roja.
+
+Lo que lo hace caro no es el verbo: es que la propiedad "este repo no borra historia ajena" era un **saber de cabeza**, la forma más fácil de perder. Es AP-57 aplicado al repo contra sí mismo -- el criterio escrito trece veces y vigilado por nadie-- y por eso se enforza con un dueño, no con un recordatorio.
+
+**Prevención:** `vault_procesos_git --check --strict` recorre por AST `scripts/`, `cli/`, `vault/` y `mcp/` y publica toda llamada que levante git con el léxico `"git"` primero --literal, concatenado o por variable--, que tiene que ser cero. El runtime lo aplica `vault.kernel.procesos_git.ejecutar_git`, el dueño: rechaza verbo desconocido, verbo mutador sin motivo en `MUTADORES_AUTORIZADOS`, el uso mutador de un verbo ambiguo (`branch -D`, `tag <nombre>`, `config k v`, `stash apply`, `reflog expire`) y todo argv que no sea lista. Y `asegurar_hash` cierra la inyección de opción: un valor que empieza por `--`, nacido en un fichero, muere antes de llegar al argv.
+
+Se salda **moviendo la llamada al dueño**, nunca ampliando una lista. Si de verdad hace falta un mutador nuevo, se autoriza en `MUTADORES_AUTORIZADOS` con su motivo escrito, y el diff que lo añade es exactamente la revisión que el criterio no daba.
+
+Límites declarados: la puerta no ve un argv armado con `" ".join(...)` o con un f-string, ni un binario que lance git por su cuenta; los `tests/` quedan fuera del alcance **y por qué** -- un test necesita git crudo para fabricar el repositorio con el que mide, y medir una tool con su propio ejecutor sería certificarse a sí mismo (AP-44). El runtime, en cambio, no depende del análisis estático: aunque un sitio se escondiera del AST, su llamada seguiría teniendo que pasar por el dueño para ejecutarse.
+
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
 - **Severidad:** high
@@ -937,7 +955,7 @@ El transporte HTTP/SSE del servidor MCP acepta sesiones sin token, responde con 
 
 ## EN
 
-Total registered norms: 81 (AP 67, CN 4, PAT 6, SP 4)
+Total registered norms: 82 (AP 68, CN 4, PAT 6, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -1720,6 +1738,24 @@ Límites declarados: el detector no ve la repetición dinámica --reparsear lo m
 El agente opera material que vive fuera del vault --el código del proyecto, sus scripts de prueba, sus prompts, sus artefactos-- y el vault no tiene ninguna nota que lo apunte. El trabajo se pierde al cerrar la sesión: la memoria no sabe qué se tocó, ni qué se probó, ni qué se decidió, y el material sigue fuera sin que ninguna puerta lo advierta. Medido el 2026-10-21 en un vault real: se ejecutaron cinco scripts de prueba del TTS y se documentaron sus resultados en el vault; los scripts quedaron fuera, sin nota que los apuntara, y el proyecto estaba enlazado al vault con cero notas de código. El caso es también el del acomodo: lo que entra al vault tiene que entrar por las tools --que son las que dejan el registro-- y lo que queda fuera, enlazado.
 
 **Prevention:** El proyecto se declara (`vault_project --add` y `--link`), y su material se documenta con las tools que dejan rastro: `vault_code_module` (nota de módulo con `source_file:`), `vault_test_save` (técnica de prueba), `vault_write` (concepto), `vault_move` (lo que se reubica, que deja `move-log.json`). El enlace va en los dos sentidos: la nota declara `source_file:` y el fichero lleva su `@vault:` -- `vault_code_sync --fix` inyecta la mitad que falta. Lo que entra al vault entra por una tool; lo que sale, con ella.
+
+### AP-68: El git que ejecuta el toolkit, sin dueño
+
+- **Severity:** high
+- **Enforcement:** guard
+- **Detected by:** vault_procesos_git
+
+Un proceso del toolkit lanza `git` sin que nadie decida qué puede lanzar. El síntoma no es el `git` en sí --leer el historial es legítimo y lo hacen las tools que contrastan contra él-- sino que **la frontera depende del criterio de quien escribió la línea**: cualquiera puede escribir `subprocess.run(["git", ...])` con un verbo mutador, y lo que evita el daño es el ojo de quien revisa, no una norma.
+
+La auditoría del 2026-10-23 sobre "¿ejecuta alguna tool git sin supervisión?" dio un veredicto tranquilizador y, aun así,.sin sustento: de **24 sitios** que levantaban git, doce eran lecturas reales y uno --el bootstrap de `vault_init`-- el único mutador, acotado a un vault recién creado, sin `push` ni identidad configurada. Todo era verdad, y todo estaba **solo en la inspección** de quien miró. Al día siguiente un `git clean -fdx` en una tool habría entrado sin que ninguna puerta se pusiera roja.
+
+Lo que lo hace caro no es el verbo: es que la propiedad "este repo no borra historia ajena" era un **saber de cabeza**, la forma más fácil de perder. Es AP-57 aplicado al repo contra sí mismo -- el criterio escrito trece veces y vigilado por nadie-- y por eso se enforza con un dueño, no con un recordatorio.
+
+**Prevention:** `vault_procesos_git --check --strict` recorre por AST `scripts/`, `cli/`, `vault/` y `mcp/` y publica toda llamada que levante git con el léxico `"git"` primero --literal, concatenado o por variable--, que tiene que ser cero. El runtime lo aplica `vault.kernel.procesos_git.ejecutar_git`, el dueño: rechaza verbo desconocido, verbo mutador sin motivo en `MUTADORES_AUTORIZADOS`, el uso mutador de un verbo ambiguo (`branch -D`, `tag <nombre>`, `config k v`, `stash apply`, `reflog expire`) y todo argv que no sea lista. Y `asegurar_hash` cierra la inyección de opción: un valor que empieza por `--`, nacido en un fichero, muere antes de llegar al argv.
+
+Se salda **moviendo la llamada al dueño**, nunca ampliando una lista. Si de verdad hace falta un mutador nuevo, se autoriza en `MUTADORES_AUTORIZADOS` con su motivo escrito, y el diff que lo añade es exactamente la revisión que el criterio no daba.
+
+Límites declarados: la puerta no ve un argv armado con `" ".join(...)` o con un f-string, ni un binario que lance git por su cuenta; los `tests/` quedan fuera del alcance **y por qué** -- un test necesita git crudo para fabricar el repositorio con el que mide, y medir una tool con su propio ejecutor sería certificarse a sí mismo (AP-44). El runtime, en cambio, no depende del análisis estático: aunque un sitio se escondiera del AST, su llamada seguiría teniendo que pasar por el dueño para ejecutarse.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 

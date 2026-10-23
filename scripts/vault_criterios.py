@@ -346,6 +346,15 @@ FUERA_DE_FRONTERA = {
     # en rojo con `build/lib/vault_toolkit/mcp/*.mjs` (medido en v40.34).
     "build": "salida de python -m build: copias empaquetadas, no fuente",
     "dist": "wheels y sdist construidos: artefactos, no fuente",
+    # v41.19. QA local del agente de navegador (el MCP de Playwright deja aquí
+    # sus snapshots `.yml` y sus capturas en cada sesión). El escáner mira el
+    # disco, no lo que git ignora, así que estar en `.gitignore` no lo excluye:
+    # sin esta entrada, abrir el navegador ponía la puerta en rojo con seis
+    # `frontera_no_declarada` que no eran código de nadie (medido el 2026-10-23,
+    # dos rondas seguidas). La evidencia que sí sobrevive —las capturas de
+    # revisión— se copia a `.archify/capturas/`, que sí está declarado abajo.
+    ".playwright-mcp": "QA efímera del agente de navegador, fuera de git: no es código del toolkit",
+    ".archify": "mapas standalone y sus recibos: artefactos derivados, no fuente",
 }
 
 

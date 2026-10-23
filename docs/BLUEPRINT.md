@@ -60,7 +60,7 @@ regenera.*
 | **Consulta** (`consulta`) | 7 | 11 | 0 | base de datos; embeddings; servicio externo |
 | **Ciclo de vida** (`ciclo_de_vida`) | 3 | 10 | 0 | — |
 | **Durabilidad** (`durabilidad`) | 4 | 4 | 0 | escribir fuera de la raíz del vault (AP-36) |
-| **Meta-toolkit** (`meta_toolkit`) | 6 | 37 | 1 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
+| **Meta-toolkit** (`meta_toolkit`) | 6 | 38 | 1 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
 | **CLI** (`cli`) | 0 | 8 | 0 | decidir: traduce argumentos a llamadas y envelopes a salida; la decisión vive en la tool |
 
 **Puente de ADR-0002:** 2 módulos de `scripts/` no importan nada de `vault/<su contexto>/` (`vault_arch.modulos_sin_hogar`). La cifra solo encoge: un módulo nuevo sin hogar bloquea `vault_arch --check`. Importar del contexto es empezar a delegar, no haber migrado.

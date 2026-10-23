@@ -1,366 +1,367 @@
 {
-  "schemaVersion": 1,
-  "ok": true,
-  "command": "finalize",
-  "status": "pass",
-  "type": "architecture",
-  "quality": "showcase",
-  "specification": {
-    "path": "C:\\Users\\Carlos Ivan\\Documents\\GitHub\\Vault-Obsidian-Architecture\\.archify\\candidata-cruces.json",
-    "sha256": "377105f6b94ef7738d4343967e8bbbccafdff58cae744b5059572fa53085153a",
-    "bytes": 9470
+ "schemaVersion": 1,
+ "ok": true,
+ "command": "finalize",
+ "status": "pass",
+ "type": "architecture",
+ "quality": "showcase",
+ "specification": {
+  "path": ".\\.archify\\candidata-cruces.json",
+  "sha256": "377105f6b94ef7738d4343967e8bbbccafdff58cae744b5059572fa53085153a",
+  "bytes": 9470
+ },
+ "artifact": {
+  "path": ".\\.archify\\mapa-cruces.html",
+  "sha256": "6148cd7a999c2cb6e74861ffc529165ab6759e52b8be4cfa7fc46831239d01fb",
+  "bytes": 852998
+ },
+ "gates": {
+  "validate": "pass",
+  "deliver": "pass",
+  "check": "pass",
+  "browser-check": "pass"
+ },
+ "diagnostics": [],
+ "diagnosticSummary": {
+  "total": 0,
+  "shown": 0,
+  "truncated": false
+ },
+ "evidence": {
+  "receipt": ".\\.archify\\mapa-cruces.finalize.json",
+  "summaryReceipt": ".\\.archify\\mapa-cruces.finalize-summary.json",
+  "browserCheckReceipt": ".\\.archify\\mapa-cruces.browser-check.json"
+ },
+ "update": {
+  "status": "update_available",
+  "installedVersion": "3.1.0",
+  "availableVersion": "3.2.0",
+  "releaseNotes": "http.",
+  "severity": "normal",
+  "checkedAt": "2026-10-23T02:03:35.481Z",
+  "source": "cache",
+  "noticeRequired": true,
+  "noticeText": "Archify update: 3.1.0 → 3.2.0. A previous check at 2026-10-23T02:03:35.481Z found a newer release. Release notes: http.",
+  "eventKey": "archify@sha256:70e210265c59f24dcbdf2a502ff671104b5454e7ee7d3554aecd86bad32384f5"
+ },
+ "visualReview": "not-requested",
+ "durationMs": 4780,
+ "visualReviewRecommendation": {
+  "action": "inspect-route-readability",
+  "signals": {
+   "resolvedCrossovers": 25,
+   "routesOverSuggestedBends": 13
   },
-  "artifact": {
-    "path": "C:\\Users\\Carlos Ivan\\Documents\\GitHub\\Vault-Obsidian-Architecture\\.archify\\mapa-cruces.html",
-    "sha256": "6148cd7a999c2cb6e74861ffc529165ab6759e52b8be4cfa7fc46831239d01fb",
-    "bytes": 852998
+  "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
+  "affectedRoutes": {
+   "crossings": [
+    {
+     "left": {
+      "id": "x-g-a",
+      "from": "g",
+      "to": "a",
+      "label": "code_tag",
+      "collectionIndex": 1,
+      "artifactIndex": 2
+     },
+     "right": {
+      "id": "x-gov-a",
+      "from": "gov",
+      "to": "a",
+      "label": "voice: fuera de puerto",
+      "collectionIndex": 12,
+      "artifactIndex": 13
+     },
+     "point": [
+      713.9333333333333,
+      305
+     ],
+     "sharedNode": "a"
+    },
+    {
+     "left": {
+      "id": "x-g-a",
+      "from": "g",
+      "to": "a",
+      "label": "code_tag",
+      "collectionIndex": 1,
+      "artifactIndex": 2
+     },
+     "right": {
+      "id": "x-q-g",
+      "from": "q",
+      "to": "g",
+      "label": "1 cruce (subgrafo)",
+      "collectionIndex": 20,
+      "artifactIndex": 21
+     },
+     "point": [
+      636,
+      312
+     ],
+     "sharedNode": "g"
+    },
+    {
+     "left": {
+      "id": "x-a-idx",
+      "from": "a",
+      "to": "idx",
+      "label": "1 · 2 fuera de puerto (tags)",
+      "collectionIndex": 3,
+      "artifactIndex": 4
+     },
+     "right": {
+      "id": "x-cv-gov",
+      "from": "cv",
+      "to": "gov",
+      "label": "3 cruces (sanar + propagar)",
+      "collectionIndex": 16,
+      "artifactIndex": 17
+     },
+     "point": [
+      504,
+      448
+     ]
+    },
+    {
+     "left": {
+      "id": "x-a-idx",
+      "from": "a",
+      "to": "idx",
+      "label": "1 · 2 fuera de puerto (tags)",
+      "collectionIndex": 3,
+      "artifactIndex": 4
+     },
+     "right": {
+      "id": "x-cv-g",
+      "from": "cv",
+      "to": "g",
+      "label": "propagate→impact",
+      "collectionIndex": 17,
+      "artifactIndex": 18
+     },
+     "point": [
+      490,
+      448
+     ]
+    },
+    {
+     "left": {
+      "id": "x-a-idx",
+      "from": "a",
+      "to": "idx",
+      "label": "1 · 2 fuera de puerto (tags)",
+      "collectionIndex": 3,
+      "artifactIndex": 4
+     },
+     "right": {
+      "id": "x-cv-mt",
+      "from": "cv",
+      "to": "mt",
+      "label": "1 cruce (standard_upgrade)",
+      "collectionIndex": 18,
+      "artifactIndex": 19
+     },
+     "point": [
+      643.2727272727273,
+      502
+     ]
+    },
+    {
+     "left": {
+      "id": "x-a-idx",
+      "from": "a",
+      "to": "idx",
+      "label": "1 · 2 fuera de puerto (tags)",
+      "collectionIndex": 3,
+      "artifactIndex": 4
+     },
+     "right": {
+      "id": "x-q-g",
+      "from": "q",
+      "to": "g",
+      "label": "1 cruce (subgrafo)",
+      "collectionIndex": 20,
+      "artifactIndex": 21
+     },
+     "point": [
+      474,
+      323.15384615384613
+     ]
+    },
+    {
+     "left": {
+      "id": "x-a-idx",
+      "from": "a",
+      "to": "idx",
+      "label": "1 · 2 fuera de puerto (tags)",
+      "collectionIndex": 3,
+      "artifactIndex": 4
+     },
+     "right": {
+      "id": "x-a-mt",
+      "from": "a",
+      "to": "mt",
+      "label": "1 cruce (vault_voice)",
+      "collectionIndex": 21,
+      "artifactIndex": 22
+     },
+     "point": [
+      474,
+      416
+     ],
+     "sharedNode": "a"
+    },
+    {
+     "left": {
+      "id": "x-cv-idx",
+      "from": "cv",
+      "to": "idx",
+      "label": "6 cruces · 1 fuera de puerto",
+      "collectionIndex": 4,
+      "artifactIndex": 5
+     },
+     "right": {
+      "id": "x-mt-cv",
+      "from": "mt",
+      "to": "cv",
+      "label": "1 cruce (spec_memory)",
+      "collectionIndex": 13,
+      "artifactIndex": 14
+     },
+     "point": [
+      636,
+      541
+     ],
+     "sharedNode": "cv"
+    }
+   ],
+   "detours": [
+    {
+     "relationship": {
+      "id": "x-k-a",
+      "from": "k",
+      "to": "a",
+      "label": "1 cruce (vault_errors → autoria)",
+      "collectionIndex": 0,
+      "artifactIndex": 1
+     },
+     "bends": 3,
+     "stretch": 1.194
+    },
+    {
+     "relationship": {
+      "id": "x-g-a",
+      "from": "g",
+      "to": "a",
+      "label": "code_tag",
+      "collectionIndex": 1,
+      "artifactIndex": 2
+     },
+     "bends": 3,
+     "stretch": 1.29
+    },
+    {
+     "relationship": {
+      "id": "x-a-idx",
+      "from": "a",
+      "to": "idx",
+      "label": "1 · 2 fuera de puerto (tags)",
+      "collectionIndex": 3,
+      "artifactIndex": 4
+     },
+     "bends": 3,
+     "stretch": 1
+    },
+    {
+     "relationship": {
+      "id": "x-cv-idx",
+      "from": "cv",
+      "to": "idx",
+      "label": "6 cruces · 1 fuera de puerto",
+      "collectionIndex": 4,
+      "artifactIndex": 5
+     },
+     "bends": 3,
+     "stretch": 1.245
+    },
+    {
+     "relationship": {
+      "id": "x-gov-idx",
+      "from": "gov",
+      "to": "idx",
+      "label": "2 cruces (runtime + repos)",
+      "collectionIndex": 6,
+      "artifactIndex": 7
+     },
+     "bends": 3,
+     "stretch": 1
+    },
+    {
+     "relationship": {
+      "id": "x-g-gov",
+      "from": "g",
+      "to": "gov",
+      "label": "1 cruce (repos grafo)",
+      "collectionIndex": 8,
+      "artifactIndex": 9
+     },
+     "bends": 3,
+     "stretch": 1.189
+    },
+    {
+     "relationship": {
+      "id": "x-a-gov",
+      "from": "a",
+      "to": "gov",
+      "label": "1 cruce (change_log)",
+      "collectionIndex": 11,
+      "artifactIndex": 12
+     },
+     "bends": 3,
+     "stretch": 1.092
+    },
+    {
+     "relationship": {
+      "id": "x-gov-a",
+      "from": "gov",
+      "to": "a",
+      "label": "voice: fuera de puerto",
+      "collectionIndex": 12,
+      "artifactIndex": 13
+     },
+     "bends": 4,
+     "stretch": 1.193
+    }
+   ],
+   "truncated": true
   },
-  "gates": {
-    "validate": "pass",
-    "deliver": "pass",
-    "check": "pass",
-    "browser-check": "pass"
-  },
-  "diagnostics": [],
-  "diagnosticSummary": {
-    "total": 0,
-    "shown": 0,
-    "truncated": false
-  },
+  "hints": [
+   "g has 3 relationships facing its left side, which fits 2 ports: make that side at least 60px, or move some of those neighbours so they face another side of g.",
+   "a has 6 relationships facing its right side, which fits 3 ports: make that side at least 102px, or move some of those neighbours so they face another side of a.",
+   "cv has 4 relationships facing its right side, which fits 3 ports: make that side at least 74px, or move some of those neighbours so they face another side of cv.",
+   "q has 4 relationships facing its right side, which fits 3 ports: make that side at least 74px, or move some of those neighbours so they face another side of q.",
+   "gov has 5 relationships facing its left side, which fits 3 ports: make that side at least 88px, or move some of those neighbours so they face another side of gov.",
+   "mt has 6 relationships facing its left side, which fits 3 ports: make that side at least 102px, or move some of those neighbours so they face another side of mt.",
+   "g → a and gov → a cross next to a: move node g or gov so the two reach a from different sides (for example one level with it, one directly above or below it).",
+   "g → a and q → g cross next to g: move node a or q so the two reach g from different sides (for example one level with it, one directly above or below it)."
+  ],
+  "repair": "Trace these relationships at the desktop viewport. For Architecture, use references/architecture-layout-repair.md: reflow a blocked main path or tangled connected scene, and repair an isolated defect locally only when the surrounding composition is accepted. Preserve all semantic content and user-fixed geometry. Rerun finalize once after the edit."
+ },
+ "layoutReviewRecommendation": {
+  "action": "inspect-leading-space",
   "evidence": {
-    "receipt": "C:\\Users\\Carlos Ivan\\Documents\\GitHub\\Vault-Obsidian-Architecture\\.archify\\mapa-cruces.finalize.json",
-    "summaryReceipt": "C:\\Users\\Carlos Ivan\\Documents\\GitHub\\Vault-Obsidian-Architecture\\.archify\\mapa-cruces.finalize-summary.json",
-    "browserCheckReceipt": "C:\\Users\\Carlos Ivan\\Documents\\GitHub\\Vault-Obsidian-Architecture\\.archify\\mapa-cruces.browser-check.json"
+   "measured": true,
+   "emptyTopPx": 186,
+   "emptyTopRatio": 0.225,
+   "occupiedTop": 186,
+   "viewBoxTop": 0,
+   "canvasHeight": 828,
+   "typicalNodeHeight": 62,
+   "reviewSuggested": true
   },
-  "update": {
-    "status": "update_available",
-    "installedVersion": "3.1.0",
-    "availableVersion": "3.2.0",
-    "releaseNotes": "https://github.com/tt-a1i/archify/releases/tag/v3.2.0",
-    "severity": "normal",
-    "checkedAt": "2026-10-23T02:03:35.481Z",
-    "source": "cache",
-    "noticeRequired": true,
-    "noticeText": "Archify update: 3.1.0 → 3.2.0. A previous check at 2026-10-23T02:03:35.481Z found a newer release. Release notes: https://github.com/tt-a1i/archify/releases/tag/v3.2.0. The installed Skill has not changed; ask to snooze or ignore this reminder.",
-    "eventKey": "archify@sha256:70e210265c59f24dcbdf2a502ff671104b5454e7ee7d3554aecd86bad32384f5"
-  },
-  "visualReview": "not-requested",
-  "durationMs": 4780,
-  "visualReviewRecommendation": {
-    "action": "inspect-route-readability",
-    "signals": {
-      "resolvedCrossovers": 25,
-      "routesOverSuggestedBends": 13
-    },
-    "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
-    "affectedRoutes": {
-      "crossings": [
-        {
-          "left": {
-            "id": "x-g-a",
-            "from": "g",
-            "to": "a",
-            "label": "code_tag",
-            "collectionIndex": 1,
-            "artifactIndex": 2
-          },
-          "right": {
-            "id": "x-gov-a",
-            "from": "gov",
-            "to": "a",
-            "label": "voice: fuera de puerto",
-            "collectionIndex": 12,
-            "artifactIndex": 13
-          },
-          "point": [
-            713.9333333333333,
-            305
-          ],
-          "sharedNode": "a"
-        },
-        {
-          "left": {
-            "id": "x-g-a",
-            "from": "g",
-            "to": "a",
-            "label": "code_tag",
-            "collectionIndex": 1,
-            "artifactIndex": 2
-          },
-          "right": {
-            "id": "x-q-g",
-            "from": "q",
-            "to": "g",
-            "label": "1 cruce (subgrafo)",
-            "collectionIndex": 20,
-            "artifactIndex": 21
-          },
-          "point": [
-            636,
-            312
-          ],
-          "sharedNode": "g"
-        },
-        {
-          "left": {
-            "id": "x-a-idx",
-            "from": "a",
-            "to": "idx",
-            "label": "1 · 2 fuera de puerto (tags)",
-            "collectionIndex": 3,
-            "artifactIndex": 4
-          },
-          "right": {
-            "id": "x-cv-gov",
-            "from": "cv",
-            "to": "gov",
-            "label": "3 cruces (sanar + propagar)",
-            "collectionIndex": 16,
-            "artifactIndex": 17
-          },
-          "point": [
-            504,
-            448
-          ]
-        },
-        {
-          "left": {
-            "id": "x-a-idx",
-            "from": "a",
-            "to": "idx",
-            "label": "1 · 2 fuera de puerto (tags)",
-            "collectionIndex": 3,
-            "artifactIndex": 4
-          },
-          "right": {
-            "id": "x-cv-g",
-            "from": "cv",
-            "to": "g",
-            "label": "propagate→impact",
-            "collectionIndex": 17,
-            "artifactIndex": 18
-          },
-          "point": [
-            490,
-            448
-          ]
-        },
-        {
-          "left": {
-            "id": "x-a-idx",
-            "from": "a",
-            "to": "idx",
-            "label": "1 · 2 fuera de puerto (tags)",
-            "collectionIndex": 3,
-            "artifactIndex": 4
-          },
-          "right": {
-            "id": "x-cv-mt",
-            "from": "cv",
-            "to": "mt",
-            "label": "1 cruce (standard_upgrade)",
-            "collectionIndex": 18,
-            "artifactIndex": 19
-          },
-          "point": [
-            643.2727272727273,
-            502
-          ]
-        },
-        {
-          "left": {
-            "id": "x-a-idx",
-            "from": "a",
-            "to": "idx",
-            "label": "1 · 2 fuera de puerto (tags)",
-            "collectionIndex": 3,
-            "artifactIndex": 4
-          },
-          "right": {
-            "id": "x-q-g",
-            "from": "q",
-            "to": "g",
-            "label": "1 cruce (subgrafo)",
-            "collectionIndex": 20,
-            "artifactIndex": 21
-          },
-          "point": [
-            474,
-            323.15384615384613
-          ]
-        },
-        {
-          "left": {
-            "id": "x-a-idx",
-            "from": "a",
-            "to": "idx",
-            "label": "1 · 2 fuera de puerto (tags)",
-            "collectionIndex": 3,
-            "artifactIndex": 4
-          },
-          "right": {
-            "id": "x-a-mt",
-            "from": "a",
-            "to": "mt",
-            "label": "1 cruce (vault_voice)",
-            "collectionIndex": 21,
-            "artifactIndex": 22
-          },
-          "point": [
-            474,
-            416
-          ],
-          "sharedNode": "a"
-        },
-        {
-          "left": {
-            "id": "x-cv-idx",
-            "from": "cv",
-            "to": "idx",
-            "label": "6 cruces · 1 fuera de puerto",
-            "collectionIndex": 4,
-            "artifactIndex": 5
-          },
-          "right": {
-            "id": "x-mt-cv",
-            "from": "mt",
-            "to": "cv",
-            "label": "1 cruce (spec_memory)",
-            "collectionIndex": 13,
-            "artifactIndex": 14
-          },
-          "point": [
-            636,
-            541
-          ],
-          "sharedNode": "cv"
-        }
-      ],
-      "detours": [
-        {
-          "relationship": {
-            "id": "x-k-a",
-            "from": "k",
-            "to": "a",
-            "label": "1 cruce (vault_errors → autoria)",
-            "collectionIndex": 0,
-            "artifactIndex": 1
-          },
-          "bends": 3,
-          "stretch": 1.194
-        },
-        {
-          "relationship": {
-            "id": "x-g-a",
-            "from": "g",
-            "to": "a",
-            "label": "code_tag",
-            "collectionIndex": 1,
-            "artifactIndex": 2
-          },
-          "bends": 3,
-          "stretch": 1.29
-        },
-        {
-          "relationship": {
-            "id": "x-a-idx",
-            "from": "a",
-            "to": "idx",
-            "label": "1 · 2 fuera de puerto (tags)",
-            "collectionIndex": 3,
-            "artifactIndex": 4
-          },
-          "bends": 3,
-          "stretch": 1
-        },
-        {
-          "relationship": {
-            "id": "x-cv-idx",
-            "from": "cv",
-            "to": "idx",
-            "label": "6 cruces · 1 fuera de puerto",
-            "collectionIndex": 4,
-            "artifactIndex": 5
-          },
-          "bends": 3,
-          "stretch": 1.245
-        },
-        {
-          "relationship": {
-            "id": "x-gov-idx",
-            "from": "gov",
-            "to": "idx",
-            "label": "2 cruces (runtime + repos)",
-            "collectionIndex": 6,
-            "artifactIndex": 7
-          },
-          "bends": 3,
-          "stretch": 1
-        },
-        {
-          "relationship": {
-            "id": "x-g-gov",
-            "from": "g",
-            "to": "gov",
-            "label": "1 cruce (repos grafo)",
-            "collectionIndex": 8,
-            "artifactIndex": 9
-          },
-          "bends": 3,
-          "stretch": 1.189
-        },
-        {
-          "relationship": {
-            "id": "x-a-gov",
-            "from": "a",
-            "to": "gov",
-            "label": "1 cruce (change_log)",
-            "collectionIndex": 11,
-            "artifactIndex": 12
-          },
-          "bends": 3,
-          "stretch": 1.092
-        },
-        {
-          "relationship": {
-            "id": "x-gov-a",
-            "from": "gov",
-            "to": "a",
-            "label": "voice: fuera de puerto",
-            "collectionIndex": 12,
-            "artifactIndex": 13
-          },
-          "bends": 4,
-          "stretch": 1.193
-        }
-      ],
-      "truncated": true
-    },
-    "hints": [
-      "g has 3 relationships facing its left side, which fits 2 ports: make that side at least 60px, or move some of those neighbours so they face another side of g.",
-      "a has 6 relationships facing its right side, which fits 3 ports: make that side at least 102px, or move some of those neighbours so they face another side of a.",
-      "cv has 4 relationships facing its right side, which fits 3 ports: make that side at least 74px, or move some of those neighbours so they face another side of cv.",
-      "q has 4 relationships facing its right side, which fits 3 ports: make that side at least 74px, or move some of those neighbours so they face another side of q.",
-      "gov has 5 relationships facing its left side, which fits 3 ports: make that side at least 88px, or move some of those neighbours so they face another side of gov.",
-      "mt has 6 relationships facing its left side, which fits 3 ports: make that side at least 102px, or move some of those neighbours so they face another side of mt.",
-      "g → a and gov → a cross next to a: move node g or gov so the two reach a from different sides (for example one level with it, one directly above or below it).",
-      "g → a and q → g cross next to g: move node a or q so the two reach g from different sides (for example one level with it, one directly above or below it)."
-    ],
-    "repair": "Trace these relationships at the desktop viewport. For Architecture, use references/architecture-layout-repair.md: reflow a blocked main path or tangled connected scene, and repair an isolated defect locally only when the surrounding composition is accepted. Preserve all semantic content and user-fixed geometry. Rerun finalize once after the edit."
-  },
-  "layoutReviewRecommendation": {
-    "action": "inspect-leading-space",
-    "evidence": {
-      "measured": true,
-      "emptyTopPx": 186,
-      "emptyTopRatio": 0.225,
-      "occupiedTop": 186,
-      "viewBoxTop": 0,
-      "canvasHeight": 828,
-      "typicalNodeHeight": 62,
-      "reviewSuggested": true
-    },
-    "reason": "Measured content, including routes and labels, leaves a large empty area above the diagram. This is a composition suggestion, not a failed gate.",
-    "repair": "Check whether that leading space is intentional. If not, reposition the connected scene nearer the canvas origin while retaining room for its actual boundaries, labels and return routes. Preserve all meaning and user-fixed geometry, then rerun finalize. No screenshot is required."
-  }
+  "reason": "Measured content, including routes and labels, leaves a large empty area above the diagram. This is a composition suggestion, not a failed gate.",
+  "repair": "Check whether that leading space is intentional. If not, reposition the connected scene nearer the canvas origin while retaining room for its actual boundaries, labels and return routes. Preserve all meaning and user-fixed geometry, then rerun finalize. No screenshot is required."
+ },
+ "nota_recibos": "Las rutas de la máquina que aparecen en los recibos de archify se sanean a forma relativa antes de versionarse: un recibo publicado no declara el nombre ni el disco de quien lo generó (test_publicacion_limpia). El sha256 del HTML y de las capturas no cambia: esos ficheros no se tocan."
 }

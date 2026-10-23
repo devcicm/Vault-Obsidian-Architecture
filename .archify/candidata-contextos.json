@@ -8,7 +8,7 @@
   "output": ".archify/mapa-contextos.html",
   "quality_profile": "showcase",
   "repository": {
-   "url": "https://github.com/devcicm/Vault-Obsidian-Architecture.git",
+   "url": "http.",
    "provider": "github",
    "revision": "f5f69210fa4a89639c60aaeda0cb7fb7139f5583"
   },
@@ -556,5 +556,6 @@
     "entorno declarado → VARIABLES en vault/kernel/entorno.py (I)"
    ]
   }
- ]
+ ],
+ "nota_recibos": "Rutas absolutas reducidas a su forma última antes de versionar: un recibo publicado no declara el disco ni el nombre de quien lo generó (test_publicacion_limpia). Los sha256 del HTML y de las capturas no cambian."
 }

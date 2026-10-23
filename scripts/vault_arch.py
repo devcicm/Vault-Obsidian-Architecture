@@ -574,6 +574,13 @@ CONTEXTS: dict[str, dict] = {
             # cuenta habría sido AP-57 en la tool que nace para vigilar
             # justamente que nadie pague por lo que no consume.
             "vault_recursos",
+            # AP-68 (v41.19). Meta-toolkit por sujeto —mide este repo, no
+            # ninguna nota— y con la misma diferencia que `vault_produccion`:
+            # no mide el repo contra sus propios registros, sino que el proceso
+            # que el repo lanza a git pase por su dueño. No importa ninguna tool
+            # de escritura; consume `vault.kernel.procesos_git`, la hoja del
+            # núcleo que es el criterio, para no reimplementarlo (AP-57).
+            "vault_procesos_git",
             # v40.31. Meta-toolkit por sujeto —mide este repo, no ninguna nota—
             # pero con una diferencia respecto a todas sus vecinas: las demás
             # miden el repo contra sí mismo, y esta mide el repo contra lo que

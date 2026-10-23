@@ -2833,7 +2833,7 @@ python vault_procesos_git.py --check --strict           # exit 1 si hay alguno (
 | **24 sitios** | levantaban git sin dueño | doce lecturas reales y un mutador |
 | **1 mutador** | `vault_init`: `init -b main`, `add -A`, `commit` | sobre un vault recién creado; `vault_init` rechaza un vault existente no vacío, no configura `user.name` y nunca hace `push` |
 | **0** | `shell=True`, `--force`, `reflog apply`, `config` que escriba | en todo el repo |
-| **0** | tools de git en el catálogo MCP | el servidor lanza `python script.py --flag=value`, nunca git |
+| **0** | tools de git en el catálogo MCP | el servidor lanza el script del catálogo con sus flags declarados, nunca git |
 
 Todo correcto, y todo **solo en la inspección de quien miró**. Al día siguiente un `git clean -fdx` habría entrado sin que nada se pusiera rojo: la única defensa era acordarse de mirar el verbo —el criterio reimplementado por persona y distribuido por cada línea, que es AP-57 aplicado al repo contra sí mismo.
 
