@@ -12,7 +12,7 @@ Referencia exhaustiva de comandos: [`COMMANDS.md`](COMMANDS.md).
 
 ## Qué es esto
 
-El repo tiene ~165 scripts y 125 tools activas. Cada una es un ejecutable independiente
+El repo tiene ~166 scripts y 125 tools activas. Cada una es un ejecutable independiente
 con su propio `argparse`, su propio contrato y sus propios side-effects. Eso funciona
 bien para invocación puntual y mal para tres cosas:
 

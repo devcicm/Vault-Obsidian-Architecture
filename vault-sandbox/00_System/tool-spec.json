@@ -4750,6 +4750,11 @@
         "variable"
       ],
       "reason": "No es tool del catalogo: es el registro canonico de las variables de entorno (AP-05) y su CLI publica presupuesto y help. Su consumidor es quien configura la shell, no un vault."
+    },
+    "vault_release": {
+      "status": "internal",
+      "group": "meta",
+      "reason": "es un invariante del repo (fabrica del bump de version), no una tool de vault: misma clase que vault_doc_counts"
     }
   },
   "_counts": {

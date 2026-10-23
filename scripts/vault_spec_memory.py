@@ -38,6 +38,14 @@ from vault_io import resolve_tool_spec  # noqa: E402
 import vault_grafo_import  # noqa: E402
 PYTHON = sys.executable
 
+# AP-58 (v41.17): DECLARED_RETURNS y el derivador del manifiesto viven
+# en la hoja vault_spec_data; el import diferido a vault_manifest era
+# el otro lado del ciclo AP-58 y aquí no pinta nada.
+from vault_spec_data import (  # noqa: E402
+    DECLARED_RETURNS, _build_manifest, _extract_args, _extract_error_codes,
+    _FUND_BY_TOOL, _read_source, DQ_METADATA,
+)
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Declared returns per tool — leídos desde tool-spec.json (spec-driven).
 # Fallback al dict hardcodeado si el archivo de spec no existe aún.
@@ -95,124 +103,6 @@ def _standard_version_file() -> Path:
     return RepositorioCicloDeVida(construir()).fichero_version
 
 
-def _load_declared_returns() -> Dict[str, List[str]]:
-    """Carga declared_returns desde tool-spec.json. Fallback a hardcoded si no existe."""
-    spec_file = resolve_tool_spec()
-    if spec_file is not None:
-        try:
-            spec = json.loads(spec_file.read_text(encoding="utf-8"))
-            return {
-                name: entry.get("declared_returns", [])
-                for name, entry in spec.get("tools", {}).items()
-            }
-        except Exception:
-            pass
-    # Fallback hardcodeado (pre-spec-driven)
-    return {
-        "vault_write":            ["path", "id"],
-        "vault_read":             ["path", "body"],
-        "vault_search":           ["results"],
-        "vault_list":             ["notes"],
-        "vault_append":           ["path"],
-        "vault_diff":             ["path", "changed"],
-        "vault_merge":            ["action"],
-        "vault_log_error":        [],
-        "vault_pattern_save":     ["path"],
-        "vault_pattern_list":     ["patterns"],
-        "vault_diagram_save":     ["path"],
-        "vault_relation_add":     ["path"],
-        "vault_knowledge_save":   ["path"],
-        "vault_knowledge_get":    ["results", "query", "total"],
-        "vault_audit":            ["healthScore"],
-        "vault_validate":         [],
-        "vault_graph":            [],
-        "vault_runbook_save":     ["path"],
-        "vault_runbook_log":      [],
-        "vault_infra_save":       ["path"],
-        "vault_infra_map":        ["path", "nodesTotal"],
-        "vault_env_save":         ["path"],
-        "vault_migrate_docs":     [],
-        "vault_migrate_rollback": [],
-        "vault_timeline":         ["query"],
-        "vault_project_status":   ["path"],
-        "vault_project_overview": ["path"],
-        "vault_code_module":      ["path"],
-        "vault_code_relation":    [],
-        "vault_code_map":         ["path"],
-        "vault_code_query":       [],
-        "vault_backup":           ["name", "path"],
-        "vault_backup_list":      ["total"],
-        "vault_restore":          [],
-        "vault_security_scan":    ["riskLevel"],
-        "vault_section_index":    ["path"],
-        "vault_master_index":     ["path"],
-        "vault_reindex":          ["indexed"],
-        "vault_bibliography_save": ["path"],
-        "vault_drift_detect":     ["mode"],
-        "vault_flow_save":        ["path"],
-        "vault_requirement_save": ["path"],
-        "vault_test_save":        ["path"],
-        "vault_ai_decision":      ["path"],
-        "vault_standard_upgrade": [],
-        "vault_change_log":       ["id"],
-        "vault_quality_check":    [],
-        "vault_fundamentals":     [],
-        "vault_impact":           [],
-        "vault_propagate":        [],
-        "vault_tokens":           [],
-        "vault_token_counter":    [],
-        "vault_token_service":    [],
-    }
-
-
-DECLARED_RETURNS: Dict[str, List[str]] = _load_declared_returns()
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Introspection helpers
-# ──────────────────────────────────────────────────────────────────────────────
-
-def _extract_args(source: str):
-    """Los argumentos del script en `(obligatorios, opcionales)`, leídos por
-    `flags_cli`. Un posicional cuenta como obligatorio."""
-    required, optional = [], []
-    for d in flags_cli.declaraciones(source):
-        flag = d.nombres[0]
-        name = flag.lstrip("-").replace("-", "_") if flag.startswith("-") else flag
-        tipo = d.kw.get("type")
-        if isinstance(tipo, ast.Name):
-            arg_type = tipo.id
-        elif d.accion in ("store_true", "store_false"):
-            arg_type = "bool"
-        else:
-            arg_type = "str"
-        ayuda = d.constante("help")
-        entry = {"name": name, "flag": flag, "type": arg_type,
-                 "help": ayuda[:120] if isinstance(ayuda, str) else ""}
-        (required if d.obligatorio or d.posicional else optional).append(entry)
-    return required, optional
-
-
-def _extract_error_codes(source: str) -> List[str]:
-    """Grep source for declared error_code strings."""
-    codes: Set[str] = set()
-    for m in re.finditer(r'"error_code"\s*:\s*"([^"]+)"', source):
-        codes.add(m.group(1))
-    for m in re.finditer(r"'error_code'\s*:\s*'([^']+)'", source):
-        codes.add(m.group(1))
-    # Also catch error_code as variable assignment: error_code = "..."
-    for m in re.finditer(r'error_code\s*=\s*["\']([^"\']+)["\']', source):
-        codes.add(m.group(1))
-    return sorted(codes)
-
-
-def _read_source(name: str) -> Optional[str]:
-    # Deuda #12: `scripts/<name>.py` puede ser un alias sin código; la fuente
-    # es la del dueño (AP-44). Sin alias, `fuente_de` devuelve `scripts/<name>.py`.
-    p = vault_grafo_import.fuente_de(name)
-    try:
-        return p.read_text(encoding="utf-8", errors="replace") if p.exists() else None
-    except Exception:
-        return None
 
 
 def _get_description(source: str) -> str:
@@ -361,7 +251,6 @@ def _run_validation() -> Dict[str, Any]:
 # ──────────────────────────────────────────────────────────────────────────────
 
 def build_spec_memory(validate: bool = False) -> Dict[str, Any]:
-    from vault_manifest import _build_manifest, DQ_METADATA, _FUND_BY_TOOL  # type: ignore
     from vault_fundamentals_catalog import FUNDAMENTALS  # type: ignore
 
     manifest_entries = _build_manifest()

@@ -417,14 +417,14 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 |---|---|---|---|---|
 | `scripts/arch-baseline.json` | cruces entre contextos | 37 | ≤ 30 para 2027-03-31 · cada 90 d · meta_toolkit — vault_arch → **en_plazo** | 37 → 37 → 37 → 37 → 37 → 37 (plana, Δ+0) |
 | `scripts/arch-baseline.json` | cruces fuera de puerto | 8 | ≤ 4 para 2027-03-31 · cada 90 d · meta_toolkit — vault_arch → **en_plazo** | 8 → 8 → 8 → 8 → 8 → 8 (plana, Δ+0) |
-| `scripts/blame-baseline.json` | AP-51 | 30 | ≤ 20 para 2027-03-31 · cada 90 d · meta_toolkit — vault_blame_audit → **en_plazo** | 31 → 30 → 30 → 30 → 30 → 30 (encoge, Δ-56) |
+| `scripts/blame-baseline.json` | AP-51 | 30 | ≤ 20 para 2027-03-31 · cada 90 d · meta_toolkit — vault_blame_audit → **en_plazo** | 30 → 30 → 30 → 30 → 30 → 30 (encoge, Δ-56) |
 | `scripts/error-contract-baseline.json` | AP-52 | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_error_contract → **cumple** | 110 → 110 → 0 → 9 → 0 → 0 (encoge, Δ-158) |
 | `scripts/noop-baseline.json` | AP-37 | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_noop_audit → **cumple** | 0 → 0 → 0 → 0 (plana, Δ+0) |
 | `scripts/smoke-baseline.json` | AP-42 | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_smoke → **cumple** | 0 → 0 (plana, Δ+0) |
 | `scripts/toolkit-audit-baseline.json` | AP-42 — pero tool por tool: el ejemplo debe ejercitar la función declarada | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_toolkit_audit → **cumple** | 0 → 19 → 1 → 0 (plana, Δ+0) |
 | `scripts/blueprint-baseline.json` | capa 4 — norma sin puerta ni test | 0 | ≤ 4 para 2027-03-31 · cada 90 d · meta_toolkit — vault_blueprint → **cumple** | 13 → 8 → 8 → 3 → 1 → 0 (encoge, Δ-16) |
 | `scripts/criterios-baseline.json` | AP-57 | 2 | ≤ 6 para 2027-03-31 · cada 90 d · meta_toolkit — vault_criterios → **cumple** | 9 → 9 → 9 → 9 → 7 → 2 (encoge, Δ-8) |
-| `scripts/ciclos-baseline.json` | AP-58 — ciclo esquivado con import diferido | 5 | ≤ 2 para 2027-03-31 · cada 90 d · meta_toolkit — vault_ciclos → **en_plazo** | 30 → 15 → 14 → 7 → 5 → 5 (encoge, Δ-25) |
+| `scripts/ciclos-baseline.json` | AP-58 — ciclo esquivado con import diferido | 3 | ≤ 2 para 2027-03-31 · cada 90 d · meta_toolkit — vault_ciclos → **en_plazo** | 15 → 14 → 7 → 5 → 5 → 3 (encoge, Δ-27) |
 | `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 4 | ≤ 2 para 2027-03-31 · cada 90 d · meta_toolkit — vault_kernel → **en_plazo** | 5 → 6 → 6 → 5 → 4 → 4 (encoge, Δ-1) |
 | `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_norms_distincion → **cumple** | 57 → 0 → 0 → 0 (encoge, Δ-57) |
 | `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_norms_coherence → **cumple** | 47 → 0 → 0 → 0 (encoge, Δ-47) |
