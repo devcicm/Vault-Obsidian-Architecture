@@ -59,7 +59,8 @@
   },
   "system_writes": [],
   "bridge_modules": [
-    "vault_grafo_import"
+    "vault_grafo_import",
+    "vault_release"
   ],
   "objetivos_por_clave": {
     "crossings": {

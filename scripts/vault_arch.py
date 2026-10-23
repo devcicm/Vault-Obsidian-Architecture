@@ -525,6 +525,14 @@ CONTEXTS: dict[str, dict] = {
             "vault_doc_counts", "vault_doc_sync", "vault_doc_staleness", "vault_noop_audit",
             "vault_blame_audit", "vault_error_contract", "vault_foreign_check",
             "vault_gate", "vault_arch", "vault_fix_all",
+            # Hoja de datos del manifiesto (AP-58, v41.17): dueña de lo que
+            # `vault_manifest` y `vault_spec_memory` compartían. Su sujeto es el
+            # catálogo, no un vault — meta-toolkit por lo mismo que los dos.
+            "vault_spec_data",
+            # Fábrica de release (bump único de versión). Su sujeto es este
+            # repo; no toca sección de contenido de vault alguno, y el único
+            # escritor que delega (`tool-spec.json`) es `vault_manifest`.
+            "vault_release",
             # Mide el changelog del manifiesto contra git (AP-53). Es
             # meta-toolkit por el mismo motivo que `vault_doc_counts`: su
             # sujeto es este repo, no un vault.
@@ -1061,6 +1069,17 @@ ANCLA_DEL_PUENTE: dict[str, str] = {
         "dos formas —por el checkout y por el paquete instalado— en el sitio "
         "que existe para que nadie más lo derive. Lo fija "
         "`tests/test_puente_sin_hogar.py::test_el_ancla_del_puente_no_se_muda`."
+    ),
+    # Fábrica de release (v41.17). No es tool de catálogo ni viaja en la
+    # wheel: bump único de los ficheros de versión de ESTE repo. No tiene
+    # dónde ir en `vault/` ni lo tendrá — escribir version.py/banner/
+    # pyproject es un trabajo del checkout, no una capacidad de memoria.
+    "vault_release": (
+        "Fábrica de release: bump único de los siete ficheros de versión de "
+        "este repo. No es tool de catálogo (no cruza el puente porque no "
+        "viaja en la wheel) y no tiene duño en vault/: su sujeto es el "
+        "checkout, no una capacidad de memoria. Ancla declarada con motivo, "
+        "no deuda congelada."
     ),
 }
 

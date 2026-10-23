@@ -606,14 +606,25 @@ def _mover_nota(
         "dry_run": dry_run,
     }
 
+    change_log = None
     if not dry_run:
         _safe("move-log", lambda: append_move_log(move_record))
+        # SP-01: la fila `moved` del change-log legible (`00_System/change-log.md`
+        # y `.change-log.json`). `vault_write`, `vault_delete`, `vault_undo` y el
+        # append dejan la suya — hasta v41.17 el movimiento solo quedaba en el
+        # move-log y en `.tool-trace.json`, y la acción `moved` existía en el
+        # contrato del log pero nadie la emitía (medido contra un vault ajeno
+        # al estándar, 2026-10-22).
+        hecho = _safe("change-log", lambda: _entrada_change_log(from_path, to_path))
+        if hecho.get("id"):
+            change_log = {"id": hecho["id"], "action": "moved"}
 
     return {
         "ok": True,
         **write_report(),
         "dry_run": dry_run,
         "moved": f"{from_path} -> {to_path}",
+        "change_log": change_log,
         "reclassified": reclasificado,
         "links_updated": links_updated,
         "files_checked": files_checked,
@@ -628,6 +639,22 @@ def _mover_nota(
         "next": "vault_reindex --graph" if degraded else None,
         "record": move_record,
     }
+
+
+def _entrada_change_log(from_path: str, to_path: str) -> Dict[str, Any]:
+    """La constancia de SP-01 para un movimiento, por el dueño del log.
+
+    Import diferido (AP-58): arista unidireccional — `vault_change_log` no
+    importa `vault_move`, este lo consulta a él."""
+    from vault_change_log import vault_change_log_add
+
+    return vault_change_log_add(
+        action="moved",
+        path=from_path,
+        new_path=to_path,
+        reason="moved by vault_move",
+        agent="vault_move",
+    )
 
 
 def move_folder(

@@ -39,8 +39,21 @@ from vault_secret_scan import redact_secrets, scan_content  # noqa: E402
 #: mecanismo. Al separarlo, `vault_io` dejó de tener ninguna escritura cruda —y
 #: eso es una mejora, no una pérdida de cobertura: el fichero que concentra la
 #: política ya no necesita excepción.
+#:
+#: v41.17: `vault_release` se suma. El bump escribe los cinco ficheros
+#: versionados del repo (manifiesto, README, pyproject, cli/README,
+#: version.py) — artefactos del repo, fuera de todo vault por definición, que
+#: es exactamente la clase de `vault_mcp_catalog`. La ruta canónica no sirve:
+#: `sanitize_content` pliega em-dash→`--` y corrompería el manifiesto en cada
+#: bump (el texto bumpiado es una copia leída de los propios ficheros, no
+#: entrada de usuario), y la cascada (`_auto_grafo` solo mira el sufijo
+#: `.md`) metería manifiesto y README como nodos del grafo del vault activo.
+#: El `newline=""` declarado en `_escribir` es el mismo control LF que el
+#: kernel fija en `_escribir_temporal`: sin él, Windows traducía cada `\n` a
+#: `\r\n` y el piso 3.9 no admite `write_text(newline=)`.
 _ESCRITURA_FUERA_DEL_VAULT = {
     "vault_mcp_catalog.py": "tools-catalog.json es del repo",
+    "vault_release.py": "los ficheros que bumpia son del repo",
 }
 
 TOKEN_FALSO = "ghp_" + "a" * 36

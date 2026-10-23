@@ -716,7 +716,7 @@ def test_lote_d_el_catalogo_de_normas_migra_y_el_puente_solo_guarda_el_ancla():
     `vault/kernel/norms_catalog.py`. `RAIZ_NORMAS` salía del abuelo de su
     `__file__`, que desde `vault/kernel/` es `vault/`: el catálogo habría
     buscado sus paquetes en `vault/normas/`. Sale del directorio del programa.
-    Tras este lote el puente solo lista el ancla declarada."""
+    Tras este lote el puente solo lista las anclas declaradas."""
     import importlib
     import json
 
@@ -728,7 +728,7 @@ def test_lote_d_el_catalogo_de_normas_migra_y_el_puente_solo_guarda_el_ancla():
     assert vault_norms_catalog is importlib.import_module("vault.kernel.norms_catalog")
     assert gi.fuente_de(modulo) == (ROOT / dueno).resolve()
     puente = json.loads((ROOT / "scripts" / "arch-baseline.json").read_text(encoding="utf-8"))
-    assert puente["bridge_modules"] == ["vault_grafo_import"]
+    assert puente["bridge_modules"] == sorted(vault_arch.ANCLA_DEL_PUENTE)
     esperado = gi.importaciones(ROOT / dueno, gi.MODULOS_LOCALES) - {modulo}
     assert gi.completo()[modulo] == esperado
     assert "__file__" not in (ROOT / dueno).read_text(encoding="utf-8")
@@ -738,9 +738,10 @@ def test_lote_d_el_catalogo_de_normas_migra_y_el_puente_solo_guarda_el_ancla():
 def test_el_contrato_del_puente_solo_admite_el_ancla():
     """Contrato del puente (ADR-0002, 2026-10-16): en la wheel, todo módulo de
     `scripts/` es alias de su dueño, tiene hogar en `vault/<contexto>/` o es un
-    ancla declarada con su motivo. Hoy el único sin hogar es el ancla."""
+    ancla declarada con su motivo. Hoy las anclas son `vault_grafo_import`
+    (el fichero de la wheel) y `vault_release` (no viaja)."""
     r = vault_arch.check()
-    assert r["bridge_anchor"] == ["vault_grafo_import"]
+    assert r["bridge_anchor"] == sorted(vault_arch.ANCLA_DEL_PUENTE)
     assert r["bridge_contract_violations"] == []
     assert r["stale_bridge_anchor"] == []
     assert set(vault_arch.modulos_sin_hogar()) == set(vault_arch.ANCLA_DEL_PUENTE)
@@ -773,5 +774,5 @@ def test_un_ancla_que_encuentra_hogar_bloquea_la_puerta(monkeypatch):
     conciencia, con la fecha que la cerró, no se deja en el registro."""
     monkeypatch.setattr(vault_arch, "modulos_sin_hogar", lambda: [])
     r = vault_arch.check()
-    assert r["stale_bridge_anchor"] == ["vault_grafo_import"]
+    assert r["stale_bridge_anchor"] == sorted(vault_arch.ANCLA_DEL_PUENTE)
     assert r["ok"] is False

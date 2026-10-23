@@ -92,22 +92,20 @@
       "visto_en": "vault_sanacion.py:196"
     },
     {
+      "firma": "vault_spec_data.py::_load_declared_returns::a36080b0",
+      "visto_en": "vault_spec_data.py:547"
+    },
+    {
+      "firma": "vault_spec_data.py::_read_source::ada2d5bf",
+      "visto_en": "vault_spec_data.py:662"
+    },
+    {
       "firma": "vault_spec_generate_catalog.py::_extract_dict_from_source::f1f60e49",
       "visto_en": "vault_spec_generate_catalog.py:70"
     },
     {
       "firma": "vault_spec_memory.py::_get_description::a36080b0",
-      "visto_en": "vault_spec_memory.py:228"
-    },
-    {
-      "firma": "vault_spec_data.py::_load_declared_returns::a36080b0",
-      "visto_en": "vault_spec_data.py:108",
-      "nota_v41_17": "el sitio vault_spec_memory.py -> vault_spec_data.py: mismo cuerpo (mismo hash), la extracción de vault_spec_data (AP-58) movió el fichero, no la deuda"
-    },
-    {
-      "firma": "vault_spec_data.py::_read_source::ada2d5bf",
-      "visto_en": "vault_spec_data.py:214",
-      "nota_v41_17": "el sitio vault_spec_memory.py -> vault_spec_data.py: mismo cuerpo (mismo hash), la extracción de vault_spec_data (AP-58) movió el fichero, no la deuda"
+      "visto_en": "vault_spec_memory.py:118"
     },
     {
       "firma": "vault_standard_upgrade.py::_live_identity::f1f60e49",

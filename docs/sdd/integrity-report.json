@@ -2,8 +2,8 @@
   "ok": true,
   "tool": "vault_sdd_init",
   "skill_version": "1.0",
-  "vault_version": "v41.16",
-  "generated_at": "2026-10-22T05:06:47.000Z",
+  "vault_version": "v41.17",
+  "generated_at": "2026-10-23T00:02:11.000Z",
   "generated_files": [
     "README.md",
     "00-principles.md",
@@ -38,7 +38,7 @@
   ],
   "missing_files": [],
   "drift": {
-    "version": "v41.16",
+    "version": "v41.17",
     "missing_norms": [],
     "warnings": []
   },

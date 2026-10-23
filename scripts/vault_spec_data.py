@@ -614,7 +614,14 @@ def _extract_args(source: str):
     """Los argumentos del script en `(obligatorios, opcionales)`, leídos por
     `flags_cli`. Un posicional cuenta como obligatorio."""
     required, optional = [], []
-    import flags_cli  # AP-58: arista unidireccional, benigna
+    # AP-58: arista unidireccional, benigna. El dueño vive en el paquete
+    # `vault`, y en una corrida como script (o un test que traiga solo
+    # `scripts/` al path) la raíz del repo no está: se garantiza aquí, antes
+    # del import diferido.
+    _raiz_repo = Path(__file__).resolve().parent.parent
+    if str(_raiz_repo) not in sys.path:
+        sys.path.insert(0, str(_raiz_repo))
+    from vault.meta_toolkit import flags_cli  # noqa: E402  (AP-58: diferido)
     for d in flags_cli.declaraciones(source):
         flag = d.nombres[0]
         name = flag.lstrip("-").replace("-", "_") if flag.startswith("-") else flag

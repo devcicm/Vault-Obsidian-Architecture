@@ -177,8 +177,10 @@ def test_se_niega_sin_ancala_de_fila(repo_bump):
     manifiesto = repo_bump / "vault-obsidian-architecture.md"
     texto = manifiesto.read_text(encoding="utf-8")
     linea_vieja = [l for l in texto.splitlines() if f"| {vieja} |" in l][0]
-    manifiesto.write_text(
-        texto.replace(linea_vieja, ""), encoding="utf-8", newline="")
+    # `open(newline=)` y no `write_text(newline=)`: el argumento es 3.10+ en
+    # pathlib y el piso declarado es 3.9 (test_piso_python).
+    with manifiesto.open("w", encoding="utf-8", newline="") as f:
+        f.write(texto.replace(linea_vieja, ""))
     r = subprocess.run(
         [sys.executable, str(ROOT / "scripts" / "vault_release.py"),
          "--nueva-version", nueva, "--nota", "nada",

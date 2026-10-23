@@ -79,7 +79,10 @@ def _envelope(**datos) -> str:
 
 
 def _escribir(ruta: Path, texto: str) -> None:
-    ruta.write_text(texto, encoding="utf-8", newline="")
+    # `write_text` no acepta `newline=` hasta 3.10 (el piso es 3.9): el
+    # traductor de líneas queda tal cual, sin \n→\r\n. `open` sí lo acepta.
+    with ruta.open("w", encoding="utf-8", newline="") as f:
+        f.write(texto)
 
 
 def _protegidos(raiz: Path) -> list:
@@ -236,6 +239,7 @@ def main() -> int:
             env={**os.environ, "VAULT_ROOT": str(sandbox),
                  "VAULT_STRICT_ROOT": "1",
                  "VAULT_MASTER": str(sandbox / ".casa-temp")},
+            encoding="utf-8", errors="replace",
             cwd=str(raiz))
     else:
         print(_envelope(ok=True, action="bump", escrito=True, version=nueva,
