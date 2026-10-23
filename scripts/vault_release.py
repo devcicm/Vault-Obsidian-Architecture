@@ -39,6 +39,7 @@ import os
 import re
 import subprocess
 import sys
+from typing import Any, Dict
 from datetime import date
 from pathlib import Path
 
@@ -145,6 +146,50 @@ def _editar_manifiesto(ruta: Path, nueva: str, vieja: str, fecha: str,
     _escribir(ruta, src)
 
 
+#: Cuántos días puede tener el último contraste contra un vault ajeno para que
+#: el bump lo considere vigente (regla 7, v41.20). Con cero, cada bump exigiría
+#: uno nuevo —disciplina pura—; con un plazo, la evidencia de consumidor deja de
+#: depender de que alguien la pida, que es como estaba.
+DIAS_DE_CONTRASTE = 60
+
+
+def _contraste_vigente(raiz: Path, hoy: date) -> Dict[str, Any]:
+    """¿Hay un contraste reciente contra un vault ajeno? (regla 7)
+
+    El repo entero se mide contra `vault-sandbox/`, que él mismo genera: no
+    puede exhibir los defectos de un vault ajeno. Los tres que han salido —
+    siete títulos de frontmatter compuestos sin escapar, el criterio de
+    documentación comparando el nombre exacto, dos conflictos AP-05 entre notas
+    del mismo servidor— aparecieron midiendo en solo lectura contra material de
+    otra persona, y ninguna puerta de aquí los habría visto nunca.
+    """
+    recibo = raiz / "docs" / "contrastes" / "ultimo-contraste.json"
+    if not recibo.is_file():
+        return {"vigente": False, "motivo": "no hay ningún contraste registrado",
+                "dias": None, "max_dias": DIAS_DE_CONTRASTE}
+    try:
+        datos = json.loads(recibo.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        return {"vigente": False, "motivo": f"el recibo no se lee: {exc}",
+                "dias": None, "max_dias": DIAS_DE_CONTRASTE}
+    try:
+        fecha = date.fromisoformat(str(datos.get("fecha", "")))
+    except ValueError:
+        return {"vigente": False, "motivo": "el recibo no trae una fecha legible",
+                "dias": None, "max_dias": DIAS_DE_CONTRASTE}
+    dias = (hoy - fecha).days
+    vigente = 0 <= dias <= DIAS_DE_CONTRASTE
+    return {
+        "vigente": vigente,
+        "fecha": fecha.isoformat(),
+        "dias": dias,
+        "max_dias": DIAS_DE_CONTRASTE,
+        "vault_medido": datos.get("vault_medido"),
+        "motivo": "" if vigente else
+                  f"el contraste es de hace {dias} días y el máximo son {DIAS_DE_CONTRASTE}",
+    }
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description="vault_release — el bump de versión del estándar en un "
@@ -161,6 +206,12 @@ def main() -> int:
     ap.add_argument("--raiz",
                     help="Raíz del repo (para los tests); la autodetección "
                          "en su ausencia")
+    ap.add_argument("--declarar-contraste-pendiente",
+                    dest="declarar_contraste",
+                    action="store_true",
+                    help="Deja pasar el bump sin contraste de vault ajeno y lo "
+                         "declara en el changelog (el hueco queda escrito, que "
+                         "es lo que lo hace revisable)")
     args = ap.parse_args()
 
     if not args.nueva_version or not args.nota:
@@ -197,6 +248,27 @@ def main() -> int:
                     + (sucio.stdout or "").strip()
                     + "\ncommit o stash antes — el bump no tapa trabajo "
                       "ajeno"))
+        return 1
+
+    # Regla 7: este repo se mide contra vault-sandbox/, que él mismo genera, y
+    # por eso no puede exhibir los defectos de un vault ajeno. Los tres que han
+    # salido salieron de medir en solo lectura contra material de otra persona.
+    # El bump se para a preguntar si ese contraste está vigente; la salida es
+    # dos, y las dos están escritas: medir, o declarar el hueco.
+    contraste = _contraste_vigente(raiz, date.fromisoformat(fecha))
+    if not contraste["vigente"] and not args.declarar_contraste:
+        print(_envelope(
+            ok=False, action="bump", escrito=False,
+            detalle=(
+                "regla 7: no hay un contraste reciente contra un vault ajeno "
+                f"({contraste['motivo']}). Este repo solo se mide contra "
+                "vault-sandbox/, que él mismo genera, y no puede exhibir lo "
+                "que solo aparece en material de otra persona.\n\n"
+                "  python scripts/vault_foreign_check.py --root <vault ajeno> "
+                "--registrar-contraste\n"
+                "  python scripts/vault_release.py ... "
+                "--declarar-contraste-pendiente  (deja el hueco escrito)"),
+            contraste=contraste))
         return 1
 
     # 1. el número, en su dueño

@@ -26,6 +26,8 @@
 
 | Métrica | Qué mide | Origen | Mejora si | Objetivo | Fuente |
 |---|---|---|---|---|---|
+| `contexto_agente_s` | Coste de la cadena de consulta de contexto que paga el agente: vault_query_parse + vault_context_pack sobre un vault real. | observada | baja | ≤ 12 s para 2026-12-31 · cada 30 d · meta_toolkit — vault_metricas | `vault_metricas --registrar-contexto` (mide la ronda; no acepta un número a mano: una métrica de producto que se rellena a mano no mide el producto) |
+| `skip_path_escritura_s` | Coste de una corrida de onboarding que no escribe nada: el caso que se paga por convención en cada reintento. | observada | baja | ≤ 2 s para 2026-12-31 · cada 30 d · meta_toolkit — vault_metricas | `vault_metricas --registrar-skip` (doble pasada real sobre un proyecto demo) |
 | `promesas_descubiertas` | Promesas a quien instala (versión, dependencia, plataforma, red) sin ejecutor. | calculada | baja | ≤ 0 promesas para 2027-01-14 · cada 30 d · meta_toolkit — vault_metricas | vault_produccion.check()['descubiertas'] |
 | `smoke_fallos` | Tools del catálogo que fallan el smoke. | observada | baja | ≤ 0 tools para 2027-01-14 · cada 30 d · meta_toolkit — vault_metricas | `failing` de `python scripts/vault_smoke.py` (--registrar-smoke) |
 | `banco_tareas_fallidas` | Tareas del banco del agente (orientar, escribir, recuperarse…) que no salen ok. | observada | baja | ≤ 0 tareas para 2027-01-14 · cada 30 d · meta_toolkit — vault_metricas | informe JSON de `tests/banco_agente.py` (--registrar-banco) |
@@ -111,3 +113,13 @@
 | 2026-10-18 | `9e2ea6c` | `suite_fallos` | 0 | ronda r59 (suite completa en serie) |
 | 2026-10-18 | `9e2ea6c` | `suite_tests` | 5863 | ronda r59 (suite completa en serie) |
 | 2026-10-18 | `9e2ea6c` | `suite_duracion_s` | 3516.01 | ronda r59 (suite completa en serie) |
+| 2026-10-23 | `0b6c042` | `contexto_agente_s` | 0.452 | medición real: parse 0.185s + pack 0.267s sobre vault temporal |
+| 2026-10-23 | `0b6c042` | `skip_path_escritura_s` | 4.569 | medición real: onboarding doble pasada sobre proyecto demo con git (2.ª pasada = 5 skipped, 0 escrituras) |
+| 2026-10-23 | `0b6c042` | `contexto_agente_s` | 0.587 | medición real: parse 0.27s + pack 0.317s sobre vault temporal |
+| 2026-10-23 | `0b6c042` | `contexto_agente_s` | 0.461 | medición real: parse 0.186s + pack 0.275s sobre vault temporal |
+| 2026-10-23 | `0b6c042` | `contexto_agente_s` | 0.454 | medición real: parse 0.177s + pack 0.277s sobre vault temporal |
+| 2026-10-23 | `0b6c042` | `contexto_agente_s` | 0.484 | medición real: parse 0.215s + pack 0.269s sobre vault temporal |
+| 2026-10-23 | `0b6c042` | `contexto_agente_s` | 0.739 | medición real: parse 0.283s + pack 0.456s sobre vault temporal |
+| 2026-10-23 | `0b6c042` | `skip_path_escritura_s` | 4.438 | medición real: onboarding doble pasada sobre proyecto demo con git (2.ª pasada = 5 skipped, 0 escrituras) |
+| 2026-10-23 | `0b6c042` | `contexto_agente_s` | 0.454 | medición real: parse 0.185s + pack 0.269s sobre vault temporal |
+| 2026-10-23 | `0b6c042` | `contexto_agente_s` | 0.709 | medición real: parse 0.297s + pack 0.412s sobre vault temporal |

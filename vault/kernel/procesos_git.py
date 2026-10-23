@@ -226,6 +226,7 @@ def ejecutar_git(repositorio: Any, args: list[str], *, binario: bool = False,
             "diff, nunca un argumento que llega de fuera.")
 
     cwd = None if repositorio is None else str(repositorio)
+    kwargs.setdefault("check", False)
     kwargs.pop("text", None)
     kwargs.pop("universal_newlines", None)
     if not binario:

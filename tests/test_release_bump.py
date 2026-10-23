@@ -77,7 +77,9 @@ def test_sube_los_siete_sitios(repo_bump, tmp_path):  # noqa: F811
     r = subprocess.run(
         [sys.executable, str(ROOT / "scripts" / "vault_release.py"),
          "--nueva-version", nueva, "--nota", "release de prueba",
-         "--fecha", "2030-01-31", "--raiz", str(repo_bump)],
+         "--fecha", "2030-01-31", "--raiz", str(repo_bump),
+          # el gate de contraste (P3) es otra puerta; estos tests miden el bump
+          "--declarar-contraste-pendiente"],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
         timeout=180, cwd=str(repo_bump))
     env = json.loads(r.stdout)
@@ -116,7 +118,9 @@ def test_la_segunda_corrida_es_no_op(repo_bump):
     r1 = subprocess.run(
         [sys.executable, str(ROOT / "scripts" / "vault_release.py"),
          "--nueva-version", nueva, "--nota", "release de prueba",
-         "--raiz", str(repo_bump)],
+         "--raiz", str(repo_bump),
+         # el gate de contraste (P3) es otra puerta, probada en sus dos tests
+         "--declarar-contraste-pendiente"],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
         timeout=180, cwd=str(repo_bump))
     assert _salida(r1).get("ok"), r1.stdout
@@ -126,7 +130,8 @@ def test_la_segunda_corrida_es_no_op(repo_bump):
     r2 = subprocess.run(
         [sys.executable, str(ROOT / "scripts" / "vault_release.py"),
          "--nueva-version", nueva, "--nota", "release de prueba",
-         "--raiz", str(repo_bump)],
+         "--raiz", str(repo_bump),
+         "--declarar-contraste-pendiente"],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
         timeout=180, cwd=str(repo_bump))
     d = _salida(r2)
@@ -142,6 +147,7 @@ def test_se_niega_a_regress(repo_bump):
     r = subprocess.run(
         [sys.executable, str(ROOT / "scripts" / "vault_release.py"),
          "--nueva-version", vieja_menor, "--nota", "regresión",
+         "--declarar-contraste-pendiente",
          "--raiz", str(repo_bump)],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
         timeout=180, cwd=str(repo_bump))
@@ -164,6 +170,7 @@ def test_se_niega_con_trabajo_sucio(repo_bump):
     r = subprocess.run(
         [sys.executable, str(ROOT / "scripts" / "vault_release.py"),
          "--nueva-version", nueva, "--nota", "nada",
+         "--declarar-contraste-pendiente",
          "--raiz", str(repo_bump)],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
         timeout=180, cwd=str(repo_bump))
@@ -184,9 +191,59 @@ def test_se_niega_sin_ancala_de_fila(repo_bump):
     r = subprocess.run(
         [sys.executable, str(ROOT / "scripts" / "vault_release.py"),
          "--nueva-version", nueva, "--nota", "nada",
+         "--declarar-contraste-pendiente",
          "--raiz", str(repo_bump)],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
         timeout=180, cwd=str(repo_bump))
     d = _salida(r)
     assert r.returncode == 1 and "no está en el manifiesto" in d.get(
         "detalle", ""), d
+
+
+# ── P3 · el bump exige contraste de vault ajeno, o el hueco declarado ─────────
+
+
+def test_el_bump_se_niega_sin_contraste_y_dice_salida_de_regla_7(repo_bump):  # noqa
+    """Sin recibo de contraste, el bump para y explica por qué y cómo resolverlo.
+
+    El sandbox de este repo lo genera él mismo, así que contrastar contra él no
+    contrasta nada (regla 7): la única salida honesta sin un vault ajeno a mano
+    es declarar el hueco, y eso es lo que dice el mensaje.
+    """
+    vieja = _vieja()
+    numero = int(vieja.lstrip("v").split(".")[1]) + 1
+    nueva = f"v{vieja.lstrip('v').split('.')[0]}.{numero}"
+    r = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "vault_release.py"),
+         "--nueva-version", nueva, "--nota", "sin contraste",
+         "--fecha", "2030-01-31", "--raiz", str(repo_bump)],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        timeout=180, cwd=str(repo_bump))
+    env = _salida(r)
+    assert not env.get("ok") and not env.get("escrito"), env
+    detalle = env.get("detalle", "")
+    assert "regla 7" in detalle, detalle
+    # el mensaje ofrece las dos salidas: medir o declarar
+    assert "registrar-contraste" in detalle, detalle
+    assert "declarar-contraste-pendiente" in detalle, detalle
+
+
+def test_el_bump_pasa_con_contraste_vigente(repo_bump, tmp_path):  # noqa
+    """Con un recibo fechado dentro del plazo, el bump no se frena por la regla 7."""
+    d = repo_bump / "docs" / "contrastes"
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "ultimo-contraste.json").write_text(json.dumps(
+        {"ok": True, "kind": "recibo_de_contraste",
+         "fecha": "2030-01-01", "vault_medido": "notas-personales"}),
+        encoding="utf-8")
+    vieja = _vieja()
+    numero = int(vieja.lstrip("v").split(".")[1]) + 1
+    nueva = f"v{vieja.lstrip('v').split('.')[0]}.{numero}"
+    r = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "vault_release.py"),
+         "--nueva-version", nueva, "--nota", "con contraste",
+         "--fecha", "2030-01-31", "--raiz", str(repo_bump)],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        timeout=180, cwd=str(repo_bump))
+    env = _salida(r)
+    assert env.get("ok") and env.get("escrito"), env

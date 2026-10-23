@@ -53,8 +53,11 @@ import argparse
 import json
 import re
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+from vault_version import CURRENT_VERSION
 
 from vault_regex import RE_WIKILINK_DESTINO  # dueño único del patrón (AP-50)
 from vault_audit_catalog import es_documentacion_del_estandar  # dueño único del criterio
@@ -398,6 +401,10 @@ material que el estandar genera no contrasta nada.
     parser.add_argument("--report", help="Escribe el informe en este fichero (fuera del vault)")
     parser.add_argument("--self-test", action="store_true", dest="self_test",
                         help="Verifica las negativas de la tool, sin vault ajeno")
+    parser.add_argument("--registrar-contraste", action="store_true",
+                        dest="registrar_contraste",
+                        help="Sella el contraste como recibo con fecha en el repo "
+                             "(lo que exige vault_release antes de un bump)")
     args = parser.parse_args()
 
     if args.self_test:
@@ -428,6 +435,32 @@ material que el estandar genera no contrasta nada.
             "sospechosa del criterio que del dato (AP-44)."
         ),
     }
+
+    if args.registrar_contraste:
+        # Un contraste sin fecha es un recuerdo, y los recuerdos no se pueden
+        # vencer. El recibo es lo que `vault_release` mira para decidir si la
+        # evidencia de consumidor está vigente (regla 7, v41.20).
+        destino_recibo = (Path(__file__).resolve().parent.parent
+                          / "docs" / "contrastes" / "ultimo-contraste.json")
+        destino_recibo.parent.mkdir(parents=True, exist_ok=True)
+        recibo = {
+            "ok": True,
+            "tool": "vault_foreign_check",
+            "kind": "recibo_de_contraste",
+            "fecha": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            "version_estandar": CURRENT_VERSION,
+            "vault_medido": destino.name,
+            "nota": (
+                "Contraste contra un vault ajeno en solo lectura. Guarda el "
+                "nombre del vault, nunca su ruta: un recibo versionado no "
+                "publica el disco de quien lo midió."
+            ),
+            "resultado": resultado,
+        }
+        destino_recibo.write_text(
+            json.dumps(recibo, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8")
+        resultado["recibo_de_contraste"] = str(destino_recibo)
 
     if args.report:
         salida = Path(args.report).expanduser().resolve()

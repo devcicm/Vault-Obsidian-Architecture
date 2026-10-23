@@ -44,6 +44,17 @@ de CI, un comando que ya no está. No comprueba que el ejecutor *pase* —eso es
 trabajo de la CI y de la suite—: comprueba que **exista**, que es la condición
 que faltaba y que nadie miraba.
 
+`AFIRMADAS` es la segunda mitad del mismo registro y mide lo otro: **propiedades
+que el estándar afirma sobre sí mismo**, no promesas a quien lo instala. La
+diferencia no es de estilo, es de fallo: una promesa sin ejecutor rompe a
+alguien de fuera; una propiedad afirmada sin máquina devuelve un cero que se
+lee como limpio — el patrón `alcance declarado > alcance ejercido` de arriba,
+que es como el repo declaraba cero ciclos mientras 92 imports diferidos los
+fabrican, y como durante una tarde entera se creyó que el git que
+lanzan las tools no podía borrar historia. Ese caso ya tiene puerta (AP-68,
+v41.19), pero la pregunta que dejó de hacerse —«qué más afirmamos sin
+comprobar?»— es la que este registro vuelve rutinaria.
+
 ## Qué NO demuestra el verde
 
 Verde aquí significa que toda promesa listada tiene ejecutor, y que las que no lo
@@ -689,8 +700,256 @@ PREGUNTAS: List[Dict[str, Any]] = [
 ]
 
 
+def _puerta_existe(script: str, puerta: str) -> bool:
+    """¿Existe el script de esa puerta y la puerta está en el registro?
+
+    Se **lee** `scripts/vault_gate.py` en vez de importarlo, y el motivo es el
+    mismo que hace hoja a esta tool: importarla arrastraría su fan-out para
+    leer una lista. La debilidad se declara —un id de puerta escrito en un
+    comentario contaría como existente— y es aceptable porque lo que se
+    comprueba es que la propiedad tiene una puerta nombrada, no que la puerta
+    pase: eso es trabajo de la ronda de cierre.
+    """
+    if not (RAIZ / "scripts" / script).is_file():
+        return False
+    texto = (RAIZ / "scripts" / "vault_gate.py").read_text(encoding="utf-8")
+    return f'"id": "{puerta}"' in texto
+
+
+def _afirmada_git() -> bool:
+    return _puerta_existe("vault_procesos_git.py", "procesos_git")
+
+
+def _afirmada_catalogo() -> bool:
+    return _puerta_existe("vault_mcp_catalog.py", "catalogo")
+
+
+def _afirmada_contratos() -> bool:
+    return _puerta_existe("vault_mcp_catalog.py", "contratos")
+
+
+def _afirmada_historial() -> bool:
+    return _puerta_existe("vault_changelog_check.py", "changelog")
+
+
+def _afirmada_normas() -> bool:
+    return _puerta_existe("vault_norms.py", "framework")
+
+
+def _afirmada_plano() -> bool:
+    return _puerta_existe("vault_blueprint.py", "blueprint")
+
+
+def _afirmada_ciclos() -> bool:
+    return _puerta_existe("vault_ciclos.py", "ciclos")
+
+
+def _afirmada_criterios() -> bool:
+    return _puerta_existe("vault_criterios.py", "criterios")
+
+
+def _afirmada_kernel() -> bool:
+    return _puerta_existe("vault_kernel.py", "kernel")
+
+
+def _afirmada_noop() -> bool:
+    return _puerta_existe("vault_noop_audit.py", "noop")
+
+
+def _afirmada_errores() -> bool:
+    return _puerta_existe("vault_error_contract.py", "contrato_error")
+
+
+def _afirmada_campos() -> bool:
+    return _puerta_existe("vault_spec_catalog_check.py", "campos")
+
+
+#: La segunda mitad de PREGUNTAS: lo que el estándar **afirma sobre sí
+#: mismo**. La primera mitad son promesas al consumidor; esta son
+#: propiedades del repo cuya verdad depende de una máquina. Se separan porque
+#: fallan distinto: una promesa sin ejecutor rompe a quien instala, y una
+#: propiedad afirmada sin máquina devuelve un cero que se lee como limpio.
+#:
+#: Nace del 2026-10-23, cuando la pregunta «¿ejecuta alguna tool git sin
+#: supervisión?» encontró 24 sitios de git sin dueño: la respuesta era que
+#: ninguno escribía historia, y **no había nada que lo comprobara**. La
+#: propiedad «este repo no borra historia ajena» era un saber de cabeza, la
+#: forma más fácil de perder. Lo que se registra aquí no es el caso de git —
+#: ese ya tiene puerta— sino la clase: toda propiedad afirmada tiene una
+#: puerta nombrada, y las que no la tienen lo dicen con su motivo escrito.
+AFIRMADAS: List[Dict[str, Any]] = [
+    {
+        "id": "afirmada_git_pasa_por_su_dueno",
+        "afirmacion": "Ninguna tool ni módulo lanza git por su cuenta.",
+        "por_que": (
+            "Lo vino a cuento de AP-68: 24 sitios lo hacían y el veredicto de "
+            "que eran todos lecturas correctas vivía solo en la inspección de "
+            "quien lo miró. Una propiedad que se sostiene en el criterio de "
+            "quien lee el diff no es una propiedad: es una costumbre."
+        ),
+        "ejerce": _afirmada_git,
+        "quien": "vault_procesos_git --check (puerta procesos_git, AP-68)",
+        "estado": "con_puerta",
+    },
+    {
+        "id": "afirmada_catalogo_no_divergente",
+        "afirmacion": "El catálogo Python y el JSON que consume el servidor MCP no divergen.",
+        "por_que": "Un MCP que sirve un contrato viejo es un fallo silencioso: nada de lo que hace el cliente se parece a lo que el repo declara.",
+        "ejerce": _afirmada_catalogo,
+        "quien": "vault_mcp_catalog --check (puerta catalogo)",
+        "estado": "con_puerta",
+    },
+    {
+        "id": "afirmada_toda_tool_tiene_contrato",
+        "afirmacion": "Toda tool del catálogo tiene entrada en tool-spec.json.",
+        "por_que": "Un contrato ausente es una tool cuyo envelope nadie ha mirado; es la forma que toma AP-48 antes de ser un bug.",
+        "ejerce": _afirmada_contratos,
+        "quien": "vault_mcp_catalog --check-contracts (puerta contratos)",
+        "estado": "con_puerta",
+    },
+    {
+        "id": "afirmada_historial_contra_git",
+        "afirmacion": "El historial que el manifiesto afirma es el que git tiene.",
+        "por_que": "Un hash escrito a mano es una afirmación sin fuente, y en un estándar cuya venta es la trazabilidad es la afirmación que más caro sale falsa.",
+        "ejerce": _afirmada_historial,
+        "quien": "vault_changelog_check (puerta changelog, AP-53)",
+        "estado": "con_puerta",
+    },
+    {
+        "id": "afirmada_toda_norma_tiene_seccion",
+        "afirmacion": "Toda norma catalogada tiene sección propia en el manifiesto.",
+        "por_que": "Una norma que solo existe en el catálogo no está publicada; quien la necesita no la encuentra.",
+        "ejerce": _afirmada_normas,
+        "quien": "vault_norms --check-framework (puerta framework)",
+        "estado": "con_puerta",
+    },
+    {
+        "id": "afirmada_plano_no_envejece",
+        "afirmacion": "El plano de docs/BLUEPRINT.md no diverge de los registros que ata.",
+        "por_que": "Un plano que se aparta del registro pasa a ser la segunda fuente de verdad, que es exactamente lo que el estándar dice de sí mismo en AP-05.",
+        "ejerce": _afirmada_plano,
+        "quien": "vault_blueprint --check (puerta blueprint)",
+        "estado": "con_puerta",
+    },
+    {
+        "id": "afirmada_sin_ciclos_nuevos",
+        "afirmacion": "Ningún módulo nuevo esquiva un ciclo con un import diferido.",
+        "por_que": "Este repo declaraba cero ciclos y el cero lo fabricaban 92 imports dentro de funciones: la afirmación era verdad solo si mirabas el nivel superior.",
+        "ejerce": _afirmada_ciclos,
+        "quien": "vault_ciclos --check (puerta ciclos, AP-58)",
+        "estado": "con_puerta",
+    },
+    {
+        "id": "afirmada_criterio_con_dueno",
+        "afirmacion": "Ningún criterio se reimplementa en el consumidor sin importar o leer a su dueño.",
+        "por_que": "AP-57 bajó de siete copias a dos porque alguien las midió; sin puerta, la tercera copia habría sido cuestión de tiempo y nadie lo habría visto.",
+        "ejerce": _afirmada_criterios,
+        "quien": "vault_criterios --check (puerta criterios, AP-57)",
+        "estado": "con_puerta",
+    },
+    {
+        "id": "afirmada_el_nucleo_lo_parece",
+        "afirmacion": "La lista declarada del núcleo no contradice a la forma que el grafo deja ver.",
+        "por_que": "Un núcleo que no lo parece se convierte en el sitio por el que todo entra, y eso se paga en cada cambio de todo lo demás.",
+        "ejerce": _afirmada_kernel,
+        "quien": "vault_kernel --check (puerta kernel, AP-59)",
+        "estado": "con_puerta",
+    },
+    {
+        "id": "afirmada_trabajo_real_escribio_algo",
+        "afirmacion": "Ninguna tool con efectos de borde devuelve ok:true sin indicador de trabajo.",
+        "por_que": "Un ok:true que no escribió nada es indistinguible del que sí, y el consumidor no tiene forma de saber cuál recibió.",
+        "ejerce": _afirmada_noop,
+        "quien": "vault_noop_audit --check --ejecutado (puerta noop, AP-37)",
+        "estado": "con_puerta",
+    },
+    {
+        "id": "afirmada_errores_tienen_contrato",
+        "afirmacion": "Ningún envelope de error se emite fuera del catálogo.",
+        "por_que": "Un código de error inventado obliga al consumidor a adivinar la recuperación, que es justo el dato que la máquina necesita para reintentar bien.",
+        "ejerce": _afirmada_errores,
+        "quien": "vault_error_contract --check (puerta contrato_error, AP-52)",
+        "estado": "con_puerta",
+    },
+    {
+        "id": "afirmada_los_campos_no_desaparecen",
+        "afirmacion": "Ningún campo estable del contrato de nota desaparece sin quedar anotado.",
+        "por_que": "Es la promesa que se le hace a los repos consumidores del toolkit: si leen un campo, ese campo sigue ahí o está anotado que no.",
+        "ejerce": _afirmada_campos,
+        "quien": "vault_spec_catalog_check --check-fields (puerta campos)",
+        "estado": "con_puerta",
+    },
+    # ── Las descubiertas: afirmadas y sin máquina, con el motivo escrito ──────
+    {
+        "id": "afirmada_funciona_en_un_vault_de_otra_persona",
+        "afirmacion": "El toolkit funciona sobre un vault real que no generó este repo.",
+        "por_que": (
+            "`vault-sandbox/` lo genera este repo y comparte sus supuestos, así "
+            "que no puede exhibir los defectos de otro: los tres que han "
+            "salido —siete títulos de frontmatter compuestos sin escapar, el "
+            "criterio de documentación que comparaba el nombre exacto, dos "
+            "conflictos AP-05 entre notas del mismo servidor— salieron "
+            "midiendo en solo lectura contra un vault consumidor."
+        ),
+        "ejerce": lambda: False,
+        "quien": "nadie, todavía",
+        "estado": "descubierta",
+        "motivo": (
+            "`vault_foreign_check --root <ajeno>` existe y funciona, pero "
+            "llamarlo depende de que alguien tenga a mano un vault ajeno: no "
+            "hay ninguna puerta que lo exija ni una cadencia que lo venza. "
+            "Es el hueco más caro de esta lista porque es el único que puede "
+            "encontrar defectos que ninguna puerta de este repo puede ver. "
+            "Saldarlo: que `vault_release` exija un contraste reciente (v41.20)."
+        ),
+    },
+    {
+        "id": "afirmada_el_agente_recuerda_lo_que_opero",
+        "afirmacion": "La memoria del agente conserva lo que el agente operó, no solo lo que escribió en el vault.",
+        "por_que": (
+            "El servicio promete memoria documental persistente; lo que la "
+            "gobierna es lo que pasó por una tool. El trabajo que ocurre fuera "
+            "del vault —un script del proyecto, un prompt, un artefacto— deja "
+            "de existir al cerrar la sesión si no hay nota que lo apunte."
+        ),
+        "ejerce": lambda: False,
+        "quien": "nadie, todavía",
+        "estado": "descubierta",
+        "motivo": (
+            "AP-67 no puede llamar sobre el vault: `vault_code_sync` compara hashes y "
+            "ficheros, y en un vault recién onboardado no hay todavía nada que "
+            "sobre. No hay forma decidible de saber si la sesión dejó rastro "
+            "sin mirar el vault entero, y esa es la razón por la que se "
+            "declara en vez de fingir que se mide."
+        ),
+    },
+    {
+        "id": "afirmada_el_agente_no_paga_por_leer",
+        "afirmacion": "Consultar la memoria cuesta poco para quien la consulta.",
+        "por_que": (
+            "El servicio existe para dar a un agente memoria; si leer cuesta "
+            "segundos y escribir cuesta segundos, el agente deja de usar la "
+            "memoria, que es la única forma de que esto falle sin que nada se "
+            "rompa."
+        ),
+        "ejerce": lambda: False,
+        "quien": "nadie, todavía",
+        "estado": "descubierta",
+        "motivo": (
+            "Medido pero no vigilado: el skip-path del onboard paga ~7 s por "
+            "no escribir nada (v41.19), y la cadena "
+            "`vault_query_parse` → `vault_context_pack` no tiene métrica. "
+            "Este repo mide su propio coste —puertas, suite, baselines— y no "
+            "el de su consumidor, que es el único coste que le importa a "
+            "quien lo usa. Pendiente de métrica con dueño y fecha."
+        ),
+    },
+]
+
+
 def medir() -> Dict[str, Any]:
-    """Evalúa cada promesa. El predicado se llama AHORA, nunca al importar."""
+    """Evalúa cada promesa y cada propiedad afirmada. Los predicados se llaman
+    AHORA, nunca al importar."""
     filas = []
     for p in PREGUNTAS:
         try:
@@ -708,7 +967,41 @@ def medir() -> Dict[str, Any]:
             **({"hueco_conocido": p["hueco_conocido"]} if p.get("hueco_conocido") else {}),
             **({"motivo": p["motivo"]} if p.get("motivo") else {}),
         })
-    return {"filas": filas}
+
+    # La segunda mitad: propiedades afirmadas. Una propiedad `con_puerta` que
+    # ha perdido su puerta es DEUDA NUEVA (no hay baseline: no hay hoy ninguna
+    # con puerta perdida, y una que la pierda se arregla, no se congela). Una
+    # `descubierta` publica su motivo y NO es fallo: declarar el hueco cuesta
+    # menos que esconderlo, que es la única forma de que este registro sirva.
+    afirmadas = []
+    for a in AFIRMADAS:
+        try:
+            con_puerta = bool(a["ejerce"]())
+        except (OSError, ValueError, KeyError):
+            con_puerta = False
+        descubierta = a["estado"] == "descubierta"
+        afirmadas.append({
+            "id": a["id"],
+            "afirmacion": a["afirmacion"],
+            "estado": a["estado"],
+            "con_puerta": con_puerta,
+            "quien": a["quien"],
+            **({"por_que": a["por_que"]} if a.get("por_que") else {}),
+            **({"motivo": a["motivo"]} if a.get("motivo") else {}),
+        })
+    perdidas = [a["id"] for a in afirmadas
+                if a["estado"] == "con_puerta" and not a["con_puerta"]]
+    huecos = [a["id"] for a in afirmadas if a["estado"] == "descubierta"]
+
+    return {
+        "filas": filas,
+        "afirmadas": afirmadas,
+        "afirmadas_total": len(afirmadas),
+        "afirmadas_con_puerta": len(afirmadas) - len(huecos),
+        "afirmadas_descubiertas": huecos,
+        # deuda nueva = una propiedad que decía tener puerta y ya no la tiene
+        "afirmadas_sin_puerta": perdidas,
+    }
 
 
 def check() -> Dict[str, Any]:
@@ -722,8 +1015,21 @@ def check() -> Dict[str, Any]:
         if f["estado"] == "descubierta" and not f.get("motivo")
     ]
     desconocidos = [f["id"] for f in m["filas"] if f["estado"] not in ESTADOS]
+    # La segunda mitad: una propiedad afirmada que dijo tener puerta y ya no la
+    # tiene es rojo —deuda nueva, sin baseline— y una descubierta sin motivo
+    # escrito también, porque el motivo es lo que la hace barata.
+    afirmadas_sin_motivo = [
+        a["id"] for a in m["afirmadas"]
+        if a["estado"] == "descubierta" and not a.get("motivo")
+    ]
+    afirmadas_desconocidas = [
+        a["id"] for a in m["afirmadas"]
+        if a["estado"] not in ("con_puerta", "descubierta")
+    ]
     return {
-        "ok": not rotas and not sin_motivo and not desconocidos,
+        "ok": (not rotas and not sin_motivo and not desconocidos
+               and not m["afirmadas_sin_puerta"] and not afirmadas_sin_motivo
+               and not afirmadas_desconocidas),
         "tool": "vault_produccion",
         "action": "check",
         "promesas": len(m["filas"]),
@@ -735,11 +1041,21 @@ def check() -> Dict[str, Any]:
         "promesas_sin_ejecutor": rotas,
         "descubiertas_sin_motivo": sin_motivo,
         "estados_desconocidos": desconocidos,
+        "afirmadas": m["afirmadas_total"],
+        "afirmadas_con_puerta": m["afirmadas_con_puerta"],
+        "afirmadas_descubiertas": m["afirmadas_descubiertas"],
+        "afirmadas_sin_puerta": m["afirmadas_sin_puerta"],
+        "afirmadas_descubiertas_sin_motivo": afirmadas_sin_motivo,
+        "afirmadas_estados_desconocidos": afirmadas_desconocidas,
         "filas": m["filas"],
+        "afirmadas_filas": m["afirmadas"],
         "hint": (
             "Verde significa que toda promesa listada tiene quien la ejerza, no "
             "que la lista esté completa. Una promesa que nadie escribió aquí "
-            "sigue sin medirse."
+            "sigue sin medirse. Lo mismo vale para las afirmadas: una "
+            "propiedad que el estándar afirma y nadie comprueba sigue sin "
+            "comprobarse, pero si está en el registro con su hueco declarado, "
+            "al menos se sabe que existe — que es lo que no pasaba antes."
         ),
     }
 

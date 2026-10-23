@@ -2298,6 +2298,10 @@
           "self-test": {
             "type": "boolean",
             "description": "Verifica las negativas de la tool, sin vault ajeno"
+          },
+          "registrar-contraste": {
+            "type": "boolean",
+            "description": "Sella el contraste como recibo con fecha en el repo (lo que exige vault_release antes de un bump)"
           }
         },
         "additionalProperties": false
@@ -3667,6 +3671,14 @@
           "registrar-banco": {
             "type": "string",
             "description": "Informe JSON de banco_agente"
+          },
+          "registrar-contexto": {
+            "type": "boolean",
+            "description": "Mide la cadena de contexto que paga el agente y la registra"
+          },
+          "registrar-skip": {
+            "type": "boolean",
+            "description": "Mide el skip-path del onboarding (2.ª pasada, no escribe) y lo registra"
           },
           "registrar": {
             "type": "string",
@@ -7491,7 +7503,7 @@
     "vault_backup_base64",
     "vault_restore_base64"
   ],
-  "standard_version": "v41.19",
+  "standard_version": "v41.20",
   "errors": {
     "AP17_DUPLICATE_TITLE": {
       "category": "governance",

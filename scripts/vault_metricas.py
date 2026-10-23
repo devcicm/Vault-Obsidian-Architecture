@@ -44,6 +44,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -77,6 +78,31 @@ def _plazo(valor: float, fecha: str = "2027-01-14", cadencia: int = 30) -> Dict[
 
 
 METRICAS: List[Dict[str, Any]] = [
+    # ── Producto: lo que le cuesta al agente ─────────────────────────────────
+    # v41.20. Hasta aquí todas las métricas medían el coste de quien mantiene
+    # el repo (suite, puertas, baselines) o el de las tools contadas por
+    # unidad de trabajo. Ninguna medía lo que le pasa a quien lo usa, y lo que
+    # lo usa es un agente con presupuesto: si consultar la memoria cuesta
+    # segundos, deja de consultar la memoria, y eso no rompe nada — solo
+    # deja de servir para lo que existe.
+    {"id": "contexto_agente_s", "tipo": "producto", "origen": "observada", "sentido": "menor",
+     "unidad": "s",
+     "que": "Coste de la cadena de consulta de contexto que paga el agente: "
+            "vault_query_parse + vault_context_pack sobre un vault real.",
+     "fuente": "`vault_metricas --registrar-contexto` (mide la ronda; no acepta "
+               "un número a mano: una métrica de producto que se rellena a "
+               "mano no mide el producto)",
+     "objetivo": {"valor": 12, "fecha_limite": "2026-12-31", "cadencia_dias": 30,
+                  "dueno": "meta_toolkit — vault_metricas"}},
+    {"id": "skip_path_escritura_s", "tipo": "producto", "origen": "observada", "sentido": "menor",
+     "unidad": "s",
+     "que": "Coste de una corrida de onboarding que no escribe nada: el caso "
+            "que se paga por convención en cada reintento.",
+     "fuente": "`vault_metricas --registrar-skip` (doble pasada real sobre un "
+               "proyecto demo)",
+     "objetivo": {"valor": 2, "fecha_limite": "2026-12-31", "cadencia_dias": 30,
+                  "dueno": "meta_toolkit — vault_metricas"}},
+
     # ── Desarrollo ───────────────────────────────────────────────────────────
     {"id": "deuda_pendiente", "tipo": "desarrollo", "origen": "calculada", "sentido": "menor",
      "unidad": "entradas",
@@ -586,6 +612,193 @@ def leer_salida_puertas(datos: Dict[str, Any]) -> List[Dict[str, Any]]:
     return [{"metrica": "puertas_duracion_s", "valor": datos["seconds"]}]
 
 
+#: Las métricas que se miden aquí y no se rellenan a mano. Una métrica de
+#: producto cuyo valor entra por `--valor` no mide el producto: mide lo que su
+#: autor quiso escribir, que es justo lo que `suites_fallos` y compañía
+#: pretendían evitar al volverse observadas.
+_MEDIDAS_ANTES: Dict[str, Any] = {}
+
+
+def _cronometro(funcion, *args, **kwargs) -> float:
+    """Segundos que tardó `funcion`, y su valor. Un fallo devuelve `None` y no
+    un cero: un runner roto tiene que verse, no leerse como rápido (AP-51)."""
+    import time as _time
+
+    inicio = _time.perf_counter()
+    try:
+        valor = funcion(*args, **kwargs)
+    except Exception as exc:  # noqa: BLE001 — el runner no debe tumbar la tool
+        _MEDIDAS_ANTES["error"] = f"{type(exc).__name__}: {exc}"
+        return -1.0
+    return round(_time.perf_counter() - inicio, 3)
+
+
+def registrar_contexto(commit: Optional[str] = None, dry_run: bool = False) -> Dict[str, Any]:
+    """Mide de verdad la cadena que paga el agente y la registra.
+
+    `vault_query_parse` + `vault_context_pack` sobre un vault temporal: dos
+    subprocesos reales, porque el coste que importa incluye el arranque del
+    intérprete. El valor va a `contexto_agente_s` con su commit y su fuente.
+
+    `dry_run=True` mide y devuelve sin escribir la observación. Existe porque
+    un test que llama a esto no puede mutar el registro del repo: lo hizo
+    durante una ronda y puso en carrera al generador del SDD, que lee las
+    cifras de observaciones (medido el 2026-10-23: `README.md not
+    idempotent` en xdist y verde en serie).
+    """
+    import subprocess
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tmp:
+        vault = Path(tmp) / "vault"
+        env = {**os.environ, "VAULT_ROOT": str(vault), "PYTHONIOENCODING": "utf-8"}
+
+        def _correr(args: List[str]) -> float:
+            return _cronometro(
+                subprocess.run,
+                [sys.executable, str(RAIZ / "scripts" / args[0]), *args[1:]],
+                capture_output=True, env=env, timeout=300,
+            )
+
+        parse = _correr(["vault_query_parse.py", "qué decidimos sobre el vault"])
+        pack = _correr(["vault_context_pack.py", "--query", "qué decidimos sobre el vault"])
+
+    if parse < 0 or pack < 0:
+        # Por el contrato de errores, no por literales propios (AP-52): un
+        # envelope de fallo que no trae `error_code` obliga a quien lo lee a
+        # adivinar la recuperación, que es justo el dato que un runner
+        # necesita para reintentar.
+        return emit_error(
+            "vault_metricas", "TOOL_EXECUTION_FAILED",
+            f"el runner de contexto no pudo medir: {_MEDIDAS_ANTES.get('error', 'falló')}",
+            pista="una métrica de producto que no se puede medir no se registra: "
+                  "se declara descubierta",
+            args={"action": "registrar_contexto", "parse_s": parse, "pack_s": pack})
+    total = round(parse + pack, 3)
+    if dry_run:
+        # mide igual; no escribe: el registro se muta por una decisión, no
+        # por correr el test que comprueba que el runner mide
+        return {"ok": True, "tool": "vault_metricas", "action": "registrar_contexto",
+                "dry_run": True, "parse_s": parse, "pack_s": pack, "total_s": total,
+                "hint": "dry_run: la medición es real y no toca el registro"}
+    r = registrar([{"metrica": "contexto_agente_s", "valor": total}],
+                  commit=commit,
+                  fuente=f"medición real: parse {parse}s + pack {pack}s sobre vault temporal")
+    return {**r, "parse_s": parse, "pack_s": pack, "total_s": total}
+
+
+def registrar_skip_path(commit: Optional[str] = None, dry_run: bool = False) -> Dict[str, Any]:
+    """Mide la corrida de onboarding que no escribe nada, sobre un proyecto real
+    de verdad (con git), y registra el resultado en `skip_path_escritura_s`.
+
+    Es la deuda que la auditoría del onboarding dejó anotada el 2026-10-21: la
+    segunda pasada paga ~7 s para no escribir nada. Declararla como métrica con
+    fecha la convierte en algo que se puede no cumplir sin que nadie tenga que
+    acordarse.
+
+    **Verifica los envelopes antes de medir.** Un runner que cronometra una
+    corrida que falló registra un número rápido y truthful —la forma más
+    difícil de detectar de mentir—: por eso la primera pasada tiene que crear
+    el vault (`vault_init`) y comprobar `ok`, y la segunda tiene que venir con
+    `merge_stats` entero en `skipped`. Un runner que no comprueba lo que mide
+    es AP-37 en el sitio donde el coste importa.
+    """
+    import subprocess
+    import tempfile
+
+    def _json_de(stdout: bytes) -> Dict[str, Any]:
+        try:
+            return json.loads(stdout.decode("utf-8", errors="replace"))
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            return {"ok": False, "error_code": "JSON_PARSE_ERROR"}
+
+    with tempfile.TemporaryDirectory() as tmp:
+        base = Path(tmp)
+        proyecto = base / "proyecto"
+        (proyecto / "src").mkdir(parents=True)
+        (proyecto / "src" / "mod.py").write_text("def h():\n    return 1\n", encoding="utf-8")
+        (proyecto / "README.md").write_text("# demo\n", encoding="utf-8")
+        _git = lambda *a: procesos_git.ejecutar_git(  # noqa: E731
+            proyecto, list(a), capture_output=True, check=True,
+            env={**os.environ, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t",
+                 "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t"})
+        _git("init", "-q")
+        _git("add", "-A")
+        _git("commit", "-q", "-m", "inicio")
+
+        vault = base / "vault"
+        # El vault tiene que EXISTIR antes de medir: onboard no crea uno (no se
+        # pisa un vault), así que sin este init el runner midiese un rechazo
+        # de 0,25 s y lo publicaría como si el skip-path fuera gratis.
+        init = subprocess.run(
+            [sys.executable, str(RAIZ / "scripts" / "vault_init.py"), "--name", "demo"],
+            capture_output=True, env={**os.environ, "VAULT_MASTER": str(base / "casa"),
+                                      "PYTHONIOENCODING": "utf-8"},
+            timeout=600)
+        if not _json_de(init.stdout).get("ok"):
+            return emit_error(
+                "vault_metricas", "TOOL_EXECUTION_FAILED",
+                "no se pudo crear el vault temporal para medir el skip-path",
+                pista="sin vault no hay skip-path que medir; se declara, no se estima",
+                args={"action": "registrar_skip_path"})
+        destino = _json_de(init.stdout).get("vault_root")
+        if not destino:
+            return emit_error(
+                "vault_metricas", "INVALID_JSON",
+                "vault_init respondió ok pero sin `vault_root`: no hay dónde medir",
+                pista="el runner necesita la ruta real del vault, no una suposición",
+                args={"action": "registrar_skip_path"})
+
+        env = {**os.environ, "VAULT_ROOT": str(destino), "PYTHONIOENCODING": "utf-8",
+               "VAULT_TOOL_TIMEOUT": "600"}
+        args = [sys.executable, str(RAIZ / "scripts" / "vault_onboard.py"),
+                "--project", "demo", "--path", str(proyecto)]
+
+        # primera pasada: crea. segunda: todo skipped y no escribe.
+        import time as _time
+
+        crudos = []
+        for _ in (1, 2):
+            t0 = _time.perf_counter()
+            crudos.append((subprocess.run(args, capture_output=True, env=env, timeout=900),
+                           round(_time.perf_counter() - t0, 3)))
+        primera, _ = (_json_de(c[0].stdout) for c in crudos)
+        segunda, skip_s = _json_de(crudos[1][0].stdout), crudos[1][1]
+
+    if not (primera.get("ok") and segunda.get("ok")):
+        # no se registra un número de una corrida que falló: sería un número
+        # rápido y truthful, la peor forma de mentir
+        return emit_error(
+            "vault_metricas", "TOOL_EXECUTION_FAILED",
+            "una de las dos corridas de onboard no salió ok; no se registra "
+            "el tiempo de una corrida que no ocurrió",
+            pista="mide con un proyecto demo que onboard pueda recorrer; si no, "
+                  "la métrica se declara y no se estima",
+            args={"action": "registrar_skip_path",
+                  "primera_ok": bool(primera.get("ok")),
+                  "segunda_ok": bool(segunda.get("ok"))})
+    stats = segunda.get("merge_stats") or {}
+    if stats.get("created") or stats.get("merged") or not stats.get("skipped"):
+        # la segunda pasada tiene que ser skip-path de verdad; si no, se está
+        # midiendo otra cosa con el nombre de esta métrica
+        return emit_error(
+            "vault_metricas", "INVALID_VALUE",
+            "la segunda corrida no fue skip-path: la métrica mide esa carrera, "
+            "no cualquier segunda corrida",
+            pista="se esperaba created=0, merged=0 y skipped>0",
+            args={"action": "registrar_skip_path", "merge_stats": stats})
+
+    if dry_run:
+        return {"ok": True, "tool": "vault_metricas", "action": "registrar_skip_path",
+                "dry_run": True, "merge_stats": stats, "skip_s": skip_s,
+                "hint": "dry_run: la medición es real y no toca el registro"}
+    r = registrar([{"metrica": "skip_path_escritura_s", "valor": skip_s}],
+                  commit=commit,
+                  fuente="medición real: onboarding doble pasada sobre proyecto demo "
+                         f"con git (2.ª pasada = {stats.get('skipped')} skipped, 0 escrituras)")
+    return {**r, "merge_stats": stats, "skip_s": skip_s}
+
+
 def main() -> int:
     tool = "vault_metricas"
     ap = argparse.ArgumentParser(
@@ -597,6 +810,10 @@ def main() -> int:
     ap.add_argument("--registrar-smoke", metavar="JSON", help="Salida JSON de vault_smoke")
     ap.add_argument("--registrar-puertas", metavar="JSON", help="Salida JSON de vault_gate --strict")
     ap.add_argument("--registrar-banco", metavar="JSON", help="Informe JSON de banco_agente")
+    ap.add_argument("--registrar-contexto", action="store_true",
+                    help="Mide la cadena de contexto que paga el agente y la registra")
+    ap.add_argument("--registrar-skip", action="store_true",
+                    help="Mide el skip-path del onboarding (2.ª pasada, no escribe) y lo registra")
     ap.add_argument("--registrar", metavar="ID", help="Registra una métrica observada")
     ap.add_argument("--valor", type=float, help="Valor para --registrar")
     ap.add_argument("--fuente", help="De dónde sale la observación")
@@ -604,7 +821,8 @@ def main() -> int:
     args = ap.parse_args()
 
     acciones = [a for a in ("check", "doc", "registrar_suite", "registrar_smoke",
-                            "registrar_puertas", "registrar_banco", "registrar") if getattr(args, a)]
+                            "registrar_puertas", "registrar_banco", "registrar",
+                            "registrar_contexto", "registrar_skip") if getattr(args, a)]
     if len(acciones) > 1:
         print(json.dumps(emit_error(tool, "CONFLICTING_ARGS",
                                     f"acciones incompatibles: {', '.join(acciones)}",
@@ -635,6 +853,10 @@ def main() -> int:
             r = registrar(_desde_banco(json.loads(_fichero(args.registrar_banco))),
                           commit=args.commit,
                           fuente=args.fuente or f"banco_agente sobre {Path(args.registrar_banco).name}")
+        elif args.registrar_contexto:
+            r = registrar_contexto(commit=args.commit)
+        elif args.registrar_skip:
+            r = registrar_skip_path(commit=args.commit)
         elif args.registrar:
             if args.valor is None:
                 r = emit_error(tool, "MISSING_REQUIRED_ARG", "--registrar necesita --valor")
