@@ -8287,7 +8287,7 @@ temp/
 
 ---
 
-### v41.21 — 2026-10-23 `git: pending`
+### v41.21 — 2026-10-23 `git: 1066e93`
 
 v41.21 cierra lo que v41.20 dejo abierto. **A** · el skip-path del onboarding baja de 4,44 s a 1,05 s (objetivo 2) y la primera pasada de 8,4 s a 4,2 s: el perfil del 2026-10-23 mostro que la segunda pasada pagaba 59 reconstrucciones de indice de seccion y 50 inventarios de nombres del vault entero para dejar todo como estaba. Ahora una corrida sin escrituras no reindexa y lo declara en `indexes_skipped`, y la pasada que si escribe no rehace el mismo indice dos veces: lo hace `vault_reindex` una sola vez. **B** · el primer contraste real contra un vault ajeno (281 ficheros) encontro un defecto del criterio, no del vault: 261 eran `node_modules` y el unico enlace roto del informe era el README de una dependencia. `vault_io` gana el dueno de que es material ajeno, el informe publica los 261 excluidos en vez de encoger en silencio, y la propiedad de la regla 7 pasa de descubierta a con_puerta con el recibo fechado como ejercidor. **C** · `vault_produccion` estrena el estado `medida`: una propiedad con instrumento, dueno y fecha pero sin puerta que falle. 15 afirmadas: 13 con puerta, 1 medida, 1 descubierta.
 
