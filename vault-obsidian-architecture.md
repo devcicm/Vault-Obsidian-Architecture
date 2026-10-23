@@ -8285,7 +8285,7 @@ temp/
 
 ---
 
-### v41.19 — 2026-10-22 `git: pending`
+### v41.19 — 2026-10-23 `git: 4759c21`
 
 AP-68: el git que ejecuta el toolkit pasa por un dueño. Nació de auditar si alguna tool lanzaba git sin supervisión o con comandos no autorizados: 24 sitios lo hacían por su cuenta y el veredicto de que todos eran lecturas correctas vivía solo en la inspección, sin guard — al día siguiente un `git clean -fdx` habría entrado sin que ninguna puerta se pusiera roja. Ahora existe `vault/kernel/procesos_git.py` (hoja del núcleo): `ejecutar_git` juzga el verbo contra una lista cerrada (lecturas puras, ambiguos por argumento, mutadores autorizados con motivo escrito) y rechaza todo argv que no sea lista, lo que hace imposible el shell. `asegurar_hash` cierra la inyección de opción sobre los hashes que nacen de ficheros —changelog, METRICAS, snapshot de drift—. Los 24 sitios se mudaron al dueño y la puerta nueva `vault_procesos_git --check` publica por AST cualquier llamada que levante git fuera de él; los tests quedan fuera del alcance y el motivo está escrito: necesitan git crudo para fabricar el repo con el que miden (AP-44). De paso, el `add` del bootstrap de `vault_init` ya no se lanzaba sin mirar su salida, y `git cat-file --batch` en `vault_baseline` entra por el dueño con su excepción de bytes declarada en vez de esquivarlo.
 
