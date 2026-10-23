@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "5b7330b0-866d-4dc6-97cf-69588a6df25a",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "C:\\Users\\Carlos Ivan\\Documents\\GitHub\\Vault-Obsidian-Architecture\\.archify\\candidata-contextos.json",
+  "output": "C:\\Users\\Carlos Ivan\\Documents\\GitHub\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.html",
+  "specification": {
+    "sha256": "c7da26d81d54ec4c86f428d545f3dd42c08f1a174cb6fc483f0c8b25bff05180",
+    "bytes": 10436
+  },
+  "artifact": {
+    "sha256": "f2ad51ae4ba52829853c976778f85169e4b19c2ab8ae02196d8b15dd1be34a98",
+    "bytes": 859043
+  }
+}

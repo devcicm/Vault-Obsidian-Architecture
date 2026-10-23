@@ -1,0 +1,352 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "C:\\Users\\Carlos Ivan\\Documents\\GitHub\\Vault-Obsidian-Architecture\\.archify\\candidata-contextos.json",
+    "sha256": "c7da26d81d54ec4c86f428d545f3dd42c08f1a174cb6fc483f0c8b25bff05180",
+    "bytes": 10436
+  },
+  "artifact": {
+    "path": "C:\\Users\\Carlos Ivan\\Documents\\GitHub\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.html",
+    "sha256": "f2ad51ae4ba52829853c976778f85169e4b19c2ab8ae02196d8b15dd1be34a98",
+    "bytes": 859043
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "C:\\Users\\Carlos Ivan\\Documents\\GitHub\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.finalize.json",
+    "summaryReceipt": "C:\\Users\\Carlos Ivan\\Documents\\GitHub\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.finalize-summary.json",
+    "browserCheckReceipt": "C:\\Users\\Carlos Ivan\\Documents\\GitHub\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.browser-check.json"
+  },
+  "update": {
+    "status": "update_available",
+    "installedVersion": "3.1.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": "https://github.com/tt-a1i/archify/releases/tag/v3.2.0",
+    "severity": "normal",
+    "checkedAt": "2026-10-23T02:03:35.481Z",
+    "source": "cache",
+    "noticeRequired": true,
+    "noticeText": "Archify update: 3.1.0 → 3.2.0. A previous check at 2026-10-23T02:03:35.481Z found a newer release. Release notes: https://github.com/tt-a1i/archify/releases/tag/v3.2.0. The installed Skill has not changed; ask to snooze or ignore this reminder.",
+    "eventKey": "archify@sha256:70e210265c59f24dcbdf2a502ff671104b5454e7ee7d3554aecd86bad32384f5"
+  },
+  "visualReview": "not-requested",
+  "durationMs": 5067,
+  "visualReviewRecommendation": {
+    "action": "inspect-route-readability",
+    "signals": {
+      "resolvedCrossovers": 27,
+      "routesOverSuggestedBends": 15
+    },
+    "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
+    "affectedRoutes": {
+      "crossings": [
+        {
+          "left": {
+            "id": "c1",
+            "from": "cv",
+            "to": "idx",
+            "label": "reindexar al escribir",
+            "collectionIndex": 3,
+            "artifactIndex": 4
+          },
+          "right": {
+            "id": "c10",
+            "from": "cv",
+            "to": "gov",
+            "label": "sanación aplica normas",
+            "collectionIndex": 12,
+            "artifactIndex": 13
+          },
+          "point": [
+            636,
+            461
+          ],
+          "sharedNode": "cv"
+        },
+        {
+          "left": {
+            "id": "c1",
+            "from": "cv",
+            "to": "idx",
+            "label": "reindexar al escribir",
+            "collectionIndex": 3,
+            "artifactIndex": 4
+          },
+          "right": {
+            "id": "c14",
+            "from": "mt",
+            "to": "cv",
+            "label": "camino de versión",
+            "collectionIndex": 16,
+            "artifactIndex": 17
+          },
+          "point": [
+            623.4,
+            486
+          ],
+          "sharedNode": "cv"
+        },
+        {
+          "left": {
+            "id": "c1",
+            "from": "cv",
+            "to": "idx",
+            "label": "reindexar al escribir",
+            "collectionIndex": 3,
+            "artifactIndex": 4
+          },
+          "right": {
+            "id": "c15",
+            "from": "cv",
+            "to": "mt",
+            "label": "sync de catálogo",
+            "collectionIndex": 17,
+            "artifactIndex": 18
+          },
+          "point": [
+            636,
+            446.3384615384544
+          ],
+          "sharedNode": "cv"
+        },
+        {
+          "left": {
+            "id": "c2",
+            "from": "a",
+            "to": "idx",
+            "label": "tags tras escribir",
+            "collectionIndex": 4,
+            "artifactIndex": 5
+          },
+          "right": {
+            "id": "c16",
+            "from": "a",
+            "to": "mt",
+            "label": "consulta el catálogo",
+            "collectionIndex": 18,
+            "artifactIndex": 19
+          },
+          "point": [
+            721,
+            376
+          ],
+          "sharedNode": "a"
+        },
+        {
+          "left": {
+            "id": "c2",
+            "from": "a",
+            "to": "idx",
+            "label": "tags tras escribir",
+            "collectionIndex": 4,
+            "artifactIndex": 5
+          },
+          "right": {
+            "id": "c18",
+            "from": "cv",
+            "to": "g",
+            "label": "propaga",
+            "collectionIndex": 20,
+            "artifactIndex": 21
+          },
+          "point": [
+            620,
+            352
+          ]
+        },
+        {
+          "left": {
+            "id": "c2",
+            "from": "a",
+            "to": "idx",
+            "label": "tags tras escribir",
+            "collectionIndex": 4,
+            "artifactIndex": 5
+          },
+          "right": {
+            "id": "c21",
+            "from": "q",
+            "to": "g",
+            "label": "lee el grafo",
+            "collectionIndex": 23,
+            "artifactIndex": 24
+          },
+          "point": [
+            479.95454545454544,
+            348.5
+          ]
+        },
+        {
+          "left": {
+            "id": "c3",
+            "from": "gov",
+            "to": "idx",
+            "label": "indexar hallazgos",
+            "collectionIndex": 5,
+            "artifactIndex": 6
+          },
+          "right": {
+            "id": "c10",
+            "from": "cv",
+            "to": "gov",
+            "label": "sanación aplica normas",
+            "collectionIndex": 12,
+            "artifactIndex": 13
+          },
+          "point": [
+            871.7000000000002,
+            429
+          ],
+          "sharedNode": "gov"
+        },
+        {
+          "left": {
+            "id": "c3",
+            "from": "gov",
+            "to": "idx",
+            "label": "indexar hallazgos",
+            "collectionIndex": 5,
+            "artifactIndex": 6
+          },
+          "right": {
+            "id": "c16",
+            "from": "a",
+            "to": "mt",
+            "label": "consulta el catálogo",
+            "collectionIndex": 18,
+            "artifactIndex": 19
+          },
+          "point": [
+            1035,
+            376
+          ]
+        }
+      ],
+      "detours": [
+        {
+          "relationship": {
+            "id": "j2",
+            "from": "mcp",
+            "to": "q",
+            "label": "paquete de contexto",
+            "collectionIndex": 1,
+            "artifactIndex": 2
+          },
+          "bends": 3,
+          "stretch": 1.065
+        },
+        {
+          "relationship": {
+            "id": "c1",
+            "from": "cv",
+            "to": "idx",
+            "label": "reindexar al escribir",
+            "collectionIndex": 3,
+            "artifactIndex": 4
+          },
+          "bends": 3,
+          "stretch": 1.245
+        },
+        {
+          "relationship": {
+            "id": "c4",
+            "from": "a",
+            "to": "g",
+            "label": "adaptador de DI",
+            "collectionIndex": 6,
+            "artifactIndex": 7
+          },
+          "bends": 3,
+          "stretch": 1.227
+        },
+        {
+          "relationship": {
+            "id": "c5",
+            "from": "q",
+            "to": "cv",
+            "label": "adaptador de DI",
+            "collectionIndex": 7,
+            "artifactIndex": 8
+          },
+          "bends": 3,
+          "stretch": 1.164
+        },
+        {
+          "relationship": {
+            "id": "c6",
+            "from": "g",
+            "to": "gov",
+            "label": "adaptador a normas",
+            "collectionIndex": 8,
+            "artifactIndex": 9
+          },
+          "bends": 3,
+          "stretch": 1.189
+        },
+        {
+          "relationship": {
+            "id": "c8",
+            "from": "k",
+            "to": "a",
+            "label": "inyecta la voz",
+            "collectionIndex": 10,
+            "artifactIndex": 11
+          },
+          "bends": 4,
+          "stretch": 1.254
+        },
+        {
+          "relationship": {
+            "id": "c10",
+            "from": "cv",
+            "to": "gov",
+            "label": "sanación aplica normas",
+            "collectionIndex": 12,
+            "artifactIndex": 13
+          },
+          "bends": 4,
+          "stretch": 1.176
+        },
+        {
+          "relationship": {
+            "id": "c12",
+            "from": "gov",
+            "to": "a",
+            "label": "norms_engine → vault_voice",
+            "collectionIndex": 14,
+            "artifactIndex": 15
+          },
+          "bends": 4,
+          "stretch": 1.126
+        }
+      ],
+      "truncated": true
+    },
+    "hints": [
+      "cv has 5 relationships facing its right side, which fits 3 ports: make that side at least 88px, or move some of those neighbours so they face another side of cv.",
+      "a has 6 relationships facing its right side, which fits 4 ports: make that side at least 102px, or move some of those neighbours so they face another side of a.",
+      "gov has 5 relationships facing its left side, which fits 3 ports: make that side at least 88px, or move some of those neighbours so they face another side of gov.",
+      "g has 4 relationships facing its left side, which fits 2 ports: make that side at least 74px, or move some of those neighbours so they face another side of g.",
+      "q has 4 relationships facing its right side, which fits 3 ports: make that side at least 74px, or move some of those neighbours so they face another side of q.",
+      "mt has 6 relationships facing its left side, which fits 3 ports: make that side at least 102px, or move some of those neighbours so they face another side of mt.",
+      "cv → idx and cv → gov cross next to cv: move node idx or gov so the two reach cv from different sides (for example one level with it, one directly above or below it).",
+      "cv → idx and mt → cv cross next to cv: move node idx or mt so the two reach cv from different sides (for example one level with it, one directly above or below it)."
+    ],
+    "repair": "Trace these relationships at the desktop viewport. For Architecture, use references/architecture-layout-repair.md: reflow a blocked main path or tangled connected scene, and repair an isolated defect locally only when the surrounding composition is accepted. Preserve all semantic content and user-fixed geometry. Rerun finalize once after the edit."
+  }
+}

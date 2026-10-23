@@ -1,0 +1,560 @@
+{
+ "schema_version": 1,
+ "diagram_type": "architecture",
+ "meta": {
+  "title": "Contextos del estándar: dominio, pertenencia y frontera",
+  "subtitle": "10 contextos de `vault_arch.CONTEXTS` · 23 fronteras del `PRESUPUESTO_DE_CRUCES` · correlación grupo→capacidad",
+  "locale": "es",
+  "output": ".archify/mapa-contextos.html",
+  "quality_profile": "showcase",
+  "repository": {
+   "url": "https://github.com/devcicm/Vault-Obsidian-Architecture.git",
+   "provider": "github",
+   "revision": "f5f69210fa4a89639c60aaeda0cb7fb7139f5583"
+  },
+  "legend": {
+   "mode": "all",
+   "entries": {
+    "external": {
+     "label": "Consumidor del servicio"
+    },
+    "messagebus": {
+     "label": "Mediador llamada ↔ tool (MCP / CLI)"
+    },
+    "security": {
+     "label": "Kernel: mecanismo confinante"
+    },
+    "frontend": {
+     "label": "Superficie de escritura del vault (Autoría)"
+    },
+    "backend": {
+     "label": "Dominio del vault (nota · grafo · norma · índice)"
+    },
+    "database": {
+     "label": "Retención y restauración (Durabilidad)"
+    },
+    "cloud": {
+     "label": "Meta-toolkit: gobernanza del estándar"
+    }
+   }
+  }
+ },
+ "layout": {
+  "mode": "grid",
+  "cols": 6
+ },
+ "components": [
+  {
+   "id": "agent",
+   "type": "external",
+   "label": "Agente",
+   "sublabel": "LLM o humano — consumidor",
+   "pos": [
+    40,
+    44
+   ],
+   "size": [
+    150,
+    52
+   ],
+   "sources": [
+    {
+     "path": "AGENTS.md",
+     "line": 24,
+     "end_line": 52,
+     "label": "El servicio y sus capacidades"
+    }
+   ]
+  },
+  {
+   "id": "mcp",
+   "type": "messagebus",
+   "label": "MCP",
+   "sublabel": "servidor Node · 125 tools",
+   "pos": [
+    360,
+    44
+   ],
+   "size": [
+    180,
+    54
+   ],
+   "sources": [
+    {
+     "path": "mcp/nodejs/vault-mcp-server.mjs",
+     "line": 1,
+     "end_line": 40,
+     "label": "servidor MCP"
+    }
+   ]
+  },
+  {
+   "id": "k",
+   "type": "security",
+   "label": "I · Kernel",
+   "sublabel": "23 módulos · 4 puertos · prohibe depender de dominios",
+   "pos": [
+    40,
+    230
+   ],
+   "size": [
+    200,
+    62
+   ],
+   "sources": [
+    {
+     "path": "scripts/vault_arch.py",
+     "line": 156,
+     "end_line": 246,
+     "label": "CONTEXTS[Kernel]"
+    }
+   ]
+  },
+  {
+   "id": "a",
+   "type": "frontend",
+   "label": "II · Autoría",
+   "sublabel": "46 módulos · 7 puertos · write path único",
+   "pos": [
+    360,
+    230
+   ],
+   "size": [
+    210,
+    74
+   ],
+   "sources": [
+    {
+     "path": "scripts/vault_arch.py",
+     "line": 247,
+     "end_line": 283,
+     "label": "CONTEXTS[Autoría]"
+    }
+   ]
+  },
+  {
+   "id": "g",
+   "type": "backend",
+   "label": "III · Grafo",
+   "sublabel": "15 módulos · 4 puertos",
+   "pos": [
+    660,
+    230
+   ],
+   "size": [
+    150,
+    58
+   ],
+   "sources": [
+    {
+     "path": "scripts/vault_arch.py",
+     "line": 284,
+     "end_line": 303,
+     "label": "CONTEXTS[Grafo]"
+    }
+   ]
+  },
+  {
+   "id": "gov",
+   "type": "backend",
+   "label": "IV · Gobernanza",
+   "sublabel": "13 módulos · 21 puertos",
+   "pos": [
+    960,
+    230
+   ],
+   "size": [
+    150,
+    72
+   ],
+   "sources": [
+    {
+     "path": "scripts/vault_arch.py",
+     "line": 304,
+     "end_line": 399,
+     "label": "CONTEXTS[Gobernanza]"
+    }
+   ]
+  },
+  {
+   "id": "idx",
+   "type": "backend",
+   "label": "V · Índices",
+   "sublabel": "7 módulos · 9 puertos",
+   "pos": [
+    660,
+    400
+   ],
+   "size": [
+    150,
+    58
+   ],
+   "sources": [
+    {
+     "path": "scripts/vault_arch.py",
+     "line": 400,
+     "end_line": 427,
+     "label": "CONTEXTS[Índices]"
+    }
+   ]
+  },
+  {
+   "id": "q",
+   "type": "backend",
+   "label": "VI · Consulta",
+   "sublabel": "11 módulos · 7 puertos · sin BD",
+   "pos": [
+    40,
+    400
+   ],
+   "size": [
+    170,
+    66
+   ],
+   "sources": [
+    {
+     "path": "scripts/vault_arch.py",
+     "line": 428,
+     "end_line": 450,
+     "label": "CONTEXTS[Consulta]"
+    }
+   ]
+  },
+  {
+   "id": "cv",
+   "type": "backend",
+   "label": "VII · Ciclo de vida",
+   "sublabel": "10 módulos · 3 puertos",
+   "pos": [
+    400,
+    400
+   ],
+   "size": [
+    180,
+    62
+   ],
+   "sources": [
+    {
+     "path": "scripts/vault_arch.py",
+     "line": 451,
+     "end_line": 470,
+     "label": "CONTEXTS[Ciclo de vida]"
+    }
+   ]
+  },
+  {
+   "id": "dur",
+   "type": "database",
+   "label": "VIII · Durabilidad",
+   "sublabel": "4 módulos · backup y cuarentena",
+   "pos": [
+    40,
+    560
+   ],
+   "size": [
+    180,
+    58
+   ],
+   "sources": [
+    {
+     "path": "scripts/vault_arch.py",
+     "line": 471,
+     "end_line": 485,
+     "label": "CONTEXTS[Durabilidad]"
+    }
+   ]
+  },
+  {
+   "id": "mt",
+   "type": "cloud",
+   "label": "IX · Meta-toolkit",
+   "sublabel": "37 mód · 6 puertos",
+   "pos": [
+    1150,
+    400
+   ],
+   "size": [
+    124,
+    62
+   ],
+   "sources": [
+    {
+     "path": "scripts/vault_arch.py",
+     "line": 486,
+     "end_line": 619,
+     "label": "CONTEXTS[Meta-toolkit]"
+    }
+   ]
+  },
+  {
+   "id": "cli",
+   "type": "messagebus",
+   "label": "X · CLI",
+   "sublabel": "consolidada",
+   "pos": [
+    1150,
+    560
+   ],
+   "size": [
+    118,
+    56
+   ],
+   "sources": [
+    {
+     "path": "scripts/vault_arch.py",
+     "line": 620,
+     "end_line": 660,
+     "label": "CONTEXTS[CLI]"
+    }
+   ]
+  }
+ ],
+ "boundaries": [
+  {
+   "kind": "region",
+   "label": "vault/ — contexto de dominio del vault",
+   "wraps": [
+    "k",
+    "a",
+    "g",
+    "gov",
+    "idx",
+    "q",
+    "cv",
+    "dur"
+   ]
+  },
+  {
+   "kind": "region",
+   "label": "mide el repo, no escribe en él",
+   "wraps": [
+    "mt",
+    "cli"
+   ]
+  }
+ ],
+ "connections": [
+  {
+   "id": "j1",
+   "from": "agent",
+   "to": "mcp",
+   "label": "llamada de tool (JSON)",
+   "variant": "emphasis"
+  },
+  {
+   "id": "j2",
+   "from": "mcp",
+   "to": "q",
+   "label": "paquete de contexto"
+  },
+  {
+   "id": "j3",
+   "from": "mcp",
+   "to": "a",
+   "label": "vault_write / vault_search"
+  },
+  {
+   "id": "c1",
+   "from": "cv",
+   "to": "idx",
+   "label": "reindexar al escribir",
+   "variant": "dashed"
+  },
+  {
+   "id": "c2",
+   "from": "a",
+   "to": "idx",
+   "label": "tags tras escribir",
+   "variant": "dashed"
+  },
+  {
+   "id": "c3",
+   "from": "gov",
+   "to": "idx",
+   "label": "indexar hallazgos",
+   "variant": "dashed"
+  },
+  {
+   "id": "c4",
+   "from": "a",
+   "to": "g",
+   "label": "adaptador de DI"
+  },
+  {
+   "id": "c5",
+   "from": "q",
+   "to": "cv",
+   "label": "adaptador de DI"
+  },
+  {
+   "id": "c6",
+   "from": "g",
+   "to": "gov",
+   "label": "adaptador a normas"
+  },
+  {
+   "id": "c7",
+   "from": "idx",
+   "to": "g",
+   "label": "grafo del índice"
+  },
+  {
+   "id": "c8",
+   "from": "k",
+   "to": "a",
+   "label": "inyecta la voz",
+   "labelAt": [
+    285,
+    246
+   ]
+  },
+  {
+   "id": "c9",
+   "from": "mt",
+   "to": "gov",
+   "label": "audita lo publicado"
+  },
+  {
+   "id": "c10",
+   "from": "cv",
+   "to": "gov",
+   "label": "sanación aplica normas"
+  },
+  {
+   "id": "c11",
+   "from": "gov",
+   "to": "mt",
+   "label": "lee el smoke",
+   "variant": "dashed"
+  },
+  {
+   "id": "c12",
+   "from": "gov",
+   "to": "a",
+   "label": "norms_engine → vault_voice",
+   "variant": "dashed"
+  },
+  {
+   "id": "c13",
+   "from": "a",
+   "to": "gov",
+   "label": "valida mermaid"
+  },
+  {
+   "id": "c14",
+   "from": "mt",
+   "to": "cv",
+   "label": "camino de versión"
+  },
+  {
+   "id": "c15",
+   "from": "cv",
+   "to": "mt",
+   "label": "sync de catálogo",
+   "variant": "dashed"
+  },
+  {
+   "id": "c16",
+   "from": "a",
+   "to": "mt",
+   "label": "consulta el catálogo",
+   "variant": "dashed"
+  },
+  {
+   "id": "c17",
+   "from": "cv",
+   "to": "a",
+   "label": "write path (AP-46)",
+   "labelAt": [
+    392,
+    334
+   ]
+  },
+  {
+   "id": "c18",
+   "from": "cv",
+   "to": "g",
+   "label": "propaga",
+   "labelAt": [
+    668,
+    327
+   ]
+  },
+  {
+   "id": "c19",
+   "from": "g",
+   "to": "a",
+   "label": "code",
+   "labelAt": [
+    592,
+    299
+   ]
+  },
+  {
+   "id": "c20",
+   "from": "q",
+   "to": "a",
+   "label": "usa vault_search"
+  },
+  {
+   "id": "c21",
+   "from": "q",
+   "to": "g",
+   "label": "lee el grafo"
+  },
+  {
+   "id": "c22",
+   "from": "mt",
+   "to": "q",
+   "label": "expone consulta"
+  },
+  {
+   "id": "c23",
+   "from": "cli",
+   "to": "mt",
+   "label": "lee TOOLS_CATALOG"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "Correlaciones registradas",
+   "items": [
+    "grupo ↔ capacidad: `vault_servicio --trace` (SERVICIO en scripts/vault_servicio.py)",
+    "estado ↔ régimen de versionado: STATUS_TRANSITIONS en vault_norms (IV)",
+    "versión ↔ contrato de nota: HISTORIA en vault/kernel/contrato_nota.py (I)",
+    "clase de documento ↔ ejes: EJES_DOCUMENTACION en vault_registry (I)"
+   ]
+  },
+  {
+   "dot": "violet",
+   "title": "Pertenencia (174 módulos en los diez contextos)",
+   "items": [
+    "I Kernel 23 · II Autoría 46 · III Grafo 15 · IV Gobernanza 13 · V Índices 7",
+    "VI Consulta 11 · VII Ciclo 10 · VIII Durabilidad 4 · IX Meta-toolkit 37 · X CLI 8",
+    "claves romanas: orden de CONTEXTS en scripts/vault_arch.py"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "Límites (prohibe) declarados",
+   "items": [
+    "I Kernel: no depende de ningún dominio",
+    "VI Consulta: sin base de datos · sin embeddings · sin servicio externo",
+    "VIII Durabilidad: no escribir fuera de la raíz (AP-36)",
+    "IX Meta-toolkit: no escribe en sección de contenido",
+    "X CLI: no decide; traduce argumento a llamada y envelope a salida"
+   ]
+  },
+  {
+   "dot": "emerald",
+   "title": "Vocabularios con dueño",
+   "items": [
+    "status (12 valores) → STATUS_VOCAB en vault_norms (IV)",
+    "causas de fallo de dominio → CAUSAS en vault/kernel/fallos.py (I)",
+    "sección por clase de doc → SECTION_DOCUMENTACION en vault_registry (I)",
+    "entorno declarado → VARIABLES en vault/kernel/entorno.py (I)"
+   ]
+  }
+ ]
+}

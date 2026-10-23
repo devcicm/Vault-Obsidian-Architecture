@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "6207dd2a-b79f-4de8-8f6d-c202b0f4dbb9",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "C:\\Users\\Carlos Ivan\\Documents\\GitHub\\Vault-Obsidian-Architecture\\.archify\\candidata-cruces.json",
+  "output": "C:\\Users\\Carlos Ivan\\Documents\\GitHub\\Vault-Obsidian-Architecture\\.archify\\mapa-cruces.html",
+  "specification": {
+    "sha256": "377105f6b94ef7738d4343967e8bbbccafdff58cae744b5059572fa53085153a",
+    "bytes": 9470
+  },
+  "artifact": {
+    "sha256": "6148cd7a999c2cb6e74861ffc529165ab6759e52b8be4cfa7fc46831239d01fb",
+    "bytes": 852998
+  }
+}

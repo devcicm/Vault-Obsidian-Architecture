@@ -1,0 +1,42 @@
+{
+ "schemaVersion": 1,
+ "ok": true,
+ "command": "visual-check",
+ "evidenceKind": "automated-browser",
+ "status": "pass",
+ "visualReview": "pending",
+ "provenance": "current",
+ "deliveryReceiptId": null,
+ "artifact": {
+  "path": ".archify/mapa-onboarding.html",
+  "sha256": "5c37178b5b5bc7b6a7a4fc2d05898acc4edb2e2ee64bce9c83672c132bac5c24",
+  "bytes": 831249
+ },
+ "reviewedAt": "2026-10-22T21:46:08",
+ "reviewer": "assistant visual review (playwright chromium, 1440x900, light+dark, fullPage)",
+ "captures": {
+  "status": "pass",
+  "screenshots": [
+   {
+    "theme": "light",
+    "file": ".archify/capturas/mapa-onboarding-light.png",
+    "sha256": "bc8e960dd3164a6637e6fa249d767732ffad1e4c2c270e2a1269da289dade831",
+    "viewport": "1440x900",
+    "revisadoEn": "v41.18, pin 6e460b8"
+   },
+   {
+    "theme": "dark",
+    "file": ".archify/capturas/mapa-onboarding-dark.png",
+    "sha256": "c2d1a0b5613d8c55a6d7892776dc799375c292bafd76582e64de93fa1257ff9f",
+    "viewport": "1440x900",
+    "revisadoEn": "v41.18, pin 6e460b8"
+   }
+  ],
+  "issuesFound": [
+   "(v41.17) ok:true se renderizaba como oktrue — corregido a «no sobre el ok de la tool»",
+   "(v41.18) tarjeta de deuda re-escrita: SALDADA lote + test; ABIERTA el skip-path de la 2.ª corrida; ANOTADA canonicalShadow"
+  ],
+  "issuesAfterFix": [],
+  "notaMetodo": "revisión visual con chromium (playwright MCP); las capturas viven en .archify/capturas/, no en .playwright-mcp/ — esa carpeta es QA efímero y está en .gitignore (AP-57: su .yml saltaba frontera)"
+ }
+}

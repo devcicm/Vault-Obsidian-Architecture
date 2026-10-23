@@ -1,0 +1,490 @@
+{
+  "kernel": {
+    "titulo": "Kernel",
+    "lenguaje": [
+      "ruta",
+      "envelope",
+      "error",
+      "bloqueo",
+      "escritura atómica"
+    ],
+    "puertos": {
+      "get_vault_root": "vault_raiz:get_vault_root",
+      "atomic_write_text": "vault_io:atomic_write_text",
+      "wrap_main": "vault_errors:wrap_main",
+      "file_lock": "vault_fs:file_lock"
+    },
+    "prohibe": [
+      "depender de cualquier contexto de dominio"
+    ],
+    "modulos_n": 23,
+    "modulos": [
+      "vault_io",
+      "vault_errors",
+      "vault_lib",
+      "vault_regex",
+      "vault_encoding",
+      "vault_registry",
+      "vault_errors_catalog",
+      "vault_errors_trace",
+      "vault_entorno",
+      "vault_vocabulario",
+      "vault_subproceso",
+      "vault_raiz",
+      "vault_fs",
+      "vault_ledger",
+      "vault_baseline",
+      "vault_escaneo_grafo",
+      "vault_grafo_import",
+      "vault_norms_catalog",
+      "vault_version",
+      "vault_fundamentals_catalog",
+      "vault_contrato_nota",
+      "vault_audit_catalog",
+      "vault_mermaid_reglas"
+    ]
+  },
+  "autoria": {
+    "titulo": "Autoría",
+    "lenguaje": [
+      "nota",
+      "frontmatter",
+      "slug",
+      "sección",
+      "alias"
+    ],
+    "puertos": {
+      "escribir_nota": "vault_write:vault_write",
+      "anexar": "vault_append:vault_append",
+      "mover": "vault_move:move_note",
+      "fusionar": "vault_merge:vault_merge",
+      "buscar": "vault_search:vault_search",
+      "hablar": "vault/autoria/voz:speak",
+      "tipo_por_carpeta": "vault_write:tipo_por_carpeta"
+    },
+    "prohibe": [],
+    "modulos_n": 46,
+    "modulos": [
+      "vault_write",
+      "vault_append",
+      "vault_move",
+      "vault_merge",
+      "vault_read",
+      "vault_diff",
+      "vault_delta",
+      "vault_list",
+      "vault_search",
+      "vault_knowledge_get",
+      "vault_knowledge_save",
+      "vault_bibliography_save",
+      "vault_bug_save",
+      "vault_diagram_save",
+      "vault_diagram_export",
+      "vault_env_save",
+      "vault_flow_save",
+      "vault_incident_save",
+      "vault_infra_save",
+      "vault_ncr_save",
+      "vault_pattern_save",
+      "vault_pattern_list",
+      "vault_privacy_save",
+      "vault_release_save",
+      "vault_requirement_save",
+      "vault_risk_save",
+      "vault_runbook_save",
+      "vault_runbook_log",
+      "vault_slo_save",
+      "vault_test_save",
+      "vault_dataset",
+      "vault_ai_decision",
+      "vault_change_log",
+      "vault_voice",
+      "vault_fix_brackets",
+      "vault_frontmatter_heal",
+      "vault_frontmatter_completar",
+      "vault_supersede",
+      "vault_delete",
+      "vault_undo",
+      "vault_timeline",
+      "vault_project_overview",
+      "vault_project_status",
+      "vault_qa_save",
+      "vault_project",
+      "vault_log_error"
+    ]
+  },
+  "grafo": {
+    "titulo": "Grafo",
+    "lenguaje": [
+      "nodo",
+      "arista",
+      "wikilink",
+      "huérfano",
+      "componente"
+    ],
+    "puertos": {
+      "construir_grafo": "vault_graph:vault_graph",
+      "resolver_wikilink": "vault_link_safety:validate_wikilinks",
+      "impacto": "vault_impact:vault_impact",
+      "refresco_de_grafo": "vault_graph:refrescar_nota_en_grafo"
+    },
+    "prohibe": [],
+    "modulos_n": 15,
+    "modulos": [
+      "vault_graph",
+      "vault_graph_fix",
+      "vault_graph_inspect",
+      "vault_graph_merge",
+      "vault_relation_add",
+      "vault_link_safety",
+      "vault_impact",
+      "vault_code_map",
+      "vault_code_module",
+      "vault_code_query",
+      "vault_code_relation",
+      "vault_code_sync",
+      "vault_code_tag",
+      "vault_infra_map",
+      "vault_env_matrix"
+    ]
+  },
+  "gobernanza": {
+    "titulo": "Gobernanza",
+    "lenguaje": [
+      "norma",
+      "guard",
+      "enforcement",
+      "severidad",
+      "violación",
+      "estado",
+      "transición de estado",
+      "fundamento",
+      "hallazgo"
+    ],
+    "puertos": {
+      "NORM_CATALOG": "vault_norms:NORM_CATALOG",
+      "auditar": "vault_audit:vault_audit",
+      "puntuar_calidad": "vault_quality_check:vault_quality_check",
+      "vocabulario_de_estado": "vault_norms:STATUS_VOCAB",
+      "vocabulario_de_dominio": "vault_norms:DOMAIN_STATUS_VOCABS",
+      "valores_cia": "vault_fundamentals:cia_valores",
+      "lineas_de_estado": "vault_norms:status_frontmatter_lines",
+      "referencias_de_norma": "vault_norms:compute_norm_refs",
+      "normalizar_estado": "vault_norms:normalize_status",
+      "transiciones_de_estado": "vault_norms:STATUS_TRANSITIONS",
+      "registro_de_ciclo_de_vida": "vault_norms:LIFECYCLE_REGISTRY",
+      "cuerpo_sin_marcadores": "vault_norms:cuerpo_sin_marcadores",
+      "norma_por_codigo": "vault_norms:norma_por_codigo",
+      "auditar_normas": "vault_norms:vault_norms_audit",
+      "auditar_runtime": "vault/gobernanza/auditoria_runtime:auditar_runtime",
+      "penalizaciones": "vault_audit:PENALIZACIONES",
+      "identidad_de_documentacion": "vault_audit:es_documentacion_del_estandar",
+      "FUNDAMENTOS": "vault_fundamentals:FUNDAMENTALS",
+      "validar_mermaid": "vault_mermaid_check:validate_mermaid",
+      "gancho_de_secretos": "vault/gobernanza/secret_scan:vault_write_hook",
+      "hay_hallazgos_bloqueantes": "vault/gobernanza/secret_scan:has_blocking_findings"
+    },
+    "prohibe": [],
+    "modulos_n": 13,
+    "modulos": [
+      "vault_norms",
+      "vault_norms_engine",
+      "vault_fuente_unica",
+      "vault_audit",
+      "vault_fundamentals",
+      "vault_quality_check",
+      "vault_validate",
+      "vault_security_scan",
+      "vault_secret_scan",
+      "vault_drift_detect",
+      "vault_mermaid_check",
+      "vault_security_rules",
+      "vault_quality_dashboard"
+    ]
+  },
+  "indices": {
+    "titulo": "Índices",
+    "lenguaje": [
+      "índice",
+      "etiqueta",
+      "término",
+      "sección indexada",
+      "coherencia"
+    ],
+    "puertos": {
+      "reindexar": "vault_reindex:vault_reindex",
+      "indice_maestro": "vault_master_index:vault_master_index",
+      "vocabulario_de_tags": "vault_tags:canonical_tags",
+      "indice_de_seccion": "vault_section_index:vault_section_index",
+      "refresco_de_busqueda": "vault_section_index:refrescar_busqueda",
+      "registrar_tags": "vault_tags:registrar_tags_de_nota",
+      "tags_de_frontmatter": "vault_tags:tags_de_frontmatter",
+      "ledger_de_backfill_de_tags": "vault_tags:vault_tags_backfill_ledger",
+      "coherencia_de_indices": "vault_reindex:index_coherence"
+    },
+    "prohibe": [],
+    "modulos_n": 7,
+    "modulos": [
+      "vault_master_index",
+      "vault_reindex",
+      "vault_section_index",
+      "vault_tags",
+      "vault_index",
+      "vault_folder_registry",
+      "vault_section"
+    ]
+  },
+  "consulta": {
+    "titulo": "Consulta",
+    "lenguaje": [
+      "intención",
+      "subgrafo",
+      "paquete de contexto",
+      "preferencia"
+    ],
+    "puertos": {
+      "parsear_consulta": "vault_query_parse:vault_query_parse",
+      "subgrafo": "vault_subgraph:vault_subgraph",
+      "empaquetar_contexto": "vault_context_pack:vault_context_pack",
+      "contexto_de_sesion": "vault_mcp_context:get_context",
+      "guardar_contexto": "vault_mcp_context:save_context",
+      "cargar_contexto": "vault_mcp_context:load_context",
+      "limpiar_contexto": "vault_mcp_context:clear_context"
+    },
+    "prohibe": [
+      "base de datos",
+      "embeddings",
+      "servicio externo"
+    ],
+    "modulos_n": 11,
+    "modulos": [
+      "vault_query_parse",
+      "vault_subgraph",
+      "vault_context_pack",
+      "vault_model_profile",
+      "vault_preferences",
+      "vault_ingest",
+      "vault_mcp_context",
+      "vault_tokens",
+      "vault_token_counter",
+      "vault_token_service",
+      "vault_compact_contracts"
+    ]
+  },
+  "ciclo_de_vida": {
+    "titulo": "Ciclo de vida",
+    "lenguaje": [
+      "versión",
+      "migración",
+      "sanación",
+      "arranque"
+    ],
+    "puertos": {
+      "CURRENT_VERSION": "vault_standard_upgrade:CURRENT_VERSION",
+      "inicializar": "vault_init:vault_init",
+      "migrar": "vault_standard_upgrade:vault_standard_upgrade"
+    },
+    "prohibe": [],
+    "modulos_n": 10,
+    "modulos": [
+      "vault_init",
+      "vault_onboard",
+      "vault_standard_upgrade",
+      "vault_sanacion",
+      "vault_migrate_docs",
+      "vault_migrate_rollback",
+      "vault_propagate",
+      "vault_sdd_init",
+      "vault_history_compact",
+      "vault_arquitectura_en"
+    ]
+  },
+  "durabilidad": {
+    "titulo": "Durabilidad",
+    "lenguaje": [
+      "backup",
+      "restauración",
+      "cuarentena",
+      "manifiesto"
+    ],
+    "puertos": {
+      "crear_backup": "vault_backup:vault_backup",
+      "listar_backups": "vault_backup_list:vault_backup_list",
+      "restaurar": "vault_restore:vault_restore",
+      "poner_en_cuarentena": "vault_quarantine:vault_quarantine_add"
+    },
+    "prohibe": [
+      "escribir fuera de la raíz del vault (AP-36)"
+    ],
+    "modulos_n": 4,
+    "modulos": [
+      "vault_backup",
+      "vault_backup_list",
+      "vault_restore",
+      "vault_quarantine"
+    ]
+  },
+  "meta_toolkit": {
+    "titulo": "Meta-toolkit",
+    "lenguaje": [
+      "catálogo",
+      "contrato",
+      "spec",
+      "smoke",
+      "conteo derivado"
+    ],
+    "puertos": {
+      "TOOLS_CATALOG": "vault_mcp_catalog:TOOLS_CATALOG",
+      "GROUPS": "vault_mcp_catalog:GROUPS",
+      "check_contracts": "vault_mcp_catalog:check_contracts",
+      "NATIVE_JS_TOOLS": "vault_mcp_catalog:NATIVE_JS_TOOLS",
+      "distribution_metadata": "vault_mcp_catalog:distribution_metadata",
+      "reconciled_params": "vault_mcp_catalog:reconciled_params"
+    },
+    "prohibe": [
+      "escribir en una sección de contenido: sus artefactos derivados viven en 00_System/"
+    ],
+    "modulos_n": 37,
+    "modulos": [
+      "vault_mcp",
+      "vault_mcp_catalog",
+      "vault_manifest",
+      "vault_smoke",
+      "vault_spec_catalog_check",
+      "vault_spec_generate_catalog",
+      "vault_spec_memory",
+      "vault_spec_validate",
+      "vault_test_runner",
+      "vault_doc_counts",
+      "vault_doc_sync",
+      "vault_doc_staleness",
+      "vault_noop_audit",
+      "vault_blame_audit",
+      "vault_error_contract",
+      "vault_foreign_check",
+      "vault_gate",
+      "vault_arch",
+      "vault_fix_all",
+      "vault_spec_data",
+      "vault_release",
+      "vault_changelog_check",
+      "vault_firma_sitio",
+      "vault_servicio",
+      "vault_blueprint",
+      "vault_norms_coherence",
+      "vault_criterios",
+      "vault_ciclos",
+      "vault_kernel",
+      "vault_excepcion_declarada",
+      "vault_recursos",
+      "vault_produccion",
+      "vault_esquema",
+      "vault_metricas",
+      "vault_distribution_sync",
+      "vault_toolkit_audit",
+      "vault_test_scope"
+    ]
+  },
+  "cli": {
+    "titulo": "CLI",
+    "lenguaje": [
+      "comando",
+      "registro de tools",
+      "preflight",
+      "envelope"
+    ],
+    "puertos": {},
+    "prohibe": [
+      "decidir: traduce argumentos a llamadas y envelopes a salida; la decisión vive en la tool"
+    ],
+    "modulos_n": 8,
+    "modulos": [
+      "vault_cli",
+      "registry",
+      "resolver",
+      "safety",
+      "runner",
+      "analyzer",
+      "scheduler",
+      "__main__"
+    ]
+  },
+  "_crucas": {
+    "('ciclo_de_vida', 'indices')": "{'objetivo': 'en_estudio', 'dueno': 'indices', 'revisado': '2026-08-14', 'cadencia_dias': 180, 'por_que': 'Reindexado tras escritura.', 'hipotesis': 'Once cruces piden lo mismo: reindexar tras escribir. Si `indices` resulta ser infraestructura y no un contexto de negocio, los once dejan de ser cruces igual que los veinte del catálogo de normas. Sin verificar: `vault_tags` y `vault_reindex` escriben, así que no tienen la forma de hoja que tenía el catálogo y el movimiento no es el mismo.'}",
+    "('autoria', 'indices')": "{'objetivo': 'en_estudio', 'dueno': 'indices', 'revisado': '2026-08-14', 'cadencia_dias': 180, 'por_que': 'Reindexado tras escritura.', 'hipotesis': 'Once cruces piden lo mismo: reindexar tras escribir. Si `indices` resulta ser infraestructura y no un contexto de negocio, los once dejan de ser cruces igual que los veinte del catálogo de normas. Sin verificar: `vault_tags` y `vault_reindex` escriben, así que no tienen la forma de hoja que tenía el catálogo y el movimiento no es el mismo.'}",
+    "('gobernanza', 'indices')": "{'objetivo': 'en_estudio', 'dueno': 'indices', 'revisado': '2026-08-14', 'cadencia_dias': 180, 'por_que': 'Reindexado tras escritura.', 'hipotesis': 'Once cruces piden lo mismo: reindexar tras escribir. Si `indices` resulta ser infraestructura y no un contexto de negocio, los once dejan de ser cruces igual que los veinte del catálogo de normas. Sin verificar: `vault_tags` y `vault_reindex` escriben, así que no tienen la forma de hoja que tenía el catálogo y el movimiento no es el mismo.'}",
+    "('autoria', 'grafo')": "{'objetivo': 'permanente', 'dueno': 'arquitectura', 'revisado': '2026-08-14', 'cadencia_dias': 180, 'por_que': 'Adaptador de DI: cablear el dominio de otro contexto es su oficio. Se cuenta igual — no contarlo dejaría la capa de DI ciega.'}",
+    "('consulta', 'ciclo_de_vida')": "{'objetivo': 'permanente', 'dueno': 'arquitectura', 'revisado': '2026-08-14', 'cadencia_dias': 180, 'por_que': 'Adaptador de DI: cablear el dominio de otro contexto es su oficio. Se cuenta igual — no contarlo dejaría la capa de DI ciega.'}",
+    "('grafo', 'gobernanza')": "{'objetivo': 'permanente', 'dueno': 'grafo', 'revisado': '2026-08-14', 'cadencia_dias': 180, 'por_que': 'Adaptador del contexto Grafo hacia el dominio de Gobernanza.'}",
+    "('indices', 'grafo')": "{'objetivo': 'permanente', 'dueno': 'arquitectura', 'revisado': '2026-08-14', 'cadencia_dias': 180, 'por_que': 'Adaptador de DI: cablear el dominio de otro contexto es su oficio. Se cuenta igual — no contarlo dejaría la capa de DI ciega.'}",
+    "('kernel', 'autoria')": "{'objetivo': 'permanente', 'dueno': 'kernel', 'revisado': '2026-08-14', 'cadencia_dias': 180, 'por_que': 'El inyector común de envelopes llama al puerto `hablar` para que el recordatorio llegue a todas las tools. El servicio degrada a silencio si falla y no importa la fachada meta `vault_voice`.'}",
+    "('meta_toolkit', 'gobernanza')": "{'objetivo': 'permanente', 'dueno': 'meta_toolkit', 'revisado': '2026-08-14', 'cadencia_dias': 180, 'por_que': 'El meta-toolkit audita que este repo cumple lo que publica, y para eso tiene que leer las normas y el audit. Es la dirección correcta: quien verifica depende de lo verificado, nunca al revés.'}",
+    "('ciclo_de_vida', 'gobernanza')": "{'objetivo': 'permanente', 'dueno': 'ciclo_de_vida', 'revisado': '2026-08-14', 'cadencia_dias': 180, 'por_que': 'Sanación y onboarding aplican las normas al vault del usuario. Sin este cruce las doce fases tendrían que reimplementar el criterio, que es AP-57.'}",
+    "('gobernanza', 'meta_toolkit')": "{'objetivo': 'a_eliminar', 'dueno': 'gobernanza', 'revisado': '2026-08-14', 'cadencia_dias': 180, 'por_que': '`vault_norms_engine` importa `vault_smoke` y `vault_mcp_catalog` en diferido para auditar el catálogo. Va al revés: el motor de normas no debería saber que existe un smoke. Sale cuando el audit del catálogo lo pida el meta-toolkit en vez de pedirlo el motor.', 'fecha_limite': '2027-06-30'}",
+    "('gobernanza', 'autoria')": "{'objetivo': 'a_eliminar', 'dueno': 'gobernanza', 'revisado': '2026-08-14', 'cadencia_dias': 180, 'por_que': '`vault_norms_engine` -> `vault_voice`: presentación colgada del motor, se conserva solo en la fachada estándar para ejecutar AP-43. Sale cuando el audit del catálogo se ejecute fuera del motor.', 'fecha_limite': '2027-06-30'}",
+    "('autoria', 'gobernanza')": "{'objetivo': 'permanente', 'dueno': 'autoria', 'revisado': '2026-08-14', 'cadencia_dias': 180, 'por_que': 'Validar mermaid al escribir y registrar el cambio: la escritura no puede publicar una nota que el propio estándar rechazaría.'}",
+    "('meta_toolkit', 'ciclo_de_vida')": "{'objetivo': 'permanente', 'dueno': 'meta_toolkit', 'revisado': '2026-08-14', 'cadencia_dias': 180, 'por_que': 'El checker del changelog necesita el camino de versión que define `vault_standard_upgrade`. Duplicarlo sería AP-05 sobre el número de versión, que es el dato más copiado del repo.'}",
+    "('ciclo_de_vida', 'meta_toolkit')": "{'objetivo': 'en_estudio', 'dueno': 'ciclo_de_vida', 'revisado': '2026-08-14', 'cadencia_dias': 180, 'por_que': '`vault_standard_upgrade` -> `vault_mcp_catalog` para sincronizar el catálogo al subir de versión.', 'hipotesis': 'Puede que la sincronización la deba disparar la puerta del meta-toolkit y no el propio upgrade. Sin verificar.'}",
+    "('autoria', 'meta_toolkit')": "{'objetivo': 'en_estudio', 'dueno': 'autoria', 'revisado': '2026-08-14', 'cadencia_dias': 180, 'por_que': '`vault_voice` -> `vault_mcp_catalog`: la voz consulta el catálogo.', 'hipotesis': 'Mismo olor que `gobernanza -> meta_toolkit`: el catálogo lo debería inyectar quien construye la voz. Sin verificar.'}",
+    "('ciclo_de_vida', 'autoria')": "{'objetivo': 'permanente', 'dueno': 'ciclo_de_vida', 'revisado': '2026-08-14', 'cadencia_dias': 180, 'por_que': 'Onboarding puebla el vault escribiendo notas: pasa por el write path único (AP-46) en vez de escribir por su cuenta.'}",
+    "('ciclo_de_vida', 'grafo')": "{'objetivo': 'permanente', 'dueno': 'ciclo_de_vida', 'revisado': '2026-08-14', 'cadencia_dias': 180, 'por_que': 'Propagar un cambio exige saber a qué alcanza, y el alcance lo mide el grafo. Reimplementarlo aquí sería AP-57.'}",
+    "('grafo', 'autoria')": "{'objetivo': 'permanente', 'dueno': 'grafo', 'revisado': '2026-08-14', 'cadencia_dias': 180, 'por_que': 'Etiquetar código escribe la nota por el write path único (AP-46).'}",
+    "('consulta', 'autoria')": "{'objetivo': 'permanente', 'dueno': 'consulta', 'revisado': '2026-08-14', 'cadencia_dias': 180, 'por_que': 'El paquete de contexto busca notas: la búsqueda tiene dueño en Autoría.'}",
+    "('consulta', 'grafo')": "{'objetivo': 'permanente', 'dueno': 'consulta', 'revisado': '2026-08-14', 'cadencia_dias': 180, 'por_que': 'El subgrafo lee el grafo. Es el caso legítimo que el docstring de `cruces()` ya nombra.'}",
+    "('meta_toolkit', 'consulta')": "{'objetivo': 'permanente', 'dueno': 'meta_toolkit', 'revisado': '2026-08-14', 'cadencia_dias': 180, 'por_que': 'El servidor MCP expone las tools de consulta: exponer es su oficio.'}",
+    "('cli', 'meta_toolkit')": "{'objetivo': 'permanente', 'dueno': 'cli', 'revisado': '2026-08-14', 'cadencia_dias': 180, 'por_que': '`cli/registry.py` lee `TOOLS_CATALOG` y `NATIVE_JS_TOOLS` para saber qué tools existen y cuáles viven en el `.mjs`. Un registro de comandos que no consulta el catálogo tendría que declarar las tools por su cuenta, que es AP-05 sobre el dato más derivado del repo. Permanente y por puerto: los dos símbolos están declarados en `meta_toolkit`. Aparece en v40.30 no porque el cruce sea nuevo —lleva ahí desde que existe la CLI— sino porque hasta ahora no había contexto `cli` que lo hiciera contable.'}"
+  },
+  "_crossings": [
+    "cli/registry -> vault_mcp_catalog",
+    "vault/autoria/repositorio.py -> vault/grafo",
+    "vault/autoria/repositorio.py -> vault/indices",
+    "vault/ciclo_de_vida/repositorio.py -> vault/indices",
+    "vault/consulta/repositorio.py -> vault/ciclo_de_vida",
+    "vault/gobernanza/auditoria_runtime.py -> vault/indices",
+    "vault/gobernanza/repositorio.py -> vault/indices",
+    "vault/gobernanza/tool.py -> vault/meta_toolkit",
+    "vault/grafo/repositorio.py -> vault/gobernanza",
+    "vault/indices/repositorio.py -> vault/grafo",
+    "vault/meta_toolkit/catalog_adapter.py -> vault/gobernanza",
+    "vault_blueprint -> vault_norms",
+    "vault_change_log -> vault/gobernanza",
+    "vault_code_tag -> vault_write",
+    "vault_context_pack -> vault_search",
+    "vault_errors -> vault/autoria",
+    "vault_mcp -> vault_mcp_context",
+    "vault_norms_coherence -> vault_norms",
+    "vault_norms_engine -> vault_mcp_catalog",
+    "vault_norms_engine -> vault_smoke",
+    "vault_norms_engine -> vault_voice",
+    "vault_onboard -> vault_reindex",
+    "vault_onboard -> vault_section_index",
+    "vault_onboard -> vault_tags",
+    "vault_onboard -> vault_write",
+    "vault_propagate -> vault/gobernanza",
+    "vault_propagate -> vault_impact",
+    "vault_sanacion -> vault/gobernanza",
+    "vault_sanacion -> vault_audit",
+    "vault_sanacion -> vault_reindex",
+    "vault_spec_memory -> vault/ciclo_de_vida",
+    "vault_spec_memory -> vault/gobernanza",
+    "vault_standard_upgrade -> vault_mcp_catalog",
+    "vault_standard_upgrade -> vault_section_index",
+    "vault_subgraph -> vault/grafo",
+    "vault_voice -> vault_mcp_catalog",
+    "vault_write -> vault_tags"
+  ],
+  "_off_port": [
+    "vault_norms_engine -> vault_mcp_catalog.check_params",
+    "vault_norms_engine -> vault_smoke.SIN_SMOKE",
+    "vault_norms_engine -> vault_smoke.invocation",
+    "vault_norms_engine -> vault_smoke.load_baseline",
+    "vault_norms_engine -> vault_voice.coverage",
+    "vault_sanacion -> vault_reindex.notas_indexables",
+    "vault_write -> vault_tags.apply_vocabulary",
+    "vault_write -> vault_tags.record_new_tags"
+  ],
+  "_anclas": {
+    "vault_grafo_import": "Dice dónde está `scripts/` (`_impl/` en la wheel) con su propio `__file__`, y de su `DIRECTORIO` derivan el suyo los dueños que se mudaron a `vault/kernel/`. Mudarlo exigiría derivar ese directorio de dos formas —por el checkout y por el paquete instalado— en el sitio que existe para que nadie más lo derive. Lo fija `tests/test_puente_sin_hogar.py::test_el_ancla_del_puente_no_se_muda`.",
+    "vault_release": "Fábrica de release: bump único de los siete ficheros de versión de este repo. No es tool de catálogo (no cruza el puente porque no viaja en la wheel) y no tiene duño en vault/: su sujeto es el checkout, no una capacidad de memoria. Ancla declarada con motivo, no deuda congelada."
+  }
+}

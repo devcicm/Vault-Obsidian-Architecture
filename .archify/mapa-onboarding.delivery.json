@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "137467aa-b9ca-42a6-ac51-e2d1026c4e27",
+  "status": "current",
+  "command": "deliver",
+  "type": "workflow",
+  "input": "C:\\Users\\Carlos Ivan\\Documents\\GitHub\\Vault-Obsidian-Architecture\\.archify\\candidata-onboarding.json",
+  "output": "C:\\Users\\Carlos Ivan\\Documents\\GitHub\\Vault-Obsidian-Architecture\\.archify\\mapa-onboarding.html",
+  "specification": {
+    "sha256": "bdcd0be7cc175c7a20d0ba33c0277b243ce38e5771af65f732d2ebd87f77233c",
+    "bytes": 8964
+  },
+  "artifact": {
+    "sha256": "5c37178b5b5bc7b6a7a4fc2d05898acc4edb2e2ee64bce9c83672c132bac5c24",
+    "bytes": 831249
+  }
+}
