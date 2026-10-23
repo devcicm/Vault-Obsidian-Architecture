@@ -8234,7 +8234,7 @@ temp/
 
 ---
 
-### v41.17 — 2026-10-22 `git: pending`
+### v41.17 — 2026-10-22 `git: b961699`
 
 La fábrica de release en un comando (vault_release), el bootstrap de la spec rehúsa sobrescribir y sube el campo con --sync-version, los arneses del repo dejan de escribir en la casa del usuario, AP-57 7->2 y AP-58 5->3
 
