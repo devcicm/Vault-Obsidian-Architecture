@@ -8286,7 +8286,7 @@ temp/
 
 ---
 
-### v41.20 — 2026-10-23 `git: pending`
+### v41.20 — 2026-10-23 `git: 077ec81`
 
 v41.20 convierte tres problemas opinados en registros ejecutables. **P1** · `vault_produccion` gana `AFIRMADAS`: la segunda mitad de su registro son las propiedades que el estándar afirma sobre sí mismo —15, 12 con puerta comprobada y 3 descubiertas con su motivo escrito—, porque la pregunta que dejó de hacerse el 2026-10-23 era «qué más afirmamos sin comprobar?». Nació de AP-68: 24 sitios de git sin dueño daban un veredicto correcto que solo existía en la inspección de quien lo miró. **P2** · dos métricas de coste del agente, `contexto_agente_s` y `skip_path_escritura_s`, con dueño y fecha, medidas por runner real y no rellenables a mano: el runner verifica el envelope antes de registrar, porque medir una corrida fallida publica un número rápido y truthful, que es la forma más difícil de detectar de mentir. Medidas hoy: la cadena de consulta de contexto cuesta 0,45 s y el skip-path del onboarding 4,57 s. **P3** · el contraste contra un vault ajeno pasa a ser condición del bump con recibo fechado (`vault_foreign_check --registrar-contraste`), o el hueco queda declarado en el propio changelog con `--declarar-contraste-pendiente`. Este bump va por esa segunda vía: no hay un vault ajeno a mano y el sandbox no contrasta nada, así que queda escrito en vez de dado por bueno.
 
