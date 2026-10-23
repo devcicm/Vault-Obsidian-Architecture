@@ -1,607 +1,621 @@
 {
- "description": "Observaciones de vault_metricas: solo de añadir. Cada una con el commit sobre el que se midió; la puerta falla si una desaparece.",
- "observaciones": [
-  {
-   "metrica": "suite_fallos",
-   "valor": 0,
-   "commit": "32d2561",
-   "fecha": "2026-10-14",
-   "fuente": "ronda r35 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_tests",
-   "valor": 5516,
-   "commit": "32d2561",
-   "fecha": "2026-10-14",
-   "fuente": "ronda r35 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_duracion_s",
-   "valor": 4119.01,
-   "commit": "32d2561",
-   "fecha": "2026-10-14",
-   "fuente": "ronda r35 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_fallos",
-   "valor": 0,
-   "commit": "55df632",
-   "fecha": "2026-10-14",
-   "fuente": "ronda r37 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_tests",
-   "valor": 5528,
-   "commit": "55df632",
-   "fecha": "2026-10-14",
-   "fuente": "ronda r37 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_duracion_s",
-   "valor": 4044.93,
-   "commit": "55df632",
-   "fecha": "2026-10-14",
-   "fuente": "ronda r37 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_fallos",
-   "valor": 0,
-   "commit": "7b21643",
-   "fecha": "2026-10-14",
-   "fuente": "ronda r38 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_tests",
-   "valor": 5530,
-   "commit": "7b21643",
-   "fecha": "2026-10-14",
-   "fuente": "ronda r38 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_duracion_s",
-   "valor": 4338.98,
-   "commit": "7b21643",
-   "fecha": "2026-10-14",
-   "fuente": "ronda r38 (suite completa en serie)"
-  },
-  {
-   "metrica": "smoke_fallos",
-   "valor": 0,
-   "commit": "df0ff4d",
-   "fecha": "2026-10-14",
-   "fuente": "vault_smoke 123/123 sobre df0ff4d"
-  },
-  {
-   "metrica": "banco_tareas_fallidas",
-   "valor": 0,
-   "commit": "df0ff4d",
-   "fecha": "2026-10-14",
-   "fuente": "banco_agente --copiar-de /vcloud (copia; original intacto por hash), muestra 25"
-  },
-  {
-   "metrica": "recall_pack_ajeno",
-   "valor": 1.0,
-   "commit": "df0ff4d",
-   "fecha": "2026-10-14",
-   "fuente": "banco_agente --copiar-de /vcloud (copia; original intacto por hash), muestra 25"
-  },
-  {
-   "metrica": "colisiones_de_sanadores",
-   "valor": 0,
-   "commit": "efc8093",
-   "fecha": "2026-10-14",
-   "fuente": "C8 --colisiones sobre copia de /vcloud (original intacto por hash); 6 sanadores, 4 ociosos"
-  },
-  {
-   "metrica": "colisiones_de_sanadores",
-   "valor": 0,
-   "commit": "efc8093",
-   "fecha": "2026-10-14",
-   "fuente": "C8 --colisiones sobre copia de /ans (original intacto por hash); 4 desenmascarados en ADR-004, completar y graph_fix fallidos"
-  },
-  {
-   "metrica": "suite_fallos",
-   "valor": 0,
-   "commit": "42a6fa8",
-   "fecha": "2026-10-14",
-   "fuente": "pytest sobre suite.txt"
-  },
-  {
-   "metrica": "suite_tests",
-   "valor": 5600,
-   "commit": "42a6fa8",
-   "fecha": "2026-10-14",
-   "fuente": "pytest sobre suite.txt"
-  },
-  {
-   "metrica": "suite_duracion_s",
-   "valor": 4874.47,
-   "commit": "42a6fa8",
-   "fecha": "2026-10-14",
-   "fuente": "pytest sobre suite.txt"
-  },
-  {
-   "metrica": "smoke_fallos",
-   "valor": 0,
-   "commit": "42a6fa8",
-   "fecha": "2026-10-14",
-   "fuente": "vault_smoke sobre 124 tools"
-  },
-  {
-   "metrica": "suite_fallos",
-   "valor": 0,
-   "commit": "ae3c5df",
-   "fecha": "2026-10-15",
-   "fuente": "pytest sobre suite.txt"
-  },
-  {
-   "metrica": "suite_tests",
-   "valor": 5604,
-   "commit": "ae3c5df",
-   "fecha": "2026-10-15",
-   "fuente": "pytest sobre suite.txt"
-  },
-  {
-   "metrica": "suite_duracion_s",
-   "valor": 3951.77,
-   "commit": "ae3c5df",
-   "fecha": "2026-10-15",
-   "fuente": "pytest sobre suite.txt"
-  },
-  {
-   "metrica": "smoke_fallos",
-   "valor": 0,
-   "commit": "ae3c5df",
-   "fecha": "2026-10-15",
-   "fuente": "vault_smoke sobre 124 tools"
-  },
-  {
-   "metrica": "suite_fallos",
-   "valor": 1,
-   "commit": "abd5cc2",
-   "fecha": "2026-10-15",
-   "fuente": "pytest sobre suite.txt"
-  },
-  {
-   "metrica": "suite_tests",
-   "valor": 5624,
-   "commit": "abd5cc2",
-   "fecha": "2026-10-15",
-   "fuente": "pytest sobre suite.txt"
-  },
-  {
-   "metrica": "suite_duracion_s",
-   "valor": 3997.04,
-   "commit": "abd5cc2",
-   "fecha": "2026-10-15",
-   "fuente": "pytest sobre suite.txt"
-  },
-  {
-   "metrica": "smoke_fallos",
-   "valor": 0,
-   "commit": "abd5cc2",
-   "fecha": "2026-10-15",
-   "fuente": "vault_smoke sobre 124 tools"
-  },
-  {
-   "metrica": "suite_fallos",
-   "valor": 0,
-   "commit": "26c2b04",
-   "fecha": "2026-10-15",
-   "fuente": "pytest sobre suite.txt"
-  },
-  {
-   "metrica": "suite_tests",
-   "valor": 5624,
-   "commit": "26c2b04",
-   "fecha": "2026-10-15",
-   "fuente": "pytest sobre suite.txt"
-  },
-  {
-   "metrica": "suite_duracion_s",
-   "valor": 3436.61,
-   "commit": "26c2b04",
-   "fecha": "2026-10-15",
-   "fuente": "pytest sobre suite.txt"
-  },
-  {
-   "metrica": "smoke_fallos",
-   "valor": 0,
-   "commit": "26c2b04",
-   "fecha": "2026-10-15",
-   "fuente": "vault_smoke sobre 124 tools"
-  },
-  {
-   "metrica": "puertas_duracion_s",
-   "valor": 87.21,
-   "commit": "2fb0465",
-   "fecha": "2026-10-16",
-   "fuente": "vault_gate sobre 24 puertas"
-  },
-  {
-   "metrica": "suite_fallos",
-   "valor": 1,
-   "commit": "6940d1c",
-   "fecha": "2026-10-16",
-   "fuente": "ronda r44 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_tests",
-   "valor": 5736,
-   "commit": "6940d1c",
-   "fecha": "2026-10-16",
-   "fuente": "ronda r44 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_duracion_s",
-   "valor": 4492.65,
-   "commit": "6940d1c",
-   "fecha": "2026-10-16",
-   "fuente": "ronda r44 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_fallos",
-   "valor": 0,
-   "commit": "0a5549d",
-   "fecha": "2026-10-16",
-   "fuente": "ronda r45 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_tests",
-   "valor": 5737,
-   "commit": "0a5549d",
-   "fecha": "2026-10-16",
-   "fuente": "ronda r45 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_duracion_s",
-   "valor": 4567.03,
-   "commit": "0a5549d",
-   "fecha": "2026-10-16",
-   "fuente": "ronda r45 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_fallos",
-   "valor": 1,
-   "commit": "cc1aaa9",
-   "fecha": "2026-10-16",
-   "fuente": "ronda r47 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_tests",
-   "valor": 5758,
-   "commit": "cc1aaa9",
-   "fecha": "2026-10-16",
-   "fuente": "ronda r47 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_duracion_s",
-   "valor": 4391.35,
-   "commit": "cc1aaa9",
-   "fecha": "2026-10-16",
-   "fuente": "ronda r47 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_fallos",
-   "valor": 1,
-   "commit": "d492db0",
-   "fecha": "2026-10-16",
-   "fuente": "ronda r48 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_tests",
-   "valor": 5758,
-   "commit": "d492db0",
-   "fecha": "2026-10-16",
-   "fuente": "ronda r48 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_duracion_s",
-   "valor": 4288.41,
-   "commit": "d492db0",
-   "fecha": "2026-10-16",
-   "fuente": "ronda r48 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_fallos",
-   "valor": 0,
-   "commit": "c52f3e1",
-   "fecha": "2026-10-16",
-   "fuente": "ronda r49 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_tests",
-   "valor": 5761,
-   "commit": "c52f3e1",
-   "fecha": "2026-10-16",
-   "fuente": "ronda r49 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_duracion_s",
-   "valor": 4374.15,
-   "commit": "c52f3e1",
-   "fecha": "2026-10-16",
-   "fuente": "ronda r49 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_fallos",
-   "valor": 0,
-   "commit": "9b897bb",
-   "fecha": "2026-10-16",
-   "fuente": "ronda r50 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_tests",
-   "valor": 5772,
-   "commit": "9b897bb",
-   "fecha": "2026-10-16",
-   "fuente": "ronda r50 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_duracion_s",
-   "valor": 4288.26,
-   "commit": "9b897bb",
-   "fecha": "2026-10-16",
-   "fuente": "ronda r50 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_fallos",
-   "valor": 0,
-   "commit": "9c85e2f",
-   "fecha": "2026-10-17",
-   "fuente": "ronda r51 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_tests",
-   "valor": 5804,
-   "commit": "9c85e2f",
-   "fecha": "2026-10-17",
-   "fuente": "ronda r51 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_duracion_s",
-   "valor": 3474.25,
-   "commit": "9c85e2f",
-   "fecha": "2026-10-17",
-   "fuente": "ronda r51 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_fallos",
-   "valor": 0,
-   "commit": "59f86d1",
-   "fecha": "2026-10-17",
-   "fuente": "ronda r52 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_tests",
-   "valor": 5844,
-   "commit": "59f86d1",
-   "fecha": "2026-10-17",
-   "fuente": "ronda r52 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_duracion_s",
-   "valor": 2967.96,
-   "commit": "59f86d1",
-   "fecha": "2026-10-17",
-   "fuente": "ronda r52 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_fallos",
-   "valor": 2,
-   "commit": "f1e5ac6",
-   "fecha": "2026-10-17",
-   "fuente": "ronda r53 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_tests",
-   "valor": 5852,
-   "commit": "f1e5ac6",
-   "fecha": "2026-10-17",
-   "fuente": "ronda r53 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_duracion_s",
-   "valor": 3187.43,
-   "commit": "f1e5ac6",
-   "fecha": "2026-10-17",
-   "fuente": "ronda r53 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_fallos",
-   "valor": 0,
-   "commit": "744d635",
-   "fecha": "2026-10-17",
-   "fuente": "ronda r54 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_tests",
-   "valor": 5852,
-   "commit": "744d635",
-   "fecha": "2026-10-17",
-   "fuente": "ronda r54 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_duracion_s",
-   "valor": 2555.56,
-   "commit": "744d635",
-   "fecha": "2026-10-17",
-   "fuente": "ronda r54 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_fallos",
-   "valor": 0,
-   "commit": "9bf32f3",
-   "fecha": "2026-10-17",
-   "fuente": "ronda r55 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_tests",
-   "valor": 5858,
-   "commit": "9bf32f3",
-   "fecha": "2026-10-17",
-   "fuente": "ronda r55 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_duracion_s",
-   "valor": 3275.55,
-   "commit": "9bf32f3",
-   "fecha": "2026-10-17",
-   "fuente": "ronda r55 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_fallos",
-   "valor": 0,
-   "commit": "e8500f7",
-   "fecha": "2026-10-17",
-   "fuente": "ronda r56 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_tests",
-   "valor": 5858,
-   "commit": "e8500f7",
-   "fecha": "2026-10-17",
-   "fuente": "ronda r56 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_duracion_s",
-   "valor": 3269.91,
-   "commit": "e8500f7",
-   "fecha": "2026-10-17",
-   "fuente": "ronda r56 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_fallos",
-   "valor": 1,
-   "commit": "8c59a48",
-   "fecha": "2026-10-18",
-   "fuente": "ronda r57 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_tests",
-   "valor": 5863,
-   "commit": "8c59a48",
-   "fecha": "2026-10-18",
-   "fuente": "ronda r57 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_duracion_s",
-   "valor": 3403.67,
-   "commit": "8c59a48",
-   "fecha": "2026-10-18",
-   "fuente": "ronda r57 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_fallos",
-   "valor": 0,
-   "commit": "6e4b926",
-   "fecha": "2026-10-18",
-   "fuente": "ronda r58 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_tests",
-   "valor": 5863,
-   "commit": "6e4b926",
-   "fecha": "2026-10-18",
-   "fuente": "ronda r58 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_duracion_s",
-   "valor": 3620.26,
-   "commit": "6e4b926",
-   "fecha": "2026-10-18",
-   "fuente": "ronda r58 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_fallos",
-   "valor": 0,
-   "commit": "9e2ea6c",
-   "fecha": "2026-10-18",
-   "fuente": "ronda r59 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_tests",
-   "valor": 5863,
-   "commit": "9e2ea6c",
-   "fecha": "2026-10-18",
-   "fuente": "ronda r59 (suite completa en serie)"
-  },
-  {
-   "metrica": "suite_duracion_s",
-   "valor": 3516.01,
-   "commit": "9e2ea6c",
-   "fecha": "2026-10-18",
-   "fuente": "ronda r59 (suite completa en serie)"
-  },
-  {
-   "metrica": "contexto_agente_s",
-   "valor": 0.452,
-   "commit": "0b6c042",
-   "fecha": "2026-10-23",
-   "fuente": "medición real: parse 0.185s + pack 0.267s sobre vault temporal"
-  },
-  {
-   "metrica": "skip_path_escritura_s",
-   "valor": 4.569,
-   "commit": "0b6c042",
-   "fecha": "2026-10-23",
-   "fuente": "medición real: onboarding doble pasada sobre proyecto demo con git (2.ª pasada = 5 skipped, 0 escrituras)"
-  },
-  {
-   "metrica": "contexto_agente_s",
-   "valor": 0.587,
-   "commit": "0b6c042",
-   "fecha": "2026-10-23",
-   "fuente": "medición real: parse 0.27s + pack 0.317s sobre vault temporal"
-  },
-  {
-   "metrica": "contexto_agente_s",
-   "valor": 0.461,
-   "commit": "0b6c042",
-   "fecha": "2026-10-23",
-   "fuente": "medición real: parse 0.186s + pack 0.275s sobre vault temporal"
-  },
-  {
-   "metrica": "contexto_agente_s",
-   "valor": 0.454,
-   "commit": "0b6c042",
-   "fecha": "2026-10-23",
-   "fuente": "medición real: parse 0.177s + pack 0.277s sobre vault temporal"
-  },
-  {
-   "metrica": "contexto_agente_s",
-   "valor": 0.484,
-   "commit": "0b6c042",
-   "fecha": "2026-10-23",
-   "fuente": "medición real: parse 0.215s + pack 0.269s sobre vault temporal"
-  },
-  {
-   "metrica": "contexto_agente_s",
-   "valor": 0.739,
-   "commit": "0b6c042",
-   "fecha": "2026-10-23",
-   "fuente": "medición real: parse 0.283s + pack 0.456s sobre vault temporal"
-  },
-  {
-   "metrica": "skip_path_escritura_s",
-   "valor": 4.438,
-   "commit": "0b6c042",
-   "fecha": "2026-10-23",
-   "fuente": "medición real: onboarding doble pasada sobre proyecto demo con git (2.ª pasada = 5 skipped, 0 escrituras)"
-  },
-  {
-   "metrica": "contexto_agente_s",
-   "valor": 0.454,
-   "commit": "0b6c042",
-   "fecha": "2026-10-23",
-   "fuente": "medición real: parse 0.185s + pack 0.269s sobre vault temporal"
-  },
-  {
-   "metrica": "contexto_agente_s",
-   "valor": 0.709,
-   "commit": "0b6c042",
-   "fecha": "2026-10-23",
-   "fuente": "medición real: parse 0.297s + pack 0.412s sobre vault temporal"
-  }
- ]
+  "description": "Observaciones de vault_metricas: solo de añadir. Cada una con el commit sobre el que se midió; la puerta falla si una desaparece.",
+  "observaciones": [
+    {
+      "metrica": "suite_fallos",
+      "valor": 0,
+      "commit": "32d2561",
+      "fecha": "2026-10-14",
+      "fuente": "ronda r35 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5516,
+      "commit": "32d2561",
+      "fecha": "2026-10-14",
+      "fuente": "ronda r35 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 4119.01,
+      "commit": "32d2561",
+      "fecha": "2026-10-14",
+      "fuente": "ronda r35 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 0,
+      "commit": "55df632",
+      "fecha": "2026-10-14",
+      "fuente": "ronda r37 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5528,
+      "commit": "55df632",
+      "fecha": "2026-10-14",
+      "fuente": "ronda r37 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 4044.93,
+      "commit": "55df632",
+      "fecha": "2026-10-14",
+      "fuente": "ronda r37 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 0,
+      "commit": "7b21643",
+      "fecha": "2026-10-14",
+      "fuente": "ronda r38 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5530,
+      "commit": "7b21643",
+      "fecha": "2026-10-14",
+      "fuente": "ronda r38 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 4338.98,
+      "commit": "7b21643",
+      "fecha": "2026-10-14",
+      "fuente": "ronda r38 (suite completa en serie)"
+    },
+    {
+      "metrica": "smoke_fallos",
+      "valor": 0,
+      "commit": "df0ff4d",
+      "fecha": "2026-10-14",
+      "fuente": "vault_smoke 123/123 sobre df0ff4d"
+    },
+    {
+      "metrica": "banco_tareas_fallidas",
+      "valor": 0,
+      "commit": "df0ff4d",
+      "fecha": "2026-10-14",
+      "fuente": "banco_agente --copiar-de /vcloud (copia; original intacto por hash), muestra 25"
+    },
+    {
+      "metrica": "recall_pack_ajeno",
+      "valor": 1.0,
+      "commit": "df0ff4d",
+      "fecha": "2026-10-14",
+      "fuente": "banco_agente --copiar-de /vcloud (copia; original intacto por hash), muestra 25"
+    },
+    {
+      "metrica": "colisiones_de_sanadores",
+      "valor": 0,
+      "commit": "efc8093",
+      "fecha": "2026-10-14",
+      "fuente": "C8 --colisiones sobre copia de /vcloud (original intacto por hash); 6 sanadores, 4 ociosos"
+    },
+    {
+      "metrica": "colisiones_de_sanadores",
+      "valor": 0,
+      "commit": "efc8093",
+      "fecha": "2026-10-14",
+      "fuente": "C8 --colisiones sobre copia de /ans (original intacto por hash); 4 desenmascarados en ADR-004, completar y graph_fix fallidos"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 0,
+      "commit": "42a6fa8",
+      "fecha": "2026-10-14",
+      "fuente": "pytest sobre suite.txt"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5600,
+      "commit": "42a6fa8",
+      "fecha": "2026-10-14",
+      "fuente": "pytest sobre suite.txt"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 4874.47,
+      "commit": "42a6fa8",
+      "fecha": "2026-10-14",
+      "fuente": "pytest sobre suite.txt"
+    },
+    {
+      "metrica": "smoke_fallos",
+      "valor": 0,
+      "commit": "42a6fa8",
+      "fecha": "2026-10-14",
+      "fuente": "vault_smoke sobre 124 tools"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 0,
+      "commit": "ae3c5df",
+      "fecha": "2026-10-15",
+      "fuente": "pytest sobre suite.txt"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5604,
+      "commit": "ae3c5df",
+      "fecha": "2026-10-15",
+      "fuente": "pytest sobre suite.txt"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 3951.77,
+      "commit": "ae3c5df",
+      "fecha": "2026-10-15",
+      "fuente": "pytest sobre suite.txt"
+    },
+    {
+      "metrica": "smoke_fallos",
+      "valor": 0,
+      "commit": "ae3c5df",
+      "fecha": "2026-10-15",
+      "fuente": "vault_smoke sobre 124 tools"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 1,
+      "commit": "abd5cc2",
+      "fecha": "2026-10-15",
+      "fuente": "pytest sobre suite.txt"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5624,
+      "commit": "abd5cc2",
+      "fecha": "2026-10-15",
+      "fuente": "pytest sobre suite.txt"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 3997.04,
+      "commit": "abd5cc2",
+      "fecha": "2026-10-15",
+      "fuente": "pytest sobre suite.txt"
+    },
+    {
+      "metrica": "smoke_fallos",
+      "valor": 0,
+      "commit": "abd5cc2",
+      "fecha": "2026-10-15",
+      "fuente": "vault_smoke sobre 124 tools"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 0,
+      "commit": "26c2b04",
+      "fecha": "2026-10-15",
+      "fuente": "pytest sobre suite.txt"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5624,
+      "commit": "26c2b04",
+      "fecha": "2026-10-15",
+      "fuente": "pytest sobre suite.txt"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 3436.61,
+      "commit": "26c2b04",
+      "fecha": "2026-10-15",
+      "fuente": "pytest sobre suite.txt"
+    },
+    {
+      "metrica": "smoke_fallos",
+      "valor": 0,
+      "commit": "26c2b04",
+      "fecha": "2026-10-15",
+      "fuente": "vault_smoke sobre 124 tools"
+    },
+    {
+      "metrica": "puertas_duracion_s",
+      "valor": 87.21,
+      "commit": "2fb0465",
+      "fecha": "2026-10-16",
+      "fuente": "vault_gate sobre 24 puertas"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 1,
+      "commit": "6940d1c",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r44 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5736,
+      "commit": "6940d1c",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r44 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 4492.65,
+      "commit": "6940d1c",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r44 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 0,
+      "commit": "0a5549d",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r45 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5737,
+      "commit": "0a5549d",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r45 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 4567.03,
+      "commit": "0a5549d",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r45 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 1,
+      "commit": "cc1aaa9",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r47 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5758,
+      "commit": "cc1aaa9",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r47 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 4391.35,
+      "commit": "cc1aaa9",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r47 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 1,
+      "commit": "d492db0",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r48 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5758,
+      "commit": "d492db0",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r48 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 4288.41,
+      "commit": "d492db0",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r48 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 0,
+      "commit": "c52f3e1",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r49 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5761,
+      "commit": "c52f3e1",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r49 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 4374.15,
+      "commit": "c52f3e1",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r49 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 0,
+      "commit": "9b897bb",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r50 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5772,
+      "commit": "9b897bb",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r50 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 4288.26,
+      "commit": "9b897bb",
+      "fecha": "2026-10-16",
+      "fuente": "ronda r50 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 0,
+      "commit": "9c85e2f",
+      "fecha": "2026-10-17",
+      "fuente": "ronda r51 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5804,
+      "commit": "9c85e2f",
+      "fecha": "2026-10-17",
+      "fuente": "ronda r51 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 3474.25,
+      "commit": "9c85e2f",
+      "fecha": "2026-10-17",
+      "fuente": "ronda r51 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 0,
+      "commit": "59f86d1",
+      "fecha": "2026-10-17",
+      "fuente": "ronda r52 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5844,
+      "commit": "59f86d1",
+      "fecha": "2026-10-17",
+      "fuente": "ronda r52 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 2967.96,
+      "commit": "59f86d1",
+      "fecha": "2026-10-17",
+      "fuente": "ronda r52 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 2,
+      "commit": "f1e5ac6",
+      "fecha": "2026-10-17",
+      "fuente": "ronda r53 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5852,
+      "commit": "f1e5ac6",
+      "fecha": "2026-10-17",
+      "fuente": "ronda r53 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 3187.43,
+      "commit": "f1e5ac6",
+      "fecha": "2026-10-17",
+      "fuente": "ronda r53 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 0,
+      "commit": "744d635",
+      "fecha": "2026-10-17",
+      "fuente": "ronda r54 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5852,
+      "commit": "744d635",
+      "fecha": "2026-10-17",
+      "fuente": "ronda r54 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 2555.56,
+      "commit": "744d635",
+      "fecha": "2026-10-17",
+      "fuente": "ronda r54 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 0,
+      "commit": "9bf32f3",
+      "fecha": "2026-10-17",
+      "fuente": "ronda r55 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5858,
+      "commit": "9bf32f3",
+      "fecha": "2026-10-17",
+      "fuente": "ronda r55 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 3275.55,
+      "commit": "9bf32f3",
+      "fecha": "2026-10-17",
+      "fuente": "ronda r55 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 0,
+      "commit": "e8500f7",
+      "fecha": "2026-10-17",
+      "fuente": "ronda r56 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5858,
+      "commit": "e8500f7",
+      "fecha": "2026-10-17",
+      "fuente": "ronda r56 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 3269.91,
+      "commit": "e8500f7",
+      "fecha": "2026-10-17",
+      "fuente": "ronda r56 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 1,
+      "commit": "8c59a48",
+      "fecha": "2026-10-18",
+      "fuente": "ronda r57 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5863,
+      "commit": "8c59a48",
+      "fecha": "2026-10-18",
+      "fuente": "ronda r57 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 3403.67,
+      "commit": "8c59a48",
+      "fecha": "2026-10-18",
+      "fuente": "ronda r57 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 0,
+      "commit": "6e4b926",
+      "fecha": "2026-10-18",
+      "fuente": "ronda r58 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5863,
+      "commit": "6e4b926",
+      "fecha": "2026-10-18",
+      "fuente": "ronda r58 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 3620.26,
+      "commit": "6e4b926",
+      "fecha": "2026-10-18",
+      "fuente": "ronda r58 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 0,
+      "commit": "9e2ea6c",
+      "fecha": "2026-10-18",
+      "fuente": "ronda r59 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 5863,
+      "commit": "9e2ea6c",
+      "fecha": "2026-10-18",
+      "fuente": "ronda r59 (suite completa en serie)"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 3516.01,
+      "commit": "9e2ea6c",
+      "fecha": "2026-10-18",
+      "fuente": "ronda r59 (suite completa en serie)"
+    },
+    {
+      "metrica": "contexto_agente_s",
+      "valor": 0.452,
+      "commit": "0b6c042",
+      "fecha": "2026-10-23",
+      "fuente": "medición real: parse 0.185s + pack 0.267s sobre vault temporal"
+    },
+    {
+      "metrica": "skip_path_escritura_s",
+      "valor": 4.569,
+      "commit": "0b6c042",
+      "fecha": "2026-10-23",
+      "fuente": "medición real: onboarding doble pasada sobre proyecto demo con git (2.ª pasada = 5 skipped, 0 escrituras)"
+    },
+    {
+      "metrica": "contexto_agente_s",
+      "valor": 0.587,
+      "commit": "0b6c042",
+      "fecha": "2026-10-23",
+      "fuente": "medición real: parse 0.27s + pack 0.317s sobre vault temporal"
+    },
+    {
+      "metrica": "contexto_agente_s",
+      "valor": 0.461,
+      "commit": "0b6c042",
+      "fecha": "2026-10-23",
+      "fuente": "medición real: parse 0.186s + pack 0.275s sobre vault temporal"
+    },
+    {
+      "metrica": "contexto_agente_s",
+      "valor": 0.454,
+      "commit": "0b6c042",
+      "fecha": "2026-10-23",
+      "fuente": "medición real: parse 0.177s + pack 0.277s sobre vault temporal"
+    },
+    {
+      "metrica": "contexto_agente_s",
+      "valor": 0.484,
+      "commit": "0b6c042",
+      "fecha": "2026-10-23",
+      "fuente": "medición real: parse 0.215s + pack 0.269s sobre vault temporal"
+    },
+    {
+      "metrica": "contexto_agente_s",
+      "valor": 0.739,
+      "commit": "0b6c042",
+      "fecha": "2026-10-23",
+      "fuente": "medición real: parse 0.283s + pack 0.456s sobre vault temporal"
+    },
+    {
+      "metrica": "skip_path_escritura_s",
+      "valor": 4.438,
+      "commit": "0b6c042",
+      "fecha": "2026-10-23",
+      "fuente": "medición real: onboarding doble pasada sobre proyecto demo con git (2.ª pasada = 5 skipped, 0 escrituras)"
+    },
+    {
+      "metrica": "contexto_agente_s",
+      "valor": 0.454,
+      "commit": "0b6c042",
+      "fecha": "2026-10-23",
+      "fuente": "medición real: parse 0.185s + pack 0.269s sobre vault temporal"
+    },
+    {
+      "metrica": "contexto_agente_s",
+      "valor": 0.709,
+      "commit": "0b6c042",
+      "fecha": "2026-10-23",
+      "fuente": "medición real: parse 0.297s + pack 0.412s sobre vault temporal"
+    },
+    {
+      "metrica": "skip_path_escritura_s",
+      "valor": 1.051,
+      "commit": "35ba058",
+      "fecha": "2026-10-23",
+      "fuente": "medición real: onboarding doble pasada sobre proyecto demo con git (2.ª pasada = 5 skipped, 0 escrituras)"
+    },
+    {
+      "metrica": "skip_path_escritura_s",
+      "valor": 1.105,
+      "commit": "35ba058",
+      "fecha": "2026-10-23",
+      "fuente": "medición real: onboarding doble pasada sobre proyecto demo con git (2.ª pasada = 5 skipped, 0 escrituras)"
+    }
+  ]
 }

@@ -12,7 +12,7 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~12.000 líneas). Fuente normativa. |
 | `scripts/*.py` | ~167 scripts, 126 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (6116 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (6119 tests). Toda norma con guard debe tener test. |
 | `normas/` | Normas como paquete (`normas/<código>/`: `norma.py`, `porque.md`, `guard.py`, `heal.py`, `test_*.py`). Las carga `vault_norms_catalog` en su sitio del catálogo; la forma la vigila `--check-framework`. Desde m186 toda norma vive aquí (cuántas, `NORMAS_EN_PAQUETE`). `guard.py`/`heal.py` son derivados —apuntan a la función dueña; los sanadores salen de `vault_norms_catalog.SANADORES`— y se regeneran con `vault_norms_engine.escribir_caras_derivadas`, no a mano. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
@@ -190,6 +190,14 @@ drift se cierra en cada commit sin intervención manual.
 - [ ] Pre-commit hook instalado: `git config core.hooksPath .githooks`
 - [ ] `python scripts/vault_gate.py --strict` → todas verdes.
 - [ ] `python -m pytest tests/ -q -n auto --tb=short` en verde.
+- [ ] Las dos, **en serie y no a la vez**. Las comparten el sandbox: `vault_toolkit_audit`
+      copia `vault-sandbox/` por cada línea de ejemplo de las 126 tools, y si la suite
+      está escribiendo ahí en ese momento la auditoría ve estado transitorio y publica
+      deuda nueva que no existe. Medido el 2026-10-23: `25/26` con `toolkit_audit` en
+      rojo por `DEBT_WOULD_GROW` de `vault_fix_all`, y `26/26` al correrla sola cinco
+      minutos después, sin tocar una línea. El verde que vale es el de la corrida
+      aislada; el paralelismo es una comodidad de quien las lanza, no una propiedad
+      del repo.
 - [ ] `git diff --stat vault-obsidian-architecture.md` sin borrados netos de contenido.
 - [ ] Si tocaste una versión: banner del manifiesto, tabla de versiones, entrada de
       changelog con hash real, badge del `README.md` y `version` de `pyproject.toml`.

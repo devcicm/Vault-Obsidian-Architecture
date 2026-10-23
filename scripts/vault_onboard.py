@@ -2901,12 +2901,42 @@ def vault_onboard(
             _record(_onboard_17_preferences(project, meta, agent, dry_run), "preferences")
 
     # 5. Update indexes
-    sections_to_index = [
-        s
-        for s in ORDERED_SECTIONS
-        if s not in _SECCIONES_NO_POBLADAS and not skip.intersection({s[:2]})
-    ]
-    created["indexes_updated"] = _update_indexes(sections_to_index, dry_run)
+    #
+    # A1 (v41.20): si la corrida no escribió ni una nota, regenerar los índices
+    # es rehacer trabajo por definición — nadie cambió lo que indexan. Medido:
+    # la segunda pasada sobre el mismo proyecto pagaba 4,4 s de reíndice para
+    # dejar todo como estaba (perfil del 2026-10-23: 59 reconstrucciones de
+    # índice de sección y 50 inventarios de nombres del vault entero).
+    #
+    # No cambia el contrato: `indexes_updated` sigue publicándose, y el
+    # envelope dice por qué va vacío. Lo que sí cambia es de quién es la
+    # responsabilidad de refrescar índices ajenos a esta corrida: de
+    # `vault_reindex`, que es la tool que existe para eso.
+    writes = merge_stats["created"] + merge_stats["merged"]
+    if writes == 0 and not dry_run:
+        created["indexes_updated"] = []
+        created["indexes_skipped"] = (
+            "sin escrituras: 0 creadas y 0 fusionadas — no hay nada que "
+            "reindexar (para refrescar índices de cambios ajenos: vault_reindex)"
+        )
+        created["search_index"] = {"ok": True, "skipped": True,
+                                   "reason": "sin escrituras"}
+    elif dry_run:
+        # En dry-run no se escribe nada: se publica la lista que se tocaría.
+        sections_to_index = [
+            s
+            for s in ORDERED_SECTIONS
+            if s not in _SECCIONES_NO_POBLADAS and not skip.intersection({s[:2]})
+        ]
+        created["indexes_updated"] = _update_indexes(sections_to_index, dry_run)
+    else:
+        # A2 (v41.20): la pasada que escribe NO regenera índices aquí. El paso
+        # 5b llama a `vault_reindex`, que ya reconstruye *todas* las secciones y
+        # el maestro antes de la búsqueda — el orden correcto, y medido en
+        # v40.7. Hacerlo también por sección aquí era la misma pasada dos veces:
+        # 59 reconstrucciones para 22 secciones en el perfil del 2026-10-23.
+        created["indexes_updated"] = []
+        created["indexes_rebuilt_by"] = "vault_reindex (paso 5b)"
 
     # 5b. Reconstruir el buscador (AP-47). Los `index.md` de sección son
     # navegación; `99_Index/search-index.json` es lo que responde a
@@ -2916,12 +2946,21 @@ def vault_onboard(
     # primer minuto, y el agente que no encontrara una nota la habría vuelto a
     # escribir. Es el mismo criterio que `sections_left_empty_by_design`: el
     # onboard no puede dejar deuda que él mismo sabe cerrar.
-    if not dry_run:
+    if not dry_run and writes > 0:
         try:
             from vault_reindex import vault_reindex
 
             resultado_reindex = vault_reindex()
             created["search_index"] = resultado_reindex
+            # `indexes_updated` publica lo que de verdad se regeneró: esta
+            # pasada rehace todas las secciones y el maestro, así que la lista
+            # son los `index.md` que existen, no los que se tocaron uno a uno.
+            creados_ahora = [
+                f"{s}/index.md" for s in ORDERED_SECTIONS
+                if s not in ("00_System", "99_Index")
+                and (_raiz() / s / "index.md").exists()
+            ]
+            created["indexes_updated"] = creados_ahora
             if not resultado_reindex.get("ok"):
                 warnings.append(
                     "search-index returned ok=False; ejecuta `vault_reindex` "

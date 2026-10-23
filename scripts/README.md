@@ -1804,7 +1804,9 @@ Tres cosas que no hace, y son la parte que importa:
 - **No se cree su propia salida** (AP-44). Relee cada nota del disco y valida el frontmatter con `yaml.safe_load`; los diagramas pasan por `vault_mermaid_check` y el que no valide no se escribe.
 - **No puebla `18_Bugs`, `19_Audits` ni `20_Quarantine`.** Son secciones dirigidas por eventos: llenarlas al arrancar sería inventar bugs que no han pasado. La salida lo declara en `sections_left_empty_by_design` para que su vacío se lea como estado correcto y no como trabajo pendiente.
 
-**Poblarlo todo pasa por `vault_io.escrituras_en_lote()`** (AP-47): el onboard es el escritor masivo del catálogo — una sola corrida puede traer 26, 54 o más notas — y sin lote cada una regeneraba índice de sección, grafo y escaneo de secretos por su cuenta. Medido sobre un proyecto demo con git: la primera corrida baja de ~13 s a ~8 s; el resultado en disco es el de escribir nota a nota. La segunda corrida no se beneficia porque no escribe: el costo que queda es el reindizado, que corre por diseño en cada pasada. La idempotencia del merge — segunda corrida todo `skipped` y los bytes idénticos — la afirma `test_segunda_corrida_no_reescribe_nada` desde una corrida real.
+**Poblarlo todo pasa por `vault_io.escrituras_en_lote()`** (AP-47): el onboard es el escritor masivo del catálogo — una sola corrida puede traer 26, 54 o más notas — y sin lote cada una regeneraba índice de sección, grafo y escaneo de secretos por su cuenta. Medido sobre un proyecto demo con git: la primera corrida baja de ~13 s a ~8 s; el resultado en disco es el de escribir nota a nota.
+
+**Y una corrida que no escribe no reindexa** (v41.20). El perfil del 2026-10-23 mostró que la segunda pasada sobre el mismo proyecto pagaba **4,4 s** para reconstruir 59 veces índices de sección y 50 veces el inventario de nombres del vault entero, y dejaba todo como estaba. Dos cambios: si `created + merged == 0` no hay nada que indexar, y el envelope lo declara en `indexes_skipped` — una lista vacía sin motivo es indistinguible de un fallo; y la pasada que sí escribe ya no regenera los índices dos veces — lo hace `vault_reindex` una sola vez, que es quien reconstruye todas las secciones y el maestro antes de la búsqueda. Medido: **primera pasada 8,4 s → 4,2 s; segunda 4,4 s → 1,1 s** (`skip_path_escritura_s`, objetivo ≤ 2 s). La idempotencia del merge — segunda corrida todo `skipped` y los bytes idénticos — la afirman `test_segunda_corrida_no_reescribe_nada` y `test_sin_escrituras_no_se_reindexa_y_se_dice` desde una corrida real.
 
 `--max-commits` acota la ventana de historia. Cuando se alcanza, la salida lo dice en `warnings`: el tope es un parámetro de la invocación, no un hecho del proyecto, y confundirlos convierte «500 commits» en un dato falso.
 
@@ -2824,7 +2826,10 @@ Las que cumplen 1–3 y no la 4 se publican como `arrastre_intracontexto` sin co
 ```bash
 python vault_procesos_git.py --check                    # lista los sitios fuera del dueño
 python vault_procesos_git.py --check --strict           # exit 1 si hay alguno (puerta 20)
+python vault_procesos_git.py --contrato                 # qué verbos se admiten y por qué
 ```
+
+`--contrato` es la otra mitad de la norma: una lista cerrada sin publicar es indistinguible de un capricho, así que la tool dice qué se puede pedir y el motivo escrito de cada mutador autorizado.
 
 **La auditoría que le dio nombre.** La pregunta era «¿ejecuta alguna tool git sin supervisión, o pasa comandos no autorizados, o sin idempotencia, o reescribiendo el git?». El veredicto fue que no —y que ese "no" no valía, porque no había nada detrás—:
 

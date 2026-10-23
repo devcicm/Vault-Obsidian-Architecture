@@ -61,7 +61,7 @@ from vault_version import CURRENT_VERSION
 
 from vault_regex import RE_WIKILINK_DESTINO  # dueño único del patrón (AP-50)
 from vault_audit_catalog import es_documentacion_del_estandar  # dueño único del criterio
-from vault_io import is_snapshot_path  # dueño único de qué es una instantánea
+from vault_io import is_ajeno_al_vault, is_snapshot_path  # dueños únicos de qué es instantánea y qué es ajeno
 from vault_lib import (  # dueños únicos de sus criterios (AP-57)
     separar_frontmatter,
     indice_de_destinos,
@@ -194,6 +194,19 @@ def contrastar(destino: Path) -> Dict[str, Any]:
     # motivo que `es_documentacion_del_estandar`: una segunda lista de carpetas
     # aquí se queda desactualizada el día que se añada la tercera.
     todas = [p for p in destino.rglob("*.md") if p.is_file()]
+    # Material de terceros que vive dentro de la carpeta del vault pero no es
+    # del vault: dependencias, cachés, metadatos de herramientas. Medido el
+    # 2026-10-23 en el primer contraste real de la regla 7: el único enlace
+    # roto del informe era el README de un paquete en `node_modules`. El
+    # criterio lo pone `vault_io.is_ajeno_al_vault`, no esta tool.
+    #
+    # Y lo que se excluye **se cuenta y se publica**: un filtro que se lleva
+    # 261 de 281 ficheros en silencio deja un informe que parece decir «este
+    # vault son 20 notas» cuando lo que dice es «no miré 261».
+    ajenos = [str(p.relative_to(destino)) for p in todas
+              if is_ajeno_al_vault(p.relative_to(destino))]
+    todas = [p for p in todas
+             if not is_ajeno_al_vault(p.relative_to(destino))]
     instantaneas = [
         str(p.relative_to(destino)) for p in todas
         if is_snapshot_path(p.relative_to(destino))
@@ -284,6 +297,11 @@ def contrastar(destino: Path) -> Dict[str, Any]:
         # explicar por qué es indistinguible de una medida que dejó de mirar.
         "snapshot_notes_excluded": instantaneas,
         "snapshot_notes_excluded_count": len(instantaneas),
+        # Material de terceros (node_modules y compañía) dentro de la carpeta:
+        # se excluye de la medida y se publica, porque fueron 261 de 281 en el
+        # primer vault real que se midió (2026-10-23).
+        "foreign_notes_excluded": len(ajenos),
+        "foreign_notes_excluded_sample": sorted(ajenos)[:5],
         "notes_measured": medidas,
         # Va junto al resultado y no enterrado: un recuento sobre `notes_measured`
         # no es un recuento sobre el vault, y quien lo lea tiene derecho a saberlo.

@@ -124,13 +124,31 @@ def test_los_pasos_en_el_orden_canonico():
         "blueprint",
         "doc_counts",
         "doc_sync",
+        # v41.21: las caras de norma son derivadas y el fixer no las regeneraba,
+        # así que cambiar una tool que nombra su norma dejaba `guard.py`
+        # desfasado hasta que la suite lo decía. Va al final: depende de que
+        # todo lo demás esté escrito.
+        "caras_de_norma",
     ]
 
 
-def test_cada_paso_apunta_a_un_script_que_existe():
+def test_cada_paso_apunta_a_su_dueno_que_existe():
+    """Un paso es un script con args, o un módulo con función (v41.21).
+
+    El segundo caso no es una comodidad: el dueño de las caras de norma expone
+    una función, no un CLI, y darle uno a la tool que no lo necesita sería
+    inventar superficie para satisfacer al fixer.
+    """
     for paso in vfa.PASOS:
-        script = ROOT / "scripts" / paso["script"]
-        assert script.exists(), f"{paso['script']} no existe en scripts/"
+        if paso.get("script"):
+            assert (ROOT / "scripts" / paso["script"]).exists(), \
+                f"{paso['script']} no existe en scripts/"
+        else:
+            assert paso.get("modulo") and paso.get("funcion"), paso
+            modulo = ROOT / "scripts" / f"{paso['modulo']}.py"
+            assert modulo.exists(), f"{paso['modulo']} no existe en scripts/"
+            assert paso["funcion"] in modulo.read_text(encoding="utf-8"), \
+                f"{paso['modulo']}.{paso['funcion']} no está definida"
 
 
 @pytest.mark.parametrize("paso", range(1, len(vfa.PASOS) + 1))
@@ -146,7 +164,9 @@ def test_dry_run_no_ejecuta():
     assert r["dry_run"] is True
     assert r["ok"] is True
     assert len(r["plan"]) == len(vfa.PASOS)
-    assert all("nombre" in p and "script" in p for p in r["plan"])
+    # cada paso del plan se identifica con su dueño: script o módulo (v41.21)
+    assert all("nombre" in p and ("script" in p or "modulo" in p)
+               for p in r["plan"])
 
 
 def test_el_conjunto_reporta_todos_los_pasos(repo_temporal):

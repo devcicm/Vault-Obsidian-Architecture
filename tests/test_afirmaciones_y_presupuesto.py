@@ -36,12 +36,25 @@ import vault_release as vr  # noqa: E402
 
 
 def test_p1_toda_propiedad_afirmada_tiene_puerta_o_motivo():
-    """Lo que el estándar afirma sobre sí mismo, con su ejecutor nombrado."""
+    """Lo que el estándar afirma sobre sí mismo, con su ejecutor nombrado.
+
+    Tres estados, y cada uno exige algo distinto: `con_puerta` prueba que la
+    puerta existe **ahora**; `medida` nombra sus instrumentos y los exige en
+    el registro de métricas; `descubierta` escribe por qué no hay nada. Un
+    cuarto estado es un error de clasificación, no una variante.
+    """
     assert len(vp.AFIRMADAS) >= 12, "el registro no cubre lo que dice cubrir"
     for a in vp.AFIRMADAS:
         if a["estado"] == "con_puerta":
             assert a["ejerce"](), f"{a['id']} dice tener puerta y no la tiene"
             assert a["quien"] and a["quien"] != "nadie, todavía", a["id"]
+        elif a["estado"] == "medida":
+            # `medida` no es un comodín: tiene que nombrar sus métricas y esas
+            # métricas tienen que existir, o vuelve a ser una afirmación sola
+            instrumentos = a.get("instrumento") or []
+            assert instrumentos, f"{a['id']} medida sin instrumento"
+            assert a["ejerce"](), f"{a['id']}: algún instrumento no está en METRICAS"
+            assert a.get("motivo", "").strip(), a["id"]
         else:
             assert a["estado"] == "descubierta", a
             # el motivo es lo que hace barato declarar un hueco: sin él, la
@@ -64,13 +77,33 @@ def test_p1_una_propiedad_que_pierde_su_puerta_pone_el_guard_en_rojo():
     assert vp.check()["ok"], "al restaurar, el guard vuelve a verde"
 
 
-def test_p1_el_contraste_de_otra_persona_esta_declarado_y_no_oculto():
-    """El hueco más caro de la lista tiene que estar escrito: es el único que
-    puede encontrar defectos que ninguna puerta de este repo puede ver."""
+def test_p1_el_contraste_de_otra_persona_tiene_puerta_con_recibo():
+    """La propiedad más cara de la lista: medir contra material que este repo
+    no generó. Estuvo `descubierta` hasta la v41.20; ahora su ejercidor es un
+    recibo fechado, y este test comprueba las dos mitades: que la puerta está
+    y que el recibo existe de verdad.
+
+    Lo que esta propiedad encontró al abrirse justifica que se pruebe: 261 de
+    281 ficheros del primer vault medido eran `node_modules`, y el único
+    enlace roto del informe era el README de una dependencia — un defecto del
+    criterio que ninguna puerta del repo podía ver.
+    """
     por_id = {a["id"]: a for a in vp.AFIRMADAS}
-    hueco = por_id["afirmada_funciona_en_un_vault_de_otra_persona"]
-    assert hueco["estado"] == "descubierta"
-    assert "foreign_check" in hueco["motivo"]
+    propiedad = por_id["afirmada_funciona_en_un_vault_de_otra_persona"]
+    assert propiedad["estado"] == "con_puerta", propiedad["estado"]
+    assert propiedad["ejerce"](), "dice tener puerta y el recibo no vale"
+    assert "node_modules" in propiedad["por_que"], \
+        "el hallazgo que la abrió tiene que quedar escrito"
+
+
+def test_p1_el_contraste_del_recibo_es_el_mismo_criterio_que_el_bump():
+    """AP-57: la propiedad y el gate del bump no pueden medir la vigencia con
+    varas distintas — el mismo recibo, el mismo plazo."""
+    recibo = RAIZ / "docs" / "contrastes" / "ultimo-contraste.json"
+    assert recibo.is_file(), "sin recibo, la propiedad no debería estar con_puerta"
+    c = vr._contraste_vigente(RAIZ, date.today())
+    assert c["vigente"], c
+    assert c["max_dias"] == 60, c
 
 
 # ── P2 · el coste que paga el agente ─────────────────────────────────────────

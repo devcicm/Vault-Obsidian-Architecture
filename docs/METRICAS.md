@@ -123,3 +123,5 @@
 | 2026-10-23 | `0b6c042` | `skip_path_escritura_s` | 4.438 | medición real: onboarding doble pasada sobre proyecto demo con git (2.ª pasada = 5 skipped, 0 escrituras) |
 | 2026-10-23 | `0b6c042` | `contexto_agente_s` | 0.454 | medición real: parse 0.185s + pack 0.269s sobre vault temporal |
 | 2026-10-23 | `0b6c042` | `contexto_agente_s` | 0.709 | medición real: parse 0.297s + pack 0.412s sobre vault temporal |
+| 2026-10-23 | `35ba058` | `skip_path_escritura_s` | 1.051 | medición real: onboarding doble pasada sobre proyecto demo con git (2.ª pasada = 5 skipped, 0 escrituras) |
+| 2026-10-23 | `35ba058` | `skip_path_escritura_s` | 1.105 | medición real: onboarding doble pasada sobre proyecto demo con git (2.ª pasada = 5 skipped, 0 escrituras) |

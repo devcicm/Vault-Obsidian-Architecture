@@ -9,5 +9,6 @@ de derivarlo; se regenera con `vault_norms_engine.escribir_caras_derivadas`.
 
 GUARD = [
     'scripts/vault_procesos_git.py::check',
+    'scripts/vault_procesos_git.py::contrato',
     'scripts/vault_procesos_git.py::main',
 ]

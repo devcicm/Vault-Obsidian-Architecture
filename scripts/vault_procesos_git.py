@@ -97,6 +97,32 @@ def check() -> Dict[str, Any]:
     }
 
 
+def contrato() -> Dict[str, Any]:
+    """Publica el criterio del dueño: qué verbos se admiten y con qué motivo.
+
+    AP-68 no es solo una puerta que dice «no»: es una lista cerrada, y una
+    lista cerrada sin publicar es indistinguible de un capricho. Esta es la
+    mitad que hace la norma usable por quien llega después — qué puede pedir,
+    qué no, y por qué el mutador que sí está autorizado lo está.
+    """
+    return {
+        "ok": True,
+        "tool": "vault_procesos_git",
+        "norm": "AP-68",
+        "action": "contrato",
+        "verbos_lectura": sorted(VERBOS_LECTURA),
+        "verbos_ambiguos": sorted(VERBOS_AMBIGUOS),
+        "mutadores_autorizados": MUTADORES_AUTORIZADOS,
+        "hint": (
+            "Los ambivalentes se admiten solo con su uso de lectura: "
+            "`branch -a` sí, `branch -D` no; `tag -l` sí, `tag v1` no; "
+            "`config --get` sí, `config k v` no. Un mutador nuevo entra en "
+            "MUTADORES_AUTORIZADOS con su motivo escrito, y ese diff es su "
+            "revisión."
+        ),
+    }
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description="vault_procesos_git — el git del toolkit pasa por un dueño (AP-68)",
@@ -104,9 +130,15 @@ def main() -> int:
     )
     ap.add_argument("--check", action="store_true",
                     help="Lista los sitios que levantan git fuera del dueño")
+    ap.add_argument("--contrato", action="store_true",
+                    help="Publica qué verbos admite el dueño y con qué motivo")
     ap.add_argument("--strict", action="store_true",
                     help="Exit 1 si hay algún sitio fuera del dueño")
     args = ap.parse_args()
+
+    if args.contrato:
+        print(json.dumps(contrato(), ensure_ascii=False))
+        return 0
 
     if not args.check:
         env = emit_error(

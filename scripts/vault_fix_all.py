@@ -112,11 +112,36 @@ PASOS: List[Dict[str, Any]] = [
         "args": ["--fix"],
         "por_que": "regenera la tabla de índice de scripts/README.md",
     },
+    {
+        # v41.21. `guard.py` y `heal.py` de cada paquete de norma son
+        # derivados: apuntan a las funciones que nombran la norma en su
+        # cuerpo. Su dueño es el motor de normas, y hasta aquí el fixer no lo
+        # llamaba — así que cambiar una tool que nombra su norma dejaba la
+        # cara desfasada hasta que la suite lo decía (medido el 2026-10-23
+        # con `--contrato` en vault_procesos_git: cinco tests en rojo por un
+        # artefacto que el fixer decía cerrar).
+        "nombre": "caras_de_norma",
+        "modulo": "vault_norms_engine",
+        "funcion": "escribir_caras_derivadas",
+        "por_que": "regenera normas/*/guard.py y heal.py desde las funciones que "
+                   "nombran cada norma (regla 3: doc derivada)",
+    },
 ]
 
 
 def _ejecutar_paso(paso: Dict[str, Any], paso_n: int) -> Dict[str, Any]:
-    cmd = [sys.executable, str(REPO_ROOT / "scripts" / paso["script"]), *paso["args"]]
+    if paso.get("modulo"):
+        # Un paso sin CLI: el dueño del artefacto expone una función, no un
+        # script. El intérprete imprime su envelope para que el fixer lo
+        # registre igual que los demás — un paso que no publica lo que hizo
+        # es indistinguible de uno que no corrió (AP-37).
+        cmd = [sys.executable, "-c",
+               "import json,sys;"
+               f"sys.path.insert(0, r'{REPO_ROOT / 'scripts'}');"
+               f"import {paso['modulo']} as m;"
+               f"print(json.dumps(m.{paso['funcion']}(), ensure_ascii=False))"]
+    else:
+        cmd = [sys.executable, str(REPO_ROOT / "scripts" / paso["script"]), *paso["args"]]
     try:
         r = ejecutar(
             cmd, cwd=str(REPO_ROOT),
@@ -126,7 +151,7 @@ def _ejecutar_paso(paso: Dict[str, Any], paso_n: int) -> Dict[str, Any]:
         return {
             **emit_error(
                 "vault_fix_all", "SERVICE_UNAVAILABLE",
-                f"no se pudo ejecutar {paso['script']}: {e}",
+                f"no se pudo ejecutar {paso.get('script') or paso.get('modulo')}: {e}",
             ),
             "paso": paso_n,
             "nombre": paso["nombre"],
@@ -166,7 +191,13 @@ def fix_all(dry_run: bool = False, solo_paso: int | None = None) -> Dict[str, An
             "dry_run": True,
             "written": 0,
             "plan": [
-                {"paso": n, "nombre": p["nombre"], "script": p["script"], "args": p["args"]}
+                {"paso": n, "nombre": p["nombre"],
+                 # Un paso es un script con args o un módulo con función: el
+                 # plan publica lo que hay, no lo que el primero de los dos
+                 # tenía (v41.21).
+                 **({"script": p["script"], "args": p["args"]}
+                    if p.get("script") else
+                    {"modulo": p["modulo"], "funcion": p["funcion"]})}
                 for n, p in pasos_a_correr
             ],
         }

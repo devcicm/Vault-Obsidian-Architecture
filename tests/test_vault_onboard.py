@@ -309,3 +309,36 @@ def test_segunda_corrida_no_reescribe_nada(vault, proyecto):
     )
     distintas = [p for p in antes if antes[p] != despues[p]]
     assert not distintas, f"la 2ª corrida reescribió notas: {[str(d) for d in distintas]}"
+
+
+def test_sin_escrituras_no_se_reindexa_y_se_dice(vault, proyecto):
+    """A1/A2 (v41.20): una corrida que no escribe no recompone índices.
+
+    Medido el 2026-10-23 con perfil: la 2.ª pasada pagaba 4,4 s para
+    reconstruir 59 veces índices de sección y 50 inventarios de nombres del
+    vault entero, y dejaba todo como estaba. Si `created + merged == 0` no hay
+    nada que reindexar; el envelope lo declara en vez de devolver una lista
+    vacía indistinguible de un fallo (AP-37/AP-51).
+    """
+    v, primera = vault
+    segunda = _correr(
+        "vault_onboard.py", str(v),
+        "--project", "demo-api", "--path", str(proyecto),
+    )
+    creado = segunda.get("created", {})
+
+    # la 2.ª no reindexa, y dice por qué
+    assert creado.get("indexes_updated") == [], (
+        f"la 2.ª pasada reindexó sin escribir: {creado.get('indexes_updated')}"
+    )
+    assert creado.get("indexes_skipped"), (
+        "si no reindexa tiene que declararlo; una lista vacía sin motivo es "
+        "indistinguible de un fallo"
+    )
+    assert segunda["merge_stats"]["created"] + segunda["merge_stats"]["merged"] == 0
+    # y el buscador también lo dice
+    assert segunda["created"]["search_index"].get("skipped") is True
+
+    # la 1.ª sí reindexa, y declara quién lo hizo
+    assert primera["created"].get("indexes_updated"), "la 1.ª pasada no reindexó"
+    assert "vault_reindex" in primera["created"].get("indexes_rebuilt_by", "")

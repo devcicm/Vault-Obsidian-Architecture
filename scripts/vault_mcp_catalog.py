@@ -3107,6 +3107,12 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Exit 1 si hay algun sitio fuera del dueno",
                 "validators": [],
             },
+            "contrato": {
+                "type": "boolean",
+                "required": False,
+                "description": "Publica los verbos admitidos y el motivo de cada mutador autorizado",
+                "validators": [],
+            },
         },
         "guards": [
             "Mide argv estaticos de scripts/, cli/, vault/ y mcp/: no ve un argv "
@@ -3120,7 +3126,8 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "side_effects": [],
         "example": (
             "python vault_procesos_git.py --check\n"
-            "python vault_procesos_git.py --check --strict"
+            "python vault_procesos_git.py --check --strict\n"
+            "python vault_procesos_git.py --contrato"
         ),
         "related": ["vault_arch", "vault_norms", "vault_gate", "vault_blueprint", "vault_changelog_check"],
     },

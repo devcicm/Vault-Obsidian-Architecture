@@ -1063,3 +1063,32 @@ def is_snapshot_path(rel: "str | Path") -> bool:
     """
     partes = str(rel).replace("\\", "/").split("/")
     return any(p in SNAPSHOT_DIRS for p in partes)
+
+
+#: Directorios que pueden vivir **dentro** de un vault sin ser del vault:
+#: dependencias instaladas, cachés y metadatos de herramientas. No son
+#: instantáneas —no hay nada que preservar— sino material de terceros que
+#: quedó ahí porque el vault es también una carpeta de trabajo.
+#:
+#: Medido el 2026-10-23 con la primera evidencia de consumidor de la regla 7
+#: (281 notas de un vault real): el único enlace roto del informe salía de
+#: `Plataforma/npm/node_modules/fast-glob/README.md`, que es la documentación
+#: de una dependencia, no una nota de nadie. Contarla como nota infla el
+#: total y convierte un `README` de paquete en un defecto del vault: el
+#: criterio de «qué es una nota» existía solo en el servidor MCP, y cada
+#: barrido de Python recorría el disco por su cuenta.
+#:
+#: Vive aquí por el mismo motivo que `SNAPSHOT_DIRS`: «qué es una nota viva»
+#: es del vault, no de un barrido concreto.
+DIRECTORIOS_AJENOS = ("node_modules", ".git", "__pycache__", ".venv", "venv",
+                      ".mypy_cache", ".pytest_cache", ".ruff_cache")
+
+
+def is_ajeno_al_vault(rel: "str | Path") -> bool:
+    """True si la ruta cae dentro de material de terceros, no del vault.
+
+    Mismo cuidado con los segmentos que `is_snapshot_path`: `node_modules`
+    como segmento, no como subcadena.
+    """
+    partes = str(rel).replace("\\", "/").split("/")
+    return any(p in DIRECTORIOS_AJENOS for p in partes)

@@ -764,6 +764,47 @@ def _afirmada_campos() -> bool:
     return _puerta_existe("vault_spec_catalog_check.py", "campos")
 
 
+def _metrica_existe(metrica: str) -> bool:
+    """¿La métrica que una propiedad `medida` nombra está en el registro?
+
+    Se lee el fichero, no se importa `vault_metricas`, por el mismo motivo que
+    `_puerta_existe`: esta tool es hoja y leer una lista no justifica
+    arrastrar el fan-out de la tool que la escribe.
+    """
+    texto = (RAIZ / "scripts" / "vault_metricas.py").read_text(encoding="utf-8")
+    return f'"id": "{metrica}"' in texto
+
+
+def _afirmadas_medidas() -> bool:
+    return (_metrica_existe("contexto_agente_s")
+            and _metrica_existe("skip_path_escritura_s"))
+
+
+def _contraste_ajeno_vigente() -> bool:
+    """¿Hay un contraste reciente contra un vault ajeno? (regla 7)
+
+    Se lee el recibo que escribe `vault_foreign_check --registrar-contraste`,
+    con el mismo plazo que aplica `vault_release`: la propiedad y el gate del
+    bump no pueden medir la vigencia con varas distintas (AP-57).
+
+    El primer recibo se escribió el 2026-10-23 contra un vault real de 281
+    ficheros, y encontró un defecto del criterio (node_modules contado como
+    nota) que ninguna puerta de este repo podía ver: por eso esta propiedad
+    importa más que las otras doce.
+    """
+    from datetime import date
+
+    recibo = RAIZ / "docs" / "contrastes" / "ultimo-contraste.json"
+    if not recibo.is_file():
+        return False
+    try:
+        datos = json.loads(recibo.read_text(encoding="utf-8"))
+        fecha = date.fromisoformat(str(datos.get("fecha", "")))
+    except (json.JSONDecodeError, OSError, ValueError):
+        return False
+    return 0 <= (date.today() - fecha).days <= 60
+
+
 #: La segunda mitad de PREGUNTAS: lo que el estándar **afirma sobre sí
 #: mismo**. La primera mitad son promesas al consumidor; esta son
 #: propiedades del repo cuya verdad depende de una máquina. Se separan porque
@@ -889,19 +930,15 @@ AFIRMADAS: List[Dict[str, Any]] = [
             "salido —siete títulos de frontmatter compuestos sin escapar, el "
             "criterio de documentación que comparaba el nombre exacto, dos "
             "conflictos AP-05 entre notas del mismo servidor— salieron "
-            "midiendo en solo lectura contra un vault consumidor."
+            "midiendo en solo lectura contra un vault consumidor. El cuarto "
+            "salió con el primer recibo de esta puerta: 261 de 281 ficheros "
+            "del vault medido eran `node_modules`, y el único enlace roto del "
+            "informe era el README de una dependencia."
         ),
-        "ejerce": lambda: False,
-        "quien": "nadie, todavía",
-        "estado": "descubierta",
-        "motivo": (
-            "`vault_foreign_check --root <ajeno>` existe y funciona, pero "
-            "llamarlo depende de que alguien tenga a mano un vault ajeno: no "
-            "hay ninguna puerta que lo exija ni una cadencia que lo venza. "
-            "Es el hueco más caro de esta lista porque es el único que puede "
-            "encontrar defectos que ninguna puerta de este repo puede ver. "
-            "Saldarlo: que `vault_release` exija un contraste reciente (v41.20)."
-        ),
+        "ejerce": _contraste_ajeno_vigente,
+        "quien": "docs/contrastes/ultimo-contraste.json (vault_foreign_check "
+                 "--registrar-contraste; mismo plazo de 60 días que vault_release)",
+        "estado": "con_puerta",
     },
     {
         "id": "afirmada_el_agente_recuerda_lo_que_opero",
@@ -932,16 +969,21 @@ AFIRMADAS: List[Dict[str, Any]] = [
             "memoria, que es la única forma de que esto falle sin que nada se "
             "rompa."
         ),
-        "ejerce": lambda: False,
-        "quien": "nadie, todavía",
-        "estado": "descubierta",
+        "ejerce": _afirmadas_medidas,
+        "quien": "vault_metricas: contexto_agente_s y skip_path_escritura_s "
+                 "(con objetivo, dueño y fecha)",
+        "estado": "medida",
+        "instrumento": ["contexto_agente_s", "skip_path_escritura_s"],
         "motivo": (
-            "Medido pero no vigilado: el skip-path del onboard paga ~7 s por "
-            "no escribir nada (v41.19), y la cadena "
-            "`vault_query_parse` → `vault_context_pack` no tiene métrica. "
-            "Este repo mide su propio coste —puertas, suite, baselines— y no "
-            "el de su consumidor, que es el único coste que le importa a "
-            "quien lo usa. Pendiente de métrica con dueño y fecha."
+            "Medida desde v41.20, no garantizada: hay instrumento con dueño y "
+            "fecha, pero **ninguna puerta falla si se incumple el objetivo** — "
+            "el aviso llega al vencer la fecha. Hoy las dos cumplen: la "
+            "consulta de contexto en 0,45 s (objetivo 12) y el skip-path del "
+            "onboarding en 1,05 s (objetivo 2). El skip-path estaba en 4,44 s "
+            "cuando se midió por primera vez, y bajó a 1,05 s al dejar de "
+            "reindexar cuando no hay escrituras y de rehacer dos veces el "
+            "mismo índice. Se llama `medida` y no `descubierta` porque el "
+            "hueco cambió de forma: ya no es «nadie lo mira»."
         ),
     },
 ]
@@ -997,7 +1039,11 @@ def medir() -> Dict[str, Any]:
         "filas": filas,
         "afirmadas": afirmadas,
         "afirmadas_total": len(afirmadas),
-        "afirmadas_con_puerta": len(afirmadas) - len(huecos),
+        # cada estado cuenta lo suyo: una propiedad `medida` tiene instrumento,
+        # no puerta, y meterla en el saco de las cubiertas es la clase de
+        # recuento que hace creer que hay más cobertura de la que hay
+        "afirmadas_con_puerta": sum(1 for a in afirmadas if a["estado"] == "con_puerta"),
+        "afirmadas_medidas_total": sum(1 for a in afirmadas if a["estado"] == "medida"),
         "afirmadas_descubiertas": huecos,
         # deuda nueva = una propiedad que decía tener puerta y ya no la tiene
         "afirmadas_sin_puerta": perdidas,
@@ -1024,12 +1070,19 @@ def check() -> Dict[str, Any]:
     ]
     afirmadas_desconocidas = [
         a["id"] for a in m["afirmadas"]
-        if a["estado"] not in ("con_puerta", "descubierta")
+        if a["estado"] not in ("con_puerta", "descubierta", "medida")
+    ]
+    # Una propiedad `medida` nombra sus instrumentos: si la métrica desaparece
+    # del registro, la propiedad vuelve a ser una afirmación sin nada detrás,
+    # y eso se ve aquí y no cuando alguien la echa de menos.
+    instrumentos_rotos = [
+        a["id"] for a in m["afirmadas"] if a["estado"] == "medida"
+        and any(not _metrica_existe(x) for x in a.get("instrumento", []))
     ]
     return {
         "ok": (not rotas and not sin_motivo and not desconocidos
                and not m["afirmadas_sin_puerta"] and not afirmadas_sin_motivo
-               and not afirmadas_desconocidas),
+               and not afirmadas_desconocidas and not instrumentos_rotos),
         "tool": "vault_produccion",
         "action": "check",
         "promesas": len(m["filas"]),
@@ -1043,10 +1096,14 @@ def check() -> Dict[str, Any]:
         "estados_desconocidos": desconocidos,
         "afirmadas": m["afirmadas_total"],
         "afirmadas_con_puerta": m["afirmadas_con_puerta"],
+        "afirmadas_medidas_total": m["afirmadas_medidas_total"],
         "afirmadas_descubiertas": m["afirmadas_descubiertas"],
         "afirmadas_sin_puerta": m["afirmadas_sin_puerta"],
         "afirmadas_descubiertas_sin_motivo": afirmadas_sin_motivo,
         "afirmadas_estados_desconocidos": afirmadas_desconocidas,
+        "afirmadas_medidas": [a["id"] for a in m["afirmadas"]
+                              if a["estado"] == "medida"],
+        "afirmadas_instrumentos_rotos": instrumentos_rotos,
         "filas": m["filas"],
         "afirmadas_filas": m["afirmadas"],
         "hint": (
