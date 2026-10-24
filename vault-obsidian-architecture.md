@@ -8297,7 +8297,7 @@ temp/
 
 ---
 
-### v41.22 — 2026-10-23 `git: pending`
+### v41.22 — 2026-10-23 `git: 8f24030`
 
 v41.22 cierra el eje de propiedad. **ADRs con responsable** (AP-64 aplicado al propio repo, no solo a los vaults de los consumidores): un ADR sin responsable no es una decision, es una intencion. **El changelog publica quien aprobo cada version**, derivado de git —el mismo origen que sello el hash—, sin cambiar el formato de la tabla. **Los docs vivos declaran su dueno** (`<!-- propiedad: ... -->`) y un guard clasifica cada doc en derivado, registro o vivo; el guard encontro tres que estaban mal clasificados, entre ellos los dos modos agenticos. **docs/GOBIERNO.md**, derivado de los registros, responde ahora 'quien responde de que': el propietario sale del banner del manifiesto y los responsables de cada decision, de los ADR. Y **vault/kernel/rutas.py** es el dueno del layout del repo, con un guard cuya baseline (177 literales) solo encoge. El ciclo destapo cinco copias donde tocaba delegar: la lista de origenes de la deteccion de raiz (reescrita a mano en un test,ayedaba 6 de 9), un criterio con dueno re-enunciado, un perfil de MCP que el repo ya recortaba, el compromiso de una baseline y la ruta del disco dentro de un recibo versionado. Cada una se salta preguntando al dueno, no arreglando el sintoma.
 
