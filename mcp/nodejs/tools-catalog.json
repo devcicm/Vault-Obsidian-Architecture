@@ -7511,7 +7511,7 @@
     "vault_backup_base64",
     "vault_restore_base64"
   ],
-  "standard_version": "v41.22",
+  "standard_version": "v41.23",
   "errors": {
     "AP17_DUPLICATE_TITLE": {
       "category": "governance",
