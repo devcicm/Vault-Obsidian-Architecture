@@ -149,15 +149,16 @@ pip install -e .
 
 ```bash
 # Instalado con pip (wheel o `pip install .`): el servidor viaja en el paquete.
-# Imprime su ruta y la entrada lista para la configuración del cliente MCP,
-# con VAULT_MCP_PYTHON fijado al intérprete del venv. Pon tu VAULT_ROOT.
-vault mcp-path
+# Imprime su ruta y la entrada lista para la configuración del cliente MCP
+# (VAULT_ROOT del vault y VAULT_MCP_PYTHON del intérprete). Registro por
+# proyecto: la entrada se pega en el .mcp.json del proyecto consumidor.
+vault mcp-path --root $PWD/vault-mi-proyecto
 
-# Alternativa desde el checkout — Opción A: symlink (requiere sudo en Linux/macOS)
-sudo ln -sf "$(pwd)/mcp/nodejs/vault-mcp-server.mjs" /usr/local/bin/vault-mcp
+# Con candado de proyecto (PROJECT_NOT_FOUND si el proyecto no existe):
+vault mcp-path --root $PWD/vault-mi-proyecto --project mi-proyecto
 
-# Opción B: python installer
-python -m vault.install --mcp
+# El procedimiento completo —quitar la instalación previa, instalar la wheel,
+# comprobar el handshake a mano— es docs/INSTALACION-LIMPIA.md.
 ```
 
 Para un agente, añade `VAULT_MCP_PERFIL=agente` al `env` de la entrada MCP: el
@@ -168,10 +169,10 @@ recordar, escribir, borrar y cerrar—, derivadas de
 **Desinstalar:**
 
 ```bash
-pip uninstall -y vault-obsidian-architecture
-# Si instalaste MCP:
-rm -f /usr/local/bin/vault-mcp
-# O con el uninstaller:
+pip uninstall -y vault-obsidian-architecture  # el servidor MCP viaja con ella
+
+# Si registros el MCP en el .mcp.json del proyecto, quita la entrada al desinstalar;
+# el uninstaller de checkout sigue disponible para instalaciones a mano:
 python -m vault.uninstall --mcp
 ```
 
@@ -223,17 +224,21 @@ vault_obsidian_architecture.egg-info/
 vault --version                          # CLI version
 vault tools list                         # tools activas
 python -m vault.gobernanza.tool --help   # tool de gobernanza
-vault-mcp --help                         # MCP server (si instalado)
+vault mcp-path                           # servidor MCP + entrada del cliente
 ```
 
 ### 6. Documentar el proyecto
 
 ```bash
-# Identidad del vault
-python scripts/vault_write.py --folder "00_System" \
+# Identidad del vault — con autor: VAULT_AGENT o --agent (00_System queda
+# exento, pero las notas de contenido no). El content gate exige ≥3 líneas
+# reales con ≥10 palabras: no deja crear notas a medias.
+VAULT_AGENT=claude python scripts/vault_write.py --folder "00_System" \
   --title "Vault Identity" \
-  --meta '{"cia_integrity":"high","agent":"claude","type":"identity"}' \
-  --content "Vault del proyecto X. Agente: claude."
+  --meta '{"type":"identity"}' \
+  --content "Vault del proyecto X para el servicio de reservas.
+    Lo opera un agente con cargo a la memoria documental,
+    y cada sesion deja registro en el change-log."
 
 # Registrar el proyecto: las tools de proyecto lo exigen (PROJECT_NOT_FOUND si falta)
 python scripts/vault_project.py --add mi-proyecto --title "Mi proyecto"
@@ -338,6 +343,23 @@ python scripts/vault_norms.py --check-framework    # guard anti-drift registro �
 ```
 
 ---
+
+## Novedades v41.22–v41.23 — La reinstalación limpia probada a ciegas
+
+- **Una misma regla de salida en las dos vías.** Las tools que contestan en
+  prosa llevan el campo `json_flag` del catálogo; el servidor MCP se lo
+  pedía y `vault run` no. Ahora la CLI de producto lo pide sola, por el
+  mismo dueño del criterio. Detectada siguiendo la guía de instalación
+  contra la wheel instalada, con test de las dos vías.
+- **El registro del MCP es por proyecto.** `vault mcp-path` imprime el
+  servidor que viaja en la wheel y la entrada del cliente; con `--project`
+  añade el candado (`VAULT_PROJECT_LOCK`, `PROJECT_NOT_FOUND` para uno que
+  no exista). Handshake y desinstalado comprobados en
+  [docs/INSTALACION-LIMPIA.md](./docs/INSTALACION-LIMPIA.md).
+- **Tres lecciones del piloto e2e**, ahora en la nota del changelog: los
+  skeletons `00-*` los crea `vault init`; el contenido exige ≥3 líneas
+  reales y ≥10 palabras; cruzar secciones con `vault_move` exige
+  reclasificar (`--type`).
 
 ## Novedades v40.35 — Producto para terceros
 
@@ -614,7 +636,7 @@ Contiene:
 - Mapa canónico script→carpeta (tabla authoritative)
 - Protocolo de inicialización corregido con comandos exactos
 - Protocolo de sesión para LLMs remotos (Claude API, GPT, Gemini, DeepSeek)
-- Sistema de versionado con migraciones automáticas (v19 → v40)
+- Sistema de versionado con migraciones automáticas (v19 → v41)
 - Changelog completo, desde v1
 - Compatibilidad con Obsidian Desktop
 
