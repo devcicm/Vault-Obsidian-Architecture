@@ -1,5 +1,7 @@
 # Seis capas conceptuales
 
+<!-- propiedad: CARLOS IVAN CM · revisión: manual -->
+
 Esta es una **vista conceptual y explicativa del producto**, no una arquitectura
 normativa. Las capas no sustituyen los contextos acotados, capacidades,
 naturalezas, taxonomías, arquitectura canónica, blueprint ni registros normativos

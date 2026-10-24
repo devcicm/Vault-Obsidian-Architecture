@@ -1,5 +1,7 @@
 # Modo agéntico de onboarding
 
+<!-- propiedad: CARLOS IVAN CM · revisión: manual -->
+
 Procedimiento para tomar un **proyecto de código que nunca tuvo vault** y poblarle
 uno que respete las normas desde la primera nota.
 

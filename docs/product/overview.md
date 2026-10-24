@@ -1,5 +1,7 @@
 # Visión de producto — Vault Obsidian Architecture
 
+<!-- propiedad: CARLOS IVAN CM · revisión: manual -->
+
 **Versión:** 1.0
 **Fecha:** 2026-09-20
 **Estado:** Draft

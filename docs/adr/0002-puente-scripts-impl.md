@@ -5,6 +5,7 @@
 - **Fecha:** 2026-09-27
 - **Decisión:** Fachada de re-export en `scripts/vault_regex.py` + `package-dir` en `pyproject.toml`
 - **Alcance:** resolución de imports entre el checkout fuente y la wheel instalada; no redefine la arquitectura de contextos
+- **Responsable:** CARLOS IVAN CM — mantenedor del estándar (autor en el banner del manifiesto). Los cambios de esta decisión requieren su aprobación explícita y un ADR nuevo que la supersede.
 
 ## Contexto
 

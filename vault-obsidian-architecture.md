@@ -716,9 +716,18 @@ vault-backups/
 
 ---
 
-## Las 69 Tools del Vault — Referencia Completa
+## Las Tools del Vault — Contrato normativo
 
-> **Tools vs Skills:** las 68 **tools** son funciones atómicas registradas en el harness — cada una hace exactamente una cosa. Una **skill** es un protocolo de múltiples pasos (secuencia de tools + lógica de decisión) que el agente ejecuta para un objetivo complejo. Las skills no son tools adicionales — son instrucciones de orquestación referenciadas en los casos de uso concretos (ej: `security-auditor`, `vault-migrator`). Un agente puede implementar skills como instrucciones en su system prompt o como flujos de trabajo.
+> **Dónde está la referencia completa y vigente.** El catálogo de las tools
+> registradas — el número actual, sus parámetros y sus ejemplos — vive en
+> `scripts/README.md`, que `vault_doc_sync` verifica contra el catálogo Python;
+> y en el recurso MCP `vault://catalog`, que el servidor publica en runtime.
+> Este documento **no** repite esa referencia: lleva el **contrato normativo**
+> de las herramientas de memoria — qué garantizan, qué no, y las convenciones
+> que ninguna firma de función puede expresar. Una referencia copiada a mano
+> aquí envejecería en la dirección cómoda (AP-47).
+
+> **Tools vs Skills:** las **tools** son funciones atómicas registradas en el harness — cada una hace exactamente una cosa. Una **skill** es un protocolo de múltiples pasos (secuencia de tools + lógica de decisión) que el agente ejecuta para un objetivo complejo. Las skills no son tools adicionales — son instrucciones de orquestación referenciadas en los casos de uso concretos (ej: `security-auditor`, `vault-migrator`). Un agente puede implementar skills como instrucciones en su system prompt o como flujos de trabajo.
 
 > **Convención de parámetro `project`:** en todas las tools, `project` es siempre un **slug kebab-case** del nombre del proyecto (ej: `"mi-api"`, `"vault-ans"`, `"ecommerce-backend"`). Nunca usar el nombre con espacios ni mayúsculas. El slug es el identificador canónico que determina las rutas de carpeta en el vault.
 
@@ -8270,7 +8279,7 @@ temp/
 | Vector DB | Costoso en recursos; el score ponderado por palabras es suficiente para <10K notas |
 | Obsidian plugins | Solo funciona en Obsidian, no en el loop del agente |
 
-**Markdown + carpetas numeradas + 53 tools especializadas** es el punto óptimo para agentes LLM:
+**Markdown + carpetas numeradas + tools especializadas** es el punto óptimo para agentes LLM:
 - Zero dependencias externas
 - Legible por humanos
 

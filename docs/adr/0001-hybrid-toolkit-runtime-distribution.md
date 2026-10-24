@@ -4,6 +4,7 @@
 - **Fecha:** 2026-09-06
 - **Decisión:** Modelo D — híbrido
 - **Alcance:** distribución y frontera de propiedad; no redefine la arquitectura canónica
+- **Responsable:** CARLOS IVAN CM — mantenedor del estándar (autor en el banner del manifiesto). Los cambios de esta decisión requieren su aprobación explícita y un ADR nuevo que la supersede.
 
 ## Contexto
 

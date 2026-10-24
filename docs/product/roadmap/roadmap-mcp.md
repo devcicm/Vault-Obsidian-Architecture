@@ -1,5 +1,7 @@
 # Roadmap — MCP Server
 
+<!-- propiedad: CARLOS IVAN CM · revisión: manual -->
+
 **Horizonte:** 6 meses (Q4 2026 — Q2 2027)
 **Versión inicial:** v1.0
 

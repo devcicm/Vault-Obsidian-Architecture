@@ -22,7 +22,8 @@ import pytest
 SCRIPTS = Path(__file__).parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
-import vault_io  # noqa: E402
+import vault_io
+from vault.kernel import raiz as vault_raiz  # noqa: E402
 from vault_norms import _CONTAMINATION_DEPTH, _VAULT_ARTIFACT_NAMES, vault_norms_audit  # noqa: E402
 
 import vault_grafo_import as gi  # noqa: E402
@@ -109,14 +110,11 @@ def test_importing_vault_io_creates_no_directories(tmp_path):
 
 
 def test_vault_root_origin_values_are_known():
-    assert vault_io.vault_root_origin() in {
-        "env",
-        "sibling_vault_dir",
-        "sibling_vault_dir_fresh",
-        "scripts_inside_vault",
-        "spec_repo_sandbox",
-        "repo_root_fallback",
-    }
+    # El conjunto lo declara el dueño (vault.kernel.raiz): una lista escrita
+    # aquí se queda vieja en silencio —el 2026-10-23 la suite falló en
+    # paralelo porque conocíamos 6 de 8 origenes y el detector devolvió
+    # `client_cwd`— (AP-57).
+    assert vault_io.vault_root_origin() in vault_raiz.ORIGENES_CONOCIDOS
     assert vault_io.vault_root_is_confident() == (
         vault_io.vault_root_origin() not in vault_io.LOW_CONFIDENCE_ORIGINS
     )
@@ -261,3 +259,45 @@ def test_restore_reports_both_locations_when_missing():
     result = vault_restore.vault_restore("no-existe-jamas", confirm=True)
     assert result["ok"] is False
     assert len(result["searched"]) == 2
+
+
+def test_todo_origen_del_codigo_esta_declarado():
+    """El conjunto declarado cubre lo que el detector puede devolver.
+
+    El otro lado del mismo acuerdo: si el detector aprende un origen nuevo y
+    nadie lo declara, el conjunto se queda viejo en la otra dirección —y el
+    test de arriba seguiría en verde con un origen que el contrato no
+    reconoce. Se lee el código y se comparan las dos listas.
+    """
+    import ast as _ast
+
+    from vault.kernel import raiz as vault_raiz
+
+    raiz_py = Path(vault_raiz.__file__)
+    arbol = _ast.parse(raiz_py.read_text(encoding="utf-8"))
+    producidos = set()
+    for nodo in _ast.walk(arbol):
+        if not isinstance(nodo, _ast.Assign):
+            continue
+        if not any(isinstance(tg, _ast.Name) and tg.id == "_VAULT_ROOT_ORIGIN"
+                   for tg in nodo.targets):
+            continue
+        # el valor puede ser una condicional ("env" if ... else "env_inexistente"):
+        # se recogen las dos ramas
+        for sub in _ast.walk(nodo.value):
+            if isinstance(sub, _ast.Constant) and isinstance(sub.value, str):
+                producidos.add(sub.value)
+    assert producidos, "el detector dejó de nombrar origenes: revisa el codigo"
+    sin_declarar = producidos - vault_raiz.ORIGENES_CONOCIDOS
+    assert not sin_declarar, (
+        f"el detector puede devolver {sorted(sin_declarar)} y no estan en "
+        "ORIGENES_CONOCIDOS: el conjunto del dueño tiene que crecer en el "
+        "mismo commit que introduce el origen"
+    )
+    # y al reves: un origen declarado que el codigo no produce es una promesa
+    # que nadie cumple
+    sin_producir = vault_raiz.ORIGENES_CONOCIDOS - producidos
+    assert not sin_producir, (
+        f"ORIGENES_CONOCIDOS declara {sorted(sin_producir)} y el detector no "
+        "los produce nunca"
+    )

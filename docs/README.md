@@ -1,5 +1,7 @@
 # Documentación
 
+<!-- propiedad: CARLOS IVAN CM · revisión: manual -->
+
 Índice de `docs/`. La fuente normativa es el
 [manifiesto](../vault-obsidian-architecture.md); lo de aquí lo explica, lo
 deriva o lo archiva.
@@ -25,6 +27,8 @@ deriva o lo archiva.
 | Documento | Para qué |
 |---|---|
 | [Arquitectura](ARQUITECTURA.md) | Contextos acotados y fronteras — derivado: se regenera con `vault_arch --blueprint` |
+| [Gobierno del estándar](GOBIERNO.md) | Qué es una norma, la escalera de enforcement, qué es ley del consumidor vs del mantenedor, el mapa capacidad→grupo→tool y el vocabulario — derivado: se regenera con `vault_servicio --doc` |
+| [Mapa del manifiesto](MAPA-MANIFIESTO.md) | Cada titular de nivel 2 del manifiesto clasificado: qué es norma, qué es guía, qué es registro — cruzado por `test_mapa_manifiesto.py` |
 | [Puertas de cierre](PUERTAS.md) | Qué mide cada puerta, cómo se arregla y por qué existe — derivado de `vault_gate.PUERTAS` y de los docstrings: se regenera con `vault_gate --fix-doc` |
 | [Plano de construcción](BLUEPRINT.md) | Derivado de los registros: se regenera con `vault_blueprint --blueprint`, no se edita |
 | [Seis capas conceptuales](architecture/layers.md) | Piezas y responsabilidades |

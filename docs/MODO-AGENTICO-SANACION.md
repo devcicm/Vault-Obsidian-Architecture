@@ -1,5 +1,7 @@
 # Modo agéntico de sanación
 
+<!-- propiedad: CARLOS IVAN CM · revisión: manual -->
+
 Procedimiento para tomar un vault **preexistente** —creado sin el estándar, o con
 una versión vieja— y dejarlo gobernado, sin perder nada de lo que ya decía.
 

@@ -54,6 +54,7 @@ no sirven— es exactamente el fallo que este módulo existe para evitar.
 
 import argparse
 import ast
+import re
 import json
 import sys
 from pathlib import Path
@@ -441,11 +442,30 @@ def check(strict: bool = False) -> Dict[str, Any]:
     #     de lo que viaja la necesita sin declararlo con un `except ImportError`.
     wheel = check_de_la_wheel()
 
+    # 12. El mapa derivado de la gobernanza (v41.21) refleja los registros:
+    #     si alguien edita `docs/GOBIERNO.md` a mano o los registros cambian
+    #     sin regenerar, el mapa dice lo que ya no es — AP-47 con formato de
+    #     doc. Se regenera en memoria y se compara contra el disco.
+    destino_doc = _RAIZ / "docs" / "GOBIERNO.md"
+    generado = escribir_doc(ruta=destino_doc.with_suffix(".regenerado.md"))
+    regenerado = destino_doc.with_suffix(".regenerado.md").read_text(
+        encoding="utf-8")
+    destino_doc.with_suffix(".regenerado.md").unlink(missing_ok=True)
+    doc_drift = None
+    if not destino_doc.is_file():
+        doc_drift = "docs/GOBIERNO.md no existe: regenera con --doc"
+    elif destino_doc.read_text(encoding="utf-8") != regenerado:
+        doc_drift = (
+            "docs/GOBIERNO.md difiere de lo que los registros producirían: "
+            "regenera con --doc. Lo escrito a mano se pierde — el registro es "
+            "la fuente")
+
     ok = not (
         huerfanos or inventados or duplicados or vacias or sin_servicio
         or sin_naturaleza or naturaleza_inventada or naturaleza_duplicada
         or naturalezas_vacias or desacuerdos
         or wheel["exclusion_drift"] or wheel["shipped_imports_of_excluded"]
+        or doc_drift
     )
     resultado = {
         "ok": ok,
@@ -467,6 +487,7 @@ def check(strict: bool = False) -> Dict[str, Any]:
         "duplicated_natures": naturaleza_duplicada,
         "empty_natures": naturalezas_vacias,
         "axis_disagreements": desacuerdos,
+        "doc_drift": doc_drift,
         "wheel": wheel,
         "hint": (
             "Un grupo huérfano no se arregla ampliando una capacidad al azar: se "
@@ -507,6 +528,221 @@ def listar() -> Dict[str, Any]:
     }
 
 
+def escribir_doc(ruta: "Path | None" = None) -> Dict[str, Any]:
+    """Deriva `docs/GOBIERNO.md` desde los registros. No se edita a mano.
+
+    La pregunta que contesta —qué es una norma, qué es ley del estándar y qué
+    es regla del propio repo, y quién vigila qué— estaba repartida entre el
+    manifiesto, `docs/PUERTAS.md`, `docs/sdd/04-antipatterns.md` y el catálogo.
+    Cuatro lectores armando el mismo modelo a mano es AP-57 con formato de
+    documentación: cada cifra aquí sale del registro que la posee, y `--check`
+    falla si el documento se aparta de la regeneración (el criterio de
+    `docs/METRICAS.md`).
+    """
+    from datetime import date
+
+    from vault_gate import PUERTAS
+    from vault_norms_catalog import NORM_CATALOG
+
+    # El propietario del estándar se deriva del banner del manifiesto: no se
+    # escribe aquí — un dueño escrito a mano en un derivado es un dueño que se
+    # desincroniza del registro que lo declara.
+    from vault_audit_catalog import manifiesto_del_estandar
+
+    manifiesto = manifiesto_del_estandar(_RAIZ)
+    banner = re.search(
+        r"^\*\*Autor:\*\*\s*(.+)$",
+        manifiesto.read_text(encoding="utf-8") if manifiesto else "",
+        re.MULTILINE,
+    )
+    propietario = banner.group(1).strip() if banner else "sin declarar"
+    responsables_adr = sorted(
+        m.group(1).strip()
+        for m in re.finditer(
+            r"^\s*-\s*\*\*Responsable:\*\*\s*([^—(]+)",
+            "\n".join(
+                (p.read_text(encoding="utf-8", errors="replace")
+                 for p in sorted((_RAIZ / "docs" / "adr").glob("*.md"))),
+            ),
+            re.MULTILINE,
+        )
+    )
+
+    filas = trazabilidad()
+    normas_por_tipo: Dict[str, int] = {}
+    normas_por_enforcement: Dict[str, int] = {}
+    for n in NORM_CATALOG:
+        normas_por_tipo[n["type"]] = normas_por_tipo.get(n["type"], 0) + 1
+        normas_por_enforcement[n["enforcement"]] = (
+            normas_por_enforcement.get(n["enforcement"], 0) + 1)
+
+    from vault.meta_toolkit.naturalezas import NATURALEZAS
+    from vault.meta_toolkit.protocolo_de_sesion import _tools_del_protocolo
+
+    meta_tools = set(NATURALEZAS["meta_estandar"]["tools"])
+    n_herramientas_meta = len(meta_tools)
+    # el mismo corte que hace el catálogo al publicar: se le pregunta a la
+    # capacidad, que es su dueña
+    from vault_mcp_catalog import grupos_no_expuestos
+    n_meta_no_expuestas = sum(
+        1 for d in _mapa_de_grupos().values() if d["name"] in set(grupos_no_expuestos()))
+
+    por_capacidad: Dict[str, List[Dict[str, str]]] = {}
+    for f in filas:
+        por_capacidad.setdefault(f["capability"] or "sin clasificar", []).append(f)
+
+    lineas: List[str] = [
+        "# Gobierno del estándar",
+        "",
+        f"_Derivado el {date.today().isoformat()} de los registros canónicos. "
+        "Se regenera con `python scripts/vault_servicio.py --doc` y no se "
+        "edita a mano: lo escrito aquí se pierde (AP-47)._",
+        "",
+        "## El servicio y sus tres capacidades",
+        "",
+    ]
+    for cap_id, cap in CAPACIDADES.items():
+        lineas.append(
+            f"- **{cap['titulo']}** (`{cap_id}`) — {cap['resultado']} Sirve a: "
+            f"`{cap['sirve_a']}`.")
+    lineas += [
+        "",
+        "## Las cuatro familias de normas",
+        "",
+        f"{len(NORM_CATALOG)} normas vivas, cada una un paquete en "
+        "`normas/<código>/`. El catálogo derivado completo está en "
+        "[docs/sdd/04-antipatterns.md](sdd/04-antipatterns.md).",
+        "",
+    ]
+    for prefijo, tipo, titulo, que in [
+        ("AP", "antipattern", "Anti-patrón",
+         "Un fallo con nombre, señal, prevención y límites. La unidad "
+         "normativa principal."),
+        ("PAT", "pattern", "Patrón",
+         "La forma recomendada de resolver algo que el estándar ya resolvió "
+         "mal una vez."),
+        ("SP", "session_protocol", "Protocolo de sesión",
+         "Reglas de proceso entre el agente y el vault durante una sesión."),
+        ("CN", "convention", "Convención",
+         "Un acuerdo de nomenclatura o forma que mantiene el vault legible y "
+         "predecible."),
+    ]:
+        lineas.append(
+            f"- **{prefijo}** · {titulo} — {que} "
+            f"({normas_por_tipo.get(tipo, 0)} vigentes).")
+    lineas += [
+        "",
+        "## La escalera de enforcement",
+        "",
+    ]
+    for nivel, que in [
+        ("guard", "Falla en el punto de uso: la tool se niega a hacerlo mal."),
+        ("guard+audit", "Y además una puerta la mide sobre el repo entero."),
+        ("audit", "Una puerta la mide; se arregla en el siguiente ciclo."),
+        ("recommended", "Se publica, no se fuerza. La cobertura débil se declara."),
+    ]:
+        lineas.append(
+            f"- **{nivel}** ({normas_por_enforcement.get(nivel, 0)} normas) — {que}")
+    lineas += [
+        "",
+        "## Qué es ley para quién",
+        "",
+        "- **Para quien usa el vault**: las normas, aplicadas por las tools de "
+        "escritura y consulta — contrato de nota, vocabulario de estados, "
+        "protocolo de borrado.",
+        # El criterio de «esto es documentación del estándar y no una nota»
+        # tiene dueño (vault_audit_catalog); aquí no se re-enuncia: se le
+        # pregunta, y el mapa publica lo que responde (AP-57).
+        "- **Para quien mantiene este repositorio**: la gobernanza del "
+        "meta-toolkit — el conjunto de tools cuya naturaleza es "
+        f"`meta_estandar` ({n_herramientas_meta}), que miden este repo y no "
+        f"el vault de nadie, por las {len(PUERTAS)} puertas de "
+        "`docs/PUERTAS.md`.",
+        "",
+        "## La superficie que ve el agente por MCP",
+        "",
+        f"El catálogo marca `exposed_via_mcp` y el servidor MCP lo respeta: "
+        f"las {n_meta_no_expuestas} tools de gobernanza **no** llegan al "
+        "cliente (el recorte lo deriva de la capacidad "
+        "`gobernanza_del_estandar`, no de una lista escrita a mano). "
+        "`VAULT_MCP_PERFIL=agente` reduce el menú a las "
+        f"{len(_tools_del_protocolo())} del protocolo de sesión, y el "
+        "servidor poda además en runtime las tools cuyo script no existe.",
+        "",
+        "## El mapa: capacidad → grupo → tool",
+        "",
+    ]
+    for cap_id, cap in CAPACIDADES.items():
+        filas_cap = por_capacidad.get(cap_id, [])
+        lineas.append(f"### {cap['titulo']} — {len(filas_cap)} tools (`{cap_id}`)")
+        lineas.append("")
+        grupos: Dict[str, List[str]] = {}
+        for f in filas_cap:
+            grupos.setdefault(f"{f['group']} ({f['group_id']})", []).append(f["tool"])
+        for grupo, tools_g in sorted(grupos.items()):
+            lineas.append(f"- **{grupo}** — {', '.join(sorted(tools_g))}")
+        lineas.append("")
+    lineas += [
+        "## El vocabulario y su dueño",
+        "",
+        "- **`meta.status`** (12 valores) — `vault_norms_catalog.STATUS_VOCAB`.",
+        "- **Secciones del vault y su clase documental** — `vault_registry`.",
+        "- **Instantáneas congeladas** — `vault_io.SNAPSHOT_DIRS`.",
+        "- **Material ajeno al vault** (`node_modules`, cachés) — "
+        "`vault_io.DIRECTORIOS_AJENOS`.",
+        "- **Los verbos de git que el toolkit ejecuta** — "
+        "`vault/kernel/procesos_git.py` (AP-68).",
+        "- **Las causas del dominio** — `vault/kernel/fallos.py`.",
+        "- **Los códigos de error y su recuperación** — `ERROR_CATALOG` en "
+        "`vault/kernel/errores.py`.",
+        "",
+        "## Cómo se lee una norma",
+        "",
+        "1. `normas/<código>/norma.py` — la declaración: qué fallo es, "
+        "severidad, enforcement, de qué se distingue.",
+        "2. `porque.md` — por qué existe y qué dejó fuera, con el alcance "
+        "declarado.",
+        "3. `guard.py` / `heal.py` — apuntan a las funciones que la aplican: "
+        "derivados, no escritura.",
+        "4. El `test_*.py` del paquete la ejercita.",
+        "5. La versión pública completa: "
+        "[docs/sdd/04-antipatterns.md](sdd/04-antipatterns.md).",
+        "",
+        "## Quién responde",
+        "",
+        "- **Por el estándar**: el mantenedor que declara el banner del "
+        f"manifiesto — **{propietario}**. No hay segunda instancia: cada "
+        "release pasa por una invocación explícita de `vault_release "
+        "--nueva-version`, y el autor del commit lo deja registrado en git "
+        "— la misma fuente que selló el hash del changelog.",
+        "- **Por cada decisión de arquitectura**: el `Responsable:` "
+        f"declarado en cada ADR de `docs/adr/` — {' · '.join(sorted(set(responsables_adr)))}. "
+        "AP-64 aplicado al propio repo (v41.21): un ADR sin responsable no "
+        "es una decisión, es una intención.",
+        "- **Por cada duda de norma**: el catálogo (`vault_norms --show "
+        "<código>`) y el `porque.md` del paquete, que declara qué quedó fuera "
+        "y por qué.",
+        "- **Por cada promesa al consumidor**: el ejercedor que declara "
+        "`vault_produccion`; por cada propiedad afirmada, la puerta o el "
+        "instrumento de `AFIRMADAS`.",
+        "",
+        "## Las puertas",
+        "",
+        f"La gobernanza se ejerce por {len(PUERTAS)} puertas de cierre, una por "
+        "registro. El porqué de cada una está en "
+        "[docs/PUERTAS.md](PUERTAS.md), derivado de `vault_gate.PUERTAS`.",
+        "",
+    ]
+
+    destino = ruta or (_RAIZ / "docs" / "GOBIERNO.md")
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    texto = "\n".join(lineas)
+    destino.write_text(texto, encoding="utf-8")
+    return {"ok": True, "tool": "vault_servicio", "action": "doc",
+            "written": str(destino.relative_to(_RAIZ)).replace("\\", "/"),
+            "bytes": len(texto.encode("utf-8"))}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Servicio de negocio del estándar y capacidades que lo realizan"
@@ -519,13 +755,19 @@ def main() -> int:
     )
     parser.add_argument("--check", action="store_true", help="trazabilidad exigida")
     parser.add_argument(
+        "--doc", action="store_true",
+        help="regenera docs/GOBIERNO.md, el mapa derivado de la gobernanza",
+    )
+    parser.add_argument(
         "--wheel-sync", action="store_true",
         help="regenera empaquetado/fuera-de-la-wheel.json desde CAPACIDADES",
     )
     parser.add_argument("--strict", action="store_true", help="exit 1 si falla")
     args = parser.parse_args()
 
-    if args.wheel_sync:
+    if args.doc:
+        salida = escribir_doc()
+    elif args.wheel_sync:
         salida = escribir_volcado_de_la_wheel()
     elif args.naturalezas:
         salida = {

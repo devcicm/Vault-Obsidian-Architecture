@@ -1,5 +1,7 @@
 # Instalación limpia y registro del MCP
 
+<!-- propiedad: CARLOS IVAN CM · revisión: manual -->
+
 El README explica la instalación de un checkout para desarrollar
 (`pip install -e .`). Esta guía cubre lo que hace un tercero: **quitar** lo que
 hubiera, **instalar la wheel** y **registrar el servidor MCP** que viaja dentro

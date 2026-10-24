@@ -1,5 +1,7 @@
 # Evolución hacia un toolkit instalable
 
+<!-- propiedad: CARLOS IVAN CM · revisión: manual -->
+
 Este documento registra decisiones y evidencia de la recuperación PR5. Es una
 bitácora de ingeniería, no una fuente canónica de catálogos, versiones,
 arquitectura o artefactos derivados.

@@ -285,8 +285,13 @@ def test_fijar_hash_no_inventa_nada_si_no_hay_pending(tmp_path, monkeypatch):
     if not C.hay_git():
         pytest.skip("sin repositorio git")
     r = C.fijar_hash()
-    assert not r["ok"] and r["error_code"] == "NOTHING_TO_FIX"
-    assert "recovery" in r
+    # v41.22: sellar lo que ya está sellado es un no-op explícito, no un
+    # error — la idempotencia del ritual de release. Lo que no puede pasar es
+    # que se invente un hash: el manifiesto queda intacto.
+    assert r["ok"] is True, r
+    assert r.get("already_sealed") is True, r
+    assert "v99.9" in r.get("detalle", ""), r
+    assert falso.read_text(encoding="utf-8").count("abc1234") == 1, "no invento un hash"
 
 
 def test_fijar_hash_rechaza_un_commit_que_no_existe(monkeypatch):
@@ -360,3 +365,74 @@ def test_congelar_conserva_lo_que_no_entiende_y_escribe_en_lf(tmp_path, monkeypa
     datos = json.loads(crudo)
     assert datos["objetivo"]["dueno"] == "changelog"
     assert datos["fechas_divergentes"] == {}
+
+
+def test_sellar_dos_veces_es_un_no_op(tmp_path, monkeypatch):
+    """Sellar una version ya sellada no es un fallo: es idempotencia.
+
+    El ritual de release ejecuta `--fijar-hash` en su segundo commit, con la
+    version ya sellada. Antes eso devolvia un error (`NOTHING_TO_FIX`), y el
+    ejemplo documentado de la tool —`--fijar-hash --dry-run`— quedaba
+    roto la mitad de las veces: entre releases no hay nada pendiente (AP-42).
+
+    El no-op dice explicitamente que version es y que no hay nada que hacer:
+    callar tambien seria mentir, solo que de otra manera.
+    """
+    import json as _json
+
+    import vault_changelog_check as cc
+
+    manifiesto = tmp_path / "manifiesto.md"
+    manifiesto.write_text(
+        "## Changelog\n\n"
+        "### v41.99 — 2026-10-22 `git: 0123456`\n\n"
+        "una entrada ya sellada\n",
+        encoding="utf-8")
+    monkeypatch.setattr(cc, "SPEC", manifiesto)
+    import vault_version
+    monkeypatch.setattr(vault_version, "CURRENT_VERSION", "v41.99")
+    monkeypatch.setattr(cc, "hay_git", lambda: True)
+    def _git_falso(*a):
+        if a[0] == "rev-parse":
+            return "0123456"
+        if a[0] == "cat-file":
+            return "commit"
+        return "2026-10-22"
+
+    monkeypatch.setattr(cc, "_git", _git_falso)
+
+    env = cc.fijar_hash(dry_run=True)
+    assert env["ok"] is True, env
+    assert env.get("already_sealed") is True, env
+    assert "v41.99" in env.get("detalle", ""), env
+    # y el manifiesto no se toca: sellar lo que ya esta sellado no escribe
+    antes = manifiesto.read_text(encoding="utf-8")
+    cc.fijar_hash()
+    assert manifiesto.read_text(encoding="utf-8") == antes
+
+
+def test_una_version_sin_entrada_en_el_changelog_sigue_siendo_error(tmp_path, monkeypatch):
+    """El otro caso, que no se puede tapar con el no-op: la version en curso no
+    tiene fila. Eso es deriva — se subio el numero sin escribir su entrada — y
+    un error es lo que corresponde."""
+    import vault_changelog_check as cc
+
+    manifiesto = tmp_path / "manifiesto.md"
+    manifiesto.write_text("## Changelog\n\n### v41.98 — 2026-10-22 `git: abc`\n",
+                          encoding="utf-8")
+    monkeypatch.setattr(cc, "SPEC", manifiesto)
+    import vault_version
+    monkeypatch.setattr(vault_version, "CURRENT_VERSION", "v41.99")
+    monkeypatch.setattr(cc, "hay_git", lambda: True)
+    def _git_falso(*a):
+        if a[0] == "rev-parse":
+            return "0123456"
+        if a[0] == "cat-file":
+            return "commit"
+        return "2026-10-22"
+
+    monkeypatch.setattr(cc, "_git", _git_falso)
+
+    env = cc.fijar_hash(dry_run=True)
+    assert env["ok"] is False, env
+    assert env.get("error_code") == "NOTHING_TO_FIX", env

@@ -2656,7 +2656,8 @@ Dos registros: `SERVICIO` —memoria documental persistente, auditable y goberna
 ```bash
 python vault_servicio.py --list            # servicio, restricciones y capacidades
 python vault_servicio.py --trace           # una fila por tool: grupo → capacidad → servicio
-python vault_servicio.py --check --strict  # la trazabilidad, sin eslabón roto
+python vault_servicio.py --check --strict
+python vault_servicio.py --doc                # regenera docs/GOBIERNO.md (el mapa de la gobernanza)  # la trazabilidad, sin eslabón roto
 ```
 
 **Trazabilidad exigida, que es lo que lo hace registro y no prosa:** todo grupo pertenece a exactamente una capacidad, ninguna capacidad reclama un grupo inexistente, ningún grupo está en dos, toda capacidad tiene al menos una tool viva y toda capacidad sirve a un servicio declarado. **Sin baseline**: se mide cero al declararla porque los 37 grupos se clasifican en la misma tanda, y una baseline aquí permitiría añadir un grupo sin decidir a qué sirve — justo el vacío que la tool cierra. Los `group_id` salen de `mapa_de_grupos()`; no hay una numeración propia.

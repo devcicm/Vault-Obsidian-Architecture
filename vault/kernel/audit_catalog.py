@@ -68,6 +68,23 @@ DOCUMENTACION_DEL_ESTANDAR: Dict[str, str] = {
 MARCA_DEL_ESTANDAR = "vault obsidian architecture"
 
 
+def manifiesto_del_estandar(raiz: "Path") -> "Optional[Path]":
+    """La ruta del manifiesto —la documentación del estándar— dentro de `raiz`.
+
+    Lo decide el dueño del criterio (`es_documentacion_del_estandar`): quien
+    necesite el manifiesto **no lo busca por su nombre en un segundo sitio**,
+    lo pregunta. Es la diferencia entre un criterio con dueño y un literal
+    repetido (AP-57) — y la que un guard de copias detecta.
+    """
+    from pathlib import Path as _Path
+
+    base = _Path(raiz)
+    for p in sorted(base.glob("*.md")):
+        if es_documentacion_del_estandar(p.name):
+            return p
+    return None
+
+
 def es_documentacion_del_estandar(rel: str, contenido: Optional[str] = None) -> bool:
     """¿Esta ruta es documentación del estándar y no una nota del vault?
 

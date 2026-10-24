@@ -6307,6 +6307,10 @@
             "type": "boolean",
             "description": "Trazabilidad exigida: grupos huerfanos, capacidades vacias"
           },
+          "doc": {
+            "type": "boolean",
+            "description": "regenera docs/GOBIERNO.md, el mapa derivado de la gobernanza"
+          },
           "wheel-sync": {
             "type": "boolean",
             "description": "regenera empaquetado/fuera-de-la-wheel.json desde CAPACIDADES"

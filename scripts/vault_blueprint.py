@@ -1740,6 +1740,8 @@ _BASELINES = [
      "AP-61 — la excepción declarada no es la que escapa"),
     ("recursos-baseline.json", "sitios",
      "AP-62 — el consumidor cruza para leer un recurso y paga el fan-out"),
+    ("rutas-baseline.json", "sitios",
+     "v41.21 — el layout del repo escrito como literal fuera de su dueño vault/kernel/rutas.py; solo encoge"),
 ]
 
 

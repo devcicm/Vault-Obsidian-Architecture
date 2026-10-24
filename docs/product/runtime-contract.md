@@ -1,5 +1,7 @@
 # Runtime Contract
 
+<!-- propiedad: CARLOS IVAN CM · revisión: manual -->
+
 Este documento define la frontera verificable del **runtime documental** en el
 modelo híbrido. No redefine secciones, vocabularios, capacidades, normas ni
 arquitectura. Cuando necesite esos datos, el toolkit debe leer sus registros

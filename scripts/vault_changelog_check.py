@@ -187,6 +187,40 @@ def _tipos_de_hashes(hashes: List[str]) -> Dict[str, str]:
     return tipos
 
 
+def _autores_de_hashes(hashes: List[str]) -> Dict[str, str]:
+    """Autor (`%an`) de muchos hashes en un solo subprocess (v41.22).
+
+    AP-64 aplicado a las releases: quién aprobó cada versión es un dato que
+    git ya tiene, y publicarlo aquí lo vuelve legible sin que nadie tenga que
+    excavar el log. Misma mecánica que `_fechas_de_hashes`, a la que acompaña.
+    """
+    if not hashes:
+        return {}
+    validos = _hashes_validos(hashes)
+    if not validos:
+        return {}
+    try:
+        r = procesos_git.ejecutar_git(
+            REPO_ROOT, ["show", "-s", "--format=%H %an", *validos],
+            capture_output=True, timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError, procesos_git.GitProhibido):
+        return {}
+    if r.returncode != 0:
+        return {}
+    autores: Dict[str, str] = {}
+    for linea in r.stdout.splitlines():
+        partes = linea.split(" ", 1)
+        if len(partes) != 2:
+            continue
+        completo = partes[0]
+        autores[completo] = partes[1]
+        for h in hashes:
+            if completo.startswith(h):
+                autores[h] = partes[1]
+    return autores
+
+
 def _fechas_de_hashes(hashes: List[str]) -> Dict[str, str]:
     """Fecha de autoría (`%as`) de muchos hashes en un solo subprocess (v40.34).
 
@@ -420,19 +454,64 @@ def fijar_hash(hash_objetivo: Optional[str] = None,
     )
     encontrado = viejo.search(texto)
     if not encontrado:
-        return {
-            "ok": False,
-            "tool": "vault_changelog_check",
-            "error_code": "NOTHING_TO_FIX",
-            "error": (
-                f"No hay una entrada `### {CURRENT_VERSION} — … `git: pending`` "
-                "en el changelog"
-            ),
-            "recovery": (
+        # Dos casos que antes se confundían en un mismo error:
+        #
+        # 1. La versión en curso **ya está sellada**. Sellar dos veces no
+        #    es un fallo: es la idempotencia de la operación, y el ritual de
+        #    release la ejecuta así en el segundo commit. Se responde con
+        #    un no-op explícito —no con un error, y no en silencio: se dice
+        #    qué versión es y que no hay nada que hacer.
+        # 2. La versión en curso **no tiene entrada** en el changelog. Eso
+        #    sí es deriva: se subió el número sin escribir su fila.
+        #
+        # El ejemplo documentado de la tool es `--fijar-hash --dry-run`, y
+        # entre releases no hay nada pendiente: un ejemplo que solo funciona
+        # en un instante concreto es un ejemplo que el auditor de tools
+        # marca como roto la mitad de las veces (AP-42).
+        entrada = re.search(
+            r"^### " + re.escape(CURRENT_VERSION) + r" — ", texto, re.MULTILINE
+        )
+        if entrada:
+            # Si el caller pedía un hash concreto y el publicado es otro,
+            # eso no es 'no hay nada que hacer': es un intento de cambiar lo
+            # que ya está sellado. Se dice, no se calla.
+            publicado = re.search(
+                r"^### " + re.escape(CURRENT_VERSION) + r" — .*?`git: ([0-9a-f]+)`",
+                texto, re.MULTILINE)
+            if hash_objetivo and publicado and publicado.group(1) != hash_objetivo:
+                return emit_error(
+                    "vault_changelog_check", "CONFLICTING_ARGS",
+                    f"{CURRENT_VERSION} ya está sellada con "
+                    f"`{publicado.group(1)}` y se pidió sellarla con "
+                    f"`{hash_objetivo}`",
+                    pista=(
+                        "una versión sellada no se re-sella: si el hash "
+                        "publicado no es el que creías, el problema está "
+                        "en el changelog, no en esta llamada"
+                    ),
+                )
+            return {
+                "ok": True,
+                "tool": "vault_changelog_check",
+                "action": "fijar_hash",
+                "sealed": False,
+                "already_sealed": True,
+                "version": CURRENT_VERSION,
+                "detalle": (
+                    f"{CURRENT_VERSION} ya está sellada: no hay nada que "
+                    "sellar. Volver a sellar no es un fallo, es la "
+                    "idempotencia del ritual de release."
+                ),
+            }
+        return emit_error(
+            "vault_changelog_check", "NOTHING_TO_FIX",
+            f"No hay una entrada `### {CURRENT_VERSION} — … `git: pending`` "
+            "en el changelog",
+            pista=(
                 "Escribe primero la entrada de la versión con `git: pending`, "
                 "o comprueba que CURRENT_VERSION es la que crees"
             ),
-        }
+        )
 
     fecha_vieja = encontrado.group(2)
     # La fecha se toma del commit, no se conserva la escrita a mano: es
@@ -522,9 +601,11 @@ def listar() -> Dict[str, Any]:
     disponible = hay_git()
     for e in todas:
         fila = dict(e)
+        autores = _autores_de_hashes([e["hash"]])
         if disponible and e["hash"] not in NO_HASH:
             fila["commit_date"] = _git("show", "-s", "--format=%as", e["hash"])
             fila["exists"] = _git("cat-file", "-t", e["hash"]) == "commit"
+            fila["aprobado_por"] = autores.get(e["hash"])
         filas.append(fila)
     return {
         "ok": True,

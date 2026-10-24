@@ -43,7 +43,27 @@ def _env(v: Path) -> dict:
 @pytest.fixture(scope="module")
 def copia_con_proyecto(tmp_path_factory):
     v = tmp_path_factory.mktemp("ejemplos") / "vault"
-    shutil.copytree(ROOT / "vault-sandbox", v, ignore=shutil.ignore_patterns(".locks"))
+    # Copiar el sandbox compartido mientras otros workers escriben en él
+    # falla en Windows: un fichero abierto para escritura no se puede leer,
+    # y `copytree` levanta PermissionError —que pytest reporta como ERROR
+    # de fixture, no como fallo de aserción—. Se reintenta: la copia es
+    # idempotente y lo que hace falta es una foto estable, no la primera.
+    import time
+
+    ultimo_error = None
+    for intento in range(5):
+        try:
+            shutil.copytree(ROOT / "vault-sandbox", v,
+                            ignore=shutil.ignore_patterns(".locks"))
+            ultimo_error = None
+            break
+        except PermissionError as exc:
+            ultimo_error = exc
+            shutil.rmtree(v, ignore_errors=True)
+            time.sleep(0.5 * (intento + 1))
+    assert ultimo_error is None, (
+        f"no se pudo copiar el sandbox tras 5 intentos: {ultimo_error}"
+    )
     if not (v / "01_Projects" / "mi-api").exists():
         r = subprocess.run(
             [sys.executable, str(ROOT / "scripts" / "vault_project.py"),

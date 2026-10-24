@@ -54,6 +54,22 @@ _VAULT_ROOT_ORIGIN: str = "unknown"
 #: existe no es una orden de crearla —`vault_init` tampoco lo hace—, es un
 #: error de configuración, y su sitio es el mismo que el del fallback.
 LOW_CONFIDENCE_ORIGINS = frozenset({"repo_root_fallback", "env_inexistente"})
+#: Los origenes que esta deteccion puede producir. Declarados aqui, en el
+#: dueno, porque un test que reescriba la lista a mano se queda viejo en
+#: silencio: el 2026-10-23 la suite fallo en paralelo porque el test
+#: conocia 6 de estos 8 y el detector devolvio `client_cwd`. Preguntar al
+#: dueno (AP-57) es lo que evita que la copia se pudra.
+ORIGENES_CONOCIDOS = frozenset({
+    "env",
+    "env_inexistente",
+    "sibling_vault_dir",
+    "sibling_vault_dir_fresh",
+    "scripts_inside_vault",
+    "spec_repo_sandbox",
+    "repo_root_fallback",
+    "client_cwd",
+    "puntero_repo",
+})
 
 
 def es_paquete_python(directorio) -> bool:

@@ -1,5 +1,7 @@
 # PRD — MCP (Model Context Protocol Server)
 
+<!-- propiedad: CARLOS IVAN CM · revisión: manual -->
+
 **Producto:** Vault-Obsidian-Architecture MCP Server
 **Versión target:** v1.0
 **Fecha:** 2026-09-20
