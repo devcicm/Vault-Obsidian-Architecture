@@ -335,6 +335,13 @@ def cmd_run(args: argparse.Namespace) -> int:
         return EXIT_PREFLIGHT_FAILED
 
     assert result.estado == INSTALLED and result.module is not None
+    # AP-57/42: qué tool necesita `--json` tiene dueño —el catálogo lo
+    # publica como `json_flag`— y el servidor MCP lo cumple. `vault run` es
+    # el mismo contrato por otra vía: es la CLI que la guía manda a leer
+    # como JSON, así que se lo pide si nadie lo pasó antes, sin cambiar
+    # ninguna otra bandera de la llamada.
+    if result.tool.json_flag and "--json" not in args.args:
+        args.args = [*args.args, "--json"]
     process = subprocess.run([sys.executable, "-m", result.module, *args.args])
     return 0 if process.returncode == 0 else EXIT_OPERATION_FAILED
 

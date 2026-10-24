@@ -128,6 +128,11 @@ vault tools show vault_gobernanza        # detalle de una tool
 vault run vault_audit                   # ejecutar una tool
 ```
 
+Las tools que contestan en prosa (el catálogo las publica como
+`json_flag`) devuelven su envelope con `--json`; lo pide solo la CLI de
+producto y el servidor MCP, no hace falta pasarlo a mano.
+
+
 **Script directo** (sin instalación):
 
 ```bash
@@ -226,14 +231,19 @@ vault tools list
 
 ### Integrar el MCP server
 
-```bash
-# Instalar symlink
-sudo ln -sf /ruta/al/Vault-Obsidian-Architecture/mcp/nodejs/vault-mcp-server.mjs \
-            /usr/local/bin/vault-mcp
+El servidor que viaja dentro de la wheel y la entrada que el cliente
+necesita las imprime la CLI; el registro se hace **por proyecto**, no
+global (el procedimiento completo y el handshake de comprobación están en
+[docs/INSTALACION-LIMPIA.md](INSTALACION-LIMPIA.md)):
 
-# Ejecutar
-vault-mcp --vault /ruta/al/tu-vault
+```bash
+vault mcp-path --root /ruta/al/tu-vault          # ruta del servidor + entrada del cliente
+vault mcp-path --root <vault> --project <slug>   # con candado de proyecto
 ```
+
+La entrada que imprime lleva `node`, el `VAULT_ROOT` del vault y el
+`VAULT_MCP_PYTHON` del intérprete donde quedó instalada la wheel. Pegarla
+en el `.mcp.json` del proyecto consumidor es todo el registro.
 
 ---
 

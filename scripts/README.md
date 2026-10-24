@@ -232,6 +232,8 @@ ninguna y, si alguna no encaja, no mueve nada.
 
 ---
 
+Contesta en prosa; `--json` devuelve el envelope de la tool. La CLI de producto (`vault run`) y el servidor MCP se lo piden solos: el criterio es del catálogo, `json_flag`.
+
 ## Grupo 2 — Observabilidad
 
 ### `vault_log_error.py`
@@ -342,6 +344,8 @@ python vault_mermaid_check.py --fix --json
 
 ---
 
+Contesta en prosa; `--json` devuelve el envelope de la tool. La CLI de producto (`vault run`) y el servidor MCP se lo piden solos: el criterio es del catálogo, `json_flag`.
+
 ### `vault_diagram_export.py`
 Exporta diagramas con opciones de visualización persistidas (zoom, pan, dirección, nodos resaltados u ocultos). Sirve para sacar una vista concreta de un diagrama grande sin editar el original.
 
@@ -354,6 +358,8 @@ python vault_diagram_export.py --config --zoom 1.5 --fit   # guarda configuraci�
 ```
 
 ---
+
+Contesta en prosa; `--json` devuelve el envelope de la tool. La CLI de producto (`vault run`) y el servidor MCP se lo piden solos: el criterio es del catálogo, `json_flag`.
 
 ## Grupo 5 — Conocimiento
 
@@ -499,6 +505,8 @@ python vault_graph_inspect.py --include-migrated    # incluye 10_Migrated/ (excl
 
 ---
 
+Contesta en prosa; `--json` devuelve el envelope de la tool. La CLI de producto (`vault run`) y el servidor MCP se lo piden solos: el criterio es del catálogo, `json_flag`.
+
 ### `vault_gobernanza.py`
 
 Valida contenido contra las normas de gobernanza del MCP: secret scan (`AP-08`), content gate, brackets y Mermaid. Diseñada como puerta de entrada del MCP — llamada antes de que un agente escriba contenido en el vault.
@@ -583,6 +591,8 @@ python vault_graph_fix.py --stubs --apply                        # crea stubs pa
 `--auto-fix-safe` resuelve sin preguntar únicamente lo inequívoco. Los `partial_match` por debajo del umbral se **saltan y se registran**, nunca se adivinan: un enlace mal reparado es peor que uno roto, porque deja de reportarse.
 
 Una nota cuyo frontmatter ya no parseaba antes de tocarla no aborta el arreglo de las demás: se salta, sin escribirse, y sale en `apply_result.skipped_unreadable` y en el log de `00_System/.graph-fixes/` con `cause: frontmatter_ilegible` (AP-46). Repararla es de `vault_frontmatter_heal`. Con `--apply` clasificado las escrituras van en `vault_io.escrituras_en_lote()` (AP-47): sección, búsqueda y grafo se regeneran una vez al cerrar, no por nota.
+
+Contesta en prosa; `--json` devuelve el envelope de la tool. La CLI de producto (`vault run`) y el servidor MCP se lo piden solos: el criterio es del catálogo, `json_flag`.
 
 ### `vault_frontmatter_heal.py`
 Repara el frontmatter que **existe y no parsea** (AP-56). No es AP-28 —la nota sin bloque— sino la que abre `---`, se ve correcta al abrirla y para `yaml.safe_load` no tiene ni id ni tags ni estado. Por defecto es **dry-run**.
@@ -1837,6 +1847,8 @@ se corrigió que `--scan` grabase `11_Code\tests` en Windows mientras `--add` y
 `--remove` reciben `11_Code/tests`: una carpeta detectada automáticamente no se
 podía quitar por su nombre, y el fichero no era portable entre plataformas.
 
+Contesta en prosa; `--json` devuelve el envelope de la tool. La CLI de producto (`vault run`) y el servidor MCP se lo piden solos: el criterio es del catálogo, `json_flag`.
+
 ### `vault_section.py`
 Secciones **propias** de un vault: carpetas de raíz `NN_Nombre` que el estándar no
 tiene y que el vault declara en `00_System/secciones.json`. No es lo mismo que
@@ -1873,6 +1885,8 @@ siguen siendo de sección y `--superseded-by` dice adónde va lo nuevo. Un
 hacerlo desde una lista vacía borraría lo que el vault ya había declarado.
 
 ---
+
+Contesta en prosa; `--json` devuelve el envelope de la tool. La CLI de producto (`vault run`) y el servidor MCP se lo piden solos: el criterio es del catálogo, `json_flag`.
 
 ## Grupo 34 — Memoria de Contexto
 

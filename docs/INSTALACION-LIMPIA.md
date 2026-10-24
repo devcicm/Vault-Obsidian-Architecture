@@ -167,6 +167,10 @@ codificación: lee los bytes como UTF-8.
 
 Lee **los dos canales**. `vault run` lanza la tool y su respuesta —con
 `"ok": true` o con su `error_code`, como `missing_agent`— sale por **stdout**.
+Hay tools que hablan en prosa salvo que se les pida JSON: el catálogo las
+publica como `json_flag` y la CLI se lo pide sola, la misma regla que cumple
+el servidor MCP. Antes de v41.22, `vault run vault_move` respondía
+«Movido: …» en texto plano a quien eso esperaba parsear.
 Cuando es el propio `vault` el que rechaza la orden antes de lanzar nada
 (tool desconocida o no instalada, destino inválido, o un argumento que el
 pre-flight bloquea, como `--path ../../fuera.md` con `PREFLIGHT_REJECTED`), el

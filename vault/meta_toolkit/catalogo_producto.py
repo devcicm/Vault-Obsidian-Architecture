@@ -35,6 +35,14 @@ class ToolProducto:
     #: del servidor; el dueño es ``vault_mcp_catalog.NATIVE_JS_TOOLS``, que
     #: cruza en ``js_native_tools``) o ``ninguna`` en esta instalación.
     via: str = "ninguna"
+    #: Las que contestan en prosa salvo ``--json``. El criterio tiene dueño —
+    #: ``vault_mcp_catalog.acepta_modo_json``— y el servidor MCP lo cumple;
+    #: ``vault run`` viaja en el mismo catálogo que él, así que lo respeta
+    #: con la misma regla: pedírselo si nadie lo pasó antes (2026-10-24,
+    #: medido e2e en la reinstalación limpia de v41.22: ``vault run
+    #: vault_move`` respondía «Movido: …» en prosa a un consumidor que la
+    #: guía manda a leer JSON).
+    json_flag: bool = False
 
 
 def _naturaleza_por_tool() -> dict[str, str]:
@@ -85,6 +93,7 @@ def catalogo_producto() -> dict[str, ToolProducto]:
             execution_module=module,
             esquema=dict(entry.get("inputSchema") or {}),
             via="cli" if module else ("mcp" if nombre in solo_mcp else "ninguna"),
+            json_flag=bool(entry.get("json_flag")),
         )
     return dict(sorted(resultado.items()))
 

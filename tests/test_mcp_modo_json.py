@@ -57,3 +57,38 @@ def test_vault_move_por_mcp_devuelve_su_envelope(tmp_path):
     env = json.loads(r["result"]["content"][0]["text"])
     assert env.get("warning") != "non_json_output", env
     assert env["ok"] is True and env["backlinks_count"] == 1, env
+
+
+def test_vault_move_por_vault_run_devuelve_su_envelope(tmp_path, monkeypatch, capfd):
+    """AP-42 — el mismo contrato por la otra vía.
+
+    Medido en la reinstalación limpia de v41.22: `vault run vault_move`
+    contestaba «Movido: … Links actualizados: 1» en prosa, al consumidor al
+    que la guía §5 manda leer el stdout como JSON. La tool habla en prosa
+    salvo `--json`; el catálogo lo publica como `json_flag`, el servidor la
+    pasa siempre y `vault run` no lo pedía nunca. Mismo dueño, misma regla,
+    las dos vías.
+    """
+    from vault import product_cli
+
+    vault = _init_vault(tmp_path / "vault")
+    (vault / "07_Knowledge").mkdir(exist_ok=True)
+    (vault / "07_Knowledge" / "origen.md").write_text("# origen\n", encoding="utf-8")
+    (vault / "07_Knowledge" / "cita.md").write_text("Ver [[origen]].\n", encoding="utf-8")
+    monkeypatch.setenv("VAULT_ROOT", str(vault))
+    rc = product_cli.main(["run", "vault_move", "--from", "07_Knowledge/origen.md",
+                           "--to", "03_Decisions/origen.md", "--impact"])
+    captura = capfd.readouterr()
+    assert rc == 0, (rc, captura.out[-300:], captura.err[-300:])
+    env = json.loads(captura.out)
+    assert env["ok"] is True and env["backlinks_count"] == 1, env
+
+
+def test_el_catalogo_de_producto_no_suelta_el_flag_del_dueno():
+    """La conversión a `ToolProducto` leía el catálogo empaquetado y dejaba
+    `json_flag` fuera: igual que copiar un dato que ya tiene dueño (AP-57)."""
+    from vault.meta_toolkit.catalogo_producto import catalogo_producto
+
+    catalogo = catalogo_producto()
+    assert catalogo["vault_move"].json_flag is True
+    assert catalogo["vault_search"].json_flag is False
