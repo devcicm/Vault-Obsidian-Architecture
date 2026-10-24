@@ -8302,7 +8302,7 @@ temp/
 
 ---
 
-### v41.23 — 2026-10-23 `git: pending`
+### v41.23 — 2026-10-23 `git: 6ddf04e`
 
 v41.23 la saco la reinstalacion limpia probada a ciegas contra la wheel, como manda la guia de instalacion: proyecto consumidor, vault init, primera escritura, MCP por stdio. El ciclo salio con un defecto real y tres falsos positivos del propio piloto que la e2e fue afinando.
 
