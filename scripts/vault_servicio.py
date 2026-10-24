@@ -539,8 +539,6 @@ def escribir_doc(ruta: "Path | None" = None) -> Dict[str, Any]:
     falla si el documento se aparta de la regeneración (el criterio de
     `docs/METRICAS.md`).
     """
-    from datetime import date
-
     from vault_gate import PUERTAS
     from vault_norms_catalog import NORM_CATALOG
 
@@ -594,7 +592,7 @@ def escribir_doc(ruta: "Path | None" = None) -> Dict[str, Any]:
     lineas: List[str] = [
         "# Gobierno del estándar",
         "",
-        f"_Derivado el {date.today().isoformat()} de los registros canónicos. "
+        "_Derivado de los registros canónicos. "
         "Se regenera con `python scripts/vault_servicio.py --doc` y no se "
         "edita a mano: lo escrito aquí se pierde (AP-47)._",
         "",
