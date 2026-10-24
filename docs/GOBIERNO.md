@@ -1,6 +1,6 @@
 # Gobierno del estándar
 
-_Derivado el 2026-10-23 de los registros canónicos. Se regenera con `python scripts/vault_servicio.py --doc` y no se edita a mano: lo escrito aquí se pierde (AP-47)._
+_Derivado de los registros canónicos. Se regenera con `python scripts/vault_servicio.py --doc` y no se edita a mano: lo escrito aquí se pierde (AP-47)._
 
 ## El servicio y sus tres capacidades
 
