@@ -1,0 +1,81 @@
+{
+  "que_demuestra": "Un control cuyo verificador no se puede cargar desaparece del resultado sin dejar rastro: el envelope publica ok=True y no distingue 'no se encontro nada' de 'no se pudo mirar'.",
+  "filas": [
+    {
+      "norma": "AP-40",
+      "dependencia": "vault_mcp_catalog",
+      "con_dependencia_sana": {
+        "ok": true,
+        "aparece_en_by_norm": true,
+        "total_violations": 15,
+        "violaciones_de_esa_norma": [
+          {
+            "norm": "AP-40",
+            "severity": "high",
+            "path": "mcp/nodejs/tools-catalog.json#herramienta-de-demostracion",
+            "detail": "parametro declarado que argparse no acepta — correr vault_mcp_catalog --sync."
+          }
+        ],
+        "declara_algo_sobre_no_ejecutado": false
+      },
+      "con_dependencia_rota": {
+        "ok": true,
+        "aparece_en_by_norm": false,
+        "total_violations": 14,
+        "violaciones_de_esa_norma": [],
+        "declara_algo_sobre_no_ejecutado": false
+      }
+    },
+    {
+      "norma": "AP-42",
+      "dependencia": "vault_smoke",
+      "con_dependencia_sana": {
+        "ok": true,
+        "aparece_en_by_norm": true,
+        "total_violations": 15,
+        "violaciones_de_esa_norma": [
+          {
+            "norm": "AP-42",
+            "severity": "high",
+            "path": "scripts/smoke-baseline.json#herramienta-congelada-de-demostracion",
+            "detail": "herramienta-congelada-de-demostracion está congelada como deuda: su ejemplo documentado no emite un JSON con `ok`. La baseline solo puede encoger."
+          }
+        ],
+        "declara_algo_sobre_no_ejecutado": false
+      },
+      "con_dependencia_rota": {
+        "ok": true,
+        "aparece_en_by_norm": false,
+        "total_violations": 14,
+        "violaciones_de_esa_norma": [],
+        "declara_algo_sobre_no_ejecutado": false
+      }
+    },
+    {
+      "norma": "AP-43",
+      "dependencia": "vault_voice",
+      "con_dependencia_sana": {
+        "ok": true,
+        "aparece_en_by_norm": true,
+        "total_violations": 15,
+        "violaciones_de_esa_norma": [
+          {
+            "norm": "AP-43",
+            "severity": "high",
+            "path": "vault_norms.NORM_CATALOG#AP-99",
+            "detail": "AP-99 no la pronuncia ninguna tool: declara tools_enforcing o tools_detecting para que el agente la vea al trabajar."
+          }
+        ],
+        "declara_algo_sobre_no_ejecutado": false
+      },
+      "con_dependencia_rota": {
+        "ok": true,
+        "aparece_en_by_norm": false,
+        "total_violations": 14,
+        "violaciones_de_esa_norma": [],
+        "declara_algo_sobre_no_ejecutado": false
+      }
+    }
+  ],
+  "conclusion": "Las tres familias (AP-40, AP-42, AP-43) comparten el mismo defecto: el resultado no declara el ESTADO de ejecucion del control, solo sus hallazgos."
+}

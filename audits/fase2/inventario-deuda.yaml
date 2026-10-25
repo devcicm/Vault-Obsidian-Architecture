@@ -131,14 +131,20 @@
   source_file: scripts/vault_norms_engine.py
   symbol: 'bloques except (ImportError, OSError, ValueError): pass en las líneas 151, 179 y 196'
   commit_sha: ef77a7b19a6aaa5e8a5bf776181ab887b7ee4587
-  observed_behavior: 'El bloque de AP-40 (check_params), el de AP-42 (load_baseline, TOOLS_CATALOG, SIN_SMOKE,
-    invocation) y el de AP-43 (coverage) importan su dependencia dentro de un try y, si la importacion
-    o la lectura falla, hacen pass: el control no se ejecuta y su resultado no lo distingue. Los cinco
-    accesos que quedan fuera de puerto son exactamente esos simbolos.'
+  observed_behavior: 'El envelope de la auditoria (vault/gobernanza/auditoria_runtime.py) publica ok=True
+    HARDCODEADO, total_violations, by_norm y violations, y NO tiene ningun campo que declare que controles
+    se ejecutaron. Los tres controles del estandar viven en scripts/vault_norms_engine.py::_checks_estandar
+    (AP-40 lineas 141-152, AP-42 159-180, AP-43 186-197), cada uno con ''except (ImportError, OSError,
+    ValueError): pass''. _checks_estandar no devuelve nada: su unico canal de salida es flag(norm,...).
+    DEMOSTRADO (L2, audits/fase2/demostrar_control_degradado.py): con la dependencia sana el control aparece
+    en by_norm con su hallazgo; con la dependencia rota desaparece y el envelope NO declara que no se
+    pudo ejecutar. Medido en las tres familias (AP-40, AP-42, AP-43).'
   expected_behavior: Un control debe distinguir EJECUTADO / DEGRADADO / FALLIDO / NO EJECUTADO, y un control
     no ejecutado no puede presentarse como 'sin hallazgos'.
-  root_cause: 'El contrato de los tres controles no declara estados de ejecucion: el envelope de resultado
-    no tiene un campo que diga si el control llego a correr, asi que el fallo de dependencia se pierde.'
+  root_cause: 'El contrato de salida no tiene estados de ejecucion: un control se comunica con el mundo
+    por sus hallazgos y no por su estado, de modo que ''no se pudo mirar'' y ''no se encontro nada'' son
+    la misma senal. La causa no es el except en si, sino que el except no tiene donde dejar constancia
+    porque el contrato no lo contempla.'
   impact: 'El audit puede informar ''cero hallazgos'' sin haber ejecutado la comprobacion: un resultado
     falso que se lee como aprobacion. Es la clase de defecto que el propio AP-43 distingue de una norma
     silenciosa.'
@@ -146,13 +152,17 @@
     es la razon por la que estos accesos siguen congelados y por la que las dos fichas de cruce que los
     cubren declaran objetivo a_eliminar con fecha limite 2027-06-30.
   evidence:
+  - 'audits/fase2/logs/L2-control-degradado.json: seis mediciones (tres controles por dos estados) — con
+    la dependencia sana el control aparece en by_norm; con la dependencia rota desaparece y el envelope
+    no avisa (el campo de estado no existe)'
+  - 'audits/fase2/demostrar_control_degradado.py: el instrumento, reejecutable'
+  - 'audits/fase2/L2-analisis-q04-q07.md: causa, consumidores, via arquitectonica y contrato propuesto'
   - scripts/vault_norms_engine.py:151,179,196 (los tres bloques except -> pass)
-  - 'scripts/arch-baseline.json: las 5 claves off_port_crossings vigentes (check_params, SIN_SMOKE, invocation,
-    load_baseline, coverage)'
-  - 'vault_arch.PRESUPUESTO_DE_CRUCES: (''gobernanza'',''meta_toolkit'') y (''gobernanza'',''autoria'')
-    con objetivo a_eliminar y fecha_limite 2027-06-30, que nombran estos mismos modulos'
-  - 'audits/fase2/logs/L1-reconciliacion-archify.json: los 5 accesos del snapshot clasificados como deuda
-    vigente'
+  - 'scripts/vault_norms.py:584-594 (LECTURA DE CODIGO: el veredicto --strict depende solo de total_violations;
+    con un control degradado, cero violaciones y exit 0 — no medido en un vault sintetico: el montaje
+    arrastraba violaciones propias)'
+  - 'scripts/vault_norms_coherence.py:652 (la puerta de coherencia compara by_norm antes/despues: si un
+    control no se ejecuta en ninguno de los dos pases, ve ''sin cambios'')'
   affected_contracts:
   - AP-40, AP-42, AP-43 (resultado de un control de gobernanza)
   - QG-02 gobernanza y normas
@@ -161,19 +171,28 @@
   - AP-42
   - AP-43
   related_tests:
-  - tests/test_ap40_*.py, tests/test_ap42_*.py, tests/test_ap43_*.py (pendiente de inventariar en L2)
-  proposed_remediation: 'L2:POR QUE, CONTRATO, PRUEBAS. Dos vias, ambas compatibles con la intencion ya
-    declarada en el registro (a_eliminar): (a) invertir la dependencia para que el motor no importe el
-    verificador (el resultado lo recibe quien lo tiene), o (b) declarar el estado de ejecucion en el envelope
-    del control. La eleccion se decide con pruebas, no con lectura.'
+  - tests/test_vault_norms_audit.py
+  - tests/test_norms_coherence.py
+  - tests/test_smoke.py
+  - tests/test_voice.py
+  proposed_remediation: 'PROPUESTA, NO IMPLEMENTADA (la autorizacion de la ronda es de investigacion).
+    Via A + B, que es lo que el propio registro ya decidio: INVERSION, que el motor no importe los verificadores
+    (que los ejecute su dueno y le pase el resultado), junto con un CONTRATO que declare el estado de
+    ejecucion por control (ejecutado | degradado | fallido | no_ejecutado) en el envelope, con ''ok''
+    sin cambiar por compatibilidad y un campo hermano ''completo'' que distinga ''no hay hallazgos'' de
+    ''no se pudo mirar''. La via C (formalizar check_params/load_baseline/coverage como puertos) se descarta:
+    formaliza justo lo que las dos fichas de cruce declaran a_eliminar antes del 2027-06-30 y deja el
+    defecto vivo. Detalle, consumidores y pruebas propuestas: audits/fase2/L2-analisis-q04-q07.md'
   regression_risk: 'Medio: cambiar el envelope de un control puede afectar a sus consumidores (los audits
     y las puertas). Por eso L2 exige caso positivo, caso negativo y dependencia fallida antes de tocar
     nada.'
   acceptance_criteria:
-  - Un control con dependencia fallida declara DEGRADADO o FALLIDO y no 'sin hallazgos'.
-  - Prueba que inyecta el fallo de dependencia y verifica el estado declarado.
-  - El numero de accesos fuera de puerto baja (baseline solo encoge) o su justificacion queda actualizada
-    con fecha.
+  - 'PENDIENTE DE DICTAMEN: el control con dependencia rota declara su estado y la auditoria no se presenta
+    como limpia (hoy el envelope no dice nada).'
+  - 'PENDIENTE DE DICTAMEN: la CLI y la puerta de coherencia distinguen ''sin hallazgos'' de ''no se pudo
+    mirar''.'
+  - 'PENDIENTE DE DICTAMEN: el envelope de un control sano es IDENTICO al de antes mas la seccion de estados
+    (sin regresion de consumidores).'
   quality_gate: QG-02
   decision: pending
 - id: TD-0004
