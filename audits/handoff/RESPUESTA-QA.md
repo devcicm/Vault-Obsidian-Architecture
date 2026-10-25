@@ -251,3 +251,56 @@ En `audits/fase2/paridad_cli_mcp.py`, las expresiones `fuera_cli` y `fuera_mcp` 
 **No autorizar release ni merge de PR #1/#2. No reescribir Git ni alterar datos reales sin decisión del propietario.** El ejecutor debe pedir autorización explícita para implementar TD-0003/Q04–Q07 y TD-0008; la remediación AP-57 y la política de evidencia pueden tratarse en lotes aislados tras la nueva orden. Publicar SHA, tests positivos y negativos, logs y reconsultar CI para cada lote. QA revisará de nuevo.
 
 **Estado:** R01–R05 publicados; R02 aceptado en alcance del harness, R04 aceptado como diseño, R01 con reservas, R03 y QG global requieren correcciones. RELEASE / QA INTEGRAL: NO CONFORME / BLOQUEADO.
+
+
+---
+
+# Dictamen independiente QA — lote R06 y preparación para terceros (2026-10-25)
+
+**Rama:** `fase2/deuda-y-product-readiness-20261025`  
+**SHA examinado del ejecutor:** `d0befe6e9c143289a0878d07512b124450eadbc1`  
+**Revisión:** lectura de commits, diff, código de verificadores, pruebas, registros publicados, configuración de distribución y estado de PR/GitHub Actions. **QA no volvió a ejecutar la suite, los 26 gates, ni la instalación completa de wheel en un entorno independiente.**
+
+## Veredicto
+
+**R06 ACEPTADO CON OBSERVACIONES DENTRO DE SU ALCANCE CORRECTIVO. PRODUCTO PARA TERCEROS Y QG-07 TODAVÍA BLOQUEADOS.**
+
+| Hallazgo | Juicio QA | Evidencia |
+|---|---|---|
+| H-F2-04 | **CORREGIDO** para el evaluador de política: exige SHA objetivo de 7–40 hex, evidencia declarada por gate y coincidencia exacta de SHA; bloquea datos faltantes | `audits/fase2/politica_qg.py`, `tests/test_fase2_politica_qg.py` (15 tests reportados) |
+| H-F2-05 | **CORREGIDO** en el alcance de AP-57: diferencia YAML de workflow frente a datos, sin eximir un directorio completo ni inflar baseline; mantiene cobertura de workflow mal ubicado | `scripts/vault_criterios.py`, `tests/test_criterios_yaml.py` (7 tests), `R06-dictamen-correcciones.txt` |
+| H-F2-06 | **CORREGIDA LA SOBREAFIRMACIÓN**, no equivale a auditoría histórica exhaustiva: distingue 52 commits considerados, 10 con exposición, 64 archivos, 120 deltas y **0 blobs íntegros** | `audits/fase2/auditar_exposicion_historica.py`, informe y 11 tests reportados |
+
+El ejecutor reporta `26/26` puertas y `6203 passed, 12 skipped, 0 failed` en Windows; el registro es suficiente para considerar el lote de remediación técnicamente entregado, **pero no sustituye un run de CI concluido ni una ejecución independiente**. No se reabren rondas anteriores sin regresión demostrable.
+
+### Observaciones residuales — no invalidan R06, sí limitan el release
+
+**OBS-R06-01 — Evidencia histórica desfasada.** El archivo `audits/fase2/logs/H-F2-01-exposicion-historica.json` incluye `estado_actual` con una anotación `nul_utf16` para el reporte `.txt`, y el `.txt` publicado conserva esa línea de la ejecución previa. Sin embargo, el `.txt` presente en el HEAD se obtiene por GitHub como UTF-8 sin NUL. La evidencia quedó *autorreferencial y no actualizada* tras la corrección. Antes de acreditar QG-00/QG-04, regenerar evidencia de forma determinista y documentar SHA de ejecución y diferencias entre artefacto actual e histórico, sin publicar identificadores privados. No afirmar que ese JSON describe exactamente el HEAD final.
+
+**OBS-R06-02 — Política declarativa ≠ procedencia comprobada.** `politica_qg.evaluar_politica()` valida estructura/coincidencia de los SHA que el *llamador declara*, no comprueba que un archivo de evidencia exista, que corresponda a una ejecución real o que la CI indicada pertenezca al SHA objetivo. El caso positivo de tests alimenta un `PASS` simulado. Esta separación es válida para un evaluador puro, pero QG-00/QG-07 de release necesitan un **colector confiable** que verifique referencias/artifacts, SHA completo de commit, contexto/matriz de CI, estados observables y política de integridad, antes de suministrar el estado al evaluador.
+
+**OBS-R06-03 — Cobertura histórica limitada.** El auditor inspecciona parches bajo prefijos de evidencia y no los blobs completos de toda la historia; `forma_secreto: 0` **no prueba ausencia universal de secretos**. La decisión sobre reescritura del historial permanece exclusivamente en el propietario; no hacer `force-push` ni publicar nombres o valores sensibles.
+
+## Estado de Quality Gates respecto de una publicación
+
+- **QG-00:** política corregida, pero falta acreditar ejecución/procedencia y evidencia vigente del SHA candidato.
+- **QG-01:** arquitectura y AP-57 reportan PASS local; sin dictamen externo multiplataforma sobre RC.
+- **QG-02: BLOCKED** mientras no se implementen TD-0003 y estados de ejecución reales de AP-40/42/43, con consumidores fail-closed.
+- **QG-03:** suite `6203 passed / 0 failed` reportada localmente; TD-0008 de integridad de datos permanece como riesgo P1.
+- **QG-04:** controles de seguridad parcialmente verificados; pendientes dependencias, symlinks/TOCTOU, superficie MCP/CLI y recuperación destructiva.
+- **QG-05:** la paridad CLI↔MCP de **cinco escenarios** reporta conformidad local y AP-40 revisa contrato; no afirmar pruebas funcionales de 97 tools.
+- **QG-06:** hay wheel probada localmente fuera del checkout en L3; no hay cierre concluyente de la matriz actual Windows/Linux/macOS y Python soportado.
+- **QG-07: BLOCKED:** run GitHub Actions `40192432773` del SHA `d0befe6` seguía en `queued` al consultar; además faltan QG-02, seguridad, corrección de TD-0008 y evidencia de release.
+
+## Trabajo mínimo para un producto distribuible a terceros
+
+1. **Autorizar y aplicar TD-0008:** proteger `vault_init --clean` con preflight, backup/cuarentena verificable, confirmación explícita, rollback, fallos inyectados y retención de respaldo. Probar **solo en runtimes descartables**. Diseñado hoy, no implementado.
+2. **Autorizar y aplicar TD-0003/Q04–Q07:** inversión de dependencias, `checks[]` y `completo` verdaderos, todos los controles obligatorios con estados verificables, consumidores strict/coherencia fail-closed, pruebas de fallo de dependencia y regresión contractual. Ninguna puerta se vuelve verde por declarar 0 violaciones cuando no pudo medir.
+3. **CI externa:** diagnosticar cola mediante Actions/runners y conseguir run concluyente del **SHA de release candidate** para Windows/Linux/macOS y el intervalo de Python declarado; pruebas de wheel, MCP y producto instalado. No atribuir PASS a runs `queued`.
+4. **Seguridad y recuperación:** completar inventario de operaciones destructivas, symlinks/TOCTOU, validación real de `inputSchema` MCP, token/orígenes de HTTP, escaneo de dependencias y artefactos sdist/wheel. Resolver o aceptar explícitamente riesgos residuales según la política QG.
+5. **Experiencia de terceros:** corregir DOC-0001/TD-0009 (Quick Start checkout vs wheel), contrastar PRD CLI/MCP/runtime (DOC-0006), documentar instalación sin clonar repo, configuración de Node/MCP, upgrade, rollback/desinstalación y conservación de vault. Revisar coherencia del classifier `Production/Stable` frente a riesgos pendientes.
+6. **Liberación trazable:** definir RC, versión/tag y artefacto publicable con hash y SBOM, checklist de instalación ajena (init, escribir/leer/actualizar/buscar, recuperación, persistencia y rechazo de rutas externas), verificaciones QG-00..QG-07 con procedencia real, y autorización explícita del propietario. No fusionar PR #1/#2 ni emitir release por este dictamen.
+
+**Prioridad:** TD-0008 e integridad de datos, TD-0003 y veracidad de gobernanza, CI/seguridad, luego documentación/RC. La exposición histórica de rutas y nombre de cuenta no exige reescritura inmediata sin evidencia de credenciales; documentar y asumir o decidir saneamiento mediante acto expreso del propietario.
+
+**Resultado:** H-F2-04/H-F2-05/H-F2-06 cerrados en alcance de su remediación; aceptación de release **NO** concedida. Este registro QA no modifica producto, tests, baselines, PR ni `main`.
