@@ -61,7 +61,7 @@ def _fila(case_id="READ_MISSING", tool="vault_read", **cambios):
     return fila
 
 
-# ── control positivo ────────────────────────────────────────────────────────
+# â”€â”€ control positivo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def test_una_medicion_limpia_pasa():
     veredicto = verificador.evaluar([_fila()], CONTRATO_OK, ["READ_MISSING"],
@@ -69,7 +69,7 @@ def test_una_medicion_limpia_pasa():
     assert veredicto["ok"], veredicto["problemas"]
 
 
-# ── identidad por escenario ─────────────────────────────────────────────────
+# â”€â”€ identidad por escenario â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def test_detecta_un_caso_requerido_omitido():
     """Falta WRITE_UPDATE: el verificador tiene que_notarlo, porque se
@@ -98,7 +98,9 @@ def test_detecta_un_case_id_no_previsto():
     assert any("no previsto" in p for p in veredicto["problemas"]), veredicto["problemas"]
 
 
-# ── contrato y errores ──────────────────────────────────────────────────────
+# â”€â”€ contrato y errores â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+
 
 def test_detecta_el_verificador_de_contrato_roto():
     veredicto = verificador.evaluar([_fila()], {"exit": 1}, ["READ_MISSING"],
@@ -165,7 +167,7 @@ def test_detecta_una_operacion_no_expuesta_por_mcp():
     assert any("no esta expuesta" in p for p in veredicto["problemas"])
 
 
-# ── efectos observables ─────────────────────────────────────────────────────
+# â”€â”€ efectos observables â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def test_detecta_efectos_observables_divergentes():
     """MCP modifica un fichero DISTINTO: el conjunto de ficheros tocados no
@@ -208,12 +210,17 @@ def test_detecta_la_cli_que_responde_exito_sin_efecto():
     assert any("efectos divergentes" in p for p in veredicto["problemas"])
 
 
-def test_detecta_modificacion_fuera_del_runtime():
-    fila = _fila(fuera_del_runtime_cli=["../fuera.md"])
+def test_detecta_escritura_fuera_del_runtime_por_cli():
+    """El exit code de la CLI y su envelope no pueden contradecirse, y una
+    escritura FUERA del runtime autorizado es un efecto prohibido que el
+    verificador senala por adaptador."""
+    fila = _fila(externos_cli={"creados": ["../fuera.md"], "modificados": [],
+                               "eliminados": []})
     veredicto = verificador.evaluar([fila], CONTRATO_OK, ["READ_MISSING"],
                                      ["READ_MISSING"])
-    assert not veredicto["ok"]
-    assert any("FUERA del runtime" in p for p in veredicto["problemas"])
+    assert not veredicto["ok"], veredicto["problemas"]
+    assert any("FUERA del runtime" in p and "CLI" in p
+               for p in veredicto["problemas"]), veredicto["problemas"]
 
 
 def test_detecta_el_exit_code_que_contradice_al_envelope():
@@ -224,3 +231,48 @@ def test_detecta_el_exit_code_que_contradice_al_envelope():
                                      ["READ_MISSING"])
     assert not veredicto["ok"]
     assert any("exit code" in p for p in veredicto["problemas"]), veredicto["problemas"]
+
+
+def test_detectar_cambios_ve_creaciones():
+    cambios = verificador.detectar_cambios({}, {"a.md": "h1"})
+    assert cambios["creados"] == ["a.md"], cambios
+    assert cambios["eliminados"] == [] and cambios["modificados"] == []
+
+
+def test_detectar_cambios_ve_modificaciones_de_contenido():
+    """Mismo nombre, otro contenido: MODIFICADO (el caso que un detector por
+    nombres no ve)."""
+    cambios = verificador.detectar_cambios(
+        {"externo/config.json": "hash_A"}, {"externo/config.json": "hash_B"})
+    assert cambios["modificados"] == ["externo/config.json"], cambios
+    assert cambios["creados"] == [] and cambios["eliminados"] == []
+
+
+def test_detectar_cambios_ve_eliminaciones():
+    cambios = verificador.detectar_cambios({"externo/viejo.md": "h"}, {})
+    assert cambios["eliminados"] == ["externo/viejo.md"], cambios
+
+
+def test_clasificar_parte_entre_internos_y_externos():
+    cambios = {"creados": ["runtime/nueva.md", "externa.md"],
+               "modificados": ["runtime/existente.md"],
+               "eliminados": ["externa-vieja.md"]}
+    reparto = verificador.clasificar_cambios(cambios, internos=("runtime/",))
+    assert reparto["internos"]["creados"] == ["runtime/nueva.md"]
+    assert reparto["externos"]["creados"] == ["externa.md"]
+    assert reparto["externos"]["eliminados"] == ["externa-vieja.md"]
+
+
+def test_los_no_verificados_son_problema():
+    fila = _fila(no_verificados=["externo/sin-permisos.md"])
+    veredicto = verificador.evaluar([fila], CONTRATO_OK, ["WRITE_CREATE"])
+    assert not veredicto["ok"]
+    assert any("no verificables" in p for p in veredicto["problemas"]), veredicto["problemas"]
+
+
+def test_mcp_que_modifica_un_prohibido_es_no_conforme():
+    fila = _fila(externos_mcp={"creados": [], "modificados": ["externo/prohibido.md"],
+                               "eliminados": []})
+    veredicto = verificador.evaluar([fila], CONTRATO_OK, ["WRITE_CREATE"])
+    assert not veredicto["ok"], veredicto["problemas"]
+    assert any("MCP" in p and "FUERA" in p for p in veredicto["problemas"]), veredicto["problemas"]
