@@ -396,6 +396,10 @@
   proposed_remediation: 'Antes del wipe, copia previa automatica a una carpeta de cuarentena (o vault-backups),
     con el mismo mecanismo que ya usa durabilidad; y prueba negativa que demuestre la recuperacion. Queda
     PENDIENTE de autorizacion: es un cambio de comportamiento del producto.'
+  design: 'audits/fase2/R04-diseno-td0008.md (R04, 2026-10-25): cuarentena por rename atomico con respaldo
+    por copia ante EXDEV, maquina de estados PRECHECK->BACKUP->VERIFY_BACKUP->READY->CLEAN->REINITIALIZE->
+    VERIFY_RESULT->COMPLETED, contrato --confirm/--dry-run, plan de rollback y 11 pruebas propuestas.
+    DISENO unicamente: scripts/vault_init.py sin cambios.'
   regression_risk: 'Bajo: anade una copia previa, no cambia el resultado del init.'
   acceptance_criteria:
   - 'PENDIENTE: --clean deja una copia del contenido anterior accesible.'

@@ -1,0 +1,149 @@
+R05 — Cierre de la orden de remediacion post-QA (fase 2)
+========================================================
+
+TASK_ID: R05
+FECHA: 2026-10-25
+RAMA: fase2/deuda-y-product-readiness-20261025
+SHA_ENTRADA: 2b8c87d (dictamen QA)
+SHA_SALIDA: ver el commit de este informe
+
+COMMITS DE LA ORDEN (uno por unidad, push tras cada uno)
+--------------------------------------------------------
+| Unidad | Commit    | Contenido                                                        |
+|--------|-----------|------------------------------------------------------------------|
+| R01    | b9fb71d   | Auditor historico sin identificadores incrustados; cobertura por blobs; 9 pruebas |
+| R01    | dc63367   | Las trazas UTF-16 del log de evidencia se convierten a texto (sin NULs) |
+| R02    | 08f9746   | Paridad: efectos FUERA del runtime por hash de contenido           |
+| R02    | 6a3ab78   | Publicacion de las 6 pruebas negativas de R02 (se quedaron fuera del add) |
+| R03    | 2b5d141   | Politica de QG ejecutable: QG-00 prerrequisito, QG-02 por TD-0003, QG-07 con CI |
+| R04    | 584470e   | Diseno de TD-0008 (sin tocar scripts/vault_init.py)                |
+| R05    | 24eb0a9   | Higiene: el auditor no reproduce nombres y los fixtures se componen en runtime |
+| R05    | 116595c   | Los instrumentos de `audits/fase2/` se cargan por ruta, no como paquetes |
+| R05    | este      | Buzon del ejecutor e informe de cierre                             |
+
+HALLAZGO ADICIONAL (y preexistente): tests/test_publicacion_limpia.py
+---------------------------------------------------------------------
+Al correr la higiene de publicacion aparecieron DOS rojos que ya existian en
+2b8c87d (reproducido en worktree --detach): `test_ninguna_ruta_local_del_autor_
+esta_publicada` y `test_no_hay_credenciales_con_forma_de_credencial`. Causa: el
+docstring del auditor usaba un nombre real como ejemplo —el defecto de H-F2-01
+cometido en el propio auditor— y los fixtures de dos ficheros de pruebas
+publicaban una ruta de maquina y una forma de credencial. Corregido en 24eb0a9:
+el ejemplo pasa a hueco generico y los fixtures se componen en runtime (el valor
+completo existe en memoria; el fuente no lo publica). Ninguna asercion relajada:
+publicacion_limpia + logs_saneados + hf201 = 18 passed.
+
+Ficheros principales:
+  audits/fase2/auditar_exposicion_historica.py   (R01)
+  tests/test_fase2_hf201_privacidad.py           (R01, 10 pruebas)
+  audits/fase2/paridad_cli_mcp.py                (R02)
+  tests/test_fase2_paridad_fail_closed.py        (R02, 23 pruebas)
+  audits/fase2/catalogo-qg.yaml                  (R03)
+  audits/fase2/politica_qg.py                    (R03)
+  tests/test_fase2_politica_qg.py                (R03, 9 pruebas)
+  audits/fase2/R04-diseno-td0008.md              (R04, solo diseno)
+  audits/fase2/inventario-deuda.yaml             (R04/R05: TD-0008 apunta al diseno)
+
+H-F2-01 — PRIVACIDAD Y COBERTURA DEL AUDITOR HISTORICO (cerrado)
+-----------------------------------------------------------------
+Causa raiz: el patron del nombre personal estaba INCRUSTADO en el codigo, y la
+cobertura partia de los commits que modificaron los directorios de evidencia
+(no de los blobs). Correccion: la cuenta se deriva del entorno en runtime; el
+recorrido pasa a objeto git (`git rev-list --objects --all` + lectura por lotes);
+las coincidencias se publican como categoria + huella sha256 truncada.
+Ejecucion real: 15 commits con exposicion en la historia de las evidencias
+(ruta_local 29, cuenta_usuario 8, forma_secreto 0); HEAD conforme.
+La historia publicada NO se reescribe: decide el propietario.
+
+H-F2-02 — EFECTOS EXTERNOS EN EL VERIFICADOR DE PARIDAD (cerrado)
+------------------------------------------------------------------
+Causa raiz: se comparaban CONJUNTOS DE NOMBRES de ficheros externos: veia
+creaciones, no veia la modificacion de contenido de un externo preexistente ni
+su eliminacion. Correccion: hash de contenido antes/despues por adaptador,
+particion internos/externos, y la lectura fallida es NO VERIFICABLE (problema),
+no ausencia de cambio. Medicion real: 5/5 CONFORME, AP-40 exit 0, 97 tools MCP.
+Entornos excluidos y declarados: runtime, foto de restauracion, venv de la
+prueba y dist (son el entorno propio de la medicion, no efectos del producto).
+
+H-F2-03 — CONTRATO DE QUALITY GATES (cerrado)
+---------------------------------------------
+Causa raiz: la politica estaba en prosa en el catalogo y nadie la aplicaba;
+QG-07 no incluia QG-00 y QG-02 podia pasar con 26/26 puertas verdes aunque el
+envelope no declarase el estado de ejecucion (TD-0003). Correccion: catalogo
+ajustado + evaluador puro `politica_qg.py` con R1-R4 y 9 pruebas negativas.
+
+TD-0008 — DISENO ENTREGADO, NO IMPLEMENTADO
+--------------------------------------------
+`audits/fase2/R04-diseno-td0008.md`. Defecto verificado en
+`scripts/vault_init.py:216-227`. Propuesta: cuarentena por rename atomico con
+respaldo por copia ante EXDEV, maquina de estados de 8 fases con postcondicion
+en cada transicion, `--confirm <nombre>` obligatorio, `--dry-run`, plan de
+rollback punto por punto, 11 pruebas propuestas y purga diferida.
+`scripts/vault_init.py` NO se ha modificado: el comportamiento publico es el
+actual.
+
+TD-0003 / Q04-Q07 — SIN IMPLEMENTAR (por orden)
+-----------------------------------------------
+La politica QG-02 deja constancia ejecutable de que sin estados de ejecucion la
+puerta es BLOCKED: el diseno de TD-0003 sigue siendo el prerequisito.
+
+VERIFICACION EJECUTADA
+----------------------
+| Verificacion | Comando | Resultado |
+|---|---|---|
+| Puertas | `python scripts/vault_gate.py --strict` | 25/26 — `criterios` (AP-57) ROJO |
+| Causa del rojo | 3 `.yaml` de evidencia (`catalogo-qg.yaml`, `inventario-deuda.yaml`, `inventario-documental.yaml`) leidos como `frontera_no_declarada` | FALSO POSITIVO PREEXISTENTE |
+| Preexistencia | mismo comando en worktree `--detach 2b8c87d` | identico rojo, `new_copies` con los mismos 3 |
+| Arquitectura | `vault_gate` -> gate `arquitectura` | ok (12,25 s) |
+| Saneamiento | `python audits/fase2/comprobar_saneamiento.py` | exit 0 |
+| Suite completa | `python -m pytest tests/ -q -n auto --tb=short` | **5 failed, 6184 passed, 12 skipped** (1077 s) |
+
+### SUITE
+
+Los 5 fallos son EXACTAMENTE los cinco de AP-57 ya reproducidos en `2b8c87d`
+(`test_ap46_montaje_con_dueno`, `test_ap57_criterios` x3,
+`test_criterios_fronteras`): todos por el mismo falso positivo de los `.yaml` de
+evidencia. Ninguno es de esta orden. La corrida intermedia (antes de las dos
+correcciones de higiene) dio 6 fallos: el sexto era el import de los
+instrumentos de `audits/fase2/` como paquetes de la suite, ya corregido en
+116595c.
+
+No se ha ampliado ninguna baseline, ni deshabilitado prueba o puerta. No se ha
+tocado `RESPUESTA-QA.md`, ni `main`, ni se ha reescrito historia.
+
+CI
+--
+Los cinco runs de la rama siguen en `queued` (ninguno ejecutado):
+  40183930953 (6a3ab78), 40183843078 (2b5d141), 40183399000 (dc63367),
+  40183307560 (08f9746), 40182779029 (b9fb71d).
+No se ha cancelado ni relanzado ningun run ni se ha tocado ningun workflow.
+Consecuencia aplicada por el propio evaluador de R03: QG-07 = BLOCKED con
+`CI_PENDIENTE`.
+
+BLOQUEOS Y RIESGOS
+------------------
+1. `CI_PENDIENTE`: QG-07 no puede pasar mientras los runs sigan en cola. Es un
+   dato del proveedor, no del ejecutor.
+2. `criterios` (AP-57) en rojo por un falso positivo PREEXISTENTE: el guard
+   incluye `.yml`/`.yaml` en `EXT_EJECUTABLES` (pensado para la CI) y trata los
+   registros de datos de `audits/fase2/` como frontera. Corregirlo exige una
+   decision de diseno del guard (exencion exacta por fichero con motivo, o
+   distinguir YAML de datos de YAML de CI) y su test; NO se hace aqui porque
+   ampliar el alcance de la orden y tocar el guard sin norma que lo respalde
+   seria exactamente el atajo que el repo prohibe.
+3. Higiene de publicacion: habia dos rojos PREEXISTENTES (2b8c87d) en
+   `test_publicacion_limpia`; corregidos en 24eb0a9 sin relajar aserciones.
+4. Dependencias de la suite: `test_dependencias_de_la_suite` contaba los
+   instrumentos de `audits/fase2/` como paquetes sin declarar; corregido en
+   116595c cargandolos por ruta (no se empaquetan en la wheel).
+5. Cinco pruebas de AP-57 (`test_ap46_montaje_con_dueno`,
+   `test_ap57_criterios` x3, `test_criterios_fronteras`) siguen rojas por el
+   MISMO falso positivo de los `.yaml` de evidencia, y son PREEXISTENTES:
+   reproducidas igual en `--detach 2b8c87d` (5 failed, 38 passed).
+6. `QG-02`/TD-0003: la puerta queda BLOCKED hasta que el envelope publique
+   estados de ejecucion. Declarado, no maquillado.
+7. La exposicion historica (blobs ya publicados) sigue existiendo: reescribir
+   historia requiere autorizacion del propietario y no se hace.
+
+SOLICITUD DE QA: revisar R01-R04 y decidir sobre el falso positivo de
+`criterios` y sobre la autorizacion del diseno de TD-0008.

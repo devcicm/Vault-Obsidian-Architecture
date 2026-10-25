@@ -1,5 +1,67 @@
-# Respuesta del ejecutor a QA — ronda 1B
+# Respuesta del ejecutor a QA — fase 2, remediación post-QA (R01–R05)
 
+- **Emisor:** agente local (ejecutor técnico)
+- **Destinatario:** QA arquitectónico
+- **Fecha:** 2026-10-25
+- **Rama:** `fase2/deuda-y-product-readiness-20261025`
+- **SHA del dictamen QA:** `2b8c87d`
+- **SHA base de ejecución:** `2b8c87d`
+- **SHA final publicado:** el commit de este documento (R05)
+- **SO / terminal / Python:** Windows, PowerShell 5, Python 3.14.3
+- **Estado del árbol:** sin cambios pendientes al cerrar
+- **`main`, PR #1 y PR #2:** intactos; sin fusionar; sin `reset --hard` ni `push --force`
+
+## Alcance ejecutado (R01–R05)
+
+R01, R02 y R03 son correcciones efectivas. R04 es **solo diseño**: `scripts/vault_init.py` no se ha tocado.
+TD-0003 y Q04–Q07 siguen sin implementar, por orden expresa.
+
+| Tarea | Estado | Commit | Qué resuelve | Evidencia |
+|---|---|---|---|---|
+| R01 / H-F2-01 | COMPLETADA | `b9fb71d` + `dc63367` | El identificador personal ya no está incrustado (se deriva del entorno) y la cobertura pasa a blobs de toda la historia; 10 pruebas | `logs/H-F2-01-exposicion-historica.{json,txt}`, `logs/R01-auditor-historico.txt` |
+| R02 / H-F2-02 | COMPLETADA | `08f9746` + `6a3ab78` | Los efectos externos se detectan por hash de contenido (creados/modificados/eliminados), con la lectura fallida como no verificable; 23 pruebas | `logs/L3-paridad-cli-mcp.txt` (5/5 CONFORME) |
+| R03 / H-F2-03 | COMPLETADA | `2b5d141` | La política de QG se ejecuta: QG-00 prerrequisito, QG-02 condicionado por TD-0003, QG-07 con CI concluyente; 9 pruebas negativas | `logs/R03-politica-qg.txt` |
+| R04 / TD-0008 | DISEÑO | `584470e` | Cuarentena atómica, máquina de estados de 8 fases con rollback, `--confirm`, 11 pruebas propuestas; sin cambio de comportamiento | `R04-diseno-td0008.md` |
+| R05 | COMPLETADA | `24eb0a9`, `116595c` y este commit | Higiene de publicación (el auditor ya no reproduce nombres; fixtures compuestos en runtime) y carga por ruta de los instrumentos de `audits/fase2/`; buzón e informe de cierre | `logs/R05-cierre-orden.txt` |
+
+## Verificación ejecutada
+
+| Verificación | Resultado |
+|---|---|
+| `python -m pytest tests/test_fase2_hf201_privacidad.py` | 10 passed |
+| `python -m pytest tests/test_fase2_paridad_fail_closed.py` | 23 passed |
+| `python -m pytest tests/test_fase2_politica_qg.py` | 9 passed |
+| `python audits/fase2/comprobar_saneamiento.py` | exit 0 |
+| `python scripts/vault_gate.py --strict` | **25/26** — `criterios` (AP-57) rojo |
+| `python -m pytest tests/ -q -n auto --tb=short` | **5 failed, 6184 passed, 12 skipped** — los 5 son los de AP-57 ya reproducidos en `2b8c87d` |
+
+**El rojo de `criterios` es preexistente**, no de esta orden: se reprodujo igual en un worktree
+`--detach 2b8c87d` (los mismos 3 `.yaml` de evidencia leídos como `frontera_no_declarada`).
+No se ha ampliado ninguna baseline ni deshabilitado ninguna puerta.
+
+## CI
+
+Los cinco runs de la rama siguen en `queued` (el último, `40183930953` / `6a3ab78`). No se ha
+cancelado ni relanzado ninguno, ni se ha modificado ningún workflow. Por ello **QG-07 = BLOCKED**
+con `CI_PENDIENTE`, tal como aplica el evaluador de R03.
+
+## Bloqueos
+
+1. **CI en cola** → QG-07 BLOCKED (dato del proveedor).
+2. **`criterios` / AP-57**: falso positivo preexistente sobre 3 YAML de datos; su corrección exige
+   decidir el criterio del guard y añadir su test (fuera del alcance de esta orden).
+3. **TD-0003**: QG-02 BLOCKED mientras el envelope no publique el estado de ejecución por control.
+4. **Exposición histórica**: sigue en los blobs publicados; reescribir historia requiere autorización
+   del propietario.
+
+## Solicitud de QA
+
+Revisar R01–R04, y decidir (a) el tratamiento del falso positivo de `criterios` y (b) la autorización
+del diseño de TD-0008 para pasar a implementación.
+
+---
+
+# Respuesta del ejecutor a QA — ronda 1B (histórico, se conserva)
 - **Emisor:** agente local (ejecutor técnico)
 - **Destinatario:** QA arquitectónico
 - **Fecha:** 2026-10-25 (hora local del ejecutor, UTC-6)
