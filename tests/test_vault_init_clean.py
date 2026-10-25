@@ -333,3 +333,62 @@ def test_ok_false_en_inicializacion_con_restauracion_fallida(tmp_path, monkeypat
     assert resultado["ok"] is False
     assert resultado["clean"]["estado"] == "RECUPERACION_PENDIENTE"
     assert resultado["args"]["restauracion"]["ok"] is False
+
+
+def test_verificacion_fallida_en_via_rename_devuelve_el_original_y_verifica(
+        tmp_path, monkeypatch):
+    """QA-RC-01f: ROLLBACK solo si la devolucion se verifica por hash."""
+    raiz = _vault(tmp_path)
+    antes = _huellas(raiz)
+    llamadas = {"n": 0}
+    verificacion_mala = {"ok": False, "faltan": ["x"], "sobran": [],
+                         "distintos": [], "errores": [], "total": 0}
+    original_verificar = vi._verificar_copia
+
+    def _verificar_condicional(original, copia):
+        llamadas["n"] += 1
+        if llamadas["n"] == 1:
+            return verificacion_mala  # la primera: la cuarentena "falla"
+        return original_verificar(original, copia)
+
+    monkeypatch.setattr(vi, "_verificar_copia", _verificar_condicional)
+    resultado = vi._preparar_clean(raiz, confirm=raiz.name)
+    assert resultado["ok"] is False
+    assert resultado["preparacion"]["estado"] == "ROLLBACK"
+    assert resultado["preparacion"]["restauracion"]["ok"] is True
+    assert _huellas(raiz) == antes, "el rollback no restauro el contenido"
+
+
+def test_verificacion_fallida_y_restauracion_rota_da_recuperacion_pendiente(
+        tmp_path, monkeypatch):
+    """QA-RC-01f: si ni la devolucion verifica, NUNCA se dice ROLLBACK."""
+    raiz = _vault(tmp_path)
+    antes = _huellas(raiz)
+    verificacion_mala = {"ok": False, "faltan": ["x"], "sobran": [],
+                         "distintos": [], "errores": [], "total": 0}
+    monkeypatch.setattr(vi, "_verificar_copia", lambda o, c: verificacion_mala)
+    resultado = vi._preparar_clean(raiz, confirm=raiz.name)
+    assert resultado["ok"] is False
+    assert resultado["preparacion"]["estado"] == "RECUPERACION_PENDIENTE"
+    assert _huellas(raiz) == antes, "el contenido se conserva en raiz"
+    assert resultado["preparacion"]["cuarentena"] == str(raiz)
+
+
+def test_verificacion_fallida_en_via_copia_no_toca_el_original(tmp_path, monkeypatch):
+    """QA-RC-01f: en la via de copia el original nunca se toca."""
+    raiz = _vault(tmp_path)
+    antes = _huellas(raiz)
+
+    def _rename_falla(self, destino):
+        raise OSError(18, "EXDEV")
+
+    verificacion_mala = {"ok": False, "faltan": ["x"], "sobran": [],
+                         "distintos": [], "errores": [], "total": 0}
+    monkeypatch.setattr(Path, "rename", _rename_falla)
+    monkeypatch.setattr(vi, "_verificar_copia", lambda o, c: verificacion_mala)
+    resultado = vi._preparar_clean(raiz, confirm=raiz.name)
+    assert resultado["ok"] is False
+    assert resultado["preparacion"]["estado"] == "ABORTED"
+    assert resultado["preparacion"]["motivo"] == "COPIA_NO_VERIFICADA"
+    assert _huellas(raiz) == antes, "el original quedo modificado"
+    assert resultado["preparacion"]["cuarentena"] is None, "la copia mala se retiro"

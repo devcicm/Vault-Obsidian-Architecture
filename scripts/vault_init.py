@@ -587,8 +587,16 @@ def _preparar_clean(raiz: Path, confirm: str | None, dry_run: bool = False,
             return {"ok": False, "preparacion": paso}
         verificacion = _verificar_copia(inventario, cuarentena)
         if not verificacion["ok"]:
-            shutil.rmtree(cuarentena, ignore_errors=True)
+            retirada = False
+            detalle_retirada = None
+            try:
+                shutil.rmtree(cuarentena)
+                retirada = not cuarentena.exists()
+            except OSError as exc:
+                detalle_retirada = str(exc)
             paso.update({"estado": "ABORTED", "motivo": "COPIA_NO_VERIFICADA",
+                         "cuarentena": (None if retirada else str(cuarentena)),
+                         "detalle_retirada": detalle_retirada,
                          "verificacion": verificacion})
             return {"ok": False, "preparacion": paso}
         try:
@@ -633,13 +641,40 @@ def _preparar_clean(raiz: Path, confirm: str | None, dry_run: bool = False,
                      "restauracion": restauracion})
         return {"ok": False, "preparacion": paso}
     if not verificacion["ok"]:
-        if raiz.exists():
-            shutil.rmtree(raiz, ignore_errors=True)
+        # QA-RC-01f: el backup no es fiable y NUNCA reemplaza al original.
+        if paso.get("mecanismo") == "rename":
+            # `raiz` es el directorio vacio recien creado: se retira para
+            # devolver la cuarentena a su sitio, y la devolucion se VERIFICA.
+            if raiz.exists():
+                shutil.rmtree(raiz)
+            try:
+                cuarentena.rename(raiz)
+            except OSError as exc:
+                paso.update({"estado": "RECUPERACION_PENDIENTE",
+                             "motivo": "RESTAURACION_FALLIDA",
+                             "cuarentena": str(cuarentena),
+                             "detalle": str(exc),
+                             "verificacion": verificacion})
+                return {"ok": False, "preparacion": paso}
+            post = _verificar_copia(inventario, raiz)
+            estado = "ROLLBACK" if post["ok"] else "RECUPERACION_PENDIENTE"
+            paso.update({"estado": estado, "motivo": "VERIFICACION_FALLIDA",
+                         "restauracion": post, "verificacion": verificacion,
+                         "cuarentena": (None if post["ok"] else str(raiz))})
+            return {"ok": False, "preparacion": paso}
+        # Via de copia: el original esta intacto (aun no se borro nada), asi
+        # que basta con retirar la copia mala y abortar. Si la retirada
+        # falla, se declara: la cuarentena muerta no se oculta.
+        retirada = False
+        detalle_retirada = None
         try:
-            cuarentena.rename(raiz)
-        except OSError:
-            pass
-        paso.update({"estado": "ROLLBACK", "motivo": "VERIFICACION_FALLIDA",
+            shutil.rmtree(cuarentena)
+            retirada = not cuarentena.exists()
+        except OSError as exc:
+            detalle_retirada = str(exc)
+        paso.update({"estado": "ABORTED", "motivo": "COPIA_NO_VERIFICADA",
+                     "cuarentena": (None if retirada else str(cuarentena)),
+                     "detalle_retirada": detalle_retirada,
                      "verificacion": verificacion})
         return {"ok": False, "preparacion": paso}
 
