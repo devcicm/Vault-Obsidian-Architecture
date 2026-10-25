@@ -1,6 +1,9 @@
-��== HISTORIA
-  commits escaneados: 8 | ficheros: 5
-  commits con exposicion: 10 | categorias: {'ruta_local': 16, 'cuenta_usuario': 8} | forma_secreto: 0
+== HISTORIA
+  commits considerados: 52 | con exposicion: 10
+  ficheros considerados: 64 | deltas inspeccionados: 120 | blobs inspeccionados: 0
+  categorias: {'ruta_local': 20, 'cuenta_usuario': 8} | forma_secreto: 0 | errores: 0
+  24eb0a9a1d audits/fase2/auditar_exposicion_historica.py -> ['ruta_local'] (2)
+  b9fb71df70 audits/fase2/auditar_exposicion_historica.py -> ['ruta_local'] (2)
   44a880eed7 audits/fase2/logs/L3-paridad-cli-mcp.txt -> ['cuenta_usuario', 'ruta_local'] (2)
   d657fb0715 audits/fase2/logs/L3-paridad-cli-mcp.txt -> ['cuenta_usuario', 'ruta_local'] (2)
   bc1a1e6add audits/fase2/logs/H-L3-01-saneamiento.txt -> ['ruta_local'] (3)
@@ -12,5 +15,5 @@
   5c276010e6 audits/handoff/logs/R1B-E04a-saneamiento.txt -> ['cuenta_usuario', 'ruta_local'] (2)
   acb20da2d2 audits/handoff/logs/2026-10-24-Q00-baseline.md -> ['cuenta_usuario', 'ruta_local'] (2)
 == ESTADO ACTUAL (HEAD)
-  conforme: sin exposicion en el HEAD
-log: audits\fase2\logs\H-F2-01-exposicion-historica.json
+  audits/fase2/logs/H-F2-01-exposicion-historica.txt -> nul_utf16
+log: audits/fase2/logs/H-F2-01-exposicion-historica.json

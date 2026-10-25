@@ -25,17 +25,31 @@ R01-A: el patron de nombre personal se SUSTITUYE por criterios genericos:
   - las rutas absolutas que atraviesan Users/ o home/ se detectan igual que
     antes;
   - los marcadores entre <> y los nombres genericos no son exposicion.
-R01-B: la cobertura pasa a OBJETOS GIT:
-  - `git rev-list --objects --all` da TODOS los blobs unicos de TODA la
-    historia (cada contenido se escanea UNA sola vez);
-  - la lectura va en LOTES con `git cat-file --batch` (sin shell);
-  - se DECLARA la cobertura: commits alcanzables, blobs unicos, analizados,
-    no analizados (binarios), exclusiones y limites del detector.
+R01-B: la cobertura pasa a la HISTORIA DE LOS PREFIJOS, con metricas
+  separadas (H-F2-06):
+  - un unico streaming de `git log --all -p --full-history -- <prefijos>`;
+  - se inspeccionan los PARCES (deltas: lineas anadidas/quitadas por commit y
+    fichero), NO blobs completos: `blobs_inspeccionados` es 0 y se declara;
+  - `commits_considerados` (todos los que tocan los prefijos),
+    `commits_con_exposicion`, `ficheros_considerados`, `deltas_inspeccionados`
+    y `errores` se publican por separado: una conclusion solo puede referirse a
+    lo que esas cifras acreditan.
 R01-C: sin valores publicados: cada coincidencia se registra como CATEGORIA
   + huella sha256 truncada a 12 hex (no reversible para datos de baja
   entropia). La historia NO se reescribe: eso decide el propietario.
 
-PRUEBAS (tests/test_fase2_hf201_privacidad.py, 9 aprobadas)
+CORRECCION DE UNA SOBREAFIRMACION (H-F2-06)
+-------------------------------------------
+La version anterior de este informe decia "cobertura por blobs" y "9 commits
+escaneados / 6 ficheros". Era falso: el instrumento recorre parches y esas
+cifras se derivaban de los commits CON hallazgos. Se corrige aqui y en el
+instrumento; los numeros vigentes son los de REPRODUCCION REAL.
+Tambien se detecto —y se declara— que el propio commit b9fb71d introdujo en el
+docstring un ejemplo con un nombre real de cuenta en una ruta de usuario; se
+corrigio en 24eb0a9, pero el blob de b9fb71d sigue en la historia publicada y
+no se reescribe sin autorizacion del propietario.
+
+PRUEBAS (tests/test_fase2_hf201_privacidad.py, 11 aprobadas)
 ------------------------------------------------------------
 1. ruta personal sintetica detectada (ruta con la cuenta ACTUAL derivada del entorno)
 2. nombre de cuenta sintetico detectado (en prosa, no solo en rutas)
@@ -44,23 +58,28 @@ PRUEBAS (tests/test_fase2_hf201_privacidad.py, 9 aprobadas)
 5. marcadores neutros aceptados (<RUTA-LOCAL>, <USUARIO>, C:/Users/<autor>/)
 6. fichero historico no presente en HEAD detectado igualmente (el blob de 44f6f89)
 7. el reporte NO reproduce la informacion sensible
-8. la cobertura declarada coincide con la ejecutada
+8. la cobertura declarada coincide con la ejecutada (metricas separadas)
+9. una historia SIN hallazgos se declara como tal (`commits_con_exposicion == []`)
 
 REPRODUCCION REAL (no solo casos fabricados)
 ---------------------------------------------
-python audits/fase2/auditar_exposicion_historica.py -> la historia de las
-evidencias muestra 15 commits con exposicion (ruta_local 29, cuenta_usuario 8,
-forma_secreto 0) y el estado ACTUAL conforme (0 ficheros con exposicion).
-El commit 44f6f89 que nombro QA esta en el inventario.
+python audits/fase2/auditar_exposicion_historica.py -> sobre los prefijos de
+evidencia: 52 commits considerados, 10 con exposicion, 64 ficheros
+considerados, 120 deltas inspeccionados, 0 blobs completos, 0 errores;
+categorias ruta_local 20 y cuenta_usuario 8; forma_secreto 0. El estado ACTUAL
+(HEAD) es conforme. El commit 44f6f89 que nombro QA esta en el inventario.
 
 LIMITACIONES DECLARADAS
 ------------------------
+- Se inspeccionan PARCES, no blobs completos: un fichero que nunca cambio en
+  el rango de prefijos no aporta delta y no se ve. `blobs_inspeccionados: 0` lo
+  declara en cada informe.
 - El instrumento mira solo los prefijos de evidencia: el resto del arbol
   versionado (codigo, manifiesto, tests) puede escanearse con el mismo
   instrumento cambiando el prefijo, y queda declarado como limite.
 - El detector es regex sobre texto: sin OCR, sin zips, sin imagenes, sin
-  otros encodings. Los blobs binarios se cuentan como no analizados.
+  otros encodings.
 - La exposicion historica (blobs publicados) la decide el propietario: no se
   reescribe historia en esta tarea.
 
-SOLICITUD DE QA: revisar el verificador y las 9 pruebas.
+SOLICITUD DE QA: revisar el verificador y las 11 pruebas.

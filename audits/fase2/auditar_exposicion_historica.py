@@ -8,6 +8,12 @@ historia entera de los ficheros de evidencia, sin leer blob a blob (el enfoque
 cat-file por lotes se cuelga en este repositorio: limitacion documentada).
 
 ALCANCE DECLARADO (no promete mas de lo que mira):
+  - QUE SE INSPECCIONA: los PARCES que `git log --all -p --full-history`
+    produce para los ficheros bajo los prefijos. Un parche contiene las lineas
+    que ese commit anadio o quito en ese fichero; NO contiene el blob completo
+    de cada estado. Por tanto `blobs_inspeccionados` es 0 y se dice: para leer
+    cada blob habria que recorrer `rev-list --objects --all`, que en este
+    repositorio no termino en 30 minutos y se descarto por coste.
   - ficheros: SOLO los de evidencia (audits/**/logs/, audits/handoff/);
     el resto del arbol versionado (codigo, manifiesto, tests) NO se escanea
     aqui: su historial puede escanearse con este instrumento cambiando el
@@ -16,6 +22,13 @@ ALCANCE DECLARADO (no promete mas de lo que mira):
   - detector: expresiones regulares genericas, sin nombres personales
     incrustados: la cuenta de la maquina se deriva del entorno en tiempo de
     ejecucion (nunca va en el codigo).
+
+METRICAS (separadas a proposito, H-F2-06): `commits_considerados` son TODOS los
+commits que tocan los prefijos; `commits_con_exposicion` son los que tienen
+hallazgos; `ficheros_considerados` y `deltas_inspeccionados` dicen cuanto se
+miro; `errores` recoge lo que no se pudo leer. Una conclusion solo puede
+referirse a lo que estas cifras acreditan — nunca "0 secretos en toda la
+historia".
 
 PRIVACIDAD: de cada coincidencia se publica solo la CATEGORIA y una HUELLA
 (sha256 truncada) del valor, nunca el valor.
@@ -114,10 +127,13 @@ def escanear_historia(prefijos: Tuple[str, ...]) -> Dict[str, Any]:
     fichero_actual: Optional[str] = None
     buffer_texto: List[str] = []
     hallazgos: List[Dict[str, Any]] = []
-    commits_vistos: Set[str] = set()
-    ficheros_vistos: Set[str] = set()
+    commits_considerados: Set[str] = set()
+    commits_con_exposicion: Set[str] = set()
+    ficheros_considerados: Set[str] = set()
+    deltas_inspeccionados = 0
     huellas_unicas: Set[str] = set()
     contador: Dict[str, int] = {}
+    errores: List[str] = []
 
     def cerrar_fichero() -> None:
         nonlocal fichero_actual, buffer_texto
@@ -132,8 +148,7 @@ def escanear_historia(prefijos: Tuple[str, ...]) -> Dict[str, Any]:
                     "coincidencias": len(del_fichero),
                     "huellas": sorted({h["huella"] for h in del_fichero}),
                 })
-                commits_vistos.add(commit_actual)
-                ficheros_vistos.add(fichero_actual)
+                commits_con_exposicion.add(commit_actual)
                 for h in del_fichero:
                     contador[h["categoria"]] = contador.get(h["categoria"], 0) + 1
                     huellas_unicas.add(h["huella"])
@@ -143,6 +158,7 @@ def escanear_historia(prefijos: Tuple[str, ...]) -> Dict[str, Any]:
         if linea.startswith("commit "):
             cerrar_fichero()
             commit_actual = linea.split()[1].strip()
+            commits_considerados.add(commit_actual)
             continue
         m = re.match(r"^\+\+\+ b/(.+)$", linea.rstrip("\n"))
         if m:
@@ -150,6 +166,9 @@ def escanear_historia(prefijos: Tuple[str, ...]) -> Dict[str, Any]:
             fichero_actual = m.group(1).strip()
             if fichero_actual == "/dev/null":
                 fichero_actual = None
+            else:
+                ficheros_considerados.add(fichero_actual)
+                deltas_inspeccionados += 1
             continue
         if fichero_actual:
             buffer_texto.append(linea)
@@ -157,18 +176,25 @@ def escanear_historia(prefijos: Tuple[str, ...]) -> Dict[str, Any]:
                 cerrar_fichero()
     proc.stdout.close()
     cerrar_fichero()
+    resto = proc.stderr.read() if proc.stderr else ""
+    proc.stderr.close()
     proc.wait()
+    for linea in (resto or "").splitlines():
+        if linea.strip():
+            errores.append(linea.strip())
 
-    ficheros_vistos.discard("/dev/null")
+    ficheros_considerados.discard("/dev/null")
     return {
-        "commits_escaneados": len(commits_vistos),
-        "ficheros_escaneados": len(ficheros_vistos),
+        "commits_considerados": len(commits_considerados),
+        "commits_con_exposicion": sorted(commits_con_exposicion),
+        "ficheros_considerados": len(ficheros_considerados),
+        "deltas_inspeccionados": deltas_inspeccionados,
+        "blobs_inspeccionados": 0,
         "hallazgos": hallazgos,
         "categorias": contador,
         "huellas_unicas": len(huellas_unicas),
-        "commits_con_exposicion": sorted(
-            h["commit"] for h in hallazgos),
         "forma_secreto_encontrada": contador.get("forma_secreto", 0),
+        "errores": errores,
     }
 
 
@@ -211,17 +237,27 @@ def main() -> int:
 
     informe = {
         "alcance": {
-            "ficheros": "los que el streaming de git log --all -p --full-history "
-                         "toca bajo esos prefijos, en TODOS los commits alcanzables",
+            "que_se_inspecciona": ("los parches que `git log --all -p --full-history` "
+                                   "produce para los ficheros bajo esos prefijos; un parche "
+                                   "contiene las lineas que ese commit anadio o quito en ese "
+                                   "fichero, NO el blob completo de cada estado"),
+            "ficheros": "los que el streaming de git log --all -p --full-history " 
+                        "toca bajo esos prefijos, en TODOS los commits alcanzables",
+            "blobs_integridad": ("0: no se leen blobs completos. Recorrerlos con "
+                                 "rev-list --objects --all no termino en 30 min en este "
+                                 "repositorio y se descarto por coste; se declara"),
             "exclusiones": ("el resto del arbol versionado (codigo, manifiesto, "
                             "tests) no se escanea en este instrumento"),
             "detector": ("regex genericas sobre texto; sin OCR, sin zips, sin "
                          "imagenes; la cuenta de la maquina se deriva del entorno"),
         },
         "historia": {
-            "commits_escaneados": historia["commits_escaneados"],
-            "ficheros_escaneados": historia["ficheros_escaneados"],
+            "commits_considerados": historia["commits_considerados"],
             "commits_con_exposicion": len(historia["commits_con_exposicion"]),
+            "ficheros_considerados": historia["ficheros_considerados"],
+            "deltas_inspeccionados": historia["deltas_inspeccionados"],
+            "blobs_inspeccionados": historia["blobs_inspeccionados"],
+            "errores": historia["errores"],
             "categorias": historia["categorias"],
             "huellas_unicas": historia["huellas_unicas"],
             "forma_secreto": historia["forma_secreto_encontrada"],
@@ -233,11 +269,14 @@ def main() -> int:
         json.dumps(informe, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     print("== HISTORIA")
-    print(f"  commits escaneados: {informe['historia']['commits_escaneados']} | "
-          f"ficheros: {informe['historia']['ficheros_escaneados']}")
-    print(f"  commits con exposicion: {informe['historia']['commits_con_exposicion']} | "
-          f"categorias: {informe['historia']['categorias']} | "
-          f"forma_secreto: {informe['historia']['forma_secreto']}")
+    print(f"  commits considerados: {informe['historia']['commits_considerados']} | "
+          f"con exposicion: {informe['historia']['commits_con_exposicion']}")
+    print(f"  ficheros considerados: {informe['historia']['ficheros_considerados']} | "
+          f"deltas inspeccionados: {informe['historia']['deltas_inspeccionados']} | "
+          f"blobs inspeccionados: {informe['historia']['blobs_inspeccionados']}")
+    print(f"  categorias: {informe['historia']['categorias']} | "
+          f"forma_secreto: {informe['historia']['forma_secreto']} | "
+          f"errores: {len(informe['historia']['errores'])}")
     for hallazgo in historia["hallazgos"]:
         print(f"  {hallazgo['commit'][:10]} {hallazgo['fichero']} -> "
               f"{hallazgo['categorias']} ({hallazgo['coincidencias']})")

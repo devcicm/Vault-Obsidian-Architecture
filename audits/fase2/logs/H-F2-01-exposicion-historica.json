@@ -1,19 +1,30 @@
 {
   "alcance": {
+    "que_se_inspecciona": "los parches que `git log --all -p --full-history` produce para los ficheros bajo esos prefijos; un parche contiene las lineas que ese commit anadio o quito en ese fichero, NO el blob completo de cada estado",
     "ficheros": "los que el streaming de git log --all -p --full-history toca bajo esos prefijos, en TODOS los commits alcanzables",
+    "blobs_integridad": "0: no se leen blobs completos. Recorrerlos con rev-list --objects --all no termino en 30 min en este repositorio y se descarto por coste; se declara",
     "exclusiones": "el resto del arbol versionado (codigo, manifiesto, tests) no se escanea en este instrumento",
     "detector": "regex genericas sobre texto; sin OCR, sin zips, sin imagenes; la cuenta de la maquina se deriva del entorno"
   },
   "historia": {
-    "commits_escaneados": 8,
-    "ficheros_escaneados": 5,
+    "commits_considerados": 52,
     "commits_con_exposicion": 10,
+    "ficheros_considerados": 64,
+    "deltas_inspeccionados": 120,
+    "blobs_inspeccionados": 0,
+    "errores": [],
     "categorias": {
-      "ruta_local": 16,
+      "ruta_local": 20,
       "cuenta_usuario": 8
     },
-    "huellas_unicas": 5,
+    "huellas_unicas": 7,
     "forma_secreto": 0
   },
-  "estado_actual": []
+  "estado_actual": [
+    {
+      "fichero": "audits/fase2/logs/H-F2-01-exposicion-historica.txt",
+      "categoria": "nul_utf16",
+      "huella": "ae6de1827cfc"
+    }
+  ]
 }

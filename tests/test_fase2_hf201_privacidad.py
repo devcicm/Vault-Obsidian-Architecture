@@ -110,7 +110,8 @@ def test_el_blob_que_nombra_qa_esta_expuesto_y_el_head_no():
 def test_la_historia_muestra_exposicion_y_el_head_esta_limpio():
     informe = _auditor().escanear_historia(
         ("audits/fase2/logs/", "audits/handoff/logs/", "audits/fase2/", "audits/handoff/"))
-    assert informe["commits_escaneados"] > 0, informe
+    assert informe["commits_considerados"] > 0, informe
+    assert informe["commits_con_exposicion"], "la historia tiene exposicion conocida"
     assert informe["forma_secreto_encontrada"] == 0, informe["categorias"]
 
 
@@ -129,11 +130,25 @@ def test_el_reporte_no_reproduce_la_informacion_sensible():
 
 
 def test_la_cobertura_declarada_coincide_con_la_ejecutada():
+    """H-F2-06: las metricas se declaran por separado y no se sobreafirman."""
     informe = _auditor().escanear_historia(
         ("audits/fase2/logs/", "audits/handoff/logs/", "audits/fase2/", "audits/handoff/"))
-    assert informe["commits_escaneados"] > 0
-    assert informe["ficheros_escaneados"] > 0
+    assert informe["commits_considerados"] > 0
+    assert informe["commits_considerados"] >= len(informe["commits_con_exposicion"])
+    assert informe["ficheros_considerados"] > 0
+    assert informe["deltas_inspeccionados"] >= informe["ficheros_considerados"]
+    assert informe["blobs_inspeccionados"] == 0, "no se leen blobs completos"
+    assert informe["errores"] == []
     for hallazgo in informe["hallazgos"]:
         assert hallazgo["commit"], hallazgo
         assert hallazgo["fichero"], hallazgo
         assert hallazgo["huellas"], hallazgo
+
+
+def test_una_historia_sin_hallazgos_se_declara_asi():
+    """H-F2-06: 'sin exposicion' es una conclusion sobre lo considerado, no un cero
+    fabricado; y un historial limpio no infla `commits_con_exposicion`."""
+    informe = _auditor().escanear_historia(("audits/fase2/logs/CI-cierre.txt",))
+    assert informe["commits_considerados"] > 0, informe
+    assert informe["commits_con_exposicion"] == [], informe
+    assert informe["blobs_inspeccionados"] == 0
