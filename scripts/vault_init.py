@@ -23,7 +23,7 @@ Usage:
     python vault_init.py                  # versión por defecto (current)
     python vault_init.py --target v32     # migrar hasta v32 explícitamente
     python vault_init.py --no-audit       # omitir vault_audit final
-    python vault_init.py --clean          # peligroso: borra el contenido actual
+    python vault_init.py --clean --confirm mi-vault   # mueve a cuarentena verificada
 """
 
 import argparse
@@ -180,10 +180,14 @@ def _create_scaffold_note(section: str) -> Dict[str, Any]:
     }
 
 
-def vault_init(
-    target_version: str = CURRENT_VERSION, run_audit: bool = True, clean: bool = False
+def _vault_init_sin_clean(
+    target_version: str = CURRENT_VERSION, run_audit: bool = True
 ) -> dict:
     """Inicializa un vault fresco en VAULT_ROOT.
+
+    No limpia nada: la operacion destructiva la orquesta `vault_init()` a
+    traves de `_preparar_clean()`, que garantiza copia verificable y rollback
+    antes de llamar aqui (TD-0008).
 
     Returns a structured result suitable for both CLI JSON output and tests.
     """
@@ -213,18 +217,11 @@ def vault_init(
         "steps": [],
     }
 
-    # Step 0: --clean wipes existing content (only if explicitly asked)
-    if clean and _raiz().exists():
-        wiped = []
-        for entry in _raiz().iterdir():
-            if entry.name == ".locks":
-                continue
-            if entry.is_dir():
-                shutil.rmtree(entry)
-            else:
-                entry.unlink()
-            wiped.append(entry.name)
-        result["steps"].append({"step": "clean", "wiped": wiped})
+    # (El antiguo "Step 0: --clean wipes..." vivia aqui. Se elimino porque
+    # borraba con shutil.rmtree sin copia ni verificacion. La operacion
+    # destructiva completa la orquesta `vault_init()` mediante
+    # `_preparar_clean()`, y esta funcion solo corre cuando el contenido
+    # anterior ya esta a salvo en una cuarentena verificada.)
 
     # Step 1: create all 17 standard folders
     folders_created = []
@@ -433,6 +430,278 @@ def vault_init(
     return result
 
 
+# ── TD-0008: operacion destructiva con recuperacion verificable ──────────────
+#
+# AP-36 pide que los side effects vivan dentro del vault. La cuarentena es la
+# excepcion deliberada y se documenta: tiene que SOBREVIVIR al borrado, asi que
+# no puede estar dentro de lo que se borra. Vive como hermana del vault
+# (`.<nombre>.cuarentena-<TS>`), en el mismo volumen, para que el rename sea
+# atomico.
+#
+# Maquina de estados (audits/fase2/R04-diseno-td0008.md):
+#   PRECHECK -> BACKUP -> VERIFY_BACKUP -> READY -> CLEAN -> VERIFIED
+# Un fallo antes de CLEAN deja el vault intacto; uno posterior deja la
+# cuarentena en pie para restaurar.
+
+MANIFIESTO_CUARENTENA = ".cuarentena.json"
+
+
+def _marcas_de_vault(raiz: Path) -> bool:
+    """Un vault se reconoce por sus marcas, no por estar en una ruta.
+
+    Sin esta comprobacion, un VAULT_ROOT mal exportado convierte `--clean` en
+    el borrado de un directorio de trabajo cualquiera.
+    """
+    return (raiz / "00_System").is_dir() or (raiz / "17_Preferences").is_dir()
+
+
+def _inventario(raiz: Path) -> Dict[str, Any]:
+    """Inventario con hash de contenido, sin seguir symlinks (TD-0008).
+
+    Verificar nombres no demuestra nada. Los symlinks se registran como tales y
+    NO se atraviesan: el inventario no puede salirse del arbol ni entrar en un
+    ciclo.
+    """
+    import hashlib
+    import os
+
+    entradas: Dict[str, Dict[str, Any]] = {}
+    errores: List[str] = []
+    for base, dirs, ficheros in os.walk(raiz, followlinks=False):
+        base_path = Path(base)
+        for d in list(dirs):
+            ruta = base_path / d
+            if ruta.is_symlink():
+                rel = ruta.relative_to(raiz).as_posix()
+                entradas[rel] = {"tipo": "symlink", "destino": os.readlink(ruta)}
+                dirs.remove(d)
+        for nombre in ficheros:
+            ruta = base_path / nombre
+            rel = ruta.relative_to(raiz).as_posix()
+            try:
+                if ruta.is_symlink():
+                    entradas[rel] = {"tipo": "symlink", "destino": os.readlink(ruta)}
+                    continue
+                digest = hashlib.sha256()
+                with ruta.open("rb") as fh:
+                    for bloque in iter(lambda: fh.read(1 << 20), b""):
+                        digest.update(bloque)
+                entradas[rel] = {"tipo": "fichero", "tamano": ruta.stat().st_size,
+                                 "sha256": digest.hexdigest()}
+            except OSError as exc:
+                errores.append(f"{rel}: {exc}")
+    return {"entradas": entradas, "errores": errores, "total": len(entradas),
+            "bytes": sum(e.get("tamano", 0) for e in entradas.values())}
+
+
+def _cuarentena_hermana(raiz: Path) -> Path:
+    """Una ruta hermana libre, en el mismo volumen, para el rename atomico."""
+    from datetime import datetime, timezone
+
+    sello = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    base = raiz.parent / f".{raiz.name}.cuarentena-{sello}"
+    candidata, n = base, 1
+    while candidata.exists():
+        n += 1
+        candidata = base.with_name(f"{base.name}-{n}")
+    return candidata
+
+
+def _verificar_copia(original: Dict[str, Any], copia: Path) -> Dict[str, Any]:
+    """Compara inventarios por CONTENIDO, no por nombre."""
+    actual = _inventario(copia)
+    faltan = sorted(set(original["entradas"]) - set(actual["entradas"]))
+    sobran = sorted(set(actual["entradas"]) - set(original["entradas"]))
+    distintos = sorted(
+        rel for rel in set(original["entradas"]) & set(actual["entradas"])
+        if original["entradas"][rel] != actual["entradas"][rel])
+    return {"ok": not (faltan or sobran or distintos or actual["errores"]),
+            "faltan": faltan[:20], "sobran": sobran[:20],
+            "distintos": distintos[:20], "errores": actual["errores"][:20],
+            "total": actual["total"]}
+
+
+def _preparar_clean(raiz: Path, confirm: str | None,
+                    dry_run: bool = False) -> Dict[str, Any]:
+    """PRECHECK -> BACKUP -> VERIFY_BACKUP -> READY (y CLEAN si no es dry-run)."""
+    paso: Dict[str, Any] = {"step": "clean", "estado": "PRECHECK"}
+    if not _marcas_de_vault(raiz):
+        paso.update({"estado": "ABORTED", "motivo": "VAULT_NOT_RECOGNIZED",
+                     "detalle": (f"'{raiz}' no tiene marcas de vault (00_System "
+                                 "o 17_Preferences): no se borra un directorio "
+                                 "que no se reconoce como vault.")})
+        return {"ok": False, "preparacion": paso}
+    if confirm != raiz.name:
+        paso.update({"estado": "ABORTED", "motivo": "CONFIRMACION_REQUERIDA",
+                     "detalle": (f"Operacion destructiva: repite con "
+                                 f"--confirm {raiz.name!r} (el nombre del vault "
+                                 "que se va a limpiar).")})
+        return {"ok": False, "preparacion": paso}
+
+    inventario = _inventario(raiz)
+    if inventario["errores"]:
+        paso.update({"estado": "ABORTED", "motivo": "INVENTARIO_INCOMPLETO",
+                     "detalle": ("No se pudo leer todo el contenido; sin "
+                                 "inventario completo no hay copia verificable."),
+                     "errores": inventario["errores"][:20]})
+        return {"ok": False, "preparacion": paso}
+
+    plan = sorted(p.name for p in raiz.iterdir() if p.name != ".locks")
+    if dry_run:
+        paso.update({"estado": "READY", "dry_run": True, "plan": plan,
+                     "total": inventario["total"], "bytes": inventario["bytes"]})
+        return {"ok": True, "preparacion": paso, "cuarentena": None}
+
+    cuarentena = _cuarentena_hermana(raiz)
+    paso["estado"] = "BACKUP"
+    try:
+        raiz.rename(cuarentena)
+    except OSError as exc:
+        # Rename imposible (volumen distinto o bloqueo): copia verificada y
+        # solo despues se borra el original. Si la copia no verifica, no se
+        # borra nada.
+        paso["mecanismo"] = "copia"
+        try:
+            shutil.copytree(raiz, cuarentena, symlinks=True)
+        except OSError as exc_copia:
+            shutil.rmtree(cuarentena, ignore_errors=True)
+            paso.update({"estado": "ABORTED", "motivo": "BACKUP_FALLIDO",
+                         "detalle": f"rename: {exc}; copia: {exc_copia}"})
+            return {"ok": False, "preparacion": paso}
+        verificacion = _verificar_copia(inventario, cuarentena)
+        if not verificacion["ok"]:
+            shutil.rmtree(cuarentena, ignore_errors=True)
+            paso.update({"estado": "ABORTED", "motivo": "COPIA_NO_VERIFICADA",
+                         "verificacion": verificacion})
+            return {"ok": False, "preparacion": paso}
+        for entry in sorted(raiz.iterdir(), reverse=True):
+            if entry.name == ".locks":
+                continue
+            if entry.is_dir() and not entry.is_symlink():
+                shutil.rmtree(entry)
+            else:
+                entry.unlink()
+    else:
+        paso["mecanismo"] = "rename"
+        raiz.mkdir(parents=True, exist_ok=True)
+        # `.locks` es estado del runtime, no contenido del usuario: el borrado
+        # antiguo lo preservaba y la cuarentena no debe llevarselo.
+        bloqueo = cuarentena / ".locks"
+        if bloqueo.exists():
+            shutil.copytree(bloqueo, raiz / ".locks", dirs_exist_ok=True)
+
+    paso["estado"] = "VERIFY_BACKUP"
+    verificacion = _verificar_copia(inventario, cuarentena)
+    if not verificacion["ok"]:
+        if raiz.exists():
+            shutil.rmtree(raiz, ignore_errors=True)
+        try:
+            cuarentena.rename(raiz)
+        except OSError:
+            pass
+        paso.update({"estado": "ROLLBACK", "motivo": "VERIFICACION_FALLIDA",
+                     "verificacion": verificacion})
+        return {"ok": False, "preparacion": paso}
+
+    try:
+        (cuarentena / MANIFIESTO_CUARENTENA).write_text(
+            json.dumps({"vault": raiz.name, "verificado": True,
+                        "total": verificacion["total"],
+                        "mecanismo": paso["mecanismo"]},
+                       indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    except OSError as exc:
+        paso["aviso_manifiesto"] = str(exc)
+
+    paso.update({"estado": "READY", "cuarentena": str(cuarentena),
+                 "total": verificacion["total"], "bytes": inventario["bytes"]})
+    return {"ok": True, "preparacion": paso, "cuarentena": cuarentena}
+
+
+def _restaurar(raiz: Path, cuarentena: Path) -> Dict[str, Any]:
+    """ROLLBACK: el contenido anterior vuelve a su sitio y se verifica."""
+    try:
+        if raiz.exists():
+            shutil.rmtree(raiz, ignore_errors=True)
+        cuarentena.rename(raiz)
+        manifiesto = raiz / MANIFIESTO_CUARENTENA
+        if manifiesto.exists():
+            manifiesto.unlink()
+        return {"ok": True, "restaurado": str(raiz)}
+    except OSError as exc:
+        return {"ok": False, "detalle": str(exc), "cuarentena": str(cuarentena)}
+
+
+def _purgar_cuarentena(ruta: Path, raiz: Path) -> Dict[str, Any]:
+    """Purga DIFERIDA: solo una cuarentena hermana, verificada y explicita."""
+    ruta = ruta.resolve()
+    try:
+        ruta.relative_to(raiz.parent)
+    except ValueError:
+        return {"ok": False, "motivo": "FUERA_DEL_AMBITO"}
+    if not ruta.name.startswith(f".{raiz.name}.cuarentena-"):
+        return {"ok": False, "motivo": "NO_ES_CUARENTENA_DE_ESTE_VAULT"}
+    if not (ruta / MANIFIESTO_CUARENTENA).is_file():
+        return {"ok": False, "motivo": "SIN_MANIFIESTO_DE_VERIFICACION"}
+    shutil.rmtree(ruta)
+    return {"ok": True, "purgado": str(ruta)}
+
+
+def vault_init(
+    target_version: str = CURRENT_VERSION,
+    run_audit: bool = True,
+    clean: bool = False,
+    confirm: str | None = None,
+    dry_run: bool = False,
+) -> dict:
+    """Inicializa un vault; con `clean`, solo sobre una copia verificada.
+
+    El contenido anterior se mueve a una cuarentena hermana verificada por
+    contenido antes de inicializar nada. Un fallo antes de CLEAN deja el vault
+    intacto; uno posterior deja la cuarentena en pie para restaurar. Nunca se
+    borra sin una via de recuperacion.
+    """
+    if not clean:
+        return _vault_init_sin_clean(target_version=target_version,
+                                     run_audit=run_audit)
+
+    raiz = _raiz()
+    if not raiz.exists() or not raiz.is_dir():
+        return emit_error("vault_init", "VAULT_NOT_FOUND",
+                          f"VAULT_ROOT does not exist or is not a directory: {raiz}")
+
+    preparacion = _preparar_clean(raiz, confirm, dry_run=dry_run)
+    paso = preparacion.get("preparacion", {})
+    if not preparacion["ok"]:
+        sobre = emit_error("vault_init", "INVALID_INPUT",
+                           paso.get("detalle", "no se pudo preparar la limpieza"),
+                           args={"motivo": paso.get("motivo"),
+                                 "estado": paso.get("estado")})
+        sobre["clean"] = paso
+        return sobre
+    if dry_run:
+        return {"ok": True, "clean": paso,
+                "vault_root": str(raiz).replace("\\", "/"),
+                "plan": paso.get("plan", [])}
+
+    cuarentena = preparacion["cuarentena"]
+    paso["estado"] = "CLEAN"
+    try:
+        resultado = _vault_init_sin_clean(target_version=target_version,
+                                          run_audit=run_audit)
+    except BaseException as exc:  # rollback tambien ante KeyboardInterrupt
+        restauracion = _restaurar(raiz, cuarentena)
+        sobre = emit_error("vault_init", "INIT_FAILED_AFTER_CLEAN", str(exc),
+                           args={"cuarentena": str(cuarentena),
+                                 "restauracion": restauracion})
+        sobre["clean"] = paso
+        return sobre
+    paso["estado"] = "VERIFIED"
+    resultado["clean"] = paso
+    resultado["cuarentena"] = str(cuarentena)
+    resultado["purga"] = "diferida"
+    return resultado
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Vault Init — bootstrap a fresh vault in one command",
@@ -449,13 +718,18 @@ def main() -> int:
   python vault_init.py --no-audit
 
   # Bootstrap desde cero (BORRA el contenido actual — usar con cuidado)
-  python vault_init.py --clean
+  python vault_init.py --clean --confirm mi-vault
+
+  # Ver que se borraria, sin borrar nada
+  python vault_init.py --clean --confirm mi-vault --dry-run
 
 Notas:
   - VAULT_ROOT se detecta automáticamente
   - Crea las carpetas estándar del registro, aplica migraciones, indexa todo,
     genera hub/commands notes y reporta el health score.
-  - --clean borra TODO el contenido del vault actual excepto .locks
+  - --clean exige --confirm <nombre-del-vault>: mueve el contenido
+    anterior a una cuarentena hermana verificada por hash antes de
+    inicializar, y la conserva hasta purgarla expresamente.
         """,
         allow_abbrev=False,
     )
@@ -478,6 +752,25 @@ Notas:
         help="Wipe existing vault content before init (DANGEROUS)",
     )
     parser.add_argument(
+        "--confirm",
+        default=None,
+        help=(
+            "Nombre del vault que se va a limpiar. Obligatorio con --clean: "
+            "una operacion destructiva no se dispara por accidente."
+        ),
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Con --clean: muestra el plan de borrado y no borra nada.",
+    )
+    parser.add_argument(
+        "--purge-backup",
+        default=None,
+        metavar="RUTA",
+        help="Purga una cuarentena concreta de este vault (purga diferida).",
+    )
+    parser.add_argument(
         "--name",
         default=None,
         help=(
@@ -497,6 +790,14 @@ Notas:
         help="Lista los vaults de la casa (nombre, version y si tienen git).",
     )
     args = parser.parse_args()
+
+    if args.purge_backup:
+        raiz_actual = _raiz()
+        resultado_purga = _purgar_cuarentena(Path(args.purge_backup), raiz_actual)
+        print(json.dumps({"ok": resultado_purga.get("ok"),
+                          "purga": resultado_purga},
+                         indent=2, ensure_ascii=False))
+        return 0 if resultado_purga.get("ok") else 1
 
     if args.list:
         print(json.dumps(_listar_vaults_de_la_casa(), indent=2, ensure_ascii=False))
@@ -529,6 +830,8 @@ Notas:
         target_version=args.target,
         run_audit=not args.no_audit,
         clean=args.clean,
+        confirm=args.confirm,
+        dry_run=args.dry_run,
     )
     if args.name and result.get("ok") and not args.no_git:
         result["git"] = _inicializar_git(destino)

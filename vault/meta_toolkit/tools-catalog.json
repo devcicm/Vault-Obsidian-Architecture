@@ -3203,6 +3203,18 @@
             "type": "boolean",
             "description": "Borrar contenido existente (DANGEROUS)"
           },
+          "confirm": {
+            "type": "string",
+            "description": "Nombre del vault que se va a limpiar. Obligatorio con --clean: una operacion destructiva no se dispara por accidente."
+          },
+          "dry-run": {
+            "type": "boolean",
+            "description": "Con --clean: muestra el plan de borrado y no borra nada."
+          },
+          "purge-backup": {
+            "type": "string",
+            "description": "Purga una cuarentena concreta de este vault (purga diferida)."
+          },
           "name": {
             "type": "string",
             "description": "Crea el vault en la casa (~/.vault-master/<nombre>) con su repositorio git"
