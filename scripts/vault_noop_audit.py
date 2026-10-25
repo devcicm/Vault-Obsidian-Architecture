@@ -188,6 +188,14 @@ FICHEROS_DEL_EJEMPLO: Dict[str, Dict[str, str]] = {
     # nada que escribir y el banco no los mide.
     "vault_fix_brackets": {"02_Observability/errors/foo.md": "corchetes"},
     "vault_frontmatter_heal": {"07_Knowledge/escalar-sin-escapar.md": "yaml_roto"},
+    # El tercer sanador (H-QA-01, cierre ronda 1B): su ejemplo completo
+    # (`--path 07_Knowledge/x.md --apply`) presupone una nota que `vault_init`
+    # no crea — en un banco limpio rehusaba con NOTE_NOT_FOUND y el banco la
+    # daba por "sin escritura y sin motivo", mientras que en un sandbox con
+    # corridas previas escribia: la medida dependia del residuo. La plantilla
+    # `nota` de abajo no trae createdAt/updatedAt/cia_*/agent, que es justo lo
+    # que el completador anade: su `--apply` escribe de verdad en banco limpio.
+    "vault_frontmatter_completar": {"07_Knowledge/x.md": "nota"},
     "vault_runbook_log": {"08_Runbooks/deploy.md": "nota"},
     "vault_supersede": {"10_Migrated/GUIA.md": "nota", "07_Knowledge/guia.md": "nota"},
     "vault_propagate": {"01_Projects/mi-api/overview.md": "nota"},
