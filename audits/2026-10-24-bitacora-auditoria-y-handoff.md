@@ -99,3 +99,9 @@ Funciones citadas en el análisis preliminar: `check_params`, `notas_indexables`
 **Decisión provisional:** no sustituir imports por una fachada cosmética ni mover funciones sin identificar el puerto canónico, propietarios y consumidores. Próximo paso: contrastar `CONTEXTS` y `PRESUPUESTO_DE_CRUCES` con la ubicación real de la interfaz; crear pruebas de contrato y regresión de escritura exitosa/fallida antes de refactorizar.
 
 **Validación:** lectura estática confirmada; ejecución de suite, pruebas y nuevo contrato: pendientes.
+
+## 9. Pruebas de contrato AP-39 incorporadas (2026-10-24)
+
+- Commit `0748b1ce9340272743fa5ff7f50f23696d9230fe`: `tests/test_ap39_contrato.py` (tres casos: resolución sin efectos secundarios, registro vacío sin escritura, deduplicación del ledger).
+- Ejecución prevista: `python -m unittest discover -s tests -p 'test_ap39_contrato.py'`.
+- **Estado:** archivo confirmado en GitHub; pruebas **no ejecutadas**. El sandbox no pudo clonar GitHub por error DNS (`Could not resolve host: github.com`). No se afirma aprobación ni corrección del acceso AP-49. Mantener el refactor bloqueado hasta validar las pruebas y revisar propiedad/puerto canónico.
