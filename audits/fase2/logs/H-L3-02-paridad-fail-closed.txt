@@ -1,0 +1,72 @@
+H-L3-02 — Verificador de paridad FAIL-CLOSED (fase 2, L3)
+===========================================================
+
+Que pedia QA: que el harness de auditoria falle cuando (a) AP-40 devuelva un
+codigo distinto de cero, (b) falte un campo obligatorio del contrato, (c) exista
+divergencia real entre codigos o significados de error, (d) los efectos
+observables difieran, (e) un caso requerido no se haya ejecutado y (f) se
+comprueben los errores de transporte MCP, incluido `isError`, cuando
+corresponda. Con pruebas negativas que demuestren que el verificador detecta
+esas situaciones.
+
+1. QUE HABIA
+------------
+El verificador comparaba unicamente los campos que elegia cada caso y salia con
+0 mientras los adaptadores coincidieran en esos campos. Consecuencias medidas:
+  - Si AP-40 fallaba, el verificador no lo notaba: el exit del contrato no
+    entraba en el veredicto.
+  - Un caso que no se hubiera ejecutado (por un fallo previo) no se reportaba.
+  - Un `isError` del protocolo MCP (error de EJECUCION de la tool) no se
+    miraba; y un error de TRANSPORTE (JSON-RPC sin envelope de tool) tampoco.
+  - Un campo ausente en un adaptador se comparaba como `None` contra el valor
+    del otro, que es una divergencia de valor camuflada de contrato incompleto.
+
+2. QUE SE HIZO
+--------------
+- La evaluacion vive ahora en `evaluar()`, una FUNCION PURA que devuelve
+  {ok, problemas} y que el ejecutable consulta. Toda la logica de juicio es
+  testeable sin arrancar node, sin venv y sin red.
+- Se anaden las seis comprobaciones que pedia QA, con su mensaje.
+- `isError` se distingue de un error de transporte: `isError` es la convention
+  MCP para un error de EJECUCION de la tool, asi que solo es problema cuando
+  CONTRADICE al otro adaptador (el CLI no fallo, o fallo con otro codigo). Un
+  error de transporte (sin envelope de tool) es problema siempre.
+- El contrato de un caso son SUS campos: todos tienen que estar presentes en los
+  dos adaptadores, no solo `ok`.
+- Se declara el ALCANCE en la salida: la paridad funcional se probo en 5 casos
+  de 97 tools expuestas; el contrato de todas lo cubre el verificador AP-40.
+
+3. PRUEBAS (las que exigia QA)
+-------------------------------
+tests/test_fase2_paridad_fail_closed.py, 11 pruebas:
+  - control positivo: una medicion limpia pasa;
+  - AP-40 con exit distinto de cero -> detectado;
+  - campo obligatorio ausente -> detectado;
+  - codigos de error divergentes -> detectado;
+  - un adaptador falla y el otro no -> detectado;
+  - efectos observables divergentes -> detectado;
+  - caso requerido no ejecutado -> detectado;
+  - `isError` con el CLI en verde -> detectado;
+  - `isError` con ambos fallando igual -> CONFORME (es la convention MCP);
+  - error de transporte -> detectado;
+  - operacion no expuesta por MCP -> detectado.
+
+  python -m pytest tests/test_fase2_paridad_fail_closed.py -q -> 11 passed, exit 0
+
+4. EJECUCION CONTRA EL SISTEMA REAL (no solo casos fabricados)
+--------------------------------------------------------------
+  python audits/fase2/paridad_cli_mcp.py --venv <venv> --runtime <runtime>
+  -> paridad 5/5 | AP-40 exit 0 | tools MCP 97 | veredicto: CONFORME | exit 0
+
+  El verificador fail-closed ENCONTRO un problema real en su primera
+  ejecucion (el `isError` de un `vault_read` sobre nota inexistente). Al
+  investigarlo, el comportamiento del servidor era correcto —error de
+  ejecucion, no de transporte— y la regla que yo habia escrito era
+  demasiado dura. Se afino la regla (comparativa) y se documento el
+  criterio: `isError` es legitimo cuando ambos adaptadores fallan igual.
+
+5. LO QUE NO CAMBIA
+-------------------
+No se toca el producto, ni sus tests, ni la cobertura. El unico cambio de
+codigo es el harness de auditoria (audits/fase2/paridad_cli_mcp.py) y el test
+nuevo que lo cubre.
