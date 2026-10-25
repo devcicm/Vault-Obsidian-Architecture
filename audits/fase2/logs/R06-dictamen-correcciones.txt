@@ -1,0 +1,72 @@
+Lote de correcciones del dictamen QA sobre R01-R05
+==================================================
+
+FECHA: 2026-10-25
+RAMA: fase2/deuda-y-product-readiness-20261025
+SHA_ENTRADA: cb3233a (dictamen QA que pide corregir)
+SHA_SALIDA: ver el commit de este informe
+
+QUE PEDIA EL DICTAMEN Y QUE SE HIZO
+-----------------------------------
+H-F2-04 (P1) — evidencia faltante tratada como valida.
+  Defecto reproducido: todos los gates en PASS declarados, control de ejecucion
+  completo y CI success devolvia liberable=true SIN sha_objetivo y SIN
+  evidencias, porque _evidencia_ajena() devolvia False cuando faltaba el dato.
+  Correccion (0a583da): sha_objetivo obligatorio con forma de SHA (7-40 hex);
+  evidencia obligatoria por gate; evidencia ausente -> BLOCKED
+  EVIDENCIA_AUSENTE; evidencia de otro SHA -> BLOCKED EVIDENCIA_DE_OTRO_SHA.
+  15 pruebas (6 negativas nuevas). Repro posterior: liberable=false.
+
+H-F2-05 (P1) — YAML de datos clasificado como codigo ejecutable (AP-57).
+  Defecto reproducido: los tres YAML de evidencia de audits/fase2 salian como
+  frontera_no_declarada; cinco pruebas y la puerta criterios en rojo.
+  Correccion (8b01bdb): yaml_es_ejecutable() declara el criterio —
+  (1) .github/ es ejecutable por definicion; (2) claves de primer nivel de
+  workflow (on:, jobs:, steps:, workflow_dispatch:, runs-on:) convierten el
+  fichero en ejecutable aunque este mal ubicado, para que el CI fuera de su
+  sitio siga detectandose; (3) el resto son datos y no son frontera.
+  Sin eximir directorios y sin tocar la baseline (sigue en 2).
+  Limite declarado: un YAML de datos ejecutado por un runner propio no se ve.
+  Resultado: 50 passed en el bloque de AP-57/AP-46; criterios ok con
+  new_copies [].
+
+H-F2-06 (P2) — alcance historico sobreafirmado.
+  Defecto reproducido: el JSON publicaba commits_escaneados=8 junto a
+  commits_con_exposicion=10; el primero solo contaba commits CON hallazgos, y
+  el informe decia "cobertura por blobs" cuando el instrumento recorre parches.
+  Correccion (d175917): se declara que se inspeccionan PARCES
+  (lineas anadidas/quitadas por commit y fichero), con blobs_inspeccionados=0
+  y el motivo (rev-list no termino en 30 min); metricas separadas
+  commits_considerados=52, commits_con_exposicion=10, ficheros_considerados=64,
+  deltas_inspeccionados=120, errores=0; y prueba de historia sin hallazgos.
+  Se declara ademas que b9fb71d introdujo un nombre real de cuenta en un
+  docstring —corregido en 24eb0a9— y que ese blob sigue en la historia
+  publicada: no se reescribe sin autorizacion del propietario.
+
+REGISTRO CANONICO (AP-57 no; regla 3 del repo): TD-0010, TD-0011 y TD-0012
+quedan en audits/fase2/inventario-deuda.yaml con estado `corregida` y su commit.
+
+VERIFICACION
+------------
+| Comprobacion | Resultado |
+|---|---|
+| tests/test_fase2_politica_qg.py | 15 passed |
+| tests/test_fase2_hf201_privacidad.py | 11 passed |
+| tests/test_criterios_yaml.py | 7 passed |
+| tests/test_criterios_fronteras.py + test_ap57_criterios.py + test_ap46 | 50 passed |
+| python scripts/vault_criterios.py --check --strict | ok, new_copies [], baseline 2 |
+| python scripts/vault_gate.py --strict | ver informe de cierre |
+| python -m pytest tests/ -q -n auto | ver informe de cierre |
+| python audits/fase2/comprobar_saneamiento.py | exit 0 |
+
+LO QUE ESTE LOTE NO HACE
+------------------------
+- No implementa TD-0003/Q04-Q07: exige autorizacion expresa (cambio de
+  producto) y QG-02 sigue BLOCKED con CONTROL_OBLIGATORIO_NO_VERIFICADO.
+- No implementa TD-0008: el diseno esta publicado y `vault_init --clean` sigue
+  como estaba; implementarlo requiere autorizacion.
+- No reescribe historia ni toca main, PR #1 ni PR #2.
+- No amplia baselines ni deshabilita pruebas o puertas.
+
+SOLICITUD DE QA: re-revisar H-F2-04/05/06 y, si procede, dictaminar QG-00..QG-07
+con la CI del SHA.

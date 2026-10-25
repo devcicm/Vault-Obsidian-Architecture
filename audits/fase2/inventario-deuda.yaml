@@ -440,3 +440,105 @@
   - 'PENDIENTE: el Quick Start declara su supuesto o enlaza el camino instalado.'
   quality_gate: QG-07
   decision: pending
+
+- id: TD-0010
+  title: La politica de QG acreditaba un estado sin SHA objetivo ni evidencias (H-F2-04)
+  category: verification
+  severity: P1
+  status: corregida
+  owner: gobernanza - politica_qg
+  context: 'Dictamen QA R01-R05: fail-closed de Quality Gates'
+  source_file: audits/fase2/politica_qg.py
+  symbol: _evidencia_ajena / evaluar_politica
+  commit_sha: 0a583da
+  observed_behavior: Con todos los gates declarados PASS, control de ejecucion completo y CI success,
+    evaluar_politica devolvia liberable=true sin sha_objetivo y sin evidencias.
+  expected_behavior: Sin SHA objetivo valido y sin evidencia por gate no hay PASS; el gate queda BLOCKED.
+  root_cause: '_evidencia_ajena() devolvia False cuando faltaba el dato: fail-open en el punto exacto
+    donde el contrato exige fail-closed.'
+  impact: Un QG podia declararse liberable sin una sola evidencia verificable.
+  likelihood: Alta en cualquier estado construido a mano o por un colector incompleto.
+  evidence:
+  - 'Reproduccion: estado sin evidencias ni SHA -> liberable=true antes de 0a583da'
+  - 'tests/test_fase2_politica_qg.py: seis pruebas negativas de datos faltantes'
+  affected_contracts:
+  - 'Quality Gates: QG-00 y QG-07'
+  related_norms:
+  - AP-52 (contrato de error) por analogia: no emitir exito sin acreditacion
+  related_tests:
+  - tests/test_fase2_politica_qg.py (15 pruebas)
+  proposed_remediation: 'Aplicada: SHA obligatorio (7-40 hex), evidencia obligatoria por gate y
+    evidencia de otro SHA bloqueada.'
+  regression_risk: 'Bajo: solo se anaden condiciones de bloqueo.'
+  acceptance_criteria:
+  - 'CUMPLIDO: sin evidencias o sin SHA, liberable=false.'
+  quality_gate: QG-00
+  decision: accepted
+- id: TD-0011
+  title: YAML de datos reportado como frontera de lenguaje ejecutable (H-F2-05 / AP-57)
+  category: governance
+  severity: P1
+  status: corregida
+  owner: meta_toolkit - vault_criterios
+  context: 'Dictamen QA R01-R05: cincuenta pruebas con cinco rojos y puerta criterios en rojo'
+  source_file: scripts/vault_criterios.py
+  symbol: EXT_EJECUTABLES / medir_fronteras
+  commit_sha: 8b01bdb
+  observed_behavior: Los inventarios YAML de audits/fase2 salian como frontera_no_declarada; cinco
+    pruebas de AP-57 y AP-46 en rojo y la puerta criterios en rojo.
+  expected_behavior: Un YAML de datos no es una frontera de lenguaje; un workflow de CI si, aunque este
+    mal ubicado.
+  root_cause: '.yml/.yaml entro en EXT_EJECUTABLES para vigilar la CI y nunca se distingue por rol.'
+  impact: 'Falso positivo permanente: deuda que nadie revisa y una puerta que no puede ponerse verde.'
+  likelihood: 'Alta: cualquier registro YAML nuevo dispara el hallazgo.'
+  evidence:
+  - 'audits/fase2/{catalogo-qg,inventario-deuda,inventario-documental}.yaml reportados'
+  - 'tests/test_criterios_yaml.py: 7 pruebas de clasificacion'
+  affected_contracts:
+  - 'Puerta criterios (AP-57)'
+  related_norms:
+  - AP-57 (criterio con dueño)
+  related_tests:
+  - tests/test_criterios_yaml.py
+  - tests/test_criterios_fronteras.py
+  - tests/test_ap57_criterios.py
+  proposed_remediation: 'Aplicada: yaml_es_ejecutable() clasifica por .github/, claves de primer nivel
+    de workflow y resto = datos; sin eximir directorios ni tocar la baseline.'
+  regression_risk: 'Bajo: los workflows siguen vigilados; se declara el limite del criterio.'
+  acceptance_criteria:
+  - 'CUMPLIDO: criterios ok con new_copies vacio y baseline en 2.'
+  quality_gate: QG-02
+  decision: accepted
+- id: TD-0012
+  title: El auditor historico sobreafirmaba su alcance y contaba mal sus commits (H-F2-06)
+  category: observability
+  severity: P2
+  status: corregida
+  owner: gobernanza - auditoria historica
+  context: 'Dictamen QA R01-R05: reserva de alcance sobre R01'
+  source_file: audits/fase2/auditar_exposicion_historica.py
+  symbol: escanear_historia
+  commit_sha: d175917
+  observed_behavior: El informe decia cobertura por blobs; el instrumento recorre parches. commits_escaneados
+    contaba solo los commits con hallazgos (8) y se publicaba junto a commits_con_exposicion (10).
+  expected_behavior: Declarar que se inspeccionan deltas, publicar commits_considerados, ficheros,
+    deltas, blobs (0), errores, y no extrapolar a toda la historia.
+  root_cause: La metrica se agrego dentro del bloque que solo se ejecuta cuando hay hallazgos.
+  impact: Una conclusion de privacidad apoyada en cifras que no median lo que decian medir.
+  likelihood: 'Alta: el error estaba en el propio instrumento de medida.'
+  evidence:
+  - 'audits/fase2/logs/H-F2-01-exposicion-historica.json con commits_considerados=52, blobs=0'
+  - 'tests/test_fase2_hf201_privacidad.py: prueba de historia sin hallazgos'
+  affected_contracts:
+  - 'Auditoria de exposicion historica'
+  related_norms:
+  - AP-44 (medir con el criterio del consumidor)
+  related_tests:
+  - tests/test_fase2_hf201_privacidad.py (11 pruebas)
+  proposed_remediation: 'Aplicada: metricas separadas, docstring corregido y reconciliacion en el
+    informe R01; el blob antiguo con el nombre real se declara y no se reescribe.'
+  regression_risk: 'Ninguno sobre el producto: es un instrumento de auditoria.'
+  acceptance_criteria:
+  - 'CUMPLIDO: blobs_inspeccionados=0 declarado y commits_considerados >= commits_con_exposicion.'
+  quality_gate: QG-00
+  decision: accepted
