@@ -1,0 +1,17 @@
+CI — estado consultado tras el cierre de fase 2 (2026-10-25)
+==============================================================
+
+Comando: gh run list --branch fase2/deuda-y-product-readiness-20261025 --limit 6
+
+40177690141 | 73e9592 | queued | -
+40177452458 | 47f5beb | queued | -
+40176728647 | 1448c4d | queued | -
+40176513135 | 78807ab | queued | -
+40175067217 | 1888cf0 | queued | -
+40174548525 | b680ac8 | queued | -
+
+El PR #2 (borrador, base main) disparo el evento pull_request: los runs de la
+rama existen y avanzan de SHA en SHA. Su conclusion sigue sin producir veredicto
+de producto: QG-07 permanece BLOCKED y el release no se declara listo.
+
+Ninguna ejecucion se cancelo ni relanzo.
