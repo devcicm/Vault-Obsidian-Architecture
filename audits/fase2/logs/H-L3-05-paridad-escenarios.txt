@@ -1,0 +1,99 @@
+H-L3-05 — Paridad con identidad por escenario y efectos reales (fase 2, L3)
+==========================================================================
+
+Que pedia QA: (a) que un caso tenga identidad propia, porque una misma
+operacion puede aparecer en varios escenarios (`vault_write` crear y actualizar);
+(b) que el verificador rechace escenarios omitidos, ids duplicados, operaciones no
+ejecutadas, campos ausentes, divergencias de error y divergencias de efectos; y
+(c) que la comparacion NO se limitara a las respuestas JSON, sino que midiera los
+ficheros modificados y su contenido o hash, restaurando el estado entre
+adaptadores y comprobando que no se modifica nada fuera del runtime autorizado.
+
+1. IDENTIDAD POR ESCENARIO
+--------------------------
+Cada caso lleva un `case_id` estable y declara su escenario:
+
+  READ_MISSING  (vault_read, leer una nota que no existe)
+  SEARCH_HITS   (vault_search, buscar un termino presente)
+  LIST_FOLDER   (vault_list, listar una carpeta)
+  WRITE_CREATE  (vault_write, crear una nota nueva)
+  WRITE_UPDATE  (vault_write, actualizar la nota ya creada)
+
+`evaluar()` deja de mirar el nombre de la operacion y mira el `case_id`:
+exige que se ejecute CADA id requerido, rechaza ids DUPLICADOS y rechaza ids
+NO PREVISTOS (un guion de medicion que crece sin que nadie lo mire tambien es un
+fallo). El caso WRITE_UPDATE declara su precondicion (la nota tiene que existir) y
+se prepara de forma determinista antes de fotografiar el estado.
+
+2. EFECTOS REALES
+-----------------
+Se mide el estado del runtime ANTES y DESPUES de cada pasada: ficheros creados,
+modificados y eliminados, con su contenido normalizado. Lo volatil se
+enmascara (marcas de tiempo, uuid y los campos id/createdAt/updatedAt), porque
+cambia entre dos ejecuciones identicas y no es diferencia funcional. Se excluye
+la TELEMETRIA DE LA LLAMADA (`.tool-trace.json`, `.mcp-trace-log.json`,
+`.voice-counter`): es el rastro de que se llamo, no un efecto del producto. Se
+comprueba ademas que no se modifica nada FUERA del runtime autorizado.
+
+Entre adaptadores se restaura el estado de partida (fotografia -> medir por CLI
+-> restaurar -> medir por MCP), de modo que los dos empiezan igual.
+
+3. RESULTADO CONTRA EL SISTEMA REAL (runtime limpio, artefacto instalado)
+-------------------------------------------------------------------------
+  python audits/fase2/paridad_cli_mcp.py --venv <venv> --runtime <runtime>
+  -> paridad 5/5 | AP-40 exit 0 | tools MCP 97 | veredicto: CONFORME | exit 0
+
+Efectos medidos (identicos en los dos adaptadores):
+  READ_MISSING  : sin efectos; ok:false y la misma ruta en ambos
+  SEARCH_HITS   : sin efectos; ok:true y el mismo total
+  LIST_FOLDER   : sin efectos; ok:true
+  WRITE_CREATE  : created:true en ambos; mismos ficheros tocados
+                   (change-log, la nota, el indice de la seccion, el ledger de
+                   vocabulario, el grafo y el indice de busqueda)
+  WRITE_UPDATE  : updated:6 en ambos; mismos ficheros tocados (con el historico
+                   de versiones, cuyo nombre lleva marca de tiempo normalizada)
+
+4. PRUEBAS NEGATIVAS (las que exigia QA, y las previas)
+---------------------------------------------------------
+tests/test_fase2_paridad_fail_closed.py — **17 aprobadas**:
+  - control positivo: una medicion limpia pasa;
+  - caso requerido omitido (WRITE_UPDATE);
+  - case_id duplicado;
+  - case_id no previsto;
+  - AP-40 con exit distinto de cero;
+  - campo obligatorio ausente;
+  - codigos de error divergentes;
+  - un adaptador falla y el otro no;
+  - isError que contradice al CLI, e isError conforme (que NO es problema);
+  - error de transporte;
+  - operacion no expuesta por MCP;
+  - efectos divergentes (ficheros distintos);
+  - huellas finales distintas;
+  - la CLI responde exito sin producir el efecto esperado;
+  - modificacion fuera del runtime autorizado;
+  - el exit code de la CLI que contradice a su envelope.
+
+5. LO QUE EL VERIFICADOR DETECTO EN SU PRIMERA EJECUCION
+---------------------------------------------------------
+Al entrar el deadline global y la comparacion de efectos, el verificador FALLO
+con las cinco filas: las diferencias eran de medicion, no de producto, y las
+norma:
+  - el historico de versiones nombra el fichero con marca de tiempo (patron con
+    guiones, que el primer patron no cubria);
+  - el indice de busqueda y el change-log llevan marcas de tiempo;
+  - la telemetria de la llamada (traza de tools, traza del MCP, contador de voz)
+    la escribe la propia llamada: no es un efecto del producto.
+Tras normalizar lo volatil y excluir la telemetria, la medicion da CONFORME con
+efectos identicos. El fail-closed hizo su trabajo: sin el, estos casos se
+habrian declarado iguales solo porque las respuestas JSON coincidian.
+
+6. LIMITACIONES
+---------------
+- La paridad funcional se mide en CINCO casos con identidad propia, sobre 97
+  tools expuestas: no es paridad semantica total, y el contrato de todas las
+  tools lo cubre el verificador AP-40 (exit 0).
+- La comparacion de efectos excluye la telemetria de la llamada por diseño
+  (documentado arriba): un cambio de producto que solo se manifestara en la
+  traza no se detectaria aqui.
+- La medicion se hizo en Windows con el artefacto instalado; la matriz
+  multiplataforma depende de la CI, que sigue en cola.

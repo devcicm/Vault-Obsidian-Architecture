@@ -9,7 +9,9 @@ PARIDAD CLI <-> MCP — fase 2 (L3)
   },
   "filas": [
     {
+      "case_id": "READ_MISSING",
       "operacion": "vault_read",
+      "escenario": "leer una nota que no existe",
       "argumentos": {
         "path": "07_Knowledge/nota-paridad.md"
       },
@@ -30,10 +32,26 @@ PARIDAD CLI <-> MCP — fase 2 (L3)
       "campos": [
         "ok",
         "path"
-      ]
+      ],
+      "efectos_cli": {
+        "creados": [],
+        "eliminados": [],
+        "modificados": [],
+        "huellas": {}
+      },
+      "efectos_mcp": {
+        "creados": [],
+        "eliminados": [],
+        "modificados": [],
+        "huellas": {}
+      },
+      "fuera_del_runtime_cli": [],
+      "fuera_del_runtime_mcp": []
     },
     {
+      "case_id": "SEARCH_HITS",
       "operacion": "vault_search",
+      "escenario": "buscar un termino presente",
       "argumentos": {
         "query": "paridad"
       },
@@ -54,10 +72,26 @@ PARIDAD CLI <-> MCP — fase 2 (L3)
       "campos": [
         "ok",
         "total"
-      ]
+      ],
+      "efectos_cli": {
+        "creados": [],
+        "eliminados": [],
+        "modificados": [],
+        "huellas": {}
+      },
+      "efectos_mcp": {
+        "creados": [],
+        "eliminados": [],
+        "modificados": [],
+        "huellas": {}
+      },
+      "fuera_del_runtime_cli": [],
+      "fuera_del_runtime_mcp": []
     },
     {
+      "case_id": "LIST_FOLDER",
       "operacion": "vault_list",
+      "escenario": "listar una carpeta",
       "argumentos": {
         "folder": "07_Knowledge"
       },
@@ -75,10 +109,26 @@ PARIDAD CLI <-> MCP — fase 2 (L3)
       "error_transporte": null,
       "campos": [
         "ok"
-      ]
+      ],
+      "efectos_cli": {
+        "creados": [],
+        "eliminados": [],
+        "modificados": [],
+        "huellas": {}
+      },
+      "efectos_mcp": {
+        "creados": [],
+        "eliminados": [],
+        "modificados": [],
+        "huellas": {}
+      },
+      "fuera_del_runtime_cli": [],
+      "fuera_del_runtime_mcp": []
     },
     {
+      "case_id": "WRITE_CREATE",
       "operacion": "vault_write",
+      "escenario": "crear una nota nueva",
       "argumentos": {
         "folder": "07_Knowledge",
         "title": "Nota de paridad",
@@ -105,10 +155,50 @@ PARIDAD CLI <-> MCP — fase 2 (L3)
         "ok",
         "created",
         "path"
-      ]
+      ],
+      "efectos_cli": {
+        "creados": [],
+        "eliminados": [],
+        "modificados": [
+          ".history/07_Knowledge__nota-de-paridad-<TS>.md",
+          "00_System/.change-log.json",
+          "00_System/change-log.md",
+          "07_Knowledge/nota-de-paridad.md",
+          "99_Index/search-index.json"
+        ],
+        "huellas": {
+          ".history/07_Knowledge__nota-de-paridad-<TS>.md": "9748362b9e3ab30fd4f653c1c92c44027d797975420d1ccb6223c1573e43dea5",
+          "00_System/.change-log.json": "68c28474fff054dffbad8976f5b587037bdecb460c7a3ecda73e99ff635977ff",
+          "00_System/change-log.md": "f688caf1ba8bfddda4bc86eef4c87cf477077ede71eeb08c74c5964aa23dba59",
+          "07_Knowledge/nota-de-paridad.md": "fbc407bc5b901aeed5f856c7c0f111b49bd9df34e37ac5ad5f74ae45406cce25",
+          "99_Index/search-index.json": "725f22df5e2728b446e09bf917c676a1136e37ed6a6650a4f6df9826c966bc28"
+        }
+      },
+      "efectos_mcp": {
+        "creados": [],
+        "eliminados": [],
+        "modificados": [
+          ".history/07_Knowledge__nota-de-paridad-<TS>.md",
+          "00_System/.change-log.json",
+          "00_System/change-log.md",
+          "07_Knowledge/nota-de-paridad.md",
+          "99_Index/search-index.json"
+        ],
+        "huellas": {
+          ".history/07_Knowledge__nota-de-paridad-<TS>.md": "9748362b9e3ab30fd4f653c1c92c44027d797975420d1ccb6223c1573e43dea5",
+          "00_System/.change-log.json": "68c28474fff054dffbad8976f5b587037bdecb460c7a3ecda73e99ff635977ff",
+          "00_System/change-log.md": "f688caf1ba8bfddda4bc86eef4c87cf477077ede71eeb08c74c5964aa23dba59",
+          "07_Knowledge/nota-de-paridad.md": "fbc407bc5b901aeed5f856c7c0f111b49bd9df34e37ac5ad5f74ae45406cce25",
+          "99_Index/search-index.json": "725f22df5e2728b446e09bf917c676a1136e37ed6a6650a4f6df9826c966bc28"
+        }
+      },
+      "fuera_del_runtime_cli": [],
+      "fuera_del_runtime_mcp": []
     },
     {
+      "case_id": "WRITE_UPDATE",
       "operacion": "vault_write",
+      "escenario": "actualizar la nota ya creada",
       "argumentos": {
         "folder": "07_Knowledge",
         "title": "Nota de paridad",
@@ -135,15 +225,56 @@ PARIDAD CLI <-> MCP — fase 2 (L3)
         "ok",
         "updated",
         "path"
-      ]
+      ],
+      "efectos_cli": {
+        "creados": [],
+        "eliminados": [],
+        "modificados": [
+          ".history/07_Knowledge__nota-de-paridad-<TS>.md",
+          "00_System/.change-log.json",
+          "00_System/change-log.md",
+          "07_Knowledge/nota-de-paridad.md",
+          "99_Index/search-index.json"
+        ],
+        "huellas": {
+          ".history/07_Knowledge__nota-de-paridad-<TS>.md": "fbc407bc5b901aeed5f856c7c0f111b49bd9df34e37ac5ad5f74ae45406cce25",
+          "00_System/.change-log.json": "5ffbf1a4d54e59afe173d24f001c498e1a54514aaf1cfc8361af0c4c01cb265c",
+          "00_System/change-log.md": "b2598cb13ef6e0372421d053531715a4e1f735276dbbe8fddd070de1d3134063",
+          "07_Knowledge/nota-de-paridad.md": "9748362b9e3ab30fd4f653c1c92c44027d797975420d1ccb6223c1573e43dea5",
+          "99_Index/search-index.json": "cac8a1d36de487117e7e7a8612d3ebcae01be77b56d382793a611c08f4e2a37d"
+        }
+      },
+      "efectos_mcp": {
+        "creados": [],
+        "eliminados": [],
+        "modificados": [
+          ".history/07_Knowledge__nota-de-paridad-<TS>.md",
+          "00_System/.change-log.json",
+          "00_System/change-log.md",
+          "07_Knowledge/nota-de-paridad.md",
+          "99_Index/search-index.json"
+        ],
+        "huellas": {
+          ".history/07_Knowledge__nota-de-paridad-<TS>.md": "fbc407bc5b901aeed5f856c7c0f111b49bd9df34e37ac5ad5f74ae45406cce25",
+          "00_System/.change-log.json": "5ffbf1a4d54e59afe173d24f001c498e1a54514aaf1cfc8361af0c4c01cb265c",
+          "00_System/change-log.md": "b2598cb13ef6e0372421d053531715a4e1f735276dbbe8fddd070de1d3134063",
+          "07_Knowledge/nota-de-paridad.md": "9748362b9e3ab30fd4f653c1c92c44027d797975420d1ccb6223c1573e43dea5",
+          "99_Index/search-index.json": "cac8a1d36de487117e7e7a8612d3ebcae01be77b56d382793a611c08f4e2a37d"
+        }
+      },
+      "fuera_del_runtime_cli": [],
+      "fuera_del_runtime_mcp": []
     }
   ],
-  "efectos": {
-    "tools_con_side_effects_declarados": 100,
-    "expuestas_por_mcp": 97
-  },
+  "casos_requeridos": [
+    "READ_MISSING",
+    "SEARCH_HITS",
+    "LIST_FOLDER",
+    "WRITE_CREATE",
+    "WRITE_UPDATE"
+  ],
+  "herramientas_mcp": 97,
   "coincidencias": 5,
   "casos": 5,
-  "herramientas_mcp": 97,
-  "alcance": "paridad funcional probada en 5 casos de 97 tools expuestas por el servidor MCP; el contrato de TODAS las tools lo cubre el verificador AP-40"
+  "alcance": "paridad funcional probada en 5 casos con identidad propia (operacion + escenario) de 97 tools expuestas por el servidor MCP; el contrato de TODAS las tools lo cubre el verificador AP-40"
 }
