@@ -1,55 +1,11 @@
-R1B-Q02 — Observabilidad del fallo del ledger (H-Q02-01) — 2026-10-24
-====================================================================
-
-SHA: bf4003f69bc84ac1ffa0fd13fc2bfe41045cc046 + parche local (commit de esta unidad)
-Entorno: Windows, PowerShell 5, Python 3.14.3, rama audit/archify-governance-20261024
-Comando: python -m unittest discover -s tests -p "test_ap39_contrato.py" -v
-Codigo de salida: 0
-Resultado: PASÓ — Ran 6 tests in 12.602s — OK (3 casos previos de QA + 3 e2e de la ronda 1 + las 2 aserciones nuevas de este parche, dentro del caso del ledger roto)
-Log: audits/handoff/logs/R1B-Q02-unittest.txt (este fichero, salida integra al final)
-
-Que se comprobo y por que no es vacuo
---------------------------------------
-El caso `test_fallo_del_ledger_no_tumba_la_nota` ahora exige, tras un fallo inducido
-del ledger (el directorio de vocabulario se sustituye por un fichero, de modo que
-`record_new_tags` no puede escribir):
-
-    self.assertEqual(sobre.get("vocabulary_recorded"), -1, ...)
-    self.assertEqual(sobre.get("vocabulary_introduced"), [tag])
-
-Capacidad de deteccion: `vocabulary_recorded` solo se publica cuando hay terminos
-nuevos (`scripts/vault_write.py:1457-1459`), y el valor -1 lo escribe el mismo autor
-cuando `record_new_tags` lanza OSError (`vault_write.py:1394-1398`). Si una
-implementacion guardara la nota y silenciara el error del ledger, el campo no
-existiria (None) o valdria >= 0, y la asercion caeria. La segunda asercion demuestra
-que hubo terminos nuevos que intentar registrar, asi que el fallo ejercitado es el del
-ledger y no un rechazo anterior del CLI (que habria devuelto ok: false).
-
-Docstring alineado con el campo real: `vocabulary_recorded` (el de `vault_write`);
-`recorded` es el de otro contrato, `registrar_tags_de_nota`, y no valdria aqui.
-
-Salida completa del comando
----------------------------
-python : test_escritura_exitosa_registra_una_sola_vez 
-(test_ap39_contrato.ContratoEscrituraAp39.test_escritura_exitosa_registra_una_sola_vez)
-En línea: 1 Carácter: 1
-+ python -m unittest discover -s tests -p 'test_ap39_contrato.py' -v >  ...
+python : ......
+En C:/Users/<autor> Ivan\AppData\Local\Temp\opencode\runner_r1b.ps1: 31 Carácter: 1
++ python -m unittest discover -s tests -p "test_ap39_contrato.py" > "$r ...
 + ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: (test_escritura_...a_una_sola_vez):String) [], RemoteException
+    + CategoryInfo          : NotSpecified: (......:String) [], RemoteException
     + FullyQualifiedErrorId : NativeCommandError
  
-La escritura confirmada anota el tÚrmino exactamente una vez, con ... ok
-test_escritura_fallida_no_deja_tags_en_el_ledger 
-(test_ap39_contrato.ContratoEscrituraAp39.test_escritura_fallida_no_deja_tags_en_el_ledger)
-Sin autor (AP-16), la escritura se rechaza DESPU╔S de resolver el ... ok
-test_fallo_del_ledger_no_tumba_la_nota 
-(test_ap39_contrato.ContratoEscrituraAp39.test_fallo_del_ledger_no_tumba_la_nota)
-La bitßcora ilegible/inescribible se registra (`vocabulary_recorded: ... ok
-test_registro_no_duplica_etiquetas (test_ap39_contrato.ContratoVocabulario.test_registro_no_duplica_etiquetas) ... ok
-test_registro_vacio_no_escribe (test_ap39_contrato.ContratoVocabulario.test_registro_vacio_no_escribe) ... ok
-test_resolver_no_registra_terminos (test_ap39_contrato.ContratoVocabulario.test_resolver_no_registra_terminos) ... ok
-
 ----------------------------------------------------------------------
-Ran 6 tests in 12.602s
+Ran 6 tests in 15.276s
 
 OK

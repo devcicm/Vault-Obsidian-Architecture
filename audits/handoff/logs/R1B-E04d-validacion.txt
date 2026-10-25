@@ -1,0 +1,113 @@
+R1B-E04d — Validacion integral en entorno aislado — 2026-10-25
+===============================================================
+
+SHA ejecutado: 2eabcfebb5e549ef78c8485b5ba88caa86f73c92 (fix H4)
+Rama: audit/archify-governance-20261024
+Entorno: Windows, PowerShell 5, Python 3.14.3
+Aislamiento: git worktree dedicado (<TEMP>/opencode/vault-r1b-iso), con su propio
+arbol y su propio vault-sandbox; variables heredadas retiradas para la corrida
+(VAULT_ROOT, VAULT_STRICT_ROOT, VAULT_MASTER, VAULT_PERMISSIVE_ROOT, VAULT_AGENT,
+PYTHONPATH) y TEMP/TMP apuntando a un directorio propio de la corrida.
+
+REFERENCIA HISTORICA (no es resultado de esta ronda)
+----------------------------------------------------
+En f6a5387 la misma suite dio 6 failed / 6134 passed / 11 skipped. Los seis fallos
+de aquella corrida: cinco eran causados por los cambios de la ronda (ruta local
+publicada en la evidencia Q00 y cuatro fixtures que usaban como ejemplo simbolos
+ya publicados como puertos) y uno era preexistente (H4). Esta ronda los cierra:
+ver abajo.
+
+COMANDOS Y RESULTADOS (codigo de salida capturado inmediatamente tras cada llamada)
+------------------------------------------------------------------------------------
+#  Comando                                                                 | Exit | Resultado
+1  python --version                                                        |  0   | Python 3.14.3
+2  python scripts/vault_standard_upgrade.py --to v41.23                    |  0   | upgraded from v20 to v41.23, migraciones aplicadas (el sandbox de pruebas se inicializa con la herramienta de la rama; applied_version NO se edita a mano)
+3  python -m unittest discover -s tests -p "test_ap39_contrato.py"          |  0   | Ran 6 tests in 15.276s — OK
+4  python -m unittest discover -s tests -p "test_puerto_notas_indexables.py"|  0   | Ran 4 tests in 24.399s — OK
+5  python scripts/vault_arch.py --check --strict                            |  0   | ok: true, broken_ports: [], off_port_total: 5, off_port_baseline: 5, new_off_port_crossings: [], settled: []
+6  python scripts/vault_gate.py --strict                                    |  1   | 26 puertas: 24 pasan, 2 fallan (detalle abajo)
+7  python -m pytest tests/ -q -n auto --tb=short                            |  1   | 1 failed, 6140 passed, 11 skipped en 1405.85s (el fallo era de evidencia propia, corregido y reverificado: 6 passed, exit 0)
+
+Condiciones innegociables de arquitectura (comando 5)
+------------------------------------------------------
+new_off_port_crossings == []  -> CUMPLE
+off_port_total == 5           -> CUMPLE (<= 5)
+off_port_baseline == 5        -> CUMPLE
+La baseline no se toco en esta ronda: sigue con las 5 entradas D–H.
+
+PUERTAS: 24/26 — las dos que fallan y su clasificacion
+-------------------------------------------------------
+1) doc_staleness — AMBIENTAL, con arreglo publicado y aplicado
+   Causa: el sandbox del worktree se acaba de reconstruir (v20 -> v41.23) y los
+   7 artefactos derivados de 00_System no existen todavia (data-framework.json,
+   norm-registry.json, data-fundamentals.json, tool-contracts.json,
+   quality-index.json, tag-registry.json, standard-version.json). En el checkout
+   principal existen porque alli el sandbox ya paso por esas generaciones.
+   Arreglo aplicado (el que la propia puerta publica en su envelope):
+     vault_fundamentals --framework ; vault_norms --rebuild ; vault_fundamentals ;
+     vault_compact_contracts ; vault_quality_check ; vault_tags
+     y standard-version.json con vault_standard_upgrade --init v41.23 (la tool de
+     la rama; el JSON no se edita a mano).
+   Re-verificacion: python scripts/vault_doc_staleness.py --check --strict
+     -> exit 0, present: 7, missing: 0.
+
+2) noop (AP-37, modo ejecutado) — AMBIENTAL y PREEXISTENTE, se deja en rojo
+   Causa: el modo ejecutado corre los ejemplos documentados contra una copia del
+   sandbox. El ejemplo de vault_frontmatter_completar apunta a una nota
+   (07_Knowledge/x.md) que un sandbox v41.23 limpio NO tiene: la tool rehusa con
+   NOTE_NOT_FOUND, no escribe, y la entrada queda "sin escritura y sin motivo".
+   Demostracion de que es del entorno y no del codigo: el MISMO comando, el MISMO
+   commit, contra el sandbox del checkout principal (que conserva esa nota de
+   corridas previas) da exit 0, ok: true, sin_escritura_sin_motivo: [].
+   Decision: NO se fabrica la nota para sacar verde. La puerta queda en rojo en el
+   entorno limpio y el hallazgo se reporta: el modo ejecutado de AP-37 depende del
+   estado del sandbox, y el ejemplo de esa tool asume contenido que vault_init no
+   crea. Es deuda preexistente de la ronda 1, no de esta rama.
+
+SUITE INTEGRAL
+--------------
+Comando: python -m pytest tests/ -q -n auto --tb=short
+Codigo de salida: 1 (corregido despues; ver abajo)
+Resultado: 1 failed, 6140 passed, 11 skipped en 1405.85s
+El UNICO fallo: tests/test_publicacion_limpia.py::
+test_ninguna_ruta_local_del_autor_esta_publicada — y era razon: dos logs de ESTA
+ronda (E04a y E04c) todavia llevaban la ruta local del autor (uno porque citaba
+textualmente la ruta retirada, otro en forma con barras que el saneador no cubria).
+Corregido: rutas sustituidas por marcadores neutros en ambos logs.
+Re-verificacion: python -m pytest tests/test_publicacion_limpia.py -q -> 6 passed,
+exit 0.
+
+Comparacion con la referencia historica (f6a5387): de 6 fallos a 1, y el 1 no es
+de codigo sino de higiene de la propia evidencia, ya corregido. Los cinco fallos
+de codigo estan cerrados: el de la ruta (E04a), los cuatro fixtures (E04b) y el
+preexistente H4 (E04c).
+
+AISLAMIENTO DEMOSTRADO
+-----------------------
+El sandbox compartido del checkout principal no fue tocado por la corrida aislada:
+- Ficheros del sandbox compartido modificados desde las 21:40: solo dos.
+  * 00_System/.tool-trace.json (21:46) — ANTES de que la corrida aislada arrancara
+    (21:50): lo escribio el pytest enfocado del propio checkout.
+  * 00_System/.voice-counter (22:16) — lo incremento la comparacion del noop que
+    este ejecutor corrio en el checkout principal (el contador de voz del vault).
+- El recuento de ficheros es identico (131 antes y despues) y la diferencia del
+  hash agregado se explica integramente por el contador de voz.
+- La corrida aislada escribio unicamente en el sandbox del worktree.
+
+LOGS
+----
+audits/handoff/logs/R1B-Q02-unittest.txt   (entorno aislado)
+audits/handoff/logs/R1B-Q03-unittest.txt   (entorno aislado)
+audits/handoff/logs/R1B-arch-strict.txt    (copia del envelope, entorno aislado)
+audits/handoff/logs/R1B-gates.txt          (26 puertas, entorno aislado)
+audits/handoff/logs/R1B-suite.txt          (suite integral, entorno aislado, saneada)
+audits/handoff/logs/R1B-sandbox-init.txt   (v20 -> v41.23 con la tool de la rama)
+audits/handoff/logs/R1B-docstaleness-recheck2.txt (7/7 tras la regeneracion)
+audits/handoff/logs/R1B-noop-recheck.txt   (estado tras la regeneracion: sigue rojo, causa ambiental)
+
+LIMITACIONES
+------------
+- La suite corre con Python 3.14.3 en Windows: la matriz de CI (3.9-3.12,
+  ubuntu/macos) no ha podido ejecutarse (ver R1B-E04e-ci.txt).
+- La puerta noop sigue en rojo en un sandbox limpio por causa preexistente;
+  documentada, no oculta, y fuera del alcance de esta ronda.

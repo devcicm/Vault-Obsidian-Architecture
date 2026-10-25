@@ -1,0 +1,361 @@
+{
+  "ok": true,
+  "tool": "vault_arch",
+  "contexts": 10,
+  "modules": 175,
+  "domain_modules": 121,
+  "crossings_total": 37,
+  "crossings_sites": 49,
+  "baseline_total": 37,
+  "new_crossings": [],
+  "settled_crossings": [],
+  "unclassified_modules": [],
+  "declared_but_missing": [],
+  "forbidden_writes": [],
+  "unsynced_writes": [],
+  "kernel_hooks": 6,
+  "undeclared_kernel_deps": [],
+  "crossing_budget_pairs": 23,
+  "crossing_budget_by_goal": {
+    "permanente": 16,
+    "a_eliminar": 2,
+    "en_estudio": 5
+  },
+  "unbudgeted_context_pairs": [],
+  "stale_crossing_budget": [],
+  "raw_vault_root_imports": [],
+  "ports_total": 68,
+  "broken_ports": [],
+  "off_port_total": 5,
+  "off_port_sites": 5,
+  "off_port_baseline": 5,
+  "new_off_port_crossings": [],
+  "settled_off_port_crossings": [],
+  "env_vars_declared": 23,
+  "undeclared_env_reads": [],
+  "mjs_env_table_stale": false,
+  "vocabularies_declared": 12,
+  "vocabulary_copies": [],
+  "vocabularies_without_owner": [],
+  "duplicate_paths_total": 0,
+  "duplicate_paths_baseline": 0,
+  "new_duplicate_paths": [],
+  "settled_duplicate_paths": [],
+  "frozen_bindings_total": 0,
+  "frozen_bindings_baseline": 0,
+  "new_frozen_bindings": [],
+  "settled_frozen_bindings": [],
+  "system_paths_owned": 29,
+  "system_writes_total": 0,
+  "system_writes_baseline": 0,
+  "new_system_writes": [],
+  "settled_system_writes": [],
+  "foreign_system_writes": [],
+  "bridge_modules_total": 2,
+  "bridge_modules_baseline": 2,
+  "new_bridge_modules": [],
+  "settled_bridge_modules": [],
+  "bridge_anchor": [
+    "vault_grafo_import",
+    "vault_release"
+  ],
+  "bridge_contract_violations": [],
+  "stale_bridge_anchor": [],
+  "growing_costs": [],
+  "crossings": [
+    {
+      "from": "vault_blueprint",
+      "from_context": "meta_toolkit",
+      "to": "vault_norms",
+      "to_context": "gobernanza"
+    },
+    {
+      "from": "vault_change_log",
+      "from_context": "autoria",
+      "to": "vault/gobernanza",
+      "to_context": "gobernanza"
+    },
+    {
+      "from": "vault_code_tag",
+      "from_context": "grafo",
+      "to": "vault_write",
+      "to_context": "autoria"
+    },
+    {
+      "from": "vault_context_pack",
+      "from_context": "consulta",
+      "to": "vault_search",
+      "to_context": "autoria"
+    },
+    {
+      "from": "vault_errors",
+      "from_context": "kernel",
+      "to": "vault/autoria",
+      "to_context": "autoria"
+    },
+    {
+      "from": "vault_norms_coherence",
+      "from_context": "meta_toolkit",
+      "to": "vault_norms",
+      "to_context": "gobernanza"
+    },
+    {
+      "from": "vault_norms_engine",
+      "from_context": "gobernanza",
+      "to": "vault_mcp_catalog",
+      "to_context": "meta_toolkit"
+    },
+    {
+      "from": "vault_norms_engine",
+      "from_context": "gobernanza",
+      "to": "vault_smoke",
+      "to_context": "meta_toolkit"
+    },
+    {
+      "from": "vault_norms_engine",
+      "from_context": "gobernanza",
+      "to": "vault_voice",
+      "to_context": "autoria"
+    },
+    {
+      "from": "vault_onboard",
+      "from_context": "ciclo_de_vida",
+      "to": "vault_reindex",
+      "to_context": "indices"
+    },
+    {
+      "from": "vault_onboard",
+      "from_context": "ciclo_de_vida",
+      "to": "vault_section_index",
+      "to_context": "indices"
+    },
+    {
+      "from": "vault_onboard",
+      "from_context": "ciclo_de_vida",
+      "to": "vault_tags",
+      "to_context": "indices"
+    },
+    {
+      "from": "vault_onboard",
+      "from_context": "ciclo_de_vida",
+      "to": "vault_write",
+      "to_context": "autoria"
+    },
+    {
+      "from": "vault_propagate",
+      "from_context": "ciclo_de_vida",
+      "to": "vault_impact",
+      "to_context": "grafo"
+    },
+    {
+      "from": "vault_propagate",
+      "from_context": "ciclo_de_vida",
+      "to": "vault/gobernanza",
+      "to_context": "gobernanza"
+    },
+    {
+      "from": "vault_spec_memory",
+      "from_context": "meta_toolkit",
+      "to": "vault/ciclo_de_vida",
+      "to_context": "ciclo_de_vida"
+    },
+    {
+      "from": "vault_spec_memory",
+      "from_context": "meta_toolkit",
+      "to": "vault/gobernanza",
+      "to_context": "gobernanza"
+    },
+    {
+      "from": "vault_standard_upgrade",
+      "from_context": "ciclo_de_vida",
+      "to": "vault_mcp_catalog",
+      "to_context": "meta_toolkit"
+    },
+    {
+      "from": "vault_standard_upgrade",
+      "from_context": "ciclo_de_vida",
+      "to": "vault_section_index",
+      "to_context": "indices"
+    },
+    {
+      "from": "vault_voice",
+      "from_context": "autoria",
+      "to": "vault_mcp_catalog",
+      "to_context": "meta_toolkit"
+    },
+    {
+      "from": "vault_write",
+      "from_context": "autoria",
+      "to": "vault_tags",
+      "to_context": "indices"
+    },
+    {
+      "from": "cli/registry",
+      "from_context": "cli",
+      "to": "vault_mcp_catalog",
+      "to_context": "meta_toolkit"
+    },
+    {
+      "from": "vault/autoria/repositorio.py",
+      "from_context": "autoria",
+      "to": "vault/indices",
+      "to_context": "indices"
+    },
+    {
+      "from": "vault/autoria/repositorio.py",
+      "from_context": "autoria",
+      "to": "vault/indices",
+      "to_context": "indices"
+    },
+    {
+      "from": "vault/autoria/repositorio.py",
+      "from_context": "autoria",
+      "to": "vault/indices",
+      "to_context": "indices"
+    },
+    {
+      "from": "vault/autoria/repositorio.py",
+      "from_context": "autoria",
+      "to": "vault/grafo",
+      "to_context": "grafo"
+    },
+    {
+      "from": "vault/autoria/repositorio.py",
+      "from_context": "autoria",
+      "to": "vault/grafo",
+      "to_context": "grafo"
+    },
+    {
+      "from": "vault/autoria/repositorio.py",
+      "from_context": "autoria",
+      "to": "vault/grafo",
+      "to_context": "grafo"
+    },
+    {
+      "from": "vault/autoria/repositorio.py",
+      "from_context": "autoria",
+      "to": "vault/grafo",
+      "to_context": "grafo"
+    },
+    {
+      "from": "vault/autoria/repositorio.py",
+      "from_context": "autoria",
+      "to": "vault/indices",
+      "to_context": "indices"
+    },
+    {
+      "from": "vault/ciclo_de_vida/repositorio.py",
+      "from_context": "ciclo_de_vida",
+      "to": "vault/indices",
+      "to_context": "indices"
+    },
+    {
+      "from": "vault/ciclo_de_vida/repositorio.py",
+      "from_context": "ciclo_de_vida",
+      "to": "vault/indices",
+      "to_context": "indices"
+    },
+    {
+      "from": "vault_sanacion",
+      "from_context": "ciclo_de_vida",
+      "to": "vault_audit",
+      "to_context": "gobernanza"
+    },
+    {
+      "from": "vault_sanacion",
+      "from_context": "ciclo_de_vida",
+      "to": "vault_reindex",
+      "to_context": "indices"
+    },
+    {
+      "from": "vault_sanacion",
+      "from_context": "ciclo_de_vida",
+      "to": "vault/gobernanza",
+      "to_context": "gobernanza"
+    },
+    {
+      "from": "vault/consulta/repositorio.py",
+      "from_context": "consulta",
+      "to": "vault/ciclo_de_vida",
+      "to_context": "ciclo_de_vida"
+    },
+    {
+      "from": "vault_subgraph",
+      "from_context": "consulta",
+      "to": "vault/grafo",
+      "to_context": "grafo"
+    },
+    {
+      "from": "vault_subgraph",
+      "from_context": "consulta",
+      "to": "vault/grafo",
+      "to_context": "grafo"
+    },
+    {
+      "from": "vault_subgraph",
+      "from_context": "consulta",
+      "to": "vault/grafo",
+      "to_context": "grafo"
+    },
+    {
+      "from": "vault/gobernanza/auditoria_runtime.py",
+      "from_context": "gobernanza",
+      "to": "vault/indices",
+      "to_context": "indices"
+    },
+    {
+      "from": "vault/gobernanza/auditoria_runtime.py",
+      "from_context": "gobernanza",
+      "to": "vault/indices",
+      "to_context": "indices"
+    },
+    {
+      "from": "vault/gobernanza/auditoria_runtime.py",
+      "from_context": "gobernanza",
+      "to": "vault/indices",
+      "to_context": "indices"
+    },
+    {
+      "from": "vault/gobernanza/auditoria_runtime.py",
+      "from_context": "gobernanza",
+      "to": "vault/indices",
+      "to_context": "indices"
+    },
+    {
+      "from": "vault/gobernanza/repositorio.py",
+      "from_context": "gobernanza",
+      "to": "vault/indices",
+      "to_context": "indices"
+    },
+    {
+      "from": "vault/gobernanza/tool.py",
+      "from_context": "gobernanza",
+      "to": "vault/meta_toolkit",
+      "to_context": "meta_toolkit"
+    },
+    {
+      "from": "vault/grafo/repositorio.py",
+      "from_context": "grafo",
+      "to": "vault/gobernanza",
+      "to_context": "gobernanza"
+    },
+    {
+      "from": "vault/indices/repositorio.py",
+      "from_context": "indices",
+      "to": "vault/grafo",
+      "to_context": "grafo"
+    },
+    {
+      "from": "vault/meta_toolkit/catalog_adapter.py",
+      "from_context": "meta_toolkit",
+      "to": "vault/gobernanza",
+      "to_context": "gobernanza"
+    },
+    {
+      "from": "vault_mcp",
+      "from_context": "meta_toolkit",
+      "to": "vault_mcp_context",
+      "to_context": "consulta"
+    }
+  ]
+}

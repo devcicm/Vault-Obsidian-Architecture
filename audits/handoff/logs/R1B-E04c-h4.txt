@@ -103,7 +103,7 @@ tests\test_quickstart_del_readme.py F                                    [100%]
 ================================== FAILURES ===================================
 ____________ test_los_comandos_del_quick_start_funcionan_en_orden _____________
 
-tmp_path = WindowsPath('C:/Users/Carlos Ivan/AppData/Local/Temp/pytest-of-Carlos Ivan/pytest-1426/test_los_comandos_del_quick_st0')
+tmp_path = WindowsPath('C:/Users/<autor>/AppData/Local/Temp/pytest-of-<autor>/pytest-1426/test_los_comandos_del_quick_st0')
 
     def test_los_comandos_del_quick_start_funcionan_en_orden(tmp_path):
         vault = tmp_path / "vault-mi-proyecto"

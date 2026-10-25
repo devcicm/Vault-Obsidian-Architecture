@@ -13,7 +13,7 @@ Que se corrigio y por que
 Fichero: audits/handoff/logs/2026-10-24-Q00-baseline.md (evidencia de la ronda 1,
 linea del entorno).
 
-ANTES:  checkout local `C:\Users\Carlos Ivan\Documents\GitHub\Vault-Obsidian-Architecture`
+ANTES:  checkout local `<ruta local del autor, retirada: era la ruta absoluta del checkout>`
 AHORA:  checkout local del repositorio en la maquina del autor (ruta local omitida a
         proposito; marcador neutro `C:/Users/<autor>/Vault-Obsidian-Architecture`)
 
