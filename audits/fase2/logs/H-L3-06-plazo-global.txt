@@ -1,0 +1,49 @@
+H-L3-06 — Plazo global del cliente MCP del harness (fase 2, L3)
+===============================================================
+
+Que pedia QA: que el timeout del harness fuera un PLAZO GLOBAL y no una espera
+renovable por cada linea recibida; con deadline monotonic, y pruebas de servidor
+silencioso, respuesta valida, mensajes de ID diferente, notificaciones
+continuas sin la respuesta esperada y terminacion del proceso. Sin confundir el
+defecto del harness con un defecto del servidor MCP.
+
+1. QUE ERA
+----------
+`readline()` bloqueante sobre el pipe: el `timeout` del metodo se calculaba
+mientras se esperaba y nunca llegaba a dispararse. Un servidor mudo colgaba el
+harness.
+
+2. QUE HAY AHORA
+----------------
+La lectura va en un hilo aparte que encola las lineas y la espera gobierna un
+UNICO deadline monotonico:
+
+    deadline = time.monotonic() + timeout
+    while True:
+        restante = deadline - time.monotonic()
+        if restante <= 0: -> timeout
+        linea = cola.get(timeout=restante)
+
+Las lineas con otro id (notificaciones, respuestas ajenas) se ignoran, pero NO
+renuevan el plazo: el plazo se consume igual. Si el proceso MCP muere, el
+lector lo hace saber y la llamada vuelve con el motivo.
+
+3. PRUEBAS (tests/test_fase2_mcp_timeout.py)
+--------------------------------------------
+  - servidor silencioso -> error de timeout en el plazo (con la version
+    antigua este test se colgaba);
+  - respuesta valida con el servidor MCP INSTALADO -> resultado (camino feliz);
+  - lineas con otro id antes de la respuesta -> se ignoran y llega la correcta;
+  - notificaciones continuas sin la respuesta esperada -> el plazo se respeta
+    (caso adversarial: con `queue.get(timeout=...)` por linea el goteo
+    renovaba el plazo y la espera podia no acabar nunca);
+  - terminacion del proceso -> vuelve con el motivo, no se queda esperando.
+
+  Sin servidor indicado: 4 passed, 1 skipped (el caso en vivo se omite con
+  motivo explicito). Con el servidor MCP instalado: 5 passed.
+
+4. LIMITACION
+-------------
+El plazo global se implemento en la reescritura del verificador de paridad
+(commit de H-L3-05), porque el cliente MCP es el mismo modulo: aqui se anade
+el juego de pruebas que demuestra la semantica del plazo.
