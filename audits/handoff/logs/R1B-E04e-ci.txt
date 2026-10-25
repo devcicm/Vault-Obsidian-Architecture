@@ -86,3 +86,27 @@ DICTAMEN
 CI: PENDIENTE DE VALIDACION. La rama de auditoria no tiene todavia veredicto de CI;
 los fallos que se ven son preexistentes y estan documentados. La validacion local
 (segun R1B-E04d) es la que si produce resultado en esta ronda.
+
+
+ANEXO DE CIERRE — estado de CI del SHA final publicado (2026-10-25)
+--------------------------------------------------------------------
+El informe del ejecutor (E05) se publico en el commit a6e1828. Consulta
+inmediatamente posterior al push final (protocolo de la orden):
+
+Run ID      | Commit SHA (cabeza) | Estado | Conclusion | URL
+------------|---------------------|--------|------------|--------------------------------------------------
+40159009096 | a6e1828 (E05)       | queued | -          | https://github.com/devcicm/Vault-Obsidian-Architecture/actions/runs/40159009096
+40158854428 | 988f5b7 (E04d)      | queued | -          | https://github.com/devcicm/Vault-Obsidian-Architecture/actions/runs/40158854428
+40156348938 | bc741dc (E04e)      | queued | -          | https://github.com/devcicm/Vault-Obsidian-Architecture/actions/runs/40156348938
+
+PR #1 (audit/archify-governance-20261024 -> main): OPEN, mergeable=MERGEABLE,
+head=a6e1828. NO se fusiona: la fusion requiere decision expresa del propietario.
+
+Dictamen final de CI para la ronda 1B: PENDIENTE DE VALIDACION. Ningun SHA de la
+rama ha llegado a ejecutarse en GitHub Actions desde el inicio de la auditoria; los
+unicos runs completados (con fallo) pertenecen a SHAs anteriores a f3aaafc y estan
+documentados arriba como preexistentes. La validacion que si produce resultado de
+esta ronda es la local, en el worktree aislado (R1B-E04d-validacion.txt).
+
+Con esto la ronda 1B queda entregada: E01-E05 completados, informe publicado en el
+buzon del ejecutor y solicitud formal de revision QA registrada.
