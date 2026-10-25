@@ -80,3 +80,35 @@ Esta decisión **no equivale a** autorizar merge a `main`, declarar la distribuc
 
 **Estado:** RONDA 1B CERRADA EN ALCANCE LOCAL; CI Y RELEASE PENDIENTES.
 
+
+---
+
+# Fase 2 · Dictamen independiente L3 (2026-10-25)
+
+**Revisor:** QA arquitectónico (ChatGPT) · **Rama:** `fase2/deuda-y-product-readiness-20261025`  
+**SHA inspeccionado:** `44f6f893670d8080703342878aca465650987604` · **Ámbito:** lectura de commits, workflow, código del harness y logs publicados en GitHub. **QA no ejecutó localmente estos tests.**
+
+## Dictamen
+
+**L3: REQUIERE AJUSTES PARA SU CIERRE DOCUMENTAL Y DE QUALITY GATE; recorrido funcional local DEMOSTRADO POR EVIDENCIA DEL EJECUTOR.**
+
+Aceptamos como evidencia del ejecutor: recorrido MVP 16/16 en Windows/Python 3.14.3/Node 24; cinco casos de paridad con los campos normalizados declarados; `AP-40` exit 0 en el log; prueba local antes/después de TD-0001 (`ModuleNotFoundError: yaml` → dos product gates PASS); ausencia de archivos `mcp-trace-log.*` en wheel de 705 miembros. Estas pruebas **no certifican** funcionamiento de las 97 tools ni multiplataforma.
+
+### Observaciones correctivas obligatorias
+
+1. **H-L3-01 · Higiene de evidencias (P2 de exposición):** `audits/fase2/logs/L3-TD0001-antes.txt` y `L3-TD0001-despues.txt` contienen rutas absolutas locales con identificadores personales. El original incluso contiene secuencias UTF-16/NUL embebidas que pueden eludir un saneamiento basado en texto UTF-8. Sanear los logs publicados, evitando incluir nombres personales, directorios de usuario, secretos y rutas físicas; convertir limpiamente la codificación sin eliminar traceback, fallos, comandos, exit codes o prueba de resolución en `site-packages`. Revisar cualquier log adicional de L3. Al estar ya publicados, evaluar también el historial Git y el mecanismo adecuado para contener futuras filtraciones sin reescribir historia de forma unilateral. Si se identifican credenciales, escalar inmediatamente a respuesta a incidentes, no publicar las credenciales en el informe.
+2. **H-L3-02 · False green del harness de paridad (P1 para validez de QG-05):** `audits/fase2/paridad_cli_mcp.py` solo utiliza `coincidencias == casos` para su exit code y no exige `contrato_ap40.exit == 0`. El criterio `_elegir` omite claves inexistentes y los casos de lectura/búsqueda son mayormente vacíos; por eso puede existir un verde engañoso si ambas respuestas omiten campos o si AP-40 falla. Corregir fail-closed y agregar pruebas negativas deliberadas: inyectar fallo de AP-40, ausencia de campo obligatorio y divergencia de error/efecto; cada condición debe producir `exit != 0`. Comparar efectos observables del archivo/runtime antes y después de operaciones de escritura; no presentar la lista de 97 como paridad semántica total.
+3. **H-L3-03 · Timeout del cliente MCP de prueba (P2):** `recorrido_mvp.py` compara contra una fecha límite, pero usa `stdout.readline()` bloqueante, que no respeta necesariamente el plazo. Lo mismo puede ocurrir en `paridad_cli_mcp.py`. Registrar como nueva deuda de confiabilidad del harness; proponer y probar un timeout real de proceso/I/O. No es defecto demostrado del servidor MCP.
+4. **H-L3-04 · CI pendiente (bloqueo de QG-07):** el YAML incorpora una instalación de wheel antes de los Product Gates, compatible sintácticamente con runners Bash en Windows/Linux/macOS, pero la matriz no tiene ejecución concluyente para este SHA. No declarar TD-0001 `corregida` para CI ni QG-06 multiplataforma PASS todavía.
+
+### Decisiones recomendadas al propietario (sin ejecutarlas unilateralmente)
+
+- **PR de fase 2:** autorizar un **draft PR** desde `fase2/deuda-y-product-readiness-20261025` hacia `main` únicamente para activar `pull_request` y revisión; **prohibir merge/auto-merge**. Informar que el diff acumula la rama auditada de ronda 1B (aproximadamente 43 commits / 60 archivos frente a main en la comprobación QA), porque el PR #1 aún no se ha fusionado. No exigir que CI concluya para continuar investigación; mantener QG-07 BLOCKED.
+- **Siguiente lote:** L2, **solo investigación Q04–Q07**, sin modificar el producto ni alterar los contratos hasta un nuevo dictamen. Antes o como corrección independiente inmediata, cerrar H-L3-01 y H-L3-02; no arrastrar esas evidencias deficientes a la aceptación de fase 2.
+
+## Criterios para cerrar las observaciones de L3
+
+Evidencia saneada verificable y prueba de que el harness falla cuando debe fallar. Añadir commit(s) separados con pruebas negativas y reporte breve en `RESPUESTA-DEL-EJECUTOR.md`. QA reevaluará; la evidencia funcional ya probada no necesita repetirse si no cambian los contratos/artefactos que mide.
+
+**Estado:** L3 CON AVANCE FUNCIONAL CONFIRMADO, QA FINAL PENDIENTE DE CORRECCIONES; CI Y RELEASE BLOQUEADOS.
+
