@@ -306,3 +306,50 @@ Matriz: `audits/fase2/matriz-paridad-cli-mcp.md` · Log: `audits/fase2/logs/L3-p
 3. Cerrar TD-0001 cuando exista un run de CI con conclusion sobre el SHA corregido.
 
 **Estado de la fase 2: PLANIFICACION Y DIAGNOSTICO EN CURSO. No se declara aprobada la fase ni el producto.**
+
+---
+
+# FASE 2 — L3 (correcciones) y L2 (investigacion) · 2026-10-25
+
+- **Rama:** `fase2/deuda-y-product-readiness-20261025` · **SHA base:** `ef77a7b` (rama auditada, congelada) · **Entorno:** Windows 11, Python 3.14.3, Node 24.14.0.
+- **Alcance de este tramo:** las tres correcciones que QA pidio sobre L3, la apertura del PR autorizado y la investigacion de L2 (Q04–Q07). **Sin implementar** Q04–Q07.
+
+## 1. Correcciones de L3 (una por commit, con prueba y evidencia)
+
+| Correccion | Commit | Que se hizo | Evidencia | Prueba |
+|---|---|---|---|---|
+| **H-L3-01** saneamiento | `bc1a1e6` | Tres logs estaban en **UTF-16 sin BOM** (3859/3184/1186 bytes NUL) y varios conservaban la estructura de la maquina detras del marcador. Todo a UTF-8 y toda ruta absoluta a `<RUTA-LOCAL>`. Se anade `audits/fase2/comprobar_saneamiento.py` (ejecutable) + `tests/test_fase2_logs_saneados.py` | `H-L3-01-saneamiento.txt` | Antes: **13 problemas, exit 1**. Despues: **conforme, exit 0**. Test: 8 passed (2 nuevos + los 6 del guard del repo) |
+| **H-L3-02** paridad fail-closed | `d657fb0` | La evaluacion vive en `evaluar()` (funcion PURA): falla si AP-40 no sale 0, falta un campo obligatorio, divergen codigos o significado del error, divergen los efectos, un caso requerido no se ejecuto, o llega `isError`/`error de transporte` que contradice al otro adaptador | `H-L3-02-paridad-fail-closed.txt` | **11 tests** (control positivo + 10 negativos). Real: 5/5, AP-40 exit 0, 97 tools, **CONFORME** |
+| **H-L3-03** timeout del harness | `44a880e` | `readline()` bloqueante -> hilo + `queue.get(timeout=...)`. El cliente acepta el comando, lo que permite probar el silencio. Registrado como **TD-0007 (instrumento, P3, corregida)**: NO es un defecto demostrado del servidor MCP. Ademas los scripts de auditoria **sanean su propia salida** (el verificador los habia cazado) | `H-L3-03-timeout-mcp.txt` | Servidor mudo -> error de timeout en ~2s (con la version antigua se colgaba). Con MCP instalado: **2 passed** |
+
+**Exposicion historica (investigada, sin reescribir historia):** `git grep` sobre `origin/main`, `origin/audit/…` y `origin/fase2/…` → **0 ficheros** con ruta local real, con el nombre del autor o con forma de credencial. No hay nada que contener ni rotar, y no se hizo force-push ni se reescribio historia: el estado de la ronda 1B se integro con un **merge** de los commits de QA (`1eca182`, `4f6170f`).
+
+## 2. PR en borrador (autorizado)
+
+**PR #2** — `fase2/deuda-y-product-readiness-20261024` → `main`: **DRAFT**, OPEN, MERGEABLE, **sin auto-merge**, sin merge de PR #1. El cuerpo identifica expresamente **los cambios heredados de la ronda 1B** (10 commits, dictamen `d78604a` "ACEPTADO CON OBSERVACIONES") y lo que añade esta rama. Al abrirlo se disparo el evento `pull_request`: **run `40173539210`** para el SHA de la rama.
+
+## 3. L2 — investigacion de Q04–Q07 (TD-0003), sin implementar
+
+**Hecho OBSERVADO y medido:** los tres controles del estandar viven en `scripts/vault_norms_engine.py::_checks_estandar` (AP-40 lineas 141-152, AP-42 159-180, AP-43 186-197), cada uno con `except (ImportError, OSError, ValueError): pass`. La funcion **no devuelve nada**: su unico canal es `flag(...)`. El envelope (`vault/gobernanza/auditoria_runtime.py`) publica `ok: True` **hardcodeado**, `total_violations`, `by_norm` y `violations`, y **no tiene ningun campo que declare que controles se ejecutaron**.
+
+**Demostracion reproducible** (`audits/fase2/demostrar_control_degradado.py`): con la dependencia sana el control aparece en `by_norm` con su hallazgo; con la dependencia rota **desaparece y el envelope no avisa**. Medido en las tres familias.
+
+**Causa:** el contrato de salida no tiene estados de ejecucion; "no se pudo mirar" y "no se encontro nada" son la misma senal.
+
+**Consumidores analizados:** la CLI `--audit --strict` decide **solo** por `total_violations` (lineas 584-594) → un control degradado baja el contador a 0 y la puerta sale con exit 0 (**LECTURA DE CODIGO**: no se pudo aislar el exit code en un vault sintetico, y asi se declara); la puerta de coherencia compara `by_norm` antes/despues y veria "sin cambios" si el control no se ejecuto en ninguno de los dos pases; y el puerto publicado `auditar_normas` hereda el defecto.
+
+**Lo que el registro ya decidio (y acota la via):** los dos cruces que sostienen estos accesos estan declarados `objetivo: a_eliminar` con `fecha_limite: 2027-06-30` → la intencion es **eliminar**, no formalizar. Propuesta: **inversion + contrato de estados** (`ejecutado | degradado | fallido | no_ejecutado`, mas un campo hermano `completo` para no cambiar `ok`). Se descarta formalizar `check_params`/`load_baseline`/`coverage` como puertos: contradice la ficha vigente y deja el defecto vivo.
+
+**Pruebas propuestas** (NO implementadas): positiva (control sano con estado `ejecutado`), negativa (envelope sin estados no conforme), dependencia fallida (el control se declara no ejecutado y la auditoria no se presenta como limpia), regresion de consumidores (la CLI con un control degradado sale con codigo distinto de cero) y equivalencia (envelope sano identico al actual mas `checks`).
+
+Documento completo: `audits/fase2/L2-analisis-q04-q07.md` · Evidencia: `audits/fase2/logs/L2-control-degradado.json` · TD-0003 actualizada en el inventario.
+
+## 4. Estado y limites
+
+- **CI: PENDIENTE DE VALIDACION EXTERNA.** El PR #2 ha disparado el workflow para la rama; hasta que un run tenga conclusion **no se declara CI aprobada**, y **QG-07 sigue pendiente**. No se cancela ni relanza ninguna ejecucion.
+- **Sin merger a `main`**, `main` intacto, PR #1 sin fusionar, ronda 1B cerrada.
+- Alcance de la paridad: **cinco** casos de 97 tools expuestas (el contrato de todas lo cubre el verificador AP-40).
+- Validacion local: Windows + Python 3.14.3 + Node 24; la matriz ubuntu/macos × 3.9–3.12 depende de la CI.
+- El release **no** se declara listo: QG-07 y la validacion multiplataforma siguen pendientes.
+
+**Estado de la fase 2: L1, L3 (con sus tres correcciones) y L2 (investigacion) entregados; L4 (documental, seguridad e historia) pendiente de autorizacion. La aceptacion corresponde a QA.**
