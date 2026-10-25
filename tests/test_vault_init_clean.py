@@ -105,8 +105,9 @@ def test_clean_exitoso_deja_cuarentena_verificada_y_contenido_intacto(tmp_path):
     assert cuarentena != raiz and cuarentena.exists()
     assert _huellas(cuarentena) == antes, "la cuarentena no conserva el contenido"
     assert (cuarentena / vi.MANIFIESTO_CUARENTENA).is_file()
-    assert raiz.exists() and list(raiz.iterdir()) == [raiz / ".locks"] or True
     assert (raiz / ".locks" / "vault.lock").exists(), "el lock debe sobrevivir"
+    assert not (raiz / "07_Knowledge").exists(), "el contenido anterior no queda en el vault nuevo"
+    assert not (raiz / "00_System").exists()
 
 
 def test_un_fallo_de_inicializacion_restaura_el_contenido(tmp_path, monkeypatch):
@@ -213,3 +214,55 @@ def test_los_mensajes_no_publican_rutas_privadas(tmp_path):
     resultado = vi._preparar_clean(raiz, confirm=None)
     texto = json.dumps(resultado, ensure_ascii=False)
     assert "C:/Users" not in texto and "C:\\\\Users" not in texto
+
+
+def test_version_invalida_tras_la_cuarentena_restaura(tmp_path, monkeypatch):
+    """QA-RC-01: un ok:false no puede dejar el runtime a medio inicializar."""
+    raiz = _vault(tmp_path)
+    antes = _huellas(raiz)
+    monkeypatch.setattr(vi, "_raiz", lambda: raiz)
+    resultado = vi.vault_init(target_version="vNoExiste", clean=True,
+                              confirm=raiz.name, run_audit=False)
+    assert resultado["ok"] is False
+    assert resultado["clean"]["estado"] == "ROLLBACK"
+    assert resultado["args"]["restauracion"]["ok"] is True
+    assert _huellas(raiz) == antes, "el rollback no restauro el contenido"
+
+
+def test_fallo_al_borrar_el_original_restaura_desde_la_copia(tmp_path, monkeypatch):
+    """QA-RC-01: el borrado de la via de copia puede fallar a mitad."""
+    raiz = _vault(tmp_path)
+    antes = _huellas(raiz)
+
+    def _rename_falla(self, destino):
+        raise OSError(18, "EXDEV: cross-device link")
+
+    def _rmtree_falla(path, *args, **kwargs):
+        raise OSError("permiso denegado al borrar")
+
+    monkeypatch.setattr(Path, "rename", _rename_falla)
+    monkeypatch.setattr("shutil.rmtree", _rmtree_falla)
+    resultado = vi._preparar_clean(raiz, confirm=raiz.name)
+    assert resultado["ok"] is False, resultado
+    assert resultado["preparacion"]["estado"] in ("ROLLBACK",
+                                                  "RECUPERACION_PENDIENTE")
+    assert _huellas(raiz) == antes, "no se restauro desde la copia verificada"
+    # La cuarentena sigue en pie: es la via de recuperacion.
+    assert Path(resultado["preparacion"]["cuarentena"]).exists(), (
+        "la cuarentena se conserva para recuperacion manual")
+
+
+def test_si_la_restauracion_falla_la_cuarentena_se_conserva(tmp_path, monkeypatch):
+    """QA-RC-01: recuperacion manual pendiente, sin borrar la copia."""
+    raiz = _vault(tmp_path)
+    preparado = vi._preparar_clean(raiz, confirm=raiz.name)
+    cuarentena = preparado["cuarentena"]
+
+    def _rename_falla(self, destino):
+        raise OSError("no se puede restaurar")
+
+    monkeypatch.setattr(Path, "rename", _rename_falla)
+    restauracion = vi._restaurar(raiz, cuarentena)
+    assert restauracion["ok"] is False
+    assert restauracion["cuarentena"] == str(cuarentena)
+    assert cuarentena.exists(), "la cuarentena no se borra si falla la restauracion"

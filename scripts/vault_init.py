@@ -576,13 +576,28 @@ def _preparar_clean(raiz: Path, confirm: str | None,
             paso.update({"estado": "ABORTED", "motivo": "COPIA_NO_VERIFICADA",
                          "verificacion": verificacion})
             return {"ok": False, "preparacion": paso}
-        for entry in sorted(raiz.iterdir(), reverse=True):
-            if entry.name == ".locks":
-                continue
-            if entry.is_dir() and not entry.is_symlink():
-                shutil.rmtree(entry)
-            else:
-                entry.unlink()
+        try:
+            for entry in sorted(raiz.iterdir(), reverse=True):
+                if entry.name == ".locks":
+                    continue
+                if entry.is_dir() and not entry.is_symlink():
+                    shutil.rmtree(entry)
+                else:
+                    entry.unlink()
+        except OSError as exc:
+            # QA-RC-01: el borrado del original puede fallar a mitad. No hay
+            # forma de reconstruirlo desde el original, pero SI desde la copia
+            # verificada: se restaura desde la cuarentena y, si tampoco se
+            # puede, se deja la cuarentena intacta y se declara recuperacion
+            # pendiente. Nunca se borra la copia en este camino.
+            restauracion = _restaurar_copia(raiz, cuarentena)
+            paso.update({"estado": ("ROLLBACK" if restauracion.get("ok")
+                                    else "RECUPERACION_PENDIENTE"),
+                         "motivo": "BORRADO_INCOMPLETO",
+                         "cuarentena": str(cuarentena),
+                         "restauracion": restauracion,
+                         "detalle": str(exc)})
+            return {"ok": False, "preparacion": paso}
     else:
         paso["mecanismo"] = "rename"
         raiz.mkdir(parents=True, exist_ok=True)
@@ -619,17 +634,35 @@ def _preparar_clean(raiz: Path, confirm: str | None,
     return {"ok": True, "preparacion": paso, "cuarentena": cuarentena}
 
 
+def _restaurar_copia(raiz: Path, cuarentena: Path) -> Dict[str, Any]:
+    """Rollback desde la COPIA cuando el original quedo a medio borrar.
+
+    La cuarentena no se elimina: si esta restauracion falla, es la unica via
+    de recuperacion y debe quedar intacta (QA-RC-01).
+    """
+    try:
+        shutil.copytree(cuarentena, raiz, dirs_exist_ok=True, symlinks=True)
+        manifiesto = raiz / MANIFIESTO_CUARENTENA
+        if manifiesto.exists():
+            manifiesto.unlink()
+        return {"ok": True, "via": "copia", "cuarentena": str(cuarentena)}
+    except OSError as exc:
+        return {"ok": False, "detalle": str(exc),
+                "cuarentena": str(cuarentena)}
+
+
 def _restaurar(raiz: Path, cuarentena: Path) -> Dict[str, Any]:
     """ROLLBACK: el contenido anterior vuelve a su sitio y se verifica."""
     try:
         if raiz.exists():
-            shutil.rmtree(raiz, ignore_errors=True)
+            shutil.rmtree(raiz)
         cuarentena.rename(raiz)
         manifiesto = raiz / MANIFIESTO_CUARENTENA
         if manifiesto.exists():
             manifiesto.unlink()
         return {"ok": True, "restaurado": str(raiz)}
     except OSError as exc:
+        # La cuarentena se conserva: es la via de recuperacion manual.
         return {"ok": False, "detalle": str(exc), "cuarentena": str(cuarentena)}
 
 
@@ -671,7 +704,19 @@ def vault_init(
         return emit_error("vault_init", "VAULT_NOT_FOUND",
                           f"VAULT_ROOT does not exist or is not a directory: {raiz}")
 
-    preparacion = _preparar_clean(raiz, confirm, dry_run=dry_run)
+    # QA-RC-01: la preparacion tambien puede fallar (copia, borrado parcial,
+    # permisos). No puede escapar sin estado de recuperacion explicito.
+    try:
+        preparacion = _preparar_clean(raiz, confirm, dry_run=dry_run)
+    except BaseException as exc:
+        sobre = emit_error("vault_init", "INIT_FAILED_AFTER_CLEAN",
+                           f"fallo preparando la limpieza: {exc}",
+                           args={"fase": "preparacion",
+                                 "cuarentena": None,
+                                 "estado": "RECUPERACION_PENDIENTE"})
+        sobre["clean"] = {"step": "clean", "estado": "RECUPERACION_PENDIENTE",
+                          "detalle": str(exc)}
+        return sobre
     paso = preparacion.get("preparacion", {})
     if not preparacion["ok"]:
         sobre = emit_error("vault_init", "INVALID_INPUT",
@@ -695,7 +740,19 @@ def vault_init(
         sobre = emit_error("vault_init", "INIT_FAILED_AFTER_CLEAN", str(exc),
                            args={"cuarentena": str(cuarentena),
                                  "restauracion": restauracion})
-        sobre["clean"] = paso
+        sobre["clean"] = {**paso, "estado": "ROLLBACK"}
+        return sobre
+    # QA-RC-01: un ok:false NO es una excepcion, y tambien deja el runtime a
+    # medio inicializar. Se restaura igual; nunca se declara VERIFIED.
+    if isinstance(resultado, dict) and resultado.get("ok") is False:
+        restauracion = _restaurar(raiz, cuarentena)
+        sobre = emit_error(
+            "vault_init", "INIT_FAILED_AFTER_CLEAN",
+            resultado.get("message") or "la inicializacion devolvio ok=false",
+            args={"cuarentena": str(cuarentena),
+                  "restauracion": restauracion,
+                  "error_code_interno": resultado.get("error_code")})
+        sobre["clean"] = {**paso, "estado": "ROLLBACK"}
         return sobre
     paso["estado"] = "VERIFIED"
     resultado["clean"] = paso
