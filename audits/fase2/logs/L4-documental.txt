@@ -1,0 +1,42 @@
+L4 � evidencia mecanica: documental y seguridad
+==============================================
+
+== DOCUMENTAL (L4-A)
+README quick start: comandos: 17
+README quick start: usa el checkout (python scripts/): True
+README quick start: usa el producto instalado (vault ...): True
+README quick start: instalacion documentada: ['pip install -e .', 'pip install .`): el servidor viaja en el paquete.']
+ARQUITECTURA.md igual al derivado arch.blueprint(): True
+PUERTAS: registro: 26
+PUERTAS.md menciona 26: True
+INSTALACION-LIMPIA.md cita la wheel: True
+docs/product/prd-cli.md: existe: True
+docs/product/prd-mcp.md: existe: True
+docs/product/runtime-contract.md: existe: True
+docs/sdd/gaps.md: existe: True
+gaps.md: fecha de la ultima actualizacion: ?
+gaps.md: hallazgos pendientes que declara: 85+ documentados
+
+== SEGURIDAD (L4-B)
+contencion: ficheros que usan assert_within_vault: 103
+superficie de operaciones: 96
+superficie: tools de gobernanza expuestas: []
+catalogo: tools totales: 126
+catalogo: expuestas por MCP: 97
+catalogo: expuestas con side_effects declarados: 76
+catalogo: expuestas sin side_effects: 21
+operacion destructiva sin copia (gap D3): scripts/vault_init.py: if clean and _raiz().exists(): wiped = [] for entry in _raiz().iterdir(): if entry.name == ".locks": continue if entry.is_dir(): shutil.rmtree(entry) else: entry.unlink() wiped.append(entry.name) resu
+implementaciones de slugify (gap K3): 21
+implementaciones de utcnow (gap K4): 14
+wheel metadatos: Requires-Python: >=3.9
+wheel metadatos: Requires-Dist: PyYAML>=6.0
+wheel metadatos: Requires-Dist: pytest>=7.0; extra == "dev"
+wheel metadatos: Requires-Dist: pytest-cov>=4.0; extra == "dev"
+wheel metadatos: Requires-Dist: pytest-xdist>=3.5; extra == "dev"
+wheel metadatos: Requires-Dist: pytest-timeout>=2.3; extra == "dev"
+wheel metadatos: Requires-Dist: ruff>=0.3.0; extra == "dev"
+wheel metadatos: Requires-Dist: jsonschema>=4.0; extra == "dev"
+wheel: miembros: 705
+wheel: miembros: 705
+
+log: audits/fase2/logs/L4-documental.txt

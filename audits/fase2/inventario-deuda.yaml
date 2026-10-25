@@ -359,3 +359,80 @@
   - 'CUMPLIDO: con el servidor MCP instalado, la llamada normal sigue devolviendo el resultado.'
   quality_gate: ''
   decision: accepted
+- id: TD-0008
+  title: vault_init --clean destruye el runtime sin copia previa (gap D3 de v36.0, vigente)
+  category: security
+  severity: P1
+  status: vigente
+  owner: ciclo_de_vida - vault_init
+  context: 'Operacion destructiva del producto: `vault init --clean`'
+  source_file: scripts/vault_init.py
+  symbol: if clean and _raiz().exists() -> shutil.rmtree(entry)
+  commit_sha: ef77a7b19a6aaa5e8a5bf776181ab887b7ee4587
+  observed_behavior: Con --clean, el init borra TODO el contenido del runtime (incluido .history/, la
+    unica copia de versiones) con shutil.rmtree entrada a entrada, y reporta 'wiped'. No hay copia previa
+    ni cuarentena.
+  expected_behavior: 'Una operacion destructiva deberia preservar una via de recuperacion: copia previa
+    automatica (o mover a cuarentena) antes del wipe.'
+  root_cause: 'Gap D3 documentado en v36.0 (docs/sdd/gaps.md) y nunca corregido: el flag llego antes que
+    la politica de recuperacion.'
+  impact: 'Perdida de informacion potencial: una invocacion con --clean por error (o por un script que
+    lo propague) destruye el vault completo del usuario sin vuelta atras. Mitigacion parcial: exige flag
+    explicito y el propio README lo declara peligroso.'
+  likelihood: Bajo en uso normal (hay que pedirlo expresamente), alto en automatizacion que reutilice
+    la flag.
+  evidence:
+  - 'scripts/vault_init.py: ''if clean and _raiz().exists(): ... shutil.rmtree(entry) ... entry.unlink()
+    ... wiped.append(entry.name)'' (OBSERVADO en el codigo)'
+  - 'docs/sdd/gaps.md: D3 ''vault_init --clean no hace backup antes de wipe'' (v36.0, 2026-06-28)'
+  - 'audits/fase2/logs/L4-historica.txt: reconciliation de gaps.md con el estado actual'
+  affected_contracts:
+  - 'Producto distribuible: operaciones destructivas'
+  related_norms:
+  - AP-36 (contencion)
+  - 'durabilidad: crear_backup/poner_en_cuarentena'
+  related_tests:
+  - 'PENDIENTE: prueba negativa de que --clean preserva una via de recuperacion'
+  proposed_remediation: 'Antes del wipe, copia previa automatica a una carpeta de cuarentena (o vault-backups),
+    con el mismo mecanismo que ya usa durabilidad; y prueba negativa que demuestre la recuperacion. Queda
+    PENDIENTE de autorizacion: es un cambio de comportamiento del producto.'
+  regression_risk: 'Bajo: anade una copia previa, no cambia el resultado del init.'
+  acceptance_criteria:
+  - 'PENDIENTE: --clean deja una copia del contenido anterior accesible.'
+  - 'PENDIENTE: prueba negativa de recuperacion tras un --clean accidental.'
+  quality_gate: QG-03
+  decision: pending
+- id: TD-0009
+  title: El Quick Start del README mezcla la superficie del checkout con la del producto instalado
+  category: documentation
+  severity: P2
+  status: vigente
+  owner: producto - por designar
+  context: Puerta de entrada del producto
+  source_file: README.md
+  symbol: seccion Quick Start
+  commit_sha: ef77a7b19a6aaa5e8a5bf776181ab887b7ee4587
+  observed_behavior: La secuencia documentada usa `vault init/tools list/mcp-path` (el producto instalado)
+    y TAMBIEN `python scripts/vault_write.py`, `python scripts/vault_project.py`, `python scripts/vault_audit.py`
+    (el checkout). La instalacion documentada es `pip install -e .`.
+  expected_behavior: El quick start declara que supuesto usa, o documenta los dos caminos.
+  root_cause: El README se escribio desde el checkout, donde las dos superficies existen; para un consumidor
+    de la wheel no lo estan.
+  impact: Un tercero con la wheel instalada copia comandos que no existen en su maquina. El camino del
+    producto instalado SI esta documentado, pero en otro documento (docs/INSTALACION-LIMPIA.md).
+  likelihood: Cierto para quien instale la wheel sin checkout.
+  evidence:
+  - 'audits/fase2/logs/L4-documental.txt: extraccion de los comandos del Quick Start y de la instalacion
+    documentada'
+  affected_contracts:
+  - QG-06 instalacion y distribucion
+  related_norms: []
+  related_tests:
+  - tests/test_quickstart_del_readme.py (mide el camino del checkout)
+  proposed_remediation: Declarar en el Quick Start que supuesto hace, y enlazar al camino de instalacion
+    limpia. Correccion documental; no se aplica en este lote (queda para revision).
+  regression_risk: 'Ninguno: es documentacion.'
+  acceptance_criteria:
+  - 'PENDIENTE: el Quick Start declara su supuesto o enlaza el camino instalado.'
+  quality_gate: QG-07
+  decision: pending

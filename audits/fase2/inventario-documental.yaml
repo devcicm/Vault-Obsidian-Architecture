@@ -1,0 +1,96 @@
+# Inventario documental — fase 2 (L4-A)
+#
+# Clasificacion de cada documento frente a la implementacion actual.
+# Estados: VIGENTE | OBSOLETO | CONTRADICTORIO | INCOMPLETO | NO_VERIFICADO.
+# Ningun documento derivado se edita a mano: sus correcciones salen del
+# registro que los deriva.
+
+- id: DOC-0001
+  document: README.md (seccion Quick Start)
+  statement: 'El quick start mezcla dos superficies: `vault init`, `vault tools list`, `vault --version`,
+    `vault mcp-path` (el producto instalado) y `python scripts/vault_project.py`, `python scripts/vault_write.py`,
+    `python scripts/vault_audit.py` (el checkout). La instalacion que documenta es `pip install -e .`.'
+  implementation: 'Un consumidor que instala la WHEEL no tiene el directorio scripts/: la secuencia documentada
+    se rompe en la mitad. El camino del producto instalado SI esta documentado, pero en otro documento
+    (docs/INSTALACION-LIMPIA.md).'
+  evidence: 'audits/fase2/logs/L4-documental.txt: extraccion de los comandos del Quick Start (usa ''python
+    scripts/'' y tambien ''vault '') y comprobacion de que la instalacion documentada es `pip install
+    -e .`.'
+  classification: INCOMPLETO
+  impact: 'La puerta de entrada del producto no dice que supuesto hace: el lector con la wheel instalada
+    copia comandos que no existen en su maquina. No es un defecto del producto, es un defecto de orientacion.'
+  resolution: Documentar en el Quick Start que es el camino del checkout, y enlarzar al de la instalacion
+    limpia. Correccion DOCUMENTAL no destructiva; no se aplica en este lote (queda para revision de QA
+    y del propietario).
+- id: DOC-0002
+  document: docs/ARQUITECTURA.md
+  statement: Plano tecnico de los diez contextos, puertos y cruces.
+  implementation: Coincide byte a byte con el derivado `vault_arch.blueprint()`; un test lo verifica.
+  evidence: 'audits/fase2/logs/L4-documental.txt: comparacion con el derivado y con el guard que lo vigila.'
+  classification: VIGENTE
+  impact: Ninguno.
+  resolution: Ninguna.
+- id: DOC-0003
+  document: docs/PUERTAS.md
+  statement: Las 26 puertas de cierre del estandar, con su porque.
+  implementation: El registro `vault_gate.PUERTAS` tiene 26 entradas y el documento las publica (derivado,
+    con su propio `--fix-doc`).
+  evidence: 'audits/fase2/logs/L4-documental.txt: recuento del registro y del documento.'
+  classification: VIGENTE
+  impact: Ninguno.
+  resolution: Ninguna.
+- id: DOC-0004
+  document: docs/INSTALACION-LIMPIA.md
+  statement: Instalacion desde la wheel, creacion de runtime y arranque del MCP.
+  implementation: 'Los comandos que cita existen y se han ejecutado en este lote: `python -m build --wheel`,
+    `pip install`, `vault init`, `vault doctor`, `vault run vault_audit`, `vault mcp-path`. El recorrido
+    L3 ejecuto esa secuencia de verdad.'
+  evidence: audits/fase2/logs/L4-documental.txt y el recorrido MVP de L3.
+  classification: VIGENTE
+  impact: Ninguno.
+  resolution: Ninguna.
+- id: DOC-0005
+  document: docs/sdd/gaps.md
+  statement: 'Inventario de brechas detectado al generar el SDD (2026-06-28, vault v36.0): 85+ hallazgos,
+    con criticos D2, D3, G1, G2, H1, H2.'
+  implementation: 'Es un REGISTRO HISTORICO, no un inventario vigente: el producto va en v41.23. Reconciliation
+    en L4-C: H1 CORREGIDA (vault_undo existe), D3 VIGENTE (vault_init --clean borra sin copia), H2 PARCIAL
+    (14 de 167 scripts con --dry-run frente a 12 de 94), K3/K4 PARCIALES (21 slugify y 14 utcnow duplicados).'
+  evidence: 'audits/fase2/logs/L4-historica.txt: comprobaciones mecanicas de H1, H2, K3, K4 y del camino
+    de borrado de --clean.'
+  classification: OBSOLETO como inventario; VIGENTE como registro de historia
+  impact: 'Quien lea el inventario de brechas creera que hay 85+ problemas abiertos: casi todos son de
+    hace cuatro versiones. El riesgo real esta en los que siguen VIGENTES (D3).'
+  resolution: 'Marcarlo como historico con fecha y reconciliarlo con el inventario canonico (L4-C, este
+    lote). No se borra: es evidencia.'
+- id: DOC-0006
+  document: docs/product/prd-cli.md, docs/product/prd-mcp.md, docs/product/runtime-contract.md
+  statement: Requisito de producto de CLI, de MCP y contrato de runtime.
+  implementation: 'NO VERIFICADO en este lote: no se ha contrastado cada afirmacion de los tres documentos
+    con el codigo. Si se ha medido la superficie que describen: 126 tools en el catalogo, 97 expuestas
+    por MCP, 0 de gobernanza entre ellas, 96 operaciones en la superficie CLI.'
+  evidence: 'audits/fase2/logs/L4-documental.txt: superficie medida (catalogo, MCP, operaciones).'
+  classification: NO_VERIFICADO
+  impact: No se puede afirmar que el requisito de producto este o no alineado; queda abierto.
+  resolution: Contraste afirmacion por afirmacion en un lote de L4 ampliado, con evidencia por documento.
+- id: DOC-0007
+  document: .archify/ (snapshot de diagramas)
+  statement: Diez contextos, 37 cruces, 8 accesos fuera de puerto y 2 anclas del puente, con su snapshot
+    de diagrama.
+  implementation: 'Reconciliado en L1: los 23 pares de contexto coinciden con ficha identica, las 37 dependencias
+    existen hoy con esos dos modulos exactos, los 8 accesos fuera de puerto se clasificaron (5 vigentes,
+    3 resueltos en ronda 1) y las 2 anclas coinciden con sus motivos.'
+  evidence: audits/fase2/matriz-arquitectonica.md y audits/fase2/logs/L1-reconciliacion-archify.txt.
+  classification: VIGENTE como evidencia auxiliar; NO es fuente de verdad
+  impact: Si se leyera como verdad, contaria 8 accesos fuera de puerto donde hay 5.
+  resolution: 'Ninguna: ya esta reconciliado y el verificador lo repite en cada corrida.'
+- id: DOC-0008
+  document: docs/adr/ (ADR vigentes)
+  statement: ADR-0002 declara el puente scripts/ -> _impl/ de la wheel.
+  implementation: 'Verificado en el codigo: `package-dir` mapea scripts/ a vault_toolkit._impl, mcp/nodejs/
+    a vault_toolkit.mcp y normas/ a vault_toolkit.normas, con un build propio (empaquetado.construir.BuildPy).
+    La wheel construida lleva 140 ficheros en _impl.'
+  evidence: 'audits/fase2/logs/L4-documental.txt: estructura del paquete mapeado en la wheel.'
+  classification: VIGENTE
+  impact: Ninguno.
+  resolution: Ninguna.
