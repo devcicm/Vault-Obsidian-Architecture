@@ -326,6 +326,56 @@ FRONTERAS: List[Dict[str, Any]] = [
 #: como hallazgo: el alcance se declara, no se supone.
 EXT_EJECUTABLES = {".mjs", ".js", ".cjs", ".ts", ".ps1", ".sh", ".yml", ".yaml"}
 
+#: Claves de primer nivel que convierten un YAML de **datos** en **ejecutable**:
+#: un workflow de CI/CD declara trabajos, disparadores o pasos. Un inventario,
+#: un catálogo o una evidencia de auditoría declara listas y campos, no trabajo.
+CLAVES_YAML_EJECUTABLE = ("jobs:", "on:", "steps:", "workflow_dispatch:", "runs-on:")
+
+
+def yaml_es_ejecutable(rel: str, texto: str) -> bool:
+    """Distingue YAML **ejecutable** de YAML de **datos** (H-F2-05).
+
+    El guard incluía `.yml/.yaml` en `EXT_EJECUTABLES` para no dejar sin medir
+    un workflow de CI fuera de `.github/`; el efecto colateral era que un
+    inventario YAML de evidencia se reportaba como `frontera_no_declarada`, y
+    un falso positivo en una puerta es deuda que nadie revisa.
+
+    Criterio (declarado, no heurístico suelto — ver `tests/test_criterios_yaml.py`):
+      1. un YAML bajo `.github/` es ejecutable por definición;
+      2. un YAML con claves de primer nivel de workflow (`on:`, `jobs:`,
+         `steps:`, `workflow_dispatch:`, `runs-on:`) es ejecutable aunque esté
+         mal ubicado — así sigue detectándose el CI fuera de su sitio;
+      3. el resto es DATOS y no es una frontera: no ejecuta nada.
+
+    Lo que este criterio **no** ve: un YAML de datos que alguien ejecute con un
+    runner propio. Se declara el límite en vez de prometer cobertura total.
+    """
+    if rel.startswith(".github/"):
+        return True
+    for linea in texto.splitlines():
+        limpia = linea.strip()
+        if limpia.startswith("#") or not limpia:
+            continue
+        # Solo la indentación cero cuenta: `on:` dentro de un inventario es un
+        # campo, no un disparador.
+        if linea[:1] not in (" ", "\t") and any(
+                limpia.startswith(clave) for clave in CLAVES_YAML_EJECUTABLE):
+            return True
+    return False
+
+
+def _yaml_de_datos(ruta: Path) -> bool:
+    """True si la ruta es un YAML que no ejecuta nada (datos)."""
+    if ruta.suffix.lower() not in (".yml", ".yaml"):
+        return False
+    try:
+        texto = ruta.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        # No poder leerlo no lo convierte en dato: se mide como ejecutable.
+        return False
+    rel = str(ruta.relative_to(REPO)).replace("\\", "/")
+    return not yaml_es_ejecutable(rel, texto)
+
 #: Rutas ajenas al toolkit que no son frontera de ningún criterio de este repo.
 #: Se listan una a una y con motivo: una exclusión por patrón se traga lo que
 #: venga después.
@@ -827,6 +877,8 @@ def medir_fronteras() -> List[Dict[str, str]]:
         if any(rel == k or rel.startswith(k + "/") for k in FUERA_DE_FRONTERA):
             continue
         if ruta.resolve() in declaradas:
+            continue
+        if _yaml_de_datos(ruta):
             continue
         hallazgos.append({"modulo": rel, "criterio": "frontera_no_declarada",
                           "senal": ruta.suffix, "dueño": "vault_criterios:FRONTERAS"})
