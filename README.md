@@ -209,6 +209,19 @@ vault tools list                        # ver las tools disponibles
 `vault init` sobre un vault que ya existe no lo repuebla: responde
 `INIT_ALREADY_INITIALIZED`.
 
+**Limpiar un runtime (`--clean`).** Es una operación destructiva y desde v41.23
+exige confirmación explícita:
+
+```text
+python scripts/vault_init.py --clean --confirm mi-vault --dry-run   # ver el plan
+python scripts/vault_init.py --clean --confirm mi-vault             # mover a cuarentena
+```
+
+La cuarentena (`.<nombre>.cuarentena-<sello>/`) se conserva hasta que se purgue
+de forma expresa con `--purge-backup <ruta>`; si la inicialización falla, el
+contenido vuelve a su sitio. Los detalles y las pruebas están en
+`audits/fase2/R04-diseno-td0008.md`.
+
 ### 4. `.gitignore` para el consumer repo
 
 ```gitignore
@@ -230,6 +243,14 @@ vault mcp-path                           # servidor MCP + entrada del cliente
 ### 6. Documentar el proyecto
 
 ```bash
+# Con la wheel instalada no hace falta el checkout: `vault run <tool>` ejecuta
+# la misma tool. Fuera del repositorio, usa esta forma:
+#   VAULT_AGENT=claude vault run vault_write --folder 00_System \
+#     --title "Vault Identity" --meta '{"type":"identity"}' --content "..."
+# Las notas de contenido exigen etiquetas (AP-26) y autor (AP-16):
+#   vault run vault_write --folder 07_Knowledge --title "Primera nota" \
+#     --tags demo inicio --content "linea uno`nlinea dos`nlinea tres"
+
 # Identidad del vault — con autor: VAULT_AGENT o --agent (00_System queda
 # exento, pero las notas de contenido no). El content gate exige ≥3 líneas
 # reales con ≥10 palabras: no deja crear notas a medias.
