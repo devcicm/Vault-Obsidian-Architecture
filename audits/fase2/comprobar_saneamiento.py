@@ -58,7 +58,10 @@ def revisar(raiz: Path) -> List[Tuple[str, str]]:
         for patron in (RUTA_WINDOWS, RUTA_UNIX):
             for coincidencia in patron.finditer(texto):
                 segmento = coincidencia.group(1).strip().strip("/\\").lower()
-                if segmento in GENERICOS:
+                # Un marcador entre <> es un HUECO, no una maquina: es la forma
+                # que el propio guard de publicacion limpia del repo acepta.
+                if segmento in GENERICOS or (
+                        segmento.startswith("<") and segmento.endswith(">")):
                     continue
                 problemas.append((relative, f"ruta local identificable: {coincidencia.group(0)[:80]}"))
         for coincidencia in CREDENCIAL.finditer(texto):

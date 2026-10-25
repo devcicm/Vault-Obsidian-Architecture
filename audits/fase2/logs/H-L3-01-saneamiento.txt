@@ -19,9 +19,9 @@ Comprobacion: python audits/fase2/comprobar_saneamiento.py  ->  exit 1, 13 probl
   - audits/fase2/logs/L3-paridad-cli-mcp.txt  : idem
   - audits/handoff/logs/2026-10-24-Q00-baseline.md, R1B-CIERRE-suite.txt,
     R1B-E04a-saneamiento.txt, R1B-E04c-h4.txt, R1B-Q02-unittest.txt,
-    R1B-Q03-unittest.txt, R1B-suite.txt : rutas con la forma C:/Users/<autor>/...
+    R1B-Q03-unittest.txt, R1B-suite.txt : rutas con la forma <FORMA-ABSOLUTA>
 
-Nota: el marcador neutro que uso la ronda 1B (C:/Users/<autor>/) lo acepta el
+Nota: el marcador neutro que uso la ronda 1B (<FORMA-ABSOLUTA>) lo acepta el
 guard de publicacion limpia del repo, pero seguia dejando la ESTRUCTURA de la
 maquina (AppData/Local/Temp/...), que es lo que QA marca. Sustituido por
 <RUTA-LOCAL>, que no contiene ni `Users/` ni nombre alguno.
@@ -43,7 +43,8 @@ Verificacion: python audits/fase2/comprobar_saneamiento.py -> exit 0
 --------------------------------------------------------------
 Se busco en las tres ramas publicadas (origin/main, origin/audit/archify-...,
 origin/fase2/...) con git grep:
-  - ficheros con ruta local real (C:\Users\Carlos o C:/Users/Carlos): 0
+  -   - ficheros con ruta local real (la forma absoluta de Windows con el nombre
+    del autor, con barras o con ellas): 0
   - ficheros con el nombre del autor: 0
   - formas de credencial (AKIA, api_key, Bearer): 0
 Resultado: NO HAY EXPOSICION HISTORICA que contener ni rotar. Lo unico publicado
