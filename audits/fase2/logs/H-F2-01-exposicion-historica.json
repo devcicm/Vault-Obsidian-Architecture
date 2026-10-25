@@ -1,0 +1,19 @@
+{
+  "alcance": {
+    "ficheros": "los que el streaming de git log --all -p --full-history toca bajo esos prefijos, en TODOS los commits alcanzables",
+    "exclusiones": "el resto del arbol versionado (codigo, manifiesto, tests) no se escanea en este instrumento",
+    "detector": "regex genericas sobre texto; sin OCR, sin zips, sin imagenes; la cuenta de la maquina se deriva del entorno"
+  },
+  "historia": {
+    "commits_escaneados": 8,
+    "ficheros_escaneados": 5,
+    "commits_con_exposicion": 10,
+    "categorias": {
+      "ruta_local": 16,
+      "cuenta_usuario": 8
+    },
+    "huellas_unicas": 5,
+    "forma_secreto": 0
+  },
+  "estado_actual": []
+}

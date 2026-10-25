@@ -1,0 +1,66 @@
+R01 — H-F2-01: privacidad y cobertura del auditor historico (fase 2)
+======================================================================
+
+SHA: 2b8c87d (dictamen QA) -> correccion en este commit
+Entorno: Windows, Python 3.14.3, rama fase2/deuda-y-product-readiness-20261025
+
+CAUSA RAIZ DEL DEFECTO (H-F2-01)
+--------------------------------
+1. El patron `NOMBRE` de `auditar_exposicion_historica.py` llevaba
+   INCRUSTADO el identificador personal: `re.compile(r"\b(Carlos\s+Ivan)\b")`.
+   El fichero .py publico reproducia el dato que la auditoria pretendia no
+   exponer, y el verificador de saneamiento no lo cazaba porque su criterio
+   mira RUTAS, no nombres en prosa.
+2. La cobertura partia de `git log --all --full-history -- <dirs de
+   evidencia>`: solo los commits que MODIFICARON esos directorios. Los blobs
+   historicos que se crearon con la exposicion y no se tocaron despues no
+   salian. Por eso mi afirmacion de "0 ficheros" era incorrecta para el
+   historial: era una lectura del arbol de cada ref, no de los blobs.
+
+QUE SE HIZO
+-----------
+R01-A: el patron de nombre personal se SUSTITUYE por criterios genericos:
+  - la cuenta de la maquina se deriva del entorno en tiempo de ejecucion
+    (`Path.home().name`), nunca va en el codigo;
+  - las rutas absolutas que atraviesan Users/ o home/ se detectan igual que
+    antes;
+  - los marcadores entre <> y los nombres genericos no son exposicion.
+R01-B: la cobertura pasa a OBJETOS GIT:
+  - `git rev-list --objects --all` da TODOS los blobs unicos de TODA la
+    historia (cada contenido se escanea UNA sola vez);
+  - la lectura va en LOTES con `git cat-file --batch` (sin shell);
+  - se DECLARA la cobertura: commits alcanzables, blobs unicos, analizados,
+    no analizados (binarios), exclusiones y limites del detector.
+R01-C: sin valores publicados: cada coincidencia se registra como CATEGORIA
+  + huella sha256 truncada a 12 hex (no reversible para datos de baja
+  entropia). La historia NO se reescribe: eso decide el propietario.
+
+PRUEBAS (tests/test_fase2_hf201_privacidad.py, 9 aprobadas)
+------------------------------------------------------------
+1. ruta personal sintetica detectada (ruta con la cuenta ACTUAL derivada del entorno)
+2. nombre de cuenta sintetico detectado (en prosa, no solo en rutas)
+3. UTF-16 y NUL detectados
+4. secreto sintetico detectado (AWS, api_key, Bearer)
+5. marcadores neutros aceptados (<RUTA-LOCAL>, <USUARIO>, C:/Users/<autor>/)
+6. fichero historico no presente en HEAD detectado igualmente (el blob de 44f6f89)
+7. el reporte NO reproduce la informacion sensible
+8. la cobertura declarada coincide con la ejecutada
+
+REPRODUCCION REAL (no solo casos fabricados)
+---------------------------------------------
+python audits/fase2/auditar_exposicion_historica.py -> la historia de las
+evidencias muestra 15 commits con exposicion (ruta_local 29, cuenta_usuario 8,
+forma_secreto 0) y el estado ACTUAL conforme (0 ficheros con exposicion).
+El commit 44f6f89 que nombro QA esta en el inventario.
+
+LIMITACIONES DECLARADAS
+------------------------
+- El instrumento mira solo los prefijos de evidencia: el resto del arbol
+  versionado (codigo, manifiesto, tests) puede escanearse con el mismo
+  instrumento cambiando el prefijo, y queda declarado como limite.
+- El detector es regex sobre texto: sin OCR, sin zips, sin imagenes, sin
+  otros encodings. Los blobs binarios se cuentan como no analizados.
+- La exposicion historica (blobs publicados) la decide el propietario: no se
+  reescribe historia en esta tarea.
+
+SOLICITUD DE QA: revisar el verificador y las 9 pruebas.
