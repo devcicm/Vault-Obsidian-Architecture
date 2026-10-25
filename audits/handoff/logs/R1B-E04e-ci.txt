@@ -1,0 +1,88 @@
+R1B-E04e — Integracion continua: estado, investigacion y clasificacion — 2026-10-24
+===================================================================================
+
+SHA: 2eabcfebb5e549ef78c8485b5ba88caa86f73c92
+Entorno: Windows, PowerShell 5, Python 3.14.3 (consulta remota con `gh`, cuenta devcicm)
+Comando de consulta: gh run list --branch audit/archify-governance-20261024 --limit 30 --json databaseId,headSha,status,conclusion,url,createdAt,updatedAt,event
+Codigo de salida: 0
+Estado del dictamen: CI: PENDIENTE DE VALIDACION
+
+ESTADO ACTUAL (consultado, no presumido)
+-----------------------------------------
+Evento de todos: pull_request (PR #1, audit/archify-governance-20261024 -> main).
+
+Run ID      | Commit SHA (cabeza)          | Creado (UTC)  | Estado    | Conclusion | URL
+------------|------------------------------|---------------|-----------|------------|---------------------------------------------
+40156116671 | 2eabcfe (fix H4, esta ronda) | 02:52:41Z     | queued    | -          | https://github.com/devcicm/Vault-Obsidian-Architecture/actions/runs/40156116671
+40155732913 | 031abfb (E04b)               | 02:46:31Z     | queued    | -          | .../actions/runs/40155732913
+40155325993 | 5c27601 (E04a)               | 02:40:09Z     | queued    | -          | .../actions/runs/40155325993
+40155246576 | 01a9d8f (E03)                | 02:38:54Z     | queued    | -          | .../actions/runs/40155246576
+40154926732 | e925bef (E02)                | 02:33:56Z     | queued    | -          | .../actions/runs/40154926732
+40154782208 | 94bf46e (E01)                | 02:31:39Z     | queued    | -          | .../actions/runs/40154782208
+40152915184 | bf4003f (dictamen QA)        | 02:02:12Z     | queued    | -          | .../actions/runs/40152915184
+40152613773 | f6a5387 (Q03)                | 01:57:33Z     | queued    | -          | .../actions/runs/40152613773
+40152158698 | ec5e56e (Q02)                | 01:50:10Z     | queued    | -          | .../actions/runs/40152158698
+40151826460 | 4fededd (Q01)                | 01:44:46Z     | queued    | -          | .../actions/runs/40151826460
+40151021224 | acb20da (Q00)                | 01:32:19Z     | queued    | -          | .../actions/runs/40151021224
+40147553769 | f3aaafc (base de la ronda)   | 00:39:37Z     | queued    | -          | .../actions/runs/40147553769
+40147548204 | 069616a (buzon QA)           | 00:39:32Z     | in_progress| -          | .../actions/runs/40147548204
+40147533176 | 8885c79 (PREVIO a la rama)   | 00:39:18Z     | completed | failure    | .../actions/runs/40147533176
+40147250440 | 3adc050 (PREVIO a la rama)   | 00:34:54Z     | completed | failure    | .../actions/runs/40147250440
+40147115820 | 08a2ddf (PREVIO a la rama)   | 00:32:46Z     | completed | failure    | .../actions/runs/40147115820
+40147025723 | 40d81e6 (PREVIO a la rama)   | 00:31:24Z     | completed | failure    | .../actions/runs/40147025723
+
+(Ninguna ejecucion de la rama de auditoria ha llegado a ejecutarse: las 13 que la
+comprenden siguen en cola.)
+
+Deteccion por job (gh api .../actions/runs/<id>/jobs)
+-----------------------------------------------------
+Run 40147533176 (8885c79): 25 jobs -> 1 success (Lint Python) + 24 failure
+Run 40147250440 (3adc050): 25 jobs -> 1 success (Lint Python) + 24 failure
+Run 40147115820 (08a2ddf): 25 jobs -> 1 success (Lint Python) + 24 failure
+Run 40147025723 (40d81e6): 25 jobs -> 1 success (Lint Python) + 24 failure
+Run 40147548204 (069616a, en curso): 20 failure + 4 en ejecucion + 1 success
+
+INVESTIGACION DE LOS DOS FALLOS QUE SENALA QA
+----------------------------------------------
+1) `ModuleNotFoundError: No module named 'yaml'`
+   Where: job "Product gates (wheel)" (instalacion limpia / wheel), en los runs
+   40147250440, 40147115820 y 40147025723. Log: "UNKNOWN STEP ... ModuleNotFoundError:
+   No module named 'yaml'".
+   Lectura: el job de wheel instala el paquete en un entorno donde PyYAML no esta
+   declarado o no llega; la matriz de "Validate Vault Spec" si instala las
+   dependencias (`pip install -e ".[dev]"`). Es un defecto de empaquetado/CI, no del
+   codigo de la rama.
+   Clasificacion: PREEXISTENTE. Los tres runs son de SHAs anteriores a f3aaafc
+   (00:31Z-00:34Z; la rama nace a las 00:39:37Z).
+
+2) `AssertionError: {"jsonrpc": "2.0", "id": 4, "result": ... "ok": false ...}`
+   Where: job "Validate Vault Spec" (Run unit tests), mismos runs preexistentes.
+   Tests implicatedados en el log: tests/test_changelog_check.py::
+   test_el_changelog_no_contradice_a_git, ::test_todos_los_hashes_publicados_existen,
+   ::test_la_tool_corre_por_cli, tests/test_contrato_nota.py::
+   test_cada_hito_de_la_historia_tiene_su_fuente[v18|v25|v37...], y
+   tests/test_blueprint.py::test_el_plano_publicado_esta_al_dia y sus tres
+   companeros de la capa 4.
+   Lectura: son tests que MIRAN EL HISTORIAL GIT y los derivados publicados. En un
+   checkout de CI el historial viene truncado (fetch-depth por defecto = 1), de modo
+   que los hashes del changelog "no existen" y el contrato de la nota no encuentra
+   su fuente. Es una diferencia de ENTORNO, no una regresion del codigo.
+   Clasificacion: PREEXISTENTE (SHAs anteriores a la rama).
+
+3) Ningun fallo observado procede de los commits de la rama de auditoria: no hay
+   ninguna ejecucion de un SHA de la rama que haya llegado a correr.
+
+CLASIFICACION GLOBAL
+--------------------
+- Fallos observados (4 runs completados): 100% PREEXISTENTES, en SHAs anteriores
+  a f3aaafc, y con la misma firma en los cuatro (24 de 25 jobs en rojo).
+- Commits de la rama (13 runs): NUNCA EJECUTADOS, todos en cola.
+- Causa de la cola: el limite de concurrencia de runners. El run 40147548204 sigue
+  en curso con 24 jobs y las ejecuciones siguientes esperan turno.
+- No se ha cancelado ni relanzado ninguna ejecucion (no estaba autorizado).
+
+DICTAMEN
+--------
+CI: PENDIENTE DE VALIDACION. La rama de auditoria no tiene todavia veredicto de CI;
+los fallos que se ven son preexistentes y estan documentados. La validacion local
+(segun R1B-E04d) es la que si produce resultado en esta ronda.
