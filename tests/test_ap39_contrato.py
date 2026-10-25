@@ -152,14 +152,27 @@ class ContratoEscrituraAp39(unittest.TestCase):
         self.assertEqual(len(entradas2), 1)
 
     def test_fallo_del_ledger_no_tumba_la_nota(self):
-        """La bitácora ilegible/inescribible se registra (`recorded: -1`) y la
-        nota ya persistida sobrevive: el ledger es memoria, no candado."""
+        """La bitácora ilegible/inescribible se registra (`vocabulary_recorded:
+        -1`) y la nota ya persistida sobrevive: el ledger es memoria, no
+        candado. El campo es el que publica `vault_write`; `recorded` es el de
+        otro contrato (`registrar_tags_de_nota`) y no valdría aquí."""
         tag = "termino-con-ledger-roto-ap39"
         vocab = self.vault / "19_Audits" / "vocabulary"
         shutil.rmtree(vocab, ignore_errors=True)
         vocab.write_text("no es un directorio a propósito", encoding="utf-8")
         sobre, p = self._escribir("AP39 Ledger Roto", [tag])
         self.assertTrue(sobre.get("ok"), p.stdout[-600:])
+        # El fallo tiene que ser OBSERVABLE, no solo tolerado: sin esta
+        # aserción, una implementación que guardara la nota y silenciara el
+        # error del ledger dejaría el test en verde (H-Q02-01).
+        self.assertEqual(
+            sobre.get("vocabulary_recorded"),
+            -1,
+            f"Fallo del ledger no observable: {sobre!r}",
+        )
+        # Y el fallo tiene que ser el del ledger: hubo términos nuevos que
+        # intentar registrar, así que no fue un rechazo anterior del CLI.
+        self.assertEqual(sobre.get("vocabulary_introduced"), [tag])
         nota = Path(sobre["path"])
         if not nota.is_absolute():
             nota = self.vault / sobre["path"]
