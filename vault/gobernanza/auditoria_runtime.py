@@ -380,8 +380,15 @@ def auditar_runtime(
 
     # AP-40, AP-42 y AP-43 observan el estándar, no este runtime.
     # La fachada legacy los intercala aquí para conservar su orden histórico.
+    # TD-0003: cada control entrega su ESTADO. Un control que no pudo correr ya
+    # no desaparece: queda como `no_ejecutado` y el envelope lo declara.
+    checks: List[Dict[str, Any]] = []
+
+    def _registrar_check(check: Dict[str, Any]) -> None:
+        checks.append(dict(check))
+
     if insertar_checks_estandar is not None:
-        insertar_checks_estandar(_flag)
+        insertar_checks_estandar(_flag, _registrar_check)
 
     # ── AP-44: enlaces que resuelven para la tool pero no para el lector ──────
     # El sintoma automatizable de la verificacion autoconsistente. Obsidian
@@ -615,7 +622,7 @@ def auditar_runtime(
     for v in violations:
         by_norm[v["norm"]] = by_norm.get(v["norm"], 0) + 1
 
-    return {
+    sobre: Dict[str, Any] = {
         "ok": True,
         "tool": "vault_runtime_audit",
         "vault_root": str(root),
@@ -625,5 +632,12 @@ def auditar_runtime(
         "by_norm": by_norm,
         "violations": violations,
     }
+    # Aditivo y solo en la fachada que audita el estándar: el camino de runtime
+    # puro no gana campos que no puede acreditar.
+    if insertar_checks_estandar is not None:
+        from .controles import resumen
+
+        sobre.update(resumen(checks))
+    return sobre
 
 # ─── Guard anti-drift del marco de datos (v39) ─────────────────────────────────

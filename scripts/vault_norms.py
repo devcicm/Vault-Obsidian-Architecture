@@ -586,10 +586,11 @@ Ejemplos:
             from vault_io import set_vault_root
             set_vault_root(Path(args.root))  # AP-36: traces al vault objetivo
         result = vault_norms_audit(Path(args.root) if args.root else None)
-        if args.strict and result.get("total_violations"):
-            # `ok` sigue siendo True (el audit corrió bien); lo que cambia es el
-            # exit code, para poder usarlo como gate sin romper a los lectores
-            # que ya interpretan el envelope.
+        if args.strict and (result.get("total_violations")
+                            or result.get("completo") is False):
+            # TD-0003: una auditoria INCOMPLETA no puede pasar la puerta. `ok`
+            # sigue siendo True (el audit corrio); lo que cambia es el exit
+            # code, para no romper a los lectores del envelope.
             print(json.dumps(result, indent=2, ensure_ascii=False))
             return 1
     elif args.check_framework:

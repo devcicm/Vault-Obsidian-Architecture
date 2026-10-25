@@ -133,69 +133,82 @@ _VAULT_ARTIFACT_NAMES = ("00_System", "99_Index", "vault-backups", ".history")
 _CONTAMINATION_DEPTH = 2
 
 
-def _checks_estandar(flag) -> None:
-    # ── AP-40: el contrato publicado tiene que ser el que la CLI acepta ───────
-    # No mira el vault: mira el repo del estándar. Se audita aquí porque es el
-    # único recorrido que un agente corre siempre, y un catálogo roto no se
-    # manifiesta como error de datos sino como una tool que nunca funciona.
-    try:
-        import vault_mcp_catalog as _cat
+def _control_ap40(flag) -> int:
+    """AP-40: el contrato publicado tiene que ser el que la CLI acepta."""
+    import vault_mcp_catalog as _cat
 
-        _params = _cat.check_params()
-        for _p in _params.get("problems", []):
-            flag(
-                "AP-40",
-                f"mcp/nodejs/tools-catalog.json#{_p['tool']}",
-                f"{_p['problem']} — correr vault_mcp_catalog --sync.",
-            )
-    except (ImportError, OSError, ValueError):
-        pass
+    hallazgos = 0
+    for _p in _cat.check_params().get("problems", []):
+        flag(
+            "AP-40",
+            f"mcp/nodejs/tools-catalog.json#{_p['tool']}",
+            f"{_p['problem']} — correr vault_mcp_catalog --sync.",
+        )
+        hallazgos += 1
+    return hallazgos
 
-    # ── AP-42: deuda de ejecución declarada ───────────────────────────────────
-    # El barrido completo tarda minutos y vive en `vault_smoke --strict` (CI).
-    # Aquí se reporta lo barato y lo que de verdad se olvida: la deuda que
-    # alguien congeló en la baseline y las tools cuyo ejemplo ni siquiera puede
-    # convertirse en una invocación.
-    try:
-        import vault_smoke as _smoke
 
-        for _t in _smoke.load_baseline():
+def _control_ap42(flag) -> int:
+    """AP-42: deuda de ejecución declarada en la baseline y ejemplos vacíos."""
+    import vault_smoke as _smoke
+
+    hallazgos = 0
+    for _t in _smoke.load_baseline():
+        flag(
+            "AP-42",
+            f"scripts/smoke-baseline.json#{_t}",
+            f"{_t} está congelada como deuda: su ejemplo documentado no emite "
+            "un JSON con `ok`. La baseline solo puede encoger.",
+        )
+        hallazgos += 1
+    for _t in sorted(_smoke.TOOLS_CATALOG):
+        if _t in _smoke.SIN_SMOKE:
+            continue
+        if _smoke.invocation(_t) is None and (_smoke.TOOLS_CATALOG[_t] or {}).get("script"):
             flag(
                 "AP-42",
-                f"scripts/smoke-baseline.json#{_t}",
-                f"{_t} está congelada como deuda: su ejemplo documentado no emite "
-                "un JSON con `ok`. La baseline solo puede encoger.",
+                f"vault_mcp_catalog.TOOLS_CATALOG#{_t}",
+                f"{_t} no tiene un `example` del que derivar una invocación: "
+                "no se puede ejecutar nunca ni en el smoke ni por un usuario.",
             )
-        for _t in sorted(_smoke.TOOLS_CATALOG):
-            if _t in _smoke.SIN_SMOKE:
-                continue
-            if _smoke.invocation(_t) is None and (_smoke.TOOLS_CATALOG[_t] or {}).get("script"):
-                flag(
-                    "AP-42",
-                    f"vault_mcp_catalog.TOOLS_CATALOG#{_t}",
-                    f"{_t} no tiene un `example` del que derivar una invocación: "
-                    "no se puede ejecutar nunca ni en el smoke ni por un usuario.",
-                )
-    except (ImportError, OSError, ValueError):
-        pass
+            hallazgos += 1
+    return hallazgos
 
-    # ── AP-43: normas que ninguna tool pronuncia ──────────────────────────────
-    # Tampoco mira el vault: mira el catálogo. Una norma sin tools_enforcing ni
-    # tools_detecting no llega jamás al agente por el bloque `vault_says`, así
-    # que existe para el auditor y no para quien escribe.
-    try:
-        import vault_voice as _voz
 
-        for _codigo in _voz.coverage().get("silent", []):
-            flag(
-                "AP-43",
-                f"vault_norms.NORM_CATALOG#{_codigo}",
-                f"{_codigo} no la pronuncia ninguna tool: declara tools_enforcing "
-                "o tools_detecting para que el agente la vea al trabajar.",
-            )
-    except (ImportError, OSError, ValueError):
-        pass
+def _control_ap43(flag) -> int:
+    """AP-43: normas que ninguna tool pronuncia."""
+    import vault_voice as _voz
 
+    hallazgos = 0
+    for _codigo in _voz.coverage().get("silent", []):
+        flag(
+            "AP-43",
+            f"vault_norms.NORM_CATALOG#{_codigo}",
+            f"{_codigo} no la pronuncia ninguna tool: declara tools_enforcing "
+            "o tools_detecting para que el agente la vea al trabajar.",
+        )
+        hallazgos += 1
+    return hallazgos
+
+
+def _checks_estandar(flag, registrar=None) -> list:
+    """Ejecuta los tres controles obligatorios y ENTREGA su estado (TD-0003).
+
+    Antes cada bloque capturaba su fallo con `except ...: pass` y el control
+    desaparecía: una dependencia rota producía una auditoría "limpia". Ahora el
+    estado viaja al envelope y `completo` lo resume.
+    """
+    from vault.gobernanza.controles import ejecutar_control
+
+    checks = [
+        ejecutar_control("AP-40", _control_ap40, flag),
+        ejecutar_control("AP-42", _control_ap42, flag),
+        ejecutar_control("AP-43", _control_ap43, flag),
+    ]
+    if registrar is not None:
+        for check in checks:
+            registrar(check)
+    return checks
 
 
 def vault_norms_audit(root: Optional[Path] = None) -> Dict[str, Any]:
