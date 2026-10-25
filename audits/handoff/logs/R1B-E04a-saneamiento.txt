@@ -15,7 +15,7 @@ linea del entorno).
 
 ANTES:  checkout local `<ruta local del autor, retirada: era la ruta absoluta del checkout>`
 AHORA:  checkout local del repositorio en la maquina del autor (ruta local omitida a
-        proposito; marcador neutro `C:/Users/<autor>/Vault-Obsidian-Architecture`)
+        proposito; marcador neutro `<RUTA-LOCAL>`)
 
 El detector (tests/test_publicacion_limpia.py) caza el segmento que va justo detras
 de `Users/` y lo considera filtracion salvo que sea generico (`...`, `user`,

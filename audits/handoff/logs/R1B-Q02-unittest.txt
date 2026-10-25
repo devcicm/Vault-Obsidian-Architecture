@@ -1,5 +1,5 @@
 python : ......
-En C:/Users/<autor> Ivan\AppData\Local\Temp\opencode\runner_r1b.ps1: 31 Carácter: 1
+En <RUTA-LOCAL> Ivan\AppData\Local\Temp\opencode\runner_r1b.ps1: 31 Carácter: 1
 + python -m unittest discover -s tests -p "test_ap39_contrato.py" > "$r ...
 + ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     + CategoryInfo          : NotSpecified: (......:String) [], RemoteException

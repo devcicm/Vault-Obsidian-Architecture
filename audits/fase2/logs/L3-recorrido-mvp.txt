@@ -1,7 +1,7 @@
 RECORRIDO MVP — fase 2 (L3)
 artefacto: vault_obsidian_architecture-41.23-py3-none-any.whl
-venv: C:/Users/<autor>/\Local\Temp\opencode\l3\venv-consumer
-runtime: C:/Users/<autor>/\Local\Temp\opencode\l3\runtime
+venv: <RUTA-LOCAL>
+runtime: <RUTA-LOCAL>
 {
   "pasos": [
     {
