@@ -1,31 +1,34 @@
 #!/usr/bin/env python3
-"""Colector de evidencias para los Quality Gates (GOAL C / OBS-R06-02).
+"""Colector de evidencias para los Quality Gates (QA-RC-02).
 
-`politica_qg.evaluar_politica()` es puro: aplica la politica al estado que le
-den. El defecto que QA señalo es que ese estado podia venir de una declaracion
-—un JSON que dice PASS— sin comprobar nada. Este colector es la otra mitad:
+Politica: un PASS se acredita con RECIBOS ESTRUCTURADOS producidos por el
+verificador que ejecuto la comprobacion, nunca con texto que mencione el SHA.
 
-  codigo/commit -> verificadores reales -> resultados normalizados -> politica
+Contrato de recibo (`<dir>/<QG-xx>.recibo.json`):
+{
+  "gate": "QG-01", "target_sha": "<40hex>", "verifier": "vault_arch",
+  "command": "python scripts/vault_arch.py --check --strict",
+  "exit_code": 0, "status": "PASS",
+  "started_at": "...", "finished_at": "...",
+  "run_id": "...", "artifact": "ruta", "artifact_sha256": "<64hex>"
+}
 
-No duplica las 26 puertas: ejecuta `vault_gate` (que las corre), la auditoria
-con estados de TD-0003, la suite por JUnit XML y la CI real por `gh`. Todo lo
-que no pueda acreditarse queda `no_ejecutado`, nunca PASS.
+Reglas fail-closed:
+  - target_sha tiene que ser el SHA COMPLETO del candidato y existir en git;
+  - el checkout tiene que estar EN ese SHA y limpio (identidad del arbol);
+  - exit_code 0 y status PASS; cualquier otra cosa NO acredita;
+  - el artefacto tiene que existir y su sha256 coincidir;
+  - sin recibos, sin suite, sin CI o con `gh` ausente: NOT_RUN / no_verificable.
 
-Reglas:
-  - el SHA objetivo tiene que existir en git y tener 40 hex;
-  - una evidencia que no menciona el SHA objetivo no acredita ese SHA;
-  - un fichero vacio o ilegible no es evidencia;
-  - la CI solo cuenta si hay un run con `head_sha == sha` y `conclusion ==
-    success`; en cola es BLOCKED;
-  - la suite solo cuenta si el JUnit XML declara 0 failures y 0 errors;
-  - si `gh` no esta disponible, la CI es `no_verificable` (no PASS).
-
-Uso:
-    python audits/fase2/colector_qg.py --sha <40hex> [--json salida] [--con-suite]
+MODELO DE CONFIANZA (declarado): un recibo local acredita que EL COLECTOR
+ejecuto el verificador en esa maquina y obtuvo ese resultado. No es firma
+independiente frente a un actor con acceso de escritura: para eso esta la CI
+externa (QG-07) y el dictamen de QA sobre el SHA congelado.
 """
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import subprocess
@@ -37,62 +40,12 @@ from typing import Any, Callable, Dict, List, Optional
 RAIZ = Path(__file__).resolve().parents[2]
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 
-#: Evidencia publicada que acredita cada puerta. La lista es el contrato: si un
-#: fichero no menciona el SHA objetivo, la puerta queda `no_ejecutado`.
-EVIDENCIAS: Dict[str, List[str]] = {
-    "QG-00": ["audits/fase2/logs/R06-dictamen-correcciones.txt"],
-    "QG-01": ["audits/fase2/logs/L1-reconciliacion-archify.txt"],
-    "QG-02": ["audits/fase2/logs/R03-politica-qg.txt"],
-    "QG-03": [],  # la suite: se mide por JUnit, no por un log escrito a mano
-    "QG-04": ["audits/fase2/logs/H-F2-01-exposicion-historica.json"],
-    "QG-05": ["audits/fase2/logs/L3-paridad-cli-mcp.txt"],
-    "QG-06": ["audits/fase2/logs/L3-wheel-contenido.txt"],
-    "QG-07": [],
-}
-
-MENCION_SHA = re.compile(r"\b[0-9a-f]{7,40}\b")
+GATES_EVIDENCIA = ("QG-00", "QG-01", "QG-02", "QG-04", "QG-05", "QG-06")
+CAMPOS_RECIBO = ("gate", "target_sha", "verifier", "command", "exit_code",
+                 "status", "started_at", "finished_at", "run_id")
 
 
-# ── Evidencias ───────────────────────────────────────────────────────────────
-
-def verificar_evidencia(ruta: str, sha: str, raiz: Path = RAIZ) -> Dict[str, Any]:
-    """Comprueba existencia, contenido y procedencia (mención del SHA)."""
-    absoluta = raiz / ruta
-    base = {"ruta": ruta, "sha": sha, "ok": False}
-    if not absoluta.is_file():
-        return {**base, "detalle": "EVIDENCIA_INEXISTENTE"}
-    try:
-        texto = absoluta.read_text(encoding="utf-8", errors="replace")
-    except OSError as exc:
-        return {**base, "detalle": f"EVIDENCIA_ILEGIBLE: {exc}"}
-    if len(texto.strip()) < 10:
-        return {**base, "detalle": "EVIDENCIA_VACIA"}
-    if sha not in texto and sha[:7] not in texto:
-        return {**base, "detalle": "SHA_NO_ACREDITADO_EN_LA_EVIDENCIA"}
-    return {**base, "ok": True, "detalle": None,
-            "bytes": len(texto)}
-
-
-def estado_desde_evidencias(gate: str, sha: str, raiz: Path = RAIZ) -> Dict[str, Any]:
-    """Estado de una puerta cuyas evidencias son ficheros publicados."""
-    rutas = EVIDENCIAS.get(gate, [])
-    if not rutas:
-        return {"control": gate, "estado": "no_ejecutado",
-                "detalle": "SIN_EVIDENCIA_DECLARADA", "hallazgos": 0,
-                "evidencias": []}
-    verificadas = [verificar_evidencia(r, sha, raiz) for r in rutas]
-    ok = all(v["ok"] for v in verificadas)
-    return {
-        "control": gate,
-        "estado": "ejecutado" if ok else "no_ejecutado",
-        "detalle": None if ok else next(
-            v["detalle"] for v in verificadas if not v["ok"]),
-        "hallazgos": 0,
-        "evidencias": verificadas,
-    }
-
-
-# ── Git ──────────────────────────────────────────────────────────────────────
+# ── Identidad del arbol ──────────────────────────────────────────────────────
 
 def sha_en_git(sha: str, ejecutar: Callable[..., Any] = subprocess.run,
                raiz: Path = RAIZ) -> bool:
@@ -106,16 +59,83 @@ def sha_en_git(sha: str, ejecutar: Callable[..., Any] = subprocess.run,
         return False
 
 
+def checkout_en_sha(sha: str, ejecutar: Callable[..., Any] = subprocess.run,
+                    raiz: Path = RAIZ) -> Dict[str, Any]:
+    """El checkout tiene que estar EN el SHA declarado y sin cambios pendientes."""
+    def git(*args: str) -> Any:
+        return ejecutar(["git", *args], cwd=str(raiz), capture_output=True,
+                        text=True)
+
+    try:
+        head = git("rev-parse", "HEAD").stdout.strip()
+        estado = git("status", "--porcelain").stdout.strip()
+    except (OSError, AttributeError) as exc:
+        return {"ok": False, "detalle": f"git_no_disponible: {exc}"}
+    if head != sha:
+        return {"ok": False, "detalle": f"CHECKOUT_EN_OTRO_SHA: HEAD={head[:7]}"}
+    if estado:
+        return {"ok": False, "detalle": "ARBOL_SUCIO",
+                "cambios": estado.splitlines()[:10]}
+    return {"ok": True, "detalle": None}
+
+
+# ── Recibos estructurados ────────────────────────────────────────────────────
+
+def leer_recibo(ruta: Path, sha: str) -> Dict[str, Any]:
+    """Valida un recibo contra el contrato; devuelve el veredicto y el recibo."""
+    base: Dict[str, Any] = {"ruta": str(ruta), "ok": False}
+    if not ruta.is_file():
+        return {**base, "detalle": "RECIBO_INEXISTENTE"}
+    try:
+        recibo = json.loads(ruta.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return {**base, "detalle": f"RECIBO_ILEGIBLE: {exc}"}
+    if not isinstance(recibo, dict):
+        return {**base, "detalle": "RECIBO_NO_OBJETO"}
+    faltan = [c for c in CAMPOS_RECIBO if not str(recibo.get(c, "")).strip()
+              and c != "exit_code"]
+    if faltan:
+        return {**base, "detalle": f"RECIBO_INCOMPLETO: {faltan}"}
+    if recibo.get("target_sha") != sha:
+        return {**base, "detalle": "RECIBO_DE_OTRO_SHA"}
+    if recibo.get("gate") != ruta.name.split(".")[0]:
+        return {**base, "detalle": "GATE_NO_COINCIDE_CON_EL_FICHERO"}
+    if recibo.get("exit_code") != 0:
+        return {**base, "detalle": f"VERIFICADOR_FALLIDO: exit={recibo.get('exit_code')}"}
+    if recibo.get("status") != "PASS":
+        return {**base, "detalle": f"STATUS_NO_PASS: {recibo.get('status')}"}
+    artefacto = recibo.get("artifact")
+    if artefacto:
+        ruta_art = RAIZ / artefacto if not Path(artefacto).is_absolute() else Path(artefacto)
+        if not ruta_art.is_file():
+            return {**base, "detalle": "ARTEFACTO_INEXISTENTE"}
+        digest = hashlib.sha256(ruta_art.read_bytes()).hexdigest()
+        if digest != recibo.get("artifact_sha256"):
+            return {**base, "detalle": "ARTEFACTO_MANIPULADO_O_DISTINTO"}
+    return {**base, "ok": True, "detalle": None, "recibo": recibo}
+
+
+def estado_desde_recibo(gate: str, sha: str, recibos: Optional[Path]) -> Dict[str, Any]:
+    """Estado de una puerta a partir de su recibo estructurado."""
+    if recibos is None:
+        return {"control": gate, "estado": "no_ejecutado",
+                "detalle": "SIN_DIRECTORIO_DE_RECIBOS", "evidencias": []}
+    veredicto = leer_recibo(recibos / f"{gate}.recibo.json", sha)
+    return {"control": gate,
+            "estado": "ejecutado" if veredicto["ok"] else "no_ejecutado",
+            "detalle": veredicto["detalle"],
+            "evidencias": [{k: v for k, v in veredicto.items() if k != "recibo"}]}
+
+
 # ── CI ───────────────────────────────────────────────────────────────────────
 
 def estado_ci(sha: str, consultar: Optional[Callable[[str], Any]] = None,
-              raiz: Path = RAIZ) -> Dict[str, Any]:
-    """La CI solo acredita si hay un run de ESE sha concluido en success."""
+              raiz: Path = RAIZ, workflow_esperado: str = "Vault CI") -> Dict[str, Any]:
     if consultar is None:
         def consultar(sh: str) -> Any:
             p = subprocess.run(
                 ["gh", "run", "list", "--commit", sh, "--limit", "10",
-                 "--json", "databaseId,status,conclusion,headSha"],
+                 "--json", "databaseId,status,conclusion,headSha,workflowName"],
                 cwd=str(raiz), capture_output=True, text=True, timeout=120)
             if p.returncode != 0:
                 raise OSError((p.stderr or "gh no disponible").strip()[:200])
@@ -127,20 +147,25 @@ def estado_ci(sha: str, consultar: Optional[Callable[[str], Any]] = None,
     propios = [r for r in runs if r.get("headSha") == sha]
     if not propios:
         return {"conclusion": "sin_run", "detalle": "no hay run para ese SHA"}
-    if any(r.get("conclusion") == "success" for r in propios):
-        return {"conclusion": "success",
-                "runs": [r.get("databaseId") for r in propios]}
-    estados = sorted({r.get("status") or "?" for r in propios})
+    ajenos = [r.get("databaseId") for r in propios
+              if r.get("workflowName") not in (None, workflow_esperado)]
+    if ajenos:
+        return {"conclusion": "no_verificable",
+                "detalle": f"WORKFLOW_AJENO: runs={ajenos}"}
+    validos = [r for r in propios
+               if r.get("workflowName") in (None, workflow_esperado)]
+    if any(r.get("conclusion") == "success" for r in validos):
+        return {"conclusion": "success", "runs": [r.get("databaseId") for r in validos]}
+    estados = sorted({r.get("status") or "?" for r in validos})
     if "queued" in estados or "in_progress" in estados:
         return {"conclusion": "queued", "detalle": f"estados={estados}"}
-    return {"conclusion": propios[0].get("conclusion") or "sin_conclusion",
+    return {"conclusion": validos[0].get("conclusion") or "sin_conclusion",
             "detalle": f"estados={estados}"}
 
 
-# ── Suite (JUnit XML) ────────────────────────────────────────────────────────
+# ── Suite (JUnit XML + recibo) ───────────────────────────────────────────────
 
 def estado_suite(xml: Optional[Path]) -> Dict[str, Any]:
-    """La suite se acredita con el JUnit XML que produce pytest."""
     if xml is None or not Path(xml).is_file():
         return {"estado": "no_ejecutado", "detalle": "SIN_JUNIT_XML",
                 "tests": 0, "failures": 0, "errors": 0, "skipped": 0}
@@ -149,8 +174,7 @@ def estado_suite(xml: Optional[Path]) -> Dict[str, Any]:
     except (ET.ParseError, OSError) as exc:
         return {"estado": "fallido", "detalle": f"JUNIT_ILEGIBLE: {exc}",
                 "tests": 0, "failures": 0, "errors": 0, "skipped": 0}
-    suites = ([arbol] if arbol.tag == "testsuite"
-              else arbol.findall("testsuite"))
+    suites = ([arbol] if arbol.tag == "testsuite" else arbol.findall("testsuite"))
     total = fallos = errores = omitidos = 0
     for suite in suites:
         total += int(suite.get("tests", 0))
@@ -165,11 +189,6 @@ def estado_suite(xml: Optional[Path]) -> Dict[str, Any]:
 
 
 def _procedencia_suite(xml: Optional[Path], sha: str) -> Dict[str, Any]:
-    """El JUnit acredita ESE SHA solo si el colector dejo su recibo.
-
-    Un XML suelto es una declaracion mas: el recibo (`<xml>.procedencia.json`)
-    lo escribe quien ejecuto la suite, con el SHA, el comando y el exit code.
-    """
     if xml is None:
         return {"ok": False, "detalle": "SIN_JUNIT_XML"}
     recibo = Path(str(xml) + ".procedencia.json")
@@ -186,13 +205,11 @@ def _procedencia_suite(xml: Optional[Path], sha: str) -> Dict[str, Any]:
     return {"ok": True, "detalle": None}
 
 
-# ── Auditoria con estados (TD-0003) ──────────────────────────────────────────
+# ── Control de ejecucion (TD-0003) ───────────────────────────────────────────
 
 def control_ejecucion(root: Optional[str] = None,
                       ejecutar: Callable[..., Any] = subprocess.run) -> Dict[str, Any]:
-    """Lee `checks`/`completo` de la auditoria real; sin eso, no verificado."""
-    comando = [sys.executable, str(RAIZ / "scripts" / "vault_norms.py"),
-               "--audit"]
+    comando = [sys.executable, str(RAIZ / "scripts" / "vault_norms.py"), "--audit"]
     if root:
         comando += ["--root", root]
     try:
@@ -200,8 +217,7 @@ def control_ejecucion(root: Optional[str] = None,
                      encoding="utf-8", errors="replace", timeout=1800)
     except (OSError, subprocess.SubprocessError) as exc:
         return {"completo": False, "degradados": [],
-                "no_verificados": ["auditoria_no_ejecutada"],
-                "detalle": str(exc)}
+                "no_verificados": ["auditoria_no_ejecutada"], "detalle": str(exc)}
     try:
         sobre = json.loads(p.stdout)
     except ValueError:
@@ -209,42 +225,40 @@ def control_ejecucion(root: Optional[str] = None,
                 "no_verificados": ["auditoria_ilegible"],
                 "detalle": (p.stdout or p.stderr or "")[:300]}
     checks = sobre.get("checks") or []
-    return {
-        "completo": bool(sobre.get("completo")),
-        "degradados": [c["control"] for c in checks
-                       if c.get("estado") in ("degradado", "fallido")],
-        "no_verificados": [c["control"] for c in checks
-                           if c.get("estado") == "no_ejecutado"],
-        "checks": checks,
-    }
+    return {"completo": bool(sobre.get("completo")),
+            "degradados": [c["control"] for c in checks
+                           if c.get("estado") in ("degradado", "fallido")],
+            "no_verificados": [c["control"] for c in checks
+                               if c.get("estado") == "no_ejecutado"],
+            "checks": checks,
+            "violaciones": sobre.get("total_violations", 0)}
 
 
 # ── Orquestacion ─────────────────────────────────────────────────────────────
 
-def colectar(sha: str, *, con_suite: bool = False,
+def colectar(sha: str, *, recibos: Optional[Path] = None,
              suite_xml: Optional[Path] = None, root: Optional[str] = None,
              raiz: Path = RAIZ, ejecutar=subprocess.run,
              consultar_ci=None) -> Dict[str, Any]:
-    """Reune el estado REAL de cada puerta para el SHA objetivo."""
     if not SHA_RE.match(sha or ""):
-        return {"ok": False, "detalle": "SHA_INVALIDO",
-                "politica": None, "estado": {}}
+        return {"ok": False, "detalle": "SHA_INVALIDO", "estado": {},
+                "politica": None}
     if not sha_en_git(sha, ejecutar, raiz):
-        return {"ok": False, "detalle": "SHA_NO_EXISTE_EN_GIT",
-                "politica": None, "estado": {}}
+        return {"ok": False, "detalle": "SHA_NO_EXISTE_EN_GIT", "estado": {},
+                "politica": None}
+    arbol = checkout_en_sha(sha, ejecutar, raiz)
 
     gates: Dict[str, str] = {}
     evidencias: Dict[str, Any] = {}
-    for gate in ("QG-00", "QG-01", "QG-02", "QG-04", "QG-05", "QG-06"):
-        dato = estado_desde_evidencias(gate, sha, raiz)
+    for gate in GATES_EVIDENCIA:
+        dato = estado_desde_recibo(gate, sha, recibos)
         gates[gate] = "PASS" if dato["estado"] == "ejecutado" else "NOT_RUN"
         evidencias[gate] = {"sha": sha, "estado": dato["estado"],
-                            "detalle": dato["detalle"],
-                            "rutas": [e["ruta"] for e in dato["evidencias"]]}
+                            "detalle": dato["detalle"]}
 
     control = control_ejecucion(root, ejecutar)
-    gates["QG-02"] = ("PASS" if gates["QG-02"] == "PASS"
-                      and control.get("completo") else "BLOCKED")
+    limpio = (control.get("completo") and not control.get("violaciones"))
+    gates["QG-02"] = ("PASS" if gates["QG-02"] == "PASS" and limpio else "BLOCKED")
 
     suite = estado_suite(suite_xml)
     procedencia = _procedencia_suite(suite_xml, sha)
@@ -255,37 +269,36 @@ def colectar(sha: str, *, con_suite: bool = False,
     else:
         gates["QG-03"] = "NOT_RUN"
         evidencias["QG-03"] = {"sha": sha, "estado": "no_ejecutado",
-                               "detalle": procedencia["detalle"],
-                               "rutas": [str(suite_xml)] if suite_xml else []}
+                               "detalle": procedencia["detalle"], "rutas": []}
 
     ci = estado_ci(sha, consultar_ci, raiz)
-    # QG-07 se declara como intencion: la politica exige, ademas, que
-    # QG-00..QG-06 esten en PASS y que la CI del SHA haya concluido.
     gates["QG-07"] = "PASS"
 
-    estado = {
-        "sha_objetivo": sha,
-        "gates": gates,
-        "evidencias": evidencias,
-        "control_ejecucion": control,
-        "ci": ci,
-    }
+    estado = {"sha_objetivo": sha, "gates": gates, "evidencias": evidencias,
+              "control_ejecucion": control, "ci": ci, "arbol": arbol}
     from politica_qg import evaluar_politica
 
-    return {"ok": True, "detalle": None, "estado": estado,
-            "suite": suite, "ci": ci,
-            "politica": evaluar_politica(estado)}
+    veredicto = evaluar_politica(estado)
+    # Identidad del arbol: sin checkout limpio EN el SHA, no hay dictamen.
+    if not arbol["ok"] and veredicto["liberable"]:
+        veredicto = {**veredicto, "liberable": False,
+                     "qg07": "BLOCKED", "gates": {**veredicto["gates"],
+                                                  "QG-00": "BLOCKED"},
+                     "motivos": {**veredicto.get("motivos", {}),
+                                 "QG-00": [arbol["detalle"]]}}
+    return {"ok": True, "detalle": None, "estado": estado, "suite": suite,
+            "ci": ci, "politica": veredicto}
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--sha", required=True, help="SHA de 40 hex a dictaminar")
+    ap.add_argument("--recibos", default=None,
+                    help="Directorio con los recibos <QG-xx>.recibo.json")
     ap.add_argument("--json", dest="salida", default=None)
-    ap.add_argument("--con-suite", action="store_true",
-                    help="Ejecuta la suite y genera el JUnit XML.")
-    ap.add_argument("--suite-xml", default=None,
-                    help="JUnit XML ya generado (evita ejecutar la suite).")
-    ap.add_argument("--root", default=None, help="Vault a auditar (opcional).")
+    ap.add_argument("--con-suite", action="store_true")
+    ap.add_argument("--suite-xml", default=None)
+    ap.add_argument("--root", default=None)
     args = ap.parse_args()
 
     xml = Path(args.suite_xml) if args.suite_xml else None
@@ -302,18 +315,17 @@ def main() -> int:
             "comando": "python -m pytest tests/ -q -n auto --junitxml=...",
             "exit": p.returncode,
             "generado_at": datetime.now(timezone.utc).strftime(
-                "%Y-%m-%dT%H:%M:%SZ"),
-        }, indent=2) + "\n", encoding="utf-8")
+                "%Y-%m-%dT%H:%M:%SZ")}, indent=2) + "\n", encoding="utf-8")
         print(f"suite exit={p.returncode} xml={xml}")
 
-    resultado = colectar(args.sha, suite_xml=xml, root=args.root)
+    recibos = Path(args.recibos) if args.recibos else None
+    resultado = colectar(args.sha, recibos=recibos, suite_xml=xml, root=args.root)
     texto = json.dumps(resultado, ensure_ascii=False, indent=2)
     if args.salida:
         Path(args.salida).parent.mkdir(parents=True, exist_ok=True)
         Path(args.salida).write_text(texto + "\n", encoding="utf-8")
     print(texto)
-    politica = resultado.get("politica") or {}
-    return 0 if politica.get("liberable") else 1
+    return 0 if (resultado.get("politica") or {}).get("liberable") else 1
 
 
 if __name__ == "__main__":

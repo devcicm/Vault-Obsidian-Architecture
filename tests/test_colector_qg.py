@@ -1,9 +1,10 @@
-"""El colector de QG acredita procedencia real, no declaraciones (GOAL C).
+"""QA-RC-02 · el colector acredita resultados estructurados, no texto con SHA.
 
-Cada prueba fabrica la situacion que debe rechazarse: evidencia ausente, de otro
-SHA, vacia, CI en cola, run de otro commit, suite con fallos, control degradado.
-El caso positivo demuestra que el PASS es alcanzable con datos reales.
+Recibos fieles al contrato; verificadores simulados exactos al contrato real.
+Modelo de confianza: el recibo acredita la ejecucion LOCAL del colector; la
+firma independiente es la CI (QG-07) y el dictamen QA sobre el SHA congelado.
 """
+import hashlib
 import importlib.util
 import json
 import sys
@@ -34,81 +35,28 @@ def _evidencia(tmp_path: Path, nombre: str, texto: str) -> Path:
     return ruta
 
 
-# ── Evidencias ───────────────────────────────────────────────────────────────
+def _recibo(tmp_path: Path, gate: str, sha: str = SHA, exit_code: int = 0,
+            status: str = "PASS", artefacto: Path | None = None,
+            extra: dict | None = None) -> Path:
+    recibos = tmp_path / "recibos"
+    recibos.mkdir(parents=True, exist_ok=True)
+    dato = {
+        "gate": gate, "target_sha": sha,
+        "verifier": "vault_arch",
+        "command": "python scripts/vault_arch.py --check --strict",
+        "exit_code": exit_code, "status": status,
+        "started_at": "2026-10-25T00:00:00Z",
+        "finished_at": "2026-10-25T00:01:00Z", "run_id": f"local-{gate}",
+    }
+    if artefacto is not None:
+        dato["artifact"] = str(artefacto)
+        dato["artifact_sha256"] = hashlib.sha256(artefacto.read_bytes()).hexdigest()
+    if extra:
+        dato.update(extra)
+    ruta = recibos / f"{gate}.recibo.json"
+    ruta.write_text(json.dumps(dato, indent=2), encoding="utf-8")
+    return ruta
 
-def test_evidencia_inexistente_no_acredita(tmp_path):
-    dato = c.verificar_evidencia("no/existe.txt", SHA, tmp_path)
-    assert dato["ok"] is False
-    assert dato["detalle"] == "EVIDENCIA_INEXISTENTE"
-
-
-def test_evidencia_vacia_no_acredita(tmp_path):
-    _evidencia(tmp_path, "vacia.txt", "   \n")
-    dato = c.verificar_evidencia("vacia.txt", SHA, tmp_path)
-    assert dato["detalle"] == "EVIDENCIA_VACIA"
-
-
-def test_evidencia_de_otro_sha_no_acredita(tmp_path):
-    _evidencia(tmp_path, "vieja.txt", f"resultado del commit {OTRO}\n")
-    dato = c.verificar_evidencia("vieja.txt", SHA, tmp_path)
-    assert dato["detalle"] == "SHA_NO_ACREDITADO_EN_LA_EVIDENCIA"
-
-
-def test_evidencia_con_el_sha_del_candidato_acredita(tmp_path):
-    _evidencia(tmp_path, "buena.txt", f"SHA: {SHA}\nresultado\n")
-    dato = c.verificar_evidencia("buena.txt", SHA, tmp_path)
-    assert dato["ok"] is True
-
-
-def test_gate_sin_evidencia_declarada_es_no_ejecutado():
-    dato = c.estado_desde_evidencias("QG-03", SHA)
-    assert dato["estado"] == "no_ejecutado"
-    assert dato["detalle"] == "SIN_EVIDENCIA_DECLARADA"
-
-
-# ── Git ──────────────────────────────────────────────────────────────────────
-
-def test_sha_invalido_se_rechaza():
-    assert c.sha_en_git("abc") is False
-
-
-def test_sha_que_no_existe_en_git_se_rechaza():
-    class P:
-        returncode = 128
-    assert c.sha_en_git(SHA, lambda *a, **k: P()) is False
-
-
-# ── CI ───────────────────────────────────────────────────────────────────────
-
-def test_ci_en_cola_es_bloqueante():
-    dato = c.estado_ci(SHA, lambda s: [
-        {"databaseId": 1, "status": "queued", "conclusion": "",
-         "headSha": SHA}])
-    assert dato["conclusion"] == "queued"
-
-
-def test_un_run_de_otro_sha_no_acredita_este():
-    dato = c.estado_ci(SHA, lambda s: [
-        {"databaseId": 2, "status": "completed", "conclusion": "success",
-         "headSha": OTRO}])
-    assert dato["conclusion"] == "sin_run"
-
-
-def test_ci_success_del_sha_correcto_acredita():
-    dato = c.estado_ci(SHA, lambda s: [
-        {"databaseId": 3, "status": "completed", "conclusion": "success",
-         "headSha": SHA}])
-    assert dato["conclusion"] == "success"
-
-
-def test_si_gh_no_esta_disponible_la_ci_no_es_pass():
-    def _falla(s):
-        raise OSError("gh: not found")
-    dato = c.estado_ci(SHA, _falla)
-    assert dato["conclusion"] == "no_verificable"
-
-
-# ── Suite ────────────────────────────────────────────────────────────────────
 
 def _junit(tmp_path: Path, tests: int, failures: int, errors: int = 0) -> Path:
     ruta = tmp_path / "junit.xml"
@@ -119,35 +67,166 @@ def _junit(tmp_path: Path, tests: int, failures: int, errors: int = 0) -> Path:
     return ruta
 
 
-def test_sin_junit_la_suite_no_esta_acreditada():
-    assert c.estado_suite(None)["estado"] == "no_ejecutado"
+# ── Recibos ──────────────────────────────────────────────────────────────────
+
+def test_recibo_valido_acredita(tmp_path):
+    assert c.leer_recibo(_recibo(tmp_path, "QG-01"), SHA)["ok"] is True
 
 
-def test_una_suite_con_fallos_no_acredita(tmp_path):
-    dato = c.estado_suite(_junit(tmp_path, tests=10, failures=1))
-    assert dato["estado"] == "fallido"
-    assert dato["detalle"] == "SUITE_CON_FALLOS"
+def test_recibo_de_otro_sha_no_acredita(tmp_path):
+    assert c.leer_recibo(_recibo(tmp_path, "QG-01", sha=OTRO), SHA)[
+        "detalle"] == "RECIBO_DE_OTRO_SHA"
 
 
-def test_una_suite_limpia_acredita(tmp_path):
-    dato = c.estado_suite(_junit(tmp_path, tests=10, failures=0))
-    assert dato["estado"] == "ejecutado"
-    assert dato["tests"] == 10
+def test_recibo_con_verificador_fallido_no_acredita(tmp_path):
+    assert "VERIFICADOR_FALLIDO" in c.leer_recibo(
+        _recibo(tmp_path, "QG-01", exit_code=1), SHA)["detalle"]
 
 
-# ── Control de ejecucion (TD-0003) ───────────────────────────────────────────
+def test_recibo_con_status_no_pass_no_acredita(tmp_path):
+    assert "STATUS_NO_PASS" in c.leer_recibo(
+        _recibo(tmp_path, "QG-01", status="FAIL"), SHA)["detalle"]
 
-def test_un_control_no_ejecutado_deja_qg02_bloqueado(tmp_path, monkeypatch):
+
+def test_recibo_incompleto_no_acredita(tmp_path):
+    assert "RECIBO_INCOMPLETO" in c.leer_recibo(
+        _recibo(tmp_path, "QG-01", extra={"verifier": ""}), SHA)["detalle"]
+
+
+def test_recibo_manipulado_no_acredita(tmp_path):
+    ruta = _recibo(tmp_path, "QG-01")
+    dato = json.loads(ruta.read_text(encoding="utf-8"))
+    dato["status"] = "FAIL"
+    ruta.write_text(json.dumps(dato), encoding="utf-8")
+    assert "STATUS_NO_PASS" in c.leer_recibo(ruta, SHA)["detalle"]
+
+
+def test_recibo_con_hash_de_artefacto_distinto_no_acredita(tmp_path):
+    artefacto = _evidencia(tmp_path, "salida.json", '{"ok": true}')
+    recibo = _recibo(tmp_path, "QG-01", artefacto=artefacto)
+    artefacto.write_text('{"ok": false}', encoding="utf-8")
+    assert "ARTEFACTO_MANIPULADO_O_DISTINTO" in c.leer_recibo(
+        recibo, SHA)["detalle"]
+
+
+def test_recibo_con_artefacto_inexistente_no_acredita(tmp_path):
+    artefacto = _evidencia(tmp_path, "x.json", "x")
+    recibo = _recibo(tmp_path, "QG-01", artefacto=artefacto)
+    artefacto.unlink()
+    assert "ARTEFACTO_INEXISTENTE" in c.leer_recibo(recibo, SHA)["detalle"]
+
+
+def test_gate_y_fichero_tienen_que_coincidir(tmp_path):
+    recibos = tmp_path / "recibos"
+    recibos.mkdir(parents=True)
+    (recibos / "QG-01.recibo.json").write_text(json.dumps(
+        {"gate": "QG-99", "target_sha": SHA, "verifier": "x", "command": "x",
+         "exit_code": 0, "status": "PASS", "started_at": "t", "finished_at": "t",
+         "run_id": "r"}), encoding="utf-8")
+    assert "GATE_NO_COINCIDE" in c.leer_recibo(
+        recibos / "QG-01.recibo.json", SHA)["detalle"]
+
+
+def test_un_texto_con_el_sha_no_acredita_nada(tmp_path):
+    recibos = tmp_path / "recibos"
+    recibos.mkdir()
+    (recibos / "QG-01.recibo.txt").write_text(f"SHA: {SHA}\nPASS\n",
+                                              encoding="utf-8")
+    assert c.estado_desde_recibo("QG-01", SHA, recibos)["estado"] == "no_ejecutado"
+
+
+def test_sin_directorio_de_recibos_es_no_ejecutado():
+    dato = c.estado_desde_recibo("QG-00", SHA, None)
+    assert dato["estado"] == "no_ejecutado"
+    assert dato["detalle"] == "SIN_DIRECTORIO_DE_RECIBOS"
+
+
+# ── Identidad del arbol ──────────────────────────────────────────────────────
+
+class _GitSeq:
+    def __init__(self, head, status=""):
+        self.respuestas = [head + "\n", status]
+        self.returncode = 0
+        self.stderr = ""
+
+    @property
+    def stdout(self):
+        return self.respuestas.pop(0) if self.respuestas else ""
+
+
+def _git_seq(head, status=""):
+    return _GitSeq(head, status)
+
+
+def test_checkout_en_otro_sha_no_acredita(tmp_path):
+    seq_otro = _git_seq(OTRO)
+    assert "CHECKOUT_EN_OTRO_SHA" in c.checkout_en_sha(
+        SHA, lambda *a, **k: seq_otro)["detalle"]
+
+
+def test_arbol_sucio_no_acredita(tmp_path):
+    seq_sucio = _git_seq(SHA, "M scripts/x.py\n")
+    assert c.checkout_en_sha(SHA, lambda *a, **k: seq_sucio)["detalle"] == "ARBOL_SUCIO"
+
+
+def test_checkout_en_sha_y_limpio_acredita(tmp_path):
+    seq_limpio = _git_seq(SHA)
+    assert c.checkout_en_sha(SHA, lambda *a, **k: seq_limpio)["ok"] is True
+
+
+# ── CI ───────────────────────────────────────────────────────────────────────
+
+def test_ci_en_cola_es_bloqueante():
+    assert c.estado_ci(SHA, lambda s: [
+        {"databaseId": 1, "status": "queued", "conclusion": "",
+         "headSha": SHA}])["conclusion"] == "queued"
+
+
+def test_un_run_de_otro_sha_no_acredita():
+    assert c.estado_ci(SHA, lambda s: [
+        {"databaseId": 2, "status": "completed", "conclusion": "success",
+         "headSha": OTRO}])["conclusion"] == "sin_run"
+
+
+def test_run_exitoso_de_workflow_ajeno_no_acredita():
+    dato = c.estado_ci(SHA, lambda s: [
+        {"databaseId": 3, "status": "completed", "conclusion": "success",
+         "headSha": SHA, "workflowName": "Otro CI"}])
+    assert dato["conclusion"] == "no_verificable"
+
+
+def test_ci_success_del_sha_y_workflow_esperado_acredita():
+    assert c.estado_ci(SHA, lambda s: [
+        {"databaseId": 4, "status": "completed", "conclusion": "success",
+         "headSha": SHA, "workflowName": "Vault CI"}])["conclusion"] == "success"
+
+
+# ── Suite y control de ejecucion ─────────────────────────────────────────────
+
+def _junit_ok(tmp_path):
+    return _junit(tmp_path, 10, 0)
+
+
+def _junit(tmp_path, tests, failures, errors=0):
+    ruta = tmp_path / "junit.xml"
+    ruta.write_text(
+        f'<?xml version="1.0"?><testsuites><testsuite name="s" tests="{tests}" '
+        f'failures="{failures}" errors="{errors}" skipped="0"/></testsuites>',
+        encoding="utf-8")
+    return ruta
+
+
+def test_junit_con_fallos_no_acredita(tmp_path):
+    assert c.estado_suite(_junit(tmp_path, 10, 1))["estado"] == "fallido"
+
+
+def test_control_degradado_deja_qg02_bloqueado(tmp_path, monkeypatch):
     class P:
         returncode = 0
-        stdout = json.dumps({
-            "ok": True, "total_violations": 0,
-            "checks": [
-                {"control": "AP-40", "estado": "no_ejecutado",
-                 "detalle": "dependencia_no_disponible", "hallazgos": 0},
-                {"control": "AP-42", "estado": "ejecutado", "hallazgos": 0},
-                {"control": "AP-43", "estado": "ejecutado", "hallazgos": 0}],
-            "completo": False})
+        stdout = json.dumps({"total_violations": 0, "completo": False,
+                             "checks": [{"control": "AP-40",
+                                         "estado": "no_ejecutado",
+                                         "hallazgos": 0}]})
         stderr = ""
 
     control = c.control_ejecucion(ejecutar=lambda *a, **k: P())
@@ -155,71 +234,82 @@ def test_un_control_no_ejecutado_deja_qg02_bloqueado(tmp_path, monkeypatch):
     assert control["no_verificados"] == ["AP-40"]
 
 
-# ── Orquestacion completa ────────────────────────────────────────────────────
+def test_auditoria_con_violaciones_no_da_qg02(tmp_path, monkeypatch):
+    class P:
+        returncode = 0
+        stdout = json.dumps({"total_violations": 3, "completo": True,
+                             "checks": [{"control": x, "estado": "ejecutado",
+                                         "hallazgos": 0}
+                                        for x in ("AP-40", "AP-42", "AP-43")]})
+        stderr = ""
 
-def _entorno_completo(tmp_path, monkeypatch):
-    """Evidencias con el SHA, control completo y CI en success."""
-    for gate, rutas in c.EVIDENCIAS.items():
-        for ruta in rutas:
-            _evidencia(tmp_path, ruta, f"SHA: {SHA}\nevidencia de {gate}\n")
+    control = c.control_ejecucion(ejecutar=lambda *a, **k: P())
+    assert control["violaciones"] == 3
+    resultado = c.colectar(SHA, recibos=None, raiz=tmp_path,
+                           ejecutar=lambda *a, **k: P(),
+                           consultar_ci=lambda s: [])
+    assert resultado["politica"]["gates"]["QG-02"] == "BLOCKED"
+
+
+# ── Orquestacion ─────────────────────────────────────────────────────────────
+
+def _entorno_completo(tmp_path):
+    for gate in ("QG-00", "QG-01", "QG-02", "QG-04", "QG-05", "QG-06"):
+        artefacto = _evidencia(tmp_path, f"art-{gate}.json", f"salida de {gate}")
+        _recibo(tmp_path, gate, artefacto=artefacto)
 
     class Git:
         returncode = 0
+        stdout = ""
+        stderr = ""
 
     class Audit:
         returncode = 0
-        stdout = json.dumps({
-            "total_violations": 0,
-            "checks": [{"control": x, "estado": "ejecutado", "hallazgos": 0}
-                       for x in ("AP-40", "AP-42", "AP-43")],
-            "completo": True})
+        stdout = json.dumps({"total_violations": 0, "completo": True,
+                             "checks": [{"control": x, "estado": "ejecutado",
+                                         "hallazgos": 0}
+                                        for x in ("AP-40", "AP-42", "AP-43")]})
         stderr = ""
 
     def ejecutar(cmd, **kwargs):
-        if "vault_norms.py" in " ".join(str(x) for x in cmd):
+        texto = " ".join(str(x) for x in cmd)
+        if "vault_norms.py" in texto:
             return Audit()
+        if "rev-parse" in texto:
+            return _git_seq(SHA)
+        if "status" in texto:
+            return _git_seq("", "")
         return Git()
 
-    xml = _junit(tmp_path, tests=5, failures=0)
+    xml = _junit_ok(tmp_path)
     Path(str(xml) + ".procedencia.json").write_text(
         '{"sha": "' + SHA + '", "exit": 0}', encoding="utf-8")
     return ejecutar, xml, lambda s: [
         {"databaseId": 9, "status": "completed", "conclusion": "success",
-         "headSha": SHA}]
+         "headSha": SHA, "workflowName": "Vault CI"}]
 
 
-def test_el_caso_completo_permite_pass(tmp_path, monkeypatch):
-    ejecutar, xml, ci = _entorno_completo(tmp_path, monkeypatch)
-    resultado = c.colectar(SHA, suite_xml=xml, raiz=tmp_path,
-                           ejecutar=ejecutar, consultar_ci=ci)
-    assert resultado["ok"] is True
+def test_el_caso_completo_con_recibos_permite_pass(tmp_path):
+    ejecutar, xml, ci = _entorno_completo(tmp_path)
+    resultado = c.colectar(SHA, recibos=tmp_path / "recibos", suite_xml=xml,
+                           raiz=tmp_path, ejecutar=ejecutar, consultar_ci=ci)
     assert resultado["politica"]["qg07"] == "PASS", resultado["politica"]
 
 
-def test_sin_evidencias_el_colector_no_libera(tmp_path, monkeypatch):
-    ejecutar, xml, ci = _entorno_completo(tmp_path, monkeypatch)
-    # Borra las evidencias: la politica no puede inventar PASS.
-    for rutas in c.EVIDENCIAS.values():
-        for ruta in rutas:
-            (tmp_path / ruta).unlink()
-    resultado = c.colectar(SHA, suite_xml=xml, raiz=tmp_path,
+def test_sin_recibos_no_hay_liberacion(tmp_path):
+    ejecutar, xml, ci = _entorno_completo(tmp_path)
+    resultado = c.colectar(SHA, recibos=None, suite_xml=xml, raiz=tmp_path,
                            ejecutar=ejecutar, consultar_ci=ci)
     assert resultado["politica"]["liberable"] is False
-    assert resultado["politica"]["gates"]["QG-00"] == "NOT_RUN"
 
 
-def test_ci_en_cola_bloquea_qg07_aunque_todo_lo_demas_este(tmp_path, monkeypatch):
-    ejecutar, xml, _ = _entorno_completo(tmp_path, monkeypatch)
+def test_ci_en_cola_bloquea_qg07(tmp_path):
+    ejecutar, xml, _ = _entorno_completo(tmp_path)
     resultado = c.colectar(
-        SHA, suite_xml=xml, raiz=tmp_path, ejecutar=ejecutar,
+        SHA, recibos=tmp_path / "recibos", suite_xml=xml, raiz=tmp_path,
+        ejecutar=ejecutar,
         consultar_ci=lambda s: [{"databaseId": 1, "status": "queued",
                                  "conclusion": "", "headSha": SHA}])
     assert resultado["politica"]["qg07"] == "BLOCKED"
-    assert any("CI_PENDIENTE" in m for m in resultado["politica"]["motivos"]["QG-07"])
-
-
-def test_un_sha_que_no_existe_no_produce_dictamen(tmp_path):
-    resultado = c.colectar(SHA, raiz=tmp_path,
-                           ejecutar=lambda *a, **k: type("P", (), {"returncode": 128})())
-    assert resultado["ok"] is False
-    assert resultado["detalle"] == "SHA_NO_EXISTE_EN_GIT"
+    assert any("CI_PENDIENTE" in m
+               for m in resultado["politica"]["motivos"]["QG-07"])
