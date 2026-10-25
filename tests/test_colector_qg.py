@@ -4,6 +4,8 @@ Recibos fieles al contrato; verificadores simulados exactos al contrato real.
 El ARTEFACTO es obligatorio y su contenido tambien se interpreta: un JSON con
 ok:false anula el PASS. La CI exige workflow identificado y matriz completa.
 """
+from __future__ import annotations
+
 import hashlib
 import importlib.util
 import json
