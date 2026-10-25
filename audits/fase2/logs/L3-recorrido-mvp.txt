@@ -1,0 +1,98 @@
+RECORRIDO MVP — fase 2 (L3)
+artefacto: vault_obsidian_architecture-41.23-py3-none-any.whl
+venv: C:/Users/<autor>/\Local\Temp\opencode\l3\venv-consumer
+runtime: C:/Users/<autor>/\Local\Temp\opencode\l3\runtime
+{
+  "pasos": [
+    {
+      "paso": "venv nuevo fuera del checkout",
+      "ok": true,
+      "detalle": "venv en venv-consumer (exit 0)"
+    },
+    {
+      "paso": "instalar la wheel en el venv",
+      "ok": true,
+      "detalle": "vault_obsidian_architecture-41.23-py3-none-any.whl instalado (exit 0)"
+    },
+    {
+      "paso": "script de consola instalado",
+      "ok": true,
+      "detalle": "vault -> vault.exe"
+    },
+    {
+      "paso": "crear runtime externo con la CLI",
+      "ok": true,
+      "detalle": "vault init exit 0",
+      "stdout": "[\"00_System\", \"01_Projects\", \"02_Observability\", \"03_Decisions\", \"04_Sessions\", \"05_Patterns\", \"06_Diagrams\", \"07_Knowledge\", \"08_Runbooks\", \"09_Infrastructure\", \"10_Migrated\", \"11_Code\", \"12_Bibliography\", \"13_Flows\", \"14_Requirements\", \"15_Tests\", \"16_AI_Governance\", \"17_Preferences\", \"18_Bugs\", \"19_Audits\", \"20_Quarantine\", \"21_QA\", \"99_Index\"], \"bootstrap\": {\"ok\": true, \"tool\": \"vault_init\"}}\n"
+    },
+    {
+      "paso": "escribir una nota por CLI",
+      "ok": true,
+      "detalle": "vault run vault_write exit 0",
+      "stdout": "\", \"AP-27 — Missing type field — nota sin tipo declarado\", \"AP-39 — Vocabulario abierto sin memoria\", \"CN-04 — Note opens with its title — la nota abre con su título como H1\", \"AP-23 — Note complexity ceiling — nota demasiado larga\", \"PAT-3 — Duplicate chain resolution\", \"PAT-4 — Phased audit execution\", \"PAT-5 — Frontmatter as provenance chain\"], \"next\": \"python scripts/vault_norms.py --audit\"}}\n",
+      "stderr": ""
+    },
+    {
+      "paso": "servidor MCP instalado",
+      "ok": true,
+      "detalle": "mjs en el artefacto: vault-mcp-server.mjs"
+    },
+    {
+      "paso": "handshake MCP (initialize)",
+      "ok": true,
+      "detalle": "{\"protocolVersion\": \"2024-11-05\", \"serverInfo\": {\"name\": \"vault-mcp-server\", \"version\": \"v41.23\"}, \"capabilities\": {\"tools\": {\"listChanged\": false}, \"resources\": {\"listChanged\": false, \"subscribe\": fa"
+    },
+    {
+      "paso": "tools/list por MCP",
+      "ok": true,
+      "detalle": "97 tools expuestas por el servidor instalado"
+    },
+    {
+      "paso": "leer la nota por MCP",
+      "ok": true,
+      "detalle": "{\n  \"ok\": true,\n  \"path\": \"07_Knowledge/nota-del-recorrido-mvp.md\",\n  \"meta\": {\n    \"title\": \"Nota del recorrido MVP\",\n    \"id\": \"a19e8fc5-94e2-48eb-8864-556a61c65670\",\n    \"createdAt\": \"2026-10-25T08:14:09+00:00\",\n    \""
+    },
+    {
+      "paso": "modificar la nota por MCP",
+      "ok": true,
+      "detalle": "{\n  \"ok\": true,\n  \"created\": false,\n  \"updated\": 6,\n  \"unchanged\": 2,\n  \"written\": 7,\n  \"path\": \"07_Knowledge/nota-del-recorrido-mvp.md\",\n  \"id\": \"a19e8fc5-94e2-48eb-8864-556a61c65670\",\n  \"filename\": \"nota-del-recorrido-"
+    },
+    {
+      "paso": "consultar por MCP (vault_search)",
+      "ok": true,
+      "detalle": "{\n  \"ok\": true,\n  \"query\": \"recorrido\",\n  \"folder\": null,\n  \"tag\": null,\n  \"total\": 1,\n  \"matched\": 1,\n  \"truncated\": false,\n  \"results\": [\n    {\n      \"path\": \"07_Knowledge/nota-del-recorrido-mvp.md\""
+    },
+    {
+      "paso": "persistencia tras reiniciar el servidor MCP",
+      "ok": true,
+      "detalle": "la linea escrita por MCP sobrevive a un proceso nuevo"
+    },
+    {
+      "paso": "verificar por CLI el cambio hecho por MCP",
+      "ok": true,
+      "detalle": "vault run vault_read exit 0"
+    },
+    {
+      "paso": "contencion: escritura fuera de la raiz rechazada",
+      "ok": true,
+      "detalle": "la tool NO escribio fuera del runtime"
+    },
+    {
+      "paso": "la nota existe en disco dentro del runtime",
+      "ok": true,
+      "detalle": "07_Knowledge\\nota-del-recorrido-mvp.md"
+    },
+    {
+      "paso": "la CLI ve el runtime como sano",
+      "ok": true,
+      "detalle": "vault status exit 0"
+    }
+  ],
+  "ok": true,
+  "fallos": [],
+  "resumen": {
+    "pasos": 16,
+    "ok": 16,
+    "fallos": 0
+  }
+}

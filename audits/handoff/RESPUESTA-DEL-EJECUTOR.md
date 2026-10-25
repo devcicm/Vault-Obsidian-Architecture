@@ -212,3 +212,97 @@ O sea: Q04–Q07 **no son deuda desconocida**; el repo decidio el 2026-08-14 eli
 4. Decisiones que se piden al propietario y QA: corregir TD-0001 (workflow) cuando L3 lo demuestre; autorizar o no la implementacion de TD-0003 cuando L2 traiga el diseno; fijar la prioridad entre deuda de entrega y preparacion de producto.
 
 **Estado de la fase 2: PLANIFICACION EN CURSO. No se declara aprobada ni el producto.**
+
+---
+
+# FASE 2 — LOTE L3 (2026-10-25): VIAJE REAL DE DISTRIBUCION
+
+- **Rama:** `fase2/deuda-y-product-readiness-20261025` · **SHA base:** `ef77a7b` (derivada de la rama auditada, congelada).
+- **Entorno:** Windows 11, Python 3.14.3, Node 24.14.0, red disponible (PyPI accesible).
+- **Artefacto:** `vault_obsidian_architecture-41.23-py3-none-any.whl` (1.661.092 bytes, 705 miembros), construido con la tool de la rama y con el interprete que REPLICA el job de CI (solo `build` instalado).
+- **Alcance:** TD-0001 (correccion autorizada), TD-0002 (verificacion), recorrido MVP y paridad CLI<->MCP. **Sin codigo de producto modificado** (unica excepcion: el workflow de CI).
+
+## 1. TD-0001 — causa raiz, correccion y verificacion
+
+**Causa raiz (confirmada y reproducida):** `tests/clean_install_gate.py` importa el paquete (`vault.meta_toolkit.distribucion` -> `frontmatter_parsing` -> `import yaml`) en el **interprete del runner**, y el job de la wheel solo instalaba `build`: la dependencia PyYAML, **declarada** en `pyproject.toml`, nunca llegaba a estar. El gate moría antes de medir.
+
+**Correccion (minima, cross-platform):** paso nuevo `Install wheel (artefacto y dependencias declaradas)` antes de `Run product gates`, con `shell: bash` —el mismo shell que ya usa el paso de SBOM de ese job— para que el glob de la wheel se expanda igual en los tres sistemas. No se tocan producto, tests ni cobertura.
+
+| Momento | Entorno | Resultado |
+|---|---|---|
+| Antes | venv 'runner' (solo `build`) | `clean_install: FAIL` — `ModuleNotFoundError: No module named 'yaml'` (clean_install_gate.py:48) |
+| Despues | el mismo venv + `pip install dist/*.whl` | `clean_install: PASS`, `memory_e2e: PASS`, **Overall: ALL PASS**, exit 0 |
+
+Evidencia: `audits/fase2/logs/L3-TD0001-antes.txt` y `L3-TD0001-despues.txt`.
+
+**Pendiente:** el run de CI del SHA corregido (la rama de fase 2 necesita un PR para que dispare el evento `pull_request`: decision del propietario). Por eso TD-0001 queda en estado **parcial**: la correccion esta aplicada y verificada en local, la confirmacion de CI no existe.
+
+## 2. TD-0002 — hipotesis refutada
+
+La wheel **no lleva trazas runtime**: 0 trazas entre 705 miembros, tanto construida desde el checkout como desde una copia limpia sin `.git` (ambas dan 1.661.092 bytes, 4 ficheros en `vault_toolkit/mcp/`). El motivo es **declarativo**: `[tool.setuptools.package-data]` nombra para `vault_toolkit.mcp` exactamente los cuatro ficheros que deben viajar. **Estado: falso positivo** (no aplica). Evidencia: `audits/fase2/logs/L3-wheel-contenido.txt`.
+
+## 3. Recorrido MVP — 16/16, desde el artefacto y fuera del checkout
+
+Ejecutado de verdad (`audits/fase2/recorrido_mvp.py`, reejecutable):
+
+| # | Paso | Resultado |
+|---|---|---|
+| 1 | venv nuevo FUERA del checkout | OK |
+| 2 | wheel instalada en ese venv | OK |
+| 3 | script de consola `vault` instalado | OK |
+| 4 | runtime externo creado con `vault init` | OK |
+| 5 | nota escrita por CLI (`vault run vault_write`) | OK |
+| 6 | servidor MCP **del artefacto** (`vault_toolkit/mcp/…`) presente | OK |
+| 7 | handshake MCP (`initialize` -> `notifications/initialized`) | OK (protocolo 2024-11-05) |
+| 8 | `tools/list` | OK — **97 tools** expuestas |
+| 9 | leer la nota por MCP (`vault_read`) | OK |
+| 10 | modificarla por MCP (`vault_write`) | OK |
+| 11 | consultarla por MCP (`vault_search`) | OK |
+| 12 | **persistencia tras reiniciar el proceso MCP** (proceso nuevo) | OK — la linea escrita por MCP sobrevive |
+| 13 | verificar por CLI el cambio hecho por MCP | OK |
+| 14 | **contencion**: intento de escritura fuera de la raiz | OK — **rechazado**, no se escribio fuera del runtime |
+| 15 | la nota existe en disco dentro del runtime | OK |
+| 16 | `vault status` ve el runtime sano | OK (exit 0) |
+
+Evidencia: `audits/fase2/logs/L3-recorrido-mvp.txt`.
+
+**Dos desviaciones fueron mias y las corrigio el instrumento, no el producto:** el primer intento escribio por CLI un cuerpo de 2 lineas y el gate **AP-11** lo rechazo con exit 7 (correcto: el gate exige tres; el write por MCP, con tres, paso); y mi criterio de "lectura correcta" miraba la ausencia de una palabra que el frontmatter lleva. Ninguna de las dos era un defecto del producto.
+
+## 4. Paridad CLI <-> MCP — 5/5, con el verificador de contrato en verde
+
+Medida sobre el **mismo runtime**, con fotografia y restauracion del estado entre adaptadores (sin eso, la segunda llamada de una escritura mide un update donde la otra midio un create: divergencia del guion, no del producto).
+
+| Operacion | CLI | MCP | Coincide |
+|---|---|---|---|
+| `vault_read` (inexistente) | `ok:false` | `ok:false` | si |
+| `vault_search` | `ok:true, total:0` | `ok:true, total:0` | si |
+| `vault_list` | `ok:true` | `ok:true` | si |
+| `vault_write` (crea) | `ok:true, created:true` | `ok:true, created:true` | si |
+| `vault_write` (actualiza) | `ok:true, updated:6` | `ok:true, updated:6` | si |
+
+**Nivel de contrato:** `vault_mcp_catalog --check-params` (el verificador AP-40 del repo, el mismo que corre en CI) → **exit 0**: el esquema MCP y el argparse de cada tool concuerdan.
+
+Matriz: `audits/fase2/matriz-paridad-cli-mcp.md` · Log: `audits/fase2/logs/L3-paridad-cli-mcp.txt`.
+
+## 5. Limitaciones de L3 (lo que NO se ha medido)
+
+1. **Multiplataforma y versiones:** todo esto es Windows + Python 3.14.3 + Node 24. La matriz declarada (ubuntu/macos, Python 3.9-3.12) solo la ejecuta la CI, y la CI esta en cola: **no hay veredicto multiplataforma**.
+2. **Seguridad completa:** L3 cubre contencion (traversal rechazado) y aislamiento (origen en `site-packages`, checkout no importable — lo afirma la puerta `memory_e2e`). El barrido de seguridad (secretos, superficie del transporte MCP, dependencias, cadena de suministro) es de L4.
+3. **Cobertura de la paridad:** 5 operaciones medidas sobre 97 tools expuestas. La paridad del resto no esta medida; el verificador de contrato (AP-40) si cubre todas las tools.
+4. **Q04–Q07:** sin tocar (investigacion autorizada para L2, implementacion pendiente de dictamen).
+5. **P0: ninguno** detectado en el viaje real: no hubo perdida de datos, ni corrupcion del runtime, ni escritura fuera de la raiz.
+
+## 6. Riesgos y bloqueos
+
+1. **CI en cola** → TD-0001 queda parcial y QG-07 no puede cerrarse. No se cancela ninguna ejecucion.
+2. **La rama de fase 2 no tiene PR** → el workflow (eventos `push` a main/master y `pull_request` a main/master) no se dispara para ella. Decision del propietario: abrir un PR de la rama de fase 2.
+3. **La paridad medida es una muestra**: 5 operaciones de 97. QG-05 debe declarar ese alcance (muestra + verificador de contrato) o exigir cobertura total.
+4. **Observaciones, no hallazgos:** `vault status` exige el argumento `runtime` mientras `vault init` no lo pide (ergonomia, exit 2 de uso); el gate AP-11 rechazo correctamente un cuerpo de dos lineas — el gate de contenido funciona en el artefacto instalado.
+
+## 7. Siguientes acciones
+
+1. Revision tecnica de L3 por QA (su buzon sigue siendo suyo) y decision sobre el PR de la rama de fase 2.
+2. Con el visto: **L4** (documental, seguridad e historia) o **L2** (Q04–Q07, solo investigacion), segun la prioridad que fije el propietario.
+3. Cerrar TD-0001 cuando exista un run de CI con conclusion sobre el SHA corregido.
+
+**Estado de la fase 2: PLANIFICACION Y DIAGNOSTICO EN CURSO. No se declara aprobada la fase ni el producto.**

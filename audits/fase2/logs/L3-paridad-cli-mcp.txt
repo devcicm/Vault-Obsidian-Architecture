@@ -1,0 +1,120 @@
+PARIDAD CLI <-> MCP — fase 2 (L3)
+{
+  "contrato_ap40": {
+    "exit": 0,
+    "stdout": "{\n  \"ok\": true,\n  \"tool\": \"vault_mcp_catalog\",\n  \"action\": \"check-params\",\n  \"json_path\": \"C:/Users/<autor> Ivan\\\\Documents\\\\GitHub\\\\Vault-Obsidian-Architecture\\\\mcp\\\\nodejs\\\\tools-catalog.json\",\n  \"tools_checked\": 122,\n  \"problems\": []\n}\n",
+    "stderr": ""
+  },
+  "filas": [
+    {
+      "operacion": "vault_read",
+      "argumentos": {
+        "path": "07_Knowledge/nota-paridad.md"
+      },
+      "expuesta_por_mcp": true,
+      "cli_exit": 7,
+      "cli": {
+        "ok": false,
+        "path": "07_Knowledge/nota-paridad.md"
+      },
+      "mcp": {
+        "ok": false,
+        "path": "07_Knowledge/nota-paridad.md"
+      },
+      "coincide": true,
+      "cli_error": "NOTE_NOT_FOUND",
+      "mcp_error": "NOTE_NOT_FOUND"
+    },
+    {
+      "operacion": "vault_search",
+      "argumentos": {
+        "query": "paridad"
+      },
+      "expuesta_por_mcp": true,
+      "cli_exit": 0,
+      "cli": {
+        "ok": true,
+        "total": 0
+      },
+      "mcp": {
+        "ok": true,
+        "total": 0
+      },
+      "coincide": true,
+      "cli_error": null,
+      "mcp_error": null
+    },
+    {
+      "operacion": "vault_list",
+      "argumentos": {
+        "folder": "07_Knowledge"
+      },
+      "expuesta_por_mcp": true,
+      "cli_exit": 0,
+      "cli": {
+        "ok": true
+      },
+      "mcp": {
+        "ok": true
+      },
+      "coincide": true,
+      "cli_error": null,
+      "mcp_error": null
+    },
+    {
+      "operacion": "vault_write",
+      "argumentos": {
+        "folder": "07_Knowledge",
+        "title": "Nota de paridad",
+        "content": "Nota escrita para medir la paridad entre los dos adaptadores del producto instalado.\nSegunda linea del cuerpo, para cumplir el gate.\nTercera linea, la que el gate exige.\n",
+        "tags": "paridad"
+      },
+      "expuesta_por_mcp": true,
+      "cli_exit": 0,
+      "cli": {
+        "ok": true,
+        "created": true,
+        "path": "07_Knowledge/nota-de-paridad.md"
+      },
+      "mcp": {
+        "ok": true,
+        "created": true,
+        "path": "07_Knowledge/nota-de-paridad.md"
+      },
+      "coincide": true,
+      "cli_error": null,
+      "mcp_error": null
+    },
+    {
+      "operacion": "vault_write",
+      "argumentos": {
+        "folder": "07_Knowledge",
+        "title": "Nota de paridad",
+        "content": "Nota escrita para medir la paridad entre los dos adaptadores del producto instalado.\nSegunda linea del cuerpo, para cumplir el gate.\nTercera linea MODIFICADA por la segunda pasada.\n",
+        "tags": "paridad"
+      },
+      "expuesta_por_mcp": true,
+      "cli_exit": 0,
+      "cli": {
+        "ok": true,
+        "updated": 6,
+        "path": "07_Knowledge/nota-de-paridad.md"
+      },
+      "mcp": {
+        "ok": true,
+        "updated": 6,
+        "path": "07_Knowledge/nota-de-paridad.md"
+      },
+      "coincide": true,
+      "cli_error": null,
+      "mcp_error": null
+    }
+  ],
+  "efectos": {
+    "tools_con_side_effects_declarados": 100,
+    "expuestas_por_mcp": 76
+  },
+  "coincidencias": 5,
+  "casos": 5,
+  "herramientas_mcp": 97
+}
