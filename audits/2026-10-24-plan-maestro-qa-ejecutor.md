@@ -40,3 +40,23 @@
 | 0 | QA | Archify + GitHub + bitácora | Plan de Q00–Q12, análisis estático, sin tests ejecutados | Q00–Q03 listos para ejecución externa |
 
 **No modificar `main` ni afirmar validación empírica desde este sandbox.** 
+
+## Revisión de cobertura y trazabilidad — 2026-10-24
+
+**Fuentes inspeccionadas:** plan Q00–Q12 y bitácora del checkout remoto; estructura real del ZIP Archify (`extraccion-registro.json`, `candidata-cruces.json`, `mapa-contextos.finalize-summary.json`). El ZIP incluye diez contextos nominales y conjuntos `_crossings`, `_off_port` y `_anclas`. El plan actual cubre los ocho símbolos A–H, pero **no acredita cobertura exhaustiva** de los cruces restantes, de todas las anclas ni de la trazabilidad de los diagnósticos del render. Una captura aprobada visualmente no valida arquitectura ni ejecución.
+
+**ODD (interpretación provisional):** *Observability-Driven Development* / desarrollo guiado por observabilidad, **sujeto a confirmar el significado pretendido por el propietario**. Se aplica de momento como disciplina de evidencias, no como dependencia o framework nuevo: observación → hipótesis causal → intervención → señales instrumentadas → prueba externa → decisión QA. Si ODD significa otra metodología, conservar el registro de trazabilidad y adaptar el nombre.
+
+### Brechas concretas a cerrar antes de declarar inventario completo
+- **T01: Cobertura de contextos.** Generar matriz de los 10 contextos con módulos, puertos, prohibiciones, propietario y versión; contrastar snapshot Archify con `scripts/vault_arch.py` actual. Responsable QA; ejecutor valida inventario contra checkout.
+- **T02: Cobertura de cruces.** Reconciliar **todos** los elementos `_crossings` del ZIP con el analizador actual, no solo los ocho `_off_port`. Etiquetar vigente, justificado, deuda, obsoleto o no reproducible; aportar import/callsite real y SHA.
+- **T03: Anclas y pruebas de evidencia.** Para cada `_anclas`, confirmar que el archivo/símbolo aún existe; enlazar hallazgo → contrato → prueba → commit → resultado. Distinguir línea del snapshot de línea actual.
+- **T04: Cobertura de fallos de control.** AP-40/42/43 deben reportar controles no ejecutados y no solo ausencia de hallazgos. Definir observabilidad del estado del control sin romper el esquema de salida.
+- **T05: Cobertura de escritores.** El comentario de `vault_tags.registrar_tags_de_nota` señala múltiples escritores fuera de `vault_write`. Inventariar y comprobar rutas reales para no cerrar AP-39 con pruebas de un solo escritor.
+- **T06: Evidencia de artefactos.** Verificar si los `gates` y `diagnostics` de `mapa-contextos.finalize-summary.json` prueban solo generación/visualización; no extrapolar a integridad de runtime.
+- **T07: Control de concurrencia.** Un dueño por archivo y ronda; registrar SHA base y cambios del agente local antes de cualquier nueva escritura QA.
+
+### Esquema ODD de cada ficha
+`ID | contexto origen/destino | símbolo y archivo real | SHA | hecho observado | hipótesis causal | impacto | contrato/invariante | intervención | señales observables | caso positivo/negativo | evidencia ejecutada (o NO EJECUTADA) | estado | siguiente dueño`.
+
+**Criterio de cierre de inventario:** cobertura explícita de los diez contextos y de todos los cruces y anclas del snapshot, con conciliación a la rama actual y cada brecha asignada. **Estado actual:** brechas identificadas, conciliación exhaustiva NO REALIZADA; tests NO EJECUTADOS. Estas tareas de trazabilidad anteceden a la declaración de QA completo y no sustituyen Q00–Q12.
