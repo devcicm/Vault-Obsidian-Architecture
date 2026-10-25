@@ -7,8 +7,9 @@ en prosa y nadie ejecutaba:
 
   R1. QG-00 es PRERREQUISITO. Si no esta en PASS, ninguna otra puerta puede
       estar en PASS: se quedan en BLOCKED con el motivo escrito.
-  R2. Una evidencia de OTRO SHA no acredita este SHA. El gate no puede pasar
-      aunque su salida diga verde.
+  R2. Sin SHA objetivo valido y sin evidencia por gate no se acredita nada:
+      un estado declarado es una afirmacion, no una medicion (H-F2-04). Una
+      evidencia de OTRO SHA tampoco acredita este SHA.
   R3. QG-02 no puede dar PASS con un control obligatorio no ejecutado o
       degradado: queda BLOCKED con CONTROL_OBLIGATORIO_NO_VERIFICADO. Las 26
       puertas verdes no sustituyen al estado de ejecucion (TD-0003).
@@ -26,10 +27,12 @@ Uso como biblioteca:
 """
 from __future__ import annotations
 
+import re
 from typing import Any, Dict, List
 
 GATES = ("QG-00", "QG-01", "QG-02", "QG-03", "QG-04", "QG-05", "QG-06", "QG-07")
 ESTADOS_VALIDOS = {"PASS", "FAIL", "BLOCKED", "NOT_RUN", "NOT_APPLICABLE"}
+SHA_OBJETIVO = re.compile(r"^[0-9a-f]{7,40}$")
 
 PASS = "PASS"
 FAIL = "FAIL"
@@ -43,14 +46,19 @@ def _gate(estado: Dict[str, Any], gate: str) -> str:
     return valor if valor in ESTADOS_VALIDOS else NOT_RUN
 
 
-def _evidencia_ajena(estado: Dict[str, Any], gate: str) -> bool:
-    """True si la evidencia declarada para el gate es de OTRO SHA."""
-    objetivo = estado.get("sha_objetivo")
-    evidencia = (estado.get("evidencias") or {}).get(gate) or {}
+def _sha_valido(estado: Dict[str, Any]) -> bool:
+    """El SHA dictaminado tiene que existir y tener forma de SHA."""
+    sha = estado.get("sha_objetivo")
+    return isinstance(sha, str) and bool(SHA_OBJETIVO.match(sha))
+
+
+def _sha_de_evidencia(estado: Dict[str, Any], gate: str) -> str | None:
+    """El SHA que la evidencia del gate declara, o None si no hay evidencia."""
+    evidencia = (estado.get("evidencias") or {}).get(gate)
+    if not isinstance(evidencia, dict):
+        return None
     sha = evidencia.get("sha")
-    if not objetivo or not sha:
-        return False
-    return sha != objetivo
+    return sha if isinstance(sha, str) and sha else None
 
 
 def _ci_concluyente(estado: Dict[str, Any]) -> bool:
@@ -81,9 +89,10 @@ def evaluar_politica(estado: Dict[str, Any]) -> Dict[str, Any]:
     """Aplica las reglas R1-R4 y devuelve el veredicto por gate y el de QG-07.
 
     `estado` es un diccionario con:
-      - sha_objetivo: el SHA que se dictamina;
+      - sha_objetivo: el SHA que se dictamina (7-40 hex; obligatorio);
       - gates: {gate: PASS|FAIL|BLOCKED|NOT_RUN|NOT_APPLICABLE} medidos;
-      - evidencias: {gate: {"sha": ..., "ruta": ...}} — opcional;
+      - evidencias: {gate: {"sha": ..., "ruta": ...}} — OBLIGATORIO para todo
+        gate que pretenda PASS: sin evidencia no hay acreditacion (H-F2-04);
       - control_ejecucion: {"completo": bool, "degradados": [...],
                             "no_verificados": [...]} — opcional;
       - ci: {"conclusion": "success"|"queued"|...} — opcional.
@@ -92,12 +101,27 @@ def evaluar_politica(estado: Dict[str, Any]) -> Dict[str, Any]:
     motivos: Dict[str, List[str]] = {g: [] for g in GATES}
     finales: Dict[str, str] = dict(gates)
 
-    # R2: una evidencia de otro SHA no acredita este SHA.
-    for gate in GATES:
-        if finales[gate] == PASS and _evidencia_ajena(estado, gate):
-            finales[gate] = BLOCKED
-            motivos[gate].append(
-                "EVIDENCIA_DE_OTRO_SHA: la evidencia no pertenece al SHA dictaminado")
+    # R2: sin identidad ni evidencia no se acredita nada (H-F2-04).
+    if not _sha_valido(estado):
+        for gate in GATES:
+            if finales[gate] == PASS:
+                finales[gate] = BLOCKED
+                motivos[gate].append(
+                    "SHA_OBJETIVO_INVALIDO: falta un SHA de 7-40 hex a dictaminar")
+    else:
+        for gate in GATES:
+            if finales[gate] != PASS:
+                continue
+            sha_evidencia = _sha_de_evidencia(estado, gate)
+            if sha_evidencia is None:
+                finales[gate] = BLOCKED
+                motivos[gate].append(
+                    "EVIDENCIA_AUSENTE: el gate no aporta evidencia con su SHA")
+            elif sha_evidencia != estado["sha_objetivo"]:
+                finales[gate] = BLOCKED
+                motivos[gate].append(
+                    "EVIDENCIA_DE_OTRO_SHA: la evidencia no pertenece al SHA "
+                    "dictaminado")
 
     # R1: QG-00 es prerrequisito de todo lo demas.
     if finales["QG-00"] != PASS:

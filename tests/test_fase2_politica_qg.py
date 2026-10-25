@@ -111,3 +111,60 @@ def test_estado_invalido_se_lee_como_not_run():
     estado["gates"]["QG-05"] = "VERDE"
     veredicto = politica_qg.evaluar_politica(estado)
     assert veredicto["gates"]["QG-05"] == "NOT_RUN"
+
+
+def test_sin_sha_objetivo_no_hay_pass():
+    """H-F2-04: un estado declarado sin SHA es una afirmacion, no una medicion."""
+    estado = _estado()
+    del estado["sha_objetivo"]
+    veredicto = politica_qg.evaluar_politica(estado)
+    assert veredicto["liberable"] is False
+    assert veredicto["gates"]["QG-00"] == "BLOCKED"
+    assert any("SHA_OBJETIVO_INVALIDO" in m
+               for m in veredicto["motivos"]["QG-00"])
+
+
+def test_sha_objetivo_vacio_o_basura_no_hay_pass():
+    for malo in ("", "no-es-un-sha", "zzzzzzz", "12345"):
+        estado = _estado(sha_objetivo=malo)
+        veredicto = politica_qg.evaluar_politica(estado)
+        assert veredicto["liberable"] is False, malo
+        assert veredicto["qg07"] == "BLOCKED", malo
+
+
+def test_sin_evidencias_no_hay_pass():
+    """El caso exacto del dictamen: todo PASS declarado y cero evidencias."""
+    estado = _estado(evidencias={})
+    veredicto = politica_qg.evaluar_politica(estado)
+    assert veredicto["liberable"] is False, veredicto
+    assert veredicto["gates"]["QG-00"] == "BLOCKED"
+    assert any("EVIDENCIA_AUSENTE" in m
+               for m in veredicto["motivos"]["QG-00"])
+
+
+def test_una_evidencia_ausente_bloquea_solo_su_gate():
+    estado = _estado()
+    del estado["evidencias"]["QG-03"]
+    veredicto = politica_qg.evaluar_politica(estado)
+    assert veredicto["gates"]["QG-03"] == "BLOCKED", veredicto["gates"]["QG-03"]
+    assert veredicto["gates"]["QG-01"] == "PASS"
+    assert veredicto["qg07"] == "BLOCKED"
+    assert any("QG_PENDIENTE:QG-03" in m for m in veredicto["motivos"]["QG-07"])
+
+
+def test_evidencia_sin_sha_no_acredita():
+    estado = _estado()
+    estado["evidencias"]["QG-04"] = {"ruta": "logs/x.txt"}
+    veredicto = politica_qg.evaluar_politica(estado)
+    assert veredicto["gates"]["QG-04"] == "BLOCKED"
+    assert any("EVIDENCIA_AUSENTE" in m
+               for m in veredicto["motivos"]["QG-04"])
+
+
+def test_una_evidencia_de_otro_sha_bloquea_su_gate():
+    estado = _estado()
+    estado["evidencias"]["QG-05"] = {"sha": "b" * 40}
+    veredicto = politica_qg.evaluar_politica(estado)
+    assert veredicto["gates"]["QG-05"] == "BLOCKED"
+    assert any("EVIDENCIA_DE_OTRO_SHA" in m
+               for m in veredicto["motivos"]["QG-05"])
