@@ -122,3 +122,22 @@ Funciones citadas en el análisis preliminar: `check_params`, `notas_indexables`
 **Aplicación a AP-39 (observación confirmada):** `vault_write.py` llama `apply_vocabulary` antes de persistir y `record_new_tags` después. Si la primera operación no escribe y la segunda solo se ejecuta tras confirmar persistencia, entonces un fallo previo de escritura no debería dejar etiquetas nuevas en el ledger **por esta ruta**. Este resultado depende de que no existan efectos secundarios ocultos ni otros escritores; requiere pruebas de fallo de escritura y de ledger. Un error del ledger se captura como `OSError` en la ruta examinada, pero no se ha demostrado la cobertura de otras excepciones. **Conclusión:** inferencia causal limitada, no validación funcional.
 
 **Estado:** protocolo registrado, inspección estática; pruebas de ejecución bloqueadas por conectividad directa del sandbox. La fase de Quality Gates continúa diferida hasta terminar la auditoría de puertos y contratos.
+
+## 11. Inventario A–H de accesos fuera de puerto (fuente Archify contrastada)
+
+**Extracción exitosa:** se leyó el adjunto `mapa-contextos.visual-check.2048x1320.light.zip`, archivo `extraccion-registro.json`, clave `_off_port`. Se obtuvieron los ocho símbolos exactos, no solo los agregados. El registro Archify corresponde a `f5f6921`; no es una medición actual. Lectura del repositorio de la rama aislada confirma usos en `vault_write.py` y `vault_norms_engine.py`. **No hay pruebas ejecutadas ni corrección de comportamiento.**
+
+| ID | Dependencia reportada por Archify | Evidencia y porqué revisar | Verificación externa propuesta |
+|---|---|---|---|
+| A | `vault_write → vault_tags.apply_vocabulary` | `vault_write.py:1046`: normaliza tags antes de persistir; la operación no figura entre los puertos publicados de Índices. | Comprobar contrato sin efectos secundarios y normalización estable. |
+| B | `vault_write → vault_tags.record_new_tags` | `vault_write.py:1394`: escribe ledger tras persistencia; fuera de puerto publicado. | Inyectar error de escritura de nota y de ledger; verificar orden y que no haya memoria falsa. |
+| C | `vault_sanacion → vault_reindex.notas_indexables` | Archify registra la llamada; `vault_sanacion.py` en la revisión actual es breve y no contiene ese símbolo: **posible desactualización o ruta indirecta**. | Rastrear import real y contrastar SHA antes de atribuir defecto vigente. |
+| D | `vault_norms_engine → vault_mcp_catalog.check_params` | `vault_norms_engine.py:142` importa catálogo dinámicamente; el puerto publicado en Meta-toolkit es `check_contracts`, no `check_params`. | Inspeccionar llamada, semántica de contrato y efecto del fallo del catálogo. |
+| E | `vault_norms_engine → vault_smoke.SIN_SMOKE` | `vault_norms_engine.py:160` importa smoke; símbolo no figura en puertos de Meta-toolkit. | Comprobar propiedad y manejo de ausencia de baseline. |
+| F | `vault_norms_engine → vault_smoke.invocation` | Misma dependencia; verificar si se invoca una implementación interna o interfaz estable. | Probar invocación y fallo controlado del smoke. |
+| G | `vault_norms_engine → vault_smoke.load_baseline` | Misma dependencia; potencial acoplamiento a formato interno de baseline. | Verificar lectura, esquema y comportamiento ante baseline corrupta. |
+| H | `vault_norms_engine → vault_voice.coverage` | `vault_norms_engine.py:187` importa voz; puerto `coverage` no está publicado en Autoría. | Verificar si cobertura es función de consulta pura y qué ocurre si no existe. |
+
+**Razonamiento causal:** A/B: normalización pura + registro posterior a persistencia confirmada ⇒ el ledger no refleja notas fallidas **por esa ruta**, sujeto a excepciones no observadas. D–H: un import hacia una función no publicada ⇒ dependencia de interfaz no garantizada; no implica automáticamente un defecto funcional. C: divergencia entre snapshot y fuente actual ⇒ no se puede tratar el cruce como vigente sin reconstruir su trazabilidad.
+
+**Prioridad:** confirmar C y semántica D–H; proponer puertos explícitos donde corresponda, sin ampliar baseline para ocultar cruces. **Evidencia:** extracción del ZIP + lectura estática de GitHub; **tests:** a ejecutar fuera de este sandbox.
