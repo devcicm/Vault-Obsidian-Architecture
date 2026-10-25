@@ -406,6 +406,15 @@ CONTEXTS: dict[str, dict] = {
             "reindexar": "vault_reindex:vault_reindex",
             "indice_maestro": "vault_master_index:vault_master_index",
             "vocabulario_de_tags": "vault_tags:canonical_tags",
+            # AP-39, camino A/B del write path (auditoría 2026-10-24): la
+            # resolución canónica ocurre ANTES de persistir — el frontmatter
+            # necesita los tags canónicos para construirse — y el registro
+            # append-only va DESPUÉS de la escritura confirmada: anotar antes
+            # deja en la bitácora palabras de escrituras que fallaron.
+            # `registrar_tags` combina las dos mitades para los escritores que
+            # no necesitan la separación; `vault_write` las usa por contrato.
+            "resolucion_de_vocabulario": "vault_tags:apply_vocabulary",
+            "registro_de_nuevos_terminos": "vault_tags:record_new_tags",
             # El índice de sección lo dispara el write path del kernel desde
             # v39: es el punto por el que índices entra en cada escritura, y
             # llevaba tres versiones cruzando la frontera sin nombre.
