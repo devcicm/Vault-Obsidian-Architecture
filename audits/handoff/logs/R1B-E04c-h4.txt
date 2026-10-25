@@ -1,0 +1,251 @@
+R1B-E04c — Correccion H4 (ejemplo vault_write del README) — 2026-10-24
+=====================================================================
+
+SHA base de la ronda: f3aaafc34a4ca719070a55f642452d52c107b58d
+SHA antes de esta unidad: 031abfb
+Entorno: Windows, PowerShell 5, Python 3.14.3, rama audit/archify-governance-20261024
+
+PASO 1 — Reproduccion del fallo en el SHA base, en entorno aislado
+-------------------------------------------------------------------
+Entorno aislado: `git worktree add --detach <TEMP>/opencode/vault-r1b-base f3aaafc`.
+El worktree tiene su propio arbol y su propio `vault-sandbox/`; el sandbox
+compartido del checkout principal no se toco. Variables de entorno heredadas
+(VAULT_ROOT, VAULT_STRICT_ROOT) withdrawadas para la corrida.
+
+Comando: python -m pytest tests/test_quickstart_del_readme.py::test_los_comandos_del_quick_start_funcionan_en_orden -q --tb=long
+Directorio: <TEMP>/opencode/vault-r1b-base (SHA f3aaafc)
+Codigo de salida: 1
+Resultado: FALLO — el comando del README no se puede trocear:
+
+    ValueError: No closing quotation
+    ...\shlex.py:189: ValueError
+
+Causa: el ejemplo `vault_write` del README abre el `--content` en varias lineas
+sin continuacion de shell. `shlex.split` de esa linea deja la comilla abierta, y
+el troceador lanza antes de que el test llegue a ejecutarlo. El test NO se
+debilito: reproduce el defecto de lectura del README, y el defecto es real.
+
+PASO 2 — Comparacion con main: donde se resolvio y con que diff
+-----------------------------------------------------------------
+Commit que lo resolvio en la rama `main` del autor: 0a06696
+("gobierno: autoria separada de aprobacion, doc sin reloj y verificacion sin efectos").
+
+ALERTA DE TRAZA: 0a06696 es un commit LOCAL de `main`, sin publicar en GitHub.
+QA no puede cotejarlo en el remoto hasta que ese commit se publique; se anota
+aqui para que la comparacion sea posible de todos modos.
+
+Diff revisado del commit, limitado a los dos ficheros del defecto
+(`git diff f3aaafc 0a06696 -- README.md tests/test_quickstart_del_readme.py`): 32 lineas,
+dos hunks, sin tocar codigo de dominio:
+
+  1. README.md — el `--content` del ejemplo pasa a una sola linea (4 lineas -> 1).
+  2. tests/test_quickstart_del_readme.py — el extractor descarta el prefijo
+     `VAR=valor` antes de decidir que hacer del comando, de modo que
+     `VAULT_AGENT=claude python scripts/vault_write.py ...` se EJECUTE con el
+     entorno de la corrida, en vez de descartarse en silencio.
+
+Por que hacen falta los dos: con solo el hunk 1, `shlex.split` deja el primer
+token como `VAULT_AGENT=claude`, el dispatcher no lo reconoce como `python ...` y
+la escritura se salta en silencio; el test seguiria fallando por la asercion
+`vault_write.py in ejecutados`. Con solo el hunk 2, el troceador seguiria
+lanzando `No closing quotation`.
+
+PASO 3 — Aplicacion: solo los cambios necesarios
+--------------------------------------------------
+Se aplico EXCLUSIVAMENTE ese diff de dos hunks sobre la rama de auditoria
+(`git apply --check` -> 0, `git apply` -> 0). No se trajo ninguna otra parte de
+0a06696 (que ademas toca `vault_servicio.py`, `vault_changelog_check.py`,
+`docs/GOBIERNO.md`, `AGENTS.md` y `docs/aprobaciones.json`: nada de eso es de H4).
+Sin cambios de comportamiento del producto: el README es documentacion y el
+fichero de test es su extractor.
+
+Compatibilidad: el README de la rama de auditoria es identico al de `main` en
+ese punto (por eso el diff aplica sin conflicto), y el testquickstart de la rama
+es la version previa a la correccion. No hay dependencia de `main` en el
+resultado.
+
+PASO 4 — Pruebas antes y despues
+--------------------------------
+ANTES (rama de auditoria, sin el arreglo): el mismo test fallaba — el fallo de
+la suite de referencia de f6a5387.
+
+DESPUES:
+  Comando: python -m pytest tests/test_quickstart_del_readme.py -q --tb=short
+  Codigo de salida: 0 — 2 passed in 14.53s
+  Regresion relacionada: python -m pytest tests/test_comandos_publicados.py
+    tests/test_afirmaciones_y_presupuesto.py tests/test_cifras_sin_vigilar.py
+    tests/test_contract_sync.py -q --tb=short
+  Codigo de salida: 0 — 44 passed in 139.01s
+
+PASO 5 — Decision que se pide a QA
+----------------------------------
+1. Aceptar el commit rotulado `fix(H4): correct README quickstart regression` como
+   correccion controlada de un defecto PREEXISTENTE (reproducido en f3aaafc).
+2. Decidir cuando se publica `0a06696` en `main`, que hoy es local: sin el, la
+   correccion de H4 de `main` no es cotejable en GitHub.
+3. Confirmar que el ambito se respeta: H4 es el unico defecto de la ronda 1 que
+   no venia de los puertos publicados.
+
+Salida del comando en el SHA base (entorno aislado)
+---------------------------------------------------============================= test session starts =============================
+platform win32 -- Python 3.14.3, pytest-9.0.2, pluggy-1.6.0
+rootdir: C:/Users/<autor> Ivan\AppData\Local\Temp\opencode\vault-r1b-base
+configfile: pyproject.toml
+plugins: anyio-4.12.1, asyncio-1.3.0, cov-7.0.0, timeout-2.4.0, xdist-3.8.0, typeguard-4.5.1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+timeout: 300.0s
+timeout method: thread
+timeout func_only: False
+collected 1 item
+
+tests\test_quickstart_del_readme.py F                                    [100%]
+
+================================== FAILURES ===================================
+____________ test_los_comandos_del_quick_start_funcionan_en_orden _____________
+
+tmp_path = WindowsPath('C:/Users/Carlos Ivan/AppData/Local/Temp/pytest-of-Carlos Ivan/pytest-1426/test_los_comandos_del_quick_st0')
+
+    def test_los_comandos_del_quick_start_funcionan_en_orden(tmp_path):
+        vault = tmp_path / "vault-mi-proyecto"
+        # `vault init` importa el paquete `vault` desde tmp_path: sin la raÝz del
+        # repo en PYTHONPATH lo resolvÝa una wheel instalada, si la habÝa, y medÝa
+        # esa versi¾n en vez de este c¾digo; sin ninguna, caÝa con stdout vacÝo.
+        env = dict(os.environ, PYTHONIOENCODING="utf-8", VAULT_ROOT=str(vault),
+                   VAULT_STRICT_ROOT="1", VAULT_AGENT="claude",
+                   PYTHONPATH=os.pathsep.join(
+                       [str(ROOT), *filter(None, [os.environ.get("PYTHONPATH")])]))
+        ejecutados = []
+        for cmd in _comandos(_quick_start()):
+>           args = shlex.split(cmd)
+                   ^^^^^^^^^^^^^^^^
+
+tests\test_quickstart_del_readme.py:68: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'VAULT_AGENT=claude python scripts/vault_write.py --folder "00_System"  --title "Vault Identity"  --meta \'{"type":"identity"}\'  --content "Vault del proyecto X para el servicio de reservas.'
+comments = False, posix = True
+
+    def split(s, comments=False, posix=True):
+        """Split the string *s* using shell-like syntax."""
+        if s is None:
+            raise ValueError("s argument must not be None")
+        lex = shlex(s, posix=posix)
+        lex.whitespace_split = True
+        if not comments:
+            lex.commenters = ''
+>       return list(lex)
+               ^^^^^^^^^
+
+C:\Python314\Lib\shlex.py:312: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <shlex.shlex object at 0x000001F624C10950>
+
+    def __next__(self):
+>       token = self.get_token()
+                ^^^^^^^^^^^^^^^^
+
+C:\Python314\Lib\shlex.py:299: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <shlex.shlex object at 0x000001F624C10950>
+
+    def get_token(self):
+        "Get a token from the input stream (or from stack if it's nonempty)"
+        if self.pushback:
+            tok = self.pushback.popleft()
+            if self.debug >= 1:
+                print("shlex: popping token " + repr(tok))
+            return tok
+        # No pushback.  Get a token.
+>       raw = self.read_token()
+              ^^^^^^^^^^^^^^^^^
+
+C:\Python314\Lib\shlex.py:107: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <shlex.shlex object at 0x000001F624C10950>
+
+    def read_token(self):
+        quoted = False
+        escapedstate = ' '
+        while True:
+            if self.punctuation_chars and self._pushback_chars:
+                nextchar = self._pushback_chars.pop()
+            else:
+                nextchar = self.instream.read(1)
+            if nextchar == '\n':
+                self.lineno += 1
+            if self.debug >= 3:
+                print("shlex: in state %r I see character: %r" % (self.state,
+                                                                  nextchar))
+            if self.state is None:
+                self.token = ''        # past end of file
+                break
+            elif self.state == ' ':
+                if not nextchar:
+                    self.state = None  # end of file
+                    break
+                elif nextchar in self.whitespace:
+                    if self.debug >= 2:
+                        print("shlex: I see whitespace in whitespace state")
+                    if self.token or (self.posix and quoted):
+                        break   # emit current token
+                    else:
+                        continue
+                elif nextchar in self.commenters:
+                    self.instream.readline()
+                    self.lineno += 1
+                elif self.posix and nextchar in self.escape:
+                    escapedstate = 'a'
+                    self.state = nextchar
+                elif nextchar in self.wordchars:
+                    self.token = nextchar
+                    self.state = 'a'
+                elif nextchar in self.punctuation_chars:
+                    self.token = nextchar
+                    self.state = 'c'
+                elif nextchar in self.quotes:
+                    if not self.posix:
+                        self.token = nextchar
+                    self.state = nextchar
+                elif self.whitespace_split:
+                    self.token = nextchar
+                    self.state = 'a'
+                else:
+                    self.token = nextchar
+                    if self.token or (self.posix and quoted):
+                        break   # emit current token
+                    else:
+                        continue
+            elif self.state in self.quotes:
+                quoted = True
+                if not nextchar:      # end of file
+                    if self.debug >= 2:
+                        print("shlex: I see EOF in quotes state")
+                    # XXX what error should be raised here?
+>                   raise ValueError("No closing quotation")
+E                   ValueError: No closing quotation
+
+C:\Python314\Lib\shlex.py:189: ValueError
+=========================== short test summary info ===========================
+FAILED tests/test_quickstart_del_readme.py::test_los_comandos_del_quick_start_funcionan_en_orden
+============================= 1 failed in 15.88s ==============================
+
+------------------------------------------------------------
+Salida del comando en la rama, tras el arreglo
+------------------------------------------------------------
+============================= test session starts =============================
+platform win32 -- Python 3.14.3, pytest-9.0.2, pluggy-1.6.0
+rootdir: C:/Users/<autor> Ivan\Documents\GitHub\Vault-Obsidian-Architecture
+configfile: pyproject.toml
+plugins: anyio-4.12.1, asyncio-1.3.0, cov-7.0.0, timeout-2.4.0, xdist-3.8.0, typeguard-4.5.1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+timeout: 300.0s
+timeout method: thread
+timeout func_only: False
+collected 2 items
+
+tests\test_quickstart_del_readme.py ..                                   [100%]
+
+============================= 2 passed in 14.53s ==============================
