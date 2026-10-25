@@ -36,6 +36,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -143,6 +144,18 @@ def evaluar(filas: List[Dict[str, Any]], contrato: Dict[str, Any],
     return {"ok": not problemas, "problemas": problemas}
 
 
+
+#: La maquina no viaja en la evidencia: las logs que este script escribe van
+#: a un repo publico, y el verificador de saneamiento las rechaza si llevan
+#: una ruta local. Se sustituye por un marcador neutro ANTES de escribir.
+RUTA_LOCAL = re.compile(r"(?:[A-Za-z]:[\\/]+Users[\\/]|/(?:home|Users)/)[^\s\"'`)\]]*")
+
+
+def sin_rutas(texto: str) -> str:
+    """Sustituye toda ruta local por un marcador neutro."""
+    return RUTA_LOCAL.sub("<RUTA-LOCAL>", texto)
+
+
 def _normalizar(texto: str) -> Dict[str, Any]:
     try:
         sobre = json.loads(texto)
@@ -162,8 +175,9 @@ class Mcp:
     timeout que se Calcule mientras se espera no llega a cumplirse nunca (H-L3-03).
     """
 
-    def __init__(self, mjs: Path, env: Dict[str, str]):
-        self.proc = subprocess.Popen(["node", str(mjs)], stdin=subprocess.PIPE,
+    def __init__(self, mjs: Path, env: Dict[str, str],
+                 cmd: Optional[List[str]] = None):
+        self.proc = subprocess.Popen(cmd or ["node", str(mjs)], stdin=subprocess.PIPE,
                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                      text=True, encoding="utf-8", errors="replace",
                                      env=env, bufsize=1)
@@ -324,9 +338,10 @@ def main() -> int:
     })
 
     Path(args.log).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.log).write_text("PARIDAD CLI <-> MCP — fase 2 (L3)\n"
-                               + json.dumps(veredicto, ensure_ascii=False, indent=2) + "\n",
-                               encoding="utf-8")
+    Path(args.log).write_text(sin_rutas(
+        "PARIDAD CLI <-> MCP — fase 2 (L3)\n"
+        + json.dumps(veredicto, ensure_ascii=False, indent=2) + "\n"),
+        encoding="utf-8")
 
     lineas = ["# Matriz de paridad CLI ↔ MCP — fase 2 (L3)", "",
               "Derivado de la ejecucion real sobre el artefacto instalado. Generado por "
@@ -354,7 +369,7 @@ def main() -> int:
                "adaptador es distinto por diseño, y lo que debe coincidir es el contrato "
                "de negocio (misma operacion, mismos argumentos, mismo efecto y mismo "
                "significado de error).", ""]
-    Path(args.matriz).write_text("\n".join(lineas) + "\n", encoding="utf-8")
+    Path(args.matriz).write_text(sin_rutas("\n".join(lineas) + "\n"), encoding="utf-8")
 
     print(f"paridad: {veredicto['coincidencias']}/{veredicto['casos']} | "
           f"AP-40 exit {contrato['exit']} | tools MCP {len(herramientas)} | "

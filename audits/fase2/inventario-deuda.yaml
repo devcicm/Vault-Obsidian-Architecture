@@ -299,3 +299,44 @@
   - Un objetivo vencido se ve como vencido, no como texto.
   quality_gate: QG-01
   decision: pending
+- id: TD-0007
+  title: 'El cliente MCP del harness de auditoria leia la respuesta con readline() bloqueante: el timeout
+    no se cumplia'
+  category: instrumento
+  severity: P3
+  status: corregida
+  owner: fase 2 - agente ejecutor (instrumento de auditoria, NO producto)
+  context: audits/fase2/paridad_cli_mcp.py, cliente MCP de la auditoria
+  source_file: audits/fase2/paridad_cli_mcp.py
+  symbol: Mcp.llamar
+  commit_sha: d657fb0
+  observed_behavior: 'La respuesta del servidor se leia con readline() sobre el pipe, que BLOQUEA: el
+    timeout del metodo se calculaba mientras se esperaba y, con la llamada bloqueada, nunca llegaba a
+    dispararse. Un servidor MCP que no contesta dejaba el harness colgado indefinidamente (y la suite,
+    con el).'
+  expected_behavior: 'El timeout del cliente se cumple: una llamada sin respuesta devuelve el error de
+    timeout en el tiempo previsto, sin bloquear el proceso.'
+  root_cause: La espera se hacia sobre una lectura bloqueante del pipe, en el mismo hilo que calcula el
+    plazo.
+  impact: 'Solo sobre el INSTRUMENTO de auditoria: una measuring colgada consume la maquina y no deja
+    veredicto. NO es un defecto demostrado del servidor MCP: en las corridas el servidor respondio siempre
+    y con timeouts holgados; lo que se corrigio es la capacidad del harness de notar un silencio.'
+  likelihood: Cierto en cuanto el servidor MCP no responde (servidor colgado, red, o un metodo desconocido).
+  evidence:
+  - 'audits/fase2/logs/H-L3-03-timeout-mcp.txt: prueba con un proceso mudo (lee stdin y nunca contesta)
+    -> el cliente devuelve el error de timeout en ~2s'
+  - 'tests/test_fase2_mcp_timeout.py: el mismo test con el servidor MCP instalado (camino feliz) -> 2
+    passed'
+  affected_contracts: []
+  related_norms: []
+  related_tests:
+  - tests/test_fase2_mcp_timeout.py
+  proposed_remediation: 'APLICADO: la lectura va en un hilo aparte y el metodo espera con queue.get(timeout=...),
+    de modo que el timeout se cumple. El cliente acepta el comando, lo que permite probar el silencio
+    sin node.'
+  regression_risk: 'Bajo: solo el harness de auditoria; el camino feliz se cubre con el servidor MCP instalado.'
+  acceptance_criteria:
+  - 'CUMPLIDO: una llamada sin respuesta devuelve el error de timeout en el plazo previsto.'
+  - 'CUMPLIDO: con el servidor MCP instalado, la llamada normal sigue devolviendo el resultado.'
+  quality_gate: ''
+  decision: accepted

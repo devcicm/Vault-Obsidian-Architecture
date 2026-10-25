@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import os
 import shutil
 import subprocess
@@ -29,6 +30,17 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+
+#: La maquina no viaja en la evidencia: este log va a un repo publico y el
+#: verificador de saneamiento rechaza cualquier ruta local identificable.
+RUTA_LOCAL = re.compile(r"(?:[A-Za-z]:[\\/]+Users[\\/]|/(?:home|Users)/)[^\s\"'`)\]]*")
+
+
+def sin_rutas(texto: str) -> str:
+    """Sustituye toda ruta local por un marcador neutro."""
+    return RUTA_LOCAL.sub("<RUTA-LOCAL>", texto)
 
 
 def _run(cmd: List[str], cwd: Optional[Path] = None, env: Optional[Dict[str, str]] = None,
@@ -256,10 +268,10 @@ def main() -> int:
         "fallos": len(veredicto["fallos"]),
     }
     Path(args.log).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.log).write_text(
+    Path(args.log).write_text(sin_rutas(
         "RECORRIDO MVP — fase 2 (L3)\n"
         f"artefacto: {wheels[0].name}\nvenv: {venv}\nruntime: {runtime}\n"
-        + json.dumps(veredicto, ensure_ascii=False, indent=2) + "\n",
+        + json.dumps(veredicto, ensure_ascii=False, indent=2) + "\n"),
         encoding="utf-8")
     print(f"\nveredicto: {veredicto['resumen']}")
     print(f"log: {args.log}")

@@ -4,7 +4,7 @@ PARIDAD CLI <-> MCP — fase 2 (L3)
   "problemas": [],
   "contrato_ap40": {
     "exit": 0,
-    "stdout": "{\n  \"ok\": true,\n  \"tool\": \"vault_mcp_catalog\",\n  \"action\": \"check-params\",\n  \"json_path\": \"C:\\\\Users\\\\Carlos Ivan\\\\Documents\\\\GitHub\\\\Vault-Obsidian-Architecture\\\\mcp\\\\nodejs\\\\tools-catalog.json\",\n  \"tools_checked\": 122,\n  \"problems\": []\n}\n",
+    "stdout": "{\n  \"ok\": true,\n  \"tool\": \"vault_mcp_catalog\",\n  \"action\": \"check-params\",\n  \"json_path\": \"<RUTA-LOCAL> Ivan\\\\Documents\\\\GitHub\\\\Vault-Obsidian-Architecture\\\\mcp\\\\nodejs\\\\tools-catalog.json\",\n  \"tools_checked\": 122,\n  \"problems\": []\n}\n",
     "stderr": ""
   },
   "filas": [

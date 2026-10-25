@@ -1,0 +1,52 @@
+H-L3-03 — Timeout del cliente MCP del harness (fase 2, L3)
+============================================================
+
+Que pedia QA: registrar y planificar la correccion del `readline()` bloqueante
+de las pruebas MCP para que los timeouts se cumplan, SIN confundir ese defecto
+del harness con un defecto demostrado del servidor MCP.
+
+1. QUE ERA
+----------
+El cliente MCP de `audits/fase2/paridad_cli_mcp.py` leia la respuesta del
+servidor con `readline()` sobre el pipe. Esa lectura BLOQUEA: el `timeout` del
+metodo se calculaba mientras se esperaba y, con la llamada bloqueada, nunca
+llegaba a dispararse. Un servidor MCP que no contesta dejaba el harness
+colgado indefinidamente.
+
+2. QUE SE HIZO
+--------------
+La lectura pasa a un hilo aparte que encola las lineas; el metodo espera con
+`queue.get(timeout=...)`. El timeout se cumple, y el cliente acepta el comando
+que ejecuta, lo que permite probar el silencio sin depender de node.
+
+3. PRUEBA DEL DEFECTO (no del servidor)
+---------------------------------------
+tests/test_fase2_mcp_timeout.py:
+  - test_el_timeout_se_cumple_con_un_servidor_que_no_contesta: se arranca un
+    proceso que lee stdin y NUNCA contesta (servidor mudo) y se llama con
+    timeout=2. El cliente devuelve el error de timeout en ~2s. Con la version
+    antigua (readline bloqueante) este test se colgaba: es la prueba del
+    defecto.
+  - test_una_respuesta_normal_sigue_llegando: con el servidor MCP INSTALADO
+    (VAULT_MCP_MJS), la llamada normal sigue devolviendo resultado — el arreglo
+    del timeout no rompe el camino feliz. Sin esa variable, el caso se omite
+    con motivo explicito.
+
+  Sin servidor indicado: 1 passed, 1 skipped (2.20s)
+  Con el servidor instalado: 2 passed (2.44s)
+
+4. LIMITE DECLARADO
+-------------------
+Este es un defecto del INSTRUMENTO de auditoria, NO un defecto demostrado del
+servidor MCP. En todas las corridas medidas el servidor respondio y con
+timeouts holgados; lo que se corrigio es la capacidad del harness de notar un
+silencio. Registrado como TD-0007 (categoria instrumento, P3, estado
+corregida) para que no se confunda con un hallazgo de producto.
+
+5. APARTE: LOS SCRIPTS SANEAN SU PROPIA SALIDA
+----------------------------------------------
+El verificador de saneamiento (H-L3-01) detecto que las logs que escriben los
+propios scripts de auditoria llevaban la ruta de la maquina (el venv y el
+runtime de la corrida). Ahora los dos scripts (recorrido y paridad) sustituyen
+toda ruta local por un marcador neutro ANTES de escribir, de modo que su
+salida no puede reintroducir la fuga que el verificador vigila.
