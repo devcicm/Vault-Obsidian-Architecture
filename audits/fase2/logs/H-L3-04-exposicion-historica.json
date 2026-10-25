@@ -1,0 +1,564 @@
+{
+  "commits_examinados": 23,
+  "commits_con_exposicion": [
+    "01a9d8f9def7a222aaccd02a22ef33cfa885faaa",
+    "031abfbbc42a3342ea05fc69a48cc684e349c146",
+    "15e18774155c8616e74103984be26135a44c79b7",
+    "2eabcfebb5e549ef78c8485b5ba88caa86f73c92",
+    "44f6f893670d8080703342878aca465650987604",
+    "559e2040bcc9e133e367779984ac0f6b87a409aa",
+    "5c276010e68e3d23fb5fe03101549aa02a9ecb4b",
+    "94bf46eb9be49ffa589736f4ccc15e34b3a272da",
+    "988f5b72b03902dcf9cc6694a1b354221d7dbd78",
+    "9bff040931625965d0487f6df19a473e96cefaf5",
+    "a813094a5c180436b61dbef751d37a852a44d8ca",
+    "acb20da2d20b7254d40ee8f26eeeb46f5106dd86",
+    "b37bd90b22d3d33b78ce312ff2925414d7343297",
+    "bc741dc538ba1968aac4fdcdda9d893e17c5fcb5",
+    "bcc1f8b69a2f8d7d0e0f20bf5d2f86c9895e1a75",
+    "d657fb07156a580dee41b8b23cdbe4bbe5739110",
+    "e925bef202dd807d3bb3e2d91ebc27f8e328cd4c",
+    "e98550d33e302d93dca9327930eafbf0d64436b6",
+    "f24a9b82913294dd3295058a5b56361cc2af229f",
+    "fa64feec7f1bdc0b858bf8ca1b16d65669ec7022"
+  ],
+  "hallazgos": [
+    {
+      "commit": "d657fb07156a580dee41b8b23cdbe4bbe5739110",
+      "ruta": "audits/fase2/logs/L3-paridad-cli-mcp.txt",
+      "categorias": [
+        "nombre_personal",
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "bf98bd8741ea",
+        "fd6f2ce20a1e"
+      ]
+    },
+    {
+      "commit": "b37bd90b22d3d33b78ce312ff2925414d7343297",
+      "ruta": "audits/fase2/logs/H-L3-01-saneamiento.txt",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "13c849bea0ad",
+        "2c67a8ede0e1",
+        "330972f63017",
+        "e1fa324889a0"
+      ]
+    },
+    {
+      "commit": "9bff040931625965d0487f6df19a473e96cefaf5",
+      "ruta": "audits/fase2/logs/H-L3-01-saneamiento.txt",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "13c849bea0ad",
+        "2c67a8ede0e1",
+        "330972f63017",
+        "e1fa324889a0"
+      ]
+    },
+    {
+      "commit": "44f6f893670d8080703342878aca465650987604",
+      "ruta": "audits/fase2/logs/L3-TD0001-antes.txt",
+      "categorias": [
+        "nul_utf16"
+      ],
+      "huellas_de_valores": []
+    },
+    {
+      "commit": "44f6f893670d8080703342878aca465650987604",
+      "ruta": "audits/fase2/logs/L3-TD0001-despues.txt",
+      "categorias": [
+        "nul_utf16"
+      ],
+      "huellas_de_valores": []
+    },
+    {
+      "commit": "44f6f893670d8080703342878aca465650987604",
+      "ruta": "audits/fase2/logs/L3-recorrido-mvp.txt",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "08cf2f5386d0",
+        "e72bd93f9999"
+      ]
+    },
+    {
+      "commit": "44f6f893670d8080703342878aca465650987604",
+      "ruta": "audits/fase2/logs/L3-wheel-contenido.txt",
+      "categorias": [
+        "nul_utf16"
+      ],
+      "huellas_de_valores": []
+    },
+    {
+      "commit": "44f6f893670d8080703342878aca465650987604",
+      "ruta": "audits/handoff/logs/2026-10-24-Q00-baseline.md",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "9b3084a5b234"
+      ]
+    },
+    {
+      "commit": "44f6f893670d8080703342878aca465650987604",
+      "ruta": "audits/handoff/logs/R1B-E04a-saneamiento.txt",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "9b3084a5b234"
+      ]
+    },
+    {
+      "commit": "44f6f893670d8080703342878aca465650987604",
+      "ruta": "audits/handoff/logs/R1B-E04c-h4.txt",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "bad269c8a2b1"
+      ]
+    },
+    {
+      "commit": "fa64feec7f1bdc0b858bf8ca1b16d65669ec7022",
+      "ruta": "audits/fase2/logs/L3-TD0001-antes.txt",
+      "categorias": [
+        "nul_utf16"
+      ],
+      "huellas_de_valores": []
+    },
+    {
+      "commit": "fa64feec7f1bdc0b858bf8ca1b16d65669ec7022",
+      "ruta": "audits/fase2/logs/L3-TD0001-despues.txt",
+      "categorias": [
+        "nul_utf16"
+      ],
+      "huellas_de_valores": []
+    },
+    {
+      "commit": "fa64feec7f1bdc0b858bf8ca1b16d65669ec7022",
+      "ruta": "audits/fase2/logs/L3-wheel-contenido.txt",
+      "categorias": [
+        "nul_utf16"
+      ],
+      "huellas_de_valores": []
+    },
+    {
+      "commit": "fa64feec7f1bdc0b858bf8ca1b16d65669ec7022",
+      "ruta": "audits/handoff/logs/2026-10-24-Q00-baseline.md",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "9b3084a5b234"
+      ]
+    },
+    {
+      "commit": "fa64feec7f1bdc0b858bf8ca1b16d65669ec7022",
+      "ruta": "audits/handoff/logs/R1B-E04a-saneamiento.txt",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "9b3084a5b234"
+      ]
+    },
+    {
+      "commit": "fa64feec7f1bdc0b858bf8ca1b16d65669ec7022",
+      "ruta": "audits/handoff/logs/R1B-E04c-h4.txt",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "bad269c8a2b1"
+      ]
+    },
+    {
+      "commit": "15e18774155c8616e74103984be26135a44c79b7",
+      "ruta": "audits/handoff/logs/2026-10-24-Q00-baseline.md",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "9b3084a5b234"
+      ]
+    },
+    {
+      "commit": "15e18774155c8616e74103984be26135a44c79b7",
+      "ruta": "audits/handoff/logs/R1B-E04a-saneamiento.txt",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "9b3084a5b234"
+      ]
+    },
+    {
+      "commit": "15e18774155c8616e74103984be26135a44c79b7",
+      "ruta": "audits/handoff/logs/R1B-E04c-h4.txt",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "bad269c8a2b1"
+      ]
+    },
+    {
+      "commit": "e98550d33e302d93dca9327930eafbf0d64436b6",
+      "ruta": "audits/handoff/logs/2026-10-24-Q00-baseline.md",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "9b3084a5b234"
+      ]
+    },
+    {
+      "commit": "e98550d33e302d93dca9327930eafbf0d64436b6",
+      "ruta": "audits/handoff/logs/R1B-E04a-saneamiento.txt",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "9b3084a5b234"
+      ]
+    },
+    {
+      "commit": "e98550d33e302d93dca9327930eafbf0d64436b6",
+      "ruta": "audits/handoff/logs/R1B-E04c-h4.txt",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "bad269c8a2b1"
+      ]
+    },
+    {
+      "commit": "559e2040bcc9e133e367779984ac0f6b87a409aa",
+      "ruta": "audits/handoff/logs/2026-10-24-Q00-baseline.md",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "9b3084a5b234"
+      ]
+    },
+    {
+      "commit": "559e2040bcc9e133e367779984ac0f6b87a409aa",
+      "ruta": "audits/handoff/logs/R1B-E04a-saneamiento.txt",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "9b3084a5b234"
+      ]
+    },
+    {
+      "commit": "559e2040bcc9e133e367779984ac0f6b87a409aa",
+      "ruta": "audits/handoff/logs/R1B-E04c-h4.txt",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "bad269c8a2b1"
+      ]
+    },
+    {
+      "commit": "a813094a5c180436b61dbef751d37a852a44d8ca",
+      "ruta": "audits/handoff/logs/2026-10-24-Q00-baseline.md",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "9b3084a5b234"
+      ]
+    },
+    {
+      "commit": "a813094a5c180436b61dbef751d37a852a44d8ca",
+      "ruta": "audits/handoff/logs/R1B-E04a-saneamiento.txt",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "9b3084a5b234"
+      ]
+    },
+    {
+      "commit": "a813094a5c180436b61dbef751d37a852a44d8ca",
+      "ruta": "audits/handoff/logs/R1B-E04c-h4.txt",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "bad269c8a2b1"
+      ]
+    },
+    {
+      "commit": "f24a9b82913294dd3295058a5b56361cc2af229f",
+      "ruta": "audits/handoff/logs/2026-10-24-Q00-baseline.md",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "9b3084a5b234"
+      ]
+    },
+    {
+      "commit": "f24a9b82913294dd3295058a5b56361cc2af229f",
+      "ruta": "audits/handoff/logs/R1B-E04a-saneamiento.txt",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "9b3084a5b234"
+      ]
+    },
+    {
+      "commit": "f24a9b82913294dd3295058a5b56361cc2af229f",
+      "ruta": "audits/handoff/logs/R1B-E04c-h4.txt",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "bad269c8a2b1"
+      ]
+    },
+    {
+      "commit": "bcc1f8b69a2f8d7d0e0f20bf5d2f86c9895e1a75",
+      "ruta": "audits/handoff/logs/2026-10-24-Q00-baseline.md",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "9b3084a5b234"
+      ]
+    },
+    {
+      "commit": "bcc1f8b69a2f8d7d0e0f20bf5d2f86c9895e1a75",
+      "ruta": "audits/handoff/logs/R1B-E04a-saneamiento.txt",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "9b3084a5b234"
+      ]
+    },
+    {
+      "commit": "bcc1f8b69a2f8d7d0e0f20bf5d2f86c9895e1a75",
+      "ruta": "audits/handoff/logs/R1B-E04c-h4.txt",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "bad269c8a2b1"
+      ]
+    },
+    {
+      "commit": "988f5b72b03902dcf9cc6694a1b354221d7dbd78",
+      "ruta": "audits/handoff/logs/2026-10-24-Q00-baseline.md",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "9b3084a5b234"
+      ]
+    },
+    {
+      "commit": "988f5b72b03902dcf9cc6694a1b354221d7dbd78",
+      "ruta": "audits/handoff/logs/R1B-E04a-saneamiento.txt",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "9b3084a5b234"
+      ]
+    },
+    {
+      "commit": "988f5b72b03902dcf9cc6694a1b354221d7dbd78",
+      "ruta": "audits/handoff/logs/R1B-E04c-h4.txt",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "bad269c8a2b1"
+      ]
+    },
+    {
+      "commit": "bc741dc538ba1968aac4fdcdda9d893e17c5fcb5",
+      "ruta": "audits/handoff/logs/2026-10-24-Q00-baseline.md",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "9b3084a5b234"
+      ]
+    },
+    {
+      "commit": "bc741dc538ba1968aac4fdcdda9d893e17c5fcb5",
+      "ruta": "audits/handoff/logs/R1B-E04a-saneamiento.txt",
+      "categorias": [
+        "nombre_personal",
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "13c849bea0ad",
+        "9b3084a5b234",
+        "bf98bd8741ea"
+      ]
+    },
+    {
+      "commit": "bc741dc538ba1968aac4fdcdda9d893e17c5fcb5",
+      "ruta": "audits/handoff/logs/R1B-E04c-h4.txt",
+      "categorias": [
+        "nombre_personal",
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "2c67a8ede0e1",
+        "bf98bd8741ea",
+        "e1fa324889a0"
+      ]
+    },
+    {
+      "commit": "2eabcfebb5e549ef78c8485b5ba88caa86f73c92",
+      "ruta": "audits/handoff/logs/2026-10-24-Q00-baseline.md",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "9b3084a5b234"
+      ]
+    },
+    {
+      "commit": "2eabcfebb5e549ef78c8485b5ba88caa86f73c92",
+      "ruta": "audits/handoff/logs/R1B-E04a-saneamiento.txt",
+      "categorias": [
+        "nombre_personal",
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "13c849bea0ad",
+        "9b3084a5b234",
+        "bf98bd8741ea"
+      ]
+    },
+    {
+      "commit": "2eabcfebb5e549ef78c8485b5ba88caa86f73c92",
+      "ruta": "audits/handoff/logs/R1B-E04c-h4.txt",
+      "categorias": [
+        "nombre_personal",
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "2c67a8ede0e1",
+        "bf98bd8741ea",
+        "e1fa324889a0"
+      ]
+    },
+    {
+      "commit": "031abfbbc42a3342ea05fc69a48cc684e349c146",
+      "ruta": "audits/handoff/logs/2026-10-24-Q00-baseline.md",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "9b3084a5b234"
+      ]
+    },
+    {
+      "commit": "031abfbbc42a3342ea05fc69a48cc684e349c146",
+      "ruta": "audits/handoff/logs/R1B-E04a-saneamiento.txt",
+      "categorias": [
+        "nombre_personal",
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "13c849bea0ad",
+        "9b3084a5b234",
+        "bf98bd8741ea"
+      ]
+    },
+    {
+      "commit": "5c276010e68e3d23fb5fe03101549aa02a9ecb4b",
+      "ruta": "audits/handoff/logs/2026-10-24-Q00-baseline.md",
+      "categorias": [
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "9b3084a5b234"
+      ]
+    },
+    {
+      "commit": "5c276010e68e3d23fb5fe03101549aa02a9ecb4b",
+      "ruta": "audits/handoff/logs/R1B-E04a-saneamiento.txt",
+      "categorias": [
+        "nombre_personal",
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "13c849bea0ad",
+        "9b3084a5b234",
+        "bf98bd8741ea"
+      ]
+    },
+    {
+      "commit": "01a9d8f9def7a222aaccd02a22ef33cfa885faaa",
+      "ruta": "audits/handoff/logs/2026-10-24-Q00-baseline.md",
+      "categorias": [
+        "nombre_personal",
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "13c849bea0ad",
+        "bf98bd8741ea"
+      ]
+    },
+    {
+      "commit": "e925bef202dd807d3bb3e2d91ebc27f8e328cd4c",
+      "ruta": "audits/handoff/logs/2026-10-24-Q00-baseline.md",
+      "categorias": [
+        "nombre_personal",
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "13c849bea0ad",
+        "bf98bd8741ea"
+      ]
+    },
+    {
+      "commit": "94bf46eb9be49ffa589736f4ccc15e34b3a272da",
+      "ruta": "audits/handoff/logs/2026-10-24-Q00-baseline.md",
+      "categorias": [
+        "nombre_personal",
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "13c849bea0ad",
+        "bf98bd8741ea"
+      ]
+    },
+    {
+      "commit": "acb20da2d20b7254d40ee8f26eeeb46f5106dd86",
+      "ruta": "audits/handoff/logs/2026-10-24-Q00-baseline.md",
+      "categorias": [
+        "nombre_personal",
+        "ruta_local"
+      ],
+      "huellas_de_valores": [
+        "13c849bea0ad",
+        "bf98bd8741ea"
+      ]
+    }
+  ],
+  "estado_actual": {
+    "ficheros_con_exposicion": [],
+    "conteo": 0
+  }
+}

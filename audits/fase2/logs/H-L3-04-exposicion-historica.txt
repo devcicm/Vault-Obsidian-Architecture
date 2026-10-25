@@ -1,0 +1,102 @@
+H-L3-04 — Exposicion historica de las evidencias (fase 2, L3)
+============================================================
+
+Que pedia QA: examinar los commits historicos accesibles (no solo el HEAD),
+identificar los blobs afectados, clasificar la exposicion sin reproducir los
+valores, distinguir rutas locales, datos personales y secretos operativos,
+determinar si hacen falta medidas de contencion y verificar que ningun
+instrumento nuevo reintroduzca la fuga. Sin reescribir historia sin
+autorizacion.
+
+0. CORRECCION DE UNA AFIRMACION MIA (que era incorrecta)
+----------------------------------------------------------
+En el informe de la ronda anterior afirmé: «git grep sobre origin/main,
+origin/audit/... y origin/fase2/... -> 0 ficheros con ruta local real, con el
+nombre del autor o con forma de credencial». Eso era una lectura del ARBOL DE
+CADA REF en ese momento, NO de la historia: `git grep <ref>` mira el estado
+actual de cada rama. QA loSignaló bien (H-L3-04) y tiene razón: el blob
+antiguo de `audits/fase2/logs/L3-TD0001-antes.txt` en el commit publico
+`44f68...` contiene la ruta con el nombre de cuenta real. La afirmacion
+«no hay exposicion publicada» era **materialmente incorrecta para el historial**.
+Queda corregida aqui.
+
+1. INSTRUMENTO
+---------------
+audits/fase2/auditar_exposicion_historica.py (reejecutable). Recorre TODOS los
+commits alcanzables que tocaron las evidencias (`git log --all --full-history`),
+extrae cada blob (`git show <commit>:<ruta>`) y lo clasifica. **No imprime el
+valor sensible**: de cada coincidencia publica solo una huella (sha256 corto,
+12 hex) que permite correlacionar dos hallazgos sin mostrarlos.
+
+2. INVENTARIO (medido)
+----------------------
+Commits examinados: todos los alcanzables que tocaron audits/**/logs.
+Commits con exposicion: **20** (incluye el commit `44f68...` que nombro QA).
+Estado ACTUAL (HEAD): **0 ficheros con exposicion**.
+
+Ficheros afectados en la historia (blob historico, sin valores):
+
+| Fichero | Blobs | Categorias |
+|---|---|---|
+| audits/handoff/logs/2026-10-24-Q00-baseline.md | 17 | ruta_local, nombre_personal |
+| audits/handoff/logs/R1B-E04a-saneamiento.txt | 13 | ruta_local, nombre_personal |
+| audits/handoff/logs/R1B-E04c-h4.txt | 11 | ruta_local, nombre_personal |
+| audits/fase2/logs/L3-TD0001-antes.txt | 2 | nul_utf16 |
+| audits/fase2/logs/L3-TD0001-despues.txt | 2 | nul_utf16 |
+| audits/fase2/logs/L3-wheel-contenido.txt | 2 | nul_utf16 |
+| audits/fase2/logs/L3-recorrido-mvp.txt | 1 | ruta_local |
+| audits/fase2/logs/L3-paridad-cli-mcp.txt | 1 | ruta_local, nombre_personal |
+| audits/fase2/logs/H-L3-01-saneamiento.txt | 2 | ruta_local |
+
+Totales por categoria: ruta_local 45 · nombre_personal 11 · nul_utf16 6 ·
+**forma_secreto 0**.
+
+3. CLASIFICACION
+----------------
+- **Rutas locales (45)**: la ruta del checkout del autor. Dato de entorno, no
+  operativo.
+- **Nombre personal (11)**: el nombre de cuenta del autor, en prosa o dentro de
+  la ruta. Dato personal, no credencial.
+- **NUL / UTF-16 (6)**: los tres logs que la redireccion de PowerShell escribio
+  en UTF-16. Defecto de codificacion, con el efecto de que un saneado basado en
+  texto UTF-8 no los veia.
+- **Secretos operativos: NINGUNO.** No hay token, clave ni credencial con forma
+  creible en ningun blob historico. **No hay incidente de credenciales que
+  escalar ni nada que rotar**: el dato expuesto es el nombre de cuenta y la
+  disposicion de carpetas de una maquina.
+
+4. MEDIDAS DE CONTENCION (recomendadas; la de reescritura necesita autorizacion)
+-------------------------------------------------------------------------------
+a) **Ya hecho y vigente**: el estado actual esta saneado (0) y hay dos barreras
+   automaticas: `audits/fase2/comprobar_saneamiento.py` (sale con codigo
+   distinto de cero ante cualquier fuga y lo cubre la suite) y los propios
+   scripts de auditoria, que ahora **sanean su salida antes de escribirla**
+   (fue el verificador quien les salio con la fuga).
+b) **Historia**: dos vias, ambas del propietario:
+   - **documentar y asumir** (lo que se propone por defecto): el repo es
+     publico, el dato es un nombre de cuenta y una disposicion de carpetas; el
+     coste de reescribir historia (reescribir 20+ commits, invalidar PR #1 y
+     #2,coordinar con forks y con las caches de Actions) es mayor que el
+     beneficio, y GitHub puede conservar los objetos touched aunque se
+     reescriban las ramas: la reescritura no garantiza la retirada.
+   - **reescribir historia** con `git filter-repo` o `BFG`, previa
+     autorizacion EXPRESA del propietario, y Decision sobre si se hace antes de
+     que el PR #1/#2 se fusione (cambia sus SHAs).
+   En ambos casos, lo que **no** hay que hacer es volver a publicar el valor.
+c) **Prevencion**: cubierta por (a). Comprobado: el verificador informa 0 y el
+   auditor historico informa 0 en el HEAD.
+
+5. RESULTADO DE LAS COMPROBACIONES
+----------------------------------
+- Estado actual: CONFORME (0 ficheros con exposicion).
+- Historia: 20 commits con exposicion, inventariados por fichero y categoria,
+  sin reproducir ningun valor.
+- Ningun instrumento nuevo genera evidencia sensible: los scripts de auditoria
+  sanEAN su propia salida y el verificador lo comprueba.
+
+6. RIESGO RESIDUAL
+------------------
+Los blobs historicos siguen siendo accesibles en las ramas publicas hasta que
+se decida una contencion: un nombre de cuenta y rutas de la maquina de quien
+ejecuta el producto. No hay credencial implicada, asi que el riesgo es de
+privacidad y de ruido, no de compromiso.
