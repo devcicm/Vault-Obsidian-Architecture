@@ -280,11 +280,16 @@ def evaluar(filas: List[Dict[str, Any]], contrato: Dict[str, Any],
             if efectos_cli.get("huellas") != efectos_mcp.get("huellas"):
                 problemas.append(f"{nombre}: las huellas finales de los ficheros "
                                  f"afectados difieren entre CLI y MCP")
-        fuera_cli = fila.get("fuera_del_runtime_cli") or []
-        fuera_mcp = fila.get("fuera_del_runtime_mcp") or []
-        if fuera_cli or fuera_mcp:
-            problemas.append(f"{nombre}: se modifico algo FUERA del runtime "
-                             f"autorizado (cli={len(fuera_cli)}, mcp={len(fuera_mcp)})")
+        for lado, cambios in (("CLI", fila.get("externos_cli") or {}),
+                               ("MCP", fila.get("externos_mcp") or {})):
+            for clase in ("creados", "modificados", "eliminados"):
+                if cambios.get(clase):
+                    problemas.append(f"{nombre}: efecto FUERA del runtime "
+                                     f"autorizado por {lado} ({clase}: "
+                                     f"{cambios[clase]})")
+        if fila.get("no_verificados"):
+            problemas.append(f"{nombre}: ficheros no verificables durante la "
+                             f"medicion: {fila['no_verificados']}")
         # El exit code de la CLI y su envelope tienen que concordar.
         if fila.get("cli_exit") is not None and "ok" in cli:
             fallo_con_envelope_ok = (fila["cli_exit"] != 0) and bool(cli.get("ok"))
@@ -304,6 +309,80 @@ def _normalizar(texto: str) -> Dict[str, Any]:
 
 def _elegir(sobre: Dict[str, Any], campos: List[str]) -> Dict[str, Any]:
     return {c: sobre.get(c) for c in campos if c in sobre}
+
+
+def detectar_cambios(antes: Dict[str, str], despues: Dict[str, str]) -> Dict[str, Any]:
+    """Los cambios entre dos estados, por huella de contenido.
+
+    Devuelve creados, modificados y eliminados. Un fichero que conserva el
+    nombre pero cambia de contenido es MODIFICADO: comparar solo nombres no
+    ve esa diferencia (H-F2-02).
+    """
+    return {
+        "creados": sorted(set(despues) - set(antes)),
+        "eliminados": sorted(set(antes) - set(despues)),
+        "modificados": sorted(
+            ruta
+            for ruta in set(antes) & set(despues)
+            if antes[ruta] != despues[ruta]
+        ),
+    }
+
+
+def clasificar_cambios(cambios: Dict[str, List[str]],
+                       internos: Tuple[str, ...]) -> Dict[str, Dict[str, List[str]]]:
+    """Parte los cambios en INTERNOS (runtime autorizado) y EXTERNOS (fuera).
+
+    Un cambio EXTERNO es un efecto prohibido; los INTERNOS son el efecto
+    esperado de la operacion. La distincion es de rutas, con exclusiones
+    declaradas para los entornos de la propia prueba.
+    """
+    reparto: Dict[str, Dict[str, List[str]]] = {
+        "internos": {"creados": [], "modificados": [], "eliminados": []},
+        "externos": {"creados": [], "modificados": [], "eliminados": []},
+    }
+    for clase in ("creados", "modificados", "eliminados"):
+        for ruta in cambios[clase]:
+            destino = (reparto["internos"]
+                       if any(ruta.startswith(p) for p in internos)
+                       else reparto["externos"])
+            destino[clase].append(ruta)
+    return reparto
+
+
+def _huellas_del_entorno(raiz: Path,
+                          excluidos: Tuple[str, ...] = ()) -> Dict[str, str]:
+    """Huellas del entorno, sin los directorios excluidos de la prueba.
+
+    Los que no se pueden leer se DEVUELVEN en 'no_verificados': no se pueden
+    ignorar como si no existieran (H-F2-02).
+    """
+    salida: Dict[str, str] = {}
+    no_verificados: List[str] = []
+    for ruta in sorted(raiz.rglob("*")):
+        if not ruta.is_file():
+            continue
+        relativa = ruta.relative_to(raiz).as_posix()
+        if any(relativa.startswith(p) for p in excluidos):
+            continue
+        try:
+            datos = ruta.read_bytes()
+        except OSError:
+            no_verificados.append(relativa)
+            continue
+        try:
+            texto = datos.decode("utf-8")
+        except UnicodeDecodeError:
+            texto = repr(datos)
+        salida[relativa] = hashlib.sha256(
+            _normalizar_contenido(texto).encode("utf-8")).hexdigest()
+    salida["__no_verificados__"] = no_verificados  # tipo: ignore[assignment]
+    return salida
+
+
+def _sin_no_verificados(huellas: Dict[str, Any]) -> List[str]:
+    valor = huellas.get("__no_verificados__", [])
+    return list(valor) if isinstance(valor, list) else []
 
 
 class Mcp:
@@ -444,21 +523,26 @@ def main() -> int:
         shutil.rmtree(foto, ignore_errors=True)
         shutil.copytree(runtime, foto)
         antes_cli = _huellas(runtime)
-        fuera_antes = {k: v for k, v in _huellas(padre).items() if not k.startswith(runtime.name)}
+        excluidos = (runtime.name + "/", "venv-consumer/", "venv-runner/",
+                     "dist/", "dist-clean/", "foto/")
+        antes_entorno = _huellas_del_entorno(padre, excluidos)
 
         argv = _argv(caso["tool"], caso["args"])
         p = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8",
                            errors="replace", env=env, timeout=900)
         cli_sobre = _normalizar(p.stdout)
         efectos_cli = _efectos(antes_cli, _huellas(runtime))
-        fuera_cli = sorted(set(_huellas(padre)) - set(fuera_antes)
-                           - {k for k in _huellas(padre) if k.startswith(runtime.name)})
+        cambios_cli = detectar_cambios(antes_entorno, _huellas_del_entorno(padre, excluidos))
+        reparto_cli = clasificar_cambios(cambios_cli, internos=(runtime.name + "/",))
+        fuera_cli = sorted(reparto_cli["externos"]["creados"]
+                           + reparto_cli["externos"]["modificados"]
+                           + reparto_cli["externos"]["eliminados"])
+        sin_verificar_cli = reparto_cli["externos"].get("__no_verificados__", [])
 
         shutil.rmtree(runtime, ignore_errors=True)
         shutil.copytree(foto, runtime)
         antes_mcp = _huellas(runtime)
-        fuera_antes_mcp = {k: v for k, v in _huellas(padre).items()
-                            if not k.startswith(runtime.name)}
+        antes_entorno_mcp = _huellas_del_entorno(padre, excluidos)
 
         expuesta = caso["tool"] in nombres_mcp
         is_error = False
@@ -473,8 +557,12 @@ def main() -> int:
         else:
             mcp_sobre = {}
         efectos_mcp = _efectos(antes_mcp, _huellas(runtime))
-        fuera_mcp = sorted(set(_huellas(padre)) - set(fuera_antes_mcp)
-                           - {k for k in _huellas(padre) if k.startswith(runtime.name)})
+        cambios_mcp = detectar_cambios(antes_entorno_mcp, _huellas_del_entorno(padre, excluidos))
+        reparto_mcp = clasificar_cambios(cambios_mcp, internos=(runtime.name + "/",))
+        fuera_mcp = sorted(reparto_mcp["externos"]["creados"]
+                           + reparto_mcp["externos"]["modificados"]
+                           + reparto_mcp["externos"]["eliminados"])
+        sin_verificar_mcp = reparto_mcp["externos"].get("__no_verificados__", [])
 
         filas.append({
             "case_id": caso["case_id"],
@@ -494,6 +582,9 @@ def main() -> int:
             "efectos_mcp": efectos_mcp,
             "fuera_del_runtime_cli": fuera_cli,
             "fuera_del_runtime_mcp": fuera_mcp,
+            "externos_cli": reparto_cli["externos"],
+            "externos_mcp": reparto_mcp["externos"],
+            "no_verificados": sorted(set(sin_verificar_cli) | set(sin_verificar_mcp)),
         })
         print(f"medido {caso['case_id']}: cli={filas[-1]['cli']} mcp={filas[-1]['mcp']} "
               f"efectos cli={efectos_cli['creados'] + efectos_cli['modificados']} "

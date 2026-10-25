@@ -46,7 +46,18 @@ PARIDAD CLI <-> MCP — fase 2 (L3)
         "huellas": {}
       },
       "fuera_del_runtime_cli": [],
-      "fuera_del_runtime_mcp": []
+      "fuera_del_runtime_mcp": [],
+      "externos_cli": {
+        "creados": [],
+        "modificados": [],
+        "eliminados": []
+      },
+      "externos_mcp": {
+        "creados": [],
+        "modificados": [],
+        "eliminados": []
+      },
+      "no_verificados": []
     },
     {
       "case_id": "SEARCH_HITS",
@@ -86,7 +97,18 @@ PARIDAD CLI <-> MCP — fase 2 (L3)
         "huellas": {}
       },
       "fuera_del_runtime_cli": [],
-      "fuera_del_runtime_mcp": []
+      "fuera_del_runtime_mcp": [],
+      "externos_cli": {
+        "creados": [],
+        "modificados": [],
+        "eliminados": []
+      },
+      "externos_mcp": {
+        "creados": [],
+        "modificados": [],
+        "eliminados": []
+      },
+      "no_verificados": []
     },
     {
       "case_id": "LIST_FOLDER",
@@ -123,7 +145,18 @@ PARIDAD CLI <-> MCP — fase 2 (L3)
         "huellas": {}
       },
       "fuera_del_runtime_cli": [],
-      "fuera_del_runtime_mcp": []
+      "fuera_del_runtime_mcp": [],
+      "externos_cli": {
+        "creados": [],
+        "modificados": [],
+        "eliminados": []
+      },
+      "externos_mcp": {
+        "creados": [],
+        "modificados": [],
+        "eliminados": []
+      },
+      "no_verificados": []
     },
     {
       "case_id": "WRITE_CREATE",
@@ -168,8 +201,8 @@ PARIDAD CLI <-> MCP — fase 2 (L3)
         ],
         "huellas": {
           ".history/07_Knowledge__nota-de-paridad-<TS>.md": "9748362b9e3ab30fd4f653c1c92c44027d797975420d1ccb6223c1573e43dea5",
-          "00_System/.change-log.json": "68c28474fff054dffbad8976f5b587037bdecb460c7a3ecda73e99ff635977ff",
-          "00_System/change-log.md": "f688caf1ba8bfddda4bc86eef4c87cf477077ede71eeb08c74c5964aa23dba59",
+          "00_System/.change-log.json": "bf188a402e154a7146fdaf05255da42c457f199ff6d92562d2abd9984347d69d",
+          "00_System/change-log.md": "cba669b43636d43aa06e01113982ea524be6b8c798b2e1b6763f0f29de6f5203",
           "07_Knowledge/nota-de-paridad.md": "fbc407bc5b901aeed5f856c7c0f111b49bd9df34e37ac5ad5f74ae45406cce25",
           "99_Index/search-index.json": "725f22df5e2728b446e09bf917c676a1136e37ed6a6650a4f6df9826c966bc28"
         }
@@ -186,14 +219,25 @@ PARIDAD CLI <-> MCP — fase 2 (L3)
         ],
         "huellas": {
           ".history/07_Knowledge__nota-de-paridad-<TS>.md": "9748362b9e3ab30fd4f653c1c92c44027d797975420d1ccb6223c1573e43dea5",
-          "00_System/.change-log.json": "68c28474fff054dffbad8976f5b587037bdecb460c7a3ecda73e99ff635977ff",
-          "00_System/change-log.md": "f688caf1ba8bfddda4bc86eef4c87cf477077ede71eeb08c74c5964aa23dba59",
+          "00_System/.change-log.json": "bf188a402e154a7146fdaf05255da42c457f199ff6d92562d2abd9984347d69d",
+          "00_System/change-log.md": "cba669b43636d43aa06e01113982ea524be6b8c798b2e1b6763f0f29de6f5203",
           "07_Knowledge/nota-de-paridad.md": "fbc407bc5b901aeed5f856c7c0f111b49bd9df34e37ac5ad5f74ae45406cce25",
           "99_Index/search-index.json": "725f22df5e2728b446e09bf917c676a1136e37ed6a6650a4f6df9826c966bc28"
         }
       },
       "fuera_del_runtime_cli": [],
-      "fuera_del_runtime_mcp": []
+      "fuera_del_runtime_mcp": [],
+      "externos_cli": {
+        "creados": [],
+        "modificados": [],
+        "eliminados": []
+      },
+      "externos_mcp": {
+        "creados": [],
+        "modificados": [],
+        "eliminados": []
+      },
+      "no_verificados": []
     },
     {
       "case_id": "WRITE_UPDATE",
@@ -238,8 +282,8 @@ PARIDAD CLI <-> MCP — fase 2 (L3)
         ],
         "huellas": {
           ".history/07_Knowledge__nota-de-paridad-<TS>.md": "fbc407bc5b901aeed5f856c7c0f111b49bd9df34e37ac5ad5f74ae45406cce25",
-          "00_System/.change-log.json": "5ffbf1a4d54e59afe173d24f001c498e1a54514aaf1cfc8361af0c4c01cb265c",
-          "00_System/change-log.md": "b2598cb13ef6e0372421d053531715a4e1f735276dbbe8fddd070de1d3134063",
+          "00_System/.change-log.json": "89996f07042248d066ad464edb21379919ee60050c1e6fc7acf1ad2c6b5ab2a0",
+          "00_System/change-log.md": "c28fb5df9cd1f6ba6736a0e794f4b9894f615f7b45d4fb133ed0ce030b1641a5",
           "07_Knowledge/nota-de-paridad.md": "9748362b9e3ab30fd4f653c1c92c44027d797975420d1ccb6223c1573e43dea5",
           "99_Index/search-index.json": "cac8a1d36de487117e7e7a8612d3ebcae01be77b56d382793a611c08f4e2a37d"
         }
@@ -256,14 +300,25 @@ PARIDAD CLI <-> MCP — fase 2 (L3)
         ],
         "huellas": {
           ".history/07_Knowledge__nota-de-paridad-<TS>.md": "fbc407bc5b901aeed5f856c7c0f111b49bd9df34e37ac5ad5f74ae45406cce25",
-          "00_System/.change-log.json": "5ffbf1a4d54e59afe173d24f001c498e1a54514aaf1cfc8361af0c4c01cb265c",
-          "00_System/change-log.md": "b2598cb13ef6e0372421d053531715a4e1f735276dbbe8fddd070de1d3134063",
+          "00_System/.change-log.json": "89996f07042248d066ad464edb21379919ee60050c1e6fc7acf1ad2c6b5ab2a0",
+          "00_System/change-log.md": "c28fb5df9cd1f6ba6736a0e794f4b9894f615f7b45d4fb133ed0ce030b1641a5",
           "07_Knowledge/nota-de-paridad.md": "9748362b9e3ab30fd4f653c1c92c44027d797975420d1ccb6223c1573e43dea5",
           "99_Index/search-index.json": "cac8a1d36de487117e7e7a8612d3ebcae01be77b56d382793a611c08f4e2a37d"
         }
       },
       "fuera_del_runtime_cli": [],
-      "fuera_del_runtime_mcp": []
+      "fuera_del_runtime_mcp": [],
+      "externos_cli": {
+        "creados": [],
+        "modificados": [],
+        "eliminados": []
+      },
+      "externos_mcp": {
+        "creados": [],
+        "modificados": [],
+        "eliminados": []
+      },
+      "no_verificados": []
     }
   ],
   "casos_requeridos": [
