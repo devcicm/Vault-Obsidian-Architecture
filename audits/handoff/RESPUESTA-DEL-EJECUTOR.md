@@ -353,3 +353,50 @@ Documento completo: `audits/fase2/L2-analisis-q04-q07.md` · Evidencia: `audits/
 - El release **no** se declara listo: QG-07 y la validacion multiplataforma siguen pendientes.
 
 **Estado de la fase 2: L1, L3 (con sus tres correcciones) y L2 (investigacion) entregados; L4 (documental, seguridad e historia) pendiente de autorizacion. La aceptacion corresponde a QA.**
+
+---
+
+# FASE 2 — CIERRE DE PENDIENTES Y QUALITY GATES (2026-10-25)
+
+**SHA base:** `b680ac8` (dictamen QA de L2/L3) · **SHA final:** `8a852de` · **Árbol:** limpio · **`main`: intacto** (local `4efcf22`, origen `1c34754`) · **PR #2 en DRAFT sin fusionar** · **PR #1 sin fusionar**.
+
+## C1 — Cierre de observaciones de L3
+
+### H-L3-04 · Exposición histórica — RESUELTO CON INVENTARIO
+Mi afirmación anterior («0 ficheros con ruta real en ninguna rama publicada») era una lectura del **árbol** de cada ref, no de la historia: QA la señaló bien y **era materialmente incorrecta para el historial**. El nuevo instrumento (`auditar_exposicion_historica.py`) recorre **todos** los commits alcanzables que tocaron las evidencias, extrae cada blob y lo clasifica **publicando solo huellas sha256** de los valores (correlacionables sin mostrarlos).
+- **Inventario:** 20 commits con exposición en 9 ficheros; categorías: `ruta_local` 45 · `nombre_personal` 11 · `nul_utf16` 6 · **`forma_secreto` 0**.
+- El commit que QA nombró (`44f6f89`) está en el inventario ✓.
+- **Clasificación:** dato personal y de entorno; **sin credenciales** → no hay incidente que escalar ni nada que rotar.
+- **Contención propuesta al propietario:** (a) documentar y asumir, o (b) reescritura de historia con `git filter-repo`/BFG **con autorización expresa** (y avisando de que GitHub puede conservar los blobs tocados, de modo que la reescritura no garantiza la retirada).
+- **Prevención verificada:** el verificador de saneamiento (exit 0) + los scripts de auditoría que **sanean su propia salida** + la prueba negativa de que el verificador detecta ruta real, UTF-16 y clave.
+Evidencia: `audits/fase2/logs/H-L3-04-exposicion-historica.{txt,json}` · commit `1888cf0`.
+
+### H-L3-05 · Paridad con identidad por escenario — RESUELTO
+- Cada caso lleva `case_id` propio (READ_MISSING, SEARCH_HITS, LIST_FOLDER, WRITE_CREATE, WRITE_UPDATE); el verificador exige ejecutar **cada id**, rechaza **duplicados** y **no previstos**.
+- **Efectos reales medidos**: estado del runtime antes/después por pasada (creados, modificados, eliminados y huellas con contenido normalizado —timestamps y uuid enmascarados—), telemetría de la llamada excluida por diseño, restauración del estado entre adaptadores, y comprobación de que **no se modifica nada fuera del runtime**.
+- **17 pruebas**: control positivo + los 7 negativos que exigía QA (caso omitido, duplicado, no previsto, AP-40 roto, campo ausente, errores divergentes, exit code contradictorio, efectos divergentes, huellas distintas, modificación fuera del runtime) + los previos adaptados.
+Evidencia: `audits/fase2/logs/H-L3-05-paridad-escenarios.txt` · commit `78807ab`.
+
+### H-L3-06 · Plazo global del cliente MCP — RESUELTO
+Un único deadline monotónico gobierna la llamada; las líneas con otro id **no lo renuevan**. Pruebas: servidor silencioso (timeout en el plazo), respuesta válida, mensajes con otro id, **notificaciones continuas sin la respuesta esperada** (el caso adversarial: el goteo no alarga el plazo) y terminación del proceso. 4 passed + 1 skipped sin servidor; 5 passed con él. Evidencia: `audits/fase2/logs/H-L3-06-plazo-global.txt` · commit `1448c4d`.
+
+## L4 — Auditoría documental, de seguridad y de deuda histórica
+
+- **L4-A documental** (`inventario-documental.yaml`, 8 documentos clasificados): el Quick Start del README es **INCOMPLETO** (mezcla la superficie del checkout con la del producto instalado — DOC-0001); ARQUITECTURA.md, PUERTAS.md, INSTALACION-LIMPIA.md y los ADR **VIGENTES** (el primero byte a byte con su derivado); los PRD **NO_VERIFICADOS** (DOC-0006); `.archify/` vigente como evidencia auxiliar.
+- **L4-B seguridad**: contención presente y usada (**103 ficheros** con `assert_within_vault`) y medida en el recorrido (el escape es rechazado); el MCP **exige initialize** (error −32002); **cero tools de gobernanza** en la superficie CLI/MCP (96 operaciones); la wheel declara `PyYAML>=6.0` y `Requires-Python >=3.9`; sin trazas runtime en el artefacto. Pendientes: auditoría de dependencias, symlinks/TOCTOU y validación de `params` contra el `inputSchema`.
+- **L4-C histórica** (`gaps.md` de v36.0 → v41.23): H1 **CORREGIDA** (`vault_undo` existe); H2 **PARCIAL** (14/167 con `--dry-run`); K3/K4 **PARCIALES** (21 `slugify`, 14 `utcnow`); D3 **VIGENTE** → **TD-0008**; resto NO_VERIFICADO (quedan para un lote de reconciliación ampliada).
+- **L4-D nueva deuda**: **TD-0008 (P1)** `vault_init --clean` destruye el runtime sin copia previa; **TD-0009 (P2)** el Quick Start del README no declara su supuesto; TD-0010 confirmada (TD-0006). **Descartados con motivo**: ARQUITECTURA desfasada (mi instrumento comparó contra otro derivado), trazas en la wheel (medido: 0), tools de gobernanza por MCP (medido: 0), credenciales publicadas (medido: 0).
+
+## Quality Gates — catálogo formal propuesto
+
+`audits/fase2/catalogo-qg.yaml`: QG-00..QG-07 con el contrato completo (id, name, version, purpose, owner, acceptance_authority, scope, checks, required_evidence, pass/fail_criteria, blocking_policy, timeout_policy, waiver_policy, results). Reutilizan: las 26 puertas (QG-02), `vault_arch`+catálogo+esquemas+reconciliador (QG-01), la suite+`memory_e2e`+recorrido MVP (QG-03), `comprobar_saneamiento`+guard de secretos+contención (QG-04), el verificador fail-closed de paridad+AP-40 (QG-05), `clean_install_gate`+contenido del artefacto (QG-06) y la decisión de release (QG-07). **Invariantes de gobernanza** incluidos (no-executado ≠ PASS, control degradado ≠ completo, resultado ≠ SHA distinto, baseline sin ampliar, waiver con propietario/motivo/vencimiento, release sin CI local-only, resultado histórico ≠ prueba actual, documentación ≠ capacidad sin comprobar).
+
+## TD-0003 — Diseño final (sin implementar)
+
+`audits/fase2/L2-diseno-final.md`: inventario completo de consumidores, inversión de dependencias (los duenos ejecutan sus controles y entregan el resultado; el motor lo colecciona), contrato aditivo de estados (`checks[]` con `ejecutado|degradado|fallido|no_ejecutado` + `completo`), fail-closed de CLI y puerta de coherencia, migración en tres fases revertibles con plan de rollback, siete tests propuestos y riesgos. La vía C (formalizar los cruces como puertos) se descarta: contradice las fichas `a_eliminar` con plazo. **No se ejecuta ningún commit de implementación sin autorización adicional.**
+
+## CI — PENDIENTE DE VALIDACIÓN EXTERNA
+
+Tres runs de la rama de fase 2 en `queued` (últimos SHAs 44a880e, 47f5beb, 73e9592, 1c788e3, 8a852de, bcbe6e8); los 4 completados con fallo siguen siendo de SHAs **previos** a la rama (preexistentes). Log: `audits/fase2/logs/CI-cierre.txt`. No se cancela ni relanza nada. **QG-07: BLOCKED.**
+
+**Estado de la fase 2: L1, L2 (investigación), L3 con sus tres correcciones, L4 y QG formalizado entregados. La aceptación corresponde a QA.**
