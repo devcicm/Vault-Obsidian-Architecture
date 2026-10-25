@@ -201,3 +201,53 @@ En `audits/fase2/paridad_cli_mcp.py`, las expresiones `fuera_cli` y `fuera_mcp` 
 6. **Release**: QG-07 continúa `BLOCKED`; no afirmar compatibilidad multiplataforma ni release listo.
 
 **Esta revisión no modificó código de producto.** Se registra solamente el dictamen de QA en su buzón con el SHA del ejecutor anterior al commit de QA.
+
+
+---
+
+# Dictamen QA — R01–R05 de fase 2, SHA cc787f9 (2026-10-25)
+
+**Rama examinada:** `fase2/deuda-y-product-readiness-20261025`  
+**SHA del ejecutor:** `cc787f9d6f27e64cdea247d76739b629a92333d7`  
+**Método:** revisión independiente de commits, diff, código, instrumentos, informe y logs publicados; estado de PR y Actions mediante GitHub. **QA no ejecutó la suite localmente ni certificó seguridad de todo el repositorio.**  
+**Decisión:** **REMediación R01–R05 ENTREGADA, NO ACEPTADA COMO QUALITY GATE INTEGRAL; REQUIERE CORRECCIONES ANTES DE DECLARAR QA CONFORME.**
+
+## 1. Resultado confirmado
+
+- Nueve commits nuevos sobre el dictamen `2b8c87d`, rama aislada en SHA `cc787f9`.
+- `main` sigue en `1c34754258441550139ce895e182ab219c93f9bb`; PR #1 abierto y sin fusionar; PR #2 abierto en DRAFT y sin fusionar.
+- El ejecutor reporta `6184 passed, 5 failed, 12 skipped` y puertas `25/26`; QA **no sustituye** fallos por PASS aunque sean preexistentes.
+- Los cinco fallos locales comparten causa atribuida por el ejecutor a AP-57. En el código de `vault_criterios.py`, `EXT_EJECUTABLES` incluye `.yaml/.yml`, y `medir_fronteras()` marca como `frontera_no_declarada` los YAML fuera de zonas. Debe demostrarse la clasificación correcta de **YAML de datos vs YAML ejecutable** mediante tests; no eximir `audits/fase2/` en bloque, ni ampliar baseline.
+- TD-0003/Q04–Q07 **sin implementar**, QG-02 `BLOCKED`; TD-0008 `--clean` potencialmente destructivo **solo diseñado**, aún P1 vigente; CI de SHA `cc787f9` run `40188756147` y sus jobs siguen `queued`, QG-07 `BLOCKED`.
+
+## 2. Dictamen por entrega
+
+| Unidad | Resultado QA |
+|---|---|
+| R01 auditor histórico | Código e instrumentos publicados; corrección de datos incrustados y pruebas reportadas. **ACEPTADO CON RESERVA de alcance**: el informe reclama cobertura por todos los blobs pero la versión final usa `git log -p` (parches/deltas), no lectura de cada blob completo. El docstring afirma incorrectamente que el parche contiene el blob completo para cada estado; la métrica `commits_escaneados` cuenta commits con hallazgos, no todos los commits examinados. Ajustar declaración, instrumentación y prueba de historia sin hallazgos. Sin reescritura histórica. |
+| R02 efectos externos | Se introdujo hash antes/después y clasificación de creados, modificados y eliminados, pruebas negativas y medición local 5/5 reportadas. **ACEPTADO EN ALCANCE DEL HARNESS LOCAL**; mantener exclusiones y errores de lectura documentados. |
+| R03 política de QG | Hay `politica_qg.py`, catálogo ajustado y 9 pruebas publicadas. **REQUIERE CORRECCIÓN**: la función `_evidencia_ajena()` devuelve `False` cuando falta `sha_objetivo` o `evidencias[gate].sha`. Así, un estado sintético de todos los gates PASS más `ci.conclusion=success` y `control_ejecucion.completo=true` puede devolver `liberable=true` **sin evidencias**, contradiciendo el contrato fail-closed de QG-00/QG-07. Cambiar a exigir evidencia existente y SHA objetivo válido, verificar cobertura de todos los gates obligatorios e incorporar tests negativos de datos faltantes. El estado siempre debe originarse en un colector confiable, no en declaraciones arbitrarias. |
+| R04 TD-0008 | ADR de cuarentena/confirmación/rollback y 11 pruebas **propuestas** publicado; **ACEPTADO COMO DISEÑO**, no como corrección funcional. El comando actual sigue eliminando datos sin backup. |
+| R05 informe y CI | Informe actualizado y rama publicada; validación integral **NO CONFORME** por cinco fallos y una puerta roja. CI todavía en cola. |
+
+## 3. Nuevas observaciones y criterios de cierre
+
+**H-F2-04 (P1 del sistema de QA): evidencia faltante tratada como válida.** Reproducir con pruebas unitarias usando `evidencias={}` y `sha_objetivo` ausente o vacío. Exigir `BLOCKED`, impedir `liberable=true`. No relajar tests ni publicar un release ante información no acreditada.
+
+**H-F2-05 (P1 de integridad de Quality Gate AP-57): YAML de datos clasificados como código ejecutable.** En `vault_criterios.py`, separar clasificación por rol/ruta/contenido controlado: YAML de workflows sigue vigilado; inventarios YAML de solo datos no se convierten en `frontera_no_declarada`; archivo de CI mal ubicado y copia de criterio YAML siguen detectables. Acompañar tests negativos y positivos; prohibido eximir todo un directorio arbitrariamente y prohibido inflar baseline. Volver a ejecutar AP-57, sus tests y los 26 gates.
+
+**H-F2-06 (P2 de trazabilidad): alcance histórico sobreafirmado.** La versión final `auditar_exposicion_historica.py` contiene `git log --all -p` limitado a prefijos; eso es historial de diffs en los prefijos, **no** inspección de blobs íntegros en todos los estados del repositorio. Además `commits_escaneados` deriva de `commits_vistos` que se agrega solo si hubo hallazgos. Reconciliar afirmaciones/documentación/instrumento y medir separados `commits_considerados`, `blobs_inspeccionados`, exclusiones y errores. No afirmar `0 secretos en toda la historia`; limitar la conclusión a lo efectivamente verificado.
+
+## 4. Decisión ejecutiva y próximas autorizaciones
+
+**NO ESTAMOS AL 100% EN QA.** El cierre del alcance de ejecución es una entrega comprobada, no certificación del producto. En la rama actual quedan:
+1. AP-57 y cinco tests fallidos / puerta 26 pendiente.
+2. QG-02 bloqueada hasta aplicar TD-0003 con estados de ejecución por control y probar consumidores.
+3. QG-07 bloqueada hasta CI concluyente y demás QG en PASS, incluido QG-00 acreditado.
+4. TD-0008 P1 sin implementar (riesgo de pérdida de datos con `--clean`).
+5. H-F2-04 y H-F2-06 como defectos pendientes en el sistema de QA.
+6. Documentación PRD, seguridad completa, historial de secretos, sdist y soporte multiplataforma siguen parcialmente/no verificados según L4.
+
+**No autorizar release ni merge de PR #1/#2. No reescribir Git ni alterar datos reales sin decisión del propietario.** El ejecutor debe pedir autorización explícita para implementar TD-0003/Q04–Q07 y TD-0008; la remediación AP-57 y la política de evidencia pueden tratarse en lotes aislados tras la nueva orden. Publicar SHA, tests positivos y negativos, logs y reconsultar CI para cada lote. QA revisará de nuevo.
+
+**Estado:** R01–R05 publicados; R02 aceptado en alcance del harness, R04 aceptado como diseño, R01 con reservas, R03 y QG global requieren correcciones. RELEASE / QA INTEGRAL: NO CONFORME / BLOQUEADO.
