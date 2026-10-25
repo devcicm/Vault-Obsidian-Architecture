@@ -1,0 +1,22 @@
+R1B-CIERRE — Estado de CI tras el push final del cierre — 2026-10-25
+=====================================================================
+
+Comando: gh run list --branch audit/archify-governance-20261024 --limit 4
+Consultado inmediatamente despues de publicar el commit de cierre.
+40168004595 | a813094 | queued | -
+   https://github.com/devcicm/Vault-Obsidian-Architecture/actions/runs/40168004595
+40161384740 | f24a9b8 | queued | -
+   https://github.com/devcicm/Vault-Obsidian-Architecture/actions/runs/40161384740
+40159084620 | bcc1f8b | queued | -
+   https://github.com/devcicm/Vault-Obsidian-Architecture/actions/runs/40159084620
+40159009096 | a6e1828 | queued | -
+   https://github.com/devcicm/Vault-Obsidian-Architecture/actions/runs/40159009096
+CLASIFICACION: los runs del cierre (fix AP-37 incluido) siguen en cola. Ningun
+SHA de la rama ha ejecutado todavia un workflow en GitHub Actions desde el inicio
+de la auditoria; los 4 runs completados con fallo documentados antes siguen
+siendo de SHAs anteriores a f3aaafc (preexistentes).
+
+CI: PENDIENTE DE VALIDACION EXTERNA. No se atribuye aprobacion de CI a los
+resultados locales; la validacion de esta ronda es local y esta documentada en
+R1B-CIERRE-entorno.md, R1B-CIERRE-gates.txt, R1B-CIERRE-arch.txt y
+R1B-CIERRE-suite.txt.
