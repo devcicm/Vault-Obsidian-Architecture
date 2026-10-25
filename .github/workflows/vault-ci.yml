@@ -153,6 +153,20 @@ jobs:
           python -m pip install build
           python -m build
 
+      # TD-0001 (fase 2, L3): las puertas de producto importan el paquete
+      # (`vault.meta_toolkit.distribucion`), que necesita PyYAML — una
+      # dependencia DECLARADA de la wheel. El job solo instalaba `build`, de
+      # modo que el gate moria con `ModuleNotFoundError: No module named
+      # 'yaml'` antes de empezar, y el job no podia pasar nunca. Instalar la
+      # wheel construida deja el artefacto y sus dependencias en el runner, y
+      # las puertas pasan a medir el producto instalado.
+      # `shell: bash` para que el glob de la wheel se expanda igual en los
+      # tres sistemas (el runner de Windows trae Git Bash); es el mismo shell
+      # que usa el paso de SBOM de este mismo job.
+      - name: Install wheel (artefacto y dependencias declaradas)
+        shell: bash
+        run: python -m pip install dist/*.whl
+
       - name: Run product gates
         run: python tests/run_product_gates.py
 
