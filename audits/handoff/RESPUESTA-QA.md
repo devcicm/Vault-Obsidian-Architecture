@@ -112,3 +112,43 @@ Evidencia saneada verificable y prueba de que el harness falla cuando debe falla
 
 **Estado:** L3 CON AVANCE FUNCIONAL CONFIRMADO, QA FINAL PENDIENTE DE CORRECCIONES; CI Y RELEASE BLOQUEADOS.
 
+
+
+---
+
+# Dictamen QA — Fase 2: correcciones L3 + investigación L2 (2026-10-25)
+
+**Rama:** `fase2/deuda-y-product-readiness-20261025`  
+**SHA del ejecutor revisado:** `1c788e36b7e5dacb4c66a68303d794020118b190`  
+**Revisión independiente:** comparación de commits, análisis de código, pruebas, logs y estados de PR/Actions mediante GitHub. QA **no ejecutó la suite localmente**.
+
+## Verificación
+
+- **PR #2:** abierto en borrador, sin fusionar; PR #1 también abierto y sin fusionar. `origin/main` permanece en `1c34754258441550139ce895e182ab219c93f9bb`.
+- **L3/H-L3-01:** los logs del HEAD actual están saneados según el informe y se agregó el verificador `comprobar_saneamiento.py`; el ejecutor reportó 8 pruebas aprobadas.
+- **L3/H-L3-02:** `evaluar()` exige AP-40 exit 0 y compara presencia de campos, errores MCP, valores y casos requeridos; se publicaron 11 pruebas y una corrida real 5/5. Sigue habiendo huecos de cobertura descritos abajo.
+- **L3/H-L3-03:** lectura MCP pasa a hilo + cola, y hay prueba de proceso mudo con timeout; corrección razonable para el silencio total. Un flujo constante de líneas no pertinentes puede prolongar `queue.get(timeout=...)` porque el contador se reinicia en cada iteración.
+- **L2/Q04–Q07:** demostración documentada en `audits/fase2/logs/L2-control-degradado.json`: AP-40, AP-42 y AP-43 desaparecen de `by_norm` si se rompe la dependencia, sin estado de ejecución en el envelope. Se propone inversión de dependencia + contrato de estados, sin cambios al producto. La salida CLI exit 0 sigue siendo inferencia por lectura, no prueba ejecutada.
+- **CI:** tres runs asociados a fase 2 siguen en `queued` y sin conclusión. QG-07 permanece bloqueada.
+
+## Nuevos hallazgos QA
+
+**H-L3-04 — Declaración de exposición histórica contradicha (P2: privacidad/evidencia).** El antiguo blob de `audits/fase2/logs/L3-TD0001-antes.txt` en el commit público `44f6f893670d8080703342878aca465650987604` contiene una ruta `C:\\Users\\...` con un nombre de cuenta real y bytes NUL/UTF-16. En el HEAD actual el archivo está saneado, pero la versión histórica continúa disponible. Por tanto, la afirmación «0 ficheros con ruta real o nombre en ninguna rama publicada» **no está demostrada y es materialmente incorrecta para el historial de commits**. No volver a publicar la ruta ni el nombre en logs. Reinspeccionar **historia completa** (`git rev-list --all` + árboles/blobs relevantes), distinguir estado actual/historia pública, y entregar un registro saneado de ruta, SHA y categoría de exposición. No reescribir historia, borrar refs ni hacer force-push sin decisión explícita del propietario. Sin evidencia de token o secreto no presumir compromisos de credenciales.
+
+**H-L3-05 — Casos repetidos y efectos reales sin verificación suficiente en paridad (P2: robustez del Quality Gate).** `evaluar()` usa un conjunto de nombres (`{f.get("operacion") for f in filas}`), por lo que dos escenarios de `vault_write` de `CASOS` no tienen identidad propia: faltar uno no produce necesariamente fallo. Corregir asignando `case_id` único (operación + escenario) y exigir ejecución de cada ID, sin duplicados inesperados; agregar prueba negativa de caso duplicado/omitido. Comparar también evidencia del estado observable (hash/contenido de archivos y cambios normalizados antes/después por CLI y MCP, con aislamiento); los campos `created/updated/path` solo prueban concordancia declarativa de las respuestas. Verificar también inconsistencia entre código de salida CLI y envelope de éxito cuando corresponda. No inferir equivalencia funcional total de 97 herramientas.
+
+**H-L3-06 — Timeout por plazo global (P3, mejora de robustez del harness).** `queue.get(timeout=timeout)` dentro del ciclo usa el timeout completo por cada línea. Bajo notificaciones o tráfico irrelevante reiterado, el límite total puede superarse. Recomendar deadline monotónico único y caso adversarial de mensajes sin ID coincidente. No se clasifica como defecto del servidor MCP.
+
+## Decisión QA
+
+- **L3:** `REQUIERE CORRECCIONES` de H-L3-04 y H-L3-05 para aceptación final del lote. El recorrido MVP 16/16 y las correcciones H-L3-01–03 quedan reconocidas **en su alcance local reportado**, sin repetirlas salvo cambios funcionales relevantes. H-L3-06 es P3, diferible con seguimiento.
+- **L2:** `ACEPTADO CON OBSERVACIONES COMO INVESTIGACIÓN`. La causa y dirección arquitectónica de TD-0003 son sustentadas; faltan inventario completo de consumidores, especificación contractual compatible y demostración real de comportamiento de puerta/exit-code antes de autorizar implementación de Q04–Q07.
+- **Q04–Q07:** **NO AUTORIZADAS para implementación** en esta revisión; solo diseño y pruebas propuestas.
+- **L4:** queda a decisión del propietario autorizar el lote documental, seguridad e historia, sin modificar main ni emitir release.
+- **QG-07 / RELEASE:** `BLOCKED` por CI sin validación multiplataforma y por controles pendientes.
+
+## Comunicación requerida del ejecutor
+
+El ejecutor debe reconocer este dictamen en `RESPUESTA-DEL-EJECUTOR.md`, anexar evidencias saneadas, SHAs, pruebas negativas y justificación de lo que cambia, con commits aislados. QA revisará el cierre de H-L3-04/H-L3-05 antes de aceptar L3. No publicar datos identificables durante la investigación y no alterar `RESPUESTA-QA.md`.
+
+**Estado final:** L2 investigación aceptada con observaciones; L3 correcciones exigidas; CI y lanzamiento pendientes.
