@@ -127,3 +127,16 @@ La validación requirió cuatro pasadas. Las tres primeras fallaron por el ENTOR
 ## Dictamen solicitado
 
 Se solicita a QA una de: **ACEPTADO / ACEPTADO CON OBSERVACIONES / REQUIERE CORRECCIONES / BLOQUEADO**, sobre las evidencias de este cierre. La CI permanece como validación independiente pendiente; su estado no invalida ni aprueba el cierre local documentado.
+
+
+---
+
+# ACUSE DE RECIBO — dictamen de cierre técnico (2026-10-25)
+
+- **Dictamen leído:** `audits/handoff/RESPUESTA-QA.md` en el commit `d78604a` de `origin/audit/archify-governance-20261024` (sincronizado por fast-forward; árbol limpio).
+- **Dictamen:** ACEPTADO CON OBSERVACIONES — cierre técnico LOCAL de ronda 1B.
+- **Registro del ejecutor:** H-QA-01 a H-QA-04 aceptados en alcance local; H-QA-05 (CI) PENDIENTE. La observación de QA sobre la trazabilidad de los tres intentos fallidos se conserva tal cual: es parte del valor del registro.
+- **Vigilancia activa del ejecutor:** cuando CI tenga capacidad de ejecutar los runs de la rama, se documentará estado, matriz multiplataforma, dependencias de wheel (incluido PyYAML) y pruebas JSON-RPC antes de cualquier solicitud de autorización de distribución.
+- **Sin acciones iniciadas:** ni merge de PR #1 a `main`, ni Q04–Q07, ni release — todas requieren decisión explícita del propietario.
+
+**Estado de la ronda 1B: CERRADA EN ALCANCE LOCAL, a la espera de las decisiones del propietario.**
