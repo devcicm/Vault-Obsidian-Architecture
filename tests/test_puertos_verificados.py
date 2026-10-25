@@ -64,7 +64,13 @@ def test_hay_puertos_en_los_contextos_que_publican_api():
     # +1 en 0134101: `reconciled_params`, en `meta_toolkit`. `cli/registry.py`
     # dejó de leer los params crudos del catálogo (81 fantasma en 41 tools) y
     # pide al dueño los que argparse acepta; el cruce se declara, no se esconde.
-    assert len(PUERTOS) == 65
+    # +3 en la ronda 1B de la auditoria (commits 4fededd y f6a5387): los
+    # puertos `resolucion_de_vocabulario` y `registro_de_nuevos_terminos`, y
+    # `enumeracion_indexable`, los tres de Indices. No son puertos nuevos por
+    # conveniencia: son simbolos que otro contexto ya usaba y que el registro
+    # no nombraba — la baseline de `off_port` los contaba como deuda porque el
+    # registro iba por detras del codigo, igual que los 23 de v40.8.
+    assert len(PUERTOS) == 68
     # `cli` queda fuera a propósito: es un adaptador de transporte y **nadie
     # importa de `cli/`**, así que no publica API. Exigirle un puerto obligaría
     # a inventar uno, que es justo lo contrario de lo que mide este fichero.
@@ -186,19 +192,37 @@ def test_ningun_simbolo_privado_cruza_una_frontera():
     assert privados == [], privados
 
 
-def test_el_detector_ve_los_dos_estilos_de_import():
+def test_el_detector_ve_los_dos_estilos_de_import(tmp_path, monkeypatch):
     """Lo que faltaba para que el test de arriba afirme algo.
 
     Sin esto, «ningún privado cruza» se puede volver a cumplir mañana por
     estrechar la medida en vez de arreglar el código, que es exactamente lo que
     pasó entre v40.8 y v40.9.
+
+    Los dos ejemplos de antes dejaron de servir: `vault_tags.apply_vocabulary`
+    y `vault_reindex.notas_indexables` se publicaron como puertos en la ronda
+    1B de la auditoría, y un puerto no puede ser ejemplo de una violación. Lo
+    que hay que conservar es la CAPACIDAD de detección: que el detector siga
+    viendo las dos formas de importar.
     """
     fuera = arch.cruces_fuera_de_puerto()
-    # `from vault_smoke import SIN_SMOKE` en vault_norms — estilo ImportFrom.
-    assert [x for x in fuera if x["symbol"] == "vault_smoke.SIN_SMOKE"]
-    # `import vault_tags` + `vault_tags.apply_vocabulary` — estilo Import, que
-    # es el que el detector no veía.
-    assert [x for x in fuera if x["symbol"] == "vault_tags.apply_vocabulary"]
+    # Estilo `import X as _alias` + `_alias.attr` — el que el detector no veía
+    # hasta v40.9. El ejemplo vivo es `vault_smoke.load_baseline`, uno de los
+    # cinco cruces que siguen congelados (D–H de la auditoría 2026-10-24).
+    assert [x for x in fuera if x["symbol"] == "vault_smoke.load_baseline"]
+    # Estilo `from X import y`: hoy no queda ningún cruce vivo que lo use —los
+    # cinco que quedan son todos `import X as _alias`—, así que la rama se
+    # prueba con un fichero sintético, que es donde todavía se puede provocar
+    # la violación. Si la rama se empujara por ondear la medida, este caso
+    # dejaría de ver el símbolo importado y caería.
+    fichero = tmp_path / "vault_falso.py"
+    fichero.write_text("from vault_smoke import SIN_SMOKE\n", encoding="utf-8")
+    ctx_smoke = arch.contexto_de("vault_smoke")
+    monkeypatch.setattr(arch, "arboles_medidos", lambda: [fichero])
+    monkeypatch.setattr(
+        arch, "_mapa_modulos",
+        lambda: {"vault_falso": "gobernanza", "vault_smoke": ctx_smoke})
+    assert [h["symbol"] for h in arch.cruces_fuera_de_puerto()] == ["vault_smoke.SIN_SMOKE"]
 
 
 def test_un_acceso_por_import_liso_se_reporta(tmp_path, monkeypatch):

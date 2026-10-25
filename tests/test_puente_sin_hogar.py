@@ -371,8 +371,25 @@ def test_lote_h_los_cinco_con_firmas_en_baselines_migran(modulo, dueno, cli):
 
 
 def test_lote_h_el_cruce_de_sanacion_sigue_medido():
+    """El cruce de `vault_sanacion` se sigue viendo, pero ya no es una
+    violación: `vault_reindex.notas_indexables` se publicó como puerto de
+    Índices en la ronda 1B de la auditoría (commit f6a5387), así que el
+    detector lo clasifica como entrada por puerto y deja de reportarlo.
+
+    Lo que se comprueba ahora es lo contrario de lo que se comprobaba: que el
+    cruce no se ha examiner a silencio por otra vía. Si el puerto desapareciera,
+    el cruce volvería a salir y la puerta lo vería; por eso se comprueba que
+    el puerto sigue declarado.
+
+    La capacidad de detección del punto ciego que este test cubría —que un
+    dueño migrado deje de medirse porque el mapa no lo conoce por su nombre
+    público— la sostiene el caso sintético de más abajo, con un símbolo que
+    sigue FUERA de puerto.
+    """
     claves = {f"{c['module']} -> {c['symbol']}" for c in vault_arch.cruces_fuera_de_puerto()}
-    assert "vault_sanacion -> vault_reindex.notas_indexables" in claves
+    assert "vault_sanacion -> vault_reindex.notas_indexables" not in claves
+    # Y el puerto que lo hace legal sigue declarado.
+    assert "notas_indexables" in vault_arch._superficie_publica("indices")
 
 
 def test_spec_generate_catalog_lee_el_catalogo_donde_vive():
@@ -429,17 +446,26 @@ def test_un_cruce_fuera_de_puerto_de_un_dueno_se_mide_con_su_alias(tmp_path, mon
     un dueño migrado (`vault/ciclo_de_vida/sanacion.py`) no está en el mapa con
     ese nombre y sus cruces dejaban de medirse. Lo destapó el lote H, al dar por
     saldado `vault_sanacion -> vault_reindex.notas_indexables` sin que nadie lo
-    hubiera saldado. La clave es la del alias, como en `cruces()` (AP-44)."""
-    dueno = tmp_path / "sanacion.py"
-    dueno.write_text("import vault_reindex\nvault_reindex.notas_indexables\n",
+    hubiera saldado. La clave es la del alias, como en `cruces()` (AP-44).
+
+    El símbolo de ejemplo tiene que seguir siendo uno FUERA de puerto:
+    `vault_reindex.notas_indexables` se publicó como puerto en la ronda 1B, y
+    un puerto no puede servir de ejemplo de una violación. Se usa
+    `vault_smoke.load_baseline`, que sigue congelado (cruce D de la auditoría
+    2026-10-24). Si el detector volviera a perder el nombre del alias, este
+    caso dejaría de encontrar el cruce y caería.
+    """
+    dueno = tmp_path / "norms_engine.py"
+    dueno.write_text("import vault_smoke\nvault_smoke.load_baseline\n",
                      encoding="utf-8")
     monkeypatch.setattr(vault_arch, "arboles_medidos", lambda: [dueno])
     monkeypatch.setattr(vault_arch, "alias_de_dueno",
-                        lambda r: "vault_sanacion" if r == dueno else None)
+                        lambda r: "vault_norms_engine" if r == dueno else None)
     cruces = vault_arch.cruces_fuera_de_puerto()
-    assert {"module": "vault_sanacion", "from_context": "ciclo_de_vida",
-            "to_context": vault_arch.contexto_de("vault_reindex"),
-            "symbol": "vault_reindex.notas_indexables"} in cruces, cruces
+    assert {"module": "vault_norms_engine",
+            "from_context": vault_arch.contexto_de("vault_norms_engine"),
+            "to_context": vault_arch.contexto_de("vault_smoke"),
+            "symbol": "vault_smoke.load_baseline"} in cruces, cruces
 
 
 def test_las_guardas_de_ap49_leen_el_codigo_del_dueno(tmp_path, monkeypatch):

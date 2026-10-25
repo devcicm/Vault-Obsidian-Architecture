@@ -1,0 +1,94 @@
+R1B-E04b — Correccion de fixtures arquitectónicos (cuatro tests) — 2026-10-24
+===========================================================================
+
+SHA: 5c27601 (antes del parche de esta unidad)
+Entorno: Windows, PowerShell 5, Python 3.14.3, rama audit/archify-governance-20261024
+Comando: python -m pytest tests/test_puente_sin_hogar.py tests/test_puertos_verificados.py -q --tb=short
+Codigo de salida: 0
+Resultado: PASÓ — 167 passed in 137.95s
+Log: este fichero
+
+CAUSA COMUN (no cuatro fallos, uno)
+-----------------------------------
+Los cuatro tests usaban como ejemplo simbolos que la ronda 1 publico como puertos
+(`vault_tags.apply_vocabulary`, `vault_tags.record_new_tags`,
+`vault_reindex.notas_indexables`). Un puerto es una entrada legal: el detector deja
+de reportarla, porque reportarla seria medir una violacion inexistente. Los tests
+no estaban mal: describian la medida ANTES de que la superficie de contrato
+cambiara. El registro de puertos cambio en los commits 4fededd (Q01) y f6a5387
+(Q03), y con el cambio cambio lo que es una infraccion.
+
+Los cinco cruces que siguen congelados (D–H de la auditoria 2026-10-24) son:
+    vault_norms_engine -> vault_mcp_catalog.check_params
+    vault_norms_engine -> vault_smoke.load_baseline
+    vault_norms_engine -> vault_smoke.SIN_SMOKE
+    vault_norms_engine -> vault_voice.coverage
+    vault_norms_engine -> vault_smoke.invocation
+La baseline NO se ha tocado en esta unidad: sigue con 5 entradas.
+
+1) tests/test_puertos_verificados.py::test_hay_puertos_en_los_contextos_que_publican_api
+   ANTES: comprobaba que el total de puertos publicados fuera 65 y que todo contexto
+   con API publicara al menos uno (la excepcion `cli` sigue sin API).
+   POR QUE CADUCO: el total es un tripwire de additions/retiradas deliberadas; los tres
+   puertos de la ronda 1B lo llevan a 68. No caduco por un defecto: caduco porque el
+   registro cambio a proposito, con los commits 4fededd y f6a5387.
+   AHORA: 68, con elmotivo de los tres puertos escrito en el docstring (mismo formato que
+   las entradas de v40.8, v40.26, v40.30 y posteriores).
+   CAPACIDAD DE DETECCION: el tripwire sigue avisando de cualquier puerto anadido o
+   retirado sin que alguien lo mire; se conserva integro.
+
+2) tests/test_puertos_verificados.py::test_el_detector_ve_los_dos_estilos_de_import
+   ANTES: probaba que el detector viera las dos formas de importar —`from X import y`
+   (ImportFrom) y `import X` + `X.attr` (Import)— con dos ejemplos vivos:
+   `vault_smoke.SIN_SMOKE` y `vault_tags.apply_vocabulary`.
+   POR QUE CADUCO: el segundo ejemplo se publico como puerto en 4fededd, y un puerto no
+   puede ser ejemplo de una infraccion.
+   AHORA: el estilo Import se demuestra con un ejemplo VIVO y congelado
+   (`vault_smoke.load_baseline`, cruce D). El estilo ImportFrom ya no tiene ningun
+   cruce vivo —los cinco que quedan son todos `import X as _alias`—, asi que su rama
+   se prueba con un fichero sintetico (`from vault_smoke import SIN_SMOKE`), que es
+   donde todavia se puede provocar la infraccion.
+   CAPACIDAD DE DETECCION: si la rama del detector se empujara por ondear la medida,
+   el caso sintetico dejaria de ver el simbolo importado y caeria; el ejemplo vivo
+   保证 que el estilo Import sigue viéndose.
+
+3) tests/test_puente_sin_hogar.py::test_lote_h_el_cruce_de_sanacion_sigue_medido
+   ANTES: exigia que el cruce `vault_sanacion -> vault_reindex.notas_indexables` SE
+   reportara como fuera de puerto (punto ciego: un dueno migrado deja de medirse si el
+   mapa no lo conoce por su nombre publico).
+   POR QUE CADUCO: el cruce ya no es una infraccion: `notas_indexables` se publico
+   como puerto de Indices en f6a5387.
+   AHORA: se exige lo contrario — que NO se reporte — y que el puerto que lo hace legal
+   siga declarado.
+   CAPACIDAD DE DETECCION: demostrada de forma empirica con un par positivo/negativo
+   (abajo). El punto ciego que cubria lo sostiene ahora el caso 4.
+
+4) tests/test_puente_sin_hogar.py::test_un_cruce_fuera_de_puerto_de_un_dueno_se_mide_con_su_alias
+   ANTES: con un fichero sintetico que importaba `vault_reindex.notas_indexables`,
+   exigia que el cruce se midiera bajo el nombre del alias (`vault_norms_engine`).
+   POR QUE CADUCO: el simbolo de ejemplo se publico como puerto, y el detector, con
+   razon, no lo reporta.
+   AHORA: el fichero sintetico usa `vault_smoke.load_baseline`, que SIGUE fuera de
+   puerto, y el alias es `vault_norms_engine`. El caso sigue exigiendo que el cruce se
+   mida bajo el nombre del alias.
+   CAPACIDAD DE DETECCION: si el detector volviera a perder el nombre del alias del
+   dueno migrado, este caso dejaria de encontrar el cruce y caeria. Es el mismo
+   mecanismo (alias_de_dueno) y el mismo aserto, con un simbolo cuya infraccion es real.
+
+DEMOSTRACION DE LA CAPACIDAD DE DETECCION (par positivo/negativo, ejecutado)
+----------------------------------------------------------------------------
+Con el puerto declarado, el sitio de sanacion no se reporta; al retirar el puerto a
+proposito (solo en memoria, sin tocar el registro), el cruce reaparece con su clave
+exacta. Es decir: el detector sigue viendo la infraccion si la infraccion vuelve.
+
+    POSITIVO (puerto declarado): el sitio NO se reporta -> False
+    NEGATIVO (puerto retirado a proposito): el sitio SI se reporta -> True
+       claves con el cruce reaparecido: ['vault_sanacion -> vault_reindex.notas_indexables']
+
+Que NO se ha tocado
+-------------------
+- scripts/arch-baseline.json: sin cambios (5 entradas, ni una mas).
+- scripts/vault_arch.py: sin cambios (los puertos se publicaron en 4fededd y f6a5387).
+- Ningun test se ha debilitado, eliminado ni puesto en skip: los cuatro siguen
+  afirma[n]do sobre su capacidad de deteccion, con ejemplos que siguen siendo
+  infracciones reales.
