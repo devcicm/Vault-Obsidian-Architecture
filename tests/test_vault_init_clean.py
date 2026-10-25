@@ -266,3 +266,70 @@ def test_si_la_restauracion_falla_la_cuarentena_se_conserva(tmp_path, monkeypatc
     assert restauracion["ok"] is False
     assert restauracion["cuarentena"] == str(cuarentena)
     assert cuarentena.exists(), "la cuarentena no se borra si falla la restauracion"
+
+
+def test_borrado_parcial_real_y_restauracion_verificada(tmp_path, monkeypatch):
+    """QA-RC-01d: un borrado que SI borra algo y LUEGO falla."""
+    raiz = _vault(tmp_path)
+    (raiz / "17_Preferences").mkdir()
+    (raiz / "17_Preferences" / "pref.md").write_text("preferencia\n", encoding="utf-8")
+    antes = _huellas(raiz)
+
+    def _rename_falla(self, destino):
+        raise OSError(18, "EXDEV")
+
+    borrados = {"n": 0}
+
+    def _rmtree_parciado(path, *args, **kwargs):
+        borrados["n"] += 1
+        original_rmtree(path, *args, **kwargs)  # borra de verdad
+        if borrados["n"] == 1:
+            raise OSError("fallo inducido tras el primer borrado exitoso")
+
+    import shutil
+    original_rmtree = shutil.rmtree
+    monkeypatch.setattr(Path, "rename", _rename_falla)
+    monkeypatch.setattr("shutil.rmtree", _rmtree_parciado)
+    resultado = vi._preparar_clean(raiz, confirm=raiz.name)
+    monkeypatch.setattr("shutil.rmtree", original_rmtree)
+    assert borrados["n"] >= 1, "la prueba debe haber borrado algo antes de fallar"
+    assert resultado["ok"] is False
+    assert resultado["preparacion"]["estado"] == "ROLLBACK"
+    assert resultado["preparacion"]["restauracion"]["verificado"] is True
+    assert _huellas(raiz) == antes, "el rollback no restauro el contenido"
+    # La cuarentena se conserva para recuperacion manual si algo fallara despues.
+    assert Path(resultado["preparacion"]["cuarentena"]).exists()
+
+
+def test_la_restauracion_desde_copia_verifica_el_contenido(tmp_path):
+    """QA-RC-01c: ok:true solo si el contenido restaurado es el original."""
+    raiz = _vault(tmp_path)
+    inventario = vi._inventario(raiz)
+    cuarentena = vi._cuarentena_hermana(raiz)
+    shutil.copytree(raiz, cuarentena, symlinks=True)
+    (cuarentena / "07_Knowledge" / "nota.md").write_text("contenido corrupto\n",
+                                                         encoding="utf-8")
+    restauracion = vi._restaurar_copia(raiz, cuarentena, inventario)
+    assert restauracion["ok"] is False
+    assert restauracion["detalle"] == "RESTAURACION_NO_VERIFICADA"
+    assert "07_Knowledge/nota.md" in restauracion["verificacion"]["distintos"]
+
+
+def test_ok_false_en_inicializacion_con_restauracion_fallida(tmp_path, monkeypatch):
+    """QA-RC-01a: si la restauracion falla, el estado es RECUPERACION_PENDIENTE."""
+    raiz = _vault(tmp_path)
+    monkeypatch.setattr(vi, "_raiz", lambda: raiz)
+
+    def _sin_clean(**kwargs):
+        return {"ok": False, "error_code": "VAULT_NOT_FOUND", "message": "x"}
+
+    monkeypatch.setattr(vi, "_vault_init_sin_clean", _sin_clean)
+
+    def _restaurar_falla(r, c):
+        return {"ok": False, "detalle": "inducido", "cuarentena": str(c)}
+
+    monkeypatch.setattr(vi, "_restaurar", _restaurar_falla)
+    resultado = vi.vault_init(clean=True, confirm=raiz.name, run_audit=False)
+    assert resultado["ok"] is False
+    assert resultado["clean"]["estado"] == "RECUPERACION_PENDIENTE"
+    assert resultado["args"]["restauracion"]["ok"] is False
