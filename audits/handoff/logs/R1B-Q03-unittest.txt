@@ -1,0 +1,71 @@
+R1B-Q03 — Precedencia de root= sobre la raiz ambiental (H-Q03-01) — 2026-10-24
+=================================================================================
+
+SHA: bf4003f69bc84ac1ffa0fd13fc2bfe41045cc046 + parche local (commit de esta unidad)
+Entorno: Windows, PowerShell 5, Python 3.14.3, rama audit/archify-governance-20261024
+Comando: python -m unittest discover -s tests -p "test_puerto_notas_indexables.py" -v
+Codigo de salida: 0
+Resultado: PASÓ — Ran 4 tests in 23.200s — OK
+Comando complementario: python -m pytest tests/test_puerto_notas_indexables.py tests/test_ap39_contrato.py -q
+Codigo de salida: 0 — 10 passed in 40.52s
+Log: audits/handoff/logs/R1B-Q03-unittest.txt (este fichero, salida integra al final)
+
+Que mide la prueba nueva (`test_el_root_explicito_manda_sobre_el_vaULT_root`)
+---------------------------------------------------------------------------
+El puerto recibe `root=` explicito mientras el AMBIENTE apunta a otra raiz. Se
+comprueba, en este orden:
+
+  0. Sin argumento, el puerto enumera la raiz AMBIENTAL (`self.raiz`): se ve en
+     `nota-proyecto.md` y no en `senaluelo.md`.
+  1. Con `root=self.otra`, enumera la raiz EXPLICITA: `senaluelo.md` presente.
+  2. No aparece ninguna nota de la raiz ambiental (`nota-proyecto.md`,
+     `nota-saber.md` ausentes).
+  3. Los filtros del criterio se conservan en la raiz explicita: suelta en la raiz
+     (`suelta-otra.md`), tramo oculto (`nota-y.md`) y carpeta fuera del
+     vocabulario de secciones (`nota-z.md`) quedan fuera.
+  4. Todas las rutas devueltas cuelgan de la raiz solicitada.
+  5. El orden es estable con la raiz explicita (dos llamadas, misma lista).
+
+Capacidad de deteccion conservada
+----------------------------------
+Si el adaptador ignorara el argumento `root=` y leyera la raiz ambiental, las
+enumeraciones 0 y 1 darian la misma lista: la asercion 2 (`assertNotIn
+("nota-proyecto.md")`) caeria y la 1 (`assertIn("senaluelo.md")`) tambien. Es
+decir, la prueba falla ante exactamente la violacion que pretendia detectar, y
+no solo ante un cambio de nombres.
+
+Como se fijo el ambiente (hecho medido, no supuesto)
+----------------------------------------------------
+En proceso, la raiz que el kernel resolveria por su cuenta esta fijada AL
+IMPORTAR (`vault/kernel/raiz.py:295`: `VAULT_ROOT = _detect_vault_root()`), y
+`reset_vault_root()` no relee la variable: devuelve la detectada en la
+importacion. La unica via para mover el ambiente en caliente es el override
+documentado `set_vault_root()`, que es el mismo mecanismo que usa una tool. La
+prueba usa las dos (variable de entorno para lo que corre en subproceso,
+override para lo que corre en proceso) y restaura ambas al terminar, para no
+dejar el proceso apuntando a un temporal.
+
+Salida completa del comando
+---------------------------
+python : test_el_root_explicito_manda_sobre_el_vaULT_root 
+(test_puerto_notas_indexables.PuertoEnumeracionIndexable.test_el_root_explicito_manda_sobre_el_vaULT_root)
+En línea: 35 Carácter: 44
++ ... h_e03c.py"; python -m unittest discover -s tests -p 'test_puerto_nota ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (test_el_root_ex..._el_vaULT_root):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+El argumento `root=` tiene precedencia sobre `VAULT_ROOT`. ... ok
+test_la_raiz_alternativa_manda (test_puerto_notas_indexables.PuertoEnumeracionIndexable.test_la_raiz_alternativa_manda)
+`root=R` enumera R y solo R: ni la autodetecci¾n ni otra raÝz ... ok
+test_los_filtros_del_criterio_del_dueno 
+(test_puerto_notas_indexables.PuertoEnumeracionIndexable.test_los_filtros_del_criterio_del_dueno)
+Fuera de secci¾n, suelto en la raÝz y tramo oculto no son notas ... ok
+test_orden_estable_y_equivalencia_con_el_dueno 
+(test_puerto_notas_indexables.PuertoEnumeracionIndexable.test_orden_estable_y_equivalencia_con_el_dueno)
+Dos llamadas consecutivas devuelven el mismo orden, y el conjunto ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 23.200s
+
+OK
