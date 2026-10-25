@@ -55,8 +55,8 @@ VERIFICACION
 | tests/test_criterios_yaml.py | 7 passed |
 | tests/test_criterios_fronteras.py + test_ap57_criterios.py + test_ap46 | 50 passed |
 | python scripts/vault_criterios.py --check --strict | ok, new_copies [], baseline 2 |
-| python scripts/vault_gate.py --strict | ver informe de cierre |
-| python -m pytest tests/ -q -n auto | ver informe de cierre |
+| python scripts/vault_gate.py --strict | **26/26 puertas en verde** |
+| python -m pytest tests/ -q -n auto | **6203 passed, 12 skipped, 0 failed** (1079 s) |
 | python audits/fase2/comprobar_saneamiento.py | exit 0 |
 
 LO QUE ESTE LOTE NO HACE

@@ -61,6 +61,25 @@ del diseño de TD-0008 para pasar a implementación.
 
 ---
 
+## Lote de correcciones del dictamen QA (H-F2-04, H-F2-05, H-F2-06)
+
+Publicado sobre el dictamen `cb3233a`, en commits separados:
+
+| Hallazgo | Corrección | Commit | Evidencia |
+|---|---|---|---|
+| **H-F2-04** (P1) — la política daba `liberable=true` sin SHA ni evidencias | `sha_objetivo` obligatorio (7-40 hex) + evidencia obligatoria por gate; ausente → `EVIDENCIA_AUSENTE`, de otro SHA → `EVIDENCIA_DE_OTRO_SHA` | `0a583da` | 15 pruebas; repro posterior da `liberable=false` |
+| **H-F2-05** (P1) — YAML de datos leído como frontera ejecutable (AP-57) | `yaml_es_ejecutable()`: `.github/` = ejecutable; claves de primer nivel de workflow = ejecutable aunque esté mal ubicado; resto = datos | `8b01bdb` | 7 pruebas nuevas; 50 passed en AP-57/AP-46; `criterios` ok, `new_copies []`, baseline 2 |
+| **H-F2-06** (P2) — alcance histórico sobreafirmado | Se inspeccionan **parches** (declarado), `blobs_inspeccionados=0`, métricas separadas (`commits_considerados=52`, `con_exposicion=10`, `ficheros=64`, `deltas=120`, `errores=0`) y prueba de historia sin hallazgos | `d175917` | `logs/H-F2-01-exposicion-historica.{json,txt}`, `logs/R01-auditor-historico.txt` |
+
+**Registro canónico:** `TD-0010`, `TD-0011` y `TD-0012` en `audits/fase2/inventario-deuda.yaml`, estado `corregida` con su commit.
+**Informe del lote:** `audits/fase2/logs/R06-dictamen-correcciones.txt`.
+
+**Verificación de este lote:** puertas **26/26** (`vault_gate --strict`), `comprobar_saneamiento` exit 0, suite completa en `R06`.
+
+**Lo que sigue pendiente y por qué:** TD-0003/Q04–Q07 (cambio de producto, requiere autorización; QG-02 `BLOCKED`), TD-0008 (diseño publicado; `vault_init --clean` intacto, requiere autorización), CI en cola (QG-07 `BLOCKED` con `CI_PENDIENTE`) y la exposición histórica del blob de `b9fb71d`, que sólo el propietario puede decidir reescribir.
+
+---
+
 # Respuesta del ejecutor a QA — ronda 1B (histórico, se conserva)
 - **Emisor:** agente local (ejecutor técnico)
 - **Destinatario:** QA arquitectónico
