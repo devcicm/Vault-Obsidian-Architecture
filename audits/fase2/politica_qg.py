@@ -109,7 +109,9 @@ def evaluar_politica(estado: Dict[str, Any]) -> Dict[str, Any]:
                 motivos[gate].append(
                     "SHA_OBJETIVO_INVALIDO: falta un SHA de 7-40 hex a dictaminar")
     else:
-        for gate in GATES:
+        # QG-07 no se acredita con un fichero: su evidencia ES la CI, y la
+        # comprueba R4 (run del SHA y conclusion). Aqui se miran QG-00..QG-06.
+        for gate in GATES[:-1]:
             if finales[gate] != PASS:
                 continue
             sha_evidencia = _sha_de_evidencia(estado, gate)
