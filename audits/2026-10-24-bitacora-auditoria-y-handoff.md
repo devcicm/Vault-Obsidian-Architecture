@@ -105,3 +105,20 @@ Funciones citadas en el análisis preliminar: `check_params`, `notas_indexables`
 - Commit `0748b1ce9340272743fa5ff7f50f23696d9230fe`: `tests/test_ap39_contrato.py` (tres casos: resolución sin efectos secundarios, registro vacío sin escritura, deduplicación del ledger).
 - Ejecución prevista: `python -m unittest discover -s tests -p 'test_ap39_contrato.py'`.
 - **Estado:** archivo confirmado en GitHub; pruebas **no ejecutadas**. El sandbox no pudo clonar GitHub por error DNS (`Could not resolve host: github.com`). No se afirma aprobación ni corrección del acceso AP-49. Mantener el refactor bloqueado hasta validar las pruebas y revisar propiedad/puerto canónico.
+
+## 10. Protocolo de auditoría asesorada y justificación causal (2026-10-24)
+
+**Decisión del propietario:** mientras no haya ejecución local del repositorio, continuar mediante inspección de código y razonamiento causal trazable, sin equiparar inferencia a prueba ejecutada. Toda recomendación debe explicar **qué**, **por qué**, **cómo** y **qué evidencia la respalda**.
+
+**Plantilla obligatoria para cada hallazgo/cambio:**
+1. **Observación:** archivo, símbolo, línea/revisión y evidencia reproducible; distinguir hecho observado de hipótesis.
+2. **Causa y riesgo:** mecanismo que produce el defecto, condiciones de activación e impacto; no denominar vulnerabilidad a una sospecha sin demostrar vector y efecto.
+3. **Contrato previo e invariantes:** precondiciones, efectos, errores, orden de operaciones, compatibilidad y propietarios.
+4. **Intervención propuesta o aplicada:** diff/commit y por qué se elige frente a alternativas; riesgos de regresión.
+5. **Modelo causal:** si A (precondición) y B (implementación/garantía) entonces se espera C (resultado), indicando explícitamente supuestos y contraejemplos.
+6. **Evidencia y confianza:** inspección estática / simulación conceptual / test unitario ejecutado / integración ejecutada; nunca marcar una inferencia como PASÓ.
+7. **Verificación pendiente:** comandos, resultados esperados, criterios de aceptación y responsable de ejecutarlos.
+
+**Aplicación a AP-39 (observación confirmada):** `vault_write.py` llama `apply_vocabulary` antes de persistir y `record_new_tags` después. Si la primera operación no escribe y la segunda solo se ejecuta tras confirmar persistencia, entonces un fallo previo de escritura no debería dejar etiquetas nuevas en el ledger **por esta ruta**. Este resultado depende de que no existan efectos secundarios ocultos ni otros escritores; requiere pruebas de fallo de escritura y de ledger. Un error del ledger se captura como `OSError` en la ruta examinada, pero no se ha demostrado la cobertura de otras excepciones. **Conclusión:** inferencia causal limitada, no validación funcional.
+
+**Estado:** protocolo registrado, inspección estática; pruebas de ejecución bloqueadas por conectividad directa del sandbox. La fase de Quality Gates continúa diferida hasta terminar la auditoría de puertos y contratos.
