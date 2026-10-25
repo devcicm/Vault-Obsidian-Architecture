@@ -140,3 +140,75 @@ Se solicita a QA una de: **ACEPTADO / ACEPTADO CON OBSERVACIONES / REQUIERE CORR
 - **Sin acciones iniciadas:** ni merge de PR #1 a `main`, ni Q04–Q07, ni release — todas requieren decisión explícita del propietario.
 
 **Estado de la ronda 1B: CERRADA EN ALCANCE LOCAL, a la espera de las decisiones del propietario.**
+
+---
+
+# FASE 2 — Deuda tecnica, Quality Gates y Product Readiness · LOTE L1 (2026-10-25)
+
+- **Rama de fase 2:** `fase2/deuda-y-product-readiness-20261025`, derivada de `ef77a7b` (punta de la rama auditada, con el acuse del dictamen).
+- **Rama auditada de ronda 1B:** `audit/archify-governance-20261024` — **congelada**, sin commits nuevos. `main` intacta (local `4efcf22`, origen `1c34754`).
+- **SHA base del descubrimiento:** `ef77a7b19a6aaa5e8a5bf776181ab887b7ee4587` · Python 3.14.3 · Windows/PowerShell 5.
+- **Alcance de L1:** inventario de los diez contextos y reconciliacion del snapshot de Archify con el codigo actual. **No se ha modificado codigo de producto** (las herramientas de `audits/fase2/` son de auditoria, no del producto).
+
+## Resultados de L1
+
+| Comprobacion | Resultado |
+|---|---|
+| Contextos inventariados | **10/10**, con puertos, modulos y prohibiciones desde el registro vivo (68 puertos en total) |
+| Pares de cruce del presupuesto | **23/23 coinciden con el registro y con ficha IDENTICA** (objetivo, dueno, revisado, cadencia, por que): cero divergencias |
+| Dependencias del snapshot (37, a nivel de fichero) | Colapsan a **23 pares de contexto, los 23 vigentes**: reconciliacion completa |
+| Accesos fuera de puerto del snapshot (8) | **5 vigentes** (los de Q04–Q07, con su cruce y su simbolo) y **3 resueltos en ronda 1** con su commit (Q01/Q03) |
+| Anclas del puente | **2/2** coinciden, con motivos identicos |
+| Delta total contra el snapshot | `indices` con 3 puertos mas (los publicados en ronda 1) y `meta_toolkit` con 1 modulo mas |
+
+**Instrumentos creados (reproducibles):** `audits/fase2/reconciliar_archify.py` (confronta snapshot y codigo) y `audits/fase2/matriz_contextos.py` (genera la matriz desde el registro). Evidencia: `audits/fase2/logs/L1-reconciliacion-archify.txt` y `.json`.
+
+## Hallazgos (6; registro canonico en `audits/fase2/inventario-deuda.yaml`)
+
+| ID | Sev | Hallazgo | Estado |
+|---|---|---|---|
+| TD-0001 | **P1** | El job de CI de la wheel ejecuta las puertas del producto sin instalar el paquete → `ModuleNotFoundError: 'yaml'` → ese job no puede pasar nunca; el defecto esta en el workflow, no en los metadatos (PyYAML SI esta declarado) | vigente |
+| TD-0003 | **P1** | Un control que no puede cargar su dependencia (3 bloques `except → pass` en `vault_norms_engine.py:151,179,196`) informa cero hallazgos: la ausencia de hallazgos no significa ejecucion | vigente |
+| TD-0002 | P2 | Las trazas runtime del servidor MCP (958 KB) caen dentro del paquete mapeado `vault_toolkit.mcp` y `exclude-package-data` no las cubre | no verificada (se mide en L3) |
+| TD-0005 | P2 | Seis documentos de producto (2 PRD, contrato de runtime, instalacion limpia, `gaps.md`, `PUERTAS.md`) sin clasificar | no verificada (L4) |
+| TD-0006 | P2 | Las baselines estan por encima de su objetivo declarado con plazo activo: `off_port_crossings` 5 vs objetivo 4; `crossings` 37 vs objetivo 30; ambos con `fecha_limite: 2027-03-31`. El mecanismo mide que no crecen, no la aproximacion | vigente |
+| TD-0004 | P2 | Reconciliacion del snapshot de Archify | **corregida** (instrumento ejecutable y repetible) |
+
+**P0: ninguno** con la evidencia reunida. El recorrido MVP de L3 puede cambiarlo; si apareciera perdida de datos o corrupcion del runtime, se avisa de inmediato.
+
+## Un hallazgo que condiciona L2
+
+Las dos fichas de cruce con `objetivo: a_eliminar` y `fecha_limite: 2027-06-30` nombran **exactamente** los modulos de Q04–Q07:
+
+- `gobernanza → meta_toolkit`: «`vault_norms_engine` importa `vault_smoke` y `vault_mcp_catalog` en diferido para auditar el catalogo» → **Q04 + Q05**
+- `gobernanza → autoria`: «`vault_norms_engine` -> `vault_voice`: presentacion colgada del motor» → **Q06**
+
+O sea: Q04–Q07 **no son deuda desconocida**; el repo decidio el 2026-08-14 eliminarlos (no formalizarlos como puertos), con plazo. L2 investiga el COMO (inversion, adaptador o contrato), con las tres pruebas exigidas, sin implementar.
+
+## CI: PENDIENTE DE VALIDACION EXTERNA (documentado, sin cancelar)
+
+| Run ID | SHA | Estado | Conclusion | Clasificacion |
+|---|---|---|---|---|
+| 40168004595 | `a813094` | queued | — | PENDIENTE (cola de runners) |
+| 40161384740 | `f24a9b8` | queued | — | PENDIENTE |
+| 40159084620 | `bcc1f8b` | queued | — | PENDIENTE |
+| 40147533176 | `8885c79` | completed | failure | **PREEXISTENTE**: 24/25 jobs en rojo; `yaml` ausente en «Product gates (wheel)» y fallos de tests que miran el historial git truncado en el checkout de CI |
+| 40147250440 / 40147115820 / 40147025723 | `3adc050` / `08a2ddf` / `40d81e6` | completed | failure | **PREEXISTENTES**, SHAs anteriores a `f3aaafc` |
+
+**Causa conocida:** limite de concurrencia de runners; un run antiguo (`069616a`, de un commit de QA de la ronda 1) sigue en curso y sostiene la cola. **No se cancela ninguna ejecucion** (condicion 2 de la orden). **Causa pendiente de investigacion:** por que el job de la wheel no instala el paquete (TD-0001) — su evidencia local llega en L3. La CI pendiente no impide investigar, pero **impide aprobar un release estable**.
+
+## Riesgos y bloqueos
+
+1. **La comparacion CLI↔MCP y el recorrido MVP son el unico punto que puede abrir un P0** (instalacion limpia, persistencia, contencion). Se ejecutan en L3 con la wheel construida y un venv nuevo fuera del checkout.
+2. **El metodo de comparacion tiene una asimetria conocida:** el lado MCP es un `.mjs` de 97 KB con su propio catalogo, y el lado CLI un registro de operaciones en Python. La paridad se medira sobre resultados NORMALIZADOS, no sobre igualdad literal de respuestas de transporte.
+3. **La deuda de documentacion (TD-0005) puede contener hallazgos ya corregidos:** `docs/sdd/gaps.md` es un historico y se reconciliara antes de contarlo (L4).
+4. **Ningun hallazgo se ha cerrado sin evidencia:** TD-0002 y TD-0005 siguen como `no_verificada` hasta que L3/L4 las midan.
+
+## Siguientes acciones
+
+1. Revision tecnica de este L1 por QA (el buzon de QA sigue siendo suyo).
+2. Con el visto: **L2** (investigacion de Q04–Q07 con causa, contrato, decision y tres pruebas por control).
+3. En paralelo, **L3** (wheel + venv + paridad CLI/MCP + recorrido MVP) y **L4** (documental + seguridad + reconciliacion historica).
+4. Decisiones que se piden al propietario y QA: corregir TD-0001 (workflow) cuando L3 lo demuestre; autorizar o no la implementacion de TD-0003 cuando L2 traiga el diseno; fijar la prioridad entre deuda de entrega y preparacion de producto.
+
+**Estado de la fase 2: PLANIFICACION EN CURSO. No se declara aprobada ni el producto.**

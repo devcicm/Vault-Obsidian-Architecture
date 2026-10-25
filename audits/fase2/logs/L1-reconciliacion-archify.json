@@ -1,0 +1,662 @@
+{
+  "sha": "ef77a7b19a6aaa5e8a5bf776181ab887b7ee4587",
+  "contextos": [
+    {
+      "contexto": "kernel",
+      "estado": "VIGENTE",
+      "titulo_snapshot": "Kernel",
+      "titulo_registro": "Kernel",
+      "puertos_snapshot_n": 4,
+      "puertos_registro_n": 4,
+      "modulos_snapshot_n": 23,
+      "modulos_registro_n": 23,
+      "solo_en_registro": [],
+      "solo_en_snapshot": []
+    },
+    {
+      "contexto": "autoria",
+      "estado": "VIGENTE",
+      "titulo_snapshot": "Autoría",
+      "titulo_registro": "Autoría",
+      "puertos_snapshot_n": 7,
+      "puertos_registro_n": 7,
+      "modulos_snapshot_n": 46,
+      "modulos_registro_n": 46,
+      "solo_en_registro": [],
+      "solo_en_snapshot": []
+    },
+    {
+      "contexto": "grafo",
+      "estado": "VIGENTE",
+      "titulo_snapshot": "Grafo",
+      "titulo_registro": "Grafo",
+      "puertos_snapshot_n": 4,
+      "puertos_registro_n": 4,
+      "modulos_snapshot_n": 15,
+      "modulos_registro_n": 15,
+      "solo_en_registro": [],
+      "solo_en_snapshot": []
+    },
+    {
+      "contexto": "gobernanza",
+      "estado": "VIGENTE",
+      "titulo_snapshot": "Gobernanza",
+      "titulo_registro": "Gobernanza",
+      "puertos_snapshot_n": 21,
+      "puertos_registro_n": 21,
+      "modulos_snapshot_n": 13,
+      "modulos_registro_n": 13,
+      "solo_en_registro": [],
+      "solo_en_snapshot": []
+    },
+    {
+      "contexto": "indices",
+      "estado": "AMPLIADO (puertos publicados en el registro)",
+      "titulo_snapshot": "Índices",
+      "titulo_registro": "Índices",
+      "puertos_snapshot_n": 9,
+      "puertos_registro_n": 12,
+      "modulos_snapshot_n": 7,
+      "modulos_registro_n": 7,
+      "solo_en_registro": [
+        "enumeracion_indexable",
+        "registro_de_nuevos_terminos",
+        "resolucion_de_vocabulario"
+      ],
+      "solo_en_snapshot": []
+    },
+    {
+      "contexto": "consulta",
+      "estado": "VIGENTE",
+      "titulo_snapshot": "Consulta",
+      "titulo_registro": "Consulta",
+      "puertos_snapshot_n": 7,
+      "puertos_registro_n": 7,
+      "modulos_snapshot_n": 11,
+      "modulos_registro_n": 11,
+      "solo_en_registro": [],
+      "solo_en_snapshot": []
+    },
+    {
+      "contexto": "ciclo_de_vida",
+      "estado": "VIGENTE",
+      "titulo_snapshot": "Ciclo de vida",
+      "titulo_registro": "Ciclo de vida",
+      "puertos_snapshot_n": 3,
+      "puertos_registro_n": 3,
+      "modulos_snapshot_n": 10,
+      "modulos_registro_n": 10,
+      "solo_en_registro": [],
+      "solo_en_snapshot": []
+    },
+    {
+      "contexto": "durabilidad",
+      "estado": "VIGENTE",
+      "titulo_snapshot": "Durabilidad",
+      "titulo_registro": "Durabilidad",
+      "puertos_snapshot_n": 4,
+      "puertos_registro_n": 4,
+      "modulos_snapshot_n": 4,
+      "modulos_registro_n": 4,
+      "solo_en_registro": [],
+      "solo_en_snapshot": []
+    },
+    {
+      "contexto": "meta_toolkit",
+      "estado": "VIGENTE",
+      "titulo_snapshot": "Meta-toolkit",
+      "titulo_registro": "Meta-toolkit",
+      "puertos_snapshot_n": 6,
+      "puertos_registro_n": 6,
+      "modulos_snapshot_n": 37,
+      "modulos_registro_n": 38,
+      "solo_en_registro": [],
+      "solo_en_snapshot": []
+    },
+    {
+      "contexto": "cli",
+      "estado": "VIGENTE",
+      "titulo_snapshot": "CLI",
+      "titulo_registro": "CLI",
+      "puertos_snapshot_n": 0,
+      "puertos_registro_n": 0,
+      "modulos_snapshot_n": 8,
+      "modulos_registro_n": 8,
+      "solo_en_registro": [],
+      "solo_en_snapshot": []
+    }
+  ],
+  "pares_de_contexto": {
+    "pares_snapshot_n": 23,
+    "pares_registro_n": 23,
+    "coincidentes": 23,
+    "solo_en_snapshot": [],
+    "solo_en_registro": [],
+    "fichas": [
+      {
+        "par": [
+          "autoria",
+          "gobernanza"
+        ],
+        "estado": "VIGENTE",
+        "diferencias": []
+      },
+      {
+        "par": [
+          "autoria",
+          "grafo"
+        ],
+        "estado": "VIGENTE",
+        "diferencias": []
+      },
+      {
+        "par": [
+          "autoria",
+          "indices"
+        ],
+        "estado": "VIGENTE",
+        "diferencias": []
+      },
+      {
+        "par": [
+          "autoria",
+          "meta_toolkit"
+        ],
+        "estado": "VIGENTE",
+        "diferencias": []
+      },
+      {
+        "par": [
+          "ciclo_de_vida",
+          "autoria"
+        ],
+        "estado": "VIGENTE",
+        "diferencias": []
+      },
+      {
+        "par": [
+          "ciclo_de_vida",
+          "gobernanza"
+        ],
+        "estado": "VIGENTE",
+        "diferencias": []
+      },
+      {
+        "par": [
+          "ciclo_de_vida",
+          "grafo"
+        ],
+        "estado": "VIGENTE",
+        "diferencias": []
+      },
+      {
+        "par": [
+          "ciclo_de_vida",
+          "indices"
+        ],
+        "estado": "VIGENTE",
+        "diferencias": []
+      },
+      {
+        "par": [
+          "ciclo_de_vida",
+          "meta_toolkit"
+        ],
+        "estado": "VIGENTE",
+        "diferencias": []
+      },
+      {
+        "par": [
+          "cli",
+          "meta_toolkit"
+        ],
+        "estado": "VIGENTE",
+        "diferencias": []
+      },
+      {
+        "par": [
+          "consulta",
+          "autoria"
+        ],
+        "estado": "VIGENTE",
+        "diferencias": []
+      },
+      {
+        "par": [
+          "consulta",
+          "ciclo_de_vida"
+        ],
+        "estado": "VIGENTE",
+        "diferencias": []
+      },
+      {
+        "par": [
+          "consulta",
+          "grafo"
+        ],
+        "estado": "VIGENTE",
+        "diferencias": []
+      },
+      {
+        "par": [
+          "gobernanza",
+          "autoria"
+        ],
+        "estado": "VIGENTE",
+        "diferencias": []
+      },
+      {
+        "par": [
+          "gobernanza",
+          "indices"
+        ],
+        "estado": "VIGENTE",
+        "diferencias": []
+      },
+      {
+        "par": [
+          "gobernanza",
+          "meta_toolkit"
+        ],
+        "estado": "VIGENTE",
+        "diferencias": []
+      },
+      {
+        "par": [
+          "grafo",
+          "autoria"
+        ],
+        "estado": "VIGENTE",
+        "diferencias": []
+      },
+      {
+        "par": [
+          "grafo",
+          "gobernanza"
+        ],
+        "estado": "VIGENTE",
+        "diferencias": []
+      },
+      {
+        "par": [
+          "indices",
+          "grafo"
+        ],
+        "estado": "VIGENTE",
+        "diferencias": []
+      },
+      {
+        "par": [
+          "kernel",
+          "autoria"
+        ],
+        "estado": "VIGENTE",
+        "diferencias": []
+      },
+      {
+        "par": [
+          "meta_toolkit",
+          "ciclo_de_vida"
+        ],
+        "estado": "VIGENTE",
+        "diferencias": []
+      },
+      {
+        "par": [
+          "meta_toolkit",
+          "consulta"
+        ],
+        "estado": "VIGENTE",
+        "diferencias": []
+      },
+      {
+        "par": [
+          "meta_toolkit",
+          "gobernanza"
+        ],
+        "estado": "VIGENTE",
+        "diferencias": []
+      }
+    ]
+  },
+  "dependencias": {
+    "dependencias_snapshot_n": 37,
+    "pares_snapshot_n": 23,
+    "sitios_vivos_n": 49,
+    "pares_contexto_vivos_n": 23,
+    "pares_vigentes": 23,
+    "filas": [
+      {
+        "par": [
+          "autoria",
+          "gobernanza"
+        ],
+        "dependencias_snapshot": [
+          "vault_change_log -> vault/gobernanza"
+        ],
+        "estado": "VIGENTE",
+        "nota": "el par de contextos sigue cruzando: vive en el registro"
+      },
+      {
+        "par": [
+          "autoria",
+          "grafo"
+        ],
+        "dependencias_snapshot": [
+          "vault/autoria/repositorio.py -> vault/grafo"
+        ],
+        "estado": "VIGENTE",
+        "nota": "el par de contextos sigue cruzando: vive en el registro"
+      },
+      {
+        "par": [
+          "autoria",
+          "indices"
+        ],
+        "dependencias_snapshot": [
+          "vault/autoria/repositorio.py -> vault/indices",
+          "vault_write -> vault_tags"
+        ],
+        "estado": "VIGENTE",
+        "nota": "el par de contextos sigue cruzando: vive en el registro"
+      },
+      {
+        "par": [
+          "autoria",
+          "meta_toolkit"
+        ],
+        "dependencias_snapshot": [
+          "vault_voice -> vault_mcp_catalog"
+        ],
+        "estado": "VIGENTE",
+        "nota": "el par de contextos sigue cruzando: vive en el registro"
+      },
+      {
+        "par": [
+          "ciclo_de_vida",
+          "autoria"
+        ],
+        "dependencias_snapshot": [
+          "vault_onboard -> vault_write"
+        ],
+        "estado": "VIGENTE",
+        "nota": "el par de contextos sigue cruzando: vive en el registro"
+      },
+      {
+        "par": [
+          "ciclo_de_vida",
+          "gobernanza"
+        ],
+        "dependencias_snapshot": [
+          "vault_propagate -> vault/gobernanza",
+          "vault_sanacion -> vault/gobernanza",
+          "vault_sanacion -> vault_audit"
+        ],
+        "estado": "VIGENTE",
+        "nota": "el par de contextos sigue cruzando: vive en el registro"
+      },
+      {
+        "par": [
+          "ciclo_de_vida",
+          "grafo"
+        ],
+        "dependencias_snapshot": [
+          "vault_propagate -> vault_impact"
+        ],
+        "estado": "VIGENTE",
+        "nota": "el par de contextos sigue cruzando: vive en el registro"
+      },
+      {
+        "par": [
+          "ciclo_de_vida",
+          "indices"
+        ],
+        "dependencias_snapshot": [
+          "vault/ciclo_de_vida/repositorio.py -> vault/indices",
+          "vault_onboard -> vault_reindex",
+          "vault_onboard -> vault_section_index",
+          "vault_onboard -> vault_tags",
+          "vault_sanacion -> vault_reindex",
+          "vault_standard_upgrade -> vault_section_index"
+        ],
+        "estado": "VIGENTE",
+        "nota": "el par de contextos sigue cruzando: vive en el registro"
+      },
+      {
+        "par": [
+          "ciclo_de_vida",
+          "meta_toolkit"
+        ],
+        "dependencias_snapshot": [
+          "vault_standard_upgrade -> vault_mcp_catalog"
+        ],
+        "estado": "VIGENTE",
+        "nota": "el par de contextos sigue cruzando: vive en el registro"
+      },
+      {
+        "par": [
+          "cli",
+          "meta_toolkit"
+        ],
+        "dependencias_snapshot": [
+          "cli/registry -> vault_mcp_catalog"
+        ],
+        "estado": "VIGENTE",
+        "nota": "el par de contextos sigue cruzando: vive en el registro"
+      },
+      {
+        "par": [
+          "consulta",
+          "autoria"
+        ],
+        "dependencias_snapshot": [
+          "vault_context_pack -> vault_search"
+        ],
+        "estado": "VIGENTE",
+        "nota": "el par de contextos sigue cruzando: vive en el registro"
+      },
+      {
+        "par": [
+          "consulta",
+          "ciclo_de_vida"
+        ],
+        "dependencias_snapshot": [
+          "vault/consulta/repositorio.py -> vault/ciclo_de_vida"
+        ],
+        "estado": "VIGENTE",
+        "nota": "el par de contextos sigue cruzando: vive en el registro"
+      },
+      {
+        "par": [
+          "consulta",
+          "grafo"
+        ],
+        "dependencias_snapshot": [
+          "vault_subgraph -> vault/grafo"
+        ],
+        "estado": "VIGENTE",
+        "nota": "el par de contextos sigue cruzando: vive en el registro"
+      },
+      {
+        "par": [
+          "gobernanza",
+          "autoria"
+        ],
+        "dependencias_snapshot": [
+          "vault_norms_engine -> vault_voice"
+        ],
+        "estado": "VIGENTE",
+        "nota": "el par de contextos sigue cruzando: vive en el registro"
+      },
+      {
+        "par": [
+          "gobernanza",
+          "indices"
+        ],
+        "dependencias_snapshot": [
+          "vault/gobernanza/auditoria_runtime.py -> vault/indices",
+          "vault/gobernanza/repositorio.py -> vault/indices"
+        ],
+        "estado": "VIGENTE",
+        "nota": "el par de contextos sigue cruzando: vive en el registro"
+      },
+      {
+        "par": [
+          "gobernanza",
+          "meta_toolkit"
+        ],
+        "dependencias_snapshot": [
+          "vault/gobernanza/tool.py -> vault/meta_toolkit",
+          "vault_norms_engine -> vault_mcp_catalog",
+          "vault_norms_engine -> vault_smoke"
+        ],
+        "estado": "VIGENTE",
+        "nota": "el par de contextos sigue cruzando: vive en el registro"
+      },
+      {
+        "par": [
+          "grafo",
+          "autoria"
+        ],
+        "dependencias_snapshot": [
+          "vault_code_tag -> vault_write"
+        ],
+        "estado": "VIGENTE",
+        "nota": "el par de contextos sigue cruzando: vive en el registro"
+      },
+      {
+        "par": [
+          "grafo",
+          "gobernanza"
+        ],
+        "dependencias_snapshot": [
+          "vault/grafo/repositorio.py -> vault/gobernanza"
+        ],
+        "estado": "VIGENTE",
+        "nota": "el par de contextos sigue cruzando: vive en el registro"
+      },
+      {
+        "par": [
+          "indices",
+          "grafo"
+        ],
+        "dependencias_snapshot": [
+          "vault/indices/repositorio.py -> vault/grafo"
+        ],
+        "estado": "VIGENTE",
+        "nota": "el par de contextos sigue cruzando: vive en el registro"
+      },
+      {
+        "par": [
+          "kernel",
+          "autoria"
+        ],
+        "dependencias_snapshot": [
+          "vault_errors -> vault/autoria"
+        ],
+        "estado": "VIGENTE",
+        "nota": "el par de contextos sigue cruzando: vive en el registro"
+      },
+      {
+        "par": [
+          "meta_toolkit",
+          "ciclo_de_vida"
+        ],
+        "dependencias_snapshot": [
+          "vault_spec_memory -> vault/ciclo_de_vida"
+        ],
+        "estado": "VIGENTE",
+        "nota": "el par de contextos sigue cruzando: vive en el registro"
+      },
+      {
+        "par": [
+          "meta_toolkit",
+          "consulta"
+        ],
+        "dependencias_snapshot": [
+          "vault_mcp -> vault_mcp_context"
+        ],
+        "estado": "VIGENTE",
+        "nota": "el par de contextos sigue cruzando: vive en el registro"
+      },
+      {
+        "par": [
+          "meta_toolkit",
+          "gobernanza"
+        ],
+        "dependencias_snapshot": [
+          "vault/meta_toolkit/catalog_adapter.py -> vault/gobernanza",
+          "vault_blueprint -> vault_norms",
+          "vault_norms_coherence -> vault_norms",
+          "vault_spec_memory -> vault/gobernanza"
+        ],
+        "estado": "VIGENTE",
+        "nota": "el par de contextos sigue cruzando: vive en el registro"
+      }
+    ]
+  },
+  "off_port": [
+    {
+      "clave": "vault_norms_engine -> vault_mcp_catalog.check_params",
+      "estado": "VIGENTE (deuda vigilada)",
+      "nota": "sigue fuera de puerto: no se ha resuelto"
+    },
+    {
+      "clave": "vault_norms_engine -> vault_smoke.SIN_SMOKE",
+      "estado": "VIGENTE (deuda vigilada)",
+      "nota": "sigue fuera de puerto: no se ha resuelto"
+    },
+    {
+      "clave": "vault_norms_engine -> vault_smoke.invocation",
+      "estado": "VIGENTE (deuda vigilada)",
+      "nota": "sigue fuera de puerto: no se ha resuelto"
+    },
+    {
+      "clave": "vault_norms_engine -> vault_smoke.load_baseline",
+      "estado": "VIGENTE (deuda vigilada)",
+      "nota": "sigue fuera de puerto: no se ha resuelto"
+    },
+    {
+      "clave": "vault_norms_engine -> vault_voice.coverage",
+      "estado": "VIGENTE (deuda vigilada)",
+      "nota": "sigue fuera de puerto: no se ha resuelto"
+    },
+    {
+      "clave": "vault_sanacion -> vault_reindex.notas_indexables",
+      "estado": "RESUELTO en ronda 1",
+      "nota": "f6a5387 (Q03): puerto enumeracion_indexable"
+    },
+    {
+      "clave": "vault_write -> vault_tags.apply_vocabulary",
+      "estado": "RESUELTO en ronda 1",
+      "nota": "4fededd (Q01): puerto resolucion_de_vocabulario"
+    },
+    {
+      "clave": "vault_write -> vault_tags.record_new_tags",
+      "estado": "RESUELTO en ronda 1",
+      "nota": "4fededd (Q01): puerto registro_de_nuevos_terminos"
+    }
+  ],
+  "anclas": {
+    "anclas_snapshot": [
+      "vault_grafo_import",
+      "vault_release"
+    ],
+    "anclas_registro": [
+      "vault_grafo_import",
+      "vault_release"
+    ],
+    "coinciden": true,
+    "motivos_iguales": {
+      "vault_grafo_import": true,
+      "vault_release": true
+    }
+  },
+  "invariantes": {
+    "contextos": 10,
+    "puertos_totales": 68,
+    "presupuesto_cruces": 23,
+    "off_port_total": 5,
+    "off_port_baseline": 5
+  }
+}

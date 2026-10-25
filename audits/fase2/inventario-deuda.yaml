@@ -1,0 +1,219 @@
+# Registro de deuda tecnica — fase 2 (L1)
+#
+# Esquema: el que fijo la orden de fase 2, verbatim. Los identificadores son
+# unicos, estables y no reutilizables.
+#
+# `status` usa el vocabulario de la orden (VIGENTE / CORREGIDA / PARCIAL /
+# FALSO POSITIVO / NO VERIFICADA / ACEPTADA CON RIESGO) en minusculas, y
+# `decision` es la del esquema (pending / accepted / rejected / deferred).
+# El lote de descubrimiento y la evidencia cruda viven en `backlog.md` y en
+# `audits/fase2/logs/`, para no ensuciar el esquema.
+#
+# SHA base del descubrimiento: ef77a7b (rama auditada, cierre de ronda 1B).
+
+- id: TD-0001
+  title: "El job de CI que valida la wheel no instala el paquete: la validacion de release en CI es imposible"
+  category: distribution
+  severity: P1
+  status: vigente
+  owner: "meta_toolkit - vault_arch"
+  context: "GitHub Actions, job 'Product gates (wheel)'"
+  source_file: ".github/workflows/vault-ci.yml"
+  symbol: "job Product gates (wheel) / paso 'Run product gates'"
+  commit_sha: "ef77a7b19a6aaa5e8a5bf776181ab887b7ee4587"
+  observed_behavior: "El job construye la wheel ('python -m build') y ejecuta 'python tests/run_product_gates.py' SIN instalar antes el paquete ni sus dependencias; 'pip install dist/*.whl' ocurre DESPUES, en el paso de SBOM. El job falla con ModuleNotFoundError: No module named 'yaml' en todos los sistemas y versiones de la matriz."
+  expected_behavior: "El job debe ejecutar las puertas del producto sobre el ARTEFACTO INSTALADO: instalar la wheel construida (y por tanto sus dependencias declaradas) antes de correr las verificaciones."
+  root_cause: "El orden de pasos del job omite la instalacion del artefacto: las puertas de producto se ejecutan contra el checkout, no contra la wheel, y las dependencias declaradas (PyYAML>=6.0 en pyproject.toml) nunca se instalan en ese job."
+  impact: "Ningun SHA de la rama ha pasado nunca por la validacion de producto en CI: el job es estructuralmente incapaz de pasar. QG-06 (instalacion y distribucion) y QG-07 (aprobacion de release) no pueden apoyarse en la CI, y el unico veredicto posible hoy es PENDIENTE DE VALIDACION EXTERNA."
+  likelihood: "Cierto: se reproduce en los cuatro runs completados con fallo (SHAs 3adc050, 08a2ddf, 40d81e6, 8885c79), siempre en 'Product gates (wheel)' y siempre con el mismo error de dependencia."
+  evidence:
+    - ".github/workflows/vault-ci.yml: pasos del job 'Product gates (wheel)' (build -> run_product_gates -> SBOM con pip install dist/*.whl)"
+    - "pyproject.toml: dependencies = [\"PyYAML>=6.0\"] (la dependencia SI esta declarada: el defecto es del workflow, no de los metadatos)"
+    - "audits/fase2/logs/R1B-E04e-ci.txt: ModuleNotFoundError en 'Product gates (wheel)' de los tres runs preexistentes"
+    - "audits/handoff/logs/R1B-CIERRE-ci.txt: el run del cierre de ronda 1B sigue en cola"
+  affected_contracts:
+    - "Producto distribuible: la wheel es el artefacto que recibe un tercero"
+    - "QG-06 instalacion y distribucion"
+    - "QG-07 aprobacion de release"
+  related_norms:
+    - "AP-40 (contrato de parametros)"
+    - "AP-48 (implementacion paralela)"
+  related_tests:
+    - "tests/run_product_gates.py (el verificador que el job no puede ejecutar)"
+  proposed_remediation: "Anadir al job, antes de 'Run product gates', la instalacion del artefacto construido ('python -m pip install dist/*.whl'), de modo que las puertas corran sobre la wheel instalada y con sus dependencias. Cambio de workflow, sin tocar el producto. Verificacion local en L3 con la misma secuencia que usa CI."
+  regression_risk: "Bajo: el job no forma parte del producto; el riesgo es que la instalacion local difiera de la de CI (mismo requisito: no depender del checkout)."
+  acceptance_criteria:
+    - "El job 'Product gates (wheel)' ejecuta sus pasos con la wheel instalada y sin ModuleNotFoundError."
+    - "Reproduccion local de la secuencia exacta del job en un venv nuevo (L3)."
+    - "El run de CI del SHA corregido llega a conclusion y su conclusion es concluyente (no 'queued')."
+  quality_gate: "QG-06"
+  decision: pending
+
+- id: TD-0002
+  title: "Las trazas runtime del servidor MCP caen dentro del paquete de la wheel y no estan excluidas"
+  category: distribution
+  severity: P2
+  status: no_verificada
+  owner: "meta_toolkit - vault_arch"
+  context: "Empaquetado de la wheel: package-dir mapea mcp/nodejs -> vault_toolkit.mcp"
+  source_file: "pyproject.toml"
+  symbol: "[tool.setuptools] package-dir / exclude-package-data"
+  commit_sha: "ef77a7b19a6aaa5e8a5bf776181ab887b7ee4587"
+  observed_behavior: "El directorio mcp/nodejs/ contiene dos trazas de runtime sin versionar (mcp-trace-log.json de 494 KB y mcp-trace-log.md de 464 KB). El paquete de la wheel se construye con package-dir {\"vault_toolkit.mcp\" = \"mcp/nodejs\"}, de modo que esos ficheros caen dentro del artefacto; exclude-package-data solo excluye '*.bak-*', 'scripts.bak-*', '.history/*' y 'vault-backups/*'."
+  expected_behavior: "Un artefacto distribuible no lleva trazas de runtime, ni de tamaño ni con datos de la sesion que las genero."
+  root_cause: "El patron de exclusion no cubre las trazas del servidor MCP, que viven en un directorio mapeado al paquete."
+  impact: "Posible: la wheeluede crecer casi un megabyte y publicar trazas de ejecucion ajenas al producto. La severidad queda en P2 porque la exposicion real (que datos contienen esas trazas) no se ha medido todavia."
+  likelihood: "Probable: los ficheros estan presentes en el arbol de trabajo en cuanto el servidor MCP ha corrido una vez."
+  evidence:
+    - "mcp/nodejs/.mcp-trace-log.json (494 KB) y .mcp-trace-log.md (464 KB), sin versionar"
+    - "pyproject.toml: package-dir y exclude-package-data"
+    - "PENDIENTE (L3): construir la wheel y listar su contenido para medir tamano y datos"
+  affected_contracts:
+    - "Producto distribuible: contenido del artefacto"
+    - "QG-06 instalacion y distribucion"
+    - "QG-04 seguridad (datos sensibles en logs)"
+  related_norms:
+    - "AP-36 (escrituras dentro de la raiz autorizada)"
+    - "AP-47 (artefactos derivados)"
+  related_tests: []
+  proposed_remediation: "Verificar primero (L3) que las trazas entran en el artefacto y que datos contienen; segun eso, excluirlas del paquete (patron de exclusion o limpieza previa al build) y anadir una comprobacion de contenido del artefacto a QG-06."
+  regression_risk: "Bajo: afecta al empaquetado, no al runtime."
+  acceptance_criteria:
+    - "La wheel construida no contiene trazas de runtime (medido sobre el artefacto)."
+    - "Si se conserva alguna, esta justificada por nombre y sin datos de sesion."
+  quality_gate: "QG-06"
+  decision: pending
+
+- id: TD-0003
+  title: "Un control que no puede cargar su dependencia informa cero hallazgos: la ausencia de hallazgos no significa ejecucion"
+  category: governance
+  severity: P1
+  status: vigente
+  owner: "gobernanza - vault_norms_engine"
+  context: "AP-40, AP-42 y AP-43: el motor de auditoria importa su verificador en diferido y captura el fallo con pass"
+  source_file: "scripts/vault_norms_engine.py"
+  symbol: "bloques except (ImportError, OSError, ValueError): pass en las líneas 151, 179 y 196"
+  commit_sha: "ef77a7b19a6aaa5e8a5bf776181ab887b7ee4587"
+  observed_behavior: "El bloque de AP-40 (check_params), el de AP-42 (load_baseline, TOOLS_CATALOG, SIN_SMOKE, invocation) y el de AP-43 (coverage) importan su dependencia dentro de un try y, si la importacion o la lectura falla, hacen pass: el control no se ejecuta y su resultado no lo distingue. Los cinco accesos que quedan fuera de puerto son exactamente esos simbolos."
+  expected_behavior: "Un control debe distinguir EJECUTADO / DEGRADADO / FALLIDO / NO EJECUTADO, y un control no ejecutado no puede presentarse como 'sin hallazgos'."
+  root_cause: "El contrato de los tres controles no declara estados de ejecucion: el envelope de resultado no tiene un campo que diga si el control llego a correr, asi que el fallo de dependencia se pierde."
+  impact: "El audit puede informar 'cero hallazgos' sin haber ejecutado la comprobacion: un resultado falso que se lee como aprobacion. Es la clase de defecto que el propio AP-43 distingue de una norma silenciosa."
+  likelihood: "Cierto en cuanto falla la dependencia (import ausente, baseline corrupta o error de permisos); es la razon por la que estos accesos siguen congelados y por la que las dos fichas de cruce que los cubren declaran objetivo a_eliminar con fecha limite 2027-06-30."
+  evidence:
+    - "scripts/vault_norms_engine.py:151,179,196 (los tres bloques except -> pass)"
+    - "scripts/arch-baseline.json: las 5 claves off_port_crossings vigentes (check_params, SIN_SMOKE, invocation, load_baseline, coverage)"
+    - "vault_arch.PRESUPUESTO_DE_CRUCES: ('gobernanza','meta_toolkit') y ('gobernanza','autoria') con objetivo a_eliminar y fecha_limite 2027-06-30, que nombran estos mismos modulos"
+    - "audits/fase2/logs/L1-reconciliacion-archify.json: los 5 accesos del snapshot clasificados como deuda vigente"
+  affected_contracts:
+    - "AP-40, AP-42, AP-43 (resultado de un control de gobernanza)"
+    - "QG-02 gobernanza y normas"
+  related_norms:
+    - "AP-40"
+    - "AP-42"
+    - "AP-43"
+  related_tests:
+    - "tests/test_ap40_*.py, tests/test_ap42_*.py, tests/test_ap43_*.py (pendiente de inventariar en L2)"
+  proposed_remediation: "L2:POR QUE, CONTRATO, PRUEBAS. Dos vias, ambas compatibles con la intencion ya declarada en el registro (a_eliminar): (a) invertir la dependencia para que el motor no importe el verificador (el resultado lo recibe quien lo tiene), o (b) declarar el estado de ejecucion en el envelope del control. La eleccion se decide con pruebas, no con lectura."
+  regression_risk: "Medio: cambiar el envelope de un control puede afectar a sus consumidores (los audits y las puertas). Por eso L2 exige caso positivo, caso negativo y dependencia fallida antes de tocar nada."
+  acceptance_criteria:
+    - "Un control con dependencia fallida declara DEGRADADO o FALLIDO y no 'sin hallazgos'."
+    - "Prueba que inyecta el fallo de dependencia y verifica el estado declarado."
+    - "El numero de accesos fuera de puerto baja (baseline solo encoge) o su justificacion queda actualizada con fecha."
+  quality_gate: "QG-02"
+  decision: pending
+
+- id: TD-0004
+  title: "Reconciliacion del snapshot de Archify con el codigo actual"
+  category: architecture
+  severity: P2
+  status: corregida
+  owner: "meta_toolkit - vault_arch"
+  context: "Inventario de contextos y cruces frente al snapshot de Archify (.archify/extraccion-registro.json)"
+  source_file: "audits/fase2/reconciliar_archify.py"
+  symbol: "reconciliacion de pares de contexto, dependencias, accesos fuera de puerto y anclas"
+  commit_sha: "ef77a7b19a6aaa5e8a5bf776181ab887b7ee4587"
+  observed_behavior: "El snapshot de Archify (revision previa) declaraba 10 contextos, 23 pares de cruce con ficha, 37 dependencias a nivel de fichero, 8 accesos fuera de puerto y 2 anclas del puente."
+  expected_behavior: "Cada elemento del snapshot se clasifica como vigente, resuelto o no conciliable, con la evidencia de a que commit se resolvio cuando aplique."
+  root_cause: "No habia ninguna conciliacion entre el snapshot y el codigo: los diagramas se citaban como si fueran el estado actual."
+  impact: "Sin conciliacion, la deuda se cuenta dos veces (snapshot + codigo) y se atribuyen al snapshot cruces ya resueltos. Resuelto en L1."
+  likelihood: "Resuelto."
+  evidence:
+    - "audits/fase2/logs/L1-reconciliacion-archify.txt: 23/23 pares de contexto coinciden con ficha identica; 37 dependencias colapsan a 23 pares, los 23 vigentes; 8 accesos fuera de puerto clasificados (5 vigentes = TD-0003, 3 resueltos en ronda 1 con su commit); anclas 2/2 con motivos identicos"
+    - "audits/fase2/matriz-arquitectonica.md: matriz de los diez contextos, derivada del registro"
+  affected_contracts:
+    - "Inventario de la auditoria de fase 2"
+  related_norms:
+    - "AP-49 (vinculos congelados)"
+  related_tests:
+    - "tests/test_arquitectura.py"
+  proposed_remediation: "Ninguna: la conciliacion queda ejecutable y repetible (python audits/fase2/reconciliar_archify.py), de modo que una revision futura vuelve a confrontar el snapshot sin trabajo manual."
+  regression_risk: "Ninguno: es una herramienta de auditoria, no toca el producto."
+  acceptance_criteria:
+    - "El reconciliador corre y emite informe reproducible en cada ronda."
+  quality_gate: "QG-01"
+  decision: accepted
+
+- id: TD-0005
+  title: "Documentacion de producto sin clasificar y con historia pendiente de reconciliar"
+  category: documentation
+  severity: P2
+  status: no_verificada
+  owner: "producto - por designar"
+  context: "Comparacion de documentos con la implementacion actual"
+  source_file: "docs/product/prd-cli.md, docs/product/prd-mcp.md, docs/product/runtime-contract.md, docs/INSTALACION-LIMPIA.md, docs/sdd/gaps.md, docs/PUERTAS.md"
+  symbol: "-"
+  commit_sha: "ef77a7b19a6aaa5e8a5bf776181ab887b7ee4587"
+  observed_behavior: "Seis documentos que el producto distribuye (dos PRD, el contrato de runtime, la guia de instalacion limpia, el historial de gaps y el plano de puertas) no estan clasificados frente a la implementacion actual: no consta cuales afirmaciones siguen vigentes."
+  expected_behavior: "Cada afirmacion de esos documentos queda clasificada como vigente, obsoleta, contradicha, incompleta o no verificada, con el hallazgo que la sostiene."
+  root_cause: "PENDIENTE DE INVESTIGACION (L4): la clasificacion no existe todavia; el historico de gaps.md puede contener hallazgos ya corregidos."
+  impact: "Un tercero que instale segun la guia puede encontrarse con afirmaciones que el codigo ya no cumple, o al reves: es deuda de confianza en el producto."
+  likelihood: "PENDIENTE DE MEDIR en L4."
+  evidence:
+    - "Los seis documentos existen en el repo (verificado en el reconocimiento de fase 2)"
+    - "PENDIENTE (L4): clasificacion documento por documento"
+  affected_contracts:
+    - "QG-05 (uso real desde CLI) y QG-06 (instalacion) se apoyan en estos documentos"
+  related_norms:
+    - "AP-47 (documentos derivados de registros)"
+  related_tests:
+    - "tests/test_cifras_sin_vigilar.py (vigila cifras, no afirmaciones)"
+  proposed_remediation: "L4: clasificar cada documento y cada afirmacion; corregir los derivados desde su fuente canonica (nunca a mano) y registrar los hallazgos obsoletos que se retiren."
+  regression_risk: "Bajo si se corrige por regeneracion; alto si se edita a mano un derivado."
+  acceptance_criteria:
+    - "Los seis documentos tienen clasificacion vigente con fecha."
+    - "Los documentos derivados se regeneran, no se editan."
+  quality_gate: "QG-07"
+  decision: pending
+
+- id: TD-0006
+  title: "Las baselines de estructura estan por encima de su propio objetivo declarado, con plazo activo"
+  category: governance
+  severity: P2
+  status: vigente
+  owner: "meta_toolkit - vault_arch"
+  context: "Objetivos declarados en scripts/arch-baseline.json (objetivos_por_clave)"
+  source_file: "scripts/arch-baseline.json"
+  symbol: "objetivos_por_clave: crossings y off_port_crossings"
+  commit_sha: "ef77a7b19a6aaa5e8a5bf776181ab887b7ee4587"
+  observed_behavior: "off_port_crossings declara tamano objetivo 4 y hoy tiene 5 entradas; crossings declara tamano objetivo 30 y hoy tiene 37. Ambos con fecha_limite 2027-03-31, cadencia 90 dias y dueno 'meta_toolkit - vault_arch'."
+  expected_behavior: "La deuda congelada tiende al objetivo declarado dentro de su plazo, y el mecanismo mide la aproximacion, no solo el crecimiento."
+  root_cause: "El mecanismo de baseline mide que la lista NO CRECE (la regla es 'solo puede encoger'), pero no mide la distancia al objetivo declarado ni avisa cuando se vence el plazo."
+  impact: "Un objetivo con fecha y dueño que nadie mide se convierte en prosa: hoy la distancia al objetivo es de 1 acceso fuera de puerto y 7 cruces, y no hay ninguna señal de que el plazo se acerque."
+  likelihood: "Cierto: es una consecuencia del diseno actual, medido sobre el registro vivo."
+  evidence:
+    - "scripts/arch-baseline.json: objetivos_por_clave.off_port_crossings (tamano 4, fecha_limite 2027-03-31) con 5 entradas reales"
+    - "scripts/arch-baseline.json: objetivos_por_clave.crossings (tamano 30, fecha_limite 2027-03-31) con 37 entradas reales"
+    - "vault/kernel/baseline.py: el mecanismo derivativo (vigencia y caducidad) que ya existe para otras claves"
+  affected_contracts:
+    - "QG-01 arquitectura y contratos"
+    - "QG-02 gobernanza y normas"
+  related_norms:
+    - "AP-49"
+  related_tests: []
+  proposed_remediation: "Publicar la distancia al objetivo en el envelope del guard (tamano actual frente a tamano objetivo) y avisar cuando se pase la fecha_limite. Es una medida, no un congelamiento nuevo: no cambia la regla de que la baseline solo encoge."
+  regression_risk: "Bajo: es observabilidad; no toca la baseline ni sus entradas."
+  acceptance_criteria:
+    - "El guard publica la distancia al objetivo declarado y su vencimiento."
+    - "Un objetivo vencido se ve como vencido, no como texto."
+  quality_gate: "QG-01"
+  decision: pending

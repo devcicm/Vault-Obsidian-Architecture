@@ -1,0 +1,32 @@
+== CONTEXTOS (snapshot vs registro)
+  kernel         VIGENTE                                    puertos 4->4 modulos 23->23
+  autoria        VIGENTE                                    puertos 7->7 modulos 46->46
+  grafo          VIGENTE                                    puertos 4->4 modulos 15->15
+  gobernanza     VIGENTE                                    puertos 21->21 modulos 13->13
+  indices        AMPLIADO (puertos publicados en el registro) puertos 9->12 modulos 7->7
+  consulta       VIGENTE                                    puertos 7->7 modulos 11->11
+  ciclo_de_vida  VIGENTE                                    puertos 3->3 modulos 10->10
+  durabilidad    VIGENTE                                    puertos 4->4 modulos 4->4
+  meta_toolkit   VIGENTE                                    puertos 6->6 modulos 37->38
+  cli            VIGENTE                                    puertos 0->0 modulos 8->8
+== PARES DE CONTEXTO (con ficha)
+  snapshot=23 registro=23 coincidentes=23
+== DEPENDENCIAS (nivel de contexto)
+  deps=37 pares_snapshot=23 sitios_vivos=49 pares_vivos=23 vigentes=23
+== ACCESOS FUERA DE PUERTO
+  vault_norms_engine -> vault_mcp_catalog.check_params     VIGENTE (deuda vigilada)
+  vault_norms_engine -> vault_smoke.SIN_SMOKE              VIGENTE (deuda vigilada)
+  vault_norms_engine -> vault_smoke.invocation             VIGENTE (deuda vigilada)
+  vault_norms_engine -> vault_smoke.load_baseline          VIGENTE (deuda vigilada)
+  vault_norms_engine -> vault_voice.coverage               VIGENTE (deuda vigilada)
+  vault_sanacion -> vault_reindex.notas_indexables         RESUELTO en ronda 1
+  vault_write -> vault_tags.apply_vocabulary               RESUELTO en ronda 1
+  vault_write -> vault_tags.record_new_tags                RESUELTO en ronda 1
+== ANCLAS
+  snapshot=['vault_grafo_import', 'vault_release'] registro=['vault_grafo_import', 'vault_release'] coinciden=True motivos_iguales={'vault_grafo_import': True, 'vault_release': True}
+== INVARIANTES
+  contextos: 10
+  puertos_totales: 68
+  presupuesto_cruces: 23
+  off_port_total: 5
+  off_port_baseline: 5
