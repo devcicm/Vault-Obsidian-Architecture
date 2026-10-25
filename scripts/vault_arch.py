@@ -427,6 +427,11 @@ CONTEXTS: dict[str, dict] = {
             "tags_de_frontmatter": "vault_tags:tags_de_frontmatter",
             "ledger_de_backfill_de_tags": "vault_tags:vault_tags_backfill_ledger",
             "coherencia_de_indices": "vault_reindex:index_coherence",
+            # Cruce C de la auditoría 2026-10-24: la sanación enumera por este
+            # símbolo desde que dejó de llamar al privado (v40.9) — el
+            # contrato de superficie faltaba, no el criterio, que vive en el
+            # núcleo (`vault/kernel/enumeracion.py`).
+            "enumeracion_indexable": "vault_reindex:notas_indexables",
         },
         "prohibe": [],
         "modulos": [

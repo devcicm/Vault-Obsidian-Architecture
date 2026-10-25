@@ -46,8 +46,7 @@
     "vault_norms_engine -> vault_smoke.SIN_SMOKE",
     "vault_norms_engine -> vault_smoke.invocation",
     "vault_norms_engine -> vault_smoke.load_baseline",
-    "vault_norms_engine -> vault_voice.coverage",
-    "vault_sanacion -> vault_reindex.notas_indexables"
+    "vault_norms_engine -> vault_voice.coverage"
   ],
   "excepcion_de_alcance": {
     "version": "v40.30",
