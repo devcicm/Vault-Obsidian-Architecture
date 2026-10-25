@@ -8,6 +8,12 @@
 # Estados: PASS | FAIL | BLOCKED | NOT_RUN | NOT_APPLICABLE
 # Regla fail-closed: una puerta no ejecutada es NOT_RUN, nunca PASS.
 # Un BLOCKED no se convierte en PASS sin una nueva evidencia.
+#
+# La POLITICA de este catalogo (QG-00 prerrequisito, evidencia de otro SHA,
+# QG-02 condicionado por el estado de ejecucion, QG-07 con CI concluyente) la
+# aplica `audits/fase2/politica_qg.py`; sus pruebas negativas viven en
+# `tests/test_fase2_politica_qg.py`. Lo que aqui se escribe en prosa se ejecuta
+# alli: un catalogo sin evaluador es una declaracion de intenciones.
 
 - id: QG-00
   name: "Identidad, aislamiento y trazabilidad"
@@ -59,10 +65,12 @@
   checks:
     - "python scripts/vault_gate.py --strict (las 26 puertas)"
     - "estado del sandbox documentado (bootstrap canonico, verificado)"
-    - "PENDIENTE (TD-0003): el envelope de la auditoria declare el estado de ejecucion por control"
-  required_evidence: [salida de vault_gate, documentacion del sandbox]
-  pass_criteria: ["26/26 puertas y sandbox canonico"]
-  fail_criteria: ["una puerta fallida, un control degradado sin declarar, o un sandbox no canonico sin documentar"]
+    - "el envelope de la auditoria declara el estado de ejecucion por control"
+    - "PENDIENTE (TD-0003): mientras el runtime no publique estados, la puerta queda BLOCKED con CONTROL_OBLIGATORIO_NO_VERIFICADO"
+  required_evidence: [salida de vault_gate, documentacion del sandbox, la seccion checks del envelope con el estado de AP-40, AP-42 y AP-43]
+  pass_criteria: ["26/26 puertas Y todos los controles obligatorios en estado ejecutado SIN degradados (completo: true)"]
+  fail_criteria: ["una puerta tecnica fallida, o un control degradado, o un control no ejecutado, o la ausencia de estados de ejecucion en el envelope (BLOCKED con CONTROL_OBLIGATORIO_NO_VERIFICADO)"]
+  nota: "26/26 puertas tecnicas aprobadas NO elimina el problema TD-0003: las puertas pueden estar verdes y el control haberse saltado. El PASS exige la evidencia del estado de ejecucion."
   blocking_policy: "bloquea QG-07"
   timeout_policy: "1200 s"
   waiver_policy: "no permitida"
@@ -155,7 +163,7 @@
   acceptance_authority: "QA arquitectonico (verifica) + propietario (autoriza)"
   scope: [el SHA del release candidate]
   checks:
-    - "QG-01..QG-06 en PASS para ese SHA"
+    - "QG-00..QG-06 en PASS para ESE SHA (QG-00 es prerrequisito: sin identidad verificada, las demas puertas quedan BLOCKED)"
     - "CI del SHA con conclusion (no queued): matriz multiplataforma, wheel y JSON-RPC"
     - "riesgos residuales aceptados y documentados"
     - "documentacion coherente (TD-0005) y versionado definido"

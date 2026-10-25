@@ -1,0 +1,64 @@
+R03 — H-F2-03: contrato de Quality Gates (fase 2)
+==================================================
+
+TASK_ID: R03
+FECHA: 2026-10-25
+RAMA: fase2/deuda-y-product-readiness-20261025
+SHA_ENTRADA: b9fb71d (R01) -> 08f9746 (R02) -> correccion en este commit
+
+DEFECTOS QUE CORRIGE
+--------------------
+1. QG-07 exigia "QG-01..QG-06 en PASS": dejaba QG-00 fuera. La identidad, el
+   aislamiento y la trazabilidad son PRERREQUISITO de cualquier otra puerta: sin
+   ellos, un PASS de QG-01..QG-06 no acredita el SHA dictaminado.
+2. QG-02 podia dar PASS con 26/26 puertas tecnicas aunque el envelope no
+   declarase el estado de ejecucion de los controles (TD-0003). Las puertas
+   verdes no demuestran que el control se ejecutase: eso es exactamente lo que
+   TD-0003 describe.
+3. El catalogo estaba escrito en prosa: nadie aplicaba la politica. Una regla
+   que solo existe en un YAML no existe.
+
+QUE SE HIZO
+-----------
+- `catalogo-qg.yaml`: QG-07 exige QG-00..QG-06 para ESE SHA; QG-02 declara que
+  sin estados de ejecucion la puerta es BLOCKED con
+  CONTROL_OBLIGATORIO_NO_VERIFICADO; la cabecera apunta al evaluador.
+- `audits/fase2/politica_qg.py`: evaluador PURO (sin IO) de las cuatro reglas:
+    R1 QG-00 prerrequisito: si no esta en PASS, las demas PASS -> BLOCKED.
+    R2 evidencia de otro SHA no acredita este SHA -> BLOCKED.
+    R3 QG-02 con control degradado, no verificado o sin seccion de estados ->
+       BLOCKED con CONTROL_OBLIGATORIO_NO_VERIFICADO.
+    R4 QG-07 solo PASS con QG-00..QG-06 en PASS y CI `success`; `queued` ->
+       BLOCKED con CI_PENDIENTE.
+  Fail-closed: gate ausente o estado desconocido se lee NOT_RUN; NOT_RUN nunca
+  es PASS.
+
+PRUEBAS (tests/test_fase2_politica_qg.py, 9 aprobadas)
+------------------------------------------------------
+1. todo acreditado permite PASS (el caso positivo: el fail-closed no es un
+   "siempre NO");
+2. QG-00 en fallo bloquea todo lo demas, con el motivo escrito;
+3. QG-02 con control degradado no da PASS;
+4. QG-02 sin seccion de estados de ejecucion es BLOCKED (nombra TD-0003);
+5. CI pendiente (`queued`) deja QG-07 BLOCKED con CI_PENDIENTE;
+6. evidencia de otro SHA no da PASS;
+7. un gate NOT_RUN bloquea QG-07;
+8. un gate ausente se lee NOT_RUN, nunca PASS;
+9. un estado invalido ("VERDE") se lee NOT_RUN.
+
+EFECTO SOBRE EL ESTADO ACTUAL (honesto)
+---------------------------------------
+Con este evaluador, QG-07 de esta rama es **BLOCKED** y no puede ser otra cosa
+mientras la CI siga en `queued`: la conclusion es un dato del proveedor, no del
+ejecutor. Y QG-02 sera BLOCKED mientras TD-0003 no publique los estados de
+ejecucion por control, aunque las 26 puertas esten verdes.
+
+LIMITACIONES DECLARADAS
+-----------------------
+- El evaluador aplica la politica sobre el estado que le pasa el llamador: no
+  mide. La medicion sigue siendo de las tools y de la CI.
+- Una conclusion de CI distinta de `success` se trata como no concluyente: el
+  catalogo no distingue hoy entre fallo y cancelacion a proposito, porque
+  ninguna de las dos acredita el SHA.
+
+SOLICITUD DE QA: revisar las cuatro reglas y las nueve pruebas.
