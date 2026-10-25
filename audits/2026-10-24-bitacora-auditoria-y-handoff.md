@@ -76,3 +76,11 @@ Funciones citadas en el análisis preliminar: `check_params`, `notas_indexables`
 | 2026-10-24 | 1–4 | Estado inicial de transferencia | Ver secciones 2–4 | `477e412`, `d7b1b4`, `4091f49` | **No ejecutadas** | Analizar puertos y contratos; validar suite |
 
 **Regla:** no marcar «completado» sin distinguir implementación, comprobación estática y pruebas ejecutadas. El tiempo transcurrido no constituye evidencia de progreso.
+
+## 7. Requisito diferido: Quality Gates de producto
+
+**Decisión del propietario (2026-10-24):** completar primero la auditoría y correcciones de puertos, contratos y dependencias; evaluar al cierre la incorporación de puertas de calidad inspiradas en inspección industrial. No implementar gates nuevos durante la refactorización inicial.
+
+**Investigación pendiente:** inventariar los controles existentes de gobernanza, sanidad, arquitectura, contratos, integridad y regresión; identificar responsables, entradas, salidas, criterios de aceptación, evidencia reproducible y política de bloqueo. Evitar controles duplicados y métricas que puedan aprobar sin verificar el comportamiento.
+
+**Criterio de entrada a esta fase:** cambios arquitectónicos justificados, pruebas de regresión ejecutadas y discrepancias documentadas. **Estado:** diferido, no implementado.
