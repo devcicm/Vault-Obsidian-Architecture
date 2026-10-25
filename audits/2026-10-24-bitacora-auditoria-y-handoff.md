@@ -84,3 +84,18 @@ Funciones citadas en el análisis preliminar: `check_params`, `notas_indexables`
 **Investigación pendiente:** inventariar los controles existentes de gobernanza, sanidad, arquitectura, contratos, integridad y regresión; identificar responsables, entradas, salidas, criterios de aceptación, evidencia reproducible y política de bloqueo. Evitar controles duplicados y métricas que puedan aprobar sin verificar el comportamiento.
 
 **Criterio de entrada a esta fase:** cambios arquitectónicos justificados, pruebas de regresión ejecutadas y discrepancias documentadas. **Estado:** diferido, no implementado.
+
+## 8. Investigación de primera frontera — Autoría → Índices (2026-10-24)
+
+**Fuente:** `candidata-cruces.json` del ZIP Archify, revisión declarada `f5f6921`. Se contrastaron símbolos con la rama aislada mediante lectura de GitHub. **No se ha corregido aún el acceso ni ejecutado pruebas.**
+
+| Consumidor | Línea examinada | Proveedor | Contrato observado | Riesgo |
+| --- | --- | --- | --- | --- |
+| `scripts/vault_write.py` | 43, 1046 | `vault_tags.apply_vocabulary(tags)` | Devuelve `(tags_resueltos, terminos_nuevos)`; operación sin escritura | Acoplamiento directo entre contextos |
+| `scripts/vault_write.py` | 1394 | `vault_tags.record_new_tags(new_terms)` | Devuelve número de registros; captura `OSError` y registra `-1` | Side effect append-only, posterior a escritura confirmada |
+
+**Evidencia del proveedor:** `scripts/vault_tags.py` líneas 272–304 y 307–333. `record_new_tags` usa bloqueo y escritura atómica del ledger; `apply_vocabulary` resuelve vocabulario sin mutar archivos. **Invariante crítico:** nunca registrar tags antes de confirmar escritura; fallo de ledger no debe invalidar nota persistida.
+
+**Decisión provisional:** no sustituir imports por una fachada cosmética ni mover funciones sin identificar el puerto canónico, propietarios y consumidores. Próximo paso: contrastar `CONTEXTS` y `PRESUPUESTO_DE_CRUCES` con la ubicación real de la interfaz; crear pruebas de contrato y regresión de escritura exitosa/fallida antes de refactorizar.
+
+**Validación:** lectura estática confirmada; ejecución de suite, pruebas y nuevo contrato: pendientes.
