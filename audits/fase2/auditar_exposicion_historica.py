@@ -80,7 +80,7 @@ def clasificar(texto: str) -> List[Dict[str, str]]:
 
     El criterio del marcador mira el SEGMENTO que va justo tras `Users/`, no la
     captura entera: `C:/Users/<autor>/resto` lleva el hueco `<autor>` y no es
-    exposicion, mientras que `C:/Users/Carlos/resto` si lo es.
+    exposicion, mientras que una cuenta real en ese mismo sitio si lo es.
     """
     salidas: List[Dict[str, str]] = []
     cuenta = _cuenta()

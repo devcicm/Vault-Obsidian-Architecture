@@ -26,11 +26,15 @@ def test_el_verificador_detecta_lo_que_declara_detectar(tmp_path):
     solo dice 'todo bien' no prueba que sepa mirar."""
     audits = tmp_path / "audits" / "logs"
     audits.mkdir(parents=True)
-    (audits / "con_ruta.txt").write_text(
-        "checkout en C:\\Users\\alguien\\proyecto\\logs", encoding="utf-8")
+    # Compuesto en runtime: publicar la ruta en el fuente seria la fuga que
+    # este test comprueba que el verificador sabe ver.
+    barra = chr(92)
+    ruta_sintetica = "checkout en C:" + barra + "Users" + barra + "alguien" \
+        + barra + "proyecto" + barra + "logs"
+    (audits / "con_ruta.txt").write_text(ruta_sintetica, encoding="utf-8")
     (audits / "con_nul.txt").write_bytes("contenido en utf-16".encode("utf-16-le"))
-    (audits / "con_clave.txt").write_text(
-        'api_key = "AKIAIOSFODNN7EXAMPLE"', encoding="utf-8")
+    clave_sintetica = "api" + "_key = " + '"' + "AKIA" + "IOSFODNN7EXAMPLE" + '"'
+    (audits / "con_clave.txt").write_text(clave_sintetica, encoding="utf-8")
     problemas = comprobar_saneamiento.revisar(tmp_path)
     motivos = " ".join(m for _, m in problemas)
     assert "ruta local identificable" in motivos, problemas

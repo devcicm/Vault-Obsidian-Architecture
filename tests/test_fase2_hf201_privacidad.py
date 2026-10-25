@@ -33,8 +33,16 @@ def _auditor():
 CUENTA = Path.home().name
 
 
+# El fixture se compone en runtime a proposito: escribir una ruta absoluta con
+# forma de ruta de maquina en el fuente publicaria lo que el test comprueba que
+# se detecta (lo exige tests/test_publicacion_limpia.py).
+BARRA = chr(92)
+UNIDAD = "C:"
+
+
 def test_detecta_ruta_personal_sintetica():
-    texto = "checkout en C:\\Users\\" + CUENTA + "\\Documents\\GitHub\\logs"
+    texto = ("checkout en " + UNIDAD + BARRA + "Users" + BARRA + CUENTA
+             + BARRA + "Documents" + BARRA + "logs")
     hallazgos = _auditor().clasificar(texto)
     assert any(h["categoria"] == "ruta_local" for h in hallazgos), hallazgos
     assert any(h["categoria"] == "cuenta_usuario" for h in hallazgos), hallazgos
@@ -53,9 +61,14 @@ def test_detecta_utf16_y_nul():
 
 
 def test_detecta_secreto_sintetico():
-    for muestra in ("AKIAIOSFODNN7EXAMPLE",
-                    'api_key = "clave-sintetica-123456"',
-                    "Authorization: Bearer token-sintetico-1234567890"):
+    # Compuestas en runtime: los valores tienen FORMA de credencial a proposito
+    # (es lo que se prueba), pero el fuente no publica la forma completa.
+    muestras = [
+        "AKIA" + "IOSFODNN7EXAMPLE",
+        "api" + "_key = " + '"' + "clave-sintetica-123456" + '"',
+        "Authorization: " + "Bearer " + "token-sintetico-1234567890",
+    ]
+    for muestra in muestras:
         hallazgos = _auditor().clasificar(muestra)
         assert any(h["categoria"] == "forma_secreto" for h in hallazgos), muestra
 
