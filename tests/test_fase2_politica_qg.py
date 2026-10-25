@@ -8,9 +8,18 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "audits" / "fase2"))
+def _cargar_politica_qg():
+    """Carga por ruta: `audits/fase2/` no es un paquete de la suite."""
+    import importlib.util
 
-import politica_qg  # noqa: E402
+    ruta = ROOT / "audits" / "fase2" / "politica_qg.py"
+    spec = importlib.util.spec_from_file_location("politica_qg", ruta)
+    modulo = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(modulo)
+    return modulo
+
+
+politica_qg = _cargar_politica_qg()
 
 SHA = "a" * 40
 TODO_PASS = {g: "PASS" for g in politica_qg.GATES}

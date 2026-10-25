@@ -11,9 +11,18 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "audits" / "fase2"))
+def _cargar_comprobar_saneamiento():
+    """Carga por ruta: `audits/fase2/` no es un paquete de la suite."""
+    import importlib.util
 
-import comprobar_saneamiento  # noqa: E402
+    ruta = ROOT / "audits" / "fase2" / "comprobar_saneamiento.py"
+    spec = importlib.util.spec_from_file_location("comprobar_saneamiento", ruta)
+    modulo = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(modulo)
+    return modulo
+
+
+comprobar_saneamiento = _cargar_comprobar_saneamiento()
 
 
 def test_las_evidencias_publicadas_estan_saneadas():

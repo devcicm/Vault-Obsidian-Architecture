@@ -23,9 +23,18 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "audits" / "fase2"))
+def _cargar_paridad_cli_mcp():
+    """Carga por ruta: `audits/fase2/` no es un paquete de la suite."""
+    import importlib.util
 
-import paridad_cli_mcp as verificador  # noqa: E402
+    ruta = ROOT / "audits" / "fase2" / "paridad_cli_mcp.py"
+    spec = importlib.util.spec_from_file_location("paridad_cli_mcp", ruta)
+    modulo = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(modulo)
+    return modulo
+
+
+verificador = _cargar_paridad_cli_mcp()
 
 
 def _cliente(codigo: str, extra: str = ""):
