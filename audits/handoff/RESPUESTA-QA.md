@@ -33,3 +33,50 @@
 - Conservar el enfoque ODD: cambio mínimo, causa, invariantes y comprobaciones empíricas.
 
 **Dictamen global:** **EN REVISIÓN QA / REQUIERE EVIDENCIA Y AJUSTE DE Q02**. Aceptación documental de Q00, conformidad estática Q01/Q03 y Q02 parcialmente verificada por código, pero **ninguna validación empírica ejecutada por QA**. Quality Gates de cierre (Q12) siguen diferidos.
+
+---
+
+# Dictamen QA — cierre técnico local de ronda 1B (2026-10-25)
+
+**Emisor:** QA arquitectónico (ChatGPT). **Destinatario:** ejecutor local.  
+**Rama:** `audit/archify-governance-20261024`.  
+**SHA ejecutor evaluado:** `3913baa18122d71596060ce93eeec58532f91184`; código corregido AP-37 en `f24a9b82913294dd3295058a5b56361cc2af229f`.  
+**Base de comparación de esta etapa:** `bcc1f8b69a2f8d7d0e0f20bf5d2f86c9895e1a75`.  
+**Método:** verificación remota de historial, cambios de código, informe y logs de GitHub. **QA no ejecutó de forma independiente la suite ni las puertas de calidad.**
+
+## Verificación y dictamen por hallazgo
+
+| Hallazgo | Evidencia revisada | Dictamen |
+|---|---|---|
+| H-QA-01 AP-37 | Diff de `scripts/vault_noop_audit.py` (+8 líneas): declara `vault_frontmatter_completar: {"07_Knowledge/x.md": "nota"}` en `FICHEROS_DEL_EJEMPLO`; logs antes (exit 1, NOTE_NOT_FOUND) / después (exit 0, herramienta medida con escritura real) | **ACEPTADO para el alcance local**. No se relajó la detección AP-37. |
+| H-QA-02 doc_staleness / gobernanza | `R1B-CIERRE-gates.txt`: `gates_total=26`, `passing=26`, `failing=0`, exit 0 reportado; `R1B-CIERRE-entorno.md` documenta bootstrap canónico | **ACEPTADO como resultado local documentado**. |
+| H-QA-03 suite integral | `R1B-CIERRE-suite.txt`: pytest sobre Windows/Python 3.14.3, 6,141 passed, 11 skipped, 2 warnings, 0 failed, 1019.94 s; exit 0 consignado por ejecutor | **ACEPTADO como resultado local documentado**, no como certificación multiplataforma. |
+| H-QA-04 arquitectura | `R1B-CIERRE-arch.txt`: `ok=true`, `broken_ports=[]`, `new_off_port_crossings=[]`, `off_port_total=5`, `off_port_baseline=5` | **ACEPTADO** para invariantes definidos en esta ronda. Permanecen cinco cruces conocidos D–H como deuda posterior. |
+| H-QA-05 CI | Estado GitHub Actions del SHA `3913baa`: workflow `40168207630` en `queued`, sin conclusión al comprobar; runs anteriores también en cola | **PENDIENTE**. No declarar CI aprobada ni producto publicable. |
+
+## Decisión QA
+
+**ACEPTADO CON OBSERVACIONES: cierre técnico LOCAL de ronda 1B.**
+
+Esta decisión **no equivale a** autorizar merge a `main`, declarar la distribución lista, emitir un release estable, certificar compatibilidad Linux/macOS ni afirmar paridad CLI–MCP. No requiere una nueva ronda 1B por los hallazgos locales ya cerrados a menos que aparezca nueva evidencia contradictoria.
+
+**Observaciones de alcance y verificación:**
+
+1. Los resultados de pruebas y gates son verificables documentalmente en GitHub, pero fueron ejecutados por el agente local. QA no los reprodujo en un entorno propio.
+2. `R1B-CIERRE-entorno.md` documenta tres intentos fallidos antes del cuarto exitoso; esta trazabilidad se conserva y no invalida la última corrida.
+3. Las pruebas se ejecutaron sobre el SHA de código `f24a9b8`; commits posteriores agregan evidencias/informe, no modifican código según el diff revisado. El SHA del HEAD ejecutor es `3913baa`.
+4. Las 11 omisiones y dos warnings deben mantenerse visibles; no equivalen a fallos de suite en el alcance informado.
+5. La cobertura de otras versiones de Python y plataformas, integración CI y criterios de empaquetado/distribución quedan pendientes para la fase posterior.
+6. Los cinco cruces fuera de puerto conocidos D–H permanecen como deuda vigilada, no como nuevas regresiones.
+
+## Comunicación y siguiente ronda
+
+- **QA** conserva la propiedad editorial de `audits/handoff/RESPUESTA-QA.md`.
+- **Ejecutor** conserva la propiedad de `audits/handoff/RESPUESTA-DEL-EJECUTOR.md` y sus logs.
+- **Propietario** decide autorización de la próxima ronda, cambios en `main`, lanzamiento y prioridad entre deuda arquitectónica (Q04–Q07) y preparación para distribución.
+- **No iniciar Q04–Q07 automáticamente** ni hacer merge de PR #1 a `main`.
+- Una vez disponible CI para el SHA de la rama, verificar estado, matriz multiplataforma, dependencias de wheel (incluido PyYAML) y pruebas JSON-RPC; registrar evidencia antes de solicitar autorización de distribución.
+- Para producto CLI + MCP, programar en fase independiente una validación de instalación limpia, operaciones E2E reales y paridad de contratos/adaptadores.
+
+**Estado:** RONDA 1B CERRADA EN ALCANCE LOCAL; CI Y RELEASE PENDIENTES.
+
