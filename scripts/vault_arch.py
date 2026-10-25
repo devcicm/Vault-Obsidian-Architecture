@@ -1886,17 +1886,20 @@ _cruce("ciclo_de_vida", "gobernanza", "permanente", "ciclo_de_vida",
        "Sanación y onboarding aplican las normas al vault del usuario. Sin este "
        "cruce las doce fases tendrían que reimplementar el criterio, que es "
        "AP-57.")
-_cruce("gobernanza", "meta_toolkit", "a_eliminar", "gobernanza",
-       "`vault_norms_engine` importa `vault_smoke` y `vault_mcp_catalog` en "
-       "diferido para auditar el catálogo. Va al revés: el motor de normas no "
-       "debería saber que existe un smoke. Sale cuando el audit del catálogo lo "
-       "pida el meta-toolkit en vez de pedirlo el motor.",
-       fecha_limite="2027-06-30")
-_cruce("gobernanza", "autoria", "a_eliminar", "gobernanza",
-       "`vault_norms_engine` -> `vault_voice`: presentación colgada del motor, "
-       "se conserva solo en la fachada estándar para ejecutar AP-43. Sale "
-       "cuando el audit del catálogo se ejecute fuera del motor.",
-       fecha_limite="2027-06-30")
+_cruce("gobernanza", "meta_toolkit", "permanente", "gobernanza",
+       "`vault_norms` compone los controles del estándar (AP-40/42/43) "
+       "importando `vault_mcp_catalog` y `vault_smoke`. Es una herramienta de "
+       "MANTENIMIENTO: no viaja en la wheel de producto (TD-0003). El motor "
+       "empaquetado (`vault_norms_engine`) ya no importa a nadie: recibe los "
+       "checks por callback. Mientras el audit del catálogo lo pida la fachada, "
+       "el cruce es un adaptador de mantenimiento, no una dependencia del "
+       "producto.")
+_cruce("gobernanza", "autoria", "permanente", "gobernanza",
+       "`vault_norms` -> `vault_voice` para ejecutar AP-43: presentación de la "
+       "fachada de mantenimiento, fuera de la wheel. El motor no la conoce. "
+       "Sale del producto cuando el audit del catálogo se ejecute en el "
+       "meta-toolkit; hoy no hay un dueño mejor para componer los tres checks.")
+
 _cruce("autoria", "gobernanza", "permanente", "autoria",
        "Validar mermaid al escribir y registrar el cambio: la escritura no puede "
        "publicar una nota que el propio estándar rechazaría.")
