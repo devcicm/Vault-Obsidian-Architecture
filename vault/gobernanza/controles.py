@@ -50,11 +50,11 @@ def ejecutar_control(control: str, ejecutor: Callable[..., int | Dict[str, Any]]
         resultado = ejecutor(*args, **kwargs)
     except ImportError as exc:
         return _check(control, "no_ejecutado",
-                      f"dependencia_no_disponible: {exc}")
+                      f"dependencia_no_disponible ({exc})")
     except (OSError, ValueError) as exc:
-        return _check(control, "degradado", f"{type(exc).__name__}: {exc}")
+        return _check(control, "degradado", f"{type(exc).__name__} ({exc})")
     except Exception as exc:  # el verificador existe y fallo: hay que verlo
-        return _check(control, "fallido", f"{type(exc).__name__}: {exc}")
+        return _check(control, "fallido", f"{type(exc).__name__} ({exc})")
     if isinstance(resultado, dict):
         hallazgos = resultado.get("hallazgos", 0)
         estado = resultado.get("estado", "ejecutado")
@@ -66,7 +66,7 @@ def ejecutar_control(control: str, ejecutor: Callable[..., int | Dict[str, Any]]
     if resultado is None:
         return _check(control, "ejecutado", None, 0)
     return _check(control, "degradado",
-                  f"resultado_no_interpretable: {type(resultado).__name__}")
+                  f"resultado_no_interpretable ({type(resultado).__name__})")
 
 
 def resumen(checks: Iterable[Dict[str, Any]]) -> Dict[str, Any]:

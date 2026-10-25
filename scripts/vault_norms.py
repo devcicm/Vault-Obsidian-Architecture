@@ -473,7 +473,7 @@ def _control_ap40(flag) -> int:
 
     hallazgos = 0
     for _p in _cat.check_params().get("problems", []):
-        flag("AP-40", f"mcp/nodejs/tools-catalog.json#{_p['tool']}",
+        flag("AP-40", f"tools-catalog#{_p['tool']}",
              f"{_p['problem']} — correr vault_mcp_catalog --sync.")
         hallazgos += 1
     return hallazgos
@@ -485,7 +485,7 @@ def _control_ap42(flag) -> int:
 
     hallazgos = 0
     for _t in _smoke.load_baseline():
-        flag("AP-42", f"scripts/smoke-baseline.json#{_t}",
+        flag("AP-42", f"smoke-baseline#{_t}",
              f"{_t} esta congelada como deuda: su ejemplo documentado no emite "
              "un JSON con `ok`. La baseline solo puede encoger.")
         hallazgos += 1

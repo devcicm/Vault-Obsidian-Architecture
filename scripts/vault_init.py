@@ -26,6 +26,8 @@ Usage:
     python vault_init.py --clean --confirm mi-vault   # mueve a cuarentena verificada
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import shutil

@@ -190,7 +190,10 @@ def test_el_audit_de_normas_conoce_ap40():
 
     assert vault_norms_catalog.norma_por_codigo("AP-40")["code"] == "AP-40"
 
-    motor = gi.codigo_de(SCRIPTS / "vault_norms_engine.py").read_text(encoding="utf-8")
+    # TD-0003: la composición de AP-40 vive en la fachada de mantenimiento
+    # (`vault_norms`), no en el motor empaquetado, porque `vault_mcp_catalog`
+    # no viaja en la wheel de producto.
+    motor = gi.codigo_de(SCRIPTS / "vault_norms.py").read_text(encoding="utf-8")
     assert '"AP-40"' in motor
     assert "check_params" in motor
 
