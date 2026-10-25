@@ -146,10 +146,11 @@
     - "AP-49 (vinculos congelados)"
   related_tests:
     - "tests/test_arquitectura.py"
-  proposed_remediation: "Ninguna: la conciliacion queda ejecutable y repetible (python audits/fase2/reconciliar_archify.py), de modo que una revision futura vuelve a confrontar el snapshot sin trabajo manual."
+  proposed_remediation: "Ninguna: la conciliacion queda ejecutable y repetible (python audits/fase2/reconciliar_archify.py), de modo que una revision futura vuelve a confrontar el snapshot sin trabajo manual. Modo --check: sale con codigo distinto de cero ante cualquier divergencia NO aceptada; el modo informativo sigue emitiendo el inventario sin bloquear. La conciliacion distingue DOS niveles: por par de contexto (23/23 con ficha identica) y EXACTA por modulo y fichero (37/37 dependencias del snapshot existen hoy con esos dos modulos exactos)."
   regression_risk: "Ninguno: es una herramienta de auditoria, no toca el producto."
   acceptance_criteria:
     - "El reconciliador corre y emite informe reproducible en cada ronda."
+    - "python audits/fase2/reconciliar_archify.py --check devuelve 0 con el estado actual y != 0 si alguien introduce una dependencia divergente."
   quality_gate: "QG-01"
   decision: accepted
 

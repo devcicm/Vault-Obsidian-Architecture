@@ -202,6 +202,7 @@ def reconciliar_dependencias(snap: Dict[str, Any]) -> Dict[str, Any]:
                     "dueno migrado o granularidad de fichero; requiere lectura")
         filas.append({"par": list(par), "dependencias_snapshot": deps,
                       "estado": estado, "nota": nota})
+    filas.extend(_dependencias_por_modulo(snap))
     return {
         "dependencias_snapshot_n": len(snap_deps),
         "pares_snapshot_n": len(pares_snap),
@@ -229,6 +230,89 @@ def reconciliar_off_port(snap: Dict[str, Any]) -> List[Dict[str, Any]]:
             nota = "no aparece ni vivo ni resuelto: requiere investigacion"
         filas.append({"clave": clave, "estado": estado, "nota": nota})
     return filas
+
+
+def _modulo_publico(nombre: str) -> str:
+    """El nombre con el que el repo nombra hoy ese modulo o fichero.
+
+    Usa los resolvers del propio repo (`vault_grafo_import`): el nombre
+    publico del alias si lo hay, y el del dueno si no. Sin esta capa, la
+    conciliacion solo llega al par de contextos y no puede afirmar nada sobre
+    el SITIO: `vault/autoria/repositorio.py` y `vault/autoria/repositorio.py`
+    son el mismo dueno con dos grafias.
+    """
+    import vault_grafo_import as gi
+
+    limpio = str(nombre).strip()
+    if not limpio:
+        return ""
+    if limpio.endswith(".py"):
+        limpio = limpio[:-3]
+    if limpio.startswith("vault/"):
+        partes = limpio.split("/")
+        if len(partes) >= 3:
+            # Ruta de dueno: la clave canonica del repo es la ruta misma
+            # (`vault_arch.clave_de_modulo`), no su basename: cinco duenos se
+            # llaman `repositorio` y el nombre suelto no distinguiria ninguno.
+            ruta = ROOT.joinpath(*partes).with_suffix(".py")
+            if ruta.exists():
+                return arch.clave_de_modulo(ruta)
+            return limpio
+        # `vault/<contexto>` es un CONTEXTO, no un modulo.
+        return limpio
+    # Ya es un nombre publico de modulo (alias).
+    return limpio
+
+
+def _dependencias_por_modulo(snap: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Capa fina: cada dependencia del snapshot, resuelta a modulo PUBLICO.
+
+    Es la conciliacion EXACTA (no por par de contexto): se resuelve cada lado
+    con el resolver del repo y se busca la fila viva que dice exactamente eso.
+    Lo que no se resuelve se declara NO NORMALIZABLE, con el motivo: no se
+    afirma una conciliacion que no se ha hecho.
+    """
+    vivos = arch.cruces()
+    pares_modulo_vivos = {(c["from"], c["to"]) for c in vivos}
+    claves_off_port = {arch._clave_fuera_de_puerto(x)
+                       for x in arch.cruces_fuera_de_puerto()}
+    filas = []
+    for entrada in snap.get("_crossings", []):
+        texto = str(entrada)
+        if " -> " not in texto:
+            continue
+        desde, hasta = texto.split(" -> ", 1)
+        mod_desde, mod_hasta = _modulo_publico(desde), _modulo_publico(hasta)
+        if not mod_desde or not mod_hasta:
+            filas.append({"dependencia": texto, "estado": "NO NORMALIZABLE",
+                          "nota": "uno de los dos lados no se resuelve a modulo"})
+            continue
+        if (mod_desde, mod_hasta) in pares_modulo_vivos:
+            estado = "EXACTA (modulo vivo)"
+            nota = "la dependencia existe hoy con esos dos modulos"
+        elif mod_hasta in arch.CONTEXTS or \
+                (mod_hasta.startswith("vault/") and
+                 mod_hasta.split("/", 1)[1] in arch.CONTEXTS):
+            estado = "VIGENTE (par de contextos)"
+            nota = ("el destino es un CONTEXTO en el snapshot: el cruce vive en "
+                    "el registro por par, no por modulo")
+        else:
+            clave = f"{mod_desde} -> {mod_hasta}"
+            if clave in RESUELTOS_EN_RONDA_1 or clave in claves_off_port:
+                estado = "RESUELTO o vigilado"
+                nota = ("el simbolo ya no cruza fuera de puerto o se resolvio "
+                        "en la ronda 1")
+            else:
+                estado = "NO CONCILIABLE"
+                nota = "no existe esa dependencia en el codigo actual"
+        filas.append({"dependencia": texto, "modulos": [mod_desde, mod_hasta],
+                      "estado": estado, "nota": nota})
+    return filas
+
+
+def recon_off_port(snap: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Los accesos fuera de puerto del snapshot, ya clasificados."""
+    return reconciliar_off_port(snap)
 
 
 def reconciliar_anclas(snap: Dict[str, Any]) -> Dict[str, Any]:
@@ -282,6 +366,10 @@ def reconciliar_contextos(snap: Dict[str, Any]) -> List[Dict[str, Any]]:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--json", dest="salida", help="fichero JSON de salida")
+    ap.add_argument("--check", action="store_true",
+                    help="modo comprobacion: sale con codigo distinto de cero si "
+                         "queda alguna divergencia NO aceptada (sin tocar "
+                         "inventario)")
     args = ap.parse_args()
 
     snap = _cargar_archify()
@@ -325,10 +413,14 @@ def main() -> int:
           f"sitios_vivos={deps['sitios_vivos_n']} pares_vivos={deps['pares_contexto_vivos_n']} "
           f"vigentes={deps['pares_vigentes']}")
     for f in deps["filas"]:
-        if f["estado"] != "VIGENTE":
-            print(f"  {f['par']} -> {f['estado']}")
-            for d in f["dependencias_snapshot"]:
-                print(f"      {d}")
+        if f["estado"] == "VIGENTE":
+            continue
+        etiqueta = f.get("par") or f.get("dependencia")
+        print(f"  {etiqueta} -> {f['estado']}")
+        for d in f.get("dependencias_snapshot", []):
+            print(f"      {d}")
+        if f.get("modulos"):
+            print(f"      modulos: {f['modulos']}")
     print("== ACCESOS FUERA DE PUERTO")
     for f in informe["off_port"]:
         print(f"  {f['clave']:56s} {f['estado']}")
@@ -345,6 +437,32 @@ def main() -> int:
             json.dumps(informe, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8")
         print(f"\ninforme escrito: {args.salida}")
+
+    if args.check:
+        divergencias = []
+        for par in pares.get("solo_en_snapshot", []):
+            divergencias.append(f"par solo en el snapshot: {par}")
+        for par in pares.get("solo_en_registro", []):
+            divergencias.append(f"par solo en el registro: {par}")
+        for f in pares.get("fichas", []):
+            if f.get("estado") != "VIGENTE":
+                divergencias.append(f"ficha divergente: {f['par']}")
+        for f in recon_off_port(snap):
+            if f["estado"] == "NO CONCILIADO":
+                divergencias.append(f"acceso no conciliado: {f['clave']}")
+        for f in informe["dependencias"]["filas"]:
+            if f["estado"] in ("NO CONCILIABLE", "NO NORMALIZABLE"):
+                divergencias.append(f"dependencia {f['estado']}: {f.get('dependencia')}")
+        if not informe["anclas"].get("coinciden"):
+            divergencias.append("las anclas del puente no coinciden")
+        print("== MODO CHECK")
+        if divergencias:
+            for d in divergencias:
+                print(f"  DIVERGENCIA: {d}")
+            print(f"\n{len(divergencias)} divergencia(s) no aceptada(s): "
+                  "el estado del inventario NO es conforme")
+            return 1
+        print("  sin divergencias no aceptadas: el inventario es conforme")
     return 0
 
 

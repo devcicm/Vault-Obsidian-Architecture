@@ -13,6 +13,80 @@
   snapshot=23 registro=23 coincidentes=23
 == DEPENDENCIAS (nivel de contexto)
   deps=37 pares_snapshot=23 sitios_vivos=49 pares_vivos=23 vigentes=23
+  cli/registry -> vault_mcp_catalog -> EXACTA (modulo vivo)
+      modulos: ['cli/registry', 'vault_mcp_catalog']
+  vault/autoria/repositorio.py -> vault/grafo -> EXACTA (modulo vivo)
+      modulos: ['vault/autoria/repositorio.py', 'vault/grafo']
+  vault/autoria/repositorio.py -> vault/indices -> EXACTA (modulo vivo)
+      modulos: ['vault/autoria/repositorio.py', 'vault/indices']
+  vault/ciclo_de_vida/repositorio.py -> vault/indices -> EXACTA (modulo vivo)
+      modulos: ['vault/ciclo_de_vida/repositorio.py', 'vault/indices']
+  vault/consulta/repositorio.py -> vault/ciclo_de_vida -> EXACTA (modulo vivo)
+      modulos: ['vault/consulta/repositorio.py', 'vault/ciclo_de_vida']
+  vault/gobernanza/auditoria_runtime.py -> vault/indices -> EXACTA (modulo vivo)
+      modulos: ['vault/gobernanza/auditoria_runtime.py', 'vault/indices']
+  vault/gobernanza/repositorio.py -> vault/indices -> EXACTA (modulo vivo)
+      modulos: ['vault/gobernanza/repositorio.py', 'vault/indices']
+  vault/gobernanza/tool.py -> vault/meta_toolkit -> EXACTA (modulo vivo)
+      modulos: ['vault/gobernanza/tool.py', 'vault/meta_toolkit']
+  vault/grafo/repositorio.py -> vault/gobernanza -> EXACTA (modulo vivo)
+      modulos: ['vault/grafo/repositorio.py', 'vault/gobernanza']
+  vault/indices/repositorio.py -> vault/grafo -> EXACTA (modulo vivo)
+      modulos: ['vault/indices/repositorio.py', 'vault/grafo']
+  vault/meta_toolkit/catalog_adapter.py -> vault/gobernanza -> EXACTA (modulo vivo)
+      modulos: ['vault/meta_toolkit/catalog_adapter.py', 'vault/gobernanza']
+  vault_blueprint -> vault_norms -> EXACTA (modulo vivo)
+      modulos: ['vault_blueprint', 'vault_norms']
+  vault_change_log -> vault/gobernanza -> EXACTA (modulo vivo)
+      modulos: ['vault_change_log', 'vault/gobernanza']
+  vault_code_tag -> vault_write -> EXACTA (modulo vivo)
+      modulos: ['vault_code_tag', 'vault_write']
+  vault_context_pack -> vault_search -> EXACTA (modulo vivo)
+      modulos: ['vault_context_pack', 'vault_search']
+  vault_errors -> vault/autoria -> EXACTA (modulo vivo)
+      modulos: ['vault_errors', 'vault/autoria']
+  vault_mcp -> vault_mcp_context -> EXACTA (modulo vivo)
+      modulos: ['vault_mcp', 'vault_mcp_context']
+  vault_norms_coherence -> vault_norms -> EXACTA (modulo vivo)
+      modulos: ['vault_norms_coherence', 'vault_norms']
+  vault_norms_engine -> vault_mcp_catalog -> EXACTA (modulo vivo)
+      modulos: ['vault_norms_engine', 'vault_mcp_catalog']
+  vault_norms_engine -> vault_smoke -> EXACTA (modulo vivo)
+      modulos: ['vault_norms_engine', 'vault_smoke']
+  vault_norms_engine -> vault_voice -> EXACTA (modulo vivo)
+      modulos: ['vault_norms_engine', 'vault_voice']
+  vault_onboard -> vault_reindex -> EXACTA (modulo vivo)
+      modulos: ['vault_onboard', 'vault_reindex']
+  vault_onboard -> vault_section_index -> EXACTA (modulo vivo)
+      modulos: ['vault_onboard', 'vault_section_index']
+  vault_onboard -> vault_tags -> EXACTA (modulo vivo)
+      modulos: ['vault_onboard', 'vault_tags']
+  vault_onboard -> vault_write -> EXACTA (modulo vivo)
+      modulos: ['vault_onboard', 'vault_write']
+  vault_propagate -> vault/gobernanza -> EXACTA (modulo vivo)
+      modulos: ['vault_propagate', 'vault/gobernanza']
+  vault_propagate -> vault_impact -> EXACTA (modulo vivo)
+      modulos: ['vault_propagate', 'vault_impact']
+  vault_sanacion -> vault/gobernanza -> EXACTA (modulo vivo)
+      modulos: ['vault_sanacion', 'vault/gobernanza']
+  vault_sanacion -> vault_audit -> EXACTA (modulo vivo)
+      modulos: ['vault_sanacion', 'vault_audit']
+  vault_sanacion -> vault_reindex -> EXACTA (modulo vivo)
+      modulos: ['vault_sanacion', 'vault_reindex']
+  vault_spec_memory -> vault/ciclo_de_vida -> EXACTA (modulo vivo)
+      modulos: ['vault_spec_memory', 'vault/ciclo_de_vida']
+  vault_spec_memory -> vault/gobernanza -> EXACTA (modulo vivo)
+      modulos: ['vault_spec_memory', 'vault/gobernanza']
+  vault_standard_upgrade -> vault_mcp_catalog -> EXACTA (modulo vivo)
+      modulos: ['vault_standard_upgrade', 'vault_mcp_catalog']
+  vault_standard_upgrade -> vault_section_index -> EXACTA (modulo vivo)
+      modulos: ['vault_standard_upgrade', 'vault_section_index']
+  vault_subgraph -> vault/grafo -> EXACTA (modulo vivo)
+      modulos: ['vault_subgraph', 'vault/grafo']
+  vault_voice -> vault_mcp_catalog -> EXACTA (modulo vivo)
+      modulos: ['vault_voice', 'vault_mcp_catalog']
+  vault_write -> vault_tags -> EXACTA (modulo vivo)
+      modulos: ['vault_write', 'vault_tags']
 == ACCESOS FUERA DE PUERTO
   vault_norms_engine -> vault_mcp_catalog.check_params     VIGENTE (deuda vigilada)
   vault_norms_engine -> vault_smoke.SIN_SMOKE              VIGENTE (deuda vigilada)

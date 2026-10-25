@@ -1,5 +1,5 @@
 {
-  "sha": "ef77a7b19a6aaa5e8a5bf776181ab887b7ee4587",
+  "sha": "e98550d33e302d93dca9327930eafbf0d64436b6",
   "contextos": [
     {
       "contexto": "kernel",
@@ -592,6 +592,339 @@
         ],
         "estado": "VIGENTE",
         "nota": "el par de contextos sigue cruzando: vive en el registro"
+      },
+      {
+        "dependencia": "cli/registry -> vault_mcp_catalog",
+        "modulos": [
+          "cli/registry",
+          "vault_mcp_catalog"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault/autoria/repositorio.py -> vault/grafo",
+        "modulos": [
+          "vault/autoria/repositorio.py",
+          "vault/grafo"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault/autoria/repositorio.py -> vault/indices",
+        "modulos": [
+          "vault/autoria/repositorio.py",
+          "vault/indices"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault/ciclo_de_vida/repositorio.py -> vault/indices",
+        "modulos": [
+          "vault/ciclo_de_vida/repositorio.py",
+          "vault/indices"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault/consulta/repositorio.py -> vault/ciclo_de_vida",
+        "modulos": [
+          "vault/consulta/repositorio.py",
+          "vault/ciclo_de_vida"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault/gobernanza/auditoria_runtime.py -> vault/indices",
+        "modulos": [
+          "vault/gobernanza/auditoria_runtime.py",
+          "vault/indices"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault/gobernanza/repositorio.py -> vault/indices",
+        "modulos": [
+          "vault/gobernanza/repositorio.py",
+          "vault/indices"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault/gobernanza/tool.py -> vault/meta_toolkit",
+        "modulos": [
+          "vault/gobernanza/tool.py",
+          "vault/meta_toolkit"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault/grafo/repositorio.py -> vault/gobernanza",
+        "modulos": [
+          "vault/grafo/repositorio.py",
+          "vault/gobernanza"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault/indices/repositorio.py -> vault/grafo",
+        "modulos": [
+          "vault/indices/repositorio.py",
+          "vault/grafo"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault/meta_toolkit/catalog_adapter.py -> vault/gobernanza",
+        "modulos": [
+          "vault/meta_toolkit/catalog_adapter.py",
+          "vault/gobernanza"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault_blueprint -> vault_norms",
+        "modulos": [
+          "vault_blueprint",
+          "vault_norms"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault_change_log -> vault/gobernanza",
+        "modulos": [
+          "vault_change_log",
+          "vault/gobernanza"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault_code_tag -> vault_write",
+        "modulos": [
+          "vault_code_tag",
+          "vault_write"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault_context_pack -> vault_search",
+        "modulos": [
+          "vault_context_pack",
+          "vault_search"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault_errors -> vault/autoria",
+        "modulos": [
+          "vault_errors",
+          "vault/autoria"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault_mcp -> vault_mcp_context",
+        "modulos": [
+          "vault_mcp",
+          "vault_mcp_context"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault_norms_coherence -> vault_norms",
+        "modulos": [
+          "vault_norms_coherence",
+          "vault_norms"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault_norms_engine -> vault_mcp_catalog",
+        "modulos": [
+          "vault_norms_engine",
+          "vault_mcp_catalog"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault_norms_engine -> vault_smoke",
+        "modulos": [
+          "vault_norms_engine",
+          "vault_smoke"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault_norms_engine -> vault_voice",
+        "modulos": [
+          "vault_norms_engine",
+          "vault_voice"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault_onboard -> vault_reindex",
+        "modulos": [
+          "vault_onboard",
+          "vault_reindex"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault_onboard -> vault_section_index",
+        "modulos": [
+          "vault_onboard",
+          "vault_section_index"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault_onboard -> vault_tags",
+        "modulos": [
+          "vault_onboard",
+          "vault_tags"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault_onboard -> vault_write",
+        "modulos": [
+          "vault_onboard",
+          "vault_write"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault_propagate -> vault/gobernanza",
+        "modulos": [
+          "vault_propagate",
+          "vault/gobernanza"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault_propagate -> vault_impact",
+        "modulos": [
+          "vault_propagate",
+          "vault_impact"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault_sanacion -> vault/gobernanza",
+        "modulos": [
+          "vault_sanacion",
+          "vault/gobernanza"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault_sanacion -> vault_audit",
+        "modulos": [
+          "vault_sanacion",
+          "vault_audit"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault_sanacion -> vault_reindex",
+        "modulos": [
+          "vault_sanacion",
+          "vault_reindex"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault_spec_memory -> vault/ciclo_de_vida",
+        "modulos": [
+          "vault_spec_memory",
+          "vault/ciclo_de_vida"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault_spec_memory -> vault/gobernanza",
+        "modulos": [
+          "vault_spec_memory",
+          "vault/gobernanza"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault_standard_upgrade -> vault_mcp_catalog",
+        "modulos": [
+          "vault_standard_upgrade",
+          "vault_mcp_catalog"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault_standard_upgrade -> vault_section_index",
+        "modulos": [
+          "vault_standard_upgrade",
+          "vault_section_index"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault_subgraph -> vault/grafo",
+        "modulos": [
+          "vault_subgraph",
+          "vault/grafo"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault_voice -> vault_mcp_catalog",
+        "modulos": [
+          "vault_voice",
+          "vault_mcp_catalog"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
+      },
+      {
+        "dependencia": "vault_write -> vault_tags",
+        "modulos": [
+          "vault_write",
+          "vault_tags"
+        ],
+        "estado": "EXACTA (modulo vivo)",
+        "nota": "la dependencia existe hoy con esos dos modulos"
       }
     ]
   },

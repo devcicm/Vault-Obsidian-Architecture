@@ -1,7 +1,7 @@
 # Matriz arquitectónica — fase 2 (L1)
 
 **Derivado de:** `vault_arch.CONTEXTS` y `vault_arch.PRESUPUESTO_DE_CRUCES` (el registro vivo), contrastado con el snapshot de Archify.
-**SHA del estado:** `ef77a7b19a6aaa5e8a5bf776181ab887b7ee4587` · **generado por:** `python audits/fase2/matriz_contextos.py`
+**SHA del estado:** `e98550d33e302d93dca9327930eafbf0d64436b6` · **generado por:** `python audits/fase2/matriz_contextos.py`
 
 > No se edita a mano: si el registro cambia, este documento se regenera.
 
