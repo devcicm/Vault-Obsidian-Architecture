@@ -25,6 +25,16 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": "vault-obsidian-architecture.md §La casa de los vaults",
         },
     },
+    "INIT_FAILED_AFTER_CLEAN": {
+        "category": "infrastructure",
+        "severity": "critical",
+        "message": "La inicializacion fallo despues de mover el contenido a cuarentena.",
+        "recovery": {
+            "action": "manual",
+            "hint": "El contenido anterior se restaura automaticamente si es posible; si no, sigue en la cuarentena indicada en args.cuarentena. Revisar la causa y repetir.",
+            "docs": "audits/fase2/R04-diseno-td0008.md",
+        },
+    },
     "INVALID_NAME": {
         "category": "validation",
         "severity": "error",

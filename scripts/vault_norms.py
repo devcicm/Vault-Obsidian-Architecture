@@ -104,7 +104,7 @@ from vault_norms_engine import (  # noqa: F401
     cuerpo_sin_marcadores,
     framework_drift_check,
     heal_ap46,
-    vault_norms_audit,
+    vault_norms_audit as _vault_norms_audit,
 )
 
 # ─── Funciones públicas ────────────────────────────────────────────────────────
@@ -465,6 +465,75 @@ def vault_norms_rebuild() -> Dict[str, Any]:
 
 
 # ─── CLI ───────────────────────────────────────────────────────────────────────
+
+
+def _control_ap40(flag) -> int:
+    """AP-40: el contrato publicado tiene que ser el que la CLI acepta."""
+    import vault_mcp_catalog as _cat
+
+    hallazgos = 0
+    for _p in _cat.check_params().get("problems", []):
+        flag("AP-40", f"mcp/nodejs/tools-catalog.json#{_p['tool']}",
+             f"{_p['problem']} — correr vault_mcp_catalog --sync.")
+        hallazgos += 1
+    return hallazgos
+
+
+def _control_ap42(flag) -> int:
+    """AP-42: deuda de ejecucion declarada y ejemplos sin invocacion."""
+    import vault_smoke as _smoke
+
+    hallazgos = 0
+    for _t in _smoke.load_baseline():
+        flag("AP-42", f"scripts/smoke-baseline.json#{_t}",
+             f"{_t} esta congelada como deuda: su ejemplo documentado no emite "
+             "un JSON con `ok`. La baseline solo puede encoger.")
+        hallazgos += 1
+    for _t in sorted(_smoke.TOOLS_CATALOG):
+        if _t in _smoke.SIN_SMOKE:
+            continue
+        if _smoke.invocation(_t) is None and (_smoke.TOOLS_CATALOG[_t] or {}).get("script"):
+            flag("AP-42", f"vault_mcp_catalog.TOOLS_CATALOG#{_t}",
+                 f"{_t} no tiene un `example` del que derivar una invocacion.")
+            hallazgos += 1
+    return hallazgos
+
+
+def _control_ap43(flag) -> int:
+    """AP-43: normas que ninguna tool pronuncia."""
+    import vault_voice as _voz
+
+    hallazgos = 0
+    for _codigo in _voz.coverage().get("silent", []):
+        flag("AP-43", f"vault_norms.NORM_CATALOG#{_codigo}",
+             f"{_codigo} no la pronuncia ninguna tool.")
+        hallazgos += 1
+    return hallazgos
+
+
+def _checks_estandar(flag, registrar=None) -> list:
+    """Los tres controles obligatorios, con su estado (TD-0003)."""
+    from vault.gobernanza.controles import ejecutar_control
+
+    checks = [
+        ejecutar_control("AP-40", _control_ap40, flag),
+        ejecutar_control("AP-42", _control_ap42, flag),
+        ejecutar_control("AP-43", _control_ap43, flag),
+    ]
+    if registrar is not None:
+        for check in checks:
+            registrar(check)
+    return checks
+
+
+def vault_norms_audit(root=None):
+    """Auditoria publica: runtime + los tres controles del estandar (TD-0003).
+
+    La composicion vive aqui, no en el motor, porque `vault_mcp_catalog`,
+    `vault_smoke` y `vault_voice` no viajan en la wheel de producto.
+    """
+    resultado = _vault_norms_audit(root, insertar_checks_estandar=_checks_estandar)
+    return resultado
 
 
 def main() -> int:

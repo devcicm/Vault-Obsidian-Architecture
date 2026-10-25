@@ -112,9 +112,9 @@ Fronteras que hoy cruza (6), deuda declarada:
 
 | Módulo | Importa | Contexto destino |
 |---|---|---|
-| `vault_norms_engine` | `vault_mcp_catalog` | Meta-toolkit |
-| `vault_norms_engine` | `vault_smoke` | Meta-toolkit |
-| `vault_norms_engine` | `vault_voice` | Autoría |
+| `vault_norms` | `vault_mcp_catalog` | Meta-toolkit |
+| `vault_norms` | `vault_smoke` | Meta-toolkit |
+| `vault_norms` | `vault_voice` | Autoría |
 | `vault/gobernanza/auditoria_runtime.py` | `vault/indices` (4 imports) | Índices |
 | `vault/gobernanza/repositorio.py` | `vault/indices` | Índices |
 | `vault/gobernanza/tool.py` | `vault/meta_toolkit` | Meta-toolkit |

@@ -11,7 +11,7 @@ GUARD = [
     'scripts/vault_mcp_catalog.py::check_sync',
     'scripts/vault_mcp_catalog.py::check_params',
     'scripts/vault_mcp_catalog.py::main',
-    'scripts/vault_norms_engine.py::_control_ap40',
-    'scripts/vault_norms_engine.py::_checks_estandar',
+    'scripts/vault_norms.py::_control_ap40',
+    'scripts/vault_norms.py::_checks_estandar',
     'vault/gobernanza/auditoria_runtime.py::auditar_runtime',
 ]

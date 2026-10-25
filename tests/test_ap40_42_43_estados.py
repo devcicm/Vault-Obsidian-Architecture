@@ -98,17 +98,17 @@ def test_resumen_completo_solo_con_los_tres_ejecutados():
 
 # ── El motor entrega los tres estados ────────────────────────────────────────
 
-def test_el_motor_ejecuta_y_entrega_los_tres_controles():
-    engine = _modulo("scripts/vault_norms_engine.py", "vault_norms_engine_td0003")
-    checks = engine._checks_estandar(lambda *a: None)
+def test_la_fachada_ejecuta_y_entrega_los_tres_controles():
+    fachada = _vault_norms()
+    checks = fachada._checks_estandar(lambda *a: None)
     assert [c["control"] for c in checks] == list(CONTROLES_OBLIGATORIOS)
     assert all(c["estado"] in ("ejecutado", "degradado") for c in checks), checks
 
 
-def test_el_motor_registra_los_checks_para_el_envelope():
-    engine = _modulo("scripts/vault_norms_engine.py", "vault_norms_engine_td0003b")
+def test_la_fachada_registra_los_checks_para_el_envelope():
+    fachada = _vault_norms()
     registrados = []
-    engine._checks_estandar(lambda *a: None, registrados.append)
+    fachada._checks_estandar(lambda *a: None, registrados.append)
     assert len(registrados) == 3
 
 
