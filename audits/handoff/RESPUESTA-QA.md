@@ -152,3 +152,52 @@ Evidencia saneada verificable y prueba de que el harness falla cuando debe falla
 El ejecutor debe reconocer este dictamen en `RESPUESTA-DEL-EJECUTOR.md`, anexar evidencias saneadas, SHAs, pruebas negativas y justificación de lo que cambia, con commits aislados. QA revisará el cierre de H-L3-04/H-L3-05 antes de aceptar L3. No publicar datos identificables durante la investigación y no alterar `RESPUESTA-QA.md`.
 
 **Estado final:** L2 investigación aceptada con observaciones; L3 correcciones exigidas; CI y lanzamiento pendientes.
+
+
+---
+
+# Dictamen QA — Entrega final de planificación y diagnóstico Fase 2 (2026-10-25)
+
+**Revisor:** QA independiente, ChatGPT. **Rama:** `fase2/deuda-y-product-readiness-20261025`.
+**SHA ejecutor inspeccionado:** `e5e1b48ea9cc2446d04b23bbf40bc3f5693a76fd`.
+**Método:** consulta de GitHub (commits, diffs, archivos, propuestas QG, informes, PR y GitHub Actions); NO ejecución local independiente de suite, CI ni pruebas de seguridad.
+
+## Decisión de QA
+
+**FASE 2 — ENTREGA DEL DIAGNÓSTICO/DISEÑO ACEPTADA CON OBSERVACIONES; CIERRE DE CALIDAD DEL PRODUCTO NO APROBADO.**
+
+Se verifica la entrega y publicación de los ocho commits posteriores al dictamen `b680ac8`. Los trabajos asignados de documentación y diseño están presentes, pero **L4 es una auditoría parcial** (PRD CLI, PRD MCP y contrato de runtime sin contraste declaración por declaración; seguridad de dependencias y sdist no ejecutadas; buena parte de los gaps históricos sin clasificar). La propuesta `catalogo-qg.yaml` está redactada, **no constituye un ejecutor de decisiones aprobado o probado**.
+
+| Área | Juicio |
+|---|---|
+| H-L3-05 | Identidad de escenario y comparación normalizada de efectos implementadas, 17 tests reportados, con brecha nueva en detección de cambios externos |
+| H-L3-06 | Timeout global monotónico documentado y 5 tests reportados: aceptado en alcance del harness |
+| H-L3-04 | Inventario histórico publicado y corrección de afirmación anterior: parcial, aún tiene déficit de cobertura y una divulgación evitable en el propio auditor |
+| L2 TD-0003 | Diseño de inversión + estados y migración entregado: aceptado como **propuesta**, NO autorizado para implementar Q04–Q07 |
+| L4 | Diagnóstico parcial y deuda nueva documentada; no declarar auditoría de seguridad o revisión completa de PRD |
+| QG-00..07 | Catálogo de propuesta entregado; corregir coherencia de reglas antes de adoptarlo como control operativo |
+| TD-0008 | P1 vigente: `vault_init --clean` puede borrar contenido sin respaldo; un release para terceros no puede ignorarlo |
+| CI | Sin conclusión para SHA final; run `40178109786` en cola cuando se consultó. QG-07 BLOCKED |
+| Git | PR #2 DRAFT sin fusionar; PR #1 sin fusionar; `main` en `1c34754258441550139ce895e182ab219c93f9bb` |
+
+## Hallazgos adicionales concretos del QA
+
+**H-F2-01 — Saneamiento y cobertura del auditor histórico, severidad P2.**
+`audits/fase2/auditar_exposicion_historica.py` lleva incrustado en `NOMBRE` un patrón de expresión regular que codifica literalmente un identificador personal. Este archivo `.py` público queda fuera del verificador que busca nombres en prosa o registros de texto, y reproduce información que la auditoría pretendía no exponer. Sustituir por un criterio no personalizado (o marcadores inertes en pruebas), sin escribir el dato personal en nuevas evidencias. Adicionalmente `commits_que_tocaron_evidencias()` parte de `git log --all --full-history -- audits/fase2/logs audits/handoff/logs`: revisa commits que tocaron esos directorios, **no todos los blobs en toda la historia del repositorio**. Declarar ese alcance limitado, o ampliar el escaneo programáticamente. La afirmación "0 secretos" solo vale para los patrones y los blobs efectivamente inspeccionados, no como garantía universal. No forzar reescritura de Git; el propietario decide sobre exposición histórica y privacidad.
+
+**H-F2-02 — Detección incompleta de efectos FUERA del runtime, severidad P1 de confianza en QG-05/04.**
+En `audits/fase2/paridad_cli_mcp.py`, las expresiones `fuera_cli` y `fuera_mcp` hacen diferencia de **sets de rutas**, no de mapas ruta→hash. Por tanto detectan algunos ficheros nuevos fuera del runtime, pero **no** una modificación de contenido de un fichero externo preexistente ni una eliminación externa. El test de la bandera `fuera_del_runtime` no prueba que el recolector detecte estos cambios reales. Corregir la medición (creados/modificados/eliminados y hashes), aislar el directorio de prueba, añadir prueba negativa con un archivo externo preexistente alterado y otra de borrado externo. Hasta entonces no proclamar que el harness demuestra ausencia de cualquier escritura fuera del runtime.
+
+**H-F2-03 — Política QG todavía no apta para ser aplicada, severidad P2.**
+`QG-07` exige `QG-01..QG-06` pero omite explícitamente `QG-00`, pese a que éste dice bloquear las demás puertas. `QG-02` contiene TD-0003 como check **pendiente** y a la vez permite PASS por 26/26 + sandbox, sin demostrar ejecución real de AP-40/42/43. Formalizar la evaluación `NOT_RUN/BLOCKED/FAIL` de controles obligatorios, requisitos de evidencia del **SHA real** y pruebas de que un control degradado **nunca** se presenta como PASS. Esto es una corrección de contrato/diseño del QG, no permiso para implementar el runtime de TD-0003.
+
+## Siguientes decisiones (NO ejecutar automáticamente)
+
+1. **Propietario**: decidir la retención o saneamiento histórico de los blobs públicos. No reescribir historia ni force-push sin autorización expresa.
+2. **QA/ejecutor, una vez autorizado**: corregir H-F2-01 y H-F2-02 en commits individuales con pruebas y evidencias; ajustar H-F2-03 en el catálogo y pruebas de política. No destruir datos reales; validar en sandboxes descartables.
+3. **Propietario**: priorizar la corrección segura y reversible de TD-0008 (con backup y recuperación) antes de cualquier beta de terceros.
+4. **TD-0003/Q04–Q07**: preparar autorización específica de implementación tras especificación compatible y pruebas de consumidores; no se considera corregida hoy.
+5. **Producto**: cerrar revisión PRD por afirmación, seguridad, dependencias/sdist y CI multiplataforma. Mantener PR #2 como borrador, no fusionar PR #1/#2 sin decisión.
+6. **Release**: QG-07 continúa `BLOCKED`; no afirmar compatibilidad multiplataforma ni release listo.
+
+**Esta revisión no modificó código de producto.** Se registra solamente el dictamen de QA en su buzón con el SHA del ejecutor anterior al commit de QA.
