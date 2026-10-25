@@ -1,0 +1,39 @@
+R1B-E04a — Saneamiento de evidencias (rutas privadas) — 2026-10-24
+===================================================================
+
+SHA: 01a9d8f (antes del parche de esta unidad)
+Entorno: Windows, PowerShell 5, Python 3.14.3, rama audit/archify-governance-20261024
+Comando: python -m pytest tests/test_publicacion_limpia.py -q --tb=short
+Codigo de salida: 0
+Resultado: PASÓ — 6 passed in 1.84s
+Log: este fichero
+
+Que se corrigio y por que
+------------------------
+Fichero: audits/handoff/logs/2026-10-24-Q00-baseline.md (evidencia de la ronda 1,
+linea del entorno).
+
+ANTES:  checkout local `C:\Users\Carlos Ivan\Documents\GitHub\Vault-Obsidian-Architecture`
+AHORA:  checkout local del repositorio en la maquina del autor (ruta local omitida a
+        proposito; marcador neutro `C:/Users/<autor>/Vault-Obsidian-Architecture`)
+
+El detector (tests/test_publicacion_limpia.py) caza el segmento que va justo detras
+de `Users/` y lo considera filtracion salvo que sea generico (`...`, `user`,
+`usuario`, `tu-usuario`, `username`, `nombre`) o vaya entre `<>`. Por eso el
+marcador neutro: conserva la forma tecnica del entorno sin publicar la maquina.
+
+El fallo aparecio en la suite de referencia de f6a5387 como
+`test_ninguna_ruta_local_del_autor_esta_publicada`: era UNICO, y lo causaba este
+fichero de evidencia de la ronda 1, no el codigo del toolkit.
+
+Que NO se elimino (dato tecnico necesario para reproducir)
+-----------------------------------------------------------
+- SO y terminal: Windows, PowerShell 5.
+- Version de Python: 3.14.3.
+- La forma de la ruta, en marcador neutro, para que se sepa que era local.
+- El resto del log (comandos, salidas, codigos de salida, cruces medidos).
+
+Verificacion: el propio test que habia detectado la filtracion pasa ahora
+(`test_publicacion_limpia.py`, 6/6). Los demas logs de esta ronda se Revisan con
+el mismo criterio antes de publicarse: `grep` de `C:\Users` sobre
+audits/handoff/logs/ devuelve cero coincidencias.
