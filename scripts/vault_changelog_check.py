@@ -49,6 +49,17 @@ que no se pueda corregir —una entrada cuyo commit ya no exista tras un filtrad
 del historial, por ejemplo— la puerta tiene que poder quedarse en verde
 anotándola, en vez de vivir en rojo hasta que alguien la desactive. Hoy la
 baseline está vacía, que es donde debe estar.
+
+Y desde v41.24, cada entrada publica su **aprobación separada de su
+autoría**. El autor de un commit no aprueba nada por ser el autor — una
+firma, cuando la hay, acredita identidad, no necesariamente permiso—. La
+aprobación vive en el registro canónico de aprobaciones, con su binding
+versión↔commit↔alcance y su evidencia tipada; `--list` la publica con
+`commit_author` (procedencia, la de siempre) al lado de
+`approval_status`/`approved_by`/`approval_evidence`. Sin registro, la
+aprobación de una versión es `desconocida`, no «aprobada por quien la
+comiteó»: la ausencia de evidencia es un estado, no un silencio que se
+rellene con la figura del autor.
 """
 
 import argparse
@@ -58,6 +69,7 @@ import subprocess
 
 import vault_baseline
 from vault.kernel import procesos_git
+from vault.kernel.rutas import ruta_repo
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -69,6 +81,13 @@ from vault_errors import emit_error, wrap_main
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SPEC = REPO_ROOT / "vault-obsidian-architecture.md"
 BASELINE = REPO_ROOT / "scripts" / "changelog-baseline.json"
+
+#: El registro canónico de aprobaciones de releases (v41.24). La ruta se
+#: pide al dueño del layout — AP-57: el nombre del directorio no se
+#: re-enuncia y una ruta nueva no es literal suelto. La tool lo LEE y lo
+#: VALIDA; no lo escribe: una aprobación registrada por la misma parte que
+#: la publica no es evidencia, es una declaración de la parte interesada.
+REGISTRO_DE_APROBACIONES = ruta_repo("docs") / "aprobaciones.json"
 
 #: `### v40.6 — 2026-08-08 `git: bf8ba6d``
 #: El separador es una raya larga, no un guion: escribirlo como `-` hace que el
@@ -190,9 +209,13 @@ def _tipos_de_hashes(hashes: List[str]) -> Dict[str, str]:
 def _autores_de_hashes(hashes: List[str]) -> Dict[str, str]:
     """Autor (`%an`) de muchos hashes en un solo subprocess (v41.22).
 
-    AP-64 aplicado a las releases: quién aprobó cada versión es un dato que
-    git ya tiene, y publicarlo aquí lo vuelve legible sin que nadie tenga que
-    excavar el log. Misma mecánica que `_fechas_de_hashes`, a la que acompaña.
+    Procedencia, no aprobación (v41.24): el autor de un commit queda
+    identificado como quedaría en cualquier traza — es decir, como dato de
+    origen, con el campo `commit_author` — y la aprobación de la versión se
+    publica por otra vía: el registro canónico de aprobaciones. Publicarlo
+    aquí con otro nombre fue presentar identidad de autoría como evidencia
+    de autorización, y ese equívoco es lo que v41.24 retira. Misma mecánica
+    que `_fechas_de_hashes`, a la que acompaña.
     """
     if not hashes:
         return {}
@@ -265,6 +288,155 @@ def _fechas_de_hashes(hashes: List[str]) -> Dict[str, str]:
 
 def hay_git() -> bool:
     return _git("rev-parse", "--git-dir") is not None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Aprobación de releases: separada de la autoría (v41.24)
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# AUTORÍA (git, `%an` — `commit_author`): procedencia, se conserva.
+# RESPONSABILIDAD: el banner del manifiesto y el `Responsable:` de cada ADR.
+# APROBACIÓN: el registro canónico — versión↔commit↔alcance↔evidencia.
+# PUBLICACIÓN: el ritual de release. Ningún campo de git acredita la
+# tercera: da igual que el commit lo hiciera una persona o un agente, y un
+# registro sin evidencia verificable tampoco acredita. Los estados:
+#
+# - `acreditada`  — registro cuya evidencia se verifica (`firma_git` válida
+#                   y firmante == aprobante declarado).
+# - `declarada`   — registro presente, evidencia ausente o no verificable.
+# - `denegada`    — registro con `no_aprobada: true` y ninguno afirmativo.
+# - `desconocida` — sin registro. La ausencia se declara como tal: nunca se
+#                   re-enlaza a la figura del autor.
+
+#: La única evidencia que este repo puede verificar a máquina hoy. Que
+#: ninguna versión la tenga mientras no haya commits firmados es un dato
+#: honesto del repo, no un hueco del mecanismo.
+EVIDENCIA_VERIFICABLE = "firma_git"
+
+
+def _leer_aprobaciones() -> List[Dict[str, Any]]:
+    """Los registros de aprobación, tal como el repo los declara.
+
+    Ausente → `[]` (hoy: ninguna versión acreditada). Ilegible → `ValueError`
+    con el motivo: AP-51 — un registro corrupto NO se lee como vacío, porque
+    «no hay aprobaciones» y «no sé qué hay aprobado» son cosas distintas, y
+    la segunda corta en la puerta en vez de colarse como un verde.
+    """
+    if not REGISTRO_DE_APROBACIONES.is_file():
+        return []
+    try:
+        datos = json.loads(
+            REGISTRO_DE_APROBACIONES.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise ValueError(
+            "el registro de aprobaciones del repo no se puede leer: "
+            f"{exc}"
+        ) from exc
+    if not isinstance(datos, dict):
+        raise ValueError(
+            "el registro de aprobaciones del repo no se puede leer como "
+            "JSON de mapeo"
+        )
+    aprobaciones = datos.get("aprobaciones", [])
+    if not isinstance(aprobaciones, list):
+        raise ValueError(
+            "el registro de aprobaciones del repo no se puede leer como "
+            "JSON de lista: la clave 'aprobaciones' no es una lista"
+        )
+    return list(aprobaciones)
+
+
+def _firma_de_hash(h: str) -> tuple:
+    """`(verificada, firmante)` de un commit, por `%G?`/`%GS`.
+
+    La firma acredita identidad —quién firmó—, no autorización: el
+    clasificador solo la cuenta cuando el registro nombra al mismo aprobante
+    que la firma revela. Sin firma disponible → `(False, None)`.
+    """
+    r = _git("show", "-s", "--format=%G? %GS", h)
+    if not r or " " not in r:
+        return (False, None)
+    verificado, firmante = r.split(" ", 1)
+    return (verificado == "G", firmante.strip() or None)
+
+
+def _estado_de_aprobacion(version: str, hash_: str,
+                          registros: List[Dict[str, Any]]) -> str:
+    """Clasifica la aprobación de UNA versión contra el registro.
+
+    `acreditada` solo con evidencia `firma_git` que se verifique y que
+    nombre al aprobante que el registro declara. Evidencia declarada y no
+    verificable → `declarada`. `no_aprobada` y ningún registro afirmativo →
+    `denegada`. Sin registro → `desconocida`. La firma de otro (o sin
+    firma) nunca acredita, y cualquiera de estos estados se deriva del
+    registro y la evidencia — nunca del autor del commit.
+    """
+    propios = [r for r in registros if r.get("version") == version]
+    if not propios:
+        return "desconocida"
+    afirmativos = [r for r in propios if not r.get("no_aprobada")]
+    if not afirmativos:
+        return "denegada"
+    for r in afirmativos:
+        for ev in (r.get("evidencia") or []):
+            if not isinstance(ev, dict) or ev.get("tipo") != EVIDENCIA_VERIFICABLE:
+                continue
+            verificada, firmante = _firma_de_hash(hash_)
+            if verificada and firmante and firmante == r.get("aprobante"):
+                return "acreditada"
+    return "declarada"
+
+
+def _problemas_de_aprobaciones(
+    todas: List[Dict[str, str]],
+    registros: List[Dict[str, Any]],
+) -> List[Dict[str, str]]:
+    """Lo que la puerta puede RECHAZAR del registro.
+
+    La ausencia de registros no es un problema — es `desconocida` (ver
+    `_estado_de_aprobacion`). Lo que sí corta: un registro que nombra otra
+    versión, otro commit o una versión que todavía no tiene hash sellado.
+    Una aprobación de otro commit no es reutilizable, y la manera de
+    decirlo es un problema de la puerta que la emite.
+    """
+    problemas: List[Dict[str, str]] = []
+    por_version = {e["version"]: e for e in todas}
+    for r in registros:
+        v = r.get("version")
+        e = por_version.get(str(v or ""))
+        if e is None:
+            problemas.append({
+                "version": str(v or "—"),
+                "problema": "aprobacion_version_desconocida",
+                "detalle": (
+                    "el registro de aprobaciones nombra una versión que el "
+                    "changelog no conoce"
+                ),
+            })
+            continue
+        if e["hash"] in NO_HASH:
+            problemas.append({
+                "version": e["version"],
+                "problema": "aprobacion_sin_commit",
+                "detalle": (
+                    f"{e['version']} no tiene commit sellado (`git: "
+                    f"{e['hash']}`), así que una aprobación no puede ligarse "
+                    "a él todavía"
+                ),
+            })
+            continue
+        commit = str(r.get("commit") or "")
+        if not commit or not e["hash"].startswith(commit):
+            problemas.append({
+                "version": e["version"],
+                "problema": "aprobacion_desviada",
+                "detalle": (
+                    f"el registro liga {e['version']} al commit `{commit}` "
+                    f"y el changelog la selló con `{e['hash']}`: la aprobación "
+                    "de otro commit no es reutilizable"
+                ),
+            })
+    return problemas
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -388,6 +560,29 @@ def comprobar(version_en_curso: Optional[str] = None) -> Dict[str, Any]:
             if e is None or fechas.get(e["hash"]) == e["fecha"]:
                 saldadas.append(version)
 
+    # (e) Aprobaciones: cada registro debe ligar la versión que nombra al
+    #     commit que esa versión tiene en el changelog. La aprobación de otro
+    #     commit no es reutilizable; un registro ilegible no se lee como
+    #     vacío (AP-51). La AUSENCIA de registro no es un problema: es el
+    #     estado `desconocida` — nunca se atribuye aprobación retrospectiva
+    #     poniendo a quien hizo el commit.
+    estados_de_aprobacion: Dict[str, str] = {}
+    registros_aprobacion: List[Dict[str, Any]] = []
+    try:
+        registros_aprobacion = _leer_aprobaciones()
+    except ValueError as exc:
+        problemas.append({
+            "version": "—",
+            "problema": "registro_ilegible",
+            "detalle": str(exc),
+        })
+    else:
+        problemas.extend(_problemas_de_aprobaciones(
+            todas, registros_aprobacion))
+        for e in con_hash:
+            estados_de_aprobacion[e["version"]] = _estado_de_aprobacion(
+                e["version"], e["hash"], registros_aprobacion)
+
     return {
         "ok": not problemas,
         "tool": "vault_changelog_check",
@@ -399,6 +594,8 @@ def comprobar(version_en_curso: Optional[str] = None) -> Dict[str, Any]:
         "baseline_size": len(baseline),
         "problems": problemas,
         "settled": saldadas,
+        "aprobaciones_registro": len(registros_aprobacion),
+        "aprobaciones": estados_de_aprobacion,
         "hint": (
             "python scripts/vault_changelog_check.py --fijar-hash  (cierra la "
             "versión en curso)  |  --freeze  (anota una divergencia histórica)"
@@ -596,22 +793,65 @@ def congelar() -> Dict[str, Any]:
 
 
 def listar() -> Dict[str, Any]:
+    """La tabla de entradas, con AUTORÍA y APROBACIÓN por separado.
+
+    - `commit_author` — el autor del commit citado (`%an`): procedencia.
+    - `approval_status` — `acreditada` | `declarada` | `denegada` |
+      `desconocida`, derivado del registro canónico de aprobaciones. Nada
+      se infiere del autor del commit (v41.24): un commit sin aprobación
+      acreditada no aparece aprobado, aunque lo firmara el titular.
+    - `approval_evidence` — la evidencia que el registro declara (verificada
+      o no, con el estado delante para saberlo). `None` sin registro.
+    - `approved_by` y la clave previa `aprobado_por` — el aprobante que el
+      registro nombra, SOLO cuando el estado es `acreditada`; `None` en los
+      demás: el nombre de un aprobante sin evidencia no se publica como
+      aprobación.
+    """
     todas = entradas()
     filas = []
     disponible = hay_git()
+    try:
+        registros = _leer_aprobaciones()
+        registro_ilegible: Optional[str] = None
+    except ValueError as exc:
+        registros = []
+        registro_ilegible = str(exc)
     for e in todas:
         fila = dict(e)
         autores = _autores_de_hashes([e["hash"]])
         if disponible and e["hash"] not in NO_HASH:
             fila["commit_date"] = _git("show", "-s", "--format=%as", e["hash"])
             fila["exists"] = _git("cat-file", "-t", e["hash"]) == "commit"
-            fila["aprobado_por"] = autores.get(e["hash"])
+            fila["commit_author"] = autores.get(e["hash"])
+            propio = next(
+                (r for r in registros if r.get("version") == e["version"]),
+                None,
+            )
+            estado = _estado_de_aprobacion(
+                e["version"], e["hash"], registros)
+            acreditado = estado == "acreditada"
+            fila["approval_status"] = estado
+            fila["approval_evidence"] = (
+                propio.get("evidencia") if propio and estado != "denegada"
+                else None
+            )
+            fila["approved_by"] = (
+                propio.get("aprobante") if acreditado else None
+            )
+        else:
+            fila["approval_status"] = "desconocida"
+            fila["approval_evidence"] = None
+            fila["approved_by"] = None
+        fila["aprobado_por"] = fila["approved_by"]
         filas.append(fila)
     return {
-        "ok": True,
+        "ok": registro_ilegible is None,
         "tool": "vault_changelog_check",
         "entries_total": len(todas),
         "entries": filas,
+        **({"problems": [{"problema": "registro_ilegible",
+                          "detalle": registro_ilegible}]}
+           if registro_ilegible else {}),
     }
 
 

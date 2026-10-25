@@ -66,6 +66,12 @@ def test_los_comandos_del_quick_start_funcionan_en_orden(tmp_path):
     ejecutados = []
     for cmd in _comandos(_quick_start()):
         args = shlex.split(cmd)
+        # Un `VAR=valor python script…` es bash legal en la misma línea: es
+        # la forma en que el README lanza la escritura con VAULT_AGENT. Se
+        # limpia del dispatch y se ejecuta con el env que ya trae la
+        # corrida — así el comando de la persona y el del test son el mismo.
+        while args and re.fullmatch(r"[A-Z_]{2,}=[^=]*", args[0]):
+            args.pop(0)
         if args[:2] == ["vault", "init"]:
             argv = [sys.executable, "-c",
                     "import sys; from vault.product_cli import main; "

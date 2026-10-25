@@ -1,0 +1,22 @@
+{
+  "schema": "aprobaciones/1",
+  "por_que": [
+    "Cada entrada del changelog publica qué commit introdujo una versión.",
+    "Quién hizo ese commit es AUTORÍA (git la tiene). No es APROBACIÓN: la",
+    "aprobación de publicar una versión es un acto del titular del estándar,",
+    "y ese acto se acredita aquí, en un registro que cubre tres campos —",
+    "version, commit y alcance— y una evidencia tipada. La única evidencia",
+    "que este repo puede verificar a máquina hoy es la firma criptográfica",
+    "del commit (tipo evidencia 'firma_git', válida si `git show -s",
+    "--format=%G? %GS` la verifica y el firmante es el aprobante declarado).",
+    "Mientras ningún commit vaya firmado, ninguna versión queda acreditada:",
+    "el estado es 'declarada' cuando alguien declara su aprobación y",
+    "'desconocida' cuando no hay registro. No se atribuye aprobación",
+    "retrospectiva a versiones históricas: la ausencia de evidencia es un",
+    "estado, no un silencio que se rellene con la figura del autor. Una",
+    "evidencia sin binding exacto (otro commit, otra versión) es rechazo de",
+    "la puerta, no dato."
+  ],
+  "dueno": "vault_changelog_check",
+  "aprobaciones": []
+}

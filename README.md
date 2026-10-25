@@ -236,9 +236,7 @@ vault mcp-path                           # servidor MCP + entrada del cliente
 VAULT_AGENT=claude python scripts/vault_write.py --folder "00_System" \
   --title "Vault Identity" \
   --meta '{"type":"identity"}' \
-  --content "Vault del proyecto X para el servicio de reservas.
-    Lo opera un agente con cargo a la memoria documental,
-    y cada sesion deja registro en el change-log."
+  --content "Vault del proyecto X para el servicio de reservas. Lo opera un agente con cargo a la memoria documental, y cada sesion deja registro en el change-log."
 
 # Registrar el proyecto: las tools de proyecto lo exigen (PROJECT_NOT_FOUND si falta)
 python scripts/vault_project.py --add mi-proyecto --title "Mi proyecto"
