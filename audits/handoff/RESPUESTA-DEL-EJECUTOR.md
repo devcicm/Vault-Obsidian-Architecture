@@ -74,7 +74,7 @@ Publicado sobre el dictamen `cb3233a`, en commits separados:
 **Registro canónico:** `TD-0010`, `TD-0011` y `TD-0012` en `audits/fase2/inventario-deuda.yaml`, estado `corregida` con su commit.
 **Informe del lote:** `audits/fase2/logs/R06-dictamen-correcciones.txt`.
 
-**Verificación de este lote:** puertas **26/26** (`vault_gate --strict`), `comprobar_saneamiento` exit 0, suite completa en `R06`.
+**Verificación de este lote:** puertas **26/26** (`vault_gate --strict`), suite completa **6203 passed / 12 skipped / 0 failed**, `comprobar_saneamiento` exit 0.
 
 **Lo que sigue pendiente y por qué:** TD-0003/Q04–Q07 (cambio de producto, requiere autorización; QG-02 `BLOCKED`), TD-0008 (diseño publicado; `vault_init --clean` intacto, requiere autorización), CI en cola (QG-07 `BLOCKED` con `CI_PENDIENTE`) y la exposición histórica del blob de `b9fb71d`, que sólo el propietario puede decidir reescribir.
 
