@@ -126,6 +126,15 @@ def bootstrap(root: Path | None = None) -> Path:
     _run(target, "vault_compact_contracts.py")
     _run(target, "vault_quality_check.py")
     _run(target, "vault_tags.py")
+    # El índice es una proyección del disco (AP-47). Las tools de arriba
+    # escriben notas —`00_System/data-framework.md`, `00_System/
+    # tool-contracts.md`, `99_Index/tag-index.md`— y lo hacen DESPUÉS del
+    # reindex: el sandbox quedaba con tres notas en disco y ninguna indexada,
+    # y la puerta de contención de la CI (`vault_norms --audit --root
+    # vault-sandbox --strict`) lo mide. Se reindexa otra vez al final: el
+    # primero deja el índice disponible para las tools que lo leen, el
+    # segundo lo deja reflejando el disco entero.
+    _run(target, "vault_reindex.py", "--graph")
 
     missing = [name for name in DERIVED_FILES if not (target / "00_System" / name).is_file()]
     if missing:
