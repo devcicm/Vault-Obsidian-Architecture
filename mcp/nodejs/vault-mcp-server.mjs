@@ -2186,7 +2186,13 @@ async function handleResourcesRead(params, session) {
   try {
     switch (uri) {
       case "vault://graph": {
-        const data = await jsNativeGraph({});
+        // La raíz es un ARGUMENTO de `jsNativeGraph` (no la busca): sin ella,
+        // `join(undefined, f)` revienta dentro de `readFile` y el error
+        // acababa dentro del texto del recurso, con apariencia de contenido
+        // válido. Medido el 2026-10-26 con una sesión JSON-RPC real:
+        // `resources/read vault://graph` devolvía
+        // «Error reading resource vault://graph: The "path" argument must be…».
+        const data = await jsNativeGraph({}, detectVaultRoot());
         return { contents: [{ uri, mimeType: "application/json", text: JSON.stringify(data, null, 2) }] };
       }
       case "vault://graph/enriched": {
@@ -2197,7 +2203,9 @@ async function handleResourcesRead(params, session) {
           data = JSON.parse(await readFile(enrichedPath, "utf-8"));
         } catch (_) {
           return { contents: [{ uri, mimeType: "text/plain", text: JSON.stringify({
-            ok: false, error: "graph-enriched.json not found. Run vault_graph --typed or vault_graph_merge first.",
+            ok: false,
+            error_code: "GRAPH_ENRICHED_NOT_FOUND",
+            error: "graph-enriched.json not found. Run vault_graph --typed or vault_graph_merge first.",
             hint: "python scripts/vault_graph.py --typed"
           }, null, 2) }] };
         }
@@ -2251,7 +2259,14 @@ async function handleResourcesRead(params, session) {
       }
     }
   } catch (e) {
-    return { contents: [{ uri, mimeType: "text/plain", text: `Error reading resource ${uri}: ${e.message}` }] };
+    // Un recurso que no se pudo leer tiene que DECIRLO: como texto plano, un
+    // cliente no distingue «el grafo» de «falló el grafo». El resto del
+    // servidor usa el mismo patrón (`ok: false` + `error_code`).
+    return { contents: [{ uri, mimeType: "application/json", text: JSON.stringify({
+      ok: false,
+      error_code: "RESOURCE_READ_FAILED",
+      error: `No se pudo leer el recurso ${uri}: ${e.message}`,
+    }, null, 2) }] };
   }
 }
 
