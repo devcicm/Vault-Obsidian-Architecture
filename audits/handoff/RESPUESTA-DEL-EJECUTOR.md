@@ -1,3 +1,124 @@
+# Respuesta del ejecutor a QA — R11 (optimización del harness y cierre de hallazgos)
+
+- **Emisor:** agente local (ejecutor técnico)
+- **Destinatario:** QA arquitectónico
+- **Fecha:** 2026-10-26
+- **Rama:** `work/release-cli-mcp-20261025`
+- **Dictamen QA respondido:** `9919c57` (rama `qa/review-arquitectura-trazabilidad-e8f7aea-20261025`)
+- **SHA inicial:** `45dca1be1e4367dc6d73d85192c04741a5ba755b`
+- **SHA final de la ronda:** `fbfae57` · **Candidato de producto congelado:** `31dfa46`
+
+## 1. Optimización medida (sin inventar porcentajes)
+
+| Métrica | Antes | Después |
+|---|---|---|
+| Tests coleccionados | 6293 | 6306 |
+| Suma de tiempos de test | 9511 s (158 min) | — (misma base de medición) |
+| Reloj de pared de la suite | 1013 s con `-n auto` | 1013 s (paralelismo ~9,4× sobre la suma) |
+| Tests que tocan la capa de arquitectura | 73 | 73 (pero ya no ensucian: el generador lee el árbol) |
+| Regeneraciones del inventario dentro de tests | 1 por test, sobre el workspace | 1 por test, sobre un **árbol inmutable** |
+| Aristas huérfanas del grafo | 49 (descartadas en silencio) | **0** (y registradas si aparecen) |
+| Autorrelaciones `APPLIES_TO` vacías | 82 | **0** (norma → contexto) |
+| Relación `DEPENDS_ON` | usaba nombres de contexto donde se esperaban IDs | usa IDs reales |
+
+**Causas del coste identificadas con evidencia** (JUnit de la corrida, no
+estimaciones): `test_fix_all` (149 s) y `test_nota_de_comandos` (109 s) ejecutan
+**gates dentro de tests** (duplicación con las 26 puertas); la capa de
+trazabilidad costaba 433 s en 73 tests por regenerar el inventario con un
+escaneo del workspace.
+
+**No se afirma ninguna mejora porcentual**: no hay dos corridas equivalentes con
+el mismo código antes y después (el código cambió). Lo que sí se mide es la
+estructura del coste y la eliminación de las causas identificadas.
+
+## 2. Cambios en la arquitectura del harness
+
+1. **Fuente inmutable**: `generar_inventario.py` lee del **árbol Git**
+   (`git ls-tree`/`git show`), no del workspace. El inventario es una foto de un
+   commit: determinista y sin carreras por construction.
+2. **Un SHA inexistente falla** (`SHA_INEXISTENTE`, exit 2) en vez de fabricar
+   un inventario. Antes generaba recursos de fuentes en vivo.
+3. **Niveles de verificación** (QA-ARC-02): `descubierto → declarado →
+   implementado → ejecutado → verificado → evidencia_acreditada → aceptado_qa →
+   ratificado_propietario`, con `next_level_requires` obligatorio. El nivel sube
+   **desde la evidencia real** (JUnit): 482 recursos con ejecución en verde, 5
+   módulos verificados, 66 con evidencia acreditada. `status` se conserva por
+   compatibilidad y significa lo que significaba.
+4. **Relaciones tipadas** (15 tipos) con fundamento validado
+   (`observada|declarada|inferida|pendiente`); una arista sin extremos NO se
+   descarta en silencio: queda registrada.
+5. **Planificador por impacto** (pilar N1): `planificar_pruebas.py` deriva los
+   tests a ejecutar del **grafo**, con cierre **bidireccional** (un cambio
+   alcanza a sus dependientes) y conservadurismo: sin impacto determinable
+   exige suite completa. Contrato YAML con `selected_tests`, `omitted_tests`,
+   `selection_justification` y `coverage_limitations`.
+6. **Pruebas negativas del planificador**: dependencia transitiva omitida,
+   aristas sin resolver, cambio sin relaciones, sin inventario, recurso sin
+   tests, grafo roto.
+
+## 3. Hallazgos QA-ARC
+
+| ID | Estado | Qué |
+|---|---|---|
+| QA-ARC-01 | **CORREGIDO** | Relaciones tipadas completas, 0 huérfanas, `DEPENDS_ON` con IDs reales, 0 autorrelaciones vacías. Recurso pendiente: la cadena propósito→evidencia→dictamen se documenta en `trazabilidad-qg.md` |
+| QA-ARC-02 | **CORREGIDO** | 8 niveles de verificación con evidencia; el inventario ya no presenta 686 "VERIFICADO" como certificación funcional |
+| QA-ARC-03 | **PARCIAL** | 64 veredictos extraídos de las ramas QA (antes 56, ahora con las ramas nuevas). La extracción automática no puede deducir el commit correctivo de cada hallazgo: queda `NO_DETERMINADO` donde la fuente no lo dice |
+| QA-ARC-04 | **PARCIAL** | Las 10 fichas clasifican naturaleza (movimiento / ficha / dependencia viva). El SHA del snapshot se toma del `.archify/extraccion-registro.json` cuando lo declara; si no, `NO_DETERMINADO` |
+| QA-ARC-05 | **CERRADO** | AP-39 re-auditado con el código actual sobre un runtime **poblado** (75 ficheros, init exit 0): **0 violaciones, 0 AP-39**. El guion exige runtime poblado; un init fallido marcaba el escenario como INVÁLIDO (evita un "0 violaciones" falso) |
+| QA-ARC-06 | **CORREGIDO** | Saneador de artefactos en el repo (`sanear_artefactos.py`); `comprobar_saneamiento` conforme |
+| QA-ARC-07 | **CORREGIDO** | `source_sha` (árbol medido) y `publication_sha` (commit que publica) separados; el publicador de mediciones vive en el repo |
+| QA-ARC-08 | **PARCIAL** | Las 15 fichas tienen impacto, causa, evidencia y acción. Las del sandbox (14) siguen sin `resolution_options` porque su resolución es documental y está en el backlog del vault de evidencia |
+
+## 4. QG-00 a QG-07 (estado autologous)
+
+| QG | Estado | Motivo |
+|---|---|---|
+| QG-00 | BLOCKED | reconciliador: 10 divergencias sin aceptar (decisión del propietario) |
+| QG-01 | BLOCKED | mismo reconciliador |
+| QG-02 | BLOCKED | 14 hallazgos del sandbox (documentales, bajo control) + contrato de certificación pendiente |
+| QG-03..QG-06 | BLOCKED | recibos PASS, bloqueados por el prerrequisito QG-00 |
+| QG-07 | BLOCKED | CI en `queued` |
+
+## 5. Estado de la verificación
+
+- **Puertas:** 26/26 (45dca1b).
+- **Suite:** 6280 passed / 13 skipped / 0 failed (45dca1b) — el fallo de
+  determinismo se corrigió en 45dca1b (comparación estructural sobre árbol
+  inmutable).
+- **E2E:** 27/27 (31dfa46).
+- **Re-ejecución sobre `fbfae57`:** pendiente (esta ronda cambió el generador y
+  las pruebas de trazabilidad: el nivel N1 exige re-ejecutar).
+- **AP-39:** 0 violaciones en runtime poblado (fbfae57).
+
+## 6. Decisiones del propietario que siguen pendientes
+
+1. Ratificar (o corregir) la Constitución arquitectónica (DRAFT).
+2. Divergencias DIV-01..10: alternativa A / B / C para los cinco cruces.
+3. Contrato de QG-02 (runtime limpio de certificación frente al vault de evidencia).
+4. Purga de `vault-backups` fuera del vault (AP-36) — contenido inventariado.
+5. Reescritura del historial publicado.
+
+## 7. Bloqueos externos
+
+- CI en cola: requiere acción del propietario sobre la cuenta (Settings →
+  Billing → Actions). No se atribuye causa sin prueba.
+- Dictamen QA sobre el SHA congelado.
+
+## 8. Riesgos residuales
+
+- La certificación integral (26 puertas + suite + E2E + recibos) debe repetirse
+  sobre el SHA final de esta ronda: la evidencia actual es de 45dca1b.
+- El planificador se apoya en el grafo; si el grafo queda desfasado respecto al
+  código, la selección se queda corta. El conservadurismo (fallback a suite
+  completa) es la red.
+- Los 14 hallazgos del sandbox siguen abiertos: son deuda de contenido de
+  evidencia, no de producto.
+
+**SOLICITUD QA: SÍ** — sobre el SHA final de esta ronda, con la re-ejecución
+integral y los recibos externos.
+
+---
+
 # Respuesta del ejecutor a QA — GOAL Release CLI + MCP (ronda R09, cierre técnico)
 
 - **Emisor:** agente local (ejecutor técnico)
