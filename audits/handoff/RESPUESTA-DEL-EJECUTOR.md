@@ -1,3 +1,155 @@
+# Respuesta del ejecutor a QA — GOAL Release CLI + MCP (ronda R09, cierre técnico)
+
+- **Emisor:** agente local (ejecutor técnico)
+- **Destinatario:** QA arquitectónico
+- **Fecha:** 2026-10-25
+- **Rama:** `work/release-cli-mcp-20261025`
+- **Dictamen QA respondido:** `a9e0143b5e246e2766fece5273bd7bfa20632707`
+- **SHA inicial de la ronda:** `29c1a15cfcb212dedbcf1b6794c238fd815a4aa5`
+- **SHA CANDIDATO CONGELADO:** `31dfa462e87f5dcdb703e649e840e826a136ba50`
+- **Árbol:** limpio en el SHA congelado; `main` intacta (`1c34754`); PR #1, #2 y #3 sin fusionar (#3 DRAFT)
+
+## GOAL: RELEASE CLI + MCP PARA TERCEROS
+
+**ESTADO: READY_FOR_QA_WITH_EXTERNAL_BLOCKER.** Las correcciones técnicas de
+R09-A..D están ejecutadas, probadas y publicadas; las 26 puertas y la suite
+completa están en verde sobre el SHA congelado; los recibos se emitieron
+ejecutando los verificadores de verdad. **Los únicos pendientes son decisiones
+del propietario y la CI externa**, y QG-00..QG-07 declaran su estado real
+(abajo), sin PASS falso.
+
+## QA-RC-02g — resultados independientes por subcheck (CERRADO, `532f19e`)
+
+Cada subcheck tiene verificador, comando (o función interna), exit code,
+artefacto **propio** y SHA-256; la puerta solo pasa si **todos** pasan. Se
+eliminó la autocertificación (un `exit 0` repartido a los subchecks). Salida
+vacía ⇒ `degradado`. El comando de pruebas se ejecuta como pytest
+(`python -m pytest <fichero> -q`), no como script. Negativas: subcheck fallido,
+no ejecutado, salida vacía, artefacto individual ausente, artefacto manipulado,
+subcheck ausente, QG-04 sin `pip_audit`, QG-06 sin instalación limpia, QG-00
+sin reconciliador.
+
+## QA-RC-02h — CLI del colector (CERRADO, `532f19e`, `001120c`, `31dfa46`)
+
+`main()` ya no pasa `jobs_ci` a `colectar()`. Nueva CLI `--ejecutar` (ejecuta
+verificadores y emite recibos **fuera** del árbol) separada de la evaluación;
+`--recibos`, `--e2e-json`, `--suite-xml`, `--pip-audit-python`,
+`--paridad-venv/--paridad-runtime`; códigos de salida explícitos (2 en error de
+argumentos) y JSON final válido. La identidad del checkout (HEAD == SHA y árbol
+limpio) se verifica **antes** de ejecutar (los verificadores escriben
+artefactos de runtime propios) y viaja al dictamen. Probada como **proceso
+real** por subprocess.
+
+## QA-RC-02i — CI vinculada al run exacto (CERRADO, `532f19e`)
+
+Jobs del endpoint del run seleccionado, con paginación y `total_count`; sin
+identidad de run, con conclusión nula, con duplicados, con jobs desconocidos o
+con paginación incompleta no se acredita; sin jobs o sin permisos ⇒ BLOCKED.
+
+## QA-RC-05 — recorrido completo de terceros (CERRADO, `5a8395c`)
+
+Sandbox nuevo por ejecución; hash del **fichero persistido**; cuarentena
+identificada por el conjunto antes/después; cliente MCP **secuencial** con ids
+correlacionados y plazo global; restore en destino limpio comparado por
+**inventario y hashes**; reinstalación que conserva los datos.
+**Resultado real: 27/27 pasos.**
+
+## SUITE / SKIPS / PUERTAS / RECORRIDO E2E (sobre el SHA congelado)
+
+| Medición | Resultado |
+|---|---|
+| 26 puertas | **26/26 en verde** |
+| Suite completa | **6270 passed · 13 skipped · 0 failed** (16:17) |
+| Recorrido E2E | **27/27** |
+
+Los 13 skips declaran no aplicable en este entorno (symlink sin privilegios,
+MCP en vivo sin su variable, etc.).
+
+## WHEEL / SDIST / HASHES
+
+| Artefacto | sha256 |
+|---|---|
+| `vault_obsidian_architecture-41.23-py3-none-any.whl` | `858f14073563d0f9ec81e5347bbf58637028da0575da758e7f9c00057815d9c1` |
+| `vault_obsidian_architecture-41.23.tar.gz` | `22cf5d0c749499ecff040436f05b77df83552d29fe5ee4e691472c068d02d472` |
+
+## QUALITY GATES — estado auténtico del SHA `31dfa46`
+
+| QG | Estado | Evidencia / motivo |
+|---|---|---|
+| QG-00 | **BLOCKED** | su recibo es FAIL: el subcheck `reconciliador_archify` falla con **10 divergencias de inventario sin aceptar** (el snapshot de Archify, que documenta otra revisión, sigue apuntando a `vault_norms_engine` y las fichas del registro cambiaron al mover los cruces a `vault_norms`). `identidad_git`, `arbol_limpio` y `saneamiento`: ejecutados |
+| QG-01 | **BLOCKED** | mismo reconciliador; `vault_arch`: ejecutado (ok) |
+| QG-02 | **BLOCKED** | `puertas_26` y `auditoria_completa`: ejecutados (`completo: true`); `sin_violaciones`: **fallido** — la auditoría del sandbox canónico arroja 14 hallazgos (AP-07, AP-36, AP-64, CN-03) |
+| QG-03 | **BLOCKED** | recibo PASS (suite JUnit con recibo de procedencia + recorrido E2E) pero bloqueado por el prerrequisito QG-00 |
+| QG-04 | **BLOCKED** | recibo PASS (saneamiento, `pip_audit` sin vulnerabilidades, contención, operaciones destructivas) pero bloqueado por QG-00 |
+| QG-05 | **BLOCKED** | recibo PASS (paridad CLI/MCP **5/5 CONFORME**, 97 tools MCP; AP-40 exit 0) pero bloqueado por QG-00 |
+| QG-06 | **BLOCKED** | recibo PASS (construcción, contenido de la wheel, instalación limpia) pero bloqueado por QG-00 |
+| QG-07 | **BLOCKED** | CI en `queued` (runs 40244460688, 40245587377, 40245754464 y posteriores) y prerrequisito QG-00 |
+
+**Ningún PASS se declara sin ejecución real**: cada subcheck tiene su artefacto
+y su hash en `%TEMP%\opencode\qg-recibos-final` (fuera del árbol versionado).
+
+## CI / PR #3
+
+- CI **queued**. Sin prueba concluyente no se atribuye la causa a facturación;
+  el diagnóstico con evidencia de API está en `audits/fase2/CI-diagnostico.md`.
+  La capacidad que falta es de la cuenta (Settings → Billing → Actions).
+- PR #3 **DRAFT**, sin merge. PR #1 y #2 sin fusionar. `main` intacta.
+
+## ARQUITECTURA (QA-RC-03) — DECISIONES DEL PROPIETARIO
+
+1. **Ratificar o corregir el movimiento de los cinco cruces** de
+   `vault_norms_engine` a `vault_norms`: el código distribuible ya no importa
+   módulos excluidos (`shipped_imports_of_excluded: []`), pero el snapshot de
+   Archify y las fichas del registro siguen describiendo el sitio anterior, y
+   el reconciliador del repo lo refleja en 10 divergencias. Sin esta decisión
+   QG-00 y QG-01 no acreditan.
+2. **Fijar el contrato de QG-02**: ¿"cero violaciones" se mide sobre el sandbox
+   canónico (que contiene 14 hallazgos deliberados) o sobre un runtime limpio
+   de certificación? El dato medido está arriba; la decisión es del dueño.
+
+Alternativas A/B/C con impacto, riesgo y recomendación:
+`audits/fase2/ESTADO-RC.md`.
+
+## SEGURIDAD
+
+`pip_audit` sin vulnerabilidades conocidas (dependencia PyYAML); wheel sin
+trazas, sin tests y sin material ajeno; contención verificada; operaciones
+destructivas con rollback verificado por hash (23 pruebas).
+
+## COMMITS
+
+`532f19e` (02g/h/i) · `5a8395c` (recorrido de terceros) · `001120c` (identidad
+del checkout) · `31dfa46` (subchecks derivados y verificadores especiales) ·
+este informe.
+
+## RECIBOS / EVIDENCIAS
+
+- Recibos externos (`%TEMP%\opencode\qg-recibos-final`): un artefacto + sha256
+  por subcheck y manifiesto agregado por puerta.
+- JUnit de la suite + recibo de procedencia (`sha`, `exit`, `junit_sha256`).
+- `audits/fase2/{colector_qg.py, recorrido_terceros_r07.py, ESTADO-RC.md,
+  CI-diagnostico.md}`, `tests/test_colector_qg.py` (30),
+  `tests/test_vault_init_clean.py` (23).
+
+## RIESGOS
+
+- QG-07 depende de una CI que no se ejecuta.
+- QG-00/QG-01 dependen de la decisión del propietario sobre el inventario.
+- El auditor histórico mide parches, no blobs (`forma_secreto: 0` no prueba
+  ausencia universal).
+
+## BLOQUEOS EXTERNOS
+
+1. CI en cola (acción del propietario sobre la cuenta).
+2. Ratificación del movimiento de los cruces (QG-00/QG-01) y del contrato de
+   QG-02.
+3. Decisión sobre reescritura de historia.
+
+**SOLICITUD QA: SÍ** — revisión independiente del SHA congelado `31dfa46`, con
+los recibos externos y las 10 divergencias de inventario pendientes de decisión.
+
+---
+
 # Respuesta del ejecutor a QA — fase 2, remediación post-QA (R01–R05)
 
 - **Emisor:** agente local (ejecutor técnico)
