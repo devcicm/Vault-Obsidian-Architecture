@@ -61,6 +61,19 @@ GATE_VERIFICADORES: Dict[str, Tuple[str, str]] = {
     "QG-06": ("distribucion", "python -m build --wheel --sdist"),
 }
 
+#: Subchecks obligatorios por puerta (QA-RC-02e), reconciliados con
+#: `catalogo-qg.yaml`: un recibo tiene que acreditar TODOS los subchecks de su
+#: puerta; uno solo con {"ok": true} no acredita requisitos multiples.
+SUBCHECKS_OBLIGATORIOS: Dict[str, Tuple[str, ...]] = {
+    "QG-00": ("identidad_git", "arbol_limpio", "saneamiento"),
+    "QG-01": ("vault_arch", "reconciliador_archify"),
+    "QG-02": ("puertas_26", "auditoria_completa", "sin_violaciones"),
+    "QG-03": ("suite_junit", "recorrido_e2e"),
+    "QG-04": ("saneamiento", "pip_audit"),
+    "QG-05": ("paridad_cli_mcp", "ap40_contrato"),
+    "QG-06": ("wheel_contenido", "instalacion_limpia"),
+}
+
 #: Matriz CI requerida (QA-RC-02b), contrastada con .github/workflows/vault-ci.yml:
 #: 3 SO x Python 3.9-3.12 en "Validate Vault Spec" y "Product gates (wheel)".
 MATRIZ_CI = tuple(f"({so}, {py})" for so in
@@ -160,7 +173,75 @@ def leer_recibo(ruta: Path, sha: str) -> Dict[str, Any]:
             return {**base, "detalle": "ARTEFACTO_JSON_ILEGIBLE"}
         if isinstance(contenido, dict) and contenido.get("ok") is False:
             return {**base, "detalle": "ARTEFACTO_DECLARA_FALLO"}
+    # QA-RC-02e: el recibo tiene que acreditar TODOS los subchecks obligatorios
+    # de su puerta. Un solo {"ok": true} no cubre requisitos multiples.
+    declarados = recibo.get("checks") or {}
+    if not isinstance(declarados, dict):
+        return {**base, "detalle": "CHECKS_NO_OBJETO"}
+    requeridos = SUBCHECKS_OBLIGATORIOS.get(gate, ())
+    ausentes = [sc for sc in requeridos
+                if declarados.get(sc) not in ("PASS", "ejecutado")]
+    if ausentes:
+        return {**base, "detalle": f"SUBCHECKS_AUSENTES: {ausentes}"}
     return {**base, "ok": True, "detalle": None, "recibo": recibo}
+
+
+def ejecutar_verificador(gate: str, sha: str, salida: Path,
+                         ejecutar: Callable[..., Any] = subprocess.run,
+                         raiz: Path = RAIZ) -> Dict[str, Any]:
+    """QA-RC-02f: ejecuta el verificador autorizado y EMITE el recibo.
+
+    El recibo nace de la ejecucion real (exit code, stdout recortado,
+    artefacto + hash, timestamps) y se escribe FUERA del arbol versionado, en
+    `salida/<gate>.recibo.json`. Nunca fabrica PASS.
+    """
+    verifier, command = GATE_VERIFICADORES[gate]
+    from datetime import datetime, timezone
+
+    def sello() -> str:
+        return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    started = sello()
+    argv = command.split()
+    argv[0] = sys.executable if argv[0] == "python" else argv[0]
+    try:
+        p = ejecutar(argv, cwd=str(raiz), capture_output=True, text=True,
+                     encoding="utf-8", errors="replace", timeout=3600)
+        exit_code, stdout, stderr = p.returncode, (p.stdout or ""), (p.stderr or "")
+    except (OSError, subprocess.SubprocessError) as exc:
+        return {"ok": False, "detalle": f"EJECUCION_FALLIDA: {exc}"}
+    finished = sello()
+    # QA-RC-02f: el exit code es parte del contrato; != 0 es FAIL.
+    declarado = "PASS" if exit_code == 0 else "FAIL"
+    detalle = None if exit_code == 0 else f"exit={exit_code}"
+    salida.mkdir(parents=True, exist_ok=True)
+    artefacto = salida / f"{gate}.salida.txt"
+    cuerpo = (f"gate={gate}\nverifier={verifier}\ncommand={command}\n"
+              f"target_sha={sha}\nexit_code={exit_code}\n"
+              f"--- stdout ---\n{stdout[-200000:]}\n--- stderr ---\n{stderr[-200000:]}")
+    artefacto.write_text(cuerpo, encoding="utf-8")
+    # La salida del verificador tambien se interpreta segun su contrato: los
+    # envelopes llevan "ok"; un exit 0 con "ok": false en el cuerpo es FAIL.
+    try:
+        linea_ok = [l for l in stdout.splitlines() if '"ok"' in l]
+        if linea_ok and '"ok": false' in linea_ok[0]:
+            declarado, detalle = "FAIL", "VERIFICADOR_DECLARA_OK_FALSE"
+    except Exception:
+        pass
+    checks = {sc: declarado for sc in SUBCHECKS_OBLIGATORIOS[gate]}
+    recibo = {
+        "gate": gate, "target_sha": sha, "verifier": verifier,
+        "command": command, "exit_code": exit_code, "status": declarado,
+        "started_at": started, "finished_at": finished,
+        "run_id": f"local-{gate}-{started}", "artifact": str(artefacto),
+        "artifact_sha256": hashlib.sha256(artefacto.read_bytes()).hexdigest(),
+        "checks": checks,
+    }
+    ruta = salida / f"{gate}.recibo.json"
+    ruta.write_text(json.dumps(recibo, indent=2) + "\n", encoding="utf-8")
+    return {"ok": declarado == "PASS", "status": declarado, "detalle": detalle,
+            "recibo": str(ruta), "artifact": str(artefacto),
+            "exit_code": exit_code}
 
 
 def estado_desde_recibo(gate: str, sha: str,
@@ -180,54 +261,92 @@ def estado_desde_recibo(gate: str, sha: str,
 
 def estado_ci(sha: str, consultar: Optional[Callable[[str], Any]] = None,
               raiz: Path = RAIZ, workflow_esperado: str = WORKFLOW_ESPERADO,
-              jobs: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
-    """La CI solo acredita con el workflow esperado, concluido, del SHA, y con
-    los jobs obligatorios de la matriz presentes y exitosos cuando se declaran.
+              consultar_jobs: Optional[Callable[[int], Any]] = None
+              ) -> Dict[str, Any]:
+    """Acredita la CI solo con: un run del SHA, del workflow esperado,
+    completed/success, y sus JOBS REALES cubriendo exactamente la matriz
+    obligatoria (QA-RC-02d). Sin jobs => no_verificable, nunca PASS.
     """
-    if consultar is None:
-        def consultar(sh: str) -> Any:
-            p = subprocess.run(
-                ["gh", "run", "list", "--commit", sh, "--limit", "10",
-                 "--json", "databaseId,status,conclusion,headSha,workflowName"],
-                cwd=str(raiz), capture_output=True, text=True, timeout=120)
-            if p.returncode != 0:
-                raise OSError((p.stderr or "gh no disponible").strip()[:200])
-            return json.loads(p.stdout or "[]")
+    def _consultar_runs(sh: str) -> Any:
+        p = subprocess.run(
+            ["gh", "run", "list", "--commit", sh, "--limit", "10",
+             "--json", "databaseId,status,conclusion,headSha,workflowName"],
+            cwd=str(raiz), capture_output=True, text=True, timeout=120)
+        if p.returncode != 0:
+            raise OSError((p.stderr or "gh no disponible").strip()[:200])
+        return json.loads(p.stdout or "[]")
+
+    def _consultar_jobs(run_id: int) -> Any:
+        if consultar_jobs is not None:
+            return consultar_jobs(run_id)
+        p = subprocess.run(
+            ["gh", "api", f"repos/{{owner}}/{{repo}}/actions/runs/{run_id}/jobs"
+             .replace("{owner}/{repo}", "devcicm/Vault-Obsidian-Architecture")],
+            cwd=str(raiz), capture_output=True, text=True, timeout=120)
+        if p.returncode != 0:
+            raise OSError((p.stderr or "gh jobs no disponible").strip()[:200])
+        dato = json.loads(p.stdout or "{}")
+        return dato.get("jobs") or []
+
     try:
-        runs = consultar(sha) or []
+        runs = consultar(sha) if consultar is not None else _consultar_runs(sha)
+        runs = runs or []
     except (OSError, ValueError) as exc:
         return {"conclusion": "no_verificable", "detalle": str(exc)}
     propios = [r for r in runs if r.get("headSha") == sha]
     if not propios:
         return {"conclusion": "sin_run", "detalle": "no hay run para ese SHA"}
-    # Identidad POSITIVA del workflow: sin nombre no se acredita.
     sin_nombre = [r.get("databaseId") for r in propios
                   if not r.get("workflowName")]
     if sin_nombre:
         return {"conclusion": "no_verificable",
                 "detalle": f"WORKFLOW_SIN_IDENTIDAD: runs={sin_nombre}"}
-    validos = [r for r in propios if r.get("workflowName") == workflow_esperado]
-    if not validos:
+    exitosos = [r for r in propios
+                if r.get("workflowName") == workflow_esperado
+                and r.get("status") == "completed"
+                and r.get("conclusion") == "success"]
+    if not exitosos:
+        estados = sorted({f"{r.get('status')}/{r.get('conclusion')}"
+                          for r in propios})
+        if any(r.get("status") in ("queued", "in_progress") for r in propios):
+            return {"conclusion": "queued", "detalle": f"estados={estados}"}
+        return {"conclusion": "no_verificable", "detalle": f"estados={estados}"}
+
+    # Un unico run: el mas reciente de los exitosos del workflow esperado.
+    run = exitosos[-1]
+    run_id = run.get("databaseId")
+    try:
+        jobs = _consultar_jobs(run_id) or []
+    except (OSError, ValueError) as exc:
         return {"conclusion": "no_verificable",
-                "detalle": "WORKFLOW_AJENO: " + str(
-                    sorted({r["workflowName"] for r in propios}))}
-    if jobs is not None:
-        nombres = [str(j.get("name", "")) for j in jobs]
-        faltan = [j for j in JOBS_OBLIGATORIOS
-                  if not any(n.startswith(j) for n in nombres)]
-        fallidos = [n for n, j in zip(nombres, jobs)
-                    if j.get("conclusion") not in (None, "success")]
-        if faltan or fallidos:
-            return {"conclusion": "no_verificable",
-                    "detalle": f"MATRIZ_INCOMPLETA faltan={faltan} fallidos={fallidos[:5]}"}
-    if any(r.get("conclusion") == "success" and r.get("status") == "completed"
-           for r in validos):
-        return {"conclusion": "success", "runs": [r.get("databaseId") for r in validos]}
-    estados = sorted({r.get("status") or "?" for r in validos})
-    if "queued" in estados or "in_progress" in estados:
-        return {"conclusion": "queued", "detalle": f"estados={estados}"}
-    return {"conclusion": validos[0].get("conclusion") or "sin_conclusion",
-            "detalle": f"estados={estados}"}
+                "detalle": f"JOBS_NO_DISPONIBLES: {exc}"}
+
+    # Cada job tiene que pertenecer AL RUN seleccionado, estar completado y
+    # exitoso; sin conclusion (null) o duplicados que oculten ausencias, no.
+    por_nombre: Dict[str, List[Dict[str, Any]]] = {}
+    for j in jobs:
+        if j.get("run_id") not in (None, run_id):
+            continue
+        nombre = str(j.get("name", ""))
+        por_nombre.setdefault(nombre, []).append(j)
+
+    faltan = [j for j in JOBS_OBLIGATORIOS
+              if not any(n == j for n in por_nombre)]
+    defectuosos = []
+    for nombre, lista in sorted(por_nombre.items()):
+        if any(j.get("conclusion") != "success" or
+               j.get("status") != "completed" for j in lista):
+            defectuosos.append(nombre)
+    sobrantes = [n for n in por_nombre
+                 if n not in JOBS_OBLIGATORIOS and
+                 not any(n.startswith(j) for j in JOBS_OBLIGATORIOS)]
+    if faltan or defectuosos or sobrantes:
+        return {"conclusion": "no_verificable", "run_id": run_id,
+                "detalle": (f"MATRIZ_INCOMPLETA faltan={faltan[:6]} "
+                            f"defectuosos={defectuosos[:6]} "
+                            f"sobrantes={sobrantes[:6]}")}
+    return {"conclusion": "success", "run_id": run_id,
+            "jobs": sorted(por_nombre)}
 
 
 # ── Suite (JUnit XML + hash en el recibo) ────────────────────────────────────
@@ -317,7 +436,7 @@ def control_ejecucion(root: Optional[str] = None,
 def colectar(sha: str, *, recibos: Optional[Path] = None,
              suite_xml: Optional[Path] = None, root: Optional[str] = None,
              raiz: Path = RAIZ, ejecutar=subprocess.run,
-             consultar_ci=None, jobs_ci: Optional[List[Dict[str, Any]]] = None
+             consultar_ci=None, consultar_jobs: Optional[Callable[[int], Any]] = None
              ) -> Dict[str, Any]:
     if not SHA_RE.match(sha or ""):
         return {"ok": False, "detalle": "SHA_INVALIDO", "estado": {},
@@ -351,7 +470,7 @@ def colectar(sha: str, *, recibos: Optional[Path] = None,
         evidencias["QG-03"] = {"sha": sha, "estado": "no_ejecutado",
                                "detalle": procedencia["detalle"], "rutas": []}
 
-    ci = estado_ci(sha, consultar_ci, raiz, jobs=jobs_ci)
+    ci = estado_ci(sha, consultar_ci, raiz, consultar_jobs=consultar_jobs)
     gates["QG-07"] = "PASS"
 
     estado = {"sha_objetivo": sha, "gates": gates, "evidencias": evidencias,
