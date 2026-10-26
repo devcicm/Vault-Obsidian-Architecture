@@ -17,6 +17,7 @@ el escenario: la raíz dudosa, el default de escaneo y el criterio de decodifica
 from __future__ import annotations
 
 import ast
+import os
 import pathlib
 import sys
 
@@ -171,11 +172,21 @@ def test_el_detector_acepta_una_codificacion_explicita(tmp_path):
 
 def test_ejecutar_lee_utf8_aunque_el_llamador_pida_texto():
     """`text=True` heredado del llamador no puede reabrir el agujero."""
+    # `env=` de subprocess es reemplazo total, y el hijo de 3.9/3.10 no puede
+    # ARRANCAR en Windows sin `SystemRoot` (win32_urandom/CryptGenRandom):
+    # medido en CI (run 40299732445) con `stdout=''` y stderr
+    # `Fatal Python error: _Py_HashRandomization_Init: failed to get random
+    # numbers to initialize Python`. La prueba no hurga en el sistema, así
+    # que le pase la invariante del anfitrión junto a lo que sí es de la
+    # prueba (el PYTHONIOENCODING del hijo).
+    env = {"PYTHONIOENCODING": "utf-8", "PATH": ""}
+    if sys.platform == "win32":
+        env["SYSTEMROOT"] = os.environ.get("SYSTEMROOT", "")
     hijo = vault_subproceso.ejecutar(
         [sys.executable, "-c", "print('el \\u00edndice dej\\u00f3 de reflejar')"],
         capture_output=True,
         text=True,
-        env={"PYTHONIOENCODING": "utf-8", "PATH": ""},
+        env=env,
     )
     assert "el índice dejó de reflejar" in hijo.stdout
 

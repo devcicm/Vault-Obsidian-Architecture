@@ -1306,26 +1306,75 @@ function formatToolError(error, message, tool) {
 
 let PYTHON_CMD = null;
 
+/**
+ * El primer candidato que puede correr el toolkit y NO siempre es el primero
+ * del PATH ni el `py` que sale primero a mano. Medido en CI (run
+ * 40299732445, Windows), elegir `py` antes que nada hacía que el catálogo
+ * entero saliera `TOOL_EXECUTION_FAILED` con `ModuleNotFoundError: import yaml`:
+ *
+ * - `py` es un launcher del sistema: resuelve el Python que tenga REGISTRADO
+ *   la máquina — en el runner de GitHub, el preinstalado de la imagen base,
+ *   sin PyYAML y distinto del intérprete donde el job hizo
+ *   `pip install -e ".[dev]"`.
+ * - `python` del PATH, en cambio, sí es el intérprete del toolkit en el
+ *   checkout y en el venv de un tercero que instaló la wheel.
+ *
+ * Por eso el orden aquí es `python3`, `python` y `py` al final, y cada
+ * candidato de este PATH se SONDEA con la única dependencia que
+ * `pyproject.toml` declara (`import yaml`): un intérprete sin ella no puede
+ * ejecutar ninguna tool, así que buscarlo "que exista" no basta.
+ * VAULT_MCP_PYTHON (fijada por `vault mcp-path` a `sys.executable`) no se
+ * sondea: es la elección explícita de quien instala y no se segunda adivina;
+ * si no puede importar yaml, eso se avisa de una vez en el arranque en vez
+ * de fallar tool a tool con el recovery de `VAULT_MCP_PYTHON`.
+ */
+function sondeo(cmd, args, timeoutMs) {
+  try {
+    execSync(`"${cmd}" ${args}`, { stdio: "ignore", timeout: timeoutMs });
+    return true;
+  } catch (_) { /* AP-51: el siguiente candidato decide, el error no se filtra aquí */ }
+  return false;
+}
+
 function detectPython() {
   if (PYTHON_CMD) return PYTHON_CMD;
-  // El primer Python del PATH no tiene por qué ser el que instaló el toolkit;
-  // instalado en un venv, solo ese ve `vault` y `_impl`. `vault mcp-path` la
-  // fija a `sys.executable`.
-  if (process.env.VAULT_MCP_PYTHON) {
-    PYTHON_CMD = process.env.VAULT_MCP_PYTHON;
+  const explícito = process.env.VAULT_MCP_PYTHON;
+  if (explícito) {
+    PYTHON_CMD = explícito;
+    if (!sondeo(explícito, `-c "import yaml"`, 20000)) {
+      log(
+        "warn",
+        `VAULT_MCP_PYTHON (${explícito}) no puede importar PyYAML. ` +
+        `Las tools de Python fallarán; instalarlo (pip install PyYAML) o ` +
+        `apuntar la variable al intérprete del toolkit (\`python -m vault ` +
+        `mcp-path\` lo escribe por ti).`,
+      );
+    }
     return PYTHON_CMD;
   }
-  for (const cmd of ["py", "python3", "python"]) {
-    try {
-      execSync(`"${cmd}" --version`, { stdio: "ignore", timeout: 5000 });
+  const candidatos = ["python3", "python", "py"];
+  const sin_yaml = [];
+  for (const cmd of candidatos) {
+    if (!sondeo(cmd, "--version", 5000)) continue; // no existe ese comando
+    if (sondeo(cmd, `-c "import yaml"`, 20000)) {
       PYTHON_CMD = cmd;
       log("info", `Python detected: ${cmd}`);
       return cmd;
-    } catch (_) { /* AP-51: se prueba el siguiente; si no hay ninguno se avisa abajo */ }
+    }
+    sin_yaml.push(cmd);
+    log("warn", `Existe ${cmd} pero no puede importar PyYAML: pasando al siguiente.`);
   }
-  PYTHON_CMD = "python";
-  log("warn", "No Python found on PATH. Python-backed tools will fail.");
-  return "python";
+  // Degradado explícito: se avisa UNA VEZ en el arranque con la acción que lo
+  // arregla, no con un TOOL_EXECUTION_FAILED por cada llamada. Se conserva el
+  // primero que existió para que el error del hijo siga siendo el mismo.
+  PYTHON_CMD = sin_yaml[0] ?? "python";
+  log(
+    "warn",
+    `Ningún Python del PATH puede importar PyYAML (probados: ${candidatos.join(", ")}). ` +
+    `Las tools de Python fallarán: instálalo en el intérprete del toolkit o ` +
+    `fija VAULT_MCP_PYTHON (\`python -m vault mcp-path\` lo fija por ti).`,
+  );
+  return PYTHON_CMD;
 }
 
 /**

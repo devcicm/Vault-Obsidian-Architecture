@@ -132,7 +132,7 @@
       "type": "ruta",
       "default": null,
       "context": "meta_toolkit",
-      "purpose": "Intérprete con el que el servidor MCP lanza las tools. Vacía, prueba `py`, `python3` y `python` del PATH; instalado en un venv, solo el de ese venv ve el toolkit, y `vault mcp-path` la fija a él. Solo la lee el `.mjs`."
+      "purpose": "Intérprete con el que el servidor MCP lanza las tools. Vacía, sondea `python3`, `python` y `py` (en ese orden; `py` al final porque en Windows del runner resuelve el Python registrado en la máquina, no el del toolkit) y exige a cada candidato que pueda `import yaml` (la dependencia declarada). Instalado en un venv, solo el de ese venv ve el toolkit, y `vault mcp-path` la fija a él: esa elección explícita no se segunda adivina. Solo la lee el `.mjs`."
     },
     {
       "name": "VAULT_PROJECT",

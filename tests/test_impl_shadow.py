@@ -11,6 +11,7 @@ Se usa un venvtmp_path factory propio para garantizar isolation completa.
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 import venv
@@ -55,7 +56,21 @@ def test_impl_preferred_over_fake_cwd_vault_io(tmp_path_factory):
         encoding="utf-8",
     )
 
-    env = {"PATH": str(venv_path / ("Scripts" if sys.platform == "win32" else "bin")), "SYSTEMROOT": ""}
+    # El env es REEMPLAZO total para subprocess (`env=` no hereda): el PATH
+    # queda reducido al del venv a propósito, pero las INVARIANTES del sistema
+    # anfitrión no se pueden borrar: sin `SystemRoot`, el win32_urandom de
+    # Python 3.9/3.10 (CryptGenRandom) no consigue números y el hijo muere en
+    # la inicialización con
+    # `Fatal Python error: _Py_HashRandomization_Init: failed to get random
+    #  numbers to initialize Python / Python runtime state: preinitialized`.
+    # Medido en CI (run 40299732445, columnas de Windows 3.9 y 3.10) y
+    # reproducido en local con `py -3.9` con env sin SystemRoot (rc=1, mismo
+    # stderr) y `py -3.12`/`py -3.14` (rc=0): 3.11 en adelante usa ProcessPrng
+    # y sobrevive. Carry-over explícito de lo del sistema, no del llamador.
+    env = {
+        "PATH": str(venv_path / ("Scripts" if sys.platform == "win32" else "bin")),
+        "SYSTEMROOT": os.environ.get("SYSTEMROOT", "") if sys.platform == "win32" else "",
+    }
     env.pop("PYTHONPATH", None)
     env.pop("PYTHONHOME", None)
 

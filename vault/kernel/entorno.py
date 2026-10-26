@@ -202,9 +202,13 @@ VARIABLES: Dict[str, Variable] = {
         Variable(
             "VAULT_MCP_PYTHON", "ruta", None, "meta_toolkit",
             "Intérprete con el que el servidor MCP lanza las tools. Vacía, "
-            "prueba `py`, `python3` y `python` del PATH; instalado en un venv, "
+            "sondea `python3`, `python` y `py` (en ese orden; `py` al final "
+            "porque en Windows del runner resuelve el Python registrado en la "
+            "máquina, no el del toolkit) y exige a cada candidato que pueda "
+            "`import yaml` (la dependencia declarada). Instalado en un venv, "
             "solo el de ese venv ve el toolkit, y `vault mcp-path` la fija a "
-            "él. Solo la lee el `.mjs`.",
+            "él: esa elección explícita no se segunda adivina. Solo la lee "
+            "el `.mjs`.",
         ),
         # AP-63, P5. Las dos van juntas: sin el candado, el proyecto de la
         # sesión no restringe nada; con el candado y sin proyecto, se cierra.

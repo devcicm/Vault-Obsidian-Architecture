@@ -25,6 +25,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        # Historia completa SOLO aquí. Los tres jobs del workflow se distinguen
+        # por lo que consultan: `validate` corre la suite, y la suite tiene 18
+        # tests que hablan con git por su cuenta (run 40299732445: con el
+        # checkout superficial que `checkout@v4` trae por defecto —`--depth=1`
+        #— `vault_changelog_check`, `vault_contrato_nota`, `vault_metricas` y
+        # el auditor de exposición histórica no resuelven commits, blobs ni
+        # rangos que SÍ existen en GitHub (`test_todos_los_hashes_publicados_
+        # existen` marcó la lista de versiones con «hash inexistente» solo
+        # por la profundidad). `product-gates` y `lint` no leen historia —
+        # construyen la wheel y compilan—, así que siguen baratos.
+        with:
+          fetch-depth: 0
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
