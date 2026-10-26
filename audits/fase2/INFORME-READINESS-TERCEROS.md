@@ -51,7 +51,7 @@ diciendo «116»/«117» y «9 tools JS-native» (son 2): son cifras caducadas d
 |---|---|---|
 | Puertas del estándar | **26/26** | `vault_gate.py --strict` sobre el candidato `701f5d4` (532,9 s) |
 | Suite completa | **6319 passed / 13 skipped / 0 failed** en **1030,7 s** | JUnit `r12d` sobre `89fbe4c`; el delta hasta `701f5d4` es la cifra de tests multiplataforma, el generador del ledger y el workflow (sin cambio en el paquete) |
-| Suite completa (candidato) | JUnit `r12e` sobre `701f5d4` | en curso al cierre de este informe |
+| Suite completa (candidato) | **6319 passed / 13 skipped / 0 failed** en **1033,9 s** | JUnit `r12e` sobre el candidato `701f5d4` (idéntica a `r12d`: el delta no tocaba el código bajo prueba) |
 | E2E de terceros | **27/27** con wheel reconstruida desde el código (el guion construye la wheel desde HEAD) | `recorrido_terceros_r07.py`; wheel `6389a9ce…e6ae`, sdist `8b91c07a…1151` |
 | Equivalencia del paquete | **706 miembros, 0 ficheros con contenido distinto** entre la wheel del E2E y la reconstruida | la construcción **no es reproducible** (el ZIP lleva marcas de tiempo): el hash de referencia es el de la construcción certificada, y lo que se comparó es el contenido |
 | AP-39 (defecto de producto) | **corregido**: 0 violaciones en runtime limpio con 75 ficheros | re-auditoría con código actual (commit `2174bb1`) |

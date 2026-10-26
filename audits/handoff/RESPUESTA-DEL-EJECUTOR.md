@@ -194,11 +194,10 @@ Estado: CORREGIDO (pendiente la corrida de verificacion en CI).
 ## 2. Certification
 
 ```text
-SUITE:   6319 passed / 13 skipped / 0 failed en 1030,7 s (JUnit r12d, sobre
-         89fbe4c) y la re-certificacion sobre el candidato 701f5d4 (JUnit
-         r12e). La diferencia entre ambos es documental y de tests: el
-         contenido del PAQUETE es identico miembro a miembro.
-PUERTAS: 26/26 en 532,9 s (mismo contenido; re-verificadas sobre 701f5d4)
+SUITE:   6319 passed / 13 skipped / 0 failed en 1033,9 s (JUnit r12e, sobre el
+         candidato 701f5d4) — identica a la r12d (89fbe4c, 1030,7 s): el
+         delta entre ambas no tocaba el codigo bajo prueba.
+PUERTAS: 26/26 en 532,9 s sobre el mismo contenido
 E2E:     27/27 con wheel reconstruida desde el codigo (el guion construye la
          wheel el mismo desde HEAD)
 WHEEL:   6389a9cefa599b26ef11f875851e7ca126b2487867b14e753cc93fd43ab0e6ae
