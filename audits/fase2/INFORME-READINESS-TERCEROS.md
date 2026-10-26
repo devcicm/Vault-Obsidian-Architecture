@@ -49,12 +49,13 @@ diciendo «116»/«117» y «9 tools JS-native» (son 2): son cifras caducadas d
 
 | Métrica | Valor | Fuente |
 |---|---|---|
-| Puertas del estándar | **26/26** | `vault_gate.py --strict` sobre `9e0bcd7` (740,8 s) |
-| Suite completa | **6307 passed / 13 skipped / 0 failed** en **1068,7 s** | JUnit `r11d` sobre el freeze `36c91e0` |
-| Suite completa (ronda R12) | **pendiente de medir** sobre el commit de los arreglos | se mide antes de congelar (§9) |
-| E2E de terceros | **27/27** con wheel reconstruida (AP-39 dentro) | `recorrido_terceros_r07.py` |
+| Puertas del estándar | **26/26** | `vault_gate.py --strict` sobre el candidato `701f5d4` (532,9 s) |
+| Suite completa | **6319 passed / 13 skipped / 0 failed** en **1030,7 s** | JUnit `r12d` sobre `89fbe4c`; el delta hasta `701f5d4` es la cifra de tests multiplataforma, el generador del ledger y el workflow (sin cambio en el paquete) |
+| Suite completa (candidato) | JUnit `r12e` sobre `701f5d4` | en curso al cierre de este informe |
+| E2E de terceros | **27/27** con wheel reconstruida desde el código (el guion construye la wheel desde HEAD) | `recorrido_terceros_r07.py`; wheel `6389a9ce…e6ae`, sdist `8b91c07a…1151` |
+| Equivalencia del paquete | **706 miembros, 0 ficheros con contenido distinto** entre la wheel del E2E y la reconstruida | la construcción **no es reproducible** (el ZIP lleva marcas de tiempo): el hash de referencia es el de la construcción certificada, y lo que se comparó es el contenido |
 | AP-39 (defecto de producto) | **corregido**: 0 violaciones en runtime limpio con 75 ficheros | re-auditoría con código actual (commit `2174bb1`) |
-| Sandbox canónico | **1**violación, y es externa: `vault-backups` dos niveles por encima del repo | audit con código actual; los 13 de contenido **corregidos** (§4) |
+| Sandbox canónico | **1** violación, y es externa: `vault-backups` dos niveles por encima del repo | audit con código actual; los 13 de contenido **corregidos** (§4) |
 | Divergencias Archify | 10 (2 fichas de movimiento de composición `667a6a5`, 5 accesos, 3 dependencias) | `reconciliar_archify.py --check` (exit 1 esperado sin ratificación) |
 | Paralelismo de la suite | 8255 s de casos contra 1076 s de reloj = **7,7×** | JUnit `r11c` + log de la corrida |
 | Rendimiento del generador de trazabilidad | **67,2 s → 9,7 s** | dos mediciones reales con `Measure-Command` |
@@ -78,16 +79,18 @@ cuesta 10× — y es del propietario. Consecuencia: **la matriz multiplataforma
 no está completa** y QG-07 no puede cerrarse (su check exige CI con
 conclusión, y la conclusión no llega mientras macOS no arranque).
 
-### 3.2 Los tres defectos reales de la corrida `40299732445`
+### 3.2 Los cinco defectos reales que la CI destapó
 
 | # | Síntoma | Causa comprobada | Corrección | Cómo se comprobó |
 |---|---|---|---|---|
-| D1 | 18 tests rojos en **todas** las columnas (Linux y Windows, 3.9–3.12): `vault_changelog_check` daba «hash inexistente» a commits que **sí** existen en GitHub; `vault_contrato_nota` no resolvía `git show`/`cat-file` de commits históricos; `vault_metricas` no resolvía el rango `8f24030..6ddf04e`; el blueprint y el auditor de exposición histórica tampoco | `actions/checkout@v4` hace checkout **superficial** (`--depth=1`): los objetos históricos no están en el clon | `fetch-depth: 0` **solo** en el job `validate` | **repro local**: clon `--depth=1` → **19 fallos** en los cinco ficheros afectados; el mismo árbol con historia completa → **129/129 pasados** con el mismo intérprete. En CI, la misma línea de código con historia completa es la que se ejecutaba en verde |
+| D1 | 18 tests rojos en **todas** las columnas (Linux y Windows, 3.9–3.12): `vault_changelog_check` daba «hash inexistente» a commits que **sí** existen en GitHub; `vault_contrato_nota` no resolvía `git show`/`cat-file` de commits históricos; `vault_metricas` no resolvía el rango `8f24030..6ddf04e`; el blueprint y el auditor de exposición histórica tampoco | `actions/checkout@v4` hace checkout **superficial** (`--depth=1`): los objetos históricos no están en el clon | `fetch-depth: 0` **solo** en el job `validate` | **repro local**: clon `--depth=1` → **19 fallos** en los cinco ficheros afectados; el mismo árbol con historia completa → **129/129 pasados** con el mismo intérprete. En la CI, la suite quedó **verde en las ocho columnas** de la corrida `40317033977` |
 | D2 | `tests/test_mcp_runner.py::test_la_tool_por_modulo_se_ejecuta_por_mcp` rojo en **las cuatro** columnas de Windows: `TOOL_EXECUTION_FAILED` con `ModuleNotFoundError: No module named 'yaml'` | el servidor MCP elegía `py` como intérprete; en el runner de Windows, `py` resuelve el Python **registrado en la imagen base** (sin PyYAML), no el de la matriz, donde `pip install -e ".[dev]"` sí instaló la dependencia | `detectPython()` sondea `python3` → `python` → `py` (en ese orden) y **exige a cada candidato `import yaml`**; la elección explícita (`VAULT_MCP_PYTHON`) no se sondea, pero se avisa en el arranque si no puede importar la dependencia | 9/9 en `test_mcp_runner.py`; 8/8 en `test_mcp_instalado.py`; medición en vivo: el servidor arranca, responde y expone 97 tools |
 | D3 | `test_impl_shadow` y `test_portabilidad_v4030` rojos en **Windows 3.9 y 3.10**: hijo de Python muerto con `Fatal Python error: _Py_HashRandomization_Init: failed to get random numbers to initialize Python` (stdout vacío) | los dos fixtures lanzan al hijo con un `env` **curado** (sustituye el entorno entero) **sin `SystemRoot`**: sin esa variable, el `win32_urandom` de 3.9/3.10 (`CryptGenRandom`) no consigue números y el hijo muere en la inicialización. 3.11+ usa `ProcessPrng` y sobrevive — de ahí que solo fallaran 3.9 y 3.10 | los dos fixtures **heredan la invariante del anfitrión** (`SYSTEMROOT`) y dejan el resto de la curación intacta | **repro local**: `py -3.9` con env sin `SystemRoot` → rc=1 con el stderr **idéntico** al de la CI; `py -3.12` y `py -3.14` → rc=0; con `SystemRoot` → rc=0 |
+| D7 | Puerta `conteos` en rojo **solo en Linux** (25/26) con la suite verde: la cifra de tests publicada (6320, medida en Windows) no coincidía con la collectada en Linux (6318) | `tests/test_read_ruta_canonica.py` solo añadía en Windows las dos variantes que usan separador de Windows y caja distinta → **la cifra de tests dependía del sistema**, y la puerta la compara con `pytest --collect-only` | las cuatro variantes se **colectan** en todas las plataformas y las dos de Windows se **saltan** fuera de Windows: la cifra queda igual en todos los sistemas (6332) y la cobertura de Windows no se pierde | diferencia de las listas de tests collectados (local vs log de la CI); 4/4 en el test; puerta `conteos` en verde |
+| D8 | Paso «Containment audit (AP-36, strict)» en rojo en Windows 3.12: la auditoría del sandbox canónico daba **13 violaciones** (CN-03×5, AP-07×4, AP-64×4) | el paso audita el sandbox que el propio job construye con `tests/sandbox_fixture.py --bootstrap`, y la **semilla** (`tests/fixtures/sandbox-seed.json`) escribía las notas con `status: accepted`, sin las secciones de AP-07 y sin `responsable` de AP-64. Eran las mismas 13 del ledger de QG-02: contenido nuestro, no un defecto de la CI | la semilla escribe notas **canónicas** (status del vocabulario, las tres secciones, `responsable` distinto del agente) | auditoría del sandbox canónico con el código actual: de 14 → **1** (la externa); en CI, **0** |
 
-Ninguno de los tres se arregló con sleeps, reintentos, baselines más amplias ni
-tests relajados. Los tres se arreglaron en su causa.
+Ninguno de los cinco se arregló con sleeps, reintentos, baselines más amplias ni
+tests relajados. Los cinco se arreglaron en su causa.
 
 ### 3.3 Lo que la CI NO demuestra todavía
 
@@ -206,23 +209,29 @@ sin release y sin dictamen QA de cierre.
 
 ## 9. Estado de la certificación de cierre
 
-- **Congelado y re-certificado en R11**: `36c91e0` — suite **6307 passed / 13
-  skipped / 0 failed** (JUnit `r11d`, 1068,7 s) y **puertas 26/26**; E2E 27/27
-  con wheel reconstruida.
-- **Ronda R12 (esta)**: corregidos los tres defectos de CI de §3.2 (commit
-  `9e0bcd7`), corregidos los 13 hallazgos de contenido del sandbox canónico y
-  el defecto de `vault://graph` en el servidor MCP; reconciliados el protocolo
-  QA (con guard de deriva), el informe y la matriz de capacidad. La
-  recertificación completa (suite + puertas + E2E sobre el commit resultante)
-  se mide antes de cerrar esta ronda; sus cifras van en el buzón del
-  ejecutor.
-- **La única certificación que falta, además de las decisiones del
-  propietario, es el dictamen QA del SHA congelado** — y, si el propietario no
-  habilita macOS, el dictamen correcto será `BLOCKED` con esa causa, que es un
-  dictamen honesto.
+- **Congelado y re-certificado en R11:** `36c91e0` — suite **6307 passed / 13
+  skipped / 0 failed** (JUnit `r11d`, 1068,7 s) y **puertas 26/26**; E2E 27/27.
+- **Ronda R12 (esta) — candidato `701f5d4`:** corregidos los **cinco** defectos
+  reales que la CI destapó (§3.2: checkout superficial, detector MCP sin
+  PyYAML, env de hijo sin SystemRoot, cifra de tests dependiente del sistema
+  y contenido no canónico de la semilla del sandbox), más el defecto de
+  `vault://graph` en el servidor MCP; reconciliados el protocolo QA (con guard
+  de deriva), el informe, la matriz de capacidad y la política de QG-02.
+  Medición sobre el candidato: **puertas 26/26** (532,9 s), **E2E 27/27** con
+  wheel reconstruida y **contenido del paquete idéntico miembro a miembro**
+  (706/706) al del E2E; suite completa **6319 passed / 13 skipped / 0 failed**
+  (JUnit `r12d`, 1030,7 s) con el delta hasta el candidato limitado a la
+  cifra de tests multiplataforma, el generador del ledger y el workflow.
+- **Lo que falta, y no lo puede cerrar el ejecutor:** el dictamen QA de cierre
+  sobre este SHA; la ratificación de las decisiones §6 (divergencias,
+  política de QG-02, `vault-backups`); y la matriz de macOS, cuyos 8 jobs no
+  arrancan en dos corridas seguidas. Si macOS no se habilita, el dictamen
+  correcto del QA es `BLOCKED` con esa causa, y el alcance publicable se
+  declara como Windows + Linux.
 
-**Veredicto:** el producto técnico está en verde y sus defectos de CI
-concretos están corregidos y comprobados. Lo que falta para un release
+**Veredicto:** el producto técnico está en verde, sus defectos de CI concretos
+están corregidos y comprobados con evidencia de la propia CI, y la
+documentación dice la verdad sobre su estado. Lo que falta para un release
 certificado son decisiones del propietario (§6) y la matriz de macOS; ninguna
 de las dos cosas la puede cerrar el ejecutor, y ninguna se resuelve con un
 documento que afirme lo contrario.

@@ -73,7 +73,19 @@ catálogo publica es 126.
 | Instalación fuera del checkout | ✅ | ✅ | ✅ | ✅ venv externo en el E2E | idem | E2E | bajo |
 | MCP empaquetado (sin checkout) | ✅ | ✅ `vault mcp-path` | ✅ | ✅ `tests/test_mcp_instalado.py` (8/8) | idem | idem | bajo |
 
-## 5. Resumen para la decisión de publicación
+## 5. Versión, canal de publicación y resumen para la decisión
+
+### 5.1 Propuesta de versión y canal (no aplicada)
+
+| Elemento | Propuesta | Por qué |
+|---|---|---|
+| Versión pública | **`41.24`** (la línea vigente; `41.23` es la instalada y publicada como base) | el producto sigue en la línea `v41.x` del manifiesto; saltar a `1.0.0` prometería una madurez que la matriz multiplataforma todavía no respalda (macOS sin medir) |
+| Canal | **PyPI**, en un canal de prueba primero (TestPyPI o un índice propio), con el token del propietario | publicar en el canal público es una decisión suya, y un release sin QA de cierre no debe salir |
+| Condición previa | **dictamen QA de cierre + QG-07 con CI concluida** (hoy, macOS) | el GOAL es explícito: CI fallida significa que el release no puede aprobarse |
+| Qué NO se hace aquí | ni tag, ni `gh release`, ni `twine upload`, ni cambio de `version` en `pyproject.toml` | no hay autorización para publicar, y `vault_release_bump` existe para hacerlo con el proceso del repo |
+| Si el propietario quiere `1.0.0` | entonces el PRD v1.0 se cumple, y el cambio de versión va por `vault_release_bump` con su changelog | el versionado público se cambia con la tool del repo, no a mano |
+
+### 5.2 Resumen para la decisión de publicación
 
 - **Publicable hoy, con Honestidad en el rótulo**: wheel + sdist, instalación
   limpia fuera del checkout, CLI de producto y MCP por JSON-RPC, en Windows
