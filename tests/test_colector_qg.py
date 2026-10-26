@@ -226,7 +226,7 @@ def test_la_cli_evalua_y_devuelve_json_consistente(tmp_path):
     assert p.returncode == 1, p.stdout[-400:]
     sobre = json.loads(p.stdout)
     assert sobre["politica"]["liberable"] is False
-    assert sobre["politica"]["gates"]["QG-00"] == "NOT_RUN"
+    assert sobre["politica"]["gates"]["QG-00"] in ("NOT_RUN", "BLOCKED")
 
 
 # ── QA-RC-02i: CI ligada al run exacto ───────────────────────────────────────
@@ -340,7 +340,10 @@ def test_sin_recibos_no_hay_liberacion(tmp_path):
                                 "checks": []})),
                            consultar_ci=lambda s: [])
     assert resultado["politica"]["liberable"] is False
-    assert resultado["politica"]["gates"]["QG-00"] == "NOT_RUN"
+    # Sin checkout en el SHA, QG-00 no es NOT_RUN: es BLOCKED.
+    assert resultado["politica"]["gates"]["QG-00"] == "BLOCKED"
+    assert any("CHECKOUT" in m or "ARBOL" in m
+               for m in resultado["politica"]["motivos"].get("QG-00", []))
 
 
 def test_el_colector_no_pasa_jobs_fuera_de_su_interfaz():

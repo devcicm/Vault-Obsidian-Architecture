@@ -130,6 +130,34 @@ def _argv(spec: List[str], raiz: Path) -> List[str]:
     return [sys.executable, str(raiz / spec[0])] + spec[1:]
 
 
+def checkout_en_sha(sha: str, ejecutar: Callable[..., Any] = subprocess.run,
+                    raiz: Path = RAIZ) -> Dict[str, Any]:
+    """El checkout tiene que estar EN el SHA y sin cambios pendientes.
+
+    Se mide el estado del árbol en el momento en que se ejecutan los
+    verificadores: algunos escriben artefactos de runtime propios y ensuciarian
+    la comprobación posterior.
+    """
+    def git(*args: str) -> Any:
+        return ejecutar(["git", *args], cwd=str(raiz), capture_output=True,
+                        text=True)
+
+    head_p = git("rev-parse", "HEAD")
+    if head_p.returncode != 0:
+        return {"ok": False, "detalle": "GIT_REV_PARSE_FALLIDO"}
+    head = head_p.stdout.strip()
+    status_p = git("status", "--porcelain")
+    if status_p.returncode != 0:
+        return {"ok": False, "detalle": "GIT_STATUS_FALLIDO"}
+    estado = status_p.stdout.strip()
+    if head != sha:
+        return {"ok": False, "detalle": f"CHECKOUT_EN_OTRO_SHA: HEAD={head[:7]}"}
+    if estado:
+        return {"ok": False, "detalle": "ARBOL_SUCIO",
+                "cambios": estado.splitlines()[:10]}
+    return {"ok": True, "detalle": None}
+
+
 # ── Checks internos (funciones propias del colector) ─────────────────────────
 
 def _check_identidad_git(sha: str, raiz: Path) -> Dict[str, Any]:
@@ -347,6 +375,11 @@ def _ejecutar_subcheck(gate: str, nombre: str, spec: Dict[str, Any], sha: str,
             if not datos.get("todos_ok"):
                 estado, detalle = "fallido", "E2E_CON_PASOS_FALLIDOS"
         elif fuente == "pytest_junit":
+            procedencia = _procedencia_suite(ruta, sha)
+            if not procedencia["ok"]:
+                return _registro(nombre, verificador, "no_ejecutado",
+                                 f"JUNIT_SIN_PROCEDENCIA: {procedencia['detalle']}",
+                                 None, started, _sello())
             try:
                 arbol = ET.parse(str(ruta)).getroot()
             except (ET.ParseError, OSError) as exc:
@@ -683,7 +716,8 @@ def colectar(sha: str, *, recibos: Optional[Path] = None,
              suite_xml: Optional[Path] = None, root: Optional[str] = None,
              raiz: Path = RAIZ, ejecutar=subprocess.run,
              consultar_ci=None,
-             consultar_jobs: Optional[Callable[[int], Any]] = None
+             consultar_jobs: Optional[Callable[[int], Any]] = None,
+             arbol: Optional[Dict[str, Any]] = None
              ) -> Dict[str, Any]:
     if not SHA_RE.match(sha or ""):
         return {"ok": False, "detalle": "SHA_INVALIDO", "estado": {},
@@ -704,10 +738,19 @@ def colectar(sha: str, *, recibos: Optional[Path] = None,
     gates["QG-07"] = "PASS"
 
     estado = {"sha_objetivo": sha, "gates": gates, "evidencias": evidencias,
-              "control_ejecucion": control, "ci": ci}
+              "control_ejecucion": control, "ci": ci,
+              "arbol": arbol if arbol is not None
+              else checkout_en_sha(sha, ejecutar, raiz)}
     from politica_qg import evaluar_politica
 
     veredicto = evaluar_politica(estado)
+    # La identidad del checkout se verifica en el momento de ejecutar los
+    # verificadores (que pueden escribir artefactos de runtime propios).
+    if not (estado["arbol"] or {}).get("ok"):
+        veredicto = {**veredicto, "liberable": False, "qg07": "BLOCKED",
+                     "gates": {**veredicto["gates"], "QG-00": "BLOCKED"},
+                     "motivos": {**veredicto.get("motivos", {}),
+                                 "QG-00": [estado["arbol"].get("detalle")]}}
     return {"ok": True, "detalle": None, "estado": estado,
             "suite": estado_suite(suite_xml),
             "ci": ci, "politica": veredicto}
@@ -739,6 +782,7 @@ def main() -> int:
         return 2
 
     recibos = Path(args.recibos) if args.recibos else None
+    identidad: Optional[Dict[str, Any]] = None
     if args.ejecutar:
         if recibos is None:
             print(json.dumps({"ok": False, "error_code": "FALTA_RECIBOS",
@@ -746,13 +790,17 @@ def main() -> int:
                              indent=2, ensure_ascii=False))
             return 2
         contexto = {
-            "suite_xml": args.suite_xml,
+            "pytest_junit": args.suite_xml,
             "recorrido_e2e": args.e2e_json,
             "pip_audit_python": args.pip_audit_python,
             "paridad_venv": args.paridad_venv,
             "paridad_runtime": args.paridad_runtime,
         }
         ejecucion = {}
+        # La identidad del checkout se comprueba ANTES de ejecutar los
+        # verificadores: algunos escriben artefactos de runtime propios.
+        identidad = checkout_en_sha(args.sha)
+        print(json.dumps({"checkout": identidad}, indent=2, ensure_ascii=False))
         for gate in GATES_EVIDENCIA:
             ejecucion[gate] = ejecutar_verificador(gate, args.sha, recibos,
                                                     contexto=contexto)
@@ -761,7 +809,8 @@ def main() -> int:
 
     resultado = colectar(args.sha, recibos=recibos,
                           suite_xml=Path(args.suite_xml) if args.suite_xml else None,
-                          root=args.root)
+                          root=args.root,
+                          arbol=identidad if args.ejecutar else None)
     texto = json.dumps(resultado, ensure_ascii=False, indent=2)
     if args.salida:
         Path(args.salida).parent.mkdir(parents=True, exist_ok=True)
