@@ -57,8 +57,24 @@ jobs:
       - name: Bootstrap del sandbox
         run: python tests/sandbox_fixture.py --bootstrap
 
+      # La forma canónica de la suite es `pytest tests/ -q -n auto` (la dice
+      # `pyproject.toml` y el checklist del repo). La CI la corría secuencial:
+      # los mismos tests, el doble de reloj. `-n auto` usa los núcleos del
+      # runner y no cambia ninguna aserción.
+      #
+      # El JUnit se publica como artefacto: sin él, un job en curso no tiene
+      # log parcial descargable (la API solo lo materializa al terminar) y un
+      # fallo de CI llega sin el detalle de qué test falló. Con el artefacto,
+      # el recibo de cada columna es comprobable por quien lo audite.
       - name: Run unit tests
-        run: python -m pytest tests/ --tb=short
+        run: python -m pytest tests/ -q -n auto --tb=short --junitxml=junit.xml
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: junit.xml
 
       # Las puertas, preguntándole al registro en vez de listándolas a mano.
       #

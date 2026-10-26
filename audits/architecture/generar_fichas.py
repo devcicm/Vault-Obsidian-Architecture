@@ -126,6 +126,27 @@ def divergencias(salida: Path) -> List[Dict[str, Any]]:
     return fichas
 
 
+def _cerrados_anteriores(salida: Path) -> List[Dict[str, Any]]:
+    """Los hallazgos que el ledger anterior aún tenía abiertos.
+
+    Un hallazgo corregido que desaparece del ledger parece un hallazgo que
+    nunca existió (es lo que dice el propio generador para el AP-39). Por eso
+    lo que el ledger anterior tenía abierto y la auditoría de HOY ya no
+    encuentra se conserva: se marca CORREGIDO, con el commit que lo cerró
+    declarado por quien ejecuta el generador.
+    """
+    import yaml
+
+    anterior = salida / "hallazgos-qg02.yaml"
+    if not anterior.is_file():
+        return []
+    try:
+        datos = yaml.safe_load(anterior.read_text(encoding="utf-8")) or {}
+    except Exception:  # noqa: BLE001 — un ledger ilegible no es un ledger
+        return []
+    return [h for h in (datos.get("hallazgos") or []) if not h.get("estado")]
+
+
 def hallazgos(salida: Path) -> List[Dict[str, Any]]:
     a = _cargar_json(TMP / "diag-escenario-A.json")
     b = _cargar_json(TMP / "diag-escenario-B.json")
@@ -234,6 +255,60 @@ def hallazgos(salida: Path) -> List[Dict[str, Any]]:
     return fichas
 
 
+def _cerrar_desaparecidos(fichas: List[Dict[str, Any]], salida: Path,
+                          commit: str) -> List[Dict[str, Any]]:
+    """Conserva como CORREGIDO lo que el ledger anterior tenía abierto.
+
+    La auditoría de HOY no lo encuentra: o se corrigió, o cambió el alcance de
+    la medición. El generador no adivina cuál de las dos cosas pasó: exige
+    que quien lo ejecute declare el commit que lo cerró (`--cerrar-commit`) y
+    lo anota como tal. Sin ese commit, el hallazgo se conserva tal cual (queda
+    abierto), porque afirmar que se corrigió sin saber quién lo corrigió sería
+    fabricar un cierre.
+    """
+    if not commit:
+        # Aun sin commit de cierre, los ids se renumeran: el bloque de
+        # cerrados y el de abiertos comparten el espacio de ids.
+        return _renumerar(fichas)
+    vivos = {(f.get("norm"), f.get("path")) for f in fichas}
+    for anterior in _cerrados_anteriores(salida):
+        if (anterior.get("norm"), anterior.get("path")) in vivos:
+            continue
+        cerrado = dict(anterior)
+        cerrado["estado"] = "CORREGIDO"
+        cerrado["commit_correctivo"] = commit
+        cerrado["verificacion"] = (
+            "re-auditoria con el codigo actual: la auditoria ya no encuentra "
+            "este hallazgo en el sandbox canonico")
+        cerrado["decision_required"] = False
+        fichas.append(cerrado)
+    return _renumerar(fichas)
+
+
+def _renumerar(fichas: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Ids únicos y coherentes con los punteros de evidencia.
+
+    Los hallazgos que se conservan como CORREGIDO vienen del ledger anterior
+    con sus ids, y el hallazgo nuevo empieza por INC-0001: sin renumerar, el
+    ledger tenía dos INC-0001. La renumeración es POR POSICIÓN (no por id
+    viejo: dos fichas pueden compartir id) y el puntero de evidencia de cada
+    ficha —que se refiere a sí misma— se reescribe con su id nuevo.
+    """
+    nuevas = []
+    for indice, ficha in enumerate(fichas, start=1):
+        nuevo = f"INC-{indice:04d}"
+        ficha = dict(ficha)
+        ficha["id"] = nuevo
+        evidencia = []
+        for item in ficha.get("evidence") or []:
+            if isinstance(item, str) and "hallazgos-qg02.yaml#INC-" in item:
+                item = item.rsplit("#", 1)[0] + "#" + nuevo
+            evidencia.append(item)
+        ficha["evidence"] = evidencia
+        nuevas.append(ficha)
+    return nuevas
+
+
 def veredictos(salida: Path) -> List[Dict[str, Any]]:
     ramas = subprocess.run(["git", "branch", "-r", "--list", "origin/qa/*"],
                            cwd=str(RAIZ), capture_output=True, text=True).stdout
@@ -298,6 +373,11 @@ def veredictos(salida: Path) -> List[Dict[str, Any]]:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--salida-dir", default=str(RAIZ / "audits" / "architecture"))
+    ap.add_argument("--cerrar-commit", default="",
+                    help="commit que corrige los hallazgos que la auditoria de "
+                         "hoy ya no encuentra: se conservan en el ledger como "
+                         "CORREGIDO con ese commit. Sin este argumento, el "
+                         "hallazgo se conserva abierto (no se adivina el cierre).")
     args = ap.parse_args()
     salida = Path(args.salida_dir)
     salida.mkdir(parents=True, exist_ok=True)
@@ -305,7 +385,7 @@ def main() -> int:
     import yaml
 
     div = divergencias(salida)
-    inc = hallazgos(salida)
+    inc = _cerrar_desaparecidos(hallazgos(salida), salida, args.cerrar_commit)
     ver = veredictos(salida)
     (salida / "divergencias-archify.yaml").write_text(
         yaml.safe_dump({"schema": 1, "sha": _sha_actual(),

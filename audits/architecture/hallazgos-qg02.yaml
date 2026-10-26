@@ -1,222 +1,9 @@
 schema: 1
-sha: ab31bf3b095effb81625464d19f2cf80ab72e35c
+sha: 89fbe4c6ab62a3708a5d10faf0545d30cac2193f
 escenario_a: sandbox canonico (vault-sandbox)
 escenario_b: runtime limpio creado por el producto
 hallazgos:
 - id: INC-0001
-  norm: CN-03
-  path: 03_Decisions/adr-001-mcp-transport.md
-  observed: status 'accepted' fuera del vocabulario canónico ['approved', 'archived', 'deprecated', 'draft',
-    'implemented', 'in-progress', 'obsolete', 'planned', 'reviewed', 'stub', 'template', 'verified'].
-  environment: escenario A (sandbox canonico)
-  root_cause: status fuera del vocabulario canonico en un documento de decision del propio vault de evidencia
-  reproduction: python scripts/vault_norms.py --audit --root <runtime>
-  evidence:
-  - audits/architecture/hallazgos-qg02.yaml#INC-0001
-  classification: violacion real del producto (contenido de evidencia)
-  impact: ''
-  severity: medium
-  resolution_options: []
-  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
-  decision_required: false
-  quality_gate: QG-02
-- id: INC-0002
-  norm: AP-07
-  path: 03_Decisions/adr-001-mcp-transport.md
-  observed: 'ADR incompleto — secciones faltantes: Contexto, Decisión, Consecuencias.'
-  environment: escenario A (sandbox canonico)
-  root_cause: ADR sin las secciones obligatorias (Contexto, Decision, Consecuencias)
-  reproduction: python scripts/vault_norms.py --audit --root <runtime>
-  evidence:
-  - audits/architecture/hallazgos-qg02.yaml#INC-0002
-  classification: violacion real del producto (contenido de evidencia)
-  impact: ''
-  severity: medium
-  resolution_options: []
-  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
-  decision_required: false
-  quality_gate: QG-02
-- id: INC-0003
-  norm: AP-64
-  path: 03_Decisions/adr-001-mcp-transport.md
-  observed: 'Decisión cerrada sin `responsable`: nadie responde de su porqué.'
-  environment: escenario A (sandbox canonico)
-  root_cause: 'decision cerrada sin `responsable`: nadie responde de su porque'
-  reproduction: python scripts/vault_norms.py --audit --root <runtime>
-  evidence:
-  - audits/architecture/hallazgos-qg02.yaml#INC-0003
-  classification: violacion real del producto (contenido de evidencia)
-  impact: ''
-  severity: medium
-  resolution_options: []
-  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
-  decision_required: false
-  quality_gate: QG-02
-- id: INC-0004
-  norm: CN-03
-  path: 03_Decisions/mcp-transport-contract.md
-  observed: status 'accepted' fuera del vocabulario canónico ['approved', 'archived', 'deprecated', 'draft',
-    'implemented', 'in-progress', 'obsolete', 'planned', 'reviewed', 'stub', 'template', 'verified'].
-  environment: escenario A (sandbox canonico)
-  root_cause: status fuera del vocabulario canonico en un documento de decision del propio vault de evidencia
-  reproduction: python scripts/vault_norms.py --audit --root <runtime>
-  evidence:
-  - audits/architecture/hallazgos-qg02.yaml#INC-0004
-  classification: violacion real del producto (contenido de evidencia)
-  impact: ''
-  severity: medium
-  resolution_options: []
-  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
-  decision_required: false
-  quality_gate: QG-02
-- id: INC-0005
-  norm: AP-07
-  path: 03_Decisions/mcp-transport-contract.md
-  observed: 'ADR incompleto — secciones faltantes: Contexto, Decisión, Consecuencias.'
-  environment: escenario A (sandbox canonico)
-  root_cause: ADR sin las secciones obligatorias (Contexto, Decision, Consecuencias)
-  reproduction: python scripts/vault_norms.py --audit --root <runtime>
-  evidence:
-  - audits/architecture/hallazgos-qg02.yaml#INC-0005
-  classification: violacion real del producto (contenido de evidencia)
-  impact: ''
-  severity: medium
-  resolution_options: []
-  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
-  decision_required: false
-  quality_gate: QG-02
-- id: INC-0006
-  norm: AP-64
-  path: 03_Decisions/mcp-transport-contract.md
-  observed: 'Decisión cerrada sin `responsable`: nadie responde de su porqué.'
-  environment: escenario A (sandbox canonico)
-  root_cause: 'decision cerrada sin `responsable`: nadie responde de su porque'
-  reproduction: python scripts/vault_norms.py --audit --root <runtime>
-  evidence:
-  - audits/architecture/hallazgos-qg02.yaml#INC-0006
-  classification: violacion real del producto (contenido de evidencia)
-  impact: ''
-  severity: medium
-  resolution_options: []
-  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
-  decision_required: false
-  quality_gate: QG-02
-- id: INC-0007
-  norm: CN-03
-  path: 03_Decisions/mcp-transport-operations.md
-  observed: status 'accepted' fuera del vocabulario canónico ['approved', 'archived', 'deprecated', 'draft',
-    'implemented', 'in-progress', 'obsolete', 'planned', 'reviewed', 'stub', 'template', 'verified'].
-  environment: escenario A (sandbox canonico)
-  root_cause: status fuera del vocabulario canonico en un documento de decision del propio vault de evidencia
-  reproduction: python scripts/vault_norms.py --audit --root <runtime>
-  evidence:
-  - audits/architecture/hallazgos-qg02.yaml#INC-0007
-  classification: violacion real del producto (contenido de evidencia)
-  impact: ''
-  severity: medium
-  resolution_options: []
-  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
-  decision_required: false
-  quality_gate: QG-02
-- id: INC-0008
-  norm: AP-07
-  path: 03_Decisions/mcp-transport-operations.md
-  observed: 'ADR incompleto — secciones faltantes: Contexto, Decisión, Consecuencias.'
-  environment: escenario A (sandbox canonico)
-  root_cause: ADR sin las secciones obligatorias (Contexto, Decision, Consecuencias)
-  reproduction: python scripts/vault_norms.py --audit --root <runtime>
-  evidence:
-  - audits/architecture/hallazgos-qg02.yaml#INC-0008
-  classification: violacion real del producto (contenido de evidencia)
-  impact: ''
-  severity: medium
-  resolution_options: []
-  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
-  decision_required: false
-  quality_gate: QG-02
-- id: INC-0009
-  norm: AP-64
-  path: 03_Decisions/mcp-transport-operations.md
-  observed: 'Decisión cerrada sin `responsable`: nadie responde de su porqué.'
-  environment: escenario A (sandbox canonico)
-  root_cause: 'decision cerrada sin `responsable`: nadie responde de su porque'
-  reproduction: python scripts/vault_norms.py --audit --root <runtime>
-  evidence:
-  - audits/architecture/hallazgos-qg02.yaml#INC-0009
-  classification: violacion real del producto (contenido de evidencia)
-  impact: ''
-  severity: medium
-  resolution_options: []
-  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
-  decision_required: false
-  quality_gate: QG-02
-- id: INC-0010
-  norm: CN-03
-  path: 03_Decisions/mcp-transport-provenance.md
-  observed: status 'accepted' fuera del vocabulario canónico ['approved', 'archived', 'deprecated', 'draft',
-    'implemented', 'in-progress', 'obsolete', 'planned', 'reviewed', 'stub', 'template', 'verified'].
-  environment: escenario A (sandbox canonico)
-  root_cause: status fuera del vocabulario canonico en un documento de decision del propio vault de evidencia
-  reproduction: python scripts/vault_norms.py --audit --root <runtime>
-  evidence:
-  - audits/architecture/hallazgos-qg02.yaml#INC-0010
-  classification: violacion real del producto (contenido de evidencia)
-  impact: ''
-  severity: medium
-  resolution_options: []
-  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
-  decision_required: false
-  quality_gate: QG-02
-- id: INC-0011
-  norm: AP-07
-  path: 03_Decisions/mcp-transport-provenance.md
-  observed: 'ADR incompleto — secciones faltantes: Contexto, Decisión, Consecuencias.'
-  environment: escenario A (sandbox canonico)
-  root_cause: ADR sin las secciones obligatorias (Contexto, Decision, Consecuencias)
-  reproduction: python scripts/vault_norms.py --audit --root <runtime>
-  evidence:
-  - audits/architecture/hallazgos-qg02.yaml#INC-0011
-  classification: violacion real del producto (contenido de evidencia)
-  impact: ''
-  severity: medium
-  resolution_options: []
-  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
-  decision_required: false
-  quality_gate: QG-02
-- id: INC-0012
-  norm: AP-64
-  path: 03_Decisions/mcp-transport-provenance.md
-  observed: 'Decisión cerrada sin `responsable`: nadie responde de su porqué.'
-  environment: escenario A (sandbox canonico)
-  root_cause: 'decision cerrada sin `responsable`: nadie responde de su porque'
-  reproduction: python scripts/vault_norms.py --audit --root <runtime>
-  evidence:
-  - audits/architecture/hallazgos-qg02.yaml#INC-0012
-  classification: violacion real del producto (contenido de evidencia)
-  impact: ''
-  severity: medium
-  resolution_options: []
-  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
-  decision_required: false
-  quality_gate: QG-02
-- id: INC-0013
-  norm: CN-03
-  path: 07_Knowledge/parser-evidence.md
-  observed: status 'active' fuera del vocabulario canónico ['approved', 'archived', 'deprecated', 'draft',
-    'implemented', 'in-progress', 'obsolete', 'planned', 'reviewed', 'stub', 'template', 'verified'].
-  environment: escenario A (sandbox canonico)
-  root_cause: status fuera del vocabulario canonico en un documento de decision del propio vault de evidencia
-  reproduction: python scripts/vault_norms.py --audit --root <runtime>
-  evidence:
-  - audits/architecture/hallazgos-qg02.yaml#INC-0013
-  classification: violacion real del producto (contenido de evidencia)
-  impact: ''
-  severity: medium
-  resolution_options: []
-  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
-  decision_required: false
-  quality_gate: QG-02
-- id: INC-0014
   norm: AP-36
   path: ../../vault-backups
   observed: '''vault-backups'' existe 2 nivel(es) por encima del vault (<RUTA-LOCAL> Ivan\Documents\GitHub\vault-backups)
@@ -226,7 +13,7 @@ hallazgos:
     dos niveles por encima del vault; procede de una ejecucion previa de backup'
   reproduction: python scripts/vault_norms.py --audit --root <runtime>
   evidence:
-  - audits/architecture/hallazgos-qg02.yaml#INC-0014
+  - audits/architecture/hallazgos-qg02.yaml#INC-0001
   classification: contaminacion de ejecuciones previas
   impact: ''
   severity: critical
@@ -235,7 +22,7 @@ hallazgos:
     y evitar que las ejecuciones escriban fuera del vault
   decision_required: true
   quality_gate: QG-02
-- id: INC-0015
+- id: INC-0002
   norm: AP-39
   path: 19_Audits/vocabulary/tag-ledger.json
   observed: 3 terminos en uso sin memoria canonica (command, hub, nav) en un runtime recien creado por
@@ -245,7 +32,7 @@ hallazgos:
   reproduction: 'python scripts/vault_init.py  # con VAULT_ROOT apuntando a un runtime nuevo; despues
     python scripts/vault_norms.py --audit --root <rt>'
   evidence:
-  - audits/architecture/hallazgos-qg02.yaml#INC-0015
+  - audits/architecture/hallazgos-qg02.yaml#INC-0002
   - commit 2174bb1 (fix(AP-39))
   - 're-auditoria: 0 violaciones en runtime con 75 ficheros'
   classification: violacion real del producto (CORREGIDA)
@@ -261,3 +48,268 @@ hallazgos:
   estado: CORREGIDO
   commit_correctivo: 2174bb1
   verificacion: 're-auditoria con el codigo actual sobre un runtime de 75 ficheros: 0 violaciones, 0 AP-39'
+- id: INC-0003
+  norm: CN-03
+  path: 03_Decisions/adr-001-mcp-transport.md
+  observed: status 'accepted' fuera del vocabulario canónico ['approved', 'archived', 'deprecated', 'draft',
+    'implemented', 'in-progress', 'obsolete', 'planned', 'reviewed', 'stub', 'template', 'verified'].
+  environment: escenario A (sandbox canonico)
+  root_cause: status fuera del vocabulario canonico en un documento de decision del propio vault de evidencia
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0003
+  classification: violacion real del producto (contenido de evidencia)
+  impact: ''
+  severity: medium
+  resolution_options: []
+  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
+  decision_required: false
+  quality_gate: QG-02
+  estado: CORREGIDO
+  commit_correctivo: '5178399'
+  verificacion: 're-auditoria con el codigo actual: la auditoria ya no encuentra este hallazgo en el sandbox
+    canonico'
+- id: INC-0004
+  norm: AP-07
+  path: 03_Decisions/adr-001-mcp-transport.md
+  observed: 'ADR incompleto — secciones faltantes: Contexto, Decisión, Consecuencias.'
+  environment: escenario A (sandbox canonico)
+  root_cause: ADR sin las secciones obligatorias (Contexto, Decision, Consecuencias)
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0004
+  classification: violacion real del producto (contenido de evidencia)
+  impact: ''
+  severity: medium
+  resolution_options: []
+  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
+  decision_required: false
+  quality_gate: QG-02
+  estado: CORREGIDO
+  commit_correctivo: '5178399'
+  verificacion: 're-auditoria con el codigo actual: la auditoria ya no encuentra este hallazgo en el sandbox
+    canonico'
+- id: INC-0005
+  norm: AP-64
+  path: 03_Decisions/adr-001-mcp-transport.md
+  observed: 'Decisión cerrada sin `responsable`: nadie responde de su porqué.'
+  environment: escenario A (sandbox canonico)
+  root_cause: 'decision cerrada sin `responsable`: nadie responde de su porque'
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0005
+  classification: violacion real del producto (contenido de evidencia)
+  impact: ''
+  severity: medium
+  resolution_options: []
+  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
+  decision_required: false
+  quality_gate: QG-02
+  estado: CORREGIDO
+  commit_correctivo: '5178399'
+  verificacion: 're-auditoria con el codigo actual: la auditoria ya no encuentra este hallazgo en el sandbox
+    canonico'
+- id: INC-0006
+  norm: CN-03
+  path: 03_Decisions/mcp-transport-contract.md
+  observed: status 'accepted' fuera del vocabulario canónico ['approved', 'archived', 'deprecated', 'draft',
+    'implemented', 'in-progress', 'obsolete', 'planned', 'reviewed', 'stub', 'template', 'verified'].
+  environment: escenario A (sandbox canonico)
+  root_cause: status fuera del vocabulario canonico en un documento de decision del propio vault de evidencia
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0006
+  classification: violacion real del producto (contenido de evidencia)
+  impact: ''
+  severity: medium
+  resolution_options: []
+  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
+  decision_required: false
+  quality_gate: QG-02
+  estado: CORREGIDO
+  commit_correctivo: '5178399'
+  verificacion: 're-auditoria con el codigo actual: la auditoria ya no encuentra este hallazgo en el sandbox
+    canonico'
+- id: INC-0007
+  norm: AP-07
+  path: 03_Decisions/mcp-transport-contract.md
+  observed: 'ADR incompleto — secciones faltantes: Contexto, Decisión, Consecuencias.'
+  environment: escenario A (sandbox canonico)
+  root_cause: ADR sin las secciones obligatorias (Contexto, Decision, Consecuencias)
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0007
+  classification: violacion real del producto (contenido de evidencia)
+  impact: ''
+  severity: medium
+  resolution_options: []
+  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
+  decision_required: false
+  quality_gate: QG-02
+  estado: CORREGIDO
+  commit_correctivo: '5178399'
+  verificacion: 're-auditoria con el codigo actual: la auditoria ya no encuentra este hallazgo en el sandbox
+    canonico'
+- id: INC-0008
+  norm: AP-64
+  path: 03_Decisions/mcp-transport-contract.md
+  observed: 'Decisión cerrada sin `responsable`: nadie responde de su porqué.'
+  environment: escenario A (sandbox canonico)
+  root_cause: 'decision cerrada sin `responsable`: nadie responde de su porque'
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0008
+  classification: violacion real del producto (contenido de evidencia)
+  impact: ''
+  severity: medium
+  resolution_options: []
+  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
+  decision_required: false
+  quality_gate: QG-02
+  estado: CORREGIDO
+  commit_correctivo: '5178399'
+  verificacion: 're-auditoria con el codigo actual: la auditoria ya no encuentra este hallazgo en el sandbox
+    canonico'
+- id: INC-0009
+  norm: CN-03
+  path: 03_Decisions/mcp-transport-operations.md
+  observed: status 'accepted' fuera del vocabulario canónico ['approved', 'archived', 'deprecated', 'draft',
+    'implemented', 'in-progress', 'obsolete', 'planned', 'reviewed', 'stub', 'template', 'verified'].
+  environment: escenario A (sandbox canonico)
+  root_cause: status fuera del vocabulario canonico en un documento de decision del propio vault de evidencia
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0009
+  classification: violacion real del producto (contenido de evidencia)
+  impact: ''
+  severity: medium
+  resolution_options: []
+  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
+  decision_required: false
+  quality_gate: QG-02
+  estado: CORREGIDO
+  commit_correctivo: '5178399'
+  verificacion: 're-auditoria con el codigo actual: la auditoria ya no encuentra este hallazgo en el sandbox
+    canonico'
+- id: INC-0010
+  norm: AP-07
+  path: 03_Decisions/mcp-transport-operations.md
+  observed: 'ADR incompleto — secciones faltantes: Contexto, Decisión, Consecuencias.'
+  environment: escenario A (sandbox canonico)
+  root_cause: ADR sin las secciones obligatorias (Contexto, Decision, Consecuencias)
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0010
+  classification: violacion real del producto (contenido de evidencia)
+  impact: ''
+  severity: medium
+  resolution_options: []
+  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
+  decision_required: false
+  quality_gate: QG-02
+  estado: CORREGIDO
+  commit_correctivo: '5178399'
+  verificacion: 're-auditoria con el codigo actual: la auditoria ya no encuentra este hallazgo en el sandbox
+    canonico'
+- id: INC-0011
+  norm: AP-64
+  path: 03_Decisions/mcp-transport-operations.md
+  observed: 'Decisión cerrada sin `responsable`: nadie responde de su porqué.'
+  environment: escenario A (sandbox canonico)
+  root_cause: 'decision cerrada sin `responsable`: nadie responde de su porque'
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0011
+  classification: violacion real del producto (contenido de evidencia)
+  impact: ''
+  severity: medium
+  resolution_options: []
+  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
+  decision_required: false
+  quality_gate: QG-02
+  estado: CORREGIDO
+  commit_correctivo: '5178399'
+  verificacion: 're-auditoria con el codigo actual: la auditoria ya no encuentra este hallazgo en el sandbox
+    canonico'
+- id: INC-0012
+  norm: CN-03
+  path: 03_Decisions/mcp-transport-provenance.md
+  observed: status 'accepted' fuera del vocabulario canónico ['approved', 'archived', 'deprecated', 'draft',
+    'implemented', 'in-progress', 'obsolete', 'planned', 'reviewed', 'stub', 'template', 'verified'].
+  environment: escenario A (sandbox canonico)
+  root_cause: status fuera del vocabulario canonico en un documento de decision del propio vault de evidencia
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0012
+  classification: violacion real del producto (contenido de evidencia)
+  impact: ''
+  severity: medium
+  resolution_options: []
+  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
+  decision_required: false
+  quality_gate: QG-02
+  estado: CORREGIDO
+  commit_correctivo: '5178399'
+  verificacion: 're-auditoria con el codigo actual: la auditoria ya no encuentra este hallazgo en el sandbox
+    canonico'
+- id: INC-0013
+  norm: AP-07
+  path: 03_Decisions/mcp-transport-provenance.md
+  observed: 'ADR incompleto — secciones faltantes: Contexto, Decisión, Consecuencias.'
+  environment: escenario A (sandbox canonico)
+  root_cause: ADR sin las secciones obligatorias (Contexto, Decision, Consecuencias)
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0013
+  classification: violacion real del producto (contenido de evidencia)
+  impact: ''
+  severity: medium
+  resolution_options: []
+  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
+  decision_required: false
+  quality_gate: QG-02
+  estado: CORREGIDO
+  commit_correctivo: '5178399'
+  verificacion: 're-auditoria con el codigo actual: la auditoria ya no encuentra este hallazgo en el sandbox
+    canonico'
+- id: INC-0014
+  norm: AP-64
+  path: 03_Decisions/mcp-transport-provenance.md
+  observed: 'Decisión cerrada sin `responsable`: nadie responde de su porqué.'
+  environment: escenario A (sandbox canonico)
+  root_cause: 'decision cerrada sin `responsable`: nadie responde de su porque'
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0014
+  classification: violacion real del producto (contenido de evidencia)
+  impact: ''
+  severity: medium
+  resolution_options: []
+  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
+  decision_required: false
+  quality_gate: QG-02
+  estado: CORREGIDO
+  commit_correctivo: '5178399'
+  verificacion: 're-auditoria con el codigo actual: la auditoria ya no encuentra este hallazgo en el sandbox
+    canonico'
+- id: INC-0015
+  norm: CN-03
+  path: 07_Knowledge/parser-evidence.md
+  observed: status 'active' fuera del vocabulario canónico ['approved', 'archived', 'deprecated', 'draft',
+    'implemented', 'in-progress', 'obsolete', 'planned', 'reviewed', 'stub', 'template', 'verified'].
+  environment: escenario A (sandbox canonico)
+  root_cause: status fuera del vocabulario canonico en un documento de decision del propio vault de evidencia
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0015
+  classification: violacion real del producto (contenido de evidencia)
+  impact: ''
+  severity: medium
+  resolution_options: []
+  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
+  decision_required: false
+  quality_gate: QG-02
+  estado: CORREGIDO
+  commit_correctivo: '5178399'
+  verificacion: 're-auditoria con el codigo actual: la auditoria ya no encuentra este hallazgo en el sandbox
+    canonico'

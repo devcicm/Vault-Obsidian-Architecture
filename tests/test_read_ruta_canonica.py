@@ -53,13 +53,28 @@ def canonica(raiz):
     return env
 
 
-VARIANTES = ["./07_Knowledge//nota.md", "07_Knowledge/../07_Knowledge/nota.md"]
-if os.name == "nt":  # separador y caja solo designan la misma nota en Windows
-    VARIANTES += ["07_Knowledge\\nota.md", "07_KNOWLEDGE/NOTA.md"]
+# Las variantes que solo designan la misma nota en Windows (el separador y la
+# caja) se COLECTAN en todas las plataformas y se saltan fuera de Windows.
+#
+# No es un detalle: la puerta `conteos` (AP-47) compara la cifra de tests
+# publicada con `pytest --collect-only -q`, y si el conjunto de casos depende
+# del sistema, la cifra sale distinta en cada columna de la CI y la puerta se
+# pone roja en las que no son la de referencia. Medido el 2026-10-26: con las
+# dos variantes solo en Windows, la CI de ubuntu recogía 6318 tests y la
+# puerta `conteos` fallaba con el número publicado (6320, medido en Windows).
+VARIANTES = [
+    ("./07_Knowledge//nota.md", False),
+    ("07_Knowledge/../07_Knowledge/nota.md", False),
+    ("07_Knowledge\\nota.md", True),
+    ("07_KNOWLEDGE/NOTA.md", True),
+]
 
 
-@pytest.mark.parametrize("variante", VARIANTES)
-def test_cualquier_grafia_devuelve_la_misma_identidad(raiz, canonica, variante):
+@pytest.mark.parametrize("variante,solo_windows", VARIANTES)
+def test_cualquier_grafia_devuelve_la_misma_identidad(raiz, canonica, variante,
+                                                       solo_windows):
+    if solo_windows and os.name != "nt":
+        pytest.skip("el separador y la caja solo designan la misma nota en Windows")
     env = _run(raiz, "vault_read.py", "--path", variante)
     assert env["ok"], env
     assert env["path"] == canonica["path"] == "07_Knowledge/nota.md"
