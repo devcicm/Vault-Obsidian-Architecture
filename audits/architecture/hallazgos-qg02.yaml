@@ -1,0 +1,256 @@
+schema: 1
+sha: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+escenario_a: sandbox canonico (vault-sandbox)
+escenario_b: runtime limpio creado por el producto
+hallazgos:
+- id: INC-0001
+  norm: CN-03
+  path: 03_Decisions/adr-001-mcp-transport.md
+  observed: status 'accepted' fuera del vocabulario canónico ['approved', 'archived', 'deprecated', 'draft',
+    'implemented', 'in-progress', 'obsolete', 'planned', 'reviewed', 'stub', 'template', 'verified'].
+  environment: escenario A (sandbox canonico)
+  root_cause: status fuera del vocabulario canonico en un documento de decision del propio vault de evidencia
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0001
+  classification: violacion real del producto (contenido de evidencia)
+  impact: ''
+  severity: medium
+  resolution_options: []
+  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
+  decision_required: false
+  quality_gate: QG-02
+- id: INC-0002
+  norm: AP-07
+  path: 03_Decisions/adr-001-mcp-transport.md
+  observed: 'ADR incompleto — secciones faltantes: Contexto, Decisión, Consecuencias.'
+  environment: escenario A (sandbox canonico)
+  root_cause: ADR sin las secciones obligatorias (Contexto, Decision, Consecuencias)
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0002
+  classification: violacion real del producto (contenido de evidencia)
+  impact: ''
+  severity: medium
+  resolution_options: []
+  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
+  decision_required: false
+  quality_gate: QG-02
+- id: INC-0003
+  norm: AP-64
+  path: 03_Decisions/adr-001-mcp-transport.md
+  observed: 'Decisión cerrada sin `responsable`: nadie responde de su porqué.'
+  environment: escenario A (sandbox canonico)
+  root_cause: 'decision cerrada sin `responsable`: nadie responde de su porque'
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0003
+  classification: violacion real del producto (contenido de evidencia)
+  impact: ''
+  severity: medium
+  resolution_options: []
+  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
+  decision_required: false
+  quality_gate: QG-02
+- id: INC-0004
+  norm: CN-03
+  path: 03_Decisions/mcp-transport-contract.md
+  observed: status 'accepted' fuera del vocabulario canónico ['approved', 'archived', 'deprecated', 'draft',
+    'implemented', 'in-progress', 'obsolete', 'planned', 'reviewed', 'stub', 'template', 'verified'].
+  environment: escenario A (sandbox canonico)
+  root_cause: status fuera del vocabulario canonico en un documento de decision del propio vault de evidencia
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0004
+  classification: violacion real del producto (contenido de evidencia)
+  impact: ''
+  severity: medium
+  resolution_options: []
+  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
+  decision_required: false
+  quality_gate: QG-02
+- id: INC-0005
+  norm: AP-07
+  path: 03_Decisions/mcp-transport-contract.md
+  observed: 'ADR incompleto — secciones faltantes: Contexto, Decisión, Consecuencias.'
+  environment: escenario A (sandbox canonico)
+  root_cause: ADR sin las secciones obligatorias (Contexto, Decision, Consecuencias)
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0005
+  classification: violacion real del producto (contenido de evidencia)
+  impact: ''
+  severity: medium
+  resolution_options: []
+  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
+  decision_required: false
+  quality_gate: QG-02
+- id: INC-0006
+  norm: AP-64
+  path: 03_Decisions/mcp-transport-contract.md
+  observed: 'Decisión cerrada sin `responsable`: nadie responde de su porqué.'
+  environment: escenario A (sandbox canonico)
+  root_cause: 'decision cerrada sin `responsable`: nadie responde de su porque'
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0006
+  classification: violacion real del producto (contenido de evidencia)
+  impact: ''
+  severity: medium
+  resolution_options: []
+  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
+  decision_required: false
+  quality_gate: QG-02
+- id: INC-0007
+  norm: CN-03
+  path: 03_Decisions/mcp-transport-operations.md
+  observed: status 'accepted' fuera del vocabulario canónico ['approved', 'archived', 'deprecated', 'draft',
+    'implemented', 'in-progress', 'obsolete', 'planned', 'reviewed', 'stub', 'template', 'verified'].
+  environment: escenario A (sandbox canonico)
+  root_cause: status fuera del vocabulario canonico en un documento de decision del propio vault de evidencia
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0007
+  classification: violacion real del producto (contenido de evidencia)
+  impact: ''
+  severity: medium
+  resolution_options: []
+  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
+  decision_required: false
+  quality_gate: QG-02
+- id: INC-0008
+  norm: AP-07
+  path: 03_Decisions/mcp-transport-operations.md
+  observed: 'ADR incompleto — secciones faltantes: Contexto, Decisión, Consecuencias.'
+  environment: escenario A (sandbox canonico)
+  root_cause: ADR sin las secciones obligatorias (Contexto, Decision, Consecuencias)
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0008
+  classification: violacion real del producto (contenido de evidencia)
+  impact: ''
+  severity: medium
+  resolution_options: []
+  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
+  decision_required: false
+  quality_gate: QG-02
+- id: INC-0009
+  norm: AP-64
+  path: 03_Decisions/mcp-transport-operations.md
+  observed: 'Decisión cerrada sin `responsable`: nadie responde de su porqué.'
+  environment: escenario A (sandbox canonico)
+  root_cause: 'decision cerrada sin `responsable`: nadie responde de su porque'
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0009
+  classification: violacion real del producto (contenido de evidencia)
+  impact: ''
+  severity: medium
+  resolution_options: []
+  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
+  decision_required: false
+  quality_gate: QG-02
+- id: INC-0010
+  norm: CN-03
+  path: 03_Decisions/mcp-transport-provenance.md
+  observed: status 'accepted' fuera del vocabulario canónico ['approved', 'archived', 'deprecated', 'draft',
+    'implemented', 'in-progress', 'obsolete', 'planned', 'reviewed', 'stub', 'template', 'verified'].
+  environment: escenario A (sandbox canonico)
+  root_cause: status fuera del vocabulario canonico en un documento de decision del propio vault de evidencia
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0010
+  classification: violacion real del producto (contenido de evidencia)
+  impact: ''
+  severity: medium
+  resolution_options: []
+  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
+  decision_required: false
+  quality_gate: QG-02
+- id: INC-0011
+  norm: AP-07
+  path: 03_Decisions/mcp-transport-provenance.md
+  observed: 'ADR incompleto — secciones faltantes: Contexto, Decisión, Consecuencias.'
+  environment: escenario A (sandbox canonico)
+  root_cause: ADR sin las secciones obligatorias (Contexto, Decision, Consecuencias)
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0011
+  classification: violacion real del producto (contenido de evidencia)
+  impact: ''
+  severity: medium
+  resolution_options: []
+  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
+  decision_required: false
+  quality_gate: QG-02
+- id: INC-0012
+  norm: AP-64
+  path: 03_Decisions/mcp-transport-provenance.md
+  observed: 'Decisión cerrada sin `responsable`: nadie responde de su porqué.'
+  environment: escenario A (sandbox canonico)
+  root_cause: 'decision cerrada sin `responsable`: nadie responde de su porque'
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0012
+  classification: violacion real del producto (contenido de evidencia)
+  impact: ''
+  severity: medium
+  resolution_options: []
+  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
+  decision_required: false
+  quality_gate: QG-02
+- id: INC-0013
+  norm: CN-03
+  path: 07_Knowledge/parser-evidence.md
+  observed: status 'active' fuera del vocabulario canónico ['approved', 'archived', 'deprecated', 'draft',
+    'implemented', 'in-progress', 'obsolete', 'planned', 'reviewed', 'stub', 'template', 'verified'].
+  environment: escenario A (sandbox canonico)
+  root_cause: status fuera del vocabulario canonico en un documento de decision del propio vault de evidencia
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0013
+  classification: violacion real del producto (contenido de evidencia)
+  impact: ''
+  severity: medium
+  resolution_options: []
+  recommended_action: 'corregir el documento de evidencia: status canonico, secciones obligatorias y responsable'
+  decision_required: false
+  quality_gate: QG-02
+- id: INC-0014
+  norm: AP-36
+  path: ../../vault-backups
+  observed: '''vault-backups'' existe 2 nivel(es) por encima del vault (<RUTA-USUARIO> Ivan\Documents\GitHub\vault-backups)
+    — side-effect escrito fuera del vault root.'
+  environment: escenario A (sandbox canonico)
+  root_cause: 'efecto lateral escrito FUERA del vault root (AP-36): un directorio vault-backups existe
+    dos niveles por encima del vault; procede de una ejecucion previa de backup'
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0014
+  classification: contaminacion de ejecuciones previas
+  impact: ''
+  severity: critical
+  resolution_options: []
+  recommended_action: localizar y purgar el directorio con el dueno de los datos (no se borra desde aqui)
+    y evitar que las ejecuciones escriban fuera del vault
+  decision_required: true
+  quality_gate: QG-02
+- id: INC-0015
+  norm: AP-39
+  path: 19_Audits/vocabulary/tag-ledger.json
+  observed: 3 término(s) en uso que no son canónicos ni constan en la bitácora ('command', 'hub', 'nav')
+    — vocabulario introducido sin dejar rastro de quién ni cuándo. Correr vault_tags --backfill-ledger
+    para ano
+  environment: escenario B (runtime limpio creado por el producto)
+  root_cause: el init del producto escribe una entrada de vocabulario sin memoria en la bitacora de tags
+    (AP-39)
+  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  evidence:
+  - audits/architecture/hallazgos-qg02.yaml#INC-0015
+  classification: violacion real del producto (el init deja el runtime con una violacion)
+  impact: ''
+  severity: medium
+  resolution_options: []
+  recommended_action: corregir el init o el registro que produce; es un defecto del producto, no del entorno
+  decision_required: true
+  quality_gate: QG-02

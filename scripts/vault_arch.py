@@ -1886,19 +1886,28 @@ _cruce("ciclo_de_vida", "gobernanza", "permanente", "ciclo_de_vida",
        "Sanación y onboarding aplican las normas al vault del usuario. Sin este "
        "cruce las doce fases tendrían que reimplementar el criterio, que es "
        "AP-57.")
-_cruce("gobernanza", "meta_toolkit", "permanente", "gobernanza",
-       "`vault_norms` compone los controles del estándar (AP-40/42/43) "
-       "importando `vault_mcp_catalog` y `vault_smoke`. Es una herramienta de "
-       "MANTENIMIENTO: no viaja en la wheel de producto (TD-0003). El motor "
-       "empaquetado (`vault_norms_engine`) ya no importa a nadie: recibe los "
-       "checks por callback. Mientras el audit del catálogo lo pida la fachada, "
-       "el cruce es un adaptador de mantenimiento, no una dependencia del "
-       "producto.")
-_cruce("gobernanza", "autoria", "permanente", "gobernanza",
-       "`vault_norms` -> `vault_voice` para ejecutar AP-43: presentación de la "
-       "fachada de mantenimiento, fuera de la wheel. El motor no la conoce. "
-       "Sale del producto cuando el audit del catálogo se ejecute en el "
-       "meta-toolkit; hoy no hay un dueño mejor para componer los tres checks.")
+_cruce("gobernanza", "meta_toolkit", "a_eliminar", "gobernanza",
+       "La FACHADA de mantenimiento (`vault_norms`) compone los controles del "
+       "estándar (AP-40/42/43) importando `vault_mcp_catalog` y `vault_smoke`. "
+       "El sitio del cruce se movió desde `vault_norms_engine` (commit 667a6a5, "
+       "inversión TD-0003) para que el motor empaquetado no importe módulos que "
+       "no viajan en la wheel; el adeudado es el MISMO y sigue vigente: lo que "
+       "elimina es que el motor de normas sea quien pide el audit del catálogo. "
+       "PENDIENTE DE RATIFICACIÓN DEL PROPIETARIO: (A) eliminar el cruce "
+       "componiendo desde el meta-toolkit; (B) migrarlo a un owner con puerto "
+       "declarado; (C) excepción formal con plazo y riesgo. Ver "
+       "audits/architecture/QA-RC-03-CRUZES.md y las fichas DIV-01..DIV-10.",
+       fecha_limite="2027-06-30")
+_cruce("gobernanza", "autoria", "a_eliminar", "gobernanza",
+       "La FACHADA de mantenimiento (`vault_norms`) -> `vault_voice` para "
+       "ejecutar AP-43: presentación de la fachada, fuera de la wheel de "
+       "producto. El sitio se movió desde `vault_norms_engine` (commit "
+       "667a6a5); el adeudado es el MISMO y sigue vigente: una norma que "
+       "ninguna tool pronuncia debe llegar al punto de uso desde el meta-toolkit, "
+       "no desde el motor de normas. PENDIENTE DE RATIFICACIÓN DEL PROPIETARIO "
+       "(mismas alternativas A/B/C). Ver audits/architecture/"
+       "QA-RC-03-CRUZES.md.",
+       fecha_limite="2027-06-30")
 
 _cruce("autoria", "gobernanza", "permanente", "autoria",
        "Validar mermaid al escribir y registrar el cambio: la escritura no puede "

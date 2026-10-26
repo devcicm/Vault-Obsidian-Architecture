@@ -1,0 +1,37 @@
+# Divergencias aceptadas del reconciliador Archify <-> registro vivo.
+#
+# QUE ES ESTO
+# El reconciliador (`audits/fase2/reconciliar_archify.py --check`) confronta el
+# SNAPSHOT de Archify (otra revision, versionado en `.archify/`) con el REGISTRO
+# VIVO (`scripts/vault_arch.py`). Cuando el codigo cambia de forma intencionada,
+# el snapshot queda viejo y el reconciliador lo reporta: eso es correcto, no es
+# un fallo del instrumento.
+#
+# Este archivo es el mecanismo DECLARADO para aceptar divergencias Concreteas:
+# cada entrada nombra la divergencia, su causa, la evidencia y la accion que
+# requiere ratificacion. Una entrada NO ratificada NO silencia la divergencia:
+# el reconciliador solo la omite si `ratificado: true` Y existe su evidencia.
+#
+# MIENTRAS ESTE ARCHIVO ESTE VACIO (o sus entradas no esten ratificadas), el
+# reconciliador se comporta igual que antes: sale con codigo distinto de cero y
+# lista las divergencias. Este archivo NO es una via para maquillar el conteo.
+#
+# DECISION PENDIENTE DEL PROPIETARIO (ver audits/architecture/QA-RC-03-CRUZES.md):
+#   (A) eliminar los cruces componiendo desde el meta-toolkit;
+#   (B) migrarlos a un owner con puerto declarado;
+#   (C) excepcion formal con plazo, riesgo y dueno.
+schema: 1
+generado_por: "revision manual; cada entrada exige evidencia y ratificacion"
+divergencias: []
+# Plantilla de entrada (comentada; no activa):
+#
+# - id: DIV-01
+#   divergencia: "acceso no conciliado: vault_norms_engine -> vault_smoke.invocation"
+#   causa: "movimiento legitimo del sitio del cruce (commit 667a6a5)"
+#   evidencia:
+#     - "audits/architecture/DIVERGENCIAS-ARCHIFY.md#div-01"
+#     - "commits/667a6a5"
+#   accion_requerida: "ratificacion del propietario (A/B/C)"
+#   ratificado: false
+#   ratificado_por: ""
+#   ratificado_en: ""

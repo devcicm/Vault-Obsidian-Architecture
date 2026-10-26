@@ -1,0 +1,56 @@
+{
+  "generado_por": "audits/architecture/mediciones.json (hechos medidos)",
+  "sha": "f049b1bd43fcdd5b0a010d73016139fbcf2286b9",
+  "sha_candidato": "31dfa462e87f5dcdb703e649e840e826a136ba50",
+  "puertas": "26/26",
+  "suite": "6270 passed / 13 skipped / 0 failed (sobre 001120c; re-ejecucion en curso)",
+  "e2e": "27/27",
+  "qg": {
+    "QG-00": "BLOCKED — el reconciliador declara 10 divergencias sin aceptar",
+    "QG-01": "BLOCKED — mismo reconciliador",
+    "QG-02": "BLOCKED — 14 hallazgos en el sandbox canonico; 1 (AP-39) en runtime limpio del producto",
+    "QG-03": "BLOCKED — recibo PASS, prerrequisito QG-00 pendiente",
+    "QG-04": "BLOCKED — recibo PASS, prerrequisito QG-00 pendiente",
+    "QG-05": "BLOCKED — recibo PASS (paridad 5/5), prerrequisito QG-00 pendiente",
+    "QG-06": "BLOCKED — recibo PASS, prerrequisito QG-00 pendiente",
+    "QG-07": "BLOCKED — CI en cola"
+  },
+  "escenario_a": {
+    "total": 14,
+    "by_norm": {
+      "CN-03": 5,
+      "AP-07": 4,
+      "AP-64": 4,
+      "AP-36": 1
+    },
+    "completo": true
+  },
+  "escenario_b": {
+    "total": 1,
+    "by_norm": {
+      "AP-39": 1
+    },
+    "completo": true
+  },
+  "deuda_corregida": [
+    "TD-0003",
+    "TD-0008",
+    "TD-0010",
+    "TD-0011",
+    "TD-0012"
+  ],
+  "riesgos": [
+    "La CI no se ejecuta: ningun gate de release se puede acredita en la matriz multipataforma.",
+    "Los cruces fuera de puerto siguen declarados y el reconciliador los refleja (10 divergencias).",
+    "El producto deja 1 violacion (AP-39) en un runtime recien creado: incumple la norma que certifica.",
+    "El sandbox canonico acumula 14 hallazgos reales de contenido de evidencia.",
+    "El auditor historico mide parches, no blobs integros."
+  ],
+  "decisiones_pendientes": [
+    "Ratificar (o corregir) la Constitucion arquitectonica propuesta (DRAFT).",
+    "Divergencias DIV-01..DIV-10: alternativa A (eliminar el cruce componiendo desde el meta-toolkit), B (migrarlo a un owner con puerto declarado) o C (excepcion formal con plazo y riesgo).",
+    "Contrato de QG-02: certificar sobre runtime limpio (recomendado) y no sobre el vault de evidencia.",
+    "Purga del directorio vault-backups fuera del vault (AP-36): lo decide el dueno de los datos.",
+    "Reescritura del historial publicado: solo el propietario."
+  ]
+}

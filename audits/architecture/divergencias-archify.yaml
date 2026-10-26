@@ -1,0 +1,209 @@
+schema: 1
+sha: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+fuente: audits/fase2/reconciliar_archify.py --check
+divergencias:
+- id: DIV-01
+  clave: 'ficha divergente: [''gobernanza'', ''autoria'']'
+  tipo: ficha de par de contextos
+  elemento_original: ficha del par en el snapshot de Archify (revision anterior)
+  elemento_vigente: ficha vigente del par en scripts/vault_arch.py
+  sha_referencia_snapshot: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  sha_codigo_actual: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  cambio_responsable: 59d0465 (ficha actualizada al mover el cruce) + 667a6a5 (sitio)
+  naturaleza: 'ficha desactualizada: el adeudado NO cambio'
+  es_movimiento_legitimo: false
+  es_deuda_viva: false
+  es_regresion: false
+  riesgo_de_actualizar_el_inventario: 'bajo: la ficha describe el mismo adeudado con el sitio vigente'
+  alternativas:
+  - 'A: eliminar el cruce componiendo desde el meta-toolkit'
+  - 'B: migrarlo a un owner con puerto declarado'
+  - 'C: excepcion formal con plazo, riesgo y dueno (ratificacion)'
+  recomendacion: ratificar el texto de la ficha conservando la clase a_eliminar y su fecha limite, o re-tomar
+    el snapshot
+  accion_requerida: ratificacion del propietario
+  ratificado: false
+- id: DIV-02
+  clave: 'ficha divergente: [''gobernanza'', ''meta_toolkit'']'
+  tipo: ficha de par de contextos
+  elemento_original: ficha del par en el snapshot de Archify (revision anterior)
+  elemento_vigente: ficha vigente del par en scripts/vault_arch.py
+  sha_referencia_snapshot: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  sha_codigo_actual: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  cambio_responsable: 59d0465 (ficha actualizada al mover el cruce) + 667a6a5 (sitio)
+  naturaleza: 'ficha desactualizada: el adeudado NO cambio'
+  es_movimiento_legitimo: false
+  es_deuda_viva: false
+  es_regresion: false
+  riesgo_de_actualizar_el_inventario: 'bajo: la ficha describe el mismo adeudado con el sitio vigente'
+  alternativas:
+  - 'A: eliminar el cruce componiendo desde el meta-toolkit'
+  - 'B: migrarlo a un owner con puerto declarado'
+  - 'C: excepcion formal con plazo, riesgo y dueno (ratificacion)'
+  recomendacion: ratificar el texto de la ficha conservando la clase a_eliminar y su fecha limite, o re-tomar
+    el snapshot
+  accion_requerida: ratificacion del propietario
+  ratificado: false
+- id: DIV-03
+  clave: 'acceso no conciliado: vault_norms_engine -> vault_mcp_catalog.check_params'
+  tipo: acceso a fichero
+  elemento_original: 'acceso declarado en el snapshot: vault_norms_engine -> vault_mcp_catalog.check_params'
+  elemento_vigente: acceso vigente en la fachada de mantenimiento (mismo par de contextos)
+  sha_referencia_snapshot: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  sha_codigo_actual: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  cambio_responsable: 667a6a5 (la composicion paso de vault_norms_engine a vault_norms)
+  naturaleza: movimiento
+  es_movimiento_legitimo: true
+  es_deuda_viva: false
+  es_regresion: false
+  riesgo_de_actualizar_el_inventario: 'bajo: el par de contextos sigue cruzando; solo cambio el modulo'
+  alternativas:
+  - 'A: eliminar el cruce componiendo desde el meta-toolkit'
+  - 'B: migrarlo a un owner con puerto declarado'
+  - 'C: excepcion formal con plazo, riesgo y dueno (ratificacion)'
+  recomendacion: re-tomar el snapshot de Archify o ratificar la aceptacion con la ficha correspondiente
+  accion_requerida: ratificacion del propietario
+  ratificado: false
+- id: DIV-04
+  clave: 'acceso no conciliado: vault_norms_engine -> vault_smoke.SIN_SMOKE'
+  tipo: acceso a fichero
+  elemento_original: 'acceso declarado en el snapshot: vault_norms_engine -> vault_smoke.SIN_SMOKE'
+  elemento_vigente: acceso vigente en la fachada de mantenimiento (mismo par de contextos)
+  sha_referencia_snapshot: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  sha_codigo_actual: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  cambio_responsable: 667a6a5 (la composicion paso de vault_norms_engine a vault_norms)
+  naturaleza: movimiento
+  es_movimiento_legitimo: true
+  es_deuda_viva: false
+  es_regresion: false
+  riesgo_de_actualizar_el_inventario: 'bajo: el par de contextos sigue cruzando; solo cambio el modulo'
+  alternativas:
+  - 'A: eliminar el cruce componiendo desde el meta-toolkit'
+  - 'B: migrarlo a un owner con puerto declarado'
+  - 'C: excepcion formal con plazo, riesgo y dueno (ratificacion)'
+  recomendacion: re-tomar el snapshot de Archify o ratificar la aceptacion con la ficha correspondiente
+  accion_requerida: ratificacion del propietario
+  ratificado: false
+- id: DIV-05
+  clave: 'acceso no conciliado: vault_norms_engine -> vault_smoke.invocation'
+  tipo: acceso a fichero
+  elemento_original: 'acceso declarado en el snapshot: vault_norms_engine -> vault_smoke.invocation'
+  elemento_vigente: acceso vigente en la fachada de mantenimiento (mismo par de contextos)
+  sha_referencia_snapshot: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  sha_codigo_actual: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  cambio_responsable: 667a6a5 (la composicion paso de vault_norms_engine a vault_norms)
+  naturaleza: movimiento
+  es_movimiento_legitimo: true
+  es_deuda_viva: false
+  es_regresion: false
+  riesgo_de_actualizar_el_inventario: 'bajo: el par de contextos sigue cruzando; solo cambio el modulo'
+  alternativas:
+  - 'A: eliminar el cruce componiendo desde el meta-toolkit'
+  - 'B: migrarlo a un owner con puerto declarado'
+  - 'C: excepcion formal con plazo, riesgo y dueno (ratificacion)'
+  recomendacion: re-tomar el snapshot de Archify o ratificar la aceptacion con la ficha correspondiente
+  accion_requerida: ratificacion del propietario
+  ratificado: false
+- id: DIV-06
+  clave: 'acceso no conciliado: vault_norms_engine -> vault_smoke.load_baseline'
+  tipo: acceso a fichero
+  elemento_original: 'acceso declarado en el snapshot: vault_norms_engine -> vault_smoke.load_baseline'
+  elemento_vigente: acceso vigente en la fachada de mantenimiento (mismo par de contextos)
+  sha_referencia_snapshot: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  sha_codigo_actual: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  cambio_responsable: 667a6a5 (la composicion paso de vault_norms_engine a vault_norms)
+  naturaleza: movimiento
+  es_movimiento_legitimo: true
+  es_deuda_viva: false
+  es_regresion: false
+  riesgo_de_actualizar_el_inventario: 'bajo: el par de contextos sigue cruzando; solo cambio el modulo'
+  alternativas:
+  - 'A: eliminar el cruce componiendo desde el meta-toolkit'
+  - 'B: migrarlo a un owner con puerto declarado'
+  - 'C: excepcion formal con plazo, riesgo y dueno (ratificacion)'
+  recomendacion: re-tomar el snapshot de Archify o ratificar la aceptacion con la ficha correspondiente
+  accion_requerida: ratificacion del propietario
+  ratificado: false
+- id: DIV-07
+  clave: 'acceso no conciliado: vault_norms_engine -> vault_voice.coverage'
+  tipo: acceso a fichero
+  elemento_original: 'acceso declarado en el snapshot: vault_norms_engine -> vault_voice.coverage'
+  elemento_vigente: acceso vigente en la fachada de mantenimiento (mismo par de contextos)
+  sha_referencia_snapshot: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  sha_codigo_actual: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  cambio_responsable: 667a6a5 (la composicion paso de vault_norms_engine a vault_norms)
+  naturaleza: movimiento
+  es_movimiento_legitimo: true
+  es_deuda_viva: false
+  es_regresion: false
+  riesgo_de_actualizar_el_inventario: 'bajo: el par de contextos sigue cruzando; solo cambio el modulo'
+  alternativas:
+  - 'A: eliminar el cruce componiendo desde el meta-toolkit'
+  - 'B: migrarlo a un owner con puerto declarado'
+  - 'C: excepcion formal con plazo, riesgo y dueno (ratificacion)'
+  recomendacion: re-tomar el snapshot de Archify o ratificar la aceptacion con la ficha correspondiente
+  accion_requerida: ratificacion del propietario
+  ratificado: false
+- id: DIV-08
+  clave: 'dependencia NO CONCILIABLE: vault_norms_engine -> vault_mcp_catalog'
+  tipo: dependencia a granularidad de fichero
+  elemento_original: 'dependencia en el snapshot: vault_norms_engine -> vault_mcp_catalog'
+  elemento_vigente: dependencia vigente en el par de contextos (mismo adeudado)
+  sha_referencia_snapshot: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  sha_codigo_actual: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  cambio_responsable: 667a6a5 (la composicion paso de vault_norms_engine a vault_norms)
+  naturaleza: movimiento
+  es_movimiento_legitimo: true
+  es_deuda_viva: false
+  es_regresion: false
+  riesgo_de_actualizar_el_inventario: 'medio: la granularidad del snapshot (fichero) no coincide con la
+    del registro (par de contextos); el adorno de la divergencia lo dice'
+  alternativas:
+  - 'A: eliminar el cruce componiendo desde el meta-toolkit'
+  - 'B: migrarlo a un owner con puerto declarado'
+  - 'C: excepcion formal con plazo, riesgo y dueno (ratificacion)'
+  recomendacion: re-tomar el snapshot o ratificar la aceptacion
+  accion_requerida: ratificacion del propietario
+  ratificado: false
+- id: DIV-09
+  clave: 'dependencia NO CONCILIABLE: vault_norms_engine -> vault_smoke'
+  tipo: dependencia a granularidad de fichero
+  elemento_original: 'dependencia en el snapshot: vault_norms_engine -> vault_smoke'
+  elemento_vigente: dependencia vigente en el par de contextos (mismo adeudado)
+  sha_referencia_snapshot: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  sha_codigo_actual: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  cambio_responsable: 667a6a5 (la composicion paso de vault_norms_engine a vault_norms)
+  naturaleza: movimiento
+  es_movimiento_legitimo: true
+  es_deuda_viva: false
+  es_regresion: false
+  riesgo_de_actualizar_el_inventario: 'medio: la granularidad del snapshot (fichero) no coincide con la
+    del registro (par de contextos); el adorno de la divergencia lo dice'
+  alternativas:
+  - 'A: eliminar el cruce componiendo desde el meta-toolkit'
+  - 'B: migrarlo a un owner con puerto declarado'
+  - 'C: excepcion formal con plazo, riesgo y dueno (ratificacion)'
+  recomendacion: re-tomar el snapshot o ratificar la aceptacion
+  accion_requerida: ratificacion del propietario
+  ratificado: false
+- id: DIV-10
+  clave: 'dependencia NO CONCILIABLE: vault_norms_engine -> vault_voice'
+  tipo: dependencia a granularidad de fichero
+  elemento_original: 'dependencia en el snapshot: vault_norms_engine -> vault_voice'
+  elemento_vigente: dependencia vigente en el par de contextos (mismo adeudado)
+  sha_referencia_snapshot: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  sha_codigo_actual: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  cambio_responsable: 667a6a5 (la composicion paso de vault_norms_engine a vault_norms)
+  naturaleza: movimiento
+  es_movimiento_legitimo: true
+  es_deuda_viva: false
+  es_regresion: false
+  riesgo_de_actualizar_el_inventario: 'medio: la granularidad del snapshot (fichero) no coincide con la
+    del registro (par de contextos); el adorno de la divergencia lo dice'
+  alternativas:
+  - 'A: eliminar el cruce componiendo desde el meta-toolkit'
+  - 'B: migrarlo a un owner con puerto declarado'
+  - 'C: excepcion formal con plazo, riesgo y dueno (ratificacion)'
+  recomendacion: re-tomar el snapshot o ratificar la aceptacion
+  accion_requerida: ratificacion del propietario
+  ratificado: false

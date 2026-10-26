@@ -1,0 +1,84 @@
+{
+  "escenario": "A: sandbox canonico (vault-sandbox)",
+  "root": "<RUTA-USUARIO> Ivan\\Documents\\GitHub\\Vault-Obsidian-Architecture\\vault-sandbox",
+  "total": 14,
+  "completo": true,
+  "by_norm": {
+    "CN-03": 5,
+    "AP-07": 4,
+    "AP-64": 4,
+    "AP-36": 1
+  },
+  "hallazgos": [
+    {
+      "norm": "CN-03",
+      "path": "03_Decisions/adr-001-mcp-transport.md",
+      "message": "status 'accepted' fuera del vocabulario canónico ['approved', 'archived', 'deprecated', 'draft', 'implemented', 'in-progress', 'obsolete', 'planned', 'reviewed', 'stub', 'template', 'verified']."
+    },
+    {
+      "norm": "AP-07",
+      "path": "03_Decisions/adr-001-mcp-transport.md",
+      "message": "ADR incompleto — secciones faltantes: Contexto, Decisión, Consecuencias."
+    },
+    {
+      "norm": "AP-64",
+      "path": "03_Decisions/adr-001-mcp-transport.md",
+      "message": "Decisión cerrada sin `responsable`: nadie responde de su porqué."
+    },
+    {
+      "norm": "CN-03",
+      "path": "03_Decisions/mcp-transport-contract.md",
+      "message": "status 'accepted' fuera del vocabulario canónico ['approved', 'archived', 'deprecated', 'draft', 'implemented', 'in-progress', 'obsolete', 'planned', 'reviewed', 'stub', 'template', 'verified']."
+    },
+    {
+      "norm": "AP-07",
+      "path": "03_Decisions/mcp-transport-contract.md",
+      "message": "ADR incompleto — secciones faltantes: Contexto, Decisión, Consecuencias."
+    },
+    {
+      "norm": "AP-64",
+      "path": "03_Decisions/mcp-transport-contract.md",
+      "message": "Decisión cerrada sin `responsable`: nadie responde de su porqué."
+    },
+    {
+      "norm": "CN-03",
+      "path": "03_Decisions/mcp-transport-operations.md",
+      "message": "status 'accepted' fuera del vocabulario canónico ['approved', 'archived', 'deprecated', 'draft', 'implemented', 'in-progress', 'obsolete', 'planned', 'reviewed', 'stub', 'template', 'verified']."
+    },
+    {
+      "norm": "AP-07",
+      "path": "03_Decisions/mcp-transport-operations.md",
+      "message": "ADR incompleto — secciones faltantes: Contexto, Decisión, Consecuencias."
+    },
+    {
+      "norm": "AP-64",
+      "path": "03_Decisions/mcp-transport-operations.md",
+      "message": "Decisión cerrada sin `responsable`: nadie responde de su porqué."
+    },
+    {
+      "norm": "CN-03",
+      "path": "03_Decisions/mcp-transport-provenance.md",
+      "message": "status 'accepted' fuera del vocabulario canónico ['approved', 'archived', 'deprecated', 'draft', 'implemented', 'in-progress', 'obsolete', 'planned', 'reviewed', 'stub', 'template', 'verified']."
+    },
+    {
+      "norm": "AP-07",
+      "path": "03_Decisions/mcp-transport-provenance.md",
+      "message": "ADR incompleto — secciones faltantes: Contexto, Decisión, Consecuencias."
+    },
+    {
+      "norm": "AP-64",
+      "path": "03_Decisions/mcp-transport-provenance.md",
+      "message": "Decisión cerrada sin `responsable`: nadie responde de su porqué."
+    },
+    {
+      "norm": "CN-03",
+      "path": "07_Knowledge/parser-evidence.md",
+      "message": "status 'active' fuera del vocabulario canónico ['approved', 'archived', 'deprecated', 'draft', 'implemented', 'in-progress', 'obsolete', 'planned', 'reviewed', 'stub', 'template', 'verified']."
+    },
+    {
+      "norm": "AP-36",
+      "path": "../../vault-backups",
+      "message": "'vault-backups' existe 2 nivel(es) por encima del vault (<RUTA-USUARIO> Ivan\\Documents\\GitHub\\vault-backups) — side-effect escrito fuera del vault root."
+    }
+  ]
+}

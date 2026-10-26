@@ -363,6 +363,37 @@ def reconciliar_contextos(snap: Dict[str, Any]) -> List[Dict[str, Any]]:
     return filas
 
 
+def _divergencias_aceptadas() -> Dict[str, Dict[str, Any]]:
+    """Aceptaciones DECLARADAS de divergencias concretas.
+
+    Una entrada solo silencia la divergencia si esta RATIFICADA
+    (`ratificado: true`) y declara evidencia. Sin ratificacion, el
+    reconciliador se comporta como antes. Es un mecanismo de decision, no un
+    apagafuegos: la lista vive en
+    `audits/architecture/divergencias-aceptadas.yaml`.
+    """
+    ruta = (Path(__file__).resolve().parents[2] / "audits" / "architecture" /
+            "divergencias-aceptadas.yaml")
+    if not ruta.is_file():
+        return {}
+    try:
+        import yaml
+
+        datos = yaml.safe_load(ruta.read_text(encoding="utf-8")) or {}
+    except Exception:  # noqa: BLE001
+        return {}
+    aceptadas: Dict[str, Dict[str, Any]] = {}
+    for entrada in datos.get("divergencias") or []:
+        if not isinstance(entrada, dict):
+            continue
+        if not entrada.get("ratificado") or not entrada.get("evidencia"):
+            continue
+        clave = str(entrada.get("divergencia", "")).strip()
+        if clave:
+            aceptadas[clave] = entrada
+    return aceptadas
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--json", dest="salida", help="fichero JSON de salida")
@@ -457,11 +488,30 @@ def main() -> int:
             divergencias.append("las anclas del puente no coinciden")
         print("== MODO CHECK")
         if divergencias:
+            aceptadas = _divergencias_aceptadas()
+            remanentes = []
+            aceptadas_efectivas = []
             for d in divergencias:
-                print(f"  DIVERGENCIA: {d}")
-            print(f"\n{len(divergencias)} divergencia(s) no aceptada(s): "
-                  "el estado del inventario NO es conforme")
-            return 1
+                entrada = aceptadas.get(d)
+                if entrada is not None:
+                    aceptadas_efectivas.append((d, entrada))
+                else:
+                    remanentes.append(d)
+            for d in divergencias:
+                entrada = aceptadas.get(d)
+                etiqueta = ("ACEPTADA (ratificada)" if entrada is not None
+                            else "DIVERGENCIA")
+                print(f"  {etiqueta}: {d}")
+            for d, entrada in aceptadas_efectivas:
+                print(f"    aceptada por: "
+                      f"{entrada.get('accion_requerida', 'ratificacion')}")
+            if remanentes:
+                print(f"\n{len(remanentes)} divergencia(s) no aceptada(s): "
+                      "el estado del inventario NO es conforme")
+                return 1
+            print(f"\n0 divergencia(s) no aceptada(s): el inventario es conforme "
+                  f"({len(aceptadas_efectivas)} aceptada(s) por ratificacion)")
+            return 0
         print("  sin divergencias no aceptadas: el inventario es conforme")
     return 0
 

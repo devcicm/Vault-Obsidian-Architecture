@@ -1,0 +1,4938 @@
+{
+  "generado_por": "audits/architecture/generar_inventario.py",
+  "sha": "f049b1bd43fcdd5b0a010d73016139fbcf2286b9",
+  "conteo": {
+    "recursos": 699,
+    "relaciones": 703
+  },
+  "indices": {
+    "calidad": "RES-DEP-5ef6",
+    "arquitectura": "RES-DEP-2277",
+    "superficie-mcp": "RES-DEP-e7fb",
+    "superficie-cli": "RES-DEP-73f3",
+    "gobierno": "RES-DEP-34e1"
+  },
+  "relaciones": [
+    {
+      "from": "RES-CON-68eb",
+      "to": "RES-PUE-01bc",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado NATIVE_JS_TOOLS"
+    },
+    {
+      "from": "RES-CON-68eb",
+      "to": "RES-PUE-444c",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado reconciled_params"
+    },
+    {
+      "from": "RES-CON-68eb",
+      "to": "RES-PUE-c91c",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado GROUPS"
+    },
+    {
+      "from": "RES-CON-68eb",
+      "to": "RES-PUE-cd53",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado distribution_metadata"
+    },
+    {
+      "from": "RES-CON-68eb",
+      "to": "RES-PUE-dd50",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado check_contracts"
+    },
+    {
+      "from": "RES-CON-68eb",
+      "to": "RES-PUE-eb43",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado TOOLS_CATALOG"
+    },
+    {
+      "from": "RES-CON-6c18",
+      "to": "RES-PUE-23e7",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado resolver_wikilink"
+    },
+    {
+      "from": "RES-CON-6c18",
+      "to": "RES-PUE-4894",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado construir_grafo"
+    },
+    {
+      "from": "RES-CON-6c18",
+      "to": "RES-PUE-891e",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado impacto"
+    },
+    {
+      "from": "RES-CON-6c18",
+      "to": "RES-PUE-8cdb",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado refresco_de_grafo"
+    },
+    {
+      "from": "RES-CON-6d8d",
+      "to": "RES-PUE-7239",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado CURRENT_VERSION"
+    },
+    {
+      "from": "RES-CON-6d8d",
+      "to": "RES-PUE-be05",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado inicializar"
+    },
+    {
+      "from": "RES-CON-6d8d",
+      "to": "RES-PUE-e4df",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado migrar"
+    },
+    {
+      "from": "RES-CON-7ad1",
+      "to": "RES-PUE-0483",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado buscar"
+    },
+    {
+      "from": "RES-CON-7ad1",
+      "to": "RES-PUE-0f8a",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado fusionar"
+    },
+    {
+      "from": "RES-CON-7ad1",
+      "to": "RES-PUE-1f7a",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado anexar"
+    },
+    {
+      "from": "RES-CON-7ad1",
+      "to": "RES-PUE-2aa4",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado hablar"
+    },
+    {
+      "from": "RES-CON-7ad1",
+      "to": "RES-PUE-4fed",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado escribir_nota"
+    },
+    {
+      "from": "RES-CON-7ad1",
+      "to": "RES-PUE-c186",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado tipo_por_carpeta"
+    },
+    {
+      "from": "RES-CON-7ad1",
+      "to": "RES-PUE-cabb",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado mover"
+    },
+    {
+      "from": "RES-CON-93de",
+      "to": "RES-PUE-3096",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado listar_backups"
+    },
+    {
+      "from": "RES-CON-93de",
+      "to": "RES-PUE-6473",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado poner_en_cuarentena"
+    },
+    {
+      "from": "RES-CON-93de",
+      "to": "RES-PUE-a9d8",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado crear_backup"
+    },
+    {
+      "from": "RES-CON-93de",
+      "to": "RES-PUE-c8e8",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado restaurar"
+    },
+    {
+      "from": "RES-CON-b805",
+      "to": "RES-PUE-2e73",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado atomic_write_text"
+    },
+    {
+      "from": "RES-CON-b805",
+      "to": "RES-PUE-ac9d",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado wrap_main"
+    },
+    {
+      "from": "RES-CON-b805",
+      "to": "RES-PUE-b70f",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado get_vault_root"
+    },
+    {
+      "from": "RES-CON-b805",
+      "to": "RES-PUE-e861",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado file_lock"
+    },
+    {
+      "from": "RES-CON-d280",
+      "to": "RES-PUE-2ad6",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado vocabulario_de_dominio"
+    },
+    {
+      "from": "RES-CON-d280",
+      "to": "RES-PUE-34d7",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado normalizar_estado"
+    },
+    {
+      "from": "RES-CON-d280",
+      "to": "RES-PUE-3600",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado auditar"
+    },
+    {
+      "from": "RES-CON-d280",
+      "to": "RES-PUE-3cbb",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado cuerpo_sin_marcadores"
+    },
+    {
+      "from": "RES-CON-d280",
+      "to": "RES-PUE-5fd1",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado FUNDAMENTOS"
+    },
+    {
+      "from": "RES-CON-d280",
+      "to": "RES-PUE-6524",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado hay_hallazgos_bloqueantes"
+    },
+    {
+      "from": "RES-CON-d280",
+      "to": "RES-PUE-6acd",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado auditar_runtime"
+    },
+    {
+      "from": "RES-CON-d280",
+      "to": "RES-PUE-80c6",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado validar_mermaid"
+    },
+    {
+      "from": "RES-CON-d280",
+      "to": "RES-PUE-81bb",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado penalizaciones"
+    },
+    {
+      "from": "RES-CON-d280",
+      "to": "RES-PUE-9562",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado norma_por_codigo"
+    },
+    {
+      "from": "RES-CON-d280",
+      "to": "RES-PUE-9fdb",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado valores_cia"
+    },
+    {
+      "from": "RES-CON-d280",
+      "to": "RES-PUE-b0be",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado referencias_de_norma"
+    },
+    {
+      "from": "RES-CON-d280",
+      "to": "RES-PUE-bf7a",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado gancho_de_secretos"
+    },
+    {
+      "from": "RES-CON-d280",
+      "to": "RES-PUE-d7b9",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado auditar_normas"
+    },
+    {
+      "from": "RES-CON-d280",
+      "to": "RES-PUE-dc1b",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado registro_de_ciclo_de_vida"
+    },
+    {
+      "from": "RES-CON-d280",
+      "to": "RES-PUE-e6fb",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado lineas_de_estado"
+    },
+    {
+      "from": "RES-CON-d280",
+      "to": "RES-PUE-e870",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado NORM_CATALOG"
+    },
+    {
+      "from": "RES-CON-d280",
+      "to": "RES-PUE-e98b",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado transiciones_de_estado"
+    },
+    {
+      "from": "RES-CON-d280",
+      "to": "RES-PUE-ecc3",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado identidad_de_documentacion"
+    },
+    {
+      "from": "RES-CON-d280",
+      "to": "RES-PUE-ed04",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado vocabulario_de_estado"
+    },
+    {
+      "from": "RES-CON-d280",
+      "to": "RES-PUE-f2df",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado puntuar_calidad"
+    },
+    {
+      "from": "RES-CON-db7d",
+      "to": "RES-PUE-02df",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado enumeracion_indexable"
+    },
+    {
+      "from": "RES-CON-db7d",
+      "to": "RES-PUE-2b97",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado registrar_tags"
+    },
+    {
+      "from": "RES-CON-db7d",
+      "to": "RES-PUE-2faa",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado refresco_de_busqueda"
+    },
+    {
+      "from": "RES-CON-db7d",
+      "to": "RES-PUE-3958",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado tags_de_frontmatter"
+    },
+    {
+      "from": "RES-CON-db7d",
+      "to": "RES-PUE-83a0",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado resolucion_de_vocabulario"
+    },
+    {
+      "from": "RES-CON-db7d",
+      "to": "RES-PUE-8c98",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado registro_de_nuevos_terminos"
+    },
+    {
+      "from": "RES-CON-db7d",
+      "to": "RES-PUE-a9cd",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado vocabulario_de_tags"
+    },
+    {
+      "from": "RES-CON-db7d",
+      "to": "RES-PUE-b498",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado indice_de_seccion"
+    },
+    {
+      "from": "RES-CON-db7d",
+      "to": "RES-PUE-e40a",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado reindexar"
+    },
+    {
+      "from": "RES-CON-db7d",
+      "to": "RES-PUE-e414",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado coherencia_de_indices"
+    },
+    {
+      "from": "RES-CON-db7d",
+      "to": "RES-PUE-e7b1",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado ledger_de_backfill_de_tags"
+    },
+    {
+      "from": "RES-CON-db7d",
+      "to": "RES-PUE-efe0",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado indice_maestro"
+    },
+    {
+      "from": "RES-CON-dfd6",
+      "to": "RES-PUE-002b",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado limpiar_contexto"
+    },
+    {
+      "from": "RES-CON-dfd6",
+      "to": "RES-PUE-2ac0",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado subgrafo"
+    },
+    {
+      "from": "RES-CON-dfd6",
+      "to": "RES-PUE-5fea",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado parsear_consulta"
+    },
+    {
+      "from": "RES-CON-dfd6",
+      "to": "RES-PUE-a2ce",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado guardar_contexto"
+    },
+    {
+      "from": "RES-CON-dfd6",
+      "to": "RES-PUE-cefc",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado contexto_de_sesion"
+    },
+    {
+      "from": "RES-CON-dfd6",
+      "to": "RES-PUE-d766",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado cargar_contexto"
+    },
+    {
+      "from": "RES-CON-dfd6",
+      "to": "RES-PUE-d821",
+      "relation": "PROVIDES",
+      "basis": "observada",
+      "detail": "puerto declarado empaquetar_contexto"
+    },
+    {
+      "from": "RES-DEP-2277",
+      "to": "RES-DEP-5ef6",
+      "relation": "AFFECTS",
+      "basis": "declarada",
+      "detail": "la arquitectura se acredita por las puertas"
+    },
+    {
+      "from": "RES-DEP-73f3",
+      "to": "RES-DEP-e7fb",
+      "relation": "AFFECTS",
+      "basis": "declarada",
+      "detail": "CLI y MCP comparten el mismo runtime"
+    },
+    {
+      "from": "RES-MOD-0108",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-0108",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-0108",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-025a",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-025a",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-025a",
+      "to": "RES-CON-d280",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto gobernanza"
+    },
+    {
+      "from": "RES-MOD-0437",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-0437",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-0437",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-04a5",
+      "to": "RES-CON-b805",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto kernel"
+    },
+    {
+      "from": "RES-MOD-062d",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-062d",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-062d",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-072e",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-072e",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-072e",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-074c",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-074c",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-074c",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-0765",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-0765",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-0765",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-0855",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-0a52",
+      "to": "RES-CON-d280",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto gobernanza"
+    },
+    {
+      "from": "RES-MOD-0b63",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-0b63",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-0b63",
+      "to": "RES-CON-6c18",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto grafo"
+    },
+    {
+      "from": "RES-MOD-0c5a",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-0c5a",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-0c5a",
+      "to": "RES-CON-6d8d",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto ciclo_de_vida"
+    },
+    {
+      "from": "RES-MOD-0cc2",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-0cc2",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-0cc2",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-0f67",
+      "to": "RES-CON-d280",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto gobernanza"
+    },
+    {
+      "from": "RES-MOD-0ff3",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-0ff3",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-0ff3",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-124c",
+      "to": "RES-CON-b805",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto kernel"
+    },
+    {
+      "from": "RES-MOD-13bc",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-13bc",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-13bc",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-1544",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-1544",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-1544",
+      "to": "RES-CON-6d8d",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto ciclo_de_vida"
+    },
+    {
+      "from": "RES-MOD-1b2f",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-1b2f",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-1b2f",
+      "to": "RES-CON-6c18",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto grafo"
+    },
+    {
+      "from": "RES-MOD-1bc3",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-1bc3",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-1bc3",
+      "to": "RES-CON-6c18",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto grafo"
+    },
+    {
+      "from": "RES-MOD-2029",
+      "to": "RES-CON-b805",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto kernel"
+    },
+    {
+      "from": "RES-MOD-2466",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-24ba",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-24ba",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-24ba",
+      "to": "RES-CON-6d8d",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto ciclo_de_vida"
+    },
+    {
+      "from": "RES-MOD-26cc",
+      "to": "RES-CON-b805",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto kernel"
+    },
+    {
+      "from": "RES-MOD-28e0",
+      "to": "RES-CON-b805",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto kernel"
+    },
+    {
+      "from": "RES-MOD-299d",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-299d",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-299d",
+      "to": "RES-CON-dfd6",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto consulta"
+    },
+    {
+      "from": "RES-MOD-2a76",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-2a76",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-2a76",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-2a87",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-2a87",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-2a87",
+      "to": "RES-CON-93de",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto durabilidad"
+    },
+    {
+      "from": "RES-MOD-2cc8",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-2cc8",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-2cc8",
+      "to": "RES-CON-dfd6",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto consulta"
+    },
+    {
+      "from": "RES-MOD-308a",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-3136",
+      "to": "RES-CON-b805",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto kernel"
+    },
+    {
+      "from": "RES-MOD-32ca",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-32ca",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-32ca",
+      "to": "RES-CON-93de",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto durabilidad"
+    },
+    {
+      "from": "RES-MOD-3324",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-3380",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-3380",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-3380",
+      "to": "RES-CON-6c18",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto grafo"
+    },
+    {
+      "from": "RES-MOD-343b",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-343b",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-343b",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-3447",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-3447",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-3447",
+      "to": "RES-CON-d280",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto gobernanza"
+    },
+    {
+      "from": "RES-MOD-349e",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-349e",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-349e",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-3566",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-3566",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-3566",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-3609",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-3609",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-3609",
+      "to": "RES-CON-93de",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto durabilidad"
+    },
+    {
+      "from": "RES-MOD-3654",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-3654",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-3654",
+      "to": "RES-CON-db7d",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto indices"
+    },
+    {
+      "from": "RES-MOD-37ae",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-37ae",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-37ae",
+      "to": "RES-CON-db7d",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto indices"
+    },
+    {
+      "from": "RES-MOD-3802",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-3802",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-3802",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-3a65",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-3a65",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-3a65",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-3aec",
+      "to": "RES-CON-b805",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto kernel"
+    },
+    {
+      "from": "RES-MOD-3b63",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-3b63",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-3b63",
+      "to": "RES-CON-6d8d",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto ciclo_de_vida"
+    },
+    {
+      "from": "RES-MOD-3c93",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-3c93",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-3c93",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-3ed5",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-3f32",
+      "to": "RES-CON-b805",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto kernel"
+    },
+    {
+      "from": "RES-MOD-4164",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-4164",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-4164",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-441e",
+      "to": "RES-CON-b805",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto kernel"
+    },
+    {
+      "from": "RES-MOD-49d3",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-49d3",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-49d3",
+      "to": "RES-CON-dfd6",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto consulta"
+    },
+    {
+      "from": "RES-MOD-4d36",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-4d36",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-4d36",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-4d4d",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-4d4d",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-4d4d",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-4e16",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-4e16",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-4e16",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-502c",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-502c",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-502c",
+      "to": "RES-CON-6c18",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto grafo"
+    },
+    {
+      "from": "RES-MOD-5560",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-5560",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-5560",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-5605",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-5734",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-5734",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-5734",
+      "to": "RES-CON-db7d",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto indices"
+    },
+    {
+      "from": "RES-MOD-58c0",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-58c0",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-58c0",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-58c8",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-5989",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-5989",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-5989",
+      "to": "RES-CON-6d8d",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto ciclo_de_vida"
+    },
+    {
+      "from": "RES-MOD-5c62",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-5c62",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-5c62",
+      "to": "RES-CON-6c18",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto grafo"
+    },
+    {
+      "from": "RES-MOD-5cdb",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-5d65",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-5d65",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-5d65",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-5ddd",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-5ddd",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-5ddd",
+      "to": "RES-CON-d280",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto gobernanza"
+    },
+    {
+      "from": "RES-MOD-5e5c",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-5e5c",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-5e5c",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-5f28",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-5f28",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-5f28",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-5f8f",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-5f8f",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-5f8f",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-628e",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-628e",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-628e",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-635e",
+      "to": "RES-CON-b805",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto kernel"
+    },
+    {
+      "from": "RES-MOD-645c",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-645c",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-645c",
+      "to": "RES-CON-6d8d",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto ciclo_de_vida"
+    },
+    {
+      "from": "RES-MOD-678d",
+      "to": "RES-CON-b805",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto kernel"
+    },
+    {
+      "from": "RES-MOD-69b9",
+      "to": "RES-CON-db7d",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto indices"
+    },
+    {
+      "from": "RES-MOD-6d35",
+      "to": "RES-CON-b805",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto kernel"
+    },
+    {
+      "from": "RES-MOD-6d4a",
+      "to": "RES-CON-b805",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto kernel"
+    },
+    {
+      "from": "RES-MOD-6ed7",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-6ed7",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-6ed7",
+      "to": "RES-CON-6c18",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto grafo"
+    },
+    {
+      "from": "RES-MOD-7198",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-7198",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-7198",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-7239",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-7239",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-7239",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-7268",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-7268",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-7268",
+      "to": "RES-CON-db7d",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto indices"
+    },
+    {
+      "from": "RES-MOD-72f4",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-72f4",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-72f4",
+      "to": "RES-CON-d280",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto gobernanza"
+    },
+    {
+      "from": "RES-MOD-732c",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-732c",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-732c",
+      "to": "RES-CON-6c18",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto grafo"
+    },
+    {
+      "from": "RES-MOD-740f",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-766f",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-766f",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-766f",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-7751",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-7751",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-7751",
+      "to": "RES-CON-d280",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto gobernanza"
+    },
+    {
+      "from": "RES-MOD-7842",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-7842",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-7842",
+      "to": "RES-CON-6d8d",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto ciclo_de_vida"
+    },
+    {
+      "from": "RES-MOD-78de",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-78de",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-78de",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-7928",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-7928",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-7928",
+      "to": "RES-CON-93de",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto durabilidad"
+    },
+    {
+      "from": "RES-MOD-7ab4",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-7ab4",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-7ab4",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-7ceb",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-7ceb",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-7ceb",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-7d86",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-7d86",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-7d86",
+      "to": "RES-CON-dfd6",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto consulta"
+    },
+    {
+      "from": "RES-MOD-7edc",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-7edc",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-7edc",
+      "to": "RES-CON-d280",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto gobernanza"
+    },
+    {
+      "from": "RES-MOD-806b",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-806b",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-806b",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-84de",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-84de",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-84de",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-8504",
+      "to": "RES-CON-dfd6",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto consulta"
+    },
+    {
+      "from": "RES-MOD-8847",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-8847",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-8847",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-8879",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-8879",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-8879",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-88e9",
+      "to": "RES-CON-b805",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto kernel"
+    },
+    {
+      "from": "RES-MOD-8b56",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-8b56",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-8b56",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-8c68",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-8c68",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-8c68",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-8c83",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-8c83",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-8c83",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-8ced",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-8de7",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-8de7",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-8de7",
+      "to": "RES-CON-db7d",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto indices"
+    },
+    {
+      "from": "RES-MOD-907f",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-907f",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-907f",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-9147",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-9147",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-9147",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-91f4",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-91f4",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-91f4",
+      "to": "RES-CON-6c18",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto grafo"
+    },
+    {
+      "from": "RES-MOD-960e",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-960e",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-960e",
+      "to": "RES-CON-dfd6",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto consulta"
+    },
+    {
+      "from": "RES-MOD-993e",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-993e",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-993e",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-9e0d",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-9e0d",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-9e0d",
+      "to": "RES-CON-d280",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto gobernanza"
+    },
+    {
+      "from": "RES-MOD-9f04",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-9f04",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-9f04",
+      "to": "RES-CON-6d8d",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto ciclo_de_vida"
+    },
+    {
+      "from": "RES-MOD-a158",
+      "to": "RES-CON-6c18",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto grafo"
+    },
+    {
+      "from": "RES-MOD-a1e9",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-a1e9",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-a1e9",
+      "to": "RES-CON-dfd6",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto consulta"
+    },
+    {
+      "from": "RES-MOD-a2f2",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-a2f2",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-a2f2",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-a51d",
+      "to": "RES-CON-b805",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto kernel"
+    },
+    {
+      "from": "RES-MOD-a855",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-a855",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-a855",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-a959",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-a959",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-a959",
+      "to": "RES-CON-6c18",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto grafo"
+    },
+    {
+      "from": "RES-MOD-aa47",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-aa47",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-aa47",
+      "to": "RES-CON-6c18",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto grafo"
+    },
+    {
+      "from": "RES-MOD-ab9f",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-ab9f",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-ab9f",
+      "to": "RES-CON-6c18",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto grafo"
+    },
+    {
+      "from": "RES-MOD-ad34",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-ad34",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-ad34",
+      "to": "RES-CON-d280",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto gobernanza"
+    },
+    {
+      "from": "RES-MOD-adb2",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-adb2",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-adb2",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-b140",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-b140",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-b140",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-b372",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-b372",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-b372",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-b48c",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-b48c",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-b48c",
+      "to": "RES-CON-6c18",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto grafo"
+    },
+    {
+      "from": "RES-MOD-b65e",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-b84d",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-b84d",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-b84d",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-bad2",
+      "to": "RES-CON-b805",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto kernel"
+    },
+    {
+      "from": "RES-MOD-bc5d",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-bc5d",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-bc5d",
+      "to": "RES-CON-6c18",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto grafo"
+    },
+    {
+      "from": "RES-MOD-bdb7",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-bdb7",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-bdb7",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-bfea",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-bfea",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-bfea",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-c087",
+      "to": "RES-CON-b6ea",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto cli"
+    },
+    {
+      "from": "RES-MOD-c1cb",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-c1cb",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-c1cb",
+      "to": "RES-CON-dfd6",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto consulta"
+    },
+    {
+      "from": "RES-MOD-c233",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-c233",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-c233",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-c2e5",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-c2e5",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-c2e5",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-c573",
+      "to": "RES-CON-b6ea",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto cli"
+    },
+    {
+      "from": "RES-MOD-c996",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-c996",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-c996",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-ccc3",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-ccc3",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-ccc3",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-cdb4",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-cdb4",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-cdb4",
+      "to": "RES-CON-6d8d",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto ciclo_de_vida"
+    },
+    {
+      "from": "RES-MOD-d01c",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-d0fe",
+      "to": "RES-CON-b805",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto kernel"
+    },
+    {
+      "from": "RES-MOD-d152",
+      "to": "RES-CON-dfd6",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto consulta"
+    },
+    {
+      "from": "RES-MOD-d614",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-d614",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-d614",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-d66a",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-d66a",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-d66a",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-d724",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-d724",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-d724",
+      "to": "RES-CON-d280",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto gobernanza"
+    },
+    {
+      "from": "RES-MOD-d9a8",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-d9a8",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-d9a8",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-dc29",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-dc29",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-dc29",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-e17a",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-e17a",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-e17a",
+      "to": "RES-CON-dfd6",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto consulta"
+    },
+    {
+      "from": "RES-MOD-e2a1",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-e2a1",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-e2a1",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-e393",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-e393",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-e393",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-e4bc",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-e4bc",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-e4bc",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-e55d",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-e55d",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-e55d",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-e631",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-e631",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-e631",
+      "to": "RES-CON-d280",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto gobernanza"
+    },
+    {
+      "from": "RES-MOD-e73b",
+      "to": "RES-CON-d280",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto gobernanza"
+    },
+    {
+      "from": "RES-MOD-e7d1",
+      "to": "RES-CON-b805",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto kernel"
+    },
+    {
+      "from": "RES-MOD-e831",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-e831",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-e831",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-e89f",
+      "to": "RES-CON-b805",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto kernel"
+    },
+    {
+      "from": "RES-MOD-e8ab",
+      "to": "RES-CON-b6ea",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto cli"
+    },
+    {
+      "from": "RES-MOD-eb80",
+      "to": "RES-CON-b805",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto kernel"
+    },
+    {
+      "from": "RES-MOD-ef17",
+      "to": "RES-CON-b805",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto kernel"
+    },
+    {
+      "from": "RES-MOD-f0c4",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-f0c4",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-f0c4",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-f1f1",
+      "to": "RES-CON-b805",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto kernel"
+    },
+    {
+      "from": "RES-MOD-f238",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-f2f7",
+      "to": "RES-CON-b805",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto kernel"
+    },
+    {
+      "from": "RES-MOD-f4a5",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-f4d3",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-f4d3",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-f4d3",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-f51c",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-f51c",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-f51c",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-f816",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-f816",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-f816",
+      "to": "RES-CON-db7d",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto indices"
+    },
+    {
+      "from": "RES-MOD-f897",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-f897",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-f897",
+      "to": "RES-CON-68eb",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto meta_toolkit"
+    },
+    {
+      "from": "RES-MOD-fa1f",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-fa1f",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-fa1f",
+      "to": "RES-CON-6d8d",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto ciclo_de_vida"
+    },
+    {
+      "from": "RES-MOD-fac8",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-fac8",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-fac8",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-fc23",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-fc23",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-fc23",
+      "to": "RES-CON-7ad1",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto autoria"
+    },
+    {
+      "from": "RES-MOD-ff0b",
+      "to": "RES-ADA-33c1",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool expuesta por el servidor MCP"
+    },
+    {
+      "from": "RES-MOD-ff0b",
+      "to": "RES-ADA-68cb",
+      "relation": "PROVIDES",
+      "basis": "declarada",
+      "detail": "tool alcanzable desde el CLI de producto"
+    },
+    {
+      "from": "RES-MOD-ff0b",
+      "to": "RES-CON-dfd6",
+      "relation": "IMPLEMENTS",
+      "basis": "declarada",
+      "detail": "modulo declarado en el contexto consulta"
+    },
+    {
+      "from": "RES-NOR-0603",
+      "to": "RES-NOR-0603",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-08d8",
+      "to": "RES-NOR-08d8",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-08df",
+      "to": "RES-NOR-08df",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-0b0c",
+      "to": "RES-NOR-0b0c",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-0baa",
+      "to": "RES-NOR-0baa",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-0e24",
+      "to": "RES-NOR-0e24",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-0eca",
+      "to": "RES-NOR-0eca",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-1162",
+      "to": "RES-NOR-1162",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-11e8",
+      "to": "RES-NOR-11e8",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-195a",
+      "to": "RES-NOR-195a",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-1b9b",
+      "to": "RES-NOR-1b9b",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-1f11",
+      "to": "RES-NOR-1f11",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-1f71",
+      "to": "RES-NOR-1f71",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-2283",
+      "to": "RES-NOR-2283",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-2c6a",
+      "to": "RES-NOR-2c6a",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-2f30",
+      "to": "RES-NOR-2f30",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-3233",
+      "to": "RES-NOR-3233",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-3658",
+      "to": "RES-NOR-3658",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-399a",
+      "to": "RES-NOR-399a",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-41ac",
+      "to": "RES-NOR-41ac",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-446d",
+      "to": "RES-NOR-446d",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-44c4",
+      "to": "RES-NOR-44c4",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-4736",
+      "to": "RES-NOR-4736",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-4d64",
+      "to": "RES-NOR-4d64",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-5054",
+      "to": "RES-NOR-5054",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-54dd",
+      "to": "RES-NOR-54dd",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-567e",
+      "to": "RES-NOR-567e",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-5683",
+      "to": "RES-NOR-5683",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-5b65",
+      "to": "RES-NOR-5b65",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-5b68",
+      "to": "RES-NOR-5b68",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-60b7",
+      "to": "RES-NOR-60b7",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-6607",
+      "to": "RES-NOR-6607",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-6671",
+      "to": "RES-NOR-6671",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-66a5",
+      "to": "RES-NOR-66a5",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-6987",
+      "to": "RES-NOR-6987",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-69b4",
+      "to": "RES-NOR-69b4",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-6d4c",
+      "to": "RES-NOR-6d4c",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-6f38",
+      "to": "RES-NOR-6f38",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-7385",
+      "to": "RES-NOR-7385",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-7600",
+      "to": "RES-NOR-7600",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-76fb",
+      "to": "RES-NOR-76fb",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-7d05",
+      "to": "RES-NOR-7d05",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-7db8",
+      "to": "RES-NOR-7db8",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-7efc",
+      "to": "RES-NOR-7efc",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-88ff",
+      "to": "RES-NOR-88ff",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-89c7",
+      "to": "RES-NOR-89c7",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-93e8",
+      "to": "RES-NOR-93e8",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-96f8",
+      "to": "RES-NOR-96f8",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-9baf",
+      "to": "RES-NOR-9baf",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-9cfc",
+      "to": "RES-NOR-9cfc",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-9ecf",
+      "to": "RES-NOR-9ecf",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-a2b9",
+      "to": "RES-NOR-a2b9",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-a9c9",
+      "to": "RES-NOR-a9c9",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-addc",
+      "to": "RES-NOR-addc",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-ae8f",
+      "to": "RES-NOR-ae8f",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-b421",
+      "to": "RES-NOR-b421",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-b443",
+      "to": "RES-NOR-b443",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-b6f0",
+      "to": "RES-NOR-b6f0",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-bd92",
+      "to": "RES-NOR-bd92",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-c3e6",
+      "to": "RES-NOR-c3e6",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-c573",
+      "to": "RES-NOR-c573",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-c5e4",
+      "to": "RES-NOR-c5e4",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-d114",
+      "to": "RES-NOR-d114",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-d19f",
+      "to": "RES-NOR-d19f",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-d2a4",
+      "to": "RES-NOR-d2a4",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-d796",
+      "to": "RES-NOR-d796",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-dbf1",
+      "to": "RES-NOR-dbf1",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-dc0a",
+      "to": "RES-NOR-dc0a",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-dce6",
+      "to": "RES-NOR-dce6",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-dcf3",
+      "to": "RES-NOR-dcf3",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-ddad",
+      "to": "RES-NOR-ddad",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-e0bc",
+      "to": "RES-NOR-e0bc",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-e352",
+      "to": "RES-NOR-e352",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-eb13",
+      "to": "RES-NOR-eb13",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-ed8f",
+      "to": "RES-NOR-ed8f",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-f070",
+      "to": "RES-NOR-f070",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-f102",
+      "to": "RES-NOR-f102",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-f12b",
+      "to": "RES-NOR-f12b",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-f354",
+      "to": "RES-NOR-f354",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-f3ec",
+      "to": "RES-NOR-f3ec",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-f61d",
+      "to": "RES-NOR-f61d",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-NOR-fc10",
+      "to": "RES-NOR-fc10",
+      "relation": "APPLIES_TO",
+      "basis": "declarada",
+      "detail": "la norma aplica al contexto de gobernanza"
+    },
+    {
+      "from": "RES-PUE-002b",
+      "to": "RES-CON-dfd6",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto limpiar_contexto pertenece a consulta"
+    },
+    {
+      "from": "RES-PUE-002b",
+      "to": "RES-MOD-d152",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto limpiar_contexto resuelve a vault_mcp_context:clear_context"
+    },
+    {
+      "from": "RES-PUE-01bc",
+      "to": "RES-CON-68eb",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto NATIVE_JS_TOOLS pertenece a meta_toolkit"
+    },
+    {
+      "from": "RES-PUE-01bc",
+      "to": "RES-MOD-5605",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto NATIVE_JS_TOOLS resuelve a vault_mcp_catalog:NATIVE_JS_TOOLS"
+    },
+    {
+      "from": "RES-PUE-02df",
+      "to": "RES-CON-db7d",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto enumeracion_indexable pertenece a indices"
+    },
+    {
+      "from": "RES-PUE-02df",
+      "to": "RES-MOD-7268",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto enumeracion_indexable resuelve a vault_reindex:notas_indexables"
+    },
+    {
+      "from": "RES-PUE-0483",
+      "to": "RES-CON-7ad1",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto buscar pertenece a autoria"
+    },
+    {
+      "from": "RES-PUE-0483",
+      "to": "RES-MOD-9147",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto buscar resuelve a vault_search:vault_search"
+    },
+    {
+      "from": "RES-PUE-0f8a",
+      "to": "RES-CON-7ad1",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto fusionar pertenece a autoria"
+    },
+    {
+      "from": "RES-PUE-0f8a",
+      "to": "RES-MOD-bdb7",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto fusionar resuelve a vault_merge:vault_merge"
+    },
+    {
+      "from": "RES-PUE-1f7a",
+      "to": "RES-CON-7ad1",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto anexar pertenece a autoria"
+    },
+    {
+      "from": "RES-PUE-1f7a",
+      "to": "RES-MOD-7ab4",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto anexar resuelve a vault_append:vault_append"
+    },
+    {
+      "from": "RES-PUE-23e7",
+      "to": "RES-CON-6c18",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto resolver_wikilink pertenece a grafo"
+    },
+    {
+      "from": "RES-PUE-23e7",
+      "to": "RES-MOD-a158",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto resolver_wikilink resuelve a vault_link_safety:validate_wikilinks"
+    },
+    {
+      "from": "RES-PUE-2aa4",
+      "to": "RES-CON-7ad1",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto hablar pertenece a autoria"
+    },
+    {
+      "from": "RES-PUE-2ac0",
+      "to": "RES-CON-dfd6",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto subgrafo pertenece a consulta"
+    },
+    {
+      "from": "RES-PUE-2ac0",
+      "to": "RES-MOD-299d",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto subgrafo resuelve a vault_subgraph:vault_subgraph"
+    },
+    {
+      "from": "RES-PUE-2ad6",
+      "to": "RES-CON-d280",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto vocabulario_de_dominio pertenece a gobernanza"
+    },
+    {
+      "from": "RES-PUE-2ad6",
+      "to": "RES-MOD-d724",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto vocabulario_de_dominio resuelve a vault_norms:DOMAIN_STATUS_VOCABS"
+    },
+    {
+      "from": "RES-PUE-2b97",
+      "to": "RES-CON-db7d",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto registrar_tags pertenece a indices"
+    },
+    {
+      "from": "RES-PUE-2b97",
+      "to": "RES-MOD-37ae",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto registrar_tags resuelve a vault_tags:registrar_tags_de_nota"
+    },
+    {
+      "from": "RES-PUE-2e73",
+      "to": "RES-CON-b805",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto atomic_write_text pertenece a kernel"
+    },
+    {
+      "from": "RES-PUE-2e73",
+      "to": "RES-MOD-bad2",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto atomic_write_text resuelve a vault_io:atomic_write_text"
+    },
+    {
+      "from": "RES-PUE-2faa",
+      "to": "RES-CON-db7d",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto refresco_de_busqueda pertenece a indices"
+    },
+    {
+      "from": "RES-PUE-2faa",
+      "to": "RES-MOD-3654",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto refresco_de_busqueda resuelve a vault_section_index:refrescar_busqueda"
+    },
+    {
+      "from": "RES-PUE-3096",
+      "to": "RES-CON-93de",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto listar_backups pertenece a durabilidad"
+    },
+    {
+      "from": "RES-PUE-3096",
+      "to": "RES-MOD-3609",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto listar_backups resuelve a vault_backup_list:vault_backup_list"
+    },
+    {
+      "from": "RES-PUE-34d7",
+      "to": "RES-CON-d280",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto normalizar_estado pertenece a gobernanza"
+    },
+    {
+      "from": "RES-PUE-34d7",
+      "to": "RES-MOD-d724",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto normalizar_estado resuelve a vault_norms:normalize_status"
+    },
+    {
+      "from": "RES-PUE-3600",
+      "to": "RES-CON-d280",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto auditar pertenece a gobernanza"
+    },
+    {
+      "from": "RES-PUE-3600",
+      "to": "RES-MOD-3447",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto auditar resuelve a vault_audit:vault_audit"
+    },
+    {
+      "from": "RES-PUE-3958",
+      "to": "RES-CON-db7d",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto tags_de_frontmatter pertenece a indices"
+    },
+    {
+      "from": "RES-PUE-3958",
+      "to": "RES-MOD-37ae",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto tags_de_frontmatter resuelve a vault_tags:tags_de_frontmatter"
+    },
+    {
+      "from": "RES-PUE-3cbb",
+      "to": "RES-CON-d280",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto cuerpo_sin_marcadores pertenece a gobernanza"
+    },
+    {
+      "from": "RES-PUE-3cbb",
+      "to": "RES-MOD-d724",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto cuerpo_sin_marcadores resuelve a vault_norms:cuerpo_sin_marcadores"
+    },
+    {
+      "from": "RES-PUE-444c",
+      "to": "RES-CON-68eb",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto reconciled_params pertenece a meta_toolkit"
+    },
+    {
+      "from": "RES-PUE-444c",
+      "to": "RES-MOD-5605",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto reconciled_params resuelve a vault_mcp_catalog:reconciled_params"
+    },
+    {
+      "from": "RES-PUE-4894",
+      "to": "RES-CON-6c18",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto construir_grafo pertenece a grafo"
+    },
+    {
+      "from": "RES-PUE-4894",
+      "to": "RES-MOD-732c",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto construir_grafo resuelve a vault_graph:vault_graph"
+    },
+    {
+      "from": "RES-PUE-4fed",
+      "to": "RES-CON-7ad1",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto escribir_nota pertenece a autoria"
+    },
+    {
+      "from": "RES-PUE-4fed",
+      "to": "RES-MOD-3802",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto escribir_nota resuelve a vault_write:vault_write"
+    },
+    {
+      "from": "RES-PUE-5fd1",
+      "to": "RES-CON-d280",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto FUNDAMENTOS pertenece a gobernanza"
+    },
+    {
+      "from": "RES-PUE-5fd1",
+      "to": "RES-MOD-7751",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto FUNDAMENTOS resuelve a vault_fundamentals:FUNDAMENTALS"
+    },
+    {
+      "from": "RES-PUE-5fea",
+      "to": "RES-CON-dfd6",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto parsear_consulta pertenece a consulta"
+    },
+    {
+      "from": "RES-PUE-5fea",
+      "to": "RES-MOD-960e",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto parsear_consulta resuelve a vault_query_parse:vault_query_parse"
+    },
+    {
+      "from": "RES-PUE-6473",
+      "to": "RES-CON-93de",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto poner_en_cuarentena pertenece a durabilidad"
+    },
+    {
+      "from": "RES-PUE-6473",
+      "to": "RES-MOD-2a87",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto poner_en_cuarentena resuelve a vault_quarantine:vault_quarantine_add"
+    },
+    {
+      "from": "RES-PUE-6524",
+      "to": "RES-CON-d280",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto hay_hallazgos_bloqueantes pertenece a gobernanza"
+    },
+    {
+      "from": "RES-PUE-6acd",
+      "to": "RES-CON-d280",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto auditar_runtime pertenece a gobernanza"
+    },
+    {
+      "from": "RES-PUE-7239",
+      "to": "RES-CON-6d8d",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto CURRENT_VERSION pertenece a ciclo_de_vida"
+    },
+    {
+      "from": "RES-PUE-7239",
+      "to": "RES-MOD-24ba",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto CURRENT_VERSION resuelve a vault_standard_upgrade:CURRENT_VERSION"
+    },
+    {
+      "from": "RES-PUE-80c6",
+      "to": "RES-CON-d280",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto validar_mermaid pertenece a gobernanza"
+    },
+    {
+      "from": "RES-PUE-80c6",
+      "to": "RES-MOD-7edc",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto validar_mermaid resuelve a vault_mermaid_check:validate_mermaid"
+    },
+    {
+      "from": "RES-PUE-81bb",
+      "to": "RES-CON-d280",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto penalizaciones pertenece a gobernanza"
+    },
+    {
+      "from": "RES-PUE-81bb",
+      "to": "RES-MOD-3447",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto penalizaciones resuelve a vault_audit:PENALIZACIONES"
+    },
+    {
+      "from": "RES-PUE-83a0",
+      "to": "RES-CON-db7d",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto resolucion_de_vocabulario pertenece a indices"
+    },
+    {
+      "from": "RES-PUE-83a0",
+      "to": "RES-MOD-37ae",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto resolucion_de_vocabulario resuelve a vault_tags:apply_vocabulary"
+    },
+    {
+      "from": "RES-PUE-891e",
+      "to": "RES-CON-6c18",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto impacto pertenece a grafo"
+    },
+    {
+      "from": "RES-PUE-891e",
+      "to": "RES-MOD-5c62",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto impacto resuelve a vault_impact:vault_impact"
+    },
+    {
+      "from": "RES-PUE-8c98",
+      "to": "RES-CON-db7d",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto registro_de_nuevos_terminos pertenece a indices"
+    },
+    {
+      "from": "RES-PUE-8c98",
+      "to": "RES-MOD-37ae",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto registro_de_nuevos_terminos resuelve a vault_tags:record_new_tags"
+    },
+    {
+      "from": "RES-PUE-8cdb",
+      "to": "RES-CON-6c18",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto refresco_de_grafo pertenece a grafo"
+    },
+    {
+      "from": "RES-PUE-8cdb",
+      "to": "RES-MOD-732c",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto refresco_de_grafo resuelve a vault_graph:refrescar_nota_en_grafo"
+    },
+    {
+      "from": "RES-PUE-9562",
+      "to": "RES-CON-d280",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto norma_por_codigo pertenece a gobernanza"
+    },
+    {
+      "from": "RES-PUE-9562",
+      "to": "RES-MOD-d724",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto norma_por_codigo resuelve a vault_norms:norma_por_codigo"
+    },
+    {
+      "from": "RES-PUE-9fdb",
+      "to": "RES-CON-d280",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto valores_cia pertenece a gobernanza"
+    },
+    {
+      "from": "RES-PUE-9fdb",
+      "to": "RES-MOD-7751",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto valores_cia resuelve a vault_fundamentals:cia_valores"
+    },
+    {
+      "from": "RES-PUE-a2ce",
+      "to": "RES-CON-dfd6",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto guardar_contexto pertenece a consulta"
+    },
+    {
+      "from": "RES-PUE-a2ce",
+      "to": "RES-MOD-d152",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto guardar_contexto resuelve a vault_mcp_context:save_context"
+    },
+    {
+      "from": "RES-PUE-a9cd",
+      "to": "RES-CON-db7d",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto vocabulario_de_tags pertenece a indices"
+    },
+    {
+      "from": "RES-PUE-a9cd",
+      "to": "RES-MOD-37ae",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto vocabulario_de_tags resuelve a vault_tags:canonical_tags"
+    },
+    {
+      "from": "RES-PUE-a9d8",
+      "to": "RES-CON-93de",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto crear_backup pertenece a durabilidad"
+    },
+    {
+      "from": "RES-PUE-a9d8",
+      "to": "RES-MOD-32ca",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto crear_backup resuelve a vault_backup:vault_backup"
+    },
+    {
+      "from": "RES-PUE-ac9d",
+      "to": "RES-CON-b805",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto wrap_main pertenece a kernel"
+    },
+    {
+      "from": "RES-PUE-ac9d",
+      "to": "RES-MOD-635e",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto wrap_main resuelve a vault_errors:wrap_main"
+    },
+    {
+      "from": "RES-PUE-b0be",
+      "to": "RES-CON-d280",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto referencias_de_norma pertenece a gobernanza"
+    },
+    {
+      "from": "RES-PUE-b0be",
+      "to": "RES-MOD-d724",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto referencias_de_norma resuelve a vault_norms:compute_norm_refs"
+    },
+    {
+      "from": "RES-PUE-b498",
+      "to": "RES-CON-db7d",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto indice_de_seccion pertenece a indices"
+    },
+    {
+      "from": "RES-PUE-b498",
+      "to": "RES-MOD-3654",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto indice_de_seccion resuelve a vault_section_index:vault_section_index"
+    },
+    {
+      "from": "RES-PUE-b70f",
+      "to": "RES-CON-b805",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto get_vault_root pertenece a kernel"
+    },
+    {
+      "from": "RES-PUE-b70f",
+      "to": "RES-MOD-441e",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto get_vault_root resuelve a vault_raiz:get_vault_root"
+    },
+    {
+      "from": "RES-PUE-be05",
+      "to": "RES-CON-6d8d",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto inicializar pertenece a ciclo_de_vida"
+    },
+    {
+      "from": "RES-PUE-be05",
+      "to": "RES-MOD-cdb4",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto inicializar resuelve a vault_init:vault_init"
+    },
+    {
+      "from": "RES-PUE-bf7a",
+      "to": "RES-CON-d280",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto gancho_de_secretos pertenece a gobernanza"
+    },
+    {
+      "from": "RES-PUE-c186",
+      "to": "RES-CON-7ad1",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto tipo_por_carpeta pertenece a autoria"
+    },
+    {
+      "from": "RES-PUE-c186",
+      "to": "RES-MOD-3802",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto tipo_por_carpeta resuelve a vault_write:tipo_por_carpeta"
+    },
+    {
+      "from": "RES-PUE-c8e8",
+      "to": "RES-CON-93de",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto restaurar pertenece a durabilidad"
+    },
+    {
+      "from": "RES-PUE-c8e8",
+      "to": "RES-MOD-7928",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto restaurar resuelve a vault_restore:vault_restore"
+    },
+    {
+      "from": "RES-PUE-c91c",
+      "to": "RES-CON-68eb",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto GROUPS pertenece a meta_toolkit"
+    },
+    {
+      "from": "RES-PUE-c91c",
+      "to": "RES-MOD-5605",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto GROUPS resuelve a vault_mcp_catalog:GROUPS"
+    },
+    {
+      "from": "RES-PUE-cabb",
+      "to": "RES-CON-7ad1",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto mover pertenece a autoria"
+    },
+    {
+      "from": "RES-PUE-cabb",
+      "to": "RES-MOD-7ceb",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto mover resuelve a vault_move:move_note"
+    },
+    {
+      "from": "RES-PUE-cd53",
+      "to": "RES-CON-68eb",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto distribution_metadata pertenece a meta_toolkit"
+    },
+    {
+      "from": "RES-PUE-cd53",
+      "to": "RES-MOD-5605",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto distribution_metadata resuelve a vault_mcp_catalog:distribution_metadata"
+    },
+    {
+      "from": "RES-PUE-cefc",
+      "to": "RES-CON-dfd6",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto contexto_de_sesion pertenece a consulta"
+    },
+    {
+      "from": "RES-PUE-cefc",
+      "to": "RES-MOD-d152",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto contexto_de_sesion resuelve a vault_mcp_context:get_context"
+    },
+    {
+      "from": "RES-PUE-d766",
+      "to": "RES-CON-dfd6",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto cargar_contexto pertenece a consulta"
+    },
+    {
+      "from": "RES-PUE-d766",
+      "to": "RES-MOD-d152",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto cargar_contexto resuelve a vault_mcp_context:load_context"
+    },
+    {
+      "from": "RES-PUE-d7b9",
+      "to": "RES-CON-d280",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto auditar_normas pertenece a gobernanza"
+    },
+    {
+      "from": "RES-PUE-d7b9",
+      "to": "RES-MOD-d724",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto auditar_normas resuelve a vault_norms:vault_norms_audit"
+    },
+    {
+      "from": "RES-PUE-d821",
+      "to": "RES-CON-dfd6",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto empaquetar_contexto pertenece a consulta"
+    },
+    {
+      "from": "RES-PUE-d821",
+      "to": "RES-MOD-2cc8",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto empaquetar_contexto resuelve a vault_context_pack:vault_context_pack"
+    },
+    {
+      "from": "RES-PUE-dc1b",
+      "to": "RES-CON-d280",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto registro_de_ciclo_de_vida pertenece a gobernanza"
+    },
+    {
+      "from": "RES-PUE-dc1b",
+      "to": "RES-MOD-d724",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto registro_de_ciclo_de_vida resuelve a vault_norms:LIFECYCLE_REGISTRY"
+    },
+    {
+      "from": "RES-PUE-dd50",
+      "to": "RES-CON-68eb",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto check_contracts pertenece a meta_toolkit"
+    },
+    {
+      "from": "RES-PUE-dd50",
+      "to": "RES-MOD-5605",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto check_contracts resuelve a vault_mcp_catalog:check_contracts"
+    },
+    {
+      "from": "RES-PUE-e40a",
+      "to": "RES-CON-db7d",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto reindexar pertenece a indices"
+    },
+    {
+      "from": "RES-PUE-e40a",
+      "to": "RES-MOD-7268",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto reindexar resuelve a vault_reindex:vault_reindex"
+    },
+    {
+      "from": "RES-PUE-e414",
+      "to": "RES-CON-db7d",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto coherencia_de_indices pertenece a indices"
+    },
+    {
+      "from": "RES-PUE-e414",
+      "to": "RES-MOD-7268",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto coherencia_de_indices resuelve a vault_reindex:index_coherence"
+    },
+    {
+      "from": "RES-PUE-e4df",
+      "to": "RES-CON-6d8d",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto migrar pertenece a ciclo_de_vida"
+    },
+    {
+      "from": "RES-PUE-e4df",
+      "to": "RES-MOD-24ba",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto migrar resuelve a vault_standard_upgrade:vault_standard_upgrade"
+    },
+    {
+      "from": "RES-PUE-e6fb",
+      "to": "RES-CON-d280",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto lineas_de_estado pertenece a gobernanza"
+    },
+    {
+      "from": "RES-PUE-e6fb",
+      "to": "RES-MOD-d724",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto lineas_de_estado resuelve a vault_norms:status_frontmatter_lines"
+    },
+    {
+      "from": "RES-PUE-e7b1",
+      "to": "RES-CON-db7d",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto ledger_de_backfill_de_tags pertenece a indices"
+    },
+    {
+      "from": "RES-PUE-e7b1",
+      "to": "RES-MOD-37ae",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto ledger_de_backfill_de_tags resuelve a vault_tags:vault_tags_backfill_ledger"
+    },
+    {
+      "from": "RES-PUE-e861",
+      "to": "RES-CON-b805",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto file_lock pertenece a kernel"
+    },
+    {
+      "from": "RES-PUE-e861",
+      "to": "RES-MOD-6d4a",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto file_lock resuelve a vault_fs:file_lock"
+    },
+    {
+      "from": "RES-PUE-e870",
+      "to": "RES-CON-d280",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto NORM_CATALOG pertenece a gobernanza"
+    },
+    {
+      "from": "RES-PUE-e870",
+      "to": "RES-MOD-d724",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto NORM_CATALOG resuelve a vault_norms:NORM_CATALOG"
+    },
+    {
+      "from": "RES-PUE-e98b",
+      "to": "RES-CON-d280",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto transiciones_de_estado pertenece a gobernanza"
+    },
+    {
+      "from": "RES-PUE-e98b",
+      "to": "RES-MOD-d724",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto transiciones_de_estado resuelve a vault_norms:STATUS_TRANSITIONS"
+    },
+    {
+      "from": "RES-PUE-eb43",
+      "to": "RES-CON-68eb",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto TOOLS_CATALOG pertenece a meta_toolkit"
+    },
+    {
+      "from": "RES-PUE-eb43",
+      "to": "RES-MOD-5605",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto TOOLS_CATALOG resuelve a vault_mcp_catalog:TOOLS_CATALOG"
+    },
+    {
+      "from": "RES-PUE-ecc3",
+      "to": "RES-CON-d280",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto identidad_de_documentacion pertenece a gobernanza"
+    },
+    {
+      "from": "RES-PUE-ecc3",
+      "to": "RES-MOD-3447",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto identidad_de_documentacion resuelve a vault_audit:es_documentacion_del_estandar"
+    },
+    {
+      "from": "RES-PUE-ed04",
+      "to": "RES-CON-d280",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto vocabulario_de_estado pertenece a gobernanza"
+    },
+    {
+      "from": "RES-PUE-ed04",
+      "to": "RES-MOD-d724",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto vocabulario_de_estado resuelve a vault_norms:STATUS_VOCAB"
+    },
+    {
+      "from": "RES-PUE-efe0",
+      "to": "RES-CON-db7d",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto indice_maestro pertenece a indices"
+    },
+    {
+      "from": "RES-PUE-efe0",
+      "to": "RES-MOD-8de7",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto indice_maestro resuelve a vault_master_index:vault_master_index"
+    },
+    {
+      "from": "RES-PUE-f2df",
+      "to": "RES-CON-d280",
+      "relation": "OWNS",
+      "basis": "declarada",
+      "detail": "el puerto puntuar_calidad pertenece a gobernanza"
+    },
+    {
+      "from": "RES-PUE-f2df",
+      "to": "RES-MOD-9e0d",
+      "relation": "CONSUMES",
+      "basis": "declarada",
+      "detail": "el puerto puntuar_calidad resuelve a vault_quality_check:vault_quality_check"
+    },
+    {
+      "from": "RES-QUA-837d",
+      "to": "RES-MOD-0765",
+      "relation": "VERIFIES",
+      "basis": "declarada",
+      "detail": "la puerta ejecuta scripts/vault_gate.py"
+    },
+    {
+      "from": "RES-QUA-970b",
+      "to": "RES-MOD-5605",
+      "relation": "VERIFIES",
+      "basis": "declarada",
+      "detail": "la puerta ejecuta scripts/vault_mcp_catalog.py"
+    },
+    {
+      "from": "RES-QUA-c173",
+      "to": "RES-MOD-f51c",
+      "relation": "VERIFIES",
+      "basis": "declarada",
+      "detail": "la puerta ejecuta scripts/vault_arch.py"
+    }
+  ]
+}
