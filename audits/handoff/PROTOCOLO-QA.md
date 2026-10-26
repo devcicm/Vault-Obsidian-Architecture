@@ -71,14 +71,24 @@ release actual).
 ## 5. Solicitud QA abierta (pendiente)
 
 - **Solicitud:** dictamen de cierre del release CLI+MCP.
-- **Sobre:** rama `work/release-cli-mcp-20261025` — **HEAD `ee7e64a`**, candidato
-  congelado de producto `36c91e0` (suite 6307/0/0 y puertas 26/26 sobre ese
-  mismo SHA; E2E 27/27 con wheel reconstruida sobre `0241ffe`, hashes en
-  `audits/fase2/INFORME-READINESS-TERCEROS.md`).
-- **Base del dictamen anterior:** `9919c57` — los 8 hallazgos QA-ARC están
-  respondidos en la ronda R11 (estado por hallazgo en el informe y en el buzón).
-- Nombre candidato por convención: `qa/review-release-cli-mcp-ee7e64a-20261026`.
+- **Sobre:** rama `work/release-cli-mcp-20261025` — **HEAD `1779353`**, candidato
+  de producto **`701f5d4`** (el commit posterior `1779353` es el delta
+  documental: buzón, informe, matriz y propuesta de versión/canal).
+- **Estado de la ronda R12:** los **cinco** defectos reales que la CI destapó
+  están corregidos y comprobados (checkout superficial, detector MCP sin
+  PyYAML en Windows, env de hijo sin `SystemRoot` en 3.9/3.10, cifra de tests
+  dependiente del sistema, contenido no canónico de la semilla del sandbox),
+  más el defecto de `vault://graph` en el servidor MCP. La CI que lo verifica
+  es la corrida `40325482090`. Detalle y evidencia: `audits/handoff/
+  RESPUESTA-DEL-EJECUTOR.md` (ronda R12) e `audits/fase2/
+  INFORME-READINESS-TERCEROS.md`.
+- **Base del dictamen anterior:** `defc657` (rama
+  `qa/review-release-cli-mcp-316623a-20261026`). Los cinco defectos de CI
+  quedan respondidos en la R12; el dictamen `9919c57` (QA-ARC) quedó respondido
+  en la R11.
+- Nombre candidato por convención: `qa/review-release-cli-mcp-1779353-20261026`.
 - **Prerrequisitos que NO dependen de QA:** decisiones del propietario del
-  informe §6 (divergencias A/B/C, contrato QG-02, CI). Si siguen abiertas, el
-  dictamen de cierre deberá declararlas `BLOCKED` con esas causas — que es el
-  dictamen correcto.
+  informe §6 (divergencias A/B/C, contrato de QG-02, `vault-backups`, runners
+  de macOS) y la Constitución arquitectónica. Si siguen abiertas, el dictamen
+  de cierre deberá declararlas `BLOCKED` con esas causas — que es el dictamen
+  correcto.
