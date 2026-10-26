@@ -1,17 +1,17 @@
 {
   "generado_por": "audits/architecture/generar_inventario.py",
-  "source_sha": "45dca1be1e4367dc6d73d85192c04741a5ba755b",
+  "source_sha": "d137a1ebe8510eec107f7b8b8446342600ee51a9",
   "source": "arbol git (inmutable)",
   "conteo": {
-    "recursos": 1215,
-    "relaciones": 1034,
+    "recursos": 1216,
+    "relaciones": 1035,
     "aristas_huerfanas": 0
   },
   "niveles": {
     "descubierto": 307,
     "declarado": 248,
-    "implementado": 105,
-    "ejecutado": 482,
+    "implementado": 588,
+    "ejecutado": 0,
     "verificado": 5,
     "evidencia_acreditada": 66,
     "aceptado_qa": 0,
@@ -5940,6 +5940,13 @@
       "relation": "VERIFIES",
       "basis": "inferida",
       "detail": "el test menciona vault_mcp_catalog"
+    },
+    {
+      "from": "RES-VER-5c189c56",
+      "to": "RES-MOD-f5385b36",
+      "relation": "VERIFIES",
+      "basis": "inferida",
+      "detail": "el test menciona vault_init"
     },
     {
       "from": "RES-VER-5ca4ca2a",

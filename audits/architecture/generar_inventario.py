@@ -74,12 +74,40 @@ class Arbol:
         self.sha = sha
         self.raiz = raiz
         self._cache: Dict[str, Optional[str]] = {}
+        self._tamanos: Optional[Dict[str, Tuple[int, str]]] = None
+        self._textos_cache: Dict[str, str] = {}
 
     def _git(self, *args: str) -> str:
         p = subprocess.run(["git", *args], cwd=str(self.raiz),
                            capture_output=True, text=True, encoding="utf-8",
                            errors="replace", timeout=600)
         return p.stdout if p.returncode == 0 else ""
+
+    def tamanos(self) -> Dict[str, Tuple[int, str]]:
+        """ruta -> (bytes, sha del blob) con UNA llamada a git.
+
+        Leer el contenido de cada fichero con `git show` cuesta un subproceso
+        por fichero: con ~1200 ficheros son 1200 subprocesos, que en paralelo
+        saturan la maquina y hacen que OTROS tests fallen por tiempo. El
+        inventario necesita el TAMANO, no el contenido.
+        """
+        if self._tamanos is None:
+            salida: Dict[str, Tuple[int, str]] = {}
+            for linea in self._git("ls-tree", "-r", "--long",
+                                   self.sha).splitlines():
+                partes = linea.split("\t", 1)
+                if len(partes) != 2:
+                    continue
+                meta = partes[0].split()
+                if len(meta) < 4 or meta[1] != "blob":
+                    continue
+                try:
+                    tamano = int(meta[3])
+                except ValueError:
+                    tamano = 0
+                salida[partes[1].replace("\\", "/")] = (tamano, meta[2])
+            self._tamanos = salida
+        return self._tamanos
 
     def ficheros(self) -> List[str]:
         return [l for l in self._git("ls-tree", "-r", "--name-only",
@@ -93,6 +121,58 @@ class Arbol:
                                timeout=600)
             self._cache[ruta] = p.stdout if p.returncode == 0 else None
         return self._cache[ruta]
+
+    def textos(self, rutas: List[str]) -> Dict[str, str]:
+        """Contenido de varios ficheros en UNA llamada a git.
+
+        `git cat-file --batch` con un hilo que escribe las peticiones y este
+        hilo que lee las respuestas: un subproceso en vez de uno por fichero.
+        """
+        faltantes = [r for r in rutas if r not in self._textos_cache]
+        if faltantes:
+            import threading
+
+            pedidos = []
+            for ruta in faltantes:
+                blob = self.tamanos().get(ruta, (0, ""))[1]
+                if blob:
+                    pedidos.append((ruta, blob))
+            if pedidos:
+                # En BINARIO: el tamano de la cabecera son BYTES y read(n) en
+                # modo texto contaria caracteres: el stream se desincroniza.
+                proc = subprocess.Popen(
+                    ["git", "cat-file", "--batch"], cwd=str(self.raiz),
+                    stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL)
+
+                def _escribir() -> None:
+                    for _, blob in pedidos:
+                        proc.stdin.write((blob + "\n").encode("utf-8"))
+                    proc.stdin.flush()
+                    proc.stdin.close()
+
+                hilo = threading.Thread(target=_escribir, daemon=True)
+                hilo.start()
+                for ruta, _ in pedidos:
+                    cabecera = proc.stdout.readline()
+                    if not cabecera:
+                        break
+                    partes = cabecera.split()
+                    if len(partes) < 3:
+                        continue
+                    try:
+                        tamano = int(partes[2])
+                    except ValueError:
+                        continue
+                    cuerpo = proc.stdout.read(tamano)
+                    proc.stdout.read(1)  # salto de linea final
+                    self._textos_cache[ruta] = cuerpo.decode("utf-8", "replace")
+                hilo.join(timeout=30)
+                try:
+                    proc.wait(timeout=30)
+                except Exception:  # noqa: BLE001
+                    proc.kill()
+        return {r: self._textos_cache.get(r, "") for r in rutas}
 
     def blob_sha(self, ruta: str) -> Optional[str]:
         linea = self._git("ls-tree", self.sha, "--", ruta).strip()
@@ -241,14 +321,15 @@ def construir(arbol: Arbol, junit: Optional[Path] = None) -> Dict[str, Any]:
     por_ruta: Dict[str, str] = {}
 
     # ── 1. modulos (desde el arbol) ────────────────────────────────────────
+    tamanos = arbol.tamanos()
     for rel in sorted(f for f in ficheros
                       if f.startswith(("vault/", "scripts/")) and f.endswith(".py")):
-        texto = arbol.texto(rel) or ""
+        tamano, blob = tamanos.get(rel, (0, ""))
         rid = inv.alta(_id("modulo", rel), Path(rel).stem,
                        nature="codigo", type="modulo",
                        source_of_truth="arbol git", path=rel, source_sha=sha,
                        publication_sha=sha,
-                       observed_behavior=f"{len(texto.splitlines())} lineas",
+                       observed_behavior=f"{tamano} bytes (blob {blob[:12]})",
                        verification_level="descubierto",
                        next_level_requires="un test que lo ejecute",
                        confidence_basis="fichero leido del arbol del commit")
@@ -450,9 +531,12 @@ def construir(arbol: Arbol, junit: Optional[Path] = None) -> Dict[str, Any]:
 
     # ── 8. tests (verificadores) y su relacion con modulos y QG ─────────────
     modulos_verificados, tests_ejecutados = set(), {}
-    for rel in sorted(f for f in ficheros
-                      if f.startswith("tests/") and f.endswith(".py")):
-        texto = arbol.texto(rel) or ""
+    rutas_test = sorted(f for f in ficheros
+                        if f.startswith("tests/") and f.endswith(".py"))
+    contenidos_test = arbol.textos(rutas_test)
+    for rel in rutas_test:
+        tamano, blob = tamanos.get(rel, (0, ""))
+        texto = contenidos_test.get(rel, "")
         nombre = Path(rel).stem
         ejecucion = pruebas_por_fichero.get(rel)
         if ejecucion and ejecucion["ejecutada"] and not ejecucion["fallo"]:
@@ -473,7 +557,7 @@ def construir(arbol: Arbol, junit: Optional[Path] = None) -> Dict[str, Any]:
                        responsibility="detectar regresiones",
                        owner="qa", source_of_truth=rel, path=rel,
                        source_sha=sha, publication_sha=sha,
-                       observed_behavior=f"{len(texto.splitlines())} lineas",
+                       observed_behavior=f"{tamano} bytes (blob {blob[:12]})",
                        expected_behavior="falla cuando el defecto esta",
                        verification_level=nivel,
                        next_level_requires=siguiente,
