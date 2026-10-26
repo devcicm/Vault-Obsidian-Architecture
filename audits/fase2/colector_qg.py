@@ -49,6 +49,9 @@ COMANDOS = {
     "contencion": ["scripts/vault_foreign_check.py", "--self-test"],
     "operaciones_destructivas": ["-m", "pytest", "tests/test_vault_init_clean.py", "-q"],
     "construccion": ["-m", "build", "--wheel", "--sdist"],
+    # Con argv propio: se completan en tiempo de ejecucion.
+    "pip_audit": ["-m", "pip_audit"],
+    "paridad_cli_mcp": ["audits/fase2/paridad_cli_mcp.py"],
 }
 
 #: Contrato por puerta: subcheck -> {tipo, verificador, ...}.
@@ -336,12 +339,25 @@ def _ejecutar_subcheck(gate: str, nombre: str, spec: Dict[str, Any], sha: str,
             return _registro(nombre, verificador, "no_ejecutado",
                              f"ORIGEN_NO_EJECUTADO:{origen}", None, started,
                              _sello())
+        texto = ""
         try:
-            datos = json.loads(Path(previo["artifact"]).read_text(
-                encoding="utf-8", errors="replace"))
-        except (OSError, ValueError) as exc:
+            texto = Path(previo["artifact"]).read_text(encoding="utf-8",
+                                                       errors="replace")
+        except OSError as exc:
             return _registro(nombre, verificador, "degradado",
                              f"ORIGEN_ILEGIBLE: {exc}", None, started, _sello())
+        datos = None
+        for linea in texto.splitlines():
+            linea = linea.strip()
+            if linea.startswith("{"):
+                try:
+                    datos = json.loads(linea)
+                    break
+                except ValueError:
+                    continue
+        if datos is None:
+            return _registro(nombre, verificador, "degradado",
+                             "ORIGEN_SIN_ENVELOPE_JSON", None, started, _sello())
         if isinstance(datos, dict) and "total_violations" in datos:
             valor = datos.get("total_violations")
             ok = valor == 0
@@ -413,10 +429,10 @@ def ejecutar_verificador(gate: str, sha: str, salida: Path,
     ctx.setdefault("registros", {})
     salida.mkdir(parents=True, exist_ok=True)
     registros: Dict[str, Any] = {}
+    ctx["registros"][gate] = registros
     for nombre, spec in SUBCONTRATOS.get(gate, {}).items():
         registros[nombre] = _ejecutar_subcheck(gate, nombre, spec, sha, salida,
                                                ejecutar, raiz, ctx)
-    ctx["registros"][gate] = registros
     estados = {n: r["estado"] for n, r in registros.items()}
     ok = bool(estados) and all(e == ESTADO_OK for e in estados.values())
     manifiesto = salida / f"{gate}.subchecks.json"
