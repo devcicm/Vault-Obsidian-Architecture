@@ -368,6 +368,9 @@ def _vault_init_sin_clean(
             "quality": ["verified", "stub", "draft", "informacion-decrepita", "deprecated"],
             "migration": ["migrated", "direct", "indirect", "excluded"],
             "agent": ["deepseek", "mavis", "opencode", "system", "vault_init"],
+            # QA-RC-02e (AP-39): los tags de las notas bootstrap que vault_init
+            # crea son canónicos por diseño — no son vocabulario abierto.
+            "bootstrap": ["command", "hub", "nav", "onboarding", "primer", "scaffold"],
         },
     }
     if _repo().sembrar_registro_etiquetas(tag_registry):
