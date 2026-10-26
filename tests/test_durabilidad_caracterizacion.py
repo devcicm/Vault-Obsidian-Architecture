@@ -28,7 +28,11 @@ SCRIPTS = REPO_ROOT / "scripts"
 @pytest.fixture
 def vault(tmp_path):
     destino = tmp_path / "vault"
-    shutil.copytree(REPO_ROOT / "vault-sandbox", destino)
+    # Los locks son estado transitorio de proceso, no contenido: otro worker
+    # puede estar escribiendo su `.tool-trace.json.lock` en el sandbox canonico
+    # mientras se copia, y la copia fallaria por eso (no por el contenido).
+    shutil.copytree(REPO_ROOT / "vault-sandbox", destino,
+                    ignore=shutil.ignore_patterns("*.lock"))
     return destino
 
 
