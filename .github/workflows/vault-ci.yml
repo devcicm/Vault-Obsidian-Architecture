@@ -130,9 +130,19 @@ jobs:
 
       - name: Run vault_norms --list
         working-directory: scripts
+        # `shell: bash` por una razón medida, no por gusto: con el shell por
+        # defecto (PowerShell en Windows) las comillas del `python -c` se
+        # pierden al pasar el argumento y el código llega partido
+        # («SyntaxError: '[' was never closed»). Medido el 2026-10-26: las
+        # cuatro columnas de Windows fallaban en este paso y las de Ubuntu
+        # pasaban, con el MISMO código. Con bash —que está en los tres
+        # runners, y es el shell que ya usan el paso de la wheel y el de
+        # SBOM— y comillas simples dentro del código, el paso es el mismo en
+        # los tres sistemas.
+        shell: bash
         run: |
           cd ..
-          python scripts/vault_norms.py --list --type ap | python -c "import json,sys; d=json.load(sys.stdin); print(f'AP norms registered: {d[\"total\"]}')"
+          python scripts/vault_norms.py --list --type ap | python -c "import json,sys; d=json.load(sys.stdin); print('AP norms registered:', d['total'])"
 
       # El manifiesto público del estándar (`vault-obsidian-architecture.md`)
       # debe pasar su propio AP-25. Sin este guard, el estándar puede publicar
