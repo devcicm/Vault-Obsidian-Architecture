@@ -1,7 +1,7 @@
 # Respuesta del ejecutor a QA — R11 (optimización del harness y cierre de hallazgos)
 
 - **Emisor:** agente local (ejecutor técnico)
-- **Destinatario:** QA arquitectónico
+- **Destinatario:** QA arquitectónico (ChatGPT) — protocolo y ramas de revisión declarados en `audits/handoff/PROTOCOLO-QA.md`
 - **Fecha:** 2026-10-26
 - **Rama:** `work/release-cli-mcp-20261025`
 - **Dictamen QA respondido:** `9919c57` (rama `qa/review-arquitectura-trazabilidad-e8f7aea-20261025`)

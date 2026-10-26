@@ -4,6 +4,7 @@
 **Rama:** `work/release-cli-mcp-20261025`
 **HEAD:** `0241ffe` · **Candidato de producto congelado:** `31dfa46`
 **Dictámenes vigentes:** `9919c57` (8 hallazgos QA-ARC-01..08 sobre la capa de trazabilidad) y `a9e0143`
+**Protocolo y agente QA:** declarado canónicamente en `audits/handoff/PROTOCOLO-QA.md` (QA arquitectónico (ChatGPT); ramas de revisión `qa/review-<ámbito>-<sha>-<fecha>`; buzones y regla de propiedad; solicitud abierta sobre este SHA)
 **Estado general:** **ADVANCE — usable por terceros técnicos hoy en Windows; release 1.0 pendiente del encadenado QG, de la CI y de decisiones explícitas del propietario**
 
 Este informe consolida el "cómo va el proyecto" con la evidencia que existe
