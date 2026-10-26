@@ -153,14 +153,16 @@ Nada de esto lo puede hacer el ejecutor; cada una tiene su expediente:
 
 ## 9. Estado de la certificación de cierre
 
-- Suite completa `r11c` sobre `0241ffe`: **COMPLETA — 6300 passed / 13 skipped /
+- Suite completa sobre `0241ffe` (JUnit `r11c`): **6300 passed / 13 skipped /
   0 failed / 0 errores** en 1076,4 s.
 - Puertas sobre `0241ffe`: 26/26.
 - E2E sobre `0241ffe` con wheel reconstruida: **27/27** (artefactos con hash nuevo).
-- Pendiente tras congelar el SHA del freeze del informe: suite + puertas + E2E
-  de cortesía sobre ese SHA (los deltas desde `0241ffe` son documentales y una
-  pirámide medida; el cierre formal pide, de todos modos, re-certificación del
-  SHA congelado).
+- Todo el código habilitado (informe en el repo, pirámide medida y sus 7 tests)
+  se congeló en `36c91e0` y ahí se **re-certificó**: suite completa **6307
+  passed / 13 skipped / 0 failed / 0 errores** en 1068,7 s (JUnit `r11d`) y
+  **puertas 26/26**. El delta entre `0241ffe` y `36c91e0` es documental y queda
+  fuera del paquete distribuido (no se repite el E2E de cortesía).
+- Con esto, la única certificación que falta es el dictamen QA del SHA congelado.
 
 **Veredicto:** el proyecto está en el mejor estado de su historia y **sí puede
 usarse por terceros hoy** bajo las condiciones de §5.1 (Windows, uso técnico,

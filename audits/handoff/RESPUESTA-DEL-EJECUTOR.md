@@ -81,14 +81,18 @@ estructura del coste y la eliminación de las causas identificadas.
 
 ## 5. Estado de la verificación
 
-- **Puertas:** 26/26 (45dca1b).
-- **Suite:** 6280 passed / 13 skipped / 0 failed (45dca1b) — el fallo de
-  determinismo se corrigió en 45dca1b (comparación estructural sobre árbol
-  inmutable).
-- **E2E:** 27/27 (31dfa46).
-- **Re-ejecución sobre `fbfae57`:** pendiente (esta ronda cambió el generador y
-  las pruebas de trazabilidad: el nivel N1 exige re-ejecutar).
-- **AP-39:** 0 violaciones en runtime poblado (fbfae57).
+- **Puertas:** 26/26 sobre `0241ffe` y sobre el freeze `36c91e0`.
+- **Suite de cierre:** **6307 passed / 13 skipped / 0 failed / 0 errores** en
+  1068,67 s sobre `36c91e0` (JUnit `r11d`) — incluye la re-certificación de la
+  suite `r11c` (6300 passed sobre `0241ffe`, 1076,40 s) y los 7 tests de la
+  pirámide nuevas.
+- **E2E:** 27/27 sobre `0241ffe` con wheel **reconstruida desde el código
+  actual** (fix AP-39 dentro del paquete): wheel `79043404…73b066`, sdist
+  `cc6b2224…57afbe`. El delta de `36c91e0` es documental (audits/, tests/, AGENTS.md):
+  fuera del paquete distribuido, por lo que no se repite el E2E completo.
+- **AP-39:** 0 violaciones en runtime poblado (75 ficheros).
+- **Informe de readiness:** `audits/fase2/INFORME-READINESS-TERCEROS.md`
+  (estado del proyecto para terceros, con cada cifra y su fuente).
 
 ## 6. Decisiones del propietario que siguen pendientes
 
