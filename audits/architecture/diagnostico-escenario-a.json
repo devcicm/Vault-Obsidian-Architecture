@@ -1,6 +1,6 @@
 {
   "escenario": "A: sandbox canonico (vault-sandbox)",
-  "root": "<RUTA-USUARIO> Ivan\\Documents\\GitHub\\Vault-Obsidian-Architecture\\vault-sandbox",
+  "root": "<RUTA-LOCAL> Ivan\\Documents\\GitHub\\Vault-Obsidian-Architecture\\vault-sandbox",
   "total": 14,
   "completo": true,
   "by_norm": {
@@ -78,7 +78,7 @@
     {
       "norm": "AP-36",
       "path": "../../vault-backups",
-      "message": "'vault-backups' existe 2 nivel(es) por encima del vault (<RUTA-USUARIO> Ivan\\Documents\\GitHub\\vault-backups) — side-effect escrito fuera del vault root."
+      "message": "'vault-backups' existe 2 nivel(es) por encima del vault (<RUTA-LOCAL> Ivan\\Documents\\GitHub\\vault-backups) — side-effect escrito fuera del vault root."
     }
   ]
 }

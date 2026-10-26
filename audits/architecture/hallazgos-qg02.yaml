@@ -1,5 +1,5 @@
 schema: 1
-sha: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+sha: ab31bf3b095effb81625464d19f2cf80ab72e35c
 escenario_a: sandbox canonico (vault-sandbox)
 escenario_b: runtime limpio creado por el producto
 hallazgos:
@@ -219,7 +219,7 @@ hallazgos:
 - id: INC-0014
   norm: AP-36
   path: ../../vault-backups
-  observed: '''vault-backups'' existe 2 nivel(es) por encima del vault (<RUTA-USUARIO> Ivan\Documents\GitHub\vault-backups)
+  observed: '''vault-backups'' existe 2 nivel(es) por encima del vault (<RUTA-LOCAL> Ivan\Documents\GitHub\vault-backups)
     — side-effect escrito fuera del vault root.'
   environment: escenario A (sandbox canonico)
   root_cause: 'efecto lateral escrito FUERA del vault root (AP-36): un directorio vault-backups existe
@@ -238,19 +238,26 @@ hallazgos:
 - id: INC-0015
   norm: AP-39
   path: 19_Audits/vocabulary/tag-ledger.json
-  observed: 3 término(s) en uso que no son canónicos ni constan en la bitácora ('command', 'hub', 'nav')
-    — vocabulario introducido sin dejar rastro de quién ni cuándo. Correr vault_tags --backfill-ledger
-    para ano
+  observed: 3 terminos en uso sin memoria canonica (command, hub, nav) en un runtime recien creado por
+    el producto
   environment: escenario B (runtime limpio creado por el producto)
-  root_cause: el init del producto escribe una entrada de vocabulario sin memoria en la bitacora de tags
-    (AP-39)
-  reproduction: python scripts/vault_norms.py --audit --root <runtime>
+  root_cause: vault_init crea notas bootstrap con tags que no declaraba como canonicos en su propio tag-registry.json
+  reproduction: 'python scripts/vault_init.py  # con VAULT_ROOT apuntando a un runtime nuevo; despues
+    python scripts/vault_norms.py --audit --root <rt>'
   evidence:
   - audits/architecture/hallazgos-qg02.yaml#INC-0015
-  classification: violacion real del producto (el init deja el runtime con una violacion)
-  impact: ''
+  - commit 2174bb1 (fix(AP-39))
+  - 're-auditoria: 0 violaciones en runtime con 75 ficheros'
+  classification: violacion real del producto (CORREGIDA)
+  impact: un runtime recien creado por el producto violaba la norma que el producto certifica (invariante
+    INV-10)
   severity: medium
-  resolution_options: []
-  recommended_action: corregir el init o el registro que produce; es un defecto del producto, no del entorno
-  decision_required: true
+  resolution_options:
+  - declarar los tags bootstrap como canonicos
+  - registrar los tags en el ledger al crear las notas
+  recommended_action: 'aplicada: categoria ''bootstrap'' en canonical_tags del tag-registry'
+  decision_required: false
   quality_gate: QG-02
+  estado: CORREGIDO
+  commit_correctivo: 2174bb1
+  verificacion: 're-auditoria con el codigo actual sobre un runtime de 75 ficheros: 0 violaciones, 0 AP-39'

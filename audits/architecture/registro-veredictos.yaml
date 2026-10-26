@@ -1,8 +1,144 @@
 schema: 1
-sha: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+sha: ab31bf3b095effb81625464d19f2cf80ab72e35c
 fuente: ramas origin/qa/* (buzon RESPUESTA-QA.md)
 veredictos:
 - id: VER-001
+  sha_evaluado: f3aaafc34a4ca719070a55f642452d52c107b58d
+  sha_rama_qa: 9919c57
+  fecha: ''
+  autoridad: QA (revision independiente)
+  hallazgo: Buzón QA → agente ejecutor — dictamen de ronda 1
+  severidad: NO_DETERMINADO
+  motivo: '| Tarea | SHA | Cambio observado | Decisión QA |'
+  evidencia:
+  - origin/origin/qa/review-arquitectura-trazabilidad-e8f7aea-20261025:audits/handoff/RESPUESTA-QA.md
+  accion_exigida: ''
+  commit_correctivo: ''
+  prueba: ''
+  estado_posterior: NO_DETERMINADO
+  veredicto_que_lo_cerro: ''
+  riesgo_residual: ''
+  confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
+- id: VER-002
+  sha_evaluado: 3913baa18122d71596060ce93eeec58532f91184
+  sha_rama_qa: 9919c57
+  fecha: ''
+  autoridad: QA (revision independiente)
+  hallazgo: Dictamen QA — cierre técnico local de ronda 1B (2026-10-25)
+  severidad: NO_DETERMINADO
+  motivo: '# Dictamen QA — cierre técnico local de ronda 1B (2026-10-25)'
+  evidencia:
+  - origin/origin/qa/review-arquitectura-trazabilidad-e8f7aea-20261025:audits/handoff/RESPUESTA-QA.md
+  accion_exigida: ''
+  commit_correctivo: ''
+  prueba: ''
+  estado_posterior: NO_DETERMINADO
+  veredicto_que_lo_cerro: ''
+  riesgo_residual: ''
+  confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
+- id: VER-003
+  sha_evaluado: 44f6f893670d8080703342878aca465650987604
+  sha_rama_qa: 9919c57
+  fecha: ''
+  autoridad: QA (revision independiente)
+  hallazgo: Fase 2 · Dictamen independiente L3 (2026-10-25)
+  severidad: NO_DETERMINADO
+  motivo: '# Fase 2 · Dictamen independiente L3 (2026-10-25)'
+  evidencia:
+  - origin/origin/qa/review-arquitectura-trazabilidad-e8f7aea-20261025:audits/handoff/RESPUESTA-QA.md
+  accion_exigida: ''
+  commit_correctivo: ''
+  prueba: ''
+  estado_posterior: NO_DETERMINADO
+  veredicto_que_lo_cerro: ''
+  riesgo_residual: ''
+  confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
+- id: VER-004
+  sha_evaluado: 1c788e36b7e5dacb4c66a68303d794020118b190
+  sha_rama_qa: 9919c57
+  fecha: ''
+  autoridad: QA (revision independiente)
+  hallazgo: 'Dictamen QA — Fase 2: correcciones L3 + investigación L2 (2026-10-25)'
+  severidad: NO_DETERMINADO
+  motivo: '# Dictamen QA — Fase 2: correcciones L3 + investigación L2 (2026-10-25)'
+  evidencia:
+  - origin/origin/qa/review-arquitectura-trazabilidad-e8f7aea-20261025:audits/handoff/RESPUESTA-QA.md
+  accion_exigida: ''
+  commit_correctivo: ''
+  prueba: ''
+  estado_posterior: NO_DETERMINADO
+  veredicto_que_lo_cerro: ''
+  riesgo_residual: ''
+  confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
+- id: VER-005
+  sha_evaluado: e5e1b48ea9cc2446d04b23bbf40bc3f5693a76fd
+  sha_rama_qa: 9919c57
+  fecha: ''
+  autoridad: QA (revision independiente)
+  hallazgo: Dictamen QA — Entrega final de planificación y diagnóstico Fase 2 (2026-10-25)
+  severidad: NO_DETERMINADO
+  motivo: '# Dictamen QA — Entrega final de planificación y diagnóstico Fase 2 (2026-10-25)'
+  evidencia:
+  - origin/origin/qa/review-arquitectura-trazabilidad-e8f7aea-20261025:audits/handoff/RESPUESTA-QA.md
+  accion_exigida: ''
+  commit_correctivo: ''
+  prueba: ''
+  estado_posterior: NO_DETERMINADO
+  veredicto_que_lo_cerro: ''
+  riesgo_residual: ''
+  confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
+- id: VER-006
+  sha_evaluado: cc787f9
+  sha_rama_qa: 9919c57
+  fecha: ''
+  autoridad: QA (revision independiente)
+  hallazgo: Dictamen QA — R01–R05 de fase 2, SHA cc787f9 (2026-10-25)
+  severidad: NO_DETERMINADO
+  motivo: '# Dictamen QA — R01–R05 de fase 2, SHA cc787f9 (2026-10-25)'
+  evidencia:
+  - origin/origin/qa/review-arquitectura-trazabilidad-e8f7aea-20261025:audits/handoff/RESPUESTA-QA.md
+  accion_exigida: ''
+  commit_correctivo: ''
+  prueba: ''
+  estado_posterior: NO_DETERMINADO
+  veredicto_que_lo_cerro: ''
+  riesgo_residual: ''
+  confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
+- id: VER-007
+  sha_evaluado: d0befe6e9c143289a0878d07512b124450eadbc1
+  sha_rama_qa: 9919c57
+  fecha: ''
+  autoridad: QA (revision independiente)
+  hallazgo: Dictamen independiente QA — lote R06 y preparación para terceros (2026-10-25)
+  severidad: NO_DETERMINADO
+  motivo: '# Dictamen independiente QA — lote R06 y preparación para terceros (2026-10-25)'
+  evidencia:
+  - origin/origin/qa/review-arquitectura-trazabilidad-e8f7aea-20261025:audits/handoff/RESPUESTA-QA.md
+  accion_exigida: ''
+  commit_correctivo: ''
+  prueba: ''
+  estado_posterior: NO_DETERMINADO
+  veredicto_que_lo_cerro: ''
+  riesgo_residual: ''
+  confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
+- id: VER-008
+  sha_evaluado: e8f7aea78be9368932b35a7aa74fa539c8b00774
+  sha_rama_qa: 9919c57
+  fecha: ''
+  autoridad: QA (revision independiente)
+  hallazgo: Dictamen QA independiente — Constitución y trazabilidad (R10, 2026-10-25)
+  severidad: NO_DETERMINADO
+  motivo: '# Dictamen QA independiente — Constitución y trazabilidad (R10, 2026-10-25)'
+  evidencia:
+  - origin/origin/qa/review-arquitectura-trazabilidad-e8f7aea-20261025:audits/handoff/RESPUESTA-QA.md
+  accion_exigida: ''
+  commit_correctivo: ''
+  prueba: ''
+  estado_posterior: NO_DETERMINADO
+  veredicto_que_lo_cerro: ''
+  riesgo_residual: ''
+  confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
+- id: VER-009
   sha_evaluado: f3aaafc34a4ca719070a55f642452d52c107b58d
   sha_rama_qa: 5de279a
   fecha: ''
@@ -19,7 +155,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-002
+- id: VER-010
   sha_evaluado: 3913baa18122d71596060ce93eeec58532f91184
   sha_rama_qa: 5de279a
   fecha: ''
@@ -36,7 +172,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-003
+- id: VER-011
   sha_evaluado: 44f6f893670d8080703342878aca465650987604
   sha_rama_qa: 5de279a
   fecha: ''
@@ -53,7 +189,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-004
+- id: VER-012
   sha_evaluado: 1c788e36b7e5dacb4c66a68303d794020118b190
   sha_rama_qa: 5de279a
   fecha: ''
@@ -70,7 +206,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-005
+- id: VER-013
   sha_evaluado: e5e1b48ea9cc2446d04b23bbf40bc3f5693a76fd
   sha_rama_qa: 5de279a
   fecha: ''
@@ -87,7 +223,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-006
+- id: VER-014
   sha_evaluado: cc787f9
   sha_rama_qa: 5de279a
   fecha: ''
@@ -104,7 +240,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-007
+- id: VER-015
   sha_evaluado: d0befe6e9c143289a0878d07512b124450eadbc1
   sha_rama_qa: 5de279a
   fecha: ''
@@ -121,7 +257,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-008
+- id: VER-016
   sha_evaluado: 0580b7e07b96b3b610d7ce5122be1522ea53562e
   sha_rama_qa: 5de279a
   fecha: ''
@@ -138,7 +274,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-009
+- id: VER-017
   sha_evaluado: f3aaafc34a4ca719070a55f642452d52c107b58d
   sha_rama_qa: a9e0143
   fecha: ''
@@ -155,7 +291,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-010
+- id: VER-018
   sha_evaluado: 3913baa18122d71596060ce93eeec58532f91184
   sha_rama_qa: a9e0143
   fecha: ''
@@ -172,7 +308,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-011
+- id: VER-019
   sha_evaluado: 44f6f893670d8080703342878aca465650987604
   sha_rama_qa: a9e0143
   fecha: ''
@@ -189,7 +325,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-012
+- id: VER-020
   sha_evaluado: 1c788e36b7e5dacb4c66a68303d794020118b190
   sha_rama_qa: a9e0143
   fecha: ''
@@ -206,7 +342,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-013
+- id: VER-021
   sha_evaluado: e5e1b48ea9cc2446d04b23bbf40bc3f5693a76fd
   sha_rama_qa: a9e0143
   fecha: ''
@@ -223,7 +359,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-014
+- id: VER-022
   sha_evaluado: cc787f9
   sha_rama_qa: a9e0143
   fecha: ''
@@ -240,7 +376,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-015
+- id: VER-023
   sha_evaluado: d0befe6e9c143289a0878d07512b124450eadbc1
   sha_rama_qa: a9e0143
   fecha: ''
@@ -257,7 +393,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-016
+- id: VER-024
   sha_evaluado: 29c1a15
   sha_rama_qa: a9e0143
   fecha: ''
@@ -274,7 +410,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-017
+- id: VER-025
   sha_evaluado: f3aaafc34a4ca719070a55f642452d52c107b58d
   sha_rama_qa: 8dbd5b0
   fecha: ''
@@ -291,7 +427,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-018
+- id: VER-026
   sha_evaluado: 3913baa18122d71596060ce93eeec58532f91184
   sha_rama_qa: 8dbd5b0
   fecha: ''
@@ -308,7 +444,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-019
+- id: VER-027
   sha_evaluado: 44f6f893670d8080703342878aca465650987604
   sha_rama_qa: 8dbd5b0
   fecha: ''
@@ -325,7 +461,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-020
+- id: VER-028
   sha_evaluado: 1c788e36b7e5dacb4c66a68303d794020118b190
   sha_rama_qa: 8dbd5b0
   fecha: ''
@@ -342,7 +478,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-021
+- id: VER-029
   sha_evaluado: e5e1b48ea9cc2446d04b23bbf40bc3f5693a76fd
   sha_rama_qa: 8dbd5b0
   fecha: ''
@@ -359,7 +495,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-022
+- id: VER-030
   sha_evaluado: cc787f9
   sha_rama_qa: 8dbd5b0
   fecha: ''
@@ -376,7 +512,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-023
+- id: VER-031
   sha_evaluado: d0befe6e9c143289a0878d07512b124450eadbc1
   sha_rama_qa: 8dbd5b0
   fecha: ''
@@ -393,7 +529,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-024
+- id: VER-032
   sha_evaluado: 4396273ea24232fc3de1838a57551ccb23a3a4ba
   sha_rama_qa: 8dbd5b0
   fecha: ''
@@ -410,7 +546,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-025
+- id: VER-033
   sha_evaluado: f3aaafc34a4ca719070a55f642452d52c107b58d
   sha_rama_qa: f710089
   fecha: ''
@@ -427,7 +563,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-026
+- id: VER-034
   sha_evaluado: 3913baa18122d71596060ce93eeec58532f91184
   sha_rama_qa: f710089
   fecha: ''
@@ -444,7 +580,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-027
+- id: VER-035
   sha_evaluado: 44f6f893670d8080703342878aca465650987604
   sha_rama_qa: f710089
   fecha: ''
@@ -461,7 +597,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-028
+- id: VER-036
   sha_evaluado: 1c788e36b7e5dacb4c66a68303d794020118b190
   sha_rama_qa: f710089
   fecha: ''
@@ -478,7 +614,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-029
+- id: VER-037
   sha_evaluado: e5e1b48ea9cc2446d04b23bbf40bc3f5693a76fd
   sha_rama_qa: f710089
   fecha: ''
@@ -495,7 +631,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-030
+- id: VER-038
   sha_evaluado: cc787f9
   sha_rama_qa: f710089
   fecha: ''
@@ -512,7 +648,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-031
+- id: VER-039
   sha_evaluado: d0befe6e9c143289a0878d07512b124450eadbc1
   sha_rama_qa: f710089
   fecha: ''
@@ -529,7 +665,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-032
+- id: VER-040
   sha_evaluado: 4595aea4c8284b523966cfb3ddde0c87cd7092aa
   sha_rama_qa: f710089
   fecha: ''
@@ -546,7 +682,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-033
+- id: VER-041
   sha_evaluado: f3aaafc34a4ca719070a55f642452d52c107b58d
   sha_rama_qa: 1e75d94
   fecha: ''
@@ -563,7 +699,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-034
+- id: VER-042
   sha_evaluado: 3913baa18122d71596060ce93eeec58532f91184
   sha_rama_qa: 1e75d94
   fecha: ''
@@ -580,7 +716,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-035
+- id: VER-043
   sha_evaluado: 44f6f893670d8080703342878aca465650987604
   sha_rama_qa: 1e75d94
   fecha: ''
@@ -597,7 +733,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-036
+- id: VER-044
   sha_evaluado: 1c788e36b7e5dacb4c66a68303d794020118b190
   sha_rama_qa: 1e75d94
   fecha: ''
@@ -614,7 +750,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-037
+- id: VER-045
   sha_evaluado: e5e1b48ea9cc2446d04b23bbf40bc3f5693a76fd
   sha_rama_qa: 1e75d94
   fecha: ''
@@ -631,7 +767,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-038
+- id: VER-046
   sha_evaluado: cc787f9
   sha_rama_qa: 1e75d94
   fecha: ''
@@ -648,7 +784,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-039
+- id: VER-047
   sha_evaluado: d0befe6e9c143289a0878d07512b124450eadbc1
   sha_rama_qa: 1e75d94
   fecha: ''
@@ -665,7 +801,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-040
+- id: VER-048
   sha_evaluado: 4c66fc2
   sha_rama_qa: 1e75d94
   fecha: ''
@@ -682,7 +818,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-041
+- id: VER-049
   sha_evaluado: f3aaafc34a4ca719070a55f642452d52c107b58d
   sha_rama_qa: fabe442
   fecha: ''
@@ -699,7 +835,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-042
+- id: VER-050
   sha_evaluado: 3913baa18122d71596060ce93eeec58532f91184
   sha_rama_qa: fabe442
   fecha: ''
@@ -716,7 +852,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-043
+- id: VER-051
   sha_evaluado: 44f6f893670d8080703342878aca465650987604
   sha_rama_qa: fabe442
   fecha: ''
@@ -733,7 +869,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-044
+- id: VER-052
   sha_evaluado: 1c788e36b7e5dacb4c66a68303d794020118b190
   sha_rama_qa: fabe442
   fecha: ''
@@ -750,7 +886,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-045
+- id: VER-053
   sha_evaluado: e5e1b48ea9cc2446d04b23bbf40bc3f5693a76fd
   sha_rama_qa: fabe442
   fecha: ''
@@ -767,7 +903,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-046
+- id: VER-054
   sha_evaluado: cc787f9
   sha_rama_qa: fabe442
   fecha: ''
@@ -784,7 +920,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-047
+- id: VER-055
   sha_evaluado: d0befe6e9c143289a0878d07512b124450eadbc1
   sha_rama_qa: fabe442
   fecha: ''
@@ -801,7 +937,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-048
+- id: VER-056
   sha_evaluado: 5836474afc8006e1846eb08b1ff1b12fbc208626
   sha_rama_qa: fabe442
   fecha: ''
@@ -818,7 +954,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-049
+- id: VER-057
   sha_evaluado: f3aaafc34a4ca719070a55f642452d52c107b58d
   sha_rama_qa: 628df53
   fecha: ''
@@ -835,7 +971,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-050
+- id: VER-058
   sha_evaluado: 3913baa18122d71596060ce93eeec58532f91184
   sha_rama_qa: 628df53
   fecha: ''
@@ -852,7 +988,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-051
+- id: VER-059
   sha_evaluado: 44f6f893670d8080703342878aca465650987604
   sha_rama_qa: 628df53
   fecha: ''
@@ -869,7 +1005,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-052
+- id: VER-060
   sha_evaluado: 1c788e36b7e5dacb4c66a68303d794020118b190
   sha_rama_qa: 628df53
   fecha: ''
@@ -886,7 +1022,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-053
+- id: VER-061
   sha_evaluado: e5e1b48ea9cc2446d04b23bbf40bc3f5693a76fd
   sha_rama_qa: 628df53
   fecha: ''
@@ -903,7 +1039,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-054
+- id: VER-062
   sha_evaluado: cc787f9
   sha_rama_qa: 628df53
   fecha: ''
@@ -920,7 +1056,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-055
+- id: VER-063
   sha_evaluado: d0befe6e9c143289a0878d07512b124450eadbc1
   sha_rama_qa: 628df53
   fecha: ''
@@ -937,7 +1073,7 @@ veredictos:
   veredicto_que_lo_cerro: ''
   riesgo_residual: ''
   confidence_basis: titulo y veredicto extraidos del buzon QA; el resto no se extrae automaticamente
-- id: VER-056
+- id: VER-064
   sha_evaluado: bfca45a983007f3641dca005e427a673138ffd54
   sha_rama_qa: 628df53
   fecha: ''

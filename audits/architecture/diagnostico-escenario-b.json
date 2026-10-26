@@ -1,16 +1,8 @@
 {
-  "escenario": "B: runtime limpio de certificacion (creado por el producto)",
-  "root": "<RUTA-USUARIO>",
-  "total": 1,
+  "escenario": "B: runtime limpio creado por el producto (codigo actual)",
+  "root": "<RUTA-LOCAL>",
+  "total": 0,
   "completo": true,
-  "by_norm": {
-    "AP-39": 1
-  },
-  "hallazgos": [
-    {
-      "norm": "AP-39",
-      "path": "19_Audits/vocabulary/tag-ledger.json",
-      "message": "3 término(s) en uso que no son canónicos ni constan en la bitácora ('command', 'hub', 'nav') — vocabulario introducido sin dejar rastro de quién ni cuándo. Correr vault_tags --backfill-ledger para ano"
-    }
-  ]
+  "by_norm": {},
+  "hallazgos": []
 }

@@ -1,5 +1,5 @@
 schema: 1
-sha: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+sha: ab31bf3b095effb81625464d19f2cf80ab72e35c
 fuente: audits/fase2/reconciliar_archify.py --check
 divergencias:
 - id: DIV-01
@@ -8,7 +8,7 @@ divergencias:
   elemento_original: ficha del par en el snapshot de Archify (revision anterior)
   elemento_vigente: ficha vigente del par en scripts/vault_arch.py
   sha_referencia_snapshot: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
-  sha_codigo_actual: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  sha_codigo_actual: ab31bf3b095effb81625464d19f2cf80ab72e35c
   cambio_responsable: 59d0465 (ficha actualizada al mover el cruce) + 667a6a5 (sitio)
   naturaleza: 'ficha desactualizada: el adeudado NO cambio'
   es_movimiento_legitimo: false
@@ -29,7 +29,7 @@ divergencias:
   elemento_original: ficha del par en el snapshot de Archify (revision anterior)
   elemento_vigente: ficha vigente del par en scripts/vault_arch.py
   sha_referencia_snapshot: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
-  sha_codigo_actual: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  sha_codigo_actual: ab31bf3b095effb81625464d19f2cf80ab72e35c
   cambio_responsable: 59d0465 (ficha actualizada al mover el cruce) + 667a6a5 (sitio)
   naturaleza: 'ficha desactualizada: el adeudado NO cambio'
   es_movimiento_legitimo: false
@@ -50,7 +50,7 @@ divergencias:
   elemento_original: 'acceso declarado en el snapshot: vault_norms_engine -> vault_mcp_catalog.check_params'
   elemento_vigente: acceso vigente en la fachada de mantenimiento (mismo par de contextos)
   sha_referencia_snapshot: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
-  sha_codigo_actual: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  sha_codigo_actual: ab31bf3b095effb81625464d19f2cf80ab72e35c
   cambio_responsable: 667a6a5 (la composicion paso de vault_norms_engine a vault_norms)
   naturaleza: movimiento
   es_movimiento_legitimo: true
@@ -70,7 +70,7 @@ divergencias:
   elemento_original: 'acceso declarado en el snapshot: vault_norms_engine -> vault_smoke.SIN_SMOKE'
   elemento_vigente: acceso vigente en la fachada de mantenimiento (mismo par de contextos)
   sha_referencia_snapshot: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
-  sha_codigo_actual: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  sha_codigo_actual: ab31bf3b095effb81625464d19f2cf80ab72e35c
   cambio_responsable: 667a6a5 (la composicion paso de vault_norms_engine a vault_norms)
   naturaleza: movimiento
   es_movimiento_legitimo: true
@@ -90,7 +90,7 @@ divergencias:
   elemento_original: 'acceso declarado en el snapshot: vault_norms_engine -> vault_smoke.invocation'
   elemento_vigente: acceso vigente en la fachada de mantenimiento (mismo par de contextos)
   sha_referencia_snapshot: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
-  sha_codigo_actual: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  sha_codigo_actual: ab31bf3b095effb81625464d19f2cf80ab72e35c
   cambio_responsable: 667a6a5 (la composicion paso de vault_norms_engine a vault_norms)
   naturaleza: movimiento
   es_movimiento_legitimo: true
@@ -110,7 +110,7 @@ divergencias:
   elemento_original: 'acceso declarado en el snapshot: vault_norms_engine -> vault_smoke.load_baseline'
   elemento_vigente: acceso vigente en la fachada de mantenimiento (mismo par de contextos)
   sha_referencia_snapshot: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
-  sha_codigo_actual: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  sha_codigo_actual: ab31bf3b095effb81625464d19f2cf80ab72e35c
   cambio_responsable: 667a6a5 (la composicion paso de vault_norms_engine a vault_norms)
   naturaleza: movimiento
   es_movimiento_legitimo: true
@@ -130,7 +130,7 @@ divergencias:
   elemento_original: 'acceso declarado en el snapshot: vault_norms_engine -> vault_voice.coverage'
   elemento_vigente: acceso vigente en la fachada de mantenimiento (mismo par de contextos)
   sha_referencia_snapshot: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
-  sha_codigo_actual: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  sha_codigo_actual: ab31bf3b095effb81625464d19f2cf80ab72e35c
   cambio_responsable: 667a6a5 (la composicion paso de vault_norms_engine a vault_norms)
   naturaleza: movimiento
   es_movimiento_legitimo: true
@@ -150,7 +150,7 @@ divergencias:
   elemento_original: 'dependencia en el snapshot: vault_norms_engine -> vault_mcp_catalog'
   elemento_vigente: dependencia vigente en el par de contextos (mismo adeudado)
   sha_referencia_snapshot: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
-  sha_codigo_actual: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  sha_codigo_actual: ab31bf3b095effb81625464d19f2cf80ab72e35c
   cambio_responsable: 667a6a5 (la composicion paso de vault_norms_engine a vault_norms)
   naturaleza: movimiento
   es_movimiento_legitimo: true
@@ -171,7 +171,7 @@ divergencias:
   elemento_original: 'dependencia en el snapshot: vault_norms_engine -> vault_smoke'
   elemento_vigente: dependencia vigente en el par de contextos (mismo adeudado)
   sha_referencia_snapshot: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
-  sha_codigo_actual: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  sha_codigo_actual: ab31bf3b095effb81625464d19f2cf80ab72e35c
   cambio_responsable: 667a6a5 (la composicion paso de vault_norms_engine a vault_norms)
   naturaleza: movimiento
   es_movimiento_legitimo: true
@@ -192,7 +192,7 @@ divergencias:
   elemento_original: 'dependencia en el snapshot: vault_norms_engine -> vault_voice'
   elemento_vigente: dependencia vigente en el par de contextos (mismo adeudado)
   sha_referencia_snapshot: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
-  sha_codigo_actual: f049b1bd43fcdd5b0a010d73016139fbcf2286b9
+  sha_codigo_actual: ab31bf3b095effb81625464d19f2cf80ab72e35c
   cambio_responsable: 667a6a5 (la composicion paso de vault_norms_engine a vault_norms)
   naturaleza: movimiento
   es_movimiento_legitimo: true

@@ -1,7 +1,7 @@
 # Estado y trazabilidad — lectura para el propietario
 
 **Generado por:** `audits/architecture/generar_informe.py`
-**SHA:** `f049b1bd43fcdd5b0a010d73016139fbcf2286b9`
+**SHA:** ``
 
 ## 1. Resumen
 
@@ -16,39 +16,40 @@ pendiente de ratificación).
 
 ## 3-5. Recursos inventariados
 
-- **Total de recursos:** 699
-- **Verificados:** 686 · **No verificados:** 13
+- **Total de recursos:** 1215
+- **Verificados:** 555 · **No verificados:** 660
 
 | Naturaleza | Recursos |
 |---|---|
-| codigo | 293 |
+| verificador | 505 |
+| codigo | 302 |
 | interfaz | 128 |
 | norma | 82 |
 | contrato | 68 |
-| evidencia | 37 |
-| documento | 29 |
+| evidencia | 66 |
 | dependencia | 23 |
 | deuda | 12 |
 | arquitectura | 10 |
 | gobierno | 8 |
 | indice | 5 |
+| decision | 3 |
 | artefacto | 2 |
-| decision | 1 |
 | entorno | 1 |
 
 ## 6. Dependencias y derivaciones
 
-- **Relaciones en el grafo:** 703
+- **Relaciones en el grafo:** 1034
 
 | Relación | Aristas |
 |---|---|
 | PROVIDES | 314 |
+| VERIFIES | 288 |
 | IMPLEMENTS | 170 |
 | APPLIES_TO | 82 |
 | OWNS | 68 |
 | CONSUMES | 64 |
-| VERIFIES | 3 |
-| AFFECTS | 2 |
+| AFFECTS | 25 |
+| DEPENDS_ON | 23 |
 
 ## 7. Contratos y responsabilidades
 
@@ -69,15 +70,15 @@ pendiente de ratificación).
   canónico + 1 en runtime limpio del producto).
 - **Divergencias de inventario con ficha:** 10 (movimiento
   legítimo del sitio del cruce + fichas actualizadas).
-- **Veredictos QA registrados:** 56
+- **Veredictos QA registrados:** 64
 
 ## 14. Riesgos
 
-- La CI no se ejecuta: ningun gate de release se puede acredita en la matriz multipataforma.
+- La CI no se ejecuta: ningun gate de release se acredita en la matriz multiplataforma.
 - Los cruces fuera de puerto siguen declarados y el reconciliador los refleja (10 divergencias).
-- El producto deja 1 violacion (AP-39) en un runtime recien creado: incumple la norma que certifica.
 - El sandbox canonico acumula 14 hallazgos reales de contenido de evidencia.
 - El auditor historico mide parches, no blobs integros.
+- Los PRD de CLI/MCP no estan contrastados con el comportamiento medido.
 
 ## 15. Decisiones pendientes del propietario
 
@@ -90,7 +91,7 @@ pendiente de ratificación).
 ## 16-19. AS-IS, TO-BE, diferencias y estado del candidato
 
 - Vistas: `audits/architecture/arquitectura-asis-tobe.md`.
-- Candidato: `31dfa462e87f5dcdb703e649e840e826a136ba50` · puertas 26/26 · suite 6270 passed / 13 skipped / 0 failed (sobre 001120c; re-ejecucion en curso) · E2E 27/27.
+- Candidato: `31dfa462e87f5dcdb703e649e840e826a136ba50` · puertas 26/26 · suite 6280 passed / 13 skipped / 0 failed (45dca1b) · E2E 27/27.
 
 ## 20. Recomendación técnica
 

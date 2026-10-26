@@ -25,7 +25,7 @@ prerrequisito: es exactamente lo que ocurre con QG-03…QG-06.
 - **Criterio de FAIL:** ['arbol sucio sin justificar, evidencias de otro SHA, o una fuga de saneamiento']
 - **Política de bloqueo:** bloquea cualquier otro QG
 - **Excepciones permitidas:** no permitida: la identidad no se exime
-- **Estado en el candidato:** **BLOCKED — el reconciliador declara 10 divergencias sin aceptar**
+- **Estado en el candidato:** **n/d**
 
 | Subcheck | Verificador | Tipo | Comando / derivación |
 |---|---|---|---|
@@ -44,7 +44,7 @@ prerrequisito: es exactamente lo que ocurre con QG-03…QG-06.
 - **Criterio de FAIL:** ['cualquier cruce nuevo, baseline ampliada, o un invariante roto']
 - **Política de bloqueo:** bloquea QG-03 y QG-07
 - **Excepciones permitidas:** solo con decision del propietario y fecha de vencimiento (nunca para seguridad)
-- **Estado en el candidato:** **BLOCKED — mismo reconciliador**
+- **Estado en el candidato:** **n/d**
 
 | Subcheck | Verificador | Tipo | Comando / derivación |
 |---|---|---|---|
@@ -61,7 +61,7 @@ prerrequisito: es exactamente lo que ocurre con QG-03…QG-06.
 - **Criterio de FAIL:** ['una puerta tecnica fallida, o un control degradado, o un control no ejecutado, o la ausencia de estados de ejecucion en el envelope (BLOCKED con CONTROL_OBLIGATORIO_NO_VERIFICADO)']
 - **Política de bloqueo:** bloquea QG-07
 - **Excepciones permitidas:** no permitida
-- **Estado en el candidato:** **BLOCKED — 14 hallazgos en el sandbox canonico; 1 (AP-39) en runtime limpio del producto**
+- **Estado en el candidato:** **n/d**
 
 | Subcheck | Verificador | Tipo | Comando / derivación |
 |---|---|---|---|
@@ -79,7 +79,7 @@ prerrequisito: es exactamente lo que ocurre con QG-03…QG-06.
 - **Criterio de FAIL:** ['cualquier failed, o una perdida de datos en el recorrido']
 - **Política de bloqueo:** bloquea QG-07
 - **Excepciones permitidas:** no permitida
-- **Estado en el candidato:** **BLOCKED — recibo PASS, prerrequisito QG-00 pendiente**
+- **Estado en el candidato:** **n/d**
 
 | Subcheck | Verificador | Tipo | Comando / derivación |
 |---|---|---|---|
@@ -96,7 +96,7 @@ prerrequisito: es exactamente lo que ocurre con QG-03…QG-06.
 - **Criterio de FAIL:** ['una fuga de secretos, un escape de contencion, o un control critico no ejecutado']
 - **Política de bloqueo:** bloquea QG-07
 - **Excepciones permitidas:** solo con propietario, causa, mitigacion y vencimiento; nunca para integridad de datos
-- **Estado en el candidato:** **BLOCKED — recibo PASS, prerrequisito QG-00 pendiente**
+- **Estado en el candidato:** **n/d**
 
 | Subcheck | Verificador | Tipo | Comando / derivación |
 |---|---|---|---|
@@ -115,7 +115,7 @@ prerrequisito: es exactamente lo que ocurre con QG-03…QG-06.
 - **Criterio de FAIL:** ['cualquier problema del verificador']
 - **Política de bloqueo:** bloquea QG-07
 - **Excepciones permitidas:** solo con la divergencia documentada y aceptada por QA
-- **Estado en el candidato:** **BLOCKED — recibo PASS (paridad 5/5), prerrequisito QG-00 pendiente**
+- **Estado en el candidato:** **n/d**
 
 | Subcheck | Verificador | Tipo | Comando / derivación |
 |---|---|---|---|
@@ -132,7 +132,7 @@ prerrequisito: es exactamente lo que ocurre con QG-03…QG-06.
 - **Criterio de FAIL:** ['instalacion rota, dependencia ausente, acoplamiento al checkout, o artefacto ajeno dentro']
 - **Política de bloqueo:** bloquea QG-07
 - **Excepciones permitidas:** no permitida
-- **Estado en el candidato:** **BLOCKED — recibo PASS, prerrequisito QG-00 pendiente**
+- **Estado en el candidato:** **n/d**
 
 | Subcheck | Verificador | Tipo | Comando / derivación |
 |---|---|---|---|
@@ -150,7 +150,7 @@ prerrequisito: es exactamente lo que ocurre con QG-03…QG-06.
 - **Criterio de FAIL:** ['CI sin conclusion, un P0/P1 sin mitigacion, o una evidencia faltante']
 - **Política de bloqueo:** es la ultima puerta: su fallo impide el release
 - **Excepciones permitidas:** una condicion pendiente (como CI) deja la puerta BLOCKED, nunca PASS
-- **Estado en el candidato:** **BLOCKED — CI en cola**
+- **Estado en el candidato:** **n/d**
 
 | Subcheck | Verificador | Tipo | Comando / derivación |
 |---|---|---|---|

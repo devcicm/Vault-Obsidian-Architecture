@@ -197,6 +197,40 @@ def hallazgos(salida: Path) -> List[Dict[str, Any]]:
                               "corregir el init o el registro que produce; es un "
                               "defecto del producto, no del entorno",
                               True))
+    # Hallazgo CERRADO: se conserva con su estado. Un hallazgo corregido que
+    # desaparece del ledger parece un hallazgo que nunca existio.
+    if b.get("total") == 0 and a.get("total", 0) > 0:
+        fichas.append({
+            "id": "INC-0015",
+            "norm": "AP-39",
+            "path": "19_Audits/vocabulary/tag-ledger.json",
+            "observed": ("3 terminos en uso sin memoria canonica (command, hub, "
+                         "nav) en un runtime recien creado por el producto"),
+            "environment": "escenario B (runtime limpio creado por el producto)",
+            "root_cause": ("vault_init crea notas bootstrap con tags que no "
+                           "declaraba como canonicos en su propio "
+                           "tag-registry.json"),
+            "reproduction": ("python scripts/vault_init.py  # con VAULT_ROOT "
+                             "apuntando a un runtime nuevo; despues "
+                             "python scripts/vault_norms.py --audit --root <rt>"),
+            "evidence": ["audits/architecture/hallazgos-qg02.yaml#INC-0015",
+                         "commit 2174bb1 (fix(AP-39))",
+                         "re-auditoria: 0 violaciones en runtime con 75 ficheros"],
+            "classification": "violacion real del producto (CORREGIDA)",
+            "impact": ("un runtime recien creado por el producto violaba la "
+                       "norma que el producto certifica (invariante INV-10)"),
+            "severity": "medium",
+            "resolution_options": ["declarar los tags bootstrap como canonicos",
+                                   "registrar los tags en el ledger al crear las notas"],
+            "recommended_action": ("aplicada: categoria 'bootstrap' en "
+                                   "canonical_tags del tag-registry"),
+            "decision_required": False,
+            "quality_gate": "QG-02",
+            "estado": "CORREGIDO",
+            "commit_correctivo": "2174bb1",
+            "verificacion": ("re-auditoria con el codigo actual sobre un runtime "
+                             "de 75 ficheros: 0 violaciones, 0 AP-39"),
+        })
     return fichas
 
 
