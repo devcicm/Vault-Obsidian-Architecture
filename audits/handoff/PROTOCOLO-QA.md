@@ -71,22 +71,24 @@ release actual).
 ## 5. Solicitud QA abierta (pendiente)
 
 - **Solicitud:** dictamen de cierre del release CLI+MCP.
-- **Sobre:** rama `work/release-cli-mcp-20261025` — **HEAD `1779353`**, candidato
-  de producto **`701f5d4`** (el commit posterior `1779353` es el delta
-  documental: buzón, informe, matriz y propuesta de versión/canal).
-- **Estado de la ronda R12:** los **cinco** defectos reales que la CI destapó
+- **Sobre:** rama `work/release-cli-mcp-20261025` — **candidato de producto
+  `408eb23`** (HEAD de la rama `6660abf`, un commit documental por delante).
+- **Estado de la ronda R12:** los **diez** defectos reales que la CI destapó
   están corregidos y comprobados (checkout superficial, detector MCP sin
   PyYAML en Windows, env de hijo sin `SystemRoot` en 3.9/3.10, cifra de tests
-  dependiente del sistema, contenido no canónico de la semilla del sandbox),
-  más el defecto de `vault://graph` en el servidor MCP. La CI que lo verifica
-  es la corrida `40325482090`. Detalle y evidencia: `audits/handoff/
-  RESPUESTA-DEL-EJECUTOR.md` (ronda R12) e `audits/fase2/
-  INFORME-READINESS-TERCEROS.md`.
+  dependiente del sistema, contenido no canónico de la semilla del sandbox,
+  quoting del paso `vault_norms --list`, idempotencia del SDD que comparaba el
+  reloj, y el defecto de `vault://graph` en el servidor MCP). La CI del
+  candidato, corrida `40340865847`, deja **17 de 25 jobs en verde** — los 8
+  `validate` de Windows y Linux entre ellos, sin un solo job en rojo—; los 8
+  que quedan son los de macOS, que no arrancan en cinco corridas seguidas.
+  Detalle y evidencia: `audits/handoff/RESPUESTA-DEL-EJECUTOR.md` (ronda R12),
+  `audits/fase2/INFORME-READINESS-TERCEROS.md` y los recibos por subcheck.
 - **Base del dictamen anterior:** `defc657` (rama
-  `qa/review-release-cli-mcp-316623a-20261026`). Los cinco defectos de CI
+  `qa/review-release-cli-mcp-316623a-20261026`). Los diez defectos de CI
   quedan respondidos en la R12; el dictamen `9919c57` (QA-ARC) quedó respondido
   en la R11.
-- Nombre candidato por convención: `qa/review-release-cli-mcp-1779353-20261026`.
+- Nombre candidato por convención: `qa/review-release-cli-mcp-408eb23-20261026`.
 - **Prerrequisitos que NO dependen de QA:** decisiones del propietario del
   informe §6 (divergencias A/B/C, contrato de QG-02, `vault-backups`, runners
   de macOS) y la Constitución arquitectónica. Si siguen abiertas, el dictamen
