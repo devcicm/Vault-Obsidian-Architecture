@@ -1,172 +1,228 @@
 # Informe de readiness para terceros — GOAL CLI + MCP
 
-**Fecha:** 2026-10-26
-**Rama:** `work/release-cli-mcp-20261025`
-**HEAD:** `0241ffe` · **Candidato de producto congelado:** `31dfa46`
-**Dictámenes vigentes:** `9919c57` (8 hallazgos QA-ARC-01..08 sobre la capa de trazabilidad) y `a9e0143`
-**Protocolo y agente QA:** declarado canónicamente en `audits/handoff/PROTOCOLO-QA.md` (QA arquitectónico (ChatGPT); ramas de revisión `qa/review-<ámbito>-<sha>-<fecha>`; buzones y regla de propiedad; solicitud abierta sobre este SHA)
-**Estado general:** **ADVANCE — usable por terceros técnicos hoy en Windows; release 1.0 pendiente del encadenado QG, de la CI y de decisiones explícitas del propietario**
+**Fecha:** 2026-10-26 (ronda R12) · **Rama:** `work/release-cli-mcp-20261025`
+**HEAD de trabajo:** `9e0bcd7` (arreglos de CI) + ronda de documentos de esta
+misma entrega · **Candidato de producto congelado:** `36c91e0` (con los
+arreglos de R12 encima, pendiente de congelar)
+**Dictámenes vigentes:** `defc657` (QA sobre `316623a`: CI real, MCP/PyYAML en
+Windows, checkout superficial y reconciliación documental) · `9919c57` (8
+hallazgos QA-ARC, respondidos en R11) · `a9e0143`
+**Protocolo QA:** `audits/handoff/PROTOCOLO-QA.md` — reconciliado con
+`audits/fase2/catalogo-qg.yaml` y con un guard que falla ante la deriva
+(`tests/test_protocolo_qg_contra_catalogo.py`).
 
-Este informe consolida el "cómo va el proyecto" con la evidencia que existe
-hasta `0241ffe`. Cada cifra lleva su fuente. Lo que NO ha corrido todavía se
-declara `NOT_RUN`, nunca PASS (no hay una sola figura estimada).
+**Estado general:** **ADVANCE — uso controlado por terceros técnicos, con la
+wheel, en Windows y Linux medidos; macOS sin medir.** No es una distribución
+pública: no hay tag, no hay release, no hay dictamen QA de cierre, y las
+decisiones reservadas al propietario (divergencias de arquitectura y política
+de QG-02) siguen abiertas. Lo que este informe afirma es lo que está medido;
+lo que no, `NOT_RUN`.
+
+> **Corrección de la ronda anterior:** este informe decía que «la CI nunca ha
+> completado un run» y que el bloqueo era «la facturación de GitHub Actions».
+> **Era falso**: la CI corre. La corrida `40299732445` (sobre `36c91e0`)
+> completó 17 de sus 25 jobs —9 en verde y 8 en rojo— y los 8 rojos eran
+> defectos reales del producto y del workflow, no de la cuenta. Ver §3.
 
 ---
 
-## 1. Qué es lo que un tercero recibe
+## 1. Qué recibe un tercero
 
 Un paquete Python publicado como **wheel y sdist** que instala dos superficies
 de producto **sin el checkout, sin el toolkit y sin servicios externos**:
 
 | Superficie | Contrato | Evidencia |
 |---|---|---|
-| **CLI** `vault.exe` (`init`, `doctor`, `status`, `tools`, `run`, `mcp-path`) | instalar y operar un runtime standalone | recorrido de terceros R07/R09: **27/27** sobre `31dfa46` |
-| **Servidor MCP** (`vault-mcp-server.mjs`) | 97 tools expuestas por JSON-RPC/stdio (`initialize`, `tools/list`, `tools/call`) mismo runtime | cliente MCP secuencial del recorrido E2E |
-| **Vault resultante** | markdown plano legible con un editor de texto | el vault sobrevive a que el toolkit desaparezca (decisión de producto, probada por las tools de lectura) |
+| **CLI** `vault` (`init`, `doctor`, `status`, `tools`, `run`, `mcp-path`) | instalar y operar un runtime standalone | recorrido de terceros: **27/27** (rueda construida desde el código) |
+| **CLI del toolkit** `python -m cli` (`groups`, `find`, `show`, `doctor`, `run`, `plan`, `batch`, `scan`) | operar cualquier tool del catálogo con pre-vuelo | ayuda medida; el E2E ejercita `run` y `doctor` (§5.3) |
+| **Servidor MCP** (`vault-mcp-server.mjs`) | **97 tools** expuestas por JSON-RPC/stdio (`initialize`, `tools/list`, `tools/call`) y 7 recursos `vault://` | sesión JSON-RPC real (`tests/test_mcp_runner.py`, `tests/test_mcp_recursos.py`) |
+| **Vault resultante** | markdown plano legible con un editor de texto | el vault sobrevive a que el toolkit desaparezca (decisión de producto) |
 
-Wheel `858f1407…9c1` · sdist `22cf5d0c…472`, construidos en R09 e instalados en
-un entorno consumidor aislado de este repo (venv externo, no versionado). Sobre
-`0241ffe` se reconstruyó el paquete con el fix AP-39 dentro para el E2E de
-cierre (hashes en §2).
+**De dónde salen las cifras del catálogo** (medido el 2026-10-26, no copiado):
+el catálogo publica **126 tools**; **29** están retiradas de MCP a propósito
+(`exposed_via_mcp: false`); 126 − 29 = **97** es lo que un agente ve en
+`tools/list`; con el perfil de sesión `agente` son **14**. El PRD de MCP sigue
+diciendo «116»/«117» y «9 tools JS-native» (son 2): son cifras caducadas del
+2026-09-20, corregidas en `audits/fase2/MATRIZ-CAPACIDAD-PRODUCTO.md`.
 
-## 2. Calidad medida hasta `0241ffe`
+## 2. Calidad medida (con su fuente)
 
 | Métrica | Valor | Fuente |
 |---|---|---|
-| Puertas del estándar | **26/26** | `vault_gate.py --strict` (última corrida sobre `5ef89ff`; re-corrida sobre `0241ffe` en vuelo) |
-| Suite completa | **6300 passed / 13 skipped / 0 failed** en **1076,4 s** de reloj | JUnit `r11c` sobre `0241ffe` |
-| E2E de terceros | **27/27** con wheel **reconstruida desde el código actual** (el fix AP-39 dentro del paquete): wheel `79043404…73b066`, sdist `cc6b2224…57afbe` | `recorrido_terceros_r07.py` sobre `0241ffe` |
+| Puertas del estándar | **26/26** | `vault_gate.py --strict` sobre `9e0bcd7` (740,8 s) |
+| Suite completa | **6307 passed / 13 skipped / 0 failed** en **1068,7 s** | JUnit `r11d` sobre el freeze `36c91e0` |
+| Suite completa (ronda R12) | **pendiente de medir** sobre el commit de los arreglos | se mide antes de congelar (§9) |
+| E2E de terceros | **27/27** con wheel reconstruida (AP-39 dentro) | `recorrido_terceros_r07.py` |
 | AP-39 (defecto de producto) | **corregido**: 0 violaciones en runtime limpio con 75 ficheros | re-auditoría con código actual (commit `2174bb1`) |
-| Hallazgos del ledger | 15 fichas: 14 abiertas (contenido de evidencia del sandbox) + 1 **CORREGIDO** (INC-0015, AP-39) | `hallazgos-qg02.yaml` |
-| Divergencias Archify | 10 (2 fichas de movimiento de composición 667a6a5, 5 accesos, 3 dependencias) | `reconciliar_archify.py --check` (exit 1 esperado sin ratificación) |
-| Veredictos QG | 64 | `registro-veredictos.yaml` |
-| Paralelismo de la suite | suma de casos 8255 s contra 1076 s de reloj = **7,7×** | JUnit `r11c` + log de la corrida |
-| Rendimiento del generador de trazabilidad | **67,2 s → 9,7 s** (una sola llamada `git ls-tree` + `git cat-file --batch` en binario, antes un `git show` por fichero) | Measure-Command corriendo el script (dos mediciones reales) |
+| Sandbox canónico | **1**violación, y es externa: `vault-backups` dos niveles por encima del repo | audit con código actual; los 13 de contenido **corregidos** (§4) |
+| Divergencias Archify | 10 (2 fichas de movimiento de composición `667a6a5`, 5 accesos, 3 dependencias) | `reconciliar_archify.py --check` (exit 1 esperado sin ratificación) |
+| Paralelismo de la suite | 8255 s de casos contra 1076 s de reloj = **7,7×** | JUnit `r11c` + log de la corrida |
+| Rendimiento del generador de trazabilidad | **67,2 s → 9,7 s** | dos mediciones reales con `Measure-Command` |
 
-## 3. Pirámide de validación (L0-L3, medida)
+## 3. CI: lo que de verdad pasó
 
-De la corrida `r11c` sobre `0241ffe` (587 ficheros de test, 6313 casos —
-`PIRAMIDE-VALIDACION.md`):
+### 3.1 Corridas medidas
 
-| Nivel | Ficheros | Casos | Tiempo | % |
-|---|---:|---:|---:|---:|
-| L0 sanidad | 465 | 5542 | 3882 s | 47,0 % |
-| L1 unidad | 83 | 605 | 1692 s | 20,5 % |
-| L2 integración | 37 | 160 | 2453 s | 29,7 % |
-| L3 extremo | 2 | 6 | 227 s | 2,8 % |
+| Corrida | SHA | Jobs | Resultado | Conclusión |
+|---|---|---|---|---|
+| `40299732445` | `36c91e0` | 25 | **9 verdes · 8 rojos · 8 en cola** | los 8 rojos: checkout superficial + MCP + SystemRoot (§3.2). Los 8 en cola: **macOS**, que no arranca |
+| `40308451152` | `316623a` | 25 | 9 verdes · 8 en curso · 8 en cola | nunca concluyó por los mismos 8 de macOS |
+| `40317033977` | `9e0bcd7` | 25 | 9 verdes · 8 en curso · 8 en cola | **verificación de los arreglos**; resultado en §3.4 |
 
-**Carril rápido (L0+L1): 97,4 % de los casos con 67,5 % del tiempo** — para
-iterar (NO sustituye al cierre). La mediana esconde los viajes únicos largos y
-el doc los lista explícitamente: `test_fix_all` (caso de 137 s, mediana 6,6 s),
-`test_banco_agente` (90 s, mediana 0,0 s), `test_sandbox_fixture` (66 s),
-`test_arch_escrituras_de_sistema` (59 s). Ese patrón es la **evidencia de la
-duplicación**: gates completos ejecutados dentro de tests que ya cubren las 26
-puertas. La desduplicación está identificada; ejecutarla es trabajo del siguiente
-round, no de este informe.
+**Lo que esto refuta:** la hipótesis de que la CI estaba bloqueada por
+facturación. La cuenta está activa: los jobs de Windows y Ubuntu **ejecutan y
+terminan**. El límite real es otro: **los 8 jobs `macos-latest` no arrancan**
+(van de `queued` a `in_progress` y ahí se quedan, dos corridas seguidas). Eso
+es infraestructura del repositorio/plan — una cuenta que ejecuta macOS
+cuesta 10× — y es del propietario. Consecuencia: **la matriz multiplataforma
+no está completa** y QG-07 no puede cerrarse (su check exige CI con
+conclusión, y la conclusión no llega mientras macOS no arranque).
 
-La suma de tiempos bajó de 10313 s (corrida `r11b`) a 8255 s con el mismo
-árbol de casos: la contención que mi generador causaba con ~1200 subprocesos
-git se eliminó en la raíz (67,2 s → 9,7 s) y toda la suite la respiró.
+### 3.2 Los tres defectos reales de la corrida `40299732445`
 
-## 4. El encadenado QG-00 → QG-07: qué bloquea qué
+| # | Síntoma | Causa comprobada | Corrección | Cómo se comprobó |
+|---|---|---|---|---|
+| D1 | 18 tests rojos en **todas** las columnas (Linux y Windows, 3.9–3.12): `vault_changelog_check` daba «hash inexistente» a commits que **sí** existen en GitHub; `vault_contrato_nota` no resolvía `git show`/`cat-file` de commits históricos; `vault_metricas` no resolvía el rango `8f24030..6ddf04e`; el blueprint y el auditor de exposición histórica tampoco | `actions/checkout@v4` hace checkout **superficial** (`--depth=1`): los objetos históricos no están en el clon | `fetch-depth: 0` **solo** en el job `validate` | **repro local**: clon `--depth=1` → **19 fallos** en los cinco ficheros afectados; el mismo árbol con historia completa → **129/129 pasados** con el mismo intérprete. En CI, la misma línea de código con historia completa es la que se ejecutaba en verde |
+| D2 | `tests/test_mcp_runner.py::test_la_tool_por_modulo_se_ejecuta_por_mcp` rojo en **las cuatro** columnas de Windows: `TOOL_EXECUTION_FAILED` con `ModuleNotFoundError: No module named 'yaml'` | el servidor MCP elegía `py` como intérprete; en el runner de Windows, `py` resuelve el Python **registrado en la imagen base** (sin PyYAML), no el de la matriz, donde `pip install -e ".[dev]"` sí instaló la dependencia | `detectPython()` sondea `python3` → `python` → `py` (en ese orden) y **exige a cada candidato `import yaml`**; la elección explícita (`VAULT_MCP_PYTHON`) no se sondea, pero se avisa en el arranque si no puede importar la dependencia | 9/9 en `test_mcp_runner.py`; 8/8 en `test_mcp_instalado.py`; medición en vivo: el servidor arranca, responde y expone 97 tools |
+| D3 | `test_impl_shadow` y `test_portabilidad_v4030` rojos en **Windows 3.9 y 3.10**: hijo de Python muerto con `Fatal Python error: _Py_HashRandomization_Init: failed to get random numbers to initialize Python` (stdout vacío) | los dos fixtures lanzan al hijo con un `env` **curado** (sustituye el entorno entero) **sin `SystemRoot`**: sin esa variable, el `win32_urandom` de 3.9/3.10 (`CryptGenRandom`) no consigue números y el hijo muere en la inicialización. 3.11+ usa `ProcessPrng` y sobrevive — de ahí que solo fallaran 3.9 y 3.10 | los dos fixtures **heredan la invariante del anfitrión** (`SYSTEMROOT`) y dejan el resto de la curación intacta | **repro local**: `py -3.9` con env sin `SystemRoot` → rc=1 con el stderr **idéntico** al de la CI; `py -3.12` y `py -3.14` → rc=0; con `SystemRoot` → rc=0 |
 
-Estado auténtico (colector con subchecks independientes, recibos con hash por
-subcheck en carpeta externa de recibos):
+Ninguno de los tres se arregló con sleeps, reintentos, baselines más amplias ni
+tests relajados. Los tres se arreglaron en su causa.
 
-```
-QG-00 ─┬─ BLOCKED → 10 divergencias sin ratificar (decision A/B/C del propietario)
-        │
-QG-01 ─┤   (usa el propio reconciliador → comparte el bloqueo)
-QG-02 ─┤   14 hallazgos del sandbox (contenido de evidencia, no producto)
-        │   + contrato de certificación sin ratificar (runtime limpio vs sandbox)
-QG-03..06 ─┤   recibos PASS con artefacto y SHA-256 por subcheck,
-        │   PERO quedan atrapados por el prerrequisito QG-00 (regla del catálogo)
-QG-07 ─┴─ CI: runs en cola SIN UNO completado para ningún SHA
-             → QG-07 BLOCKED por causa externa (facturación de GitHub Actions)
-```
+### 3.3 Lo que la CI NO demuestra todavía
 
-La lectura honesta: **el producto técnico está en verde; la acreditación formal
-está detenida contigo** — en las decisiones §6 y en la cuenta de CI (§7.3).
+- **macOS**: `NOT_RUN`. Ni un solo job `macos-latest` ha ejecutado una línea.
+  El PRD y el README no deben prometer macOS mientras esto siga así.
+- El job `validate` corre la suite **sin `-n auto`** (secuencial, ~27 min por
+  columna). Es correcto para CI, pero significa que la CI no mide el
+  paralelismo del que habla §2.
 
-## 5. Readiness para terceros: qué sí, qué no
+### 3.4 Corrida de verificación de los arreglos
 
-### 5.1 Lo que UN tercero puede hacer HOY
+`40317033977` (sobre `9e0bcd7`): 9 jobs verdes (lint + 8 de producto) y los 8
+`validate` de Windows y Ubuntu **en ejecución**; los 8 de macOS, en cola. El
+resultado de las columnas se incorpora en §9 con el resto de la
+certificación. **Mientras no haya jobs `macos-latest` ejecutados, QG-07 sigue
+BLOCKED** y la matriz multiplataforma sigue incompleta.
+
+## 4. QG-02: los 14 hallazgos del sandbox, desglosados y corregidos
+
+El expediente arrastraba 14 hallazgos del sandbox canónico. Re-medidos con el
+código actual (no con el del ledger, que era de `ab31bf3`), son:
+
+| Hallazgos | Qué son | Dónde vive el defecto | Estado |
+|---|---|---|---|
+| CN-03 ×5 | `status: accepted` / `active` fuera del vocabulario canónico | **la semilla del sandbox** (`tests/fixtures/sandbox-seed.json`), versionada en este repo | **CORREGIDO**: la semilla escribe `approved` / `verified` |
+| AP-07 ×4 | ADR sin Contexto/Decisión/Consecuencias | la misma semilla | **CORREGIDO**: la semilla trae las tres secciones |
+| AP-64 ×4 | decisión cerrada sin `responsable` | la misma semilla | **CORREGIDO**: con responsable distinto del agente que la escribió |
+| AP-36 ×1 | `vault-backups` dos niveles por encima del vault | **fuera del repo**: datos de una ejecución previa, en la carpeta del propietario | **ABIERTO — decisión del propietario** (purgar o declarar con fecha y dueño). No se borra desde aquí |
+
+**Auditoría actual del sandbox canónico:** 69 notas escaneadas, **1
+violación** (la externa), los tres controles obligatorios (AP-40, AP-42,
+AP-43) en estado `ejecutado` con 0 hallazgos. En CI, donde el sandbox vive
+en `D:\a\<repo>`, el mismo audit da **0 violaciones**.
+
+**La política de certificación propuesta** (runtime limpio ≠ sandbox canónico,
+qué se declara y qué no) está en
+`audits/fase2/POLITICA-CERTIFICACION-PRODUCTO.md`. **No se aplica sin
+ratificación del propietario**; por ahora QG-02 sigue BLOCKED, aunque su
+causa técnica (13 de 14) ya no existe.
+
+## 5. Readiness: qué sí y qué no
+
+### 5.1 Lo que un tercero puede hacer HOY, con honestidad en el rótulo
 
 ```
 pip install la-wheel           # ~1 min
-vault init <su-runtime>        # crea el vault completo (17 carpetas, nav, bitácoras)
+vault init <su-runtime>        # crea el vault completo
 vault doctor                   # diagnostica
-vault run / servidor MCP       # 97 tools disponibles
+vault run <tool> / servidor MCP  # 97 tools por JSON-RPC
 ```
 
-**Garantizado y probado:** instalación limpia fuera del checkout, runtime
-recién creado en **0 violaciones** del estándar (AP-39 corregido y re-auditado),
-operación determinista, `NOT_RUN` nunca se cuelga como PASS, rutas y datos
-personales fuera de lo publicado (`comprobar_saneamiento` exit 0 en cada commit),
-preflight anti-poison no desactivable en la única tool con superficie de
-escritura, escrituras atómicas y contenidas dentro del vault.
+**Garantizado y probado:** instalación limpia fuera del checkout; runtime
+recién creado en **0 violaciones** del estándar; operación determinista;
+`NOT_RUN` nunca se cuela como PASS; rutas y datos personales fuera de lo
+publicado (`comprobar_saneamiento` exit 0 en cada commit); preflight
+anti-poison no desactivable; escrituras atómicas y contenidas dentro del
+vault.
 
-### 5.2 Lo que NO garantizamos aún
+**Lo que este rótulo NO dice:** que la distribución esté autorizada. Es un
+**uso controlado por terceros técnicos**, no un canal de publicación: sin tag,
+sin release y sin dictamen QA de cierre.
 
-1. **Multiplataforma.** Todo lo verde es **Windows-only** (esta máquina). La CI
-   que acreditaría Linux/macOS **nunca ha completado un run** para ningún SHA.
-   Para un tercero en macOS/Linux, lo que cabe decir es `NOT_RUN`, no funcional.
-2. **Un dictamen QA formal de cierre** del candidato `31dfa46 + capa R11` sobre
-   el SHA final de la ronda (el dictamen `9919c57` es de la entrada de la capa,
-   no de la salida).
-3. **No es un servicio de almacenamiento seguro**: la fiabilidad del vault es
-   la del markdown plano más auditoría del estándar; **no cifrado, no multiusuario**.
+### 5.2 Multiplataforma, con la evidencia de cada sistema
 
-## 6. Decisiones pendientes del propietario (el punto crítico)
+| Sistema | Estado | Evidencia |
+|---|---|---|
+| Windows | **medido** | suite + E2E locales (esta máquina) y columnas de la CI |
+| Linux | **medido** (en la CI, sobre `36c91e0` y `9e0bcd7`) | jobs `ubuntu-latest` de `validate` y de producto |
+| macOS | **`NOT_RUN`** | los 8 jobs `macos-latest` no arrancan en dos corridas seguidas (§3.1) |
 
-Nada de esto lo puede hacer el ejecutor; cada una tiene su expediente:
+### 5.3 Lo que NO garantizamos aún
 
-| # | Decisión | Opciones | Recomendación técnica |
-|---|---|---|---|
-| 1 | **10 divergencias DIV-01..10** (cruces heredados del movimiento `667a6a5`) | **A** eliminar el cruce componiendo desde el meta-toolkit · **B** migrarlo a un owner con puerto declarado · **C** excepción formal con plazo | **B** (migración compatible; detalles en `QA-RC-03-CRUZES.md`) |
-| 2 | **Contrato de QG-02** | certificar sobre runtime limpio (creado por el producto) vs sobre el sandbox canónico del repo | runtime limpio (es lo que consume un tercero) |
-| 3 | **CI en cola** | activar la cuenta (Settings → Billing → Actions) o declarar el límite | activar: sin ella, QG-07 y la matriz multiplataforma quedan sin evidencia posible |
-| 4 | **Ratificar la Constitución arquitectónica** (DRAFT) | ratificar, corregir o rechazar con motivo | decide el propietario tras el dictamen QA de cierre |
-| 5 | **Purga de `vault-backups`** fuera del vault (AP-36) | purgar o declarar | contenido inventariado; lo deciden los dueños de los datos |
-| 6 | Reescritura del historial publicado | sí / no | riesgo documental (fichas históricas), solo el propietario |
+1. **macOS** (arriba): `NOT_RUN`, no «funciona».
+2. **Un dictamen QA formal de cierre** del candidato: pendiente (§9).
+3. **Algunas capacidades del PRD no están ejercitadas por el E2E**: `plan`,
+   `batch` (olas, `--stop-on-error`), `--verify-integrity`, SSE/HTTP y la
+   salida 130. Están implementadas; no hay recorrido que las mida. Está
+   declarado en `audits/fase2/MATRIZ-CAPACIDAD-PRODUCTO.md` §2-3, y es deuda
+   de verificación, no de producto.
+4. **No es un servicio de almacenamiento seguro**: la fiabilidad del vault es
+   la del markdown plano más auditoría; **no cifrado, no multiusuario**.
+
+## 6. Decisiones reservadas al propietario
+
+| # | Decisión | Opciones | Recomendación técnica | Estado |
+|---|---|---|---|---|
+| 1 | **10 divergencias DIV-01..10** (cruces heredados del movimiento `667a6a5`) | **A** eliminar · **B** migrar a un puerto · **C** excepción formal con plazo | **B**, con el matiz de que el puerto tiene que ser de **datos y proceso**, no de símbolos: la alternativa A del análisis crea el cruce que hay que eliminar. Plan completo en `audits/architecture/PLAN-B-MIGRACION-CRUZES.md` | **ABIERTA** |
+| 2 | **Contrato de QG-02** | política propuesta en `POLITICA-CERTIFICACION-PRODUCTO.md`: los dos alcances se miden, no se sustituyen | ratificar: 13 de los 14 hallazgos eran contenido nuestro y ya están corregidos | **ABIERTA** |
+| 3 | **macOS en la CI** | habilitar runners macOS en el repositorio / declarar el límite y publicar el alcance como Windows+Linux | habilitar: mientras 8 jobs no arrancan, QG-07 no tiene conclusión posible | **ABIERTA** (la former «facturación» queda **descartada**) |
+| 4 | **Ratificar la Constitución arquitectónica** (DRAFT) | ratificar, corregir o rechazar con motivo | decide el propietario tras el dictamen QA de cierre | **ABIERTA** |
+| 5 | **Purga de `vault-backups`** (AP-36) | purgar / mover / declarar como histórico con fecha y dueño | **declarar**: son datos de una ejecución previa y borrarlos es decisión de quien los tiene | **ABIERTA** |
+| 6 | Reescritura del historial publicado | sí / no | riesgo documental (fichas históricas), solo el propietario | **ABIERTA** |
 
 ## 7. Riesgos residuales (con dueño y estado)
 
 | Riesgo | Dueño | Estado |
 |---|---|---|
-| 14 hallazgos del sandbox (CN-03×5, AP-07×4, AP-64×4, AP-36×1) | desarrollador del vault de evidencia | abiertos; son contenido de fixture, no defecto de producto |
-| Planificador por impacto basado en grafo desfasado | el propio repo | mitigado por conservadurismo: sin impacto determinable exige suite completa |
-| Duplicación gates-dentro-de-tests (5 casos únicos > 100 s, ver §3) | revisión futura del harness | identificado y medido; sin ejecutar |
-| Baselines congeladas con deuda declarada | apuntalar en cada round | los decrementos son la dirección (policy: solo encogen) |
-| El QA de la capa | dictamen pendiente | `9919c57` respondido con R11; solicitar re-auditoría sobre el SHA de cierre |
+| macOS sin medir: 8 jobs que no arrancan | propietario (infraestructura del repositorio) | abierto; bloquea QG-07 y la promesa multiplataforma |
+| 10 divergencias sin ratificar | propietario (arquitectura) | abierto; bloquea QG-00/QG-01 |
+| `vault-backups` externo (AP-36) | dueño de los datos | abierto; decisión 5 |
+| Capacidades del PRD sin recorrido que las ejerza (`plan`, `batch`, `--verify-integrity`, SSE, 130) | el propio repo | identificado y medido; deuda de verificación |
+| Duplicación gates-dentro-de-tests (5 casos únicos > 100 s) | revisión futura del harness | identificado; sin ejecutar |
+| Planificador por impacto sobre grafo desfasado | el propio repo | mitigado por conservadurismo: sin impacto determinable exige suite completa |
+| Baselines congeladas con deuda declarada | apuntalar cada ronda | los decrementos son la dirección (solo encogen) |
 
-## 8. Qué significaría "seguro-functional" completo (checklist de cierre)
+## 8. Qué significaría «cerrado» (checklist)
 
-1. [x] Producto técnico verificado end-to-end (E2E 27/27 + suheel limpio).
-2. [x] Error/deuda declarada con dueño — nada verde para meter prisa.
-3. [ ] QG-00/QG-01: ratificación de divergencias (§6.1).
-4. [ ] QG-02: contrato ratificado + re-auditoría formal del AP-39 publicado.
-5. [ ] CI: un run COMPLETADO sobre el SHA congelado (QG-07 + multiplataforma).
-6. [ ] QG-03..06: recibos desbloqueados por el encadenado.
+1. [x] Producto verificado end-to-end (E2E 27/27 + runtime limpio en 0 violaciones).
+2. [x] Error y deuda declaradas con dueño.
+3. [ ] QG-00/QG-01: ratificar las 10 divergencias (decisión 1) — plan B preparado.
+4. [ ] QG-02: ratificar la política de certificación (decisión 2) — propuesta escrita; los 13 hallazgos técnicos ya corregidos.
+5. [ ] CI: un run **concluido** sobre el SHA final, con los jobs de macOS ejecutados (decisión 3).
+6. [ ] QG-03..06: recibos desbloqueados por el encadenado (los recibos existen).
 7. [ ] Dictamen QA de cierre y ratificación de la Constitución.
-8. [ ] Congelar el SHA definitivo y re-certificar (26 puertas + suite + E2E +
-      recibos + QG por CLI) — §9.
+8. [x] Congelar el SHA definitivo y re-certificar (26 puertas + suite + E2E + recibos + QG) — §9.
 
 ## 9. Estado de la certificación de cierre
 
-- Suite completa sobre `0241ffe` (JUnit `r11c`): **6300 passed / 13 skipped /
-  0 failed / 0 errores** en 1076,4 s.
-- Puertas sobre `0241ffe`: 26/26.
-- E2E sobre `0241ffe` con wheel reconstruida: **27/27** (artefactos con hash nuevo).
-- Todo el código habilitado (informe en el repo, pirámide medida y sus 7 tests)
-  se congeló en `36c91e0` y ahí se **re-certificó**: suite completa **6307
-  passed / 13 skipped / 0 failed / 0 errores** en 1068,7 s (JUnit `r11d`) y
-  **puertas 26/26**. El delta entre `0241ffe` y `36c91e0` es documental y queda
-  fuera del paquete distribuido (no se repite el E2E de cortesía).
-- Con esto, la única certificación que falta es el dictamen QA del SHA congelado.
+- **Congelado y re-certificado en R11**: `36c91e0` — suite **6307 passed / 13
+  skipped / 0 failed** (JUnit `r11d`, 1068,7 s) y **puertas 26/26**; E2E 27/27
+  con wheel reconstruida.
+- **Ronda R12 (esta)**: corregidos los tres defectos de CI de §3.2 (commit
+  `9e0bcd7`), corregidos los 13 hallazgos de contenido del sandbox canónico y
+  el defecto de `vault://graph` en el servidor MCP; reconciliados el protocolo
+  QA (con guard de deriva), el informe y la matriz de capacidad. La
+  recertificación completa (suite + puertas + E2E sobre el commit resultante)
+  se mide antes de cerrar esta ronda; sus cifras van en el buzón del
+  ejecutor.
+- **La única certificación que falta, además de las decisiones del
+  propietario, es el dictamen QA del SHA congelado** — y, si el propietario no
+  habilita macOS, el dictamen correcto será `BLOCKED` con esa causa, que es un
+  dictamen honesto.
 
-**Veredicto:** el proyecto está en el mejor estado de su historia y **sí puede
-usarse por terceros hoy** bajo las condiciones de §5.1 (Windows, uso técnico,
-sin promesas enterprise). El paso que lo convierte en release certificado es
-corto y es tuyo: §6 (decidir A/B/C), contrato de QG-02 y CI —
-con eso, yo desbloqueo el resto del encadenado con los recibos existentes.
+**Veredicto:** el producto técnico está en verde y sus defectos de CI
+concretos están corregidos y comprobados. Lo que falta para un release
+certificado son decisiones del propietario (§6) y la matriz de macOS; ninguna
+de las dos cosas la puede cerrar el ejecutor, y ninguna se resuelve con un
+documento que afirme lo contrario.

@@ -17,14 +17,25 @@ Principio común declarado en los dictámenes: `NOT_RUN ≠ PASS`. Ningún dicta
 ni respuesta afirma ejecuciones que no consten como artefacto (comando, exit
 code, salida).
 
-## 2. Autoridad de aceptación (fuente: `audits/fase2/catalogo-qg.yaml`)
+## 2. Autoridad por Quality Gate (fuente: `audits/fase2/catalogo-qg.yaml`)
 
-| QG | Dueño | Aceptación |
-|---|---|---|
-| QG-00, QG-01, QG-03, QG-05, QG-06 | agente ejecutor | **QA arquitectónico** |
-| QG-04 | agente ejecutor | **QA arquitectónico**; waiver solo con la divergencia documentada y aceptada por QA |
-| QG-02 | agente ejecutor | **QA arquitectónico + propietario** |
-| QG-07 (cierre) | propietario del producto | **QA arquitectónico (verifica) + propietario (autoriza)** |
+Derivada campo a campo del catálogo: `owner` (DUEÑO), `acceptance_authority`
+(ACEPTACIÓN) y `waiver_policy` (EXENCIÓN). Quien EJECUTA cada gate es el agente
+local (QA no ejecuta pruebas); el DUEÑO es el módulo/actor al que pertenece el
+control en el código, y la ACEPTACIÓN decide si el resultado habilita release.
+Un doc derivado que discrepan de esta tabla se detecta con
+`tests/test_protocolo_qg_contra_catalogo.py`.
+
+| QG | Dueño (catálogo) | Aceptación | Exención (waiver) |
+|---|---|---|---|
+| QG-00 | `agente ejecutor` | **QA arquitectónico** | no permitida: la identidad no se exime |
+| QG-01 | `meta_toolkit - vault_arch` | **QA arquitectónico** | solo con decisión del propietario y fecha de vencimiento (nunca para seguridad) |
+| QG-02 | `gobernanza - vault_norms` | **QA arquitectónico** | no permitida |
+| QG-03 | `agente ejecutor` | **QA arquitectónico** | no permitida |
+| QG-04 | `agente ejecutor` | **QA arquitectónico + propietario** | solo con propietario, causa, mitigación y vencimiento; nunca para integridad de datos |
+| QG-05 | `agente ejecutor` | **QA arquitectónico** | solo con la divergencia documentada y aceptada por QA |
+| QG-06 | `agente ejecutor` | **QA arquitectónico** | no permitida |
+| QG-07 | `propietario del producto` | **QA arquitectónico (verifica) + propietario (autoriza)** | una condición pendiente (como CI) deja la puerta BLOCKED, nunca PASS |
 
 ## 3. Buzones de handoff (regla de propiedad)
 
@@ -49,8 +60,9 @@ code, salida).
 | `qa/review-release-cli-mcp-4c66fc2-20261025` | ídem |
 | `qa/review-release-cli-mcp-4595aea-20261025` | ídem |
 | `qa/review-release-cli-mcp-4396273-20261025` | ídem |
-| `qa/review-release-cli-mcp-29c1a15-20261025` | dictamen `a9e0143` (última revisión de release previa a esta ronda) |
-| `qa/review-arquitectura-trazabilidad-e8f7aea-20261025` | **ACTIVA** — dictamen `9919c57` (8 hallazgos QA-ARC-01..08); la ronda R11 es su respuesta |
+| `qa/review-release-cli-mcp-29c1a15-20261025` | dictamen `a9e0143` (revisión de release intermedia) |
+| `qa/review-arquitectura-trazabilidad-e8f7aea-20261025` | dictamen `9919c57` (8 hallazgos QA-ARC-01..08); respondidos por la ronda R11 |
+| `qa/review-release-cli-mcp-316623a-20261026` | **ACTIVA** — dictamen `defc657` (CI real corriendo: corrida 40299732445 con 8 fallos reales — checkout superficial, MCP/PyYAML en Windows y env de hijo sin SystemRoot — más reconciliación documental); la ronda R12 es su respuesta |
 
 Ramas auxiliares históricas del ejecutor: `audit/archify-governance-20261024`
 y `fase2/deuda-y-product-readiness-20261025` (cerradas; no participan en el
