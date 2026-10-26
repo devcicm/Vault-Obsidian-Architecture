@@ -6,8 +6,8 @@
 - **Rama:** `work/release-cli-mcp-20261025`
 - **Dictamen QA respondido:** `defc657` (rama `qa/review-release-cli-mcp-316623a-20261026`)
 - **SHA inicial:** `316623a` (HEAD al abrir la ronda)
-- **SHA final:** `701f5d4` · **Candidato de producto congelado:** `701f5d4`
-  (este buzón es el delta documental posterior)
+- **SHA final:** `408eb23` · **Candidato de producto congelado:** `408eb23`
+  (los commits posteriores de esta misma entrega son documentales)
 
 ```text
 GOAL:       Remediar los fallos reales de CI, verificar compatibilidad,
@@ -15,23 +15,27 @@ GOAL:       Remediar los fallos reales de CI, verificar compatibilidad,
             preparar (sin aplicar) la decisión de arquitectura B.
 RAMA:       work/release-cli-mcp-20261025
 SHA INICIAL: 316623a
-SHA FINAL:  701f5d4
-ESTADO:     AVANCE — los cinco defectos reales de CI están corregidos y
-            comprobados; la documentación está reconciliada con su fuente;
-            QG-00/01/02 siguen BLOCKED por decisiones del propietario y la
-            matriz macOS por infraestructura de la CI. NO MERGE. NO RELEASE.
+SHA FINAL:  408eb23
+ESTADO:     AVANCE — los DIEZ defectos reales que la CI destapó están
+            corregidos y comprobados (D1-D10); la corrida del SHA final tiene
+            17 de 25 jobs en verde, incluidos los 8 validate de Windows y
+            Linux; la documentación está reconciliada con su fuente; QG-00/01/02
+            siguen BLOCKED por decisiones del propietario y QG-07 por los 8
+            jobs macos-latest que no arrancan. NO MERGE. NO RELEASE.
 ```
 
 ## 1. CI — lo que de verdad pasó y lo que se corrigió
 
 ```text
 CI:
-RUN ID:        40299732445 (freeze 36c91e0) · 40308451152 (316623a) · 40317033977 (9e0bcd7)
+RUN ID:        40340865847 (SHA final 408eb23) · 40335869688 (8b87b24) ·
+               40326462714 (0fffbc3) · 40317033977 (9e0bcd7) · 40299732445
+               (freeze 36c91e0)
 JOBS TOTAL:    25 (12 validate = 3 SO x 4 Python · 12 product-gates · 1 lint)
-JOBS PASS:     9   (lint + 8 product-gates de Windows y Ubuntu)
-JOBS FAIL:     8   (los 8 "Validate Vault Spec" de Windows y Ubuntu)
-JOBS QUEUED:   8   (los 8 macos-latest: NO arrancan; van de queued a in_progress y se quedan)
-JOBS IN_PROGRESS: 8 (las columnas validate de Windows y Ubuntu)
+JOBS PASS:     17  (lint + 8 product-gates + los 8 validate de Windows y Linux)
+JOBS FAIL:     0   en la corrida del SHA final
+JOBS QUEUED:   8   (los 8 macos-latest: NO arrancan, en 5 corridas seguidas)
+JOBS IN_PROGRESS: 0
 ```
 
 **La hipótesis de la ronda anterior («la CI está bloqueada por facturación») queda
@@ -183,6 +187,69 @@ Evidencia: log del job 121552106864 (JSON completo de la auditoria).
 Estado: CORREGIDO (pendiente la corrida de verificacion en CI).
 ```
 
+```text
+ID: D9
+Job: Validate Vault Spec (windows-latest, 3.9-3.12) — 4 jobs
+Sistema operativo: Windows Server 2022 · Python: 3.9-3.12
+Paso: "Run vault_norms --list"
+Síntoma: el paso fallaba en las cuatro columnas de Windows y PASABA en las
+         cuatro de Ubuntu, con el mismo codigo y el mismo repositorio:
+         «SyntaxError: '[' was never closed».
+Causa comprobada: el paso usa `python -c "..."` con comillas dobles escapadas
+         dentro; con el shell por defecto de Windows (PowerShell) las comillas
+         se pierden al pasar el argumento al proceso nativo y el codigo llega
+         partido. En bash el mismo texto funciona. Reproducido en local: con
+         PowerShell 5.1 tampoco vale la forma de comillas simples (PowerShell
+         quita las comillas interiores).
+Hipótesis descartadas: (a) «es el codigo de las normas» — el mismo comando
+         pasa en Ubuntu; (b) «falta un interprete» — el paso anterior (spec
+         validate) usa el mismo python y pasa; (c) «es el quoting de YAML» —
+         el error es del interprete de python, no del yaml.
+Cambio correctivo: el paso declara `shell: bash` (que esta en los tres
+         runners y es el shell que ya usan el paso de la wheel y el de SBOM) y
+         el codigo de python usa comillas simples, sin escapes.
+Regresión negativa: con el shell por defecto, la columna de Windows falla
+         (corrida 40326462714, paso "Run vault_norms --list").
+Regresión positiva: verificado en el bash de esta maquina ("AP norms
+         registered: 76", exit 0) y en CI: windows-3.12 completo en verde
+         (corrida 40335869688) con ese paso en success.
+Evidencia: logs de los jobs de las corridas 40326462714 y 40335869688.
+Estado: CORREGIDO.
+```
+
+```text
+ID: D10
+Job: Validate Vault Spec (windows-latest, 3.11) — 1 job
+Sistema operativo: Windows Server 2022 · Python: 3.11.9
+Test: tests/test_vault_sdd_init.py::TestSkillExecution::test_skill_idempotency
+Síntoma: «README.md not idempotent», con una UNICA diferencia: dos lineas
+         «Generated at» con un segundo de distancia (14:25:55.000Z contra
+         14:25:54.000Z).
+Causa comprobada: los generadores del SDD estampan el instante de la
+         escritura («Generated at», «Generado») y el JSON lleva
+         `generated_at`; el test generaba dos veces y comparaba byte a byte, de
+         modo que el resultado dependia del SEGUNDO en que caian las dos
+         generaciones y no del codigo. El repo ya conocia la otra causa del
+         mismo fallo —una mutacion concurrente del registro que el SDD cuenta,
+         corregida con `dry_run=True` en el runner de contexto, medido el
+         2026-10-23—; esta, el reloj, seguia viva.
+Hipótesis descartadas: (a) «el generador produce contenido distinto» — con
+         el instante normalizado, los doce generadores dan contenido
+         identico; (b) «es de Windows» — la comparacion es del generador, no
+         de la plataforma; (c) «es contencion del runner» — el test corre en
+         su directorio temporal.
+Cambio correctivo: la comparacion normaliza SOLO el instante (la etiqueta de
+         la linea y el resto del texto se siguen comparando; en el JSON se
+         excluye la clave `generated_at`).
+Regresión negativa: dos generaciones separadas por 1,2 s (cruce de segundo
+         forzado) dan contenido CRUDO distinto en README.md.
+Regresión positiva: el mismo par da contenido NORMALIZADO identico en los
+         doce generadores; 15/15 tres veces seguidas.
+Evidencia: corrida 40335869688 (job de Windows 3.11) y la comprobacion local
+         con el cruce de segundo forzado.
+Estado: CORREGIDO.
+```
+
 ### 1.2 Correcciones adicionales de esta ronda
 
 | ID | Dónde | Qué | Comprobación |
@@ -194,10 +261,9 @@ Estado: CORREGIDO (pendiente la corrida de verificacion en CI).
 ## 2. Certification
 
 ```text
-SUITE:   6319 passed / 13 skipped / 0 failed en 1033,9 s (JUnit r12e, sobre el
-         candidato 701f5d4) — identica a la r12d (89fbe4c, 1030,7 s): el
-         delta entre ambas no tocaba el codigo bajo prueba.
-PUERTAS: 26/26 en 532,9 s sobre el mismo contenido
+SUITE:   6319 passed / 13 skipped / 0 failed en 994,9 s (JUnit r12h, sobre el
+         SHA final 408eb23); 6332 collectados, 0 fallos, 0 errores.
+PUERTAS: 26/26 en 532,9 s (mismo contenido)
 E2E:     27/27 con wheel reconstruida desde el codigo (el guion construye la
          wheel el mismo desde HEAD)
 WHEEL:   6389a9cefa599b26ef11f875851e7ca126b2487867b14e753cc93fd43ab0e6ae
@@ -226,13 +292,47 @@ semilla (D8), ambos corregidos en esta misma ronda.
 
 ## 3. QG-00 a QG-07 (estado autologous)
 
+**Recibos externos por subcheck** del SHA final `408eb23` (colector con
+`--ejecutar`: cada subcheck tiene su verificador, su exit code, su artefacto
+propio y su SHA-256; el directorio de recibos vive FUERA del arbol versionado
+para que el commit no contenga su propia acreditacion):
+
+| QG | Estado del recibo | Subchecks (estado) | Lo que falla, si falla |
+|---|---|---|---|
+| QG-00 | **FAIL** (exit 1) | identidad_git=ejecutado · arbol_limpio=ejecutado · saneamiento=ejecutado · **reconciliador_archify=fallido** | las 10 divergencias sin ratificar (decisión del propietario) |
+| QG-01 | **FAIL** (exit 1) | vault_arch=ejecutado · **reconciliador_archify=fallido** | las mismas 10 divergencias |
+| QG-02 | **FAIL** (exit 1) | puertas_26=ejecutado · auditoria_completa=ejecutado · **sin_violaciones=fallido** | **1** violación, externa: `vault-backups` dos niveles por encima del repo (decisión de su dueño) |
+| QG-03 | **PASS** (exit 0) | suite_junit=ejecutado (6332 tests, 0 fallos) · recorrido_e2e=ejecutado (27/27) | — |
+| QG-04 | **PASS** (exit 0) | saneamiento=ejecutado · pip_audit=ejecutado («No known vulnerabilities found») · contencion=ejecutado · operaciones_destructivas=ejecutado | — |
+| QG-05 | **PASS** (exit 0) | paridad_cli_mcp=ejecutado · ap40_contrato=ejecutado | — |
+| QG-06 | **PASS** (exit 0) | construccion=ejecutado · wheel_contenido=ejecutado · instalacion_limpia=ejecutado | — |
+
+**Estado fail-closed de la política** (el que decide si esto es publicable):
+QG-00 `NOT_RUN` · QG-01 `NOT_RUN` · QG-02 `BLOCKED` · QG-03..QG-06 `BLOCKED`
+por el prerrequisito QG-00 · **QG-07 `BLOCKED`** · **`liberable: false`**.
+
+Dos correcciones para que los recibos midieran lo que deben medir (no para
+relajarlos):
+
+- El subcheck `suite_junit` exige el **recibo de procedencia** del JUnit
+  (`<junit>.procedencia.json` con `sha`, `exit` y `junit_sha256`): sin él, el
+  subcheck queda `no_ejecutado` (fail-closed, nunca PASS). El recibo declara
+  el SHA evaluado, así que un JUnit de otro SHA no acredita este.
+- El subcheck `pip_audit` audita el entorno del intérprete que se le pasa. Con
+  una venv que solo llevaba `pip-audit`, lo que salía eran las
+  vulnerabilidades del **pip de la propia auditoría** (PYSEC-2026-*, pip
+  25.3), no las del producto. La venv se preparó con el paquete instalado y
+  el pip subido: ahora mide las dependencias del producto y sale en 0.
+
+### 3.1 Estado de las puertas
+
 | QG | Estado | Motivo |
 |---|---|---|
 | QG-00 | **BLOCKED** | 10 divergencias sin ratificar (decisión A/B/C del propietario). El plan B está **preparado y no ejecutado**: `audits/architecture/PLAN-B-MIGRACION-CRUZES.md` |
 | QG-01 | **BLOCKED** | mismo reconciliador. La alternativa B del plan corrige un error de dirección del análisis de QA-RC-03 (la opción A crea el cruce que hay que eliminar) |
 | QG-02 | **BLOCKED** | 13 de los 14 hallazgos eran contenido de **nuestra** semilla y están **CORREGIDOS** (`5178399`); queda 1, externo (AP-36, `vault-backups`), que es decisión de su dueño. Falta ratificar la política de certificación (propuesta, no aplicada) |
-| QG-03..QG-06 | **BLOCKED** | recibos PASS externos, atrapados por el prerrequisito QG-00 (regla del catálogo) |
-| QG-07 | **BLOCKED** | la CI ya no está en cola por facturación, pero **no hay conclusión**: 8 jobs macos-latest no arrancan. Además, QG-07 exige QA (verifica) + propietario (autoriza) |
+| QG-03..QG-06 | **BLOCKED** | recibos **PASS** (con artefacto y SHA-256 por subcheck), atrapados por el prerrequisito QG-00 (regla del catálogo) |
+| QG-07 | **BLOCKED** | la CI ya no está en cola por facturación: **17 de 25 jobs verdes** en la corrida del SHA final, incluidos los 8 `validate` de Windows y Linux. Falta la conclusión, y la conclusión no llega mientras los **8 jobs `macos-latest` no arranquen**. Además QG-07 exige QA (verifica) + propietario (autoriza) |
 
 ## 4. Documentación reconciliada (con su fuente)
 
@@ -286,20 +386,29 @@ COMMITS:   9e0bcd7 (fix CI: fetch-depth, detector MCP, SystemRoot)
            fc50d2b (fix MCP: vault://graph + códigos de error)
            89fbe4c (docs R12: protocolo + guard, plan B, política, matriz, informe)
            701f5d4 (fix CI: cifra de tests multiplataforma + JUnit como
-           artefacto + ledger QG-02 regenerado) — CANDIDATO DE PRODUCTO
-           + este buzón (delta documental)
-EVIDENCIAS: logs de los 8 jobs de la corrida 40299732445 y de los jobs
-           fallidos de la 40317033977 (descargados y analizados); clon local
-           --depth=1 vs completo (19 fallos vs 129/129); repro de SystemRoot
-           (3.9/3.12/3.14); medición en vivo del servidor MCP (97 tools, 7
-           recursos); auditoría del sandbox (14 -> 1); comparación de las
-           listas de tests collectados (local vs CI); JUnit de la suite.
-RECIBOS:   ledger de hallazgos QG-02 regenerado con el código actual (15
-           fichas: 1 ABIERTO —AP-36, externo— y 14 CORREGIDO con su commit).
-SOLICITUD QA: SÍ — dictamen de cierre sobre el SHA final de esta ronda, con
-           la respuesta a `defc657` y el estado real de la CI. Si las decisiones
-           del propietario y macOS siguen abiertas, el dictamen correcto es
-           BLOCKED con esas causas.
+           artefacto + ledger QG-02 regenerado)
+           8b87b24 (fix CI: el paso vault_norms --list no depende del shell)
+           408eb23 (fix suite: la idempotencia del SDD no compara el reloj)
+           CANDIDATO DE PRODUCTO = 408eb23
+           + el commit de este buzón (delta documental)
+EVIDENCIAS: logs de los jobs de las corridas 40299732445, 40317033977,
+           40326462714, 40335869688 y 40340865847 (descargados y analizados);
+           clon local --depth=1 vs completo (19 fallos vs 129/129); repro de
+           SystemRoot (3.9/3.12/3.14); cruce de segundo forzado del flake del
+           SDD; medición en vivo del servidor MCP (97 tools, 7 recursos);
+           auditoría del sandbox (14 -> 1); comparación de las listas de tests
+           collectados (local vs CI); JUnit r12h con su recibo de procedencia.
+RECIBOS:   QG-00..QG-06 del SHA 408eb23, con artefacto y SHA-256 por
+           subcheck, en un directorio FUERA del arbol versionado. QG-03/04/05/06
+           PASS; QG-00/01 fallan solo por las 10 divergencias sin ratificar y
+           QG-02 solo por la violacion externa. La politica los deja
+           BLOCKED y `liberable: false`. Ademas, el ledger de hallazgos QG-02
+           queda regenerado con el codigo actual (15 fichas: 1 ABIERTO
+           —AP-36, externo— y 14 CORREGIDO con su commit).
+SOLICITUD QA: SÍ — dictamen de cierre sobre el SHA final `408eb23`, con la
+           respuesta a `defc657` (los diez defectos, con su ficha) y el estado
+           real de la CI. Si las decisiones del propietario y macOS siguen
+           abiertas, el dictamen correcto es BLOCKED con esas causas.
 ```
 
 ---

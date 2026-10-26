@@ -1,9 +1,8 @@
 # Informe de readiness para terceros — GOAL CLI + MCP
 
 **Fecha:** 2026-10-26 (ronda R12) · **Rama:** `work/release-cli-mcp-20261025`
-**HEAD de trabajo:** `9e0bcd7` (arreglos de CI) + ronda de documentos de esta
-misma entrega · **Candidato de producto congelado:** `36c91e0` (con los
-arreglos de R12 encima, pendiente de congelar)
+**HEAD de trabajo / candidato congelado:** `408eb23` (los commits posteriores
+de esta entrega son documentales)
 **Dictámenes vigentes:** `defc657` (QA sobre `316623a`: CI real, MCP/PyYAML en
 Windows, checkout superficial y reconciliación documental) · `9919c57` (8
 hallazgos QA-ARC, respondidos en R11) · `a9e0143`
@@ -49,9 +48,9 @@ diciendo «116»/«117» y «9 tools JS-native» (son 2): son cifras caducadas d
 
 | Métrica | Valor | Fuente |
 |---|---|---|
-| Puertas del estándar | **26/26** | `vault_gate.py --strict` sobre el candidato `701f5d4` (532,9 s) |
-| Suite completa | **6319 passed / 13 skipped / 0 failed** en **1030,7 s** | JUnit `r12d` sobre `89fbe4c`; el delta hasta `701f5d4` es la cifra de tests multiplataforma, el generador del ledger y el workflow (sin cambio en el paquete) |
-| Suite completa (candidato) | **6319 passed / 13 skipped / 0 failed** en **1033,9 s** | JUnit `r12e` sobre el candidato `701f5d4` (idéntica a `r12d`: el delta no tocaba el código bajo prueba) |
+| Suite completa | **6319 passed / 13 skipped / 0 failed** en **994,9 s** | JUnit `r12h` sobre el SHA final `408eb23` (6332 collectados, 0 fallos, 0 errores) |
+| Suite completa (candidatos intermedios) | 6319/13/0 en 1033,9 s (`r12e`, `701f5d4`), 1030,7 s (`r12d`, `89fbe4c`), 1001,9 s (`r12g`, `8b87b24`) | JUnit; el delta entre candidatos no tocaba el código bajo prueba |
+| Puertas del estándar | **26/26** | `vault_gate.py --strict` (532,9 s) y, en CI, en las 8 columnas win/ub de la corrida `40340865847` |
 | E2E de terceros | **27/27** con wheel reconstruida desde el código (el guion construye la wheel desde HEAD) | `recorrido_terceros_r07.py`; wheel `6389a9ce…e6ae`, sdist `8b91c07a…1151` |
 | Equivalencia del paquete | **706 miembros, 0 ficheros con contenido distinto** entre la wheel del E2E y la reconstruida | la construcción **no es reproducible** (el ZIP lleva marcas de tiempo): el hash de referencia es el de la construcción certificada, y lo que se comparó es el contenido |
 | AP-39 (defecto de producto) | **corregido**: 0 violaciones en runtime limpio con 75 ficheros | re-auditoría con código actual (commit `2174bb1`) |
@@ -67,19 +66,22 @@ diciendo «116»/«117» y «9 tools JS-native» (son 2): son cifras caducadas d
 | Corrida | SHA | Jobs | Resultado | Conclusión |
 |---|---|---|---|---|
 | `40299732445` | `36c91e0` | 25 | **9 verdes · 8 rojos · 8 en cola** | los 8 rojos: checkout superficial + MCP + SystemRoot (§3.2). Los 8 en cola: **macOS**, que no arranca |
-| `40308451152` | `316623a` | 25 | 9 verdes · 8 en curso · 8 en cola | nunca concluyó por los mismos 8 de macOS |
-| `40317033977` | `9e0bcd7` | 25 | 9 verdes · 8 en curso · 8 en cola | **verificación de los arreglos**; resultado en §3.4 |
+| `40317033977` | `9e0bcd7` | 25 | 9 verdes · 8 rojos · 8 en cola | los 8 rojos: **suite verde** y fallo en `conteos` (D7) o en la contención (D8) |
+| `40326462714` | `0fffbc3` | 25 | 13 verdes · 3 rojos · 8 en cola · 1 en curso | los 3 rojos de Windows: el paso `vault_norms --list` (D9) |
+| `40335869688` | `8b87b24` | 25 | 13 verdes · 1 rojo · 8 en cola · 3 en curso | el rojo: el flake de la idempotencia del SDD (D10) |
+| `40340865847` | **`408eb23`** | 25 | **17 verdes · 8 en cola** | los 8 en cola son **macOS**, que sigue sin arrancar. Ningún job en rojo |
 
 **Lo que esto refuta:** la hipótesis de que la CI estaba bloqueada por
-facturación. La cuenta está activa: los jobs de Windows y Ubuntu **ejecutan y
-terminan**. El límite real es otro: **los 8 jobs `macos-latest` no arrancan**
-(van de `queued` a `in_progress` y ahí se quedan, dos corridas seguidas). Eso
-es infraestructura del repositorio/plan — una cuenta que ejecuta macOS
+facturación. La cuenta ejecuta y los jobs de Windows y Linux **terminan**. El
+límite real es otro: **los 8 jobs `macos-latest` no arrancan**, en cinco
+corridas seguidas (40 jobs de macOS en cola, ninguno jamás asignado a un
+runner, mientras 40+ jobs de Windows y Linux sí se ejecutaron en paralelo).
+Eso es infraestructura del repositorio/plan — una cuenta que ejecuta macOS
 cuesta 10× — y es del propietario. Consecuencia: **la matriz multiplataforma
 no está completa** y QG-07 no puede cerrarse (su check exige CI con
 conclusión, y la conclusión no llega mientras macOS no arranque).
 
-### 3.2 Los cinco defectos reales que la CI destapó
+### 3.2 Los diez defectos reales que la CI destapó
 
 | # | Síntoma | Causa comprobada | Corrección | Cómo se comprobó |
 |---|---|---|---|---|
@@ -89,8 +91,11 @@ conclusión, y la conclusión no llega mientras macOS no arranque).
 | D7 | Puerta `conteos` en rojo **solo en Linux** (25/26) con la suite verde: la cifra de tests publicada (6320, medida en Windows) no coincidía con la collectada en Linux (6318) | `tests/test_read_ruta_canonica.py` solo añadía en Windows las dos variantes que usan separador de Windows y caja distinta → **la cifra de tests dependía del sistema**, y la puerta la compara con `pytest --collect-only` | las cuatro variantes se **colectan** en todas las plataformas y las dos de Windows se **saltan** fuera de Windows: la cifra queda igual en todos los sistemas (6332) y la cobertura de Windows no se pierde | diferencia de las listas de tests collectados (local vs log de la CI); 4/4 en el test; puerta `conteos` en verde |
 | D8 | Paso «Containment audit (AP-36, strict)» en rojo en Windows 3.12: la auditoría del sandbox canónico daba **13 violaciones** (CN-03×5, AP-07×4, AP-64×4) | el paso audita el sandbox que el propio job construye con `tests/sandbox_fixture.py --bootstrap`, y la **semilla** (`tests/fixtures/sandbox-seed.json`) escribía las notas con `status: accepted`, sin las secciones de AP-07 y sin `responsable` de AP-64. Eran las mismas 13 del ledger de QG-02: contenido nuestro, no un defecto de la CI | la semilla escribe notas **canónicas** (status del vocabulario, las tres secciones, `responsable` distinto del agente) | auditoría del sandbox canónico con el código actual: de 14 → **1** (la externa); en CI, **0** |
 
-Ninguno de los cinco se arregló con sleeps, reintentos, baselines más amplias ni
-tests relajados. Los cinco se arreglaron en su causa.
+| D9 | Paso «Run vault_norms --list» rojo en **las cuatro** columnas de Windows y verde en las de Ubuntu, con el mismo código: `SyntaxError: '[' was never closed` | el paso usa `python -c "..."` con comillas dobles escapadas; con el shell por defecto de Windows (PowerShell) las comillas se pierden al pasar el argumento al proceso nativo y el código llega partido. En bash funciona | el paso declara `shell: bash` (que está en los tres runners) y el código usa comillas simples | verificado en el bash local («AP norms registered: 76», exit 0) y en CI: windows-3.12 en verde con ese paso en `success` |
+| D10 | `test_vault_sdd_init.py::test_skill_idempotency` rojo en Windows 3.11: «README.md not idempotent», con una única diferencia (dos «Generated at» con un segundo de distancia) | los generadores del SDD estampan el instante de la escritura y el test comparaba dos generaciones byte a byte: el resultado dependía del **segundo** en que caían, no del código | la comparación normaliza **solo el instante** (la etiqueta y el resto del texto se siguen comparando) | dos generaciones con 1,2 s de diferencia: contenido crudo distinto, contenido normalizado idéntico en los doce generadores; 15/15 tres veces seguidas |
+
+Ninguno de los diez se arregló con sleeps, reintentos, baselines más amplias
+ni tests relajados. Los diez se arreglaron en su causa.
 
 ### 3.3 Lo que la CI NO demuestra todavía
 
@@ -102,11 +107,16 @@ tests relajados. Los cinco se arreglaron en su causa.
 
 ### 3.4 Corrida de verificación de los arreglos
 
-`40317033977` (sobre `9e0bcd7`): 9 jobs verdes (lint + 8 de producto) y los 8
-`validate` de Windows y Ubuntu **en ejecución**; los 8 de macOS, en cola. El
-resultado de las columnas se incorpora en §9 con el resto de la
-certificación. **Mientras no haya jobs `macos-latest` ejecutados, QG-07 sigue
-BLOCKED** y la matriz multiplataforma sigue incompleta.
+**`40340865847` (SHA final `408eb23`): 17 de 25 jobs en verde** — lint, los 8
+de producto (wheel) y **los 8 `validate` de Windows y Linux**, que pasaron la
+suite completa, las 26 puertas, el AP-40, el smoke de las 126 tools, la
+auditoría de contención, la validación del runtime recién creado, el paso de
+`vault_norms --list` y el AP-25 del manifiesto. **Ningún job en rojo.** Los 8
+restantes son los de macOS, en cola desde el principio y sin arrancar nunca.
+
+Es decir: **los diez defectos que la CI destapó están corregidos y la propia CI
+lo demuestra**. Lo que sigue sin llegar es la conclusión de la corrida (y, con
+ella, el cierre de QG-07), y la causa es externa: los runners de macOS.
 
 ## 4. QG-02: los 14 hallazgos del sandbox, desglosados y corregidos
 
@@ -157,9 +167,9 @@ sin release y sin dictamen QA de cierre.
 
 | Sistema | Estado | Evidencia |
 |---|---|---|
-| Windows | **medido** | suite + E2E locales (esta máquina) y columnas de la CI |
-| Linux | **medido** (en la CI, sobre `36c91e0` y `9e0bcd7`) | jobs `ubuntu-latest` de `validate` y de producto |
-| macOS | **`NOT_RUN`** | los 8 jobs `macos-latest` no arrancan en dos corridas seguidas (§3.1) |
+| Windows | **medido** | suite + E2E locales (esta máquina) y las **4 columnas de la CI en verde** (corrida `40340865847`) |
+| Linux | **medido** | las **4 columnas de la CI en verde** (corrida `40340865847`) |
+| macOS | **`NOT_RUN`** | los 8 jobs `macos-latest` no arrancan en cinco corridas seguidas (§3.1) |
 
 ### 5.3 Lo que NO garantizamos aún
 
@@ -210,27 +220,33 @@ sin release y sin dictamen QA de cierre.
 ## 9. Estado de la certificación de cierre
 
 - **Congelado y re-certificado en R11:** `36c91e0` — suite **6307 passed / 13
-  skipped / 0 failed** (JUnit `r11d`, 1068,7 s) y **puertas 26/26**; E2E 27/27.
-- **Ronda R12 (esta) — candidato `701f5d4`:** corregidos los **cinco** defectos
-  reales que la CI destapó (§3.2: checkout superficial, detector MCP sin
-  PyYAML, env de hijo sin SystemRoot, cifra de tests dependiente del sistema
-  y contenido no canónico de la semilla del sandbox), más el defecto de
+  skipped / 0 failed** (JUnit `r11d`) y **puertas 26/26**; E2E 27/27.
+- **Ronda R12 (esta) — SHA final `408eb23`:** corregidos los **diez** defectos
+  que la CI destapó (§3.2: checkout superficial, detector MCP sin PyYAML, env
+  de hijo sin SystemRoot, cifra de tests dependiente del sistema, contenido no
+  canónico de la semilla del sandbox, quoting del paso `vault_norms --list` y
+  la idempotencia del SDD que comparaba el reloj), más el defecto de
   `vault://graph` en el servidor MCP; reconciliados el protocolo QA (con guard
   de deriva), el informe, la matriz de capacidad y la política de QG-02.
-  Medición sobre el candidato: **puertas 26/26** (532,9 s), **E2E 27/27** con
-  wheel reconstruida y **contenido del paquete idéntico miembro a miembro**
-  (706/706) al del E2E; suite completa **6319 passed / 13 skipped / 0 failed**
-  (JUnit `r12d`, 1030,7 s) con el delta hasta el candidato limitado a la
-  cifra de tests multiplataforma, el generador del ledger y el workflow.
+  Medición sobre el SHA final: **suite 6319 passed / 13 skipped / 0 failed**
+  (JUnit `r12h`, 994,9 s), **puertas 26/26**, **E2E 27/27** con wheel
+  reconstruida y contenido del paquete idéntico miembro a miembro (706/706),
+  y **CI con 17 de 25 jobs en verde** (los 8 `validate` de Windows y Linux
+  incluidos), sin un solo job en rojo.
+- **Recibos externos por subcheck** del mismo SHA: QG-03, QG-04, QG-05 y QG-06
+  **PASS** (con artefacto y SHA-256 por subcheck); QG-00 y QG-01 fallan **solo**
+  por el reconciliador (las 10 divergencias sin ratificar) y QG-02 **solo** por
+  la violación externa de `vault-backups`. La política los deja
+  **BLOCKED** y `liberable: false` — que es el estado honesto.
 - **Lo que falta, y no lo puede cerrar el ejecutor:** el dictamen QA de cierre
   sobre este SHA; la ratificación de las decisiones §6 (divergencias,
   política de QG-02, `vault-backups`); y la matriz de macOS, cuyos 8 jobs no
-  arrancan en dos corridas seguidas. Si macOS no se habilita, el dictamen
+  arrancan en cinco corridas seguidas. Si macOS no se habilita, el dictamen
   correcto del QA es `BLOCKED` con esa causa, y el alcance publicable se
   declara como Windows + Linux.
 
-**Veredicto:** el producto técnico está en verde, sus defectos de CI concretos
-están corregidos y comprobados con evidencia de la propia CI, y la
+**Veredicto:** el producto técnico está en verde, sus diez defectos de CI
+concretos están corregidos y comprobados con evidencia de la propia CI, y la
 documentación dice la verdad sobre su estado. Lo que falta para un release
 certificado son decisiones del propietario (§6) y la matriz de macOS; ninguna
 de las dos cosas la puede cerrar el ejecutor, y ninguna se resuelve con un
