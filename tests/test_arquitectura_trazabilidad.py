@@ -114,14 +114,22 @@ def test_el_reconciliador_sigue_listando_las_diez_sin_ratificacion():
     assert "divergencia(s) no aceptada(s)" in salida, salida[-400:]
 
 
-def test_el_inventario_se_regenera_de_forma_determinista():
+def test_el_inventario_se_regenera_de_forma_determinista(tmp_path):
+    """Regenera en un dir temporal y compara contra el versionado."""
     antes = (BASE / "inventario-maestro.yaml").read_text(encoding="utf-8")
-    p = subprocess.run([sys.executable, str(BASE / "generar_inventario.py")],
+    salida = tmp_path / "regen"
+    p = subprocess.run([sys.executable, str(BASE / "generar_inventario.py"),
+                        "--salida-dir", str(salida)],
                        cwd=str(ROOT), capture_output=True, text=True,
                        encoding="utf-8", errors="replace", timeout=1800)
     assert p.returncode == 0, p.stdout[-400:] + p.stderr[-400:]
-    despues = (BASE / "inventario-maestro.yaml").read_text(encoding="utf-8")
-    assert antes == despues, "el inventario generado no es reproducible"
+    despues = (salida / "inventario-maestro.yaml").read_text(encoding="utf-8")
+    # El campo sha_corte cambia con cada commit: se compara el resto.
+    def sin_sha(texto):
+        return "\n".join(l for l in texto.splitlines()
+                         if "sha_corte" not in l)
+    assert sin_sha(antes) == sin_sha(despues), (
+        "el inventario regenerado difiere del versionado")
 
 
 def test_la_constitucion_esta_marcada_como_borrador():
