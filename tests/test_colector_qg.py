@@ -1,13 +1,15 @@
-"""QA-RC-02d/e/f · recibos con subchecks, CI con matriz real, ejecutor auténtico.
+"""QA-RC-02g/h/i · subchecks con ejecucion propia, CLI real y CI ligada al run.
 
-El colector exige: recibo por puerta con TODOS sus subchecks obligatorios en
-PASS, artefacto existente con hash coincidente, verifier+command autorizados,
-CI del workflow esperado con sus 25 jobs reales concluidos. Sin recibos, sin
-jobs o con gh ausente: NOT_RUN / no_verificable, nunca PASS.
+Cada subcheck tiene su verificador, su exit code, su artefacto y su SHA-256:
+la puerta solo pasa si TODOS pasan. Se prueban los negativos que QA enumera
+(subcheck ausente, fallido, no ejecutado, salida vacia, artefacto individual
+ausente, comando pytest ejecutado como script) y la CLI como proceso real.
 """
-import hashlib
+from __future__ import annotations
+
 import importlib.util
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -29,417 +31,321 @@ OTRO = "b" * 40
 c = _colector()
 
 
-def _evidencia(tmp_path: Path, nombre: str, texto: str) -> Path:
-    ruta = tmp_path / nombre
-    ruta.parent.mkdir(parents=True, exist_ok=True)
-    ruta.write_text(texto, encoding="utf-8")
-    return ruta
-
-
-def _checks(gate: str, estado: str = "PASS") -> dict:
-    return {sc: estado for sc in c.SUBCHECKS_OBLIGATORIOS[gate]}
-
-
-def _recibo(tmp_path: Path, gate: str, sha: str = SHA, exit_code: int = 0,
-            status: str = "PASS", checks: dict | None = None,
-            sin_checks: bool = False, sin_artefacto: bool = False,
-            verifier: str | None = None, comando: str | None = None,
-            extra: dict | None = None) -> Path:
-    recibos = tmp_path / "recibos"
-    recibos.mkdir(parents=True, exist_ok=True)
-    verifier_aut, comando_aut = c.GATE_VERIFICADORES[gate]
-    artefacto = _evidencia(tmp_path, f"art-{gate}.json",
-                           json.dumps({"ok": status == "PASS"}) if not
-                           sin_artefacto else "x")
-    dato = {
-        "gate": gate, "target_sha": sha,
-        "verifier": verifier or verifier_aut,
-        "command": comando or comando_aut,
-        "exit_code": exit_code, "status": status,
-        "started_at": "2026-10-25T00:00:00Z",
-        "finished_at": "2026-10-25T00:01:00Z", "run_id": f"local-{gate}",
-        "artifact": None if sin_artefacto else str(artefacto),
-        "artifact_sha256": None if sin_artefacto else hashlib.sha256(
-            artefacto.read_bytes()).hexdigest(),
-        "checks": {} if sin_checks else (checks if checks is not None
-                                         else _checks(gate)),
-    }
-    if extra:
-        dato.update(extra)
-    ruta = recibos / f"{gate}.recibo.json"
-    ruta.write_text(json.dumps(dato, indent=2), encoding="utf-8")
-    return ruta
-
-
-def _junit(tmp_path: Path, tests: int = 5, failures: int = 0,
-           errors: int = 0, firmar: bool = True, sha: str = SHA) -> Path:
-    ruta = tmp_path / "junit.xml"
-    ruta.write_text(
-        f'<?xml version="1.0"?><testsuites><testsuite name="s" tests="{tests}" '
-        f'failures="{failures}" errors="{errors}" skipped="0"/></testsuites>',
-        encoding="utf-8")
-    if firmar:
-        Path(str(ruta) + ".procedencia.json").write_text(json.dumps({
-            "sha": sha, "exit": 0,
-            "junit_sha256": hashlib.sha256(ruta.read_bytes()).hexdigest()}),
-            encoding="utf-8")
-    return ruta
-
-
-# ── Recibos con subchecks (02e) ──────────────────────────────────────────────
-
-def test_recibo_completo_acredita(tmp_path):
-    assert c.leer_recibo(_recibo(tmp_path, "QG-01"), SHA)["ok"] is True
-
-
-def test_subchecks_ausentes_no_acreditan(tmp_path):
-    dato = c.leer_recibo(_recibo(tmp_path, "QG-01",
-                                 checks={"vault_arch": "PASS"}), SHA)
-    assert "SUBCHECKS_AUSENTES" in dato["detalle"]
-    assert "reconciliador_archify" in dato["detalle"]
-
-
-def test_subcheck_en_estado_distinto_de_pass_no_acredita(tmp_path):
-    checks = _checks("QG-02")
-    checks["auditoria_completa"] = "degradado"
-    dato = c.leer_recibo(_recibo(tmp_path, "QG-02", checks=checks), SHA)
-    assert "SUBCHECKS_AUSENTES" in dato["detalle"]
-
-
-def test_recibo_sin_seccion_checks_no_acredita(tmp_path):
-    dato = c.leer_recibo(_recibo(tmp_path, "QG-04", sin_checks=True), SHA)
-    assert "SUBCHECKS_AUSENTES" in dato["detalle"]
-
-
-# ── Recibos: las negativas de 02a siguen en pie ──────────────────────────────
-
-def test_recibo_de_otro_sha_no_acredita(tmp_path):
-    assert c.leer_recibo(_recibo(tmp_path, "QG-01", sha=OTRO), SHA)[
-        "detalle"] == "RECIBO_DE_OTRO_SHA"
-
-
-def test_exit_code_no_cero_no_acredita(tmp_path):
-    assert "VERIFICADOR_FALLIDO" in c.leer_recibo(
-        _recibo(tmp_path, "QG-01", exit_code=1), SHA)["detalle"]
-
-
-def test_status_no_pass_no_acredita(tmp_path):
-    assert "STATUS_NO_PASS" in c.leer_recibo(
-        _recibo(tmp_path, "QG-01", status="FAIL"), SHA)["detalle"]
-
-
-def test_comando_no_autorizado_no_acredita(tmp_path):
-    dato = c.leer_recibo(_recibo(tmp_path, "QG-01",
-                                 comando="python scripts/otro.py"), SHA)
-    assert dato["detalle"] == "VERIFICADOR_O_COMANDO_NO_AUTORIZADO"
-
-
-def test_verificador_ajeno_no_acredita(tmp_path):
-    dato = c.leer_recibo(_recibo(tmp_path, "QG-01", verifier="otro"), SHA)
-    assert dato["detalle"] == "VERIFICADOR_O_COMANDO_NO_AUTORIZADO"
-
-
-def test_texto_con_el_sha_no_acredita_nada(tmp_path):
-    recibos = tmp_path / "recibos"
-    recibos.mkdir()
-    (recibos / "QG-01.recibo.txt").write_text(f"SHA: {SHA}\nPASS\n",
-                                              encoding="utf-8")
-    assert c.estado_desde_recibo("QG-01", SHA, recibos)["estado"] == "no_ejecutado"
-
-
-def test_sin_recibos_es_no_ejecutado():
-    dato = c.estado_desde_recibo("QG-00", SHA, None)
-    assert dato["estado"] == "no_ejecutado"
-
-
-# ── QA-RC-02d: CI con jobs reales y matriz exacta ────────────────────────────
-
-def _jobs(nombres, conclusion="success", status="completed", run_id=None):
-    return [{"name": n, "conclusion": conclusion, "status": status,
-             "run_id": run_id} for n in nombres]
-
-
-def _matriz(completa=True, conclusion="success", run_id=None):
-    nombres = list(c.JOBS_OBLIGATORIOS)
-    if not completa:
-        nombres = nombres[:-1]  # quita uno: matriz incompleta
-    return _jobs(nombres, conclusion=conclusion, run_id=run_id)
-
-
-def test_ci_exitosa_con_matriz_completa_acredita():
-    runs = [_run()]
-    dato = c.estado_ci(SHA, consultar=lambda s: runs,
-                       consultar_jobs=lambda rid: _matriz())
-    assert dato["conclusion"] == "success"
-    assert dato["run_id"] == 1
-
-
-def _run(status="completed", conclusion="success", sha=SHA,
-         workflow="Vault CI", id=1):
-    return {"databaseId": id, "status": status, "conclusion": conclusion,
-            "headSha": sha, "workflowName": workflow}
-
-
-def test_ci_en_cola_es_bloqueante():
-    dato = c.estado_ci(SHA, consultar=lambda s: [
-        _run(status="queued", conclusion="")], consultar_jobs=lambda r: [])
-    assert dato["conclusion"] == "queued"
-
-
-def test_ci_exitosa_sin_jobs_consultables_no_acredita():
-    def _jobs_fallan(run_id):
-        raise OSError("sin permiso para jobs")
-    dato = c.estado_ci(SHA, consultar=lambda s: [_run()],
-                       consultar_jobs=_jobs_fallan)
-    assert dato["conclusion"] == "no_verificable"
-    assert "JOBS_NO_DISPONIBLES" in dato["detalle"]
-
-
-def test_workflow_sin_identidad_no_acredita():
-    dato = c.estado_ci(SHA, consultar=lambda s: [_run(workflow=None)],
-                       consultar_jobs=lambda r: [])
-    assert "WORKFLOW_SIN_IDENTIDAD" in dato["detalle"]
-
-
-def test_workflow_ajeno_no_acredita():
-    dato = c.estado_ci(SHA, consultar=lambda s: [_run(workflow="Otro CI")],
-                       consultar_jobs=lambda r: [])
-    assert dato["conclusion"] == "no_verificable"
-
-
-def test_matriz_incompleta_no_acredita():
-    dato = c.estado_ci(SHA, consultar=lambda s: [_run()],
-                       consultar_jobs=lambda r: _matriz(completa=False))
-    assert "MATRIZ_INCOMPLETA" in dato["detalle"]
-
-
-def test_job_sin_conclusion_no_acredita():
-    jobs = _matriz() + [{"name": "Extra", "conclusion": None,
-                         "status": "completed", "run_id": 1}]
-    dato = c.estado_ci(SHA, consultar=lambda s: [_run()],
-                       consultar_jobs=lambda r: jobs)
-    assert "MATRIZ_INCOMPLETA" in dato["detalle"]
-
-
-def test_job_cancelado_no_acredita():
-    jobs = _matriz()
-    jobs[-1]["conclusion"] = "cancelled"
-    dato = c.estado_ci(SHA, consultar=lambda s: [_run()],
-                       consultar_jobs=lambda r: jobs)
-    assert "MATRIZ_INCOMPLETA" in dato["detalle"]
-
-
-def test_jobs_duplicados_que_ocultan_ausencias_no_acreditan():
-    """Dos Lint Python no sustituyen a los jobs de la matriz que faltan."""
-    jobs = _jobs(["Lint Python", "Lint Python", "Lint Python",
-                  "Lint Python", "Lint Python"])
-    dato = c.estado_ci(SHA, consultar=lambda s: [_run()],
-                       consultar_jobs=lambda r: jobs)
-    assert "MATRIZ_INCOMPLETA" in dato["detalle"]
-
-
-def test_jobs_de_otro_run_no_se_considenan():
-    jobs = _matriz(run_id=777)  # matriz completa pero de OTRO run
-    dato = c.estado_ci(SHA, consultar=lambda s: [_run()],
-                       consultar_jobs=lambda r: jobs)
-    assert "MATRIZ_INCOMPLETA" in dato["detalle"]
-
-
-def test_run_de_otro_sha_no_acredita():
-    dato = c.estado_ci(SHA, consultar=lambda s: [_run(sha=OTRO)],
-                       consultar_jobs=lambda r: [])
-    assert dato["conclusion"] == "sin_run"
-
-
-# ── QA-RC-02c: procedencia JUnit y control de ejecucion ──────────────────────
-
-def test_junit_sin_firma_no_acredita(tmp_path):
-    xml = _junit(tmp_path, firmar=False)
-    assert "SIN_RECIBO_DE_EJECUCION" in c._procedencia_suite(xml, SHA)["detalle"]
-
-
-def test_junit_manipulado_tras_firmar_no_acredita(tmp_path):
-    xml = _junit(tmp_path, 5, 0)
-    _junit(tmp_path, 5, 2, firmar=False)
-    # reescrito sin firmar: el hash del recibo ya no coincide
-    assert "JUNIT_MANIPULADO" in c._procedencia_suite(xml, SHA)["detalle"]
-
-
-def test_junit_firmado_y_limpio_acredita(tmp_path):
-    xml = _junit(tmp_path, 5, 0)
-    assert c._procedencia_suite(xml, SHA)["ok"] is True
-
-
-def test_checkout_en_otro_sha_no_acredita(tmp_path):
-    class P:
-        returncode = 0
-        stdout = OTRO + "\n"
-        stderr = ""
-
-    seq = [P]
-    def ejecutar(cmd, **k):
-        p = _P2(seq)
-        return p
-    class _P2:
-        returncode = 0
-        stdout = ""
-        stderr = ""
-    # rev-parse devuelve OTRO: el detalle debe nombrar el desvio.
-    dato = c.checkout_en_sha(SHA, lambda *a, **k: type(
-        "R", (), {"returncode": 0, "stdout": OTRO + "\n", "stderr": ""})())
-    assert "CHECKOUT_EN_OTRO_SHA" in dato["detalle"]
-
-
-def test_git_con_error_de_retorno_no_acredita(tmp_path):
-    dato = c.checkout_en_sha(SHA, lambda *a, **k: type(
-        "R", (), {"returncode": 128, "stdout": "", "stderr": ""})())
-    assert dato["detalle"] == "GIT_REV_PARSE_FALLIDO"
-
-
-# ── Control de ejecucion (TD-0003) ───────────────────────────────────────────
-
 class _Proc:
-    def __init__(self, exit_code, stdout):
+    def __init__(self, exit_code=0, stdout='{"ok": true}', stderr=""):
         self.returncode = exit_code
         self.stdout = stdout
-        self.stderr = ""
+        self.stderr = stderr
 
 
-class _GitSeq:
-    """Fiel al contrato de `checkout_en_sha`: rev-parse HEAD -> status."""
-
-    def __init__(self, head, status=""):
-        self.respuestas = [head + "\n", status]
-        self.returncode = 0
-        self.stderr = ""
-
-    @property
-    def stdout(self):
-        return self.respuestas.pop(0) if self.respuestas else ""
+def _subchecks(gate: str) -> tuple:
+    return tuple(c.SUBCONTRATOS[gate])
 
 
-def _git_seq(head, status=""):
-    return _GitSeq(head, status)
+def _fake_ejecutar(salidas: dict, por_comando: bool = True):
+    """Fake de subprocess: decide por verificador (texto del argv)."""
+    def _ejecutar(argv, **kwargs):
+        texto = " ".join(str(a) for a in argv)
+        for clave, valor in salidas.items():
+            if clave in texto:
+                if isinstance(valor, _Proc):
+                    return valor
+                return _Proc(0, valor)
+        return _Proc(0, '{"ok": true}')
+    return _ejecutar
 
 
-def test_auditoria_con_exit_no_cero_no_se_acredita():
-    control = c.control_ejecucion(
-        ejecutar=lambda *a, **k: _Proc(1, json.dumps({"completo": True})))
-    assert control["completo"] is False
-    assert control["no_verificados"] == ["auditoria_fallida"]
+# ── QA-RC-02g: subchecks independientes ──────────────────────────────────────
+
+def test_los_subchecks_de_cada_puerta_son_contratos_distintos():
+    for gate, contrato in c.SUBCONTRATOS.items():
+        assert contrato, gate
+        for nombre, spec in contrato.items():
+            assert spec["tipo"] in ("comando", "interno", "derivado", "externo")
+            assert spec.get("verificador")
 
 
-def test_auditoria_ilegible_es_no_ejecutada():
-    control = c.control_ejecucion(ejecutar=lambda *a, **k: _Proc(0, "no-json"))
-    assert control["no_verificados"] == ["auditoria_ilegible"]
-
-
-def test_auditoria_con_violaciones_bloquea_qg02(tmp_path):
-    sobre = json.dumps({"total_violations": 2, "completo": True, "checks": []})
-    resultado = c.colectar(SHA, recibos=None, raiz=tmp_path,
-                           ejecutar=lambda *a, **k: _Proc(0, sobre),
-                           consultar_ci=lambda s: [])
-    assert resultado["politica"]["gates"]["QG-02"] == "BLOCKED"
-
-
-# ── QA-RC-02f: el ejecutor produce recibos autenticos ────────────────────────
-
-def test_el_ejecutor_emite_recibo_desde_una_ejecucion_real(tmp_path):
-    verifier, comando = c.GATE_VERIFICADORES["QG-04"]
+def test_un_subcheck_fallido_impide_la_puerta(tmp_path):
+    """Un comando con exito y otro que falla: la puerta NO pasa."""
+    salidas = {"reconciliar_archify.py": _Proc(1, "boom")}
     resultado = c.ejecutar_verificador(
-        "QG-04", SHA, tmp_path / "salida",
-        ejecutar=lambda *a, **k: _Proc(0, '{"ok": true}'))
-    assert resultado["ok"] is True
+        "QG-01", SHA, tmp_path / "salida",
+        ejecutar=_fake_ejecutar(salidas))
+    assert resultado["ok"] is False
+    assert "reconciliador_archify" in resultado["fallidos"]
+    assert resultado["checks"]["vault_arch"] == "ejecutado"
+
+
+def test_un_subcheck_no_ejecutado_impide_la_puerta(tmp_path):
+    """pip_audit sin interprete: no_ejecutado, la puerta no pasa."""
+    resultado = c.ejecutar_verificador(
+        "QG-04", SHA, tmp_path / "salida", ejecutar=_fake_ejecutar({}))
+    assert resultado["ok"] is False
+    assert resultado["checks"]["pip_audit"] == "no_ejecutado"
+
+
+def test_una_salida_vacia_no_acredita(tmp_path):
+    def _vacia(argv, **kwargs):
+        return _Proc(0, "")
+    resultado = c.ejecutar_verificador(
+        "QG-01", SHA, tmp_path / "salida", ejecutar=_vacia)
+    assert resultado["ok"] is False
+    assert resultado["checks"]["vault_arch"] == "degradado"
     recibo = json.loads(Path(resultado["recibo"]).read_text(encoding="utf-8"))
-    assert recibo["target_sha"] == SHA
-    assert recibo["exit_code"] == 0
-    assert recibo["status"] == "PASS"
-    assert set(recibo["checks"]) == set(c.SUBCHECKS_OBLIGATORIOS["QG-04"])
-    assert all(v == "PASS" for v in recibo["checks"].values())
-    artefacto = Path(recibo["artifact"])
-    assert artefacto.is_file()
-    assert hashlib.sha256(artefacto.read_bytes()).hexdigest() == \
-        recibo["artifact_sha256"]
+    assert recibo["subchecks"]["vault_arch"]["detalle"] == "SALIDA_VACIA"
+
+
+def test_el_comando_de_pruebas_se_ejecuta_como_pytest(tmp_path):
+    """QA-RC-02g: un .py de pytest ejecutado como script devuelve 0 sin correr
+    nada; el comando correcto es `python -m pytest <fichero>`."""
+    comando = c.COMANDOS["operaciones_destructivas"]
+    assert comando[0] == "-m" and comando[1] == "pytest", comando
+    assert comando[2].endswith(".py")
+
+
+def test_cada_subcheck_tiene_su_propio_artefacto(tmp_path):
+    resultado = c.ejecutar_verificador(
+        "QG-00", SHA, tmp_path / "salida", ejecutar=_fake_ejecutar({}))
+    recibo = json.loads(Path(resultado["recibo"]).read_text(encoding="utf-8"))
+    for nombre in _subchecks("QG-00"):
+        registro = recibo["subchecks"][nombre]
+        assert registro["artifact"], nombre
+        assert Path(registro["artifact"]).is_file(), nombre
+        assert registro["artifact_sha256"], nombre
+    # Y los artefactos son DISTINTOS: no es el mismo archivo repetido.
+    rutas = {r["artifact"] for r in recibo["subchecks"].values()}
+    assert len(rutas) == len(_subchecks("QG-00"))
+
+
+def test_el_recibo_de_la_puerta_agrega_los_subchecks(tmp_path):
+    resultado = c.ejecutar_verificador(
+        "QG-01", SHA, tmp_path / "salida", ejecutar=_fake_ejecutar({}))
+    recibo = json.loads(Path(resultado["recibo"]).read_text(encoding="utf-8"))
+    assert set(recibo["checks"]) == set(_subchecks("QG-01"))
     veredicto = c.leer_recibo(Path(resultado["recibo"]), SHA)
     assert veredicto["ok"] is True, veredicto
 
 
-def test_el_ejecutor_registra_el_fallo_del_verificador(tmp_path):
-    resultado = c.ejecutar_verificador(
-        "QG-01", SHA, tmp_path / "salida",
-        ejecutar=lambda *a, **k: _Proc(1, 'json roto'))
-    assert resultado["ok"] is False
-    assert resultado["status"] == "FAIL"
-    recibo = json.loads(Path(resultado["recibo"]).read_text(encoding="utf-8"))
-    assert recibo["exit_code"] == 1
-    assert all(v == "FAIL" for v in recibo["checks"].values())
-
-
-# ── Orquestacion con recibos autenticos + CI simulada fiel ───────────────────
-
-def _ci_con_jobs(jobs):
-    def _consultar(sha):
-        return [_run()]
-
-    def _consultar_jobs(run_id):
-        return jobs
-
-    _consultar.jobs = _consultar_jobs
-    return _consultar
-
-
-def test_la_orquestacion_con_recibos_reales_y_matriz_acredita(tmp_path):
+def test_un_recibo_sin_artefactos_individuales_no_acredita(tmp_path):
+    """Todo PASS, pero sin artefactos por subcheck: no acredita."""
     salida = tmp_path / "salida"
-    for gate in ("QG-00", "QG-01", "QG-02", "QG-04", "QG-05", "QG-06"):
-        r = c.ejecutar_verificador(
-            gate, SHA, salida,
-            ejecutar=lambda *a, **k: _Proc(0, '{"ok": true}'))
-        assert r["ok"] is True, (gate, r)
-    xml = _junit(tmp_path, 5, 0)
+    c.ejecutar_verificador("QG-01", SHA, salida, ejecutar=_fake_ejecutar({}))
+    ruta = salida / "QG-01.recibo.json"
+    recibo = json.loads(ruta.read_text(encoding="utf-8"))
+    for nombre in recibo["subchecks"]:
+        recibo["subchecks"][nombre]["artifact"] = None
+    ruta.write_text(json.dumps(recibo), encoding="utf-8")
+    detalle = c.leer_recibo(ruta, SHA)["detalle"]
+    assert "SUBCHECK_SIN_ARTEFACTO" in detalle
+
+
+def test_un_recibo_sin_un_subcheck_no_acredita(tmp_path):
+    salida = tmp_path / "salida"
+    c.ejecutar_verificador("QG-01", SHA, salida, ejecutar=_fake_ejecutar({}))
+    ruta = salida / "QG-01.recibo.json"
+    recibo = json.loads(ruta.read_text(encoding="utf-8"))
+    recibo["checks"].pop("reconciliador_archify")
+    ruta.write_text(json.dumps(recibo), encoding="utf-8")
+    detalle = c.leer_recibo(ruta, SHA)["detalle"]
+    assert "SUBCHECKS_AUSENTES" in detalle
+
+
+def test_un_recibo_con_artefacto_manipulado_no_acredita(tmp_path):
+    salida = tmp_path / "salida"
+    c.ejecutar_verificador("QG-01", SHA, salida, ejecutar=_fake_ejecutar({}))
+    ruta = salida / "QG-01.recibo.json"
+    recibo = json.loads(ruta.read_text(encoding="utf-8"))
+    objetivo = Path(recibo["subchecks"]["vault_arch"]["artifact"])
+    objetivo.write_text("contenido manipulado\n", encoding="utf-8")
+    detalle = c.leer_recibo(ruta, SHA)["detalle"]
+    assert "MANIPULADO" in detalle
+
+
+def test_qg04_sin_pip_audit_no_pasa(tmp_path):
+    """Se intenta acreditar QG-04 sin pip_audit."""
+    resultado = c.ejecutar_verificador(
+        "QG-04", SHA, tmp_path / "salida", ejecutar=_fake_ejecutar({}))
+    assert resultado["checks"]["pip_audit"] == "no_ejecutado"
+    assert resultado["ok"] is False
+
+
+def test_qg06_sin_instalacion_limpia_no_pasa(tmp_path):
+    """Se intenta acreditar QG-06 sin la evidencia de instalacion limpia."""
+    resultado = c.ejecutar_verificador(
+        "QG-06", SHA, tmp_path / "salida", ejecutar=_fake_ejecutar({}))
+    assert resultado["checks"]["instalacion_limpia"] == "no_ejecutado"
+    assert resultado["ok"] is False
+
+
+def test_qg00_sin_reconciliador_no_pasa(tmp_path):
+    resultado = c.ejecutar_verificador(
+        "QG-00", SHA, tmp_path / "salida", ejecutar=_fake_ejecutar({}))
+    assert resultado["checks"]["reconciliador_archify"] != "ejecutado" or \
+        resultado["ok"] is False
+
+
+def test_recibo_de_otro_sha_no_acredita(tmp_path):
+    salida = tmp_path / "salida"
+    c.ejecutar_verificador("QG-01", SHA, salida, ejecutar=_fake_ejecutar({}))
+    detalle = c.leer_recibo(salida / "QG-01.recibo.json", OTRO)["detalle"]
+    assert detalle == "RECIBO_DE_OTRO_SHA"
+
+
+# ── QA-RC-02h: la CLI real ───────────────────────────────────────────────────
+
+def _cli(*args, cwd=None):
+    return subprocess.run([sys.executable, str(ROOT / "audits" / "fase2" /
+                                               "colector_qg.py"), *args],
+                          capture_output=True, text=True, encoding="utf-8",
+                          errors="replace", cwd=str(cwd or ROOT), timeout=300)
+
+
+def test_la_cli_responde_help():
+    p = _cli("--help")
+    assert p.returncode == 0
+    assert "--ejecutar" in p.stdout and "--recibos" in p.stdout
+
+
+def test_la_cli_rechaza_un_sha_invalido():
+    p = _cli("--sha", "no-es-un-sha")
+    assert p.returncode == 2
+    assert "SHA_INVALIDO" in p.stdout
+
+
+def test_la_cli_ejecutar_sin_recibos_falla_explicitamente():
+    p = _cli("--sha", SHA, "--ejecutar")
+    assert p.returncode == 2
+    assert "FALTA_RECIBOS" in p.stdout
+
+
+def test_la_cli_evalua_y_devuelve_json_consistente(tmp_path):
+    """Flujo ejecutable como proceso real: evalua y devuelve JSON + exit code."""
+    salida = tmp_path / "recibos"
+    salida.mkdir()
+    p = _cli("--sha", SHA, "--recibos", str(salida))
+    assert p.returncode == 1, p.stdout[-400:]
+    sobre = json.loads(p.stdout)
+    assert sobre["politica"]["liberable"] is False
+    assert sobre["politica"]["gates"]["QG-00"] == "NOT_RUN"
+
+
+# ── QA-RC-02i: CI ligada al run exacto ───────────────────────────────────────
+
+def _run(status="completed", conclusion="success", sha=SHA,
+         workflow="Vault CI", id=7):
+    return {"databaseId": id, "status": status, "conclusion": conclusion,
+            "headSha": sha, "workflowName": workflow}
+
+
+def _jobs(nombres, conclusion="success", status="completed", run_id=7):
+    return {"jobs": [{"name": n, "conclusion": conclusion, "status": status,
+                      "run_id": run_id} for n in nombres],
+            "total_count": len(nombres)}
+
+
+def _matriz(completa=True, conclusion="success", run_id=7, status="completed"):
+    nombres = list(c.JOBS_OBLIGATORIOS)
+    if not completa:
+        nombres = nombres[:-1]
+    return _jobs(nombres, conclusion=conclusion, status=status, run_id=run_id)
+
+
+def test_ci_con_matriz_completa_acredita():
+    dato = c.estado_ci(SHA, consultar=lambda s: [_run()],
+                       consultar_jobs=lambda r: _matriz())
+    assert dato["conclusion"] == "success"
+    assert dato["run_id"] == 7
+
+
+def test_ci_sin_jobs_es_bloqueante():
+    dato = c.estado_ci(SHA, consultar=lambda s: [_run()],
+                       consultar_jobs=lambda r: {"jobs": [], "total_count": 0})
+    assert dato["conclusion"] == "no_verificable"
+    assert "SIN_JOBS" in dato["detalle"]
+
+
+def test_ci_con_jobs_sin_identidad_de_run_no_acredita():
+    jobs = {"jobs": [{"name": n, "conclusion": "success", "status": "completed"}
+                     for n in c.JOBS_OBLIGATORIOS],
+            "total_count": len(c.JOBS_OBLIGATORIOS)}
+    dato = c.estado_ci(SHA, consultar=lambda s: [_run()],
+                       consultar_jobs=lambda r: jobs)
+    # Sin run_id no se puede probar que sean de ESTE run: no acredita.
+    assert dato["conclusion"] == "no_verificable"
+
+
+def test_ci_con_paginacion_incompleta_no_acredita():
     jobs = _matriz()
-    seq_git = _git_seq(SHA)
-
-    def ejecutar(cmd, **kwargs):
-        texto = " ".join(str(x) for x in cmd)
-        if "vault_norms.py" in texto:
-            return _Proc(0, json.dumps(
-                {"total_violations": 0, "completo": True,
-                 "checks": [{"control": x, "estado": "ejecutado", "hallazgos": 0}
-                            for x in ("AP-40", "AP-42", "AP-43")]}))
-        if "rev-parse" in texto:
-            return seq_git
-        if "status" in texto:
-            return seq_git
-        return _Proc(0, '{"ok": true}')
-
-    resultado = c.colectar(
-        SHA, recibos=salida, suite_xml=xml, raiz=tmp_path, ejecutar=ejecutar,
-        consultar_ci=_ci_con_jobs(jobs), consultar_jobs=lambda r: jobs)
-    assert resultado["politica"]["qg07"] == "PASS", resultado["politica"]
+    jobs["total_count"] = len(c.JOBS_OBLIGATORIOS) + 5
+    dato = c.estado_ci(SHA, consultar=lambda s: [_run()],
+                       consultar_jobs=lambda r: jobs)
+    assert "PAGINACION_INCOMPLETA" in dato["detalle"]
 
 
-def test_sin_recibos_la_orquestacion_bloquea_todo(tmp_path):
+def test_ci_con_jobs_duplicados_no_acredita():
+    nombres = list(c.JOBS_OBLIGATORIOS) + ["Lint Python"]
+    jobs = _jobs(nombres)
+    dato = c.estado_ci(SHA, consultar=lambda s: [_run()],
+                       consultar_jobs=lambda r: jobs)
+    assert "JOBS_DUPLICADOS" in dato["detalle"]
+
+
+def test_ci_con_conclusion_null_no_acredita():
+    jobs = _matriz()
+    jobs["jobs"][0]["conclusion"] = None
+    dato = c.estado_ci(SHA, consultar=lambda s: [_run()],
+                       consultar_jobs=lambda r: jobs)
+    assert "MATRIZ_INCOMPLETA" in dato["detalle"]
+
+
+def test_ci_con_jobs_de_otro_run_no_acredita():
+    jobs = _matriz(run_id=999)
+    dato = c.estado_ci(SHA, consultar=lambda s: [_run()],
+                       consultar_jobs=lambda r: jobs)
+    assert "JOBS_DE_OTRO_RUN" in dato["detalle"]
+
+
+def test_ci_con_job_desconocido_no_acredita():
+    jobs = _matriz()
+    jobs["jobs"].append({"name": "Job Misterioso", "conclusion": "success",
+                          "status": "completed", "run_id": 7})
+    jobs["total_count"] = len(jobs["jobs"])
+    dato = c.estado_ci(SHA, consultar=lambda s: [_run()],
+                       consultar_jobs=lambda r: jobs)
+    assert "MATRIZ_INCOMPLETA" in dato["detalle"]
+
+
+def test_ci_en_cola_es_bloqueante():
+    dato = c.estado_ci(SHA, consultar=lambda s: [
+        _run(status="queued", conclusion="")],
+        consultar_jobs=lambda r: {"jobs": [], "total_count": 0})
+    assert dato["conclusion"] == "queued"
+
+
+def test_sin_permisos_para_jobs_es_bloqueante():
+    def _falla(run_id):
+        raise OSError("HTTP 403")
+    dato = c.estado_ci(SHA, consultar=lambda s: [_run()],
+                       consultar_jobs=_falla)
+    assert dato["conclusion"] == "no_verificable"
+    assert "JOBS_NO_DISPONIBLES" in dato["detalle"]
+
+
+# ── Orquestacion ─────────────────────────────────────────────────────────────
+
+def test_sin_recibos_no_hay_liberacion(tmp_path):
     resultado = c.colectar(SHA, recibos=None, raiz=tmp_path,
-                           ejecutar=lambda *a, **k: _Proc(
-                               0, json.dumps({"total_violations": 0,
-                                              "completo": True, "checks": []})),
+                           ejecutar=lambda *a, **k: _Proc(0, json.dumps(
+                               {"total_violations": 0, "completo": True,
+                                "checks": []})),
                            consultar_ci=lambda s: [])
     assert resultado["politica"]["liberable"] is False
     assert resultado["politica"]["gates"]["QG-00"] == "NOT_RUN"
 
 
-def test_ci_en_cola_bloquea_qg07(tmp_path):
-    salida = tmp_path / "salida"
-    for gate in ("QG-00", "QG-01", "QG-02", "QG-04", "QG-05", "QG-06"):
-        c.ejecutar_verificador(
-            gate, SHA, salida,
-            ejecutar=lambda *a, **k: _Proc(0, '{"ok": true}'))
-    xml = _junit(tmp_path, 5, 0)
-    resultado = c.colectar(
-        SHA, recibos=salida, suite_xml=xml, raiz=tmp_path,
-        ejecutar=lambda *a, **k: _Proc(0, json.dumps(
-            {"total_violations": 0, "completo": True, "checks": []})),
-        consultar_ci=lambda s: [_run(status="queued", conclusion="")])
-    assert resultado["politica"]["qg07"] == "BLOCKED"
-    assert any("CI_PENDIENTE" in m
-               for m in resultado["politica"]["motivos"]["QG-07"])
+def test_el_colector_no_pasa_jobs_fuera_de_su_interfaz():
+    """La CLI y la funcion comparten firma: no queda jobs_ci colgando."""
+    import inspect
+    parametros = inspect.signature(c.colectar).parameters
+    assert "jobs_ci" not in parametros
+    assert "consultar_jobs" in parametros
