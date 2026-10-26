@@ -1,0 +1,4706 @@
+{
+  "fuente": "JUnit de una corrida real",
+  "cortes_por_caso": {
+    "L0": 1.0,
+    "L1": 5.0,
+    "L2": 30.0
+  },
+  "ficheros": [
+    {
+      "fichero": "test_fix_all",
+      "nivel": "L2",
+      "casos": 15,
+      "mediana_caso": 6.602,
+      "max_caso": 137.13,
+      "total": 332.36
+    },
+    {
+      "fichero": "test_arquitectura",
+      "nivel": "L0",
+      "casos": 44,
+      "mediana_caso": 0.016,
+      "max_caso": 26.69,
+      "total": 296.12
+    },
+    {
+      "fichero": "test_puertos_verificados",
+      "nivel": "L0",
+      "casos": 86,
+      "mediana_caso": 0.006,
+      "max_caso": 39.09,
+      "total": 235.08
+    },
+    {
+      "fichero": "test_banco_agente",
+      "nivel": "L0",
+      "casos": 14,
+      "mediana_caso": 0.003,
+      "max_caso": 90.22,
+      "total": 224.56
+    },
+    {
+      "fichero": "test_comandos_publicados",
+      "nivel": "L2",
+      "casos": 21,
+      "mediana_caso": 11.286,
+      "max_caso": 20.36,
+      "total": 200.78
+    },
+    {
+      "fichero": "test_norms_coherence",
+      "nivel": "L0",
+      "casos": 69,
+      "mediana_caso": 0.019,
+      "max_caso": 19.41,
+      "total": 197.14
+    },
+    {
+      "fichero": "test_doc_sync",
+      "nivel": "L2",
+      "casos": 11,
+      "mediana_caso": 18.029,
+      "max_caso": 38.55,
+      "total": 181.95
+    },
+    {
+      "fichero": "test_puente_sin_hogar",
+      "nivel": "L0",
+      "casos": 81,
+      "mediana_caso": 0.198,
+      "max_caso": 31.13,
+      "total": 181.45
+    },
+    {
+      "fichero": "test_indice_no_se_regenera_dos_veces",
+      "nivel": "L2",
+      "casos": 10,
+      "mediana_caso": 19.462,
+      "max_caso": 22.59,
+      "total": 158.61
+    },
+    {
+      "fichero": "test_ap52_contrato_de_error",
+      "nivel": "L1",
+      "casos": 86,
+      "mediana_caso": 1.192,
+      "max_caso": 36.55,
+      "total": 156.46
+    },
+    {
+      "fichero": "test_nombre_reservado_indice",
+      "nivel": "L0",
+      "casos": 18,
+      "mediana_caso": 0.004,
+      "max_caso": 25.61,
+      "total": 154.92
+    },
+    {
+      "fichero": "test_arquitectura_trazabilidad",
+      "nivel": "L1",
+      "casos": 14,
+      "mediana_caso": 3.111,
+      "max_caso": 52.04,
+      "total": 139.95
+    },
+    {
+      "fichero": "test_mcp_traza_contenida",
+      "nivel": "L2",
+      "casos": 6,
+      "mediana_caso": 23.062,
+      "max_caso": 42.08,
+      "total": 135.56
+    },
+    {
+      "fichero": "test_reindex_check_codigo",
+      "nivel": "L3",
+      "casos": 4,
+      "mediana_caso": 33.088,
+      "max_caso": 34.04,
+      "total": 126.65
+    },
+    {
+      "fichero": "test_mcp_descripcion_calculada",
+      "nivel": "L0",
+      "casos": 49,
+      "mediana_caso": 0.732,
+      "max_caso": 9.53,
+      "total": 126.6
+    },
+    {
+      "fichero": "test_preflight_rutas_por_argumento",
+      "nivel": "L2",
+      "casos": 7,
+      "mediana_caso": 17.071,
+      "max_caso": 18.93,
+      "total": 117.97
+    },
+    {
+      "fichero": "test_grafo_desfasado",
+      "nivel": "L2",
+      "casos": 5,
+      "mediana_caso": 21.604,
+      "max_caso": 24.94,
+      "total": 109.94
+    },
+    {
+      "fichero": "test_vault_sanacion",
+      "nivel": "L1",
+      "casos": 17,
+      "mediana_caso": 4.449,
+      "max_caso": 31.82,
+      "total": 101.07
+    },
+    {
+      "fichero": "test_sandbox_fixture",
+      "nivel": "L3",
+      "casos": 2,
+      "mediana_caso": 50.228,
+      "max_caso": 65.97,
+      "total": 100.46
+    },
+    {
+      "fichero": "test_vault_onboard",
+      "nivel": "L1",
+      "casos": 13,
+      "mediana_caso": 1.093,
+      "max_caso": 43.5,
+      "total": 96.98
+    },
+    {
+      "fichero": "test_registro_de_entorno",
+      "nivel": "L0",
+      "casos": 24,
+      "mediana_caso": 0.003,
+      "max_caso": 29.6,
+      "total": 92.44
+    },
+    {
+      "fichero": "test_blueprint",
+      "nivel": "L0",
+      "casos": 40,
+      "mediana_caso": 0.93,
+      "max_caso": 15.06,
+      "total": 90.61
+    },
+    {
+      "fichero": "test_firma_de_version_inerte",
+      "nivel": "L2",
+      "casos": 5,
+      "mediana_caso": 13.312,
+      "max_caso": 35.39,
+      "total": 89.62
+    },
+    {
+      "fichero": "test_ap08_version_pinned",
+      "nivel": "L2",
+      "casos": 5,
+      "mediana_caso": 21.807,
+      "max_caso": 24.65,
+      "total": 88.48
+    },
+    {
+      "fichero": "test_doc_staleness_regenerar",
+      "nivel": "L2",
+      "casos": 6,
+      "mediana_caso": 18.677,
+      "max_caso": 23.41,
+      "total": 82.85
+    },
+    {
+      "fichero": "test_nota_de_comandos",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.067,
+      "max_caso": 58.57,
+      "total": 76.86
+    },
+    {
+      "fichero": "test_ap08_vigencia",
+      "nivel": "L2",
+      "casos": 5,
+      "mediana_caso": 18.017,
+      "max_caso": 21.8,
+      "total": 76.21
+    },
+    {
+      "fichero": "test_ingest_tope_de_fuente",
+      "nivel": "L2",
+      "casos": 6,
+      "mediana_caso": 18.075,
+      "max_caso": 20.65,
+      "total": 75.84
+    },
+    {
+      "fichero": "test_drift_snapshot_codigo",
+      "nivel": "L2",
+      "casos": 3,
+      "mediana_caso": 23.798,
+      "max_caso": 28.09,
+      "total": 73.28
+    },
+    {
+      "fichero": "test_mcp_runner",
+      "nivel": "L1",
+      "casos": 9,
+      "mediana_caso": 1.072,
+      "max_caso": 23.93,
+      "total": 70.97
+    },
+    {
+      "fichero": "test_mcp_errores_canonicos",
+      "nivel": "L2",
+      "casos": 6,
+      "mediana_caso": 16.931,
+      "max_caso": 18.68,
+      "total": 70.39
+    },
+    {
+      "fichero": "PuertoEnumeracionIndexable",
+      "nivel": "L2",
+      "casos": 4,
+      "mediana_caso": 17.191,
+      "max_caso": 35.21,
+      "total": 69.78
+    },
+    {
+      "fichero": "test_frontmatter_yaml_valido",
+      "nivel": "L0",
+      "casos": 44,
+      "mediana_caso": 0.004,
+      "max_caso": 18.62,
+      "total": 69.64
+    },
+    {
+      "fichero": "test_move_lock",
+      "nivel": "L2",
+      "casos": 3,
+      "mediana_caso": 11.482,
+      "max_caso": 42.09,
+      "total": 64.48
+    },
+    {
+      "fichero": "test_cobertura_de_secciones",
+      "nivel": "L0",
+      "casos": 85,
+      "mediana_caso": 0.001,
+      "max_caso": 22.42,
+      "total": 63.86
+    },
+    {
+      "fichero": "test_arch_escrituras_de_sistema",
+      "nivel": "L1",
+      "casos": 4,
+      "mediana_caso": 1.217,
+      "max_caso": 59.07,
+      "total": 62.05
+    },
+    {
+      "fichero": "test_ap57_criterios",
+      "nivel": "L0",
+      "casos": 21,
+      "mediana_caso": 0.013,
+      "max_caso": 16.52,
+      "total": 60.1
+    },
+    {
+      "fichero": "test_vault_norms_audit",
+      "nivel": "L1",
+      "casos": 25,
+      "mediana_caso": 3.979,
+      "max_caso": 4.76,
+      "total": 59.6
+    },
+    {
+      "fichero": "test_preflight_markdown_legitimo",
+      "nivel": "L2",
+      "casos": 3,
+      "mediana_caso": 19.177,
+      "max_caso": 20.07,
+      "total": 57.41
+    },
+    {
+      "fichero": "test_sistema_un_solo_escritor",
+      "nivel": "L0",
+      "casos": 15,
+      "mediana_caso": 0.624,
+      "max_caso": 9.18,
+      "total": 56.39
+    },
+    {
+      "fichero": "test_arquitectura_filas_unicas",
+      "nivel": "L2",
+      "casos": 2,
+      "mediana_caso": 28.108,
+      "max_caso": 31.45,
+      "total": 56.22
+    },
+    {
+      "fichero": "test_ap01_codigo_inexistente",
+      "nivel": "L2",
+      "casos": 3,
+      "mediana_caso": 23.792,
+      "max_caso": 24.74,
+      "total": 48.54
+    },
+    {
+      "fichero": "test_durabilidad_caracterizacion",
+      "nivel": "L1",
+      "casos": 17,
+      "mediana_caso": 2.343,
+      "max_caso": 6.21,
+      "total": 46.92
+    },
+    {
+      "fichero": "test_ap49_vinculo_congelado",
+      "nivel": "L0",
+      "casos": 13,
+      "mediana_caso": 0.007,
+      "max_caso": 23.76,
+      "total": 45.76
+    },
+    {
+      "fichero": "test_normas_caras",
+      "nivel": "L0",
+      "casos": 9,
+      "mediana_caso": 0.137,
+      "max_caso": 22.59,
+      "total": 44.28
+    },
+    {
+      "fichero": "test_context_pack_sustituida",
+      "nivel": "L0",
+      "casos": 11,
+      "mediana_caso": 0.003,
+      "max_caso": 23.56,
+      "total": 43.88
+    },
+    {
+      "fichero": "test_ap42_pistas_de_audit",
+      "nivel": "L0",
+      "casos": 23,
+      "mediana_caso": 0.965,
+      "max_caso": 21.33,
+      "total": 43.33
+    },
+    {
+      "fichero": "test_changelog_check",
+      "nivel": "L0",
+      "casos": 26,
+      "mediana_caso": 0.446,
+      "max_caso": 24.3,
+      "total": 42.91
+    },
+    {
+      "fichero": "test_js_native_frontera",
+      "nivel": "L0",
+      "casos": 13,
+      "mediana_caso": 0.011,
+      "max_caso": 9.14,
+      "total": 42.41
+    },
+    {
+      "fichero": "test_mcp_modo_json",
+      "nivel": "L1",
+      "casos": 5,
+      "mediana_caso": 2.146,
+      "max_caso": 20.71,
+      "total": 41.62
+    },
+    {
+      "fichero": "test_write_agent_flag",
+      "nivel": "L2",
+      "casos": 2,
+      "mediana_caso": 20.62,
+      "max_caso": 23.21,
+      "total": 41.24
+    },
+    {
+      "fichero": "test_caracterizacion_de_los_save",
+      "nivel": "L0",
+      "casos": 72,
+      "mediana_caso": 0.003,
+      "max_caso": 38.49,
+      "total": 41.03
+    },
+    {
+      "fichero": "test_status_machine",
+      "nivel": "L1",
+      "casos": 21,
+      "mediana_caso": 2.272,
+      "max_caso": 4.96,
+      "total": 40.97
+    },
+    {
+      "fichero": "test_registro_de_vocabulario",
+      "nivel": "L0",
+      "casos": 49,
+      "mediana_caso": 0.003,
+      "max_caso": 28.62,
+      "total": 39.8
+    },
+    {
+      "fichero": "test_ap39_registro_en_el_write_path",
+      "nivel": "L1",
+      "casos": 6,
+      "mediana_caso": 1.036,
+      "max_caso": 20.2,
+      "total": 39.34
+    },
+    {
+      "fichero": "test_secciones_propias_consumidores",
+      "nivel": "L0",
+      "casos": 54,
+      "mediana_caso": 0.089,
+      "max_caso": 6.01,
+      "total": 39.19
+    },
+    {
+      "fichero": "test_data_framework",
+      "nivel": "L0",
+      "casos": 18,
+      "mediana_caso": 0.003,
+      "max_caso": 19.99,
+      "total": 38.68
+    },
+    {
+      "fichero": "test_spec_required_es_verdad",
+      "nivel": "L1",
+      "casos": 3,
+      "mediana_caso": 3.297,
+      "max_caso": 32.75,
+      "total": 38.58
+    },
+    {
+      "fichero": "test_product_lifecycle",
+      "nivel": "L0",
+      "casos": 16,
+      "mediana_caso": 0.043,
+      "max_caso": 17.68,
+      "total": 36.66
+    },
+    {
+      "fichero": "test_criterios_fronteras",
+      "nivel": "L0",
+      "casos": 17,
+      "mediana_caso": 0.003,
+      "max_caso": 18.02,
+      "total": 35.36
+    },
+    {
+      "fichero": "TestFaseStaging",
+      "nivel": "L1",
+      "casos": 3,
+      "mediana_caso": 3.974,
+      "max_caso": 27.22,
+      "total": 35.12
+    },
+    {
+      "fichero": "test_mcp_descubrimiento",
+      "nivel": "L2",
+      "casos": 2,
+      "mediana_caso": 17.133,
+      "max_caso": 17.27,
+      "total": 34.27
+    },
+    {
+      "fichero": "test_vault_containment",
+      "nivel": "L0",
+      "casos": 24,
+      "mediana_caso": 0.504,
+      "max_caso": 4.18,
+      "total": 33.27
+    },
+    {
+      "fichero": "test_ap45_cobertura_sin_evidencia",
+      "nivel": "L0",
+      "casos": 20,
+      "mediana_caso": 0.003,
+      "max_caso": 4.6,
+      "total": 33.03
+    },
+    {
+      "fichero": "test_ap66_coste_que_crece",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.003,
+      "max_caso": 32.19,
+      "total": 32.19
+    },
+    {
+      "fichero": "test_indice_rutas_posix",
+      "nivel": "L2",
+      "casos": 2,
+      "mediana_caso": 15.938,
+      "max_caso": 16.42,
+      "total": 31.88
+    },
+    {
+      "fichero": "test_ap51_culpar_al_dato",
+      "nivel": "L0",
+      "casos": 47,
+      "mediana_caso": 0.002,
+      "max_caso": 6.87,
+      "total": 31.67
+    },
+    {
+      "fichero": "test_mcp_requisitos_alternativos",
+      "nivel": "L0",
+      "casos": 17,
+      "mediana_caso": 0.004,
+      "max_caso": 21.53,
+      "total": 30.07
+    },
+    {
+      "fichero": "test_recetas_en_codigo",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.103,
+      "max_caso": 21.56,
+      "total": 29.58
+    },
+    {
+      "fichero": "test_frontmatter_inyeccion",
+      "nivel": "L1",
+      "casos": 20,
+      "mediana_caso": 1.378,
+      "max_caso": 2.43,
+      "total": 29.1
+    },
+    {
+      "fichero": "test_alcance_medido_v4030",
+      "nivel": "L0",
+      "casos": 15,
+      "mediana_caso": 0.051,
+      "max_caso": 13.2,
+      "total": 28.85
+    },
+    {
+      "fichero": "test_meta_toolkit_dominio",
+      "nivel": "L0",
+      "casos": 13,
+      "mediana_caso": 0.028,
+      "max_caso": 26.67,
+      "total": 28.1
+    },
+    {
+      "fichero": "test_ap44_verificacion_autoconsistente",
+      "nivel": "L1",
+      "casos": 7,
+      "mediana_caso": 4.306,
+      "max_caso": 4.88,
+      "total": 27.18
+    },
+    {
+      "fichero": "TestOkFlag",
+      "nivel": "L2",
+      "casos": 2,
+      "mediana_caso": 13.458,
+      "max_caso": 25.93,
+      "total": 26.92
+    },
+    {
+      "fichero": "test_ap48_implementacion_paralela",
+      "nivel": "L1",
+      "casos": 7,
+      "mediana_caso": 1.228,
+      "max_caso": 22.17,
+      "total": 26.6
+    },
+    {
+      "fichero": "test_migrate_docs_distribucion",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.005,
+      "max_caso": 23.24,
+      "total": 26.54
+    },
+    {
+      "fichero": "test_smoke",
+      "nivel": "L0",
+      "casos": 25,
+      "mediana_caso": 0.046,
+      "max_caso": 6.0,
+      "total": 25.83
+    },
+    {
+      "fichero": "test_mcp_argumentos",
+      "nivel": "L0",
+      "casos": 23,
+      "mediana_caso": 0.006,
+      "max_caso": 17.94,
+      "total": 25.73
+    },
+    {
+      "fichero": "test_upgrade_cumplimiento",
+      "nivel": "L1",
+      "casos": 5,
+      "mediana_caso": 4.197,
+      "max_caso": 13.06,
+      "total": 25.67
+    },
+    {
+      "fichero": "test_servicio",
+      "nivel": "L1",
+      "casos": 10,
+      "mediana_caso": 3.397,
+      "max_caso": 4.23,
+      "total": 25.36
+    },
+    {
+      "fichero": "test_piso_python",
+      "nivel": "L1",
+      "casos": 7,
+      "mediana_caso": 3.794,
+      "max_caso": 9.65,
+      "total": 25.29
+    },
+    {
+      "fichero": "test_vault_section",
+      "nivel": "L1",
+      "casos": 16,
+      "mediana_caso": 1.095,
+      "max_caso": 3.98,
+      "total": 24.97
+    },
+    {
+      "fichero": "test_quickstart_del_readme",
+      "nivel": "L2",
+      "casos": 2,
+      "mediana_caso": 12.227,
+      "max_caso": 24.45,
+      "total": 24.45
+    },
+    {
+      "fichero": "test_ci_sin_enmascarar",
+      "nivel": "L0",
+      "casos": 9,
+      "mediana_caso": 0.022,
+      "max_caso": 22.42,
+      "total": 24.41
+    },
+    {
+      "fichero": "test_auto_index_error_recuperacion",
+      "nivel": "L2",
+      "casos": 1,
+      "mediana_caso": 24.031,
+      "max_caso": 24.03,
+      "total": 24.03
+    },
+    {
+      "fichero": "test_context_pack_seccion_inferida",
+      "nivel": "L1",
+      "casos": 3,
+      "mediana_caso": 1.037,
+      "max_caso": 21.66,
+      "total": 22.7
+    },
+    {
+      "fichero": "test_vault_project",
+      "nivel": "L1",
+      "casos": 9,
+      "mediana_caso": 2.155,
+      "max_caso": 6.68,
+      "total": 22.63
+    },
+    {
+      "fichero": "test_project_repo_sync",
+      "nivel": "L1",
+      "casos": 5,
+      "mediana_caso": 4.109,
+      "max_caso": 9.58,
+      "total": 22.62
+    },
+    {
+      "fichero": "test_normas_paquete",
+      "nivel": "L0",
+      "casos": 183,
+      "mediana_caso": 0.003,
+      "max_caso": 21.18,
+      "total": 22.43
+    },
+    {
+      "fichero": "test_ap01_prosa",
+      "nivel": "L2",
+      "casos": 2,
+      "mediana_caso": 11.198,
+      "max_caso": 22.39,
+      "total": 22.4
+    },
+    {
+      "fichero": "test_vault_init_contabilidad",
+      "nivel": "L2",
+      "casos": 2,
+      "mediana_caso": 11.153,
+      "max_caso": 22.12,
+      "total": 22.31
+    },
+    {
+      "fichero": "test_mcp_perfil",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.441,
+      "max_caso": 19.83,
+      "total": 22.26
+    },
+    {
+      "fichero": "test_baseline",
+      "nivel": "L0",
+      "casos": 33,
+      "mediana_caso": 0.008,
+      "max_caso": 5.84,
+      "total": 21.68
+    },
+    {
+      "fichero": "test_schema_por_tipo",
+      "nivel": "L0",
+      "casos": 13,
+      "mediana_caso": 0.005,
+      "max_caso": 20.21,
+      "total": 21.66
+    },
+    {
+      "fichero": "test_flags_cli",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.01,
+      "max_caso": 21.46,
+      "total": 21.49
+    },
+    {
+      "fichero": "test_catalog_params",
+      "nivel": "L0",
+      "casos": 19,
+      "mediana_caso": 0.025,
+      "max_caso": 5.65,
+      "total": 21.35
+    },
+    {
+      "fichero": "test_puntos_ciegos_de_guards",
+      "nivel": "L0",
+      "casos": 13,
+      "mediana_caso": 0.003,
+      "max_caso": 20.32,
+      "total": 21.22
+    },
+    {
+      "fichero": "test_navegacion_por_enlaces",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.022,
+      "max_caso": 19.57,
+      "total": 20.48
+    },
+    {
+      "fichero": "test_iso_aplicada",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.012,
+      "max_caso": 19.9,
+      "total": 19.94
+    },
+    {
+      "fichero": "test_relation_add_lock",
+      "nivel": "L1",
+      "casos": 3,
+      "mediana_caso": 4.944,
+      "max_caso": 12.58,
+      "total": 19.81
+    },
+    {
+      "fichero": "test_write_colision_de_slug",
+      "nivel": "L1",
+      "casos": 6,
+      "mediana_caso": 3.179,
+      "max_caso": 3.9,
+      "total": 19.69
+    },
+    {
+      "fichero": "test_firma_de_sitio",
+      "nivel": "L0",
+      "casos": 11,
+      "mediana_caso": 0.002,
+      "max_caso": 12.75,
+      "total": 19.68
+    },
+    {
+      "fichero": "test_audit_no_audita_instantaneas",
+      "nivel": "L0",
+      "casos": 12,
+      "mediana_caso": 0.004,
+      "max_caso": 8.33,
+      "total": 19.59
+    },
+    {
+      "fichero": "test_gestion_de_normas",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.002,
+      "max_caso": 19.22,
+      "total": 19.23
+    },
+    {
+      "fichero": "test_ap46_montaje_con_dueno",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.019,
+      "max_caso": 13.74,
+      "total": 18.71
+    },
+    {
+      "fichero": "TestCarpetasEstandar",
+      "nivel": "L2",
+      "casos": 2,
+      "mediana_caso": 9.348,
+      "max_caso": 18.52,
+      "total": 18.7
+    },
+    {
+      "fichero": "test_cn04_escritores_con_titulo",
+      "nivel": "L1",
+      "casos": 10,
+      "mediana_caso": 1.77,
+      "max_caso": 2.92,
+      "total": 18.15
+    },
+    {
+      "fichero": "test_token_service_seguridad",
+      "nivel": "L1",
+      "casos": 15,
+      "mediana_caso": 1.301,
+      "max_caso": 1.85,
+      "total": 17.45
+    },
+    {
+      "fichero": "test_mcp_atfile",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.08,
+      "max_caso": 17.26,
+      "total": 17.43
+    },
+    {
+      "fichero": "test_mcp_guard_enlaces",
+      "nivel": "L2",
+      "casos": 1,
+      "mediana_caso": 17.145,
+      "max_caso": 17.14,
+      "total": 17.14
+    },
+    {
+      "fichero": "test_excepcion_declarada",
+      "nivel": "L1",
+      "casos": 9,
+      "mediana_caso": 2.214,
+      "max_caso": 5.78,
+      "total": 16.97
+    },
+    {
+      "fichero": "test_init_instalado_poblado",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.056,
+      "max_caso": 16.82,
+      "total": 16.95
+    },
+    {
+      "fichero": "test_project_sesion",
+      "nivel": "L1",
+      "casos": 8,
+      "mediana_caso": 1.268,
+      "max_caso": 6.31,
+      "total": 16.95
+    },
+    {
+      "fichero": "test_vault_arquitectura_en",
+      "nivel": "L0",
+      "casos": 17,
+      "mediana_caso": 0.953,
+      "max_caso": 1.93,
+      "total": 16.95
+    },
+    {
+      "fichero": "test_vault_test_runner",
+      "nivel": "L2",
+      "casos": 3,
+      "mediana_caso": 6.222,
+      "max_caso": 10.52,
+      "total": 16.75
+    },
+    {
+      "fichero": "test_backup_base64",
+      "nivel": "L1",
+      "casos": 14,
+      "mediana_caso": 1.184,
+      "max_caso": 2.31,
+      "total": 16.74
+    },
+    {
+      "fichero": "ContratoEscrituraAp39",
+      "nivel": "L1",
+      "casos": 3,
+      "mediana_caso": 1.122,
+      "max_caso": 14.73,
+      "total": 16.66
+    },
+    {
+      "fichero": "test_kernel",
+      "nivel": "L0",
+      "casos": 31,
+      "mediana_caso": 0.008,
+      "max_caso": 5.08,
+      "total": 16.43
+    },
+    {
+      "fichero": "test_vault_supersede",
+      "nivel": "L1",
+      "casos": 13,
+      "mediana_caso": 1.126,
+      "max_caso": 2.3,
+      "total": 16.37
+    },
+    {
+      "fichero": "test_write_titulo_valido",
+      "nivel": "L1",
+      "casos": 11,
+      "mediana_caso": 1.471,
+      "max_caso": 1.88,
+      "total": 16.25
+    },
+    {
+      "fichero": "test_vault_delete_contencion",
+      "nivel": "L1",
+      "casos": 16,
+      "mediana_caso": 1.041,
+      "max_caso": 1.64,
+      "total": 16.16
+    },
+    {
+      "fichero": "test_recursos",
+      "nivel": "L0",
+      "casos": 12,
+      "mediana_caso": 0.019,
+      "max_caso": 6.09,
+      "total": 15.92
+    },
+    {
+      "fichero": "test_fase2_mcp_timeout",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.273,
+      "max_caso": 13.15,
+      "total": 15.73
+    },
+    {
+      "fichero": "test_ap37_ejecutado",
+      "nivel": "L0",
+      "casos": 12,
+      "mediana_caso": 0.57,
+      "max_caso": 6.3,
+      "total": 15.57
+    },
+    {
+      "fichero": "test_vault_test_scope",
+      "nivel": "L0",
+      "casos": 12,
+      "mediana_caso": 0.02,
+      "max_caso": 14.4,
+      "total": 15.28
+    },
+    {
+      "fichero": "test_propagate_contencion",
+      "nivel": "L1",
+      "casos": 4,
+      "mediana_caso": 1.791,
+      "max_caso": 10.7,
+      "total": 14.98
+    },
+    {
+      "fichero": "test_project_heal",
+      "nivel": "L1",
+      "casos": 4,
+      "mediana_caso": 3.551,
+      "max_caso": 5.17,
+      "total": 14.96
+    },
+    {
+      "fichero": "test_ap46_escritores_migrados",
+      "nivel": "L0",
+      "casos": 50,
+      "mediana_caso": 0.026,
+      "max_caso": 8.81,
+      "total": 14.61
+    },
+    {
+      "fichero": "test_append_concurrente",
+      "nivel": "L2",
+      "casos": 2,
+      "mediana_caso": 7.087,
+      "max_caso": 10.76,
+      "total": 14.17
+    },
+    {
+      "fichero": "test_undo_force_reversible",
+      "nivel": "L2",
+      "casos": 2,
+      "mediana_caso": 7.064,
+      "max_caso": 11.13,
+      "total": 14.13
+    },
+    {
+      "fichero": "test_escritores_cumplen_el_contrato",
+      "nivel": "L1",
+      "casos": 6,
+      "mediana_caso": 2.321,
+      "max_caso": 3.03,
+      "total": 14.08
+    },
+    {
+      "fichero": "test_merge_dedup",
+      "nivel": "L1",
+      "casos": 4,
+      "mediana_caso": 1.061,
+      "max_caso": 10.95,
+      "total": 13.99
+    },
+    {
+      "fichero": "test_portabilidad_v4030",
+      "nivel": "L0",
+      "casos": 21,
+      "mediana_caso": 0.007,
+      "max_caso": 7.7,
+      "total": 13.9
+    },
+    {
+      "fichero": "test_runbook_log_lock",
+      "nivel": "L2",
+      "casos": 2,
+      "mediana_caso": 6.909,
+      "max_caso": 10.92,
+      "total": 13.82
+    },
+    {
+      "fichero": "test_regresiones_v34",
+      "nivel": "L1",
+      "casos": 8,
+      "mediana_caso": 1.34,
+      "max_caso": 3.4,
+      "total": 13.76
+    },
+    {
+      "fichero": "test_search_como_consumidor",
+      "nivel": "L0",
+      "casos": 13,
+      "mediana_caso": 0.813,
+      "max_caso": 2.4,
+      "total": 13.44
+    },
+    {
+      "fichero": "test_raiz_no_seccion",
+      "nivel": "L0",
+      "casos": 13,
+      "mediana_caso": 0.003,
+      "max_caso": 7.67,
+      "total": 12.96
+    },
+    {
+      "fichero": "test_arch_escrituras_por_parametro",
+      "nivel": "L1",
+      "casos": 6,
+      "mediana_caso": 1.077,
+      "max_caso": 6.71,
+      "total": 12.88
+    },
+    {
+      "fichero": "test_ejemplos_de_escritores",
+      "nivel": "L1",
+      "casos": 10,
+      "mediana_caso": 1.673,
+      "max_caso": 3.18,
+      "total": 12.76
+    },
+    {
+      "fichero": "test_recovery_es_objeto",
+      "nivel": "L1",
+      "casos": 12,
+      "mediana_caso": 1.079,
+      "max_caso": 2.5,
+      "total": 12.69
+    },
+    {
+      "fichero": "test_merge_overwrite",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.943,
+      "max_caso": 10.94,
+      "total": 12.63
+    },
+    {
+      "fichero": "test_colector_qg",
+      "nivel": "L0",
+      "casos": 30,
+      "mediana_caso": 0.013,
+      "max_caso": 9.67,
+      "total": 12.52
+    },
+    {
+      "fichero": "test_kernel_huellas_sin_historia",
+      "nivel": "L1",
+      "casos": 5,
+      "mediana_caso": 2.5,
+      "max_caso": 3.14,
+      "total": 12.23
+    },
+    {
+      "fichero": "test_vault_move",
+      "nivel": "L1",
+      "casos": 10,
+      "mediana_caso": 1.082,
+      "max_caso": 2.13,
+      "total": 12.23
+    },
+    {
+      "fichero": "test_planificador_impacto",
+      "nivel": "L0",
+      "casos": 9,
+      "mediana_caso": 0.004,
+      "max_caso": 11.99,
+      "total": 12.02
+    },
+    {
+      "fichero": "test_preferences_lock",
+      "nivel": "L2",
+      "casos": 1,
+      "mediana_caso": 11.995,
+      "max_caso": 11.99,
+      "total": 11.99
+    },
+    {
+      "fichero": "test_error_code_catalogo",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.01,
+      "max_caso": 8.15,
+      "total": 11.61
+    },
+    {
+      "fichero": "test_validate_codigo_catalogo",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.973,
+      "max_caso": 4.97,
+      "total": 11.53
+    },
+    {
+      "fichero": "test_pre_commit_worktree",
+      "nivel": "L2",
+      "casos": 2,
+      "mediana_caso": 5.756,
+      "max_caso": 7.3,
+      "total": 11.51
+    },
+    {
+      "fichero": "test_disparos_de_revision",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.003,
+      "max_caso": 10.74,
+      "total": 10.75
+    },
+    {
+      "fichero": "test_versionado_consumidores",
+      "nivel": "L1",
+      "casos": 10,
+      "mediana_caso": 1.022,
+      "max_caso": 2.19,
+      "total": 10.62
+    },
+    {
+      "fichero": "test_rutas_repo",
+      "nivel": "L2",
+      "casos": 3,
+      "mediana_caso": 5.288,
+      "max_caso": 5.31,
+      "total": 10.6
+    },
+    {
+      "fichero": "test_envelope_forma",
+      "nivel": "L0",
+      "casos": 19,
+      "mediana_caso": 0.665,
+      "max_caso": 0.99,
+      "total": 10.33
+    },
+    {
+      "fichero": "test_cli_package",
+      "nivel": "L0",
+      "casos": 49,
+      "mediana_caso": 0.004,
+      "max_caso": 3.88,
+      "total": 10.27
+    },
+    {
+      "fichero": "test_baseline_un_escritor",
+      "nivel": "L0",
+      "casos": 8,
+      "mediana_caso": 0.006,
+      "max_caso": 8.18,
+      "total": 9.81
+    },
+    {
+      "fichero": "test_project_pertenencia",
+      "nivel": "L0",
+      "casos": 8,
+      "mediana_caso": 0.005,
+      "max_caso": 4.3,
+      "total": 9.77
+    },
+    {
+      "fichero": "test_barrido_de_secciones",
+      "nivel": "L1",
+      "casos": 3,
+      "mediana_caso": 4.581,
+      "max_caso": 5.09,
+      "total": 9.68
+    },
+    {
+      "fichero": "test_ap46_write_path_unico",
+      "nivel": "L0",
+      "casos": 9,
+      "mediana_caso": 0.126,
+      "max_caso": 4.53,
+      "total": 9.58
+    },
+    {
+      "fichero": "test_project_registrado",
+      "nivel": "L0",
+      "casos": 12,
+      "mediana_caso": 0.04,
+      "max_caso": 3.18,
+      "total": 9.54
+    },
+    {
+      "fichero": "test_ciclo_de_vida_dominio",
+      "nivel": "L0",
+      "casos": 11,
+      "mediana_caso": 0.031,
+      "max_caso": 8.88,
+      "total": 9.45
+    },
+    {
+      "fichero": "test_nombre_dispositivo",
+      "nivel": "L0",
+      "casos": 24,
+      "mediana_caso": 0.003,
+      "max_caso": 2.32,
+      "total": 9.19
+    },
+    {
+      "fichero": "test_ap40_42_43_estados",
+      "nivel": "L0",
+      "casos": 15,
+      "mediana_caso": 0.004,
+      "max_caso": 4.68,
+      "total": 9.13
+    },
+    {
+      "fichero": "test_salud_por_familias",
+      "nivel": "L0",
+      "casos": 20,
+      "mediana_caso": 0.002,
+      "max_caso": 4.58,
+      "total": 9.02
+    },
+    {
+      "fichero": "test_read_ruta_canonica",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.916,
+      "max_caso": 6.33,
+      "total": 8.93
+    },
+    {
+      "fichero": "test_producto_sin_gobernanza",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.635,
+      "max_caso": 3.44,
+      "total": 8.81
+    },
+    {
+      "fichero": "test_vault_diff_contencion",
+      "nivel": "L0",
+      "casos": 11,
+      "mediana_caso": 0.699,
+      "max_caso": 1.04,
+      "total": 8.81
+    },
+    {
+      "fichero": "test_mcp_http_seguridad",
+      "nivel": "L0",
+      "casos": 11,
+      "mediana_caso": 0.72,
+      "max_caso": 2.23,
+      "total": 8.8
+    },
+    {
+      "fichero": "test_ap47_indice_refleja_disco",
+      "nivel": "L0",
+      "casos": 11,
+      "mediana_caso": 0.017,
+      "max_caso": 4.52,
+      "total": 8.75
+    },
+    {
+      "fichero": "test_kernel_aviso_del_indice",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.941,
+      "max_caso": 4.96,
+      "total": 8.66
+    },
+    {
+      "fichero": "test_escrituras_en_lote",
+      "nivel": "L0",
+      "casos": 13,
+      "mediana_caso": 0.323,
+      "max_caso": 3.17,
+      "total": 8.65
+    },
+    {
+      "fichero": "test_source_hygiene",
+      "nivel": "L0",
+      "casos": 538,
+      "mediana_caso": 0.004,
+      "max_caso": 2.37,
+      "total": 8.62
+    },
+    {
+      "fichero": "test_grafo_import",
+      "nivel": "L0",
+      "casos": 20,
+      "mediana_caso": 0.021,
+      "max_caso": 4.72,
+      "total": 8.46
+    },
+    {
+      "fichero": "test_cn04_nota_abre_con_titulo",
+      "nivel": "L1",
+      "casos": 5,
+      "mediana_caso": 1.246,
+      "max_caso": 4.45,
+      "total": 8.42
+    },
+    {
+      "fichero": "test_mcp_instalado",
+      "nivel": "L0",
+      "casos": 8,
+      "mediana_caso": 0.963,
+      "max_caso": 2.19,
+      "total": 8.38
+    },
+    {
+      "fichero": "TestHealthScore",
+      "nivel": "L1",
+      "casos": 2,
+      "mediana_caso": 4.153,
+      "max_caso": 8.15,
+      "total": 8.31
+    },
+    {
+      "fichero": "TestPrimers",
+      "nivel": "L1",
+      "casos": 2,
+      "mediana_caso": 4.095,
+      "max_caso": 8.05,
+      "total": 8.19
+    },
+    {
+      "fichero": "test_smoke_contrato",
+      "nivel": "L0",
+      "casos": 9,
+      "mediana_caso": 0.003,
+      "max_caso": 7.37,
+      "total": 8.15
+    },
+    {
+      "fichero": "test_contrato_consumidor_mcp",
+      "nivel": "L1",
+      "casos": 5,
+      "mediana_caso": 1.075,
+      "max_caso": 3.64,
+      "total": 8.14
+    },
+    {
+      "fichero": "test_gobierno_derivado",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.656,
+      "max_caso": 6.68,
+      "total": 8.0
+    },
+    {
+      "fichero": "test_bigo_grafo_y_recursion",
+      "nivel": "L0",
+      "casos": 13,
+      "mediana_caso": 0.075,
+      "max_caso": 1.98,
+      "total": 7.97
+    },
+    {
+      "fichero": "test_procesos_git",
+      "nivel": "L0",
+      "casos": 12,
+      "mediana_caso": 0.007,
+      "max_caso": 4.8,
+      "total": 7.86
+    },
+    {
+      "fichero": "test_consulta_dominio",
+      "nivel": "L0",
+      "casos": 9,
+      "mediana_caso": 0.014,
+      "max_caso": 7.7,
+      "total": 7.82
+    },
+    {
+      "fichero": "test_release_bump",
+      "nivel": "L1",
+      "casos": 7,
+      "mediana_caso": 1.15,
+      "max_caso": 2.11,
+      "total": 7.81
+    },
+    {
+      "fichero": "test_vault_undo_contencion",
+      "nivel": "L1",
+      "casos": 6,
+      "mediana_caso": 1.083,
+      "max_caso": 2.19,
+      "total": 7.39
+    },
+    {
+      "fichero": "test_metricas",
+      "nivel": "L0",
+      "casos": 23,
+      "mediana_caso": 0.003,
+      "max_caso": 3.76,
+      "total": 7.32
+    },
+    {
+      "fichero": "test_mcp_enum_de_choices",
+      "nivel": "L0",
+      "casos": 105,
+      "mediana_caso": 0.002,
+      "max_caso": 1.27,
+      "total": 7.21
+    },
+    {
+      "fichero": "test_write_tags_con_coma",
+      "nivel": "L1",
+      "casos": 5,
+      "mediana_caso": 1.458,
+      "max_caso": 1.68,
+      "total": 7.15
+    },
+    {
+      "fichero": "test_contract_sync",
+      "nivel": "L1",
+      "casos": 8,
+      "mediana_caso": 1.097,
+      "max_caso": 1.89,
+      "total": 7.14
+    },
+    {
+      "fichero": "test_tags_dice_lo_que_escribe",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.211,
+      "max_caso": 6.07,
+      "total": 6.97
+    },
+    {
+      "fichero": "test_reindex_orden",
+      "nivel": "L2",
+      "casos": 1,
+      "mediana_caso": 6.869,
+      "max_caso": 6.87,
+      "total": 6.87
+    },
+    {
+      "fichero": "test_raiz_que_es_el_programa",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.763,
+      "max_caso": 3.07,
+      "total": 6.8
+    },
+    {
+      "fichero": "test_ap56_sin_interpolacion_cruda",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.018,
+      "max_caso": 4.73,
+      "total": 6.75
+    },
+    {
+      "fichero": "test_voice",
+      "nivel": "L0",
+      "casos": 23,
+      "mediana_caso": 0.004,
+      "max_caso": 4.97,
+      "total": 6.71
+    },
+    {
+      "fichero": "test_cli_sin_abreviaturas",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.728,
+      "max_caso": 3.0,
+      "total": 6.51
+    },
+    {
+      "fichero": "test_slug_canonico",
+      "nivel": "L0",
+      "casos": 28,
+      "mediana_caso": 0.002,
+      "max_caso": 3.21,
+      "total": 6.41
+    },
+    {
+      "fichero": "test_params_reconciliados_consumidores",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.791,
+      "max_caso": 3.67,
+      "total": 6.17
+    },
+    {
+      "fichero": "test_ciclos",
+      "nivel": "L0",
+      "casos": 13,
+      "mediana_caso": 0.154,
+      "max_caso": 2.13,
+      "total": 6.16
+    },
+    {
+      "fichero": "test_indice_de_seccion_tras_quitar",
+      "nivel": "L1",
+      "casos": 2,
+      "mediana_caso": 3.08,
+      "max_caso": 3.13,
+      "total": 6.16
+    },
+    {
+      "fichero": "test_iso42005_impacto",
+      "nivel": "L0",
+      "casos": 14,
+      "mediana_caso": 0.003,
+      "max_caso": 2.06,
+      "total": 6.06
+    },
+    {
+      "fichero": "test_vault_gate",
+      "nivel": "L0",
+      "casos": 21,
+      "mediana_caso": 0.012,
+      "max_caso": 1.27,
+      "total": 5.71
+    },
+    {
+      "fichero": "test_agents_root",
+      "nivel": "L1",
+      "casos": 2,
+      "mediana_caso": 2.801,
+      "max_caso": 2.85,
+      "total": 5.6
+    },
+    {
+      "fichero": "TestCLIModes",
+      "nivel": "L1",
+      "casos": 5,
+      "mediana_caso": 1.021,
+      "max_caso": 2.37,
+      "total": 5.6
+    },
+    {
+      "fichero": "test_delete_recuperable",
+      "nivel": "L1",
+      "casos": 4,
+      "mediana_caso": 1.393,
+      "max_caso": 1.97,
+      "total": 5.54
+    },
+    {
+      "fichero": "TestContextPackDynamicBudget",
+      "nivel": "L1",
+      "casos": 3,
+      "mediana_caso": 1.765,
+      "max_caso": 2.07,
+      "total": 5.34
+    },
+    {
+      "fichero": "test_registry_derivation",
+      "nivel": "L0",
+      "casos": 19,
+      "mediana_caso": 0.003,
+      "max_caso": 3.05,
+      "total": 5.17
+    },
+    {
+      "fichero": "test_context_pack_top_k_valido",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.969,
+      "max_caso": 1.42,
+      "total": 5.04
+    },
+    {
+      "fichero": "test_diagram_export_contencion",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.81,
+      "max_caso": 1.1,
+      "total": 5.04
+    },
+    {
+      "fichero": "test_aliases_superseded_sin_uso",
+      "nivel": "L1",
+      "casos": 2,
+      "mediana_caso": 2.486,
+      "max_caso": 4.89,
+      "total": 4.97
+    },
+    {
+      "fichero": "test_vault_validate_contencion",
+      "nivel": "L1",
+      "casos": 5,
+      "mediana_caso": 1.002,
+      "max_caso": 1.01,
+      "total": 4.92
+    },
+    {
+      "fichero": "test_envelope_sin_fugas",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.754,
+      "max_caso": 1.19,
+      "total": 4.89
+    },
+    {
+      "fichero": "test_fallos_del_dominio",
+      "nivel": "L0",
+      "casos": 8,
+      "mediana_caso": 0.214,
+      "max_caso": 1.96,
+      "total": 4.84
+    },
+    {
+      "fichero": "TestMigratedFrom",
+      "nivel": "L1",
+      "casos": 1,
+      "mediana_caso": 4.792,
+      "max_caso": 4.79,
+      "total": 4.79
+    },
+    {
+      "fichero": "test_append_seccion_exacta",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.593,
+      "max_caso": 0.99,
+      "total": 4.75
+    },
+    {
+      "fichero": "test_regla7_contraste_ajeno",
+      "nivel": "L0",
+      "casos": 39,
+      "mediana_caso": 0.005,
+      "max_caso": 1.37,
+      "total": 4.63
+    },
+    {
+      "fichero": "test_ficha_de_proyecto_completa",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.982,
+      "max_caso": 2.58,
+      "total": 4.54
+    },
+    {
+      "fichero": "test_append_solo_notas",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.691,
+      "max_caso": 1.02,
+      "total": 4.53
+    },
+    {
+      "fichero": "test_project_status_contencion",
+      "nivel": "L1",
+      "casos": 2,
+      "mediana_caso": 2.26,
+      "max_caso": 2.56,
+      "total": 4.52
+    },
+    {
+      "fichero": "test_vault_fantasma",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.639,
+      "max_caso": 1.39,
+      "total": 4.45
+    },
+    {
+      "fichero": "test_move_folder_no_pierde",
+      "nivel": "L1",
+      "casos": 4,
+      "mediana_caso": 1.0,
+      "max_caso": 1.54,
+      "total": 4.39
+    },
+    {
+      "fichero": "test_publicacion_limpia",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.142,
+      "max_caso": 2.85,
+      "total": 4.33
+    },
+    {
+      "fichero": "test_mcp_iserror",
+      "nivel": "L1",
+      "casos": 2,
+      "mediana_caso": 2.156,
+      "max_caso": 2.16,
+      "total": 4.31
+    },
+    {
+      "fichero": "test_casi_duplicados_sin_cuadratica",
+      "nivel": "L0",
+      "casos": 65,
+      "mediana_caso": 0.064,
+      "max_caso": 0.12,
+      "total": 4.22
+    },
+    {
+      "fichero": "test_frontmatter_lector_unico",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.017,
+      "max_caso": 3.71,
+      "total": 4.08
+    },
+    {
+      "fichero": "test_move_destino_es_nota",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.952,
+      "max_caso": 1.29,
+      "total": 4.03
+    },
+    {
+      "fichero": "test_f8_vault_write_anota",
+      "nivel": "L1",
+      "casos": 3,
+      "mediana_caso": 1.288,
+      "max_caso": 2.65,
+      "total": 3.94
+    },
+    {
+      "fichero": "test_move_grafo_actual",
+      "nivel": "L1",
+      "casos": 2,
+      "mediana_caso": 1.938,
+      "max_caso": 2.17,
+      "total": 3.88
+    },
+    {
+      "fichero": "test_sin_escapes_invalidos",
+      "nivel": "L1",
+      "casos": 1,
+      "mediana_caso": 3.881,
+      "max_caso": 3.88,
+      "total": 3.88
+    },
+    {
+      "fichero": "test_ciclo_lib_io_invertido",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.025,
+      "max_caso": 3.84,
+      "total": 3.87
+    },
+    {
+      "fichero": "test_move_todas_las_formas_de_enlace",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.986,
+      "max_caso": 1.12,
+      "total": 3.86
+    },
+    {
+      "fichero": "test_f8_bitacora_corrupta",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.822,
+      "max_caso": 1.49,
+      "total": 3.84
+    },
+    {
+      "fichero": "test_list_status_vocabulario",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.768,
+      "max_caso": 0.79,
+      "total": 3.76
+    },
+    {
+      "fichero": "test_envelope_frontera",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.734,
+      "max_caso": 0.83,
+      "total": 3.64
+    },
+    {
+      "fichero": "test_status_vocabulary",
+      "nivel": "L0",
+      "casos": 206,
+      "mediana_caso": 0.004,
+      "max_caso": 2.77,
+      "total": 3.6
+    },
+    {
+      "fichero": "test_naturalezas",
+      "nivel": "L0",
+      "casos": 8,
+      "mediana_caso": 0.005,
+      "max_caso": 3.55,
+      "total": 3.58
+    },
+    {
+      "fichero": "test_ap46_identidad_es_texto",
+      "nivel": "L1",
+      "casos": 2,
+      "mediana_caso": 1.767,
+      "max_caso": 3.33,
+      "total": 3.53
+    },
+    {
+      "fichero": "test_agente_por_defecto",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.877,
+      "max_caso": 2.63,
+      "total": 3.51
+    },
+    {
+      "fichero": "test_preferencia_ilegible",
+      "nivel": "L1",
+      "casos": 3,
+      "mediana_caso": 1.173,
+      "max_caso": 1.48,
+      "total": 3.4
+    },
+    {
+      "fichero": "test_grafo_refresco",
+      "nivel": "L0",
+      "casos": 8,
+      "mediana_caso": 0.185,
+      "max_caso": 1.89,
+      "total": 3.26
+    },
+    {
+      "fichero": "test_ap50_decision_duplicada",
+      "nivel": "L0",
+      "casos": 8,
+      "mediana_caso": 0.007,
+      "max_caso": 3.17,
+      "total": 3.22
+    },
+    {
+      "fichero": "test_context_memory",
+      "nivel": "L0",
+      "casos": 53,
+      "mediana_caso": 0.005,
+      "max_caso": 0.41,
+      "total": 3.09
+    },
+    {
+      "fichero": "test_delete_no_borra_derivados",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.736,
+      "max_caso": 0.93,
+      "total": 3.08
+    },
+    {
+      "fichero": "test_move_salida_json",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.772,
+      "max_caso": 0.78,
+      "total": 3.05
+    },
+    {
+      "fichero": "test_raiz_dudosa_no_deja_rastro",
+      "nivel": "L1",
+      "casos": 2,
+      "mediana_caso": 1.514,
+      "max_caso": 1.66,
+      "total": 3.03
+    },
+    {
+      "fichero": "test_fase2_hf201_privacidad",
+      "nivel": "L0",
+      "casos": 11,
+      "mediana_caso": 0.094,
+      "max_caso": 0.89,
+      "total": 3.02
+    },
+    {
+      "fichero": "test_mermaid_check_contencion",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.858,
+      "max_caso": 1.35,
+      "total": 2.99
+    },
+    {
+      "fichero": "test_particion_frontmatter_unica",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.008,
+      "max_caso": 2.87,
+      "total": 2.89
+    },
+    {
+      "fichero": "test_installable_boundary",
+      "nivel": "L0",
+      "casos": 15,
+      "mediana_caso": 0.014,
+      "max_caso": 1.43,
+      "total": 2.85
+    },
+    {
+      "fichero": "test_generator_version",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.075,
+      "max_caso": 2.57,
+      "total": 2.84
+    },
+    {
+      "fichero": "test_bloqueo_compartido",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.015,
+      "max_caso": 1.51,
+      "total": 2.77
+    },
+    {
+      "fichero": "test_contrato_de_campos",
+      "nivel": "L0",
+      "casos": 22,
+      "mediana_caso": 0.02,
+      "max_caso": 0.67,
+      "total": 2.74
+    },
+    {
+      "fichero": "test_list_no_sale_del_vault",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.667,
+      "max_caso": 0.76,
+      "total": 2.72
+    },
+    {
+      "fichero": "test_quality_dashboard_indice_calidad",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.394,
+      "max_caso": 2.29,
+      "total": 2.72
+    },
+    {
+      "fichero": "test_validate_cumplimiento",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.246,
+      "max_caso": 0.74,
+      "total": 2.7
+    },
+    {
+      "fichero": "test_vault_init_clean",
+      "nivel": "L0",
+      "casos": 23,
+      "mediana_caso": 0.03,
+      "max_caso": 0.96,
+      "total": 2.64
+    },
+    {
+      "fichero": "test_audit_artefactos_corruptos",
+      "nivel": "L1",
+      "casos": 2,
+      "mediana_caso": 1.314,
+      "max_caso": 1.74,
+      "total": 2.63
+    },
+    {
+      "fichero": "test_indice_recuperacion_real",
+      "nivel": "L1",
+      "casos": 1,
+      "mediana_caso": 2.62,
+      "max_caso": 2.62,
+      "total": 2.62
+    },
+    {
+      "fichero": "test_delete_avisa_enlaces_entrantes",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.893,
+      "max_caso": 0.94,
+      "total": 2.55
+    },
+    {
+      "fichero": "test_file_lock_entre_procesos",
+      "nivel": "L1",
+      "casos": 2,
+      "mediana_caso": 1.241,
+      "max_caso": 2.16,
+      "total": 2.48
+    },
+    {
+      "fichero": "test_indice_compartido_ilegible",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.022,
+      "max_caso": 2.45,
+      "total": 2.48
+    },
+    {
+      "fichero": "test_lock_reentrante",
+      "nivel": "L0",
+      "casos": 16,
+      "mediana_caso": 0.022,
+      "max_caso": 1.1,
+      "total": 2.41
+    },
+    {
+      "fichero": "test_vault_move_clasificacion",
+      "nivel": "L0",
+      "casos": 12,
+      "mediana_caso": 0.068,
+      "max_caso": 0.91,
+      "total": 2.4
+    },
+    {
+      "fichero": "test_meta_contrato",
+      "nivel": "L0",
+      "casos": 24,
+      "mediana_caso": 0.042,
+      "max_caso": 0.79,
+      "total": 2.38
+    },
+    {
+      "fichero": "test_secreto_detectado",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.949,
+      "max_caso": 1.05,
+      "total": 2.37
+    },
+    {
+      "fichero": "test_f8_vault_append_anota",
+      "nivel": "L1",
+      "casos": 1,
+      "mediana_caso": 2.352,
+      "max_caso": 2.35,
+      "total": 2.35
+    },
+    {
+      "fichero": "test_dependencias_de_la_suite",
+      "nivel": "L1",
+      "casos": 2,
+      "mediana_caso": 1.12,
+      "max_caso": 2.24,
+      "total": 2.24
+    },
+    {
+      "fichero": "test_move_change_log",
+      "nivel": "L1",
+      "casos": 2,
+      "mediana_caso": 1.117,
+      "max_caso": 1.25,
+      "total": 2.23
+    },
+    {
+      "fichero": "test_yaml_scalar_unico",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.016,
+      "max_caso": 2.16,
+      "total": 2.21
+    },
+    {
+      "fichero": "test_ap14_criterio_del_lector",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.719,
+      "max_caso": 0.76,
+      "total": 2.19
+    },
+    {
+      "fichero": "test_spec_args_publicados",
+      "nivel": "L1",
+      "casos": 2,
+      "mediana_caso": 1.074,
+      "max_caso": 2.13,
+      "total": 2.15
+    },
+    {
+      "fichero": "test_frontmatter_completar",
+      "nivel": "L0",
+      "casos": 25,
+      "mediana_caso": 0.015,
+      "max_caso": 1.19,
+      "total": 2.1
+    },
+    {
+      "fichero": "test_run_context",
+      "nivel": "L0",
+      "casos": 11,
+      "mediana_caso": 0.035,
+      "max_caso": 1.25,
+      "total": 2.08
+    },
+    {
+      "fichero": "TestContratoCLI",
+      "nivel": "L1",
+      "casos": 2,
+      "mediana_caso": 1.03,
+      "max_caso": 1.29,
+      "total": 2.06
+    },
+    {
+      "fichero": "test_public_cli",
+      "nivel": "L0",
+      "casos": 19,
+      "mediana_caso": 0.009,
+      "max_caso": 0.88,
+      "total": 2.04
+    },
+    {
+      "fichero": "test_sanacion_orden_por_nucleo",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.928,
+      "max_caso": 0.94,
+      "total": 2.04
+    },
+    {
+      "fichero": "test_list_limite_valido",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.668,
+      "max_caso": 0.71,
+      "total": 2.03
+    },
+    {
+      "fichero": "test_vault_mcp_arranca",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.994,
+      "max_caso": 1.41,
+      "total": 1.99
+    },
+    {
+      "fichero": "test_produccion",
+      "nivel": "L0",
+      "casos": 22,
+      "mediana_caso": 0.017,
+      "max_caso": 0.36,
+      "total": 1.97
+    },
+    {
+      "fichero": "test_ap46_heal",
+      "nivel": "L0",
+      "casos": 15,
+      "mediana_caso": 0.014,
+      "max_caso": 0.79,
+      "total": 1.94
+    },
+    {
+      "fichero": "TestClasificacion",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.938,
+      "max_caso": 0.97,
+      "total": 1.88
+    },
+    {
+      "fichero": "test_rutas_posix_publicadas",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.904,
+      "max_caso": 0.97,
+      "total": 1.81
+    },
+    {
+      "fichero": "test_audit_backlinks_como_obsidian",
+      "nivel": "L0",
+      "casos": 11,
+      "mediana_caso": 0.167,
+      "max_caso": 0.28,
+      "total": 1.8
+    },
+    {
+      "fichero": "test_nucleo_del_vault",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.349,
+      "max_caso": 1.05,
+      "total": 1.75
+    },
+    {
+      "fichero": "test_diagram_export_no_dice_guardada",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.868,
+      "max_caso": 1.06,
+      "total": 1.74
+    },
+    {
+      "fichero": "test_ingest_indice_busqueda",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.698,
+      "max_caso": 0.73,
+      "total": 1.66
+    },
+    {
+      "fichero": "test_validate_titulo_con_guiones",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.802,
+      "max_caso": 0.84,
+      "total": 1.6
+    },
+    {
+      "fichero": "test_lock_fencing",
+      "nivel": "L0",
+      "casos": 11,
+      "mediana_caso": 0.014,
+      "max_caso": 1.26,
+      "total": 1.58
+    },
+    {
+      "fichero": "test_esquema_por_version",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.195,
+      "max_caso": 0.49,
+      "total": 1.56
+    },
+    {
+      "fichero": "test_ap16_tools_tipadas",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.333,
+      "max_caso": 0.36,
+      "total": 1.56
+    },
+    {
+      "fichero": "test_impact_grafo_ilegible",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.771,
+      "max_caso": 0.8,
+      "total": 1.54
+    },
+    {
+      "fichero": "test_vault_toolkit_audit",
+      "nivel": "L0",
+      "casos": 26,
+      "mediana_caso": 0.004,
+      "max_caso": 0.81,
+      "total": 1.54
+    },
+    {
+      "fichero": "test_recovery_ejecutable",
+      "nivel": "L0",
+      "casos": 11,
+      "mediana_caso": 0.033,
+      "max_caso": 0.78,
+      "total": 1.53
+    },
+    {
+      "fichero": "test_subgraph_grafo_ilegible",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.762,
+      "max_caso": 0.87,
+      "total": 1.52
+    },
+    {
+      "fichero": "test_contrato_nota",
+      "nivel": "L0",
+      "casos": 29,
+      "mediana_caso": 0.003,
+      "max_caso": 0.48,
+      "total": 1.48
+    },
+    {
+      "fichero": "TestNotaUpdateMismoProyecto",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.067,
+      "max_caso": 1.25,
+      "total": 1.44
+    },
+    {
+      "fichero": "test_escritura_frontmatter_ilegible",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.715,
+      "max_caso": 0.76,
+      "total": 1.43
+    },
+    {
+      "fichero": "test_ap56_frontmatter_heal",
+      "nivel": "L0",
+      "casos": 13,
+      "mediana_caso": 0.003,
+      "max_caso": 1.35,
+      "total": 1.43
+    },
+    {
+      "fichero": "test_lock_dueno_vivo",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.2,
+      "max_caso": 0.57,
+      "total": 1.39
+    },
+    {
+      "fichero": "test_version_coherence",
+      "nivel": "L0",
+      "casos": 15,
+      "mediana_caso": 0.003,
+      "max_caso": 0.43,
+      "total": 1.39
+    },
+    {
+      "fichero": "test_vault_changelog_concurrency",
+      "nivel": "L1",
+      "casos": 1,
+      "mediana_caso": 1.351,
+      "max_caso": 1.35,
+      "total": 1.35
+    },
+    {
+      "fichero": "test_onboard_skip",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.666,
+      "max_caso": 1.22,
+      "total": 1.33
+    },
+    {
+      "fichero": "test_raiz_no_identificada_codigo",
+      "nivel": "L1",
+      "casos": 1,
+      "mediana_caso": 1.328,
+      "max_caso": 1.33,
+      "total": 1.33
+    },
+    {
+      "fichero": "test_impl_shadow",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.659,
+      "max_caso": 1.31,
+      "total": 1.32
+    },
+    {
+      "fichero": "test_audit_rotos_ancla_y_relativa",
+      "nivel": "L0",
+      "casos": 9,
+      "mediana_caso": 0.146,
+      "max_caso": 0.15,
+      "total": 1.3
+    },
+    {
+      "fichero": "test_sanadores_sin_lote",
+      "nivel": "L0",
+      "casos": 10,
+      "mediana_caso": 0.168,
+      "max_caso": 0.36,
+      "total": 1.3
+    },
+    {
+      "fichero": "test_security_scan_dice_lo_que_mira",
+      "nivel": "L0",
+      "casos": 10,
+      "mediana_caso": 0.045,
+      "max_caso": 0.79,
+      "total": 1.22
+    },
+    {
+      "fichero": "test_o4_reescritura_idempotente",
+      "nivel": "L0",
+      "casos": 8,
+      "mediana_caso": 0.186,
+      "max_caso": 0.23,
+      "total": 1.21
+    },
+    {
+      "fichero": "test_mcp_sin_servicios_largos",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.603,
+      "max_caso": 1.19,
+      "total": 1.21
+    },
+    {
+      "fichero": "test_registro_ilegible_se_aparta",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.026,
+      "max_caso": 0.98,
+      "total": 1.21
+    },
+    {
+      "fichero": "test_o8_presupuesto",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.031,
+      "max_caso": 0.97,
+      "total": 1.16
+    },
+    {
+      "fichero": "test_afirmaciones_y_presupuesto",
+      "nivel": "L0",
+      "casos": 13,
+      "mediana_caso": 0.003,
+      "max_caso": 0.85,
+      "total": 1.13
+    },
+    {
+      "fichero": "test_cn01_cn04_audit_informativo",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.184,
+      "max_caso": 0.75,
+      "total": 1.12
+    },
+    {
+      "fichero": "test_doc_counts",
+      "nivel": "L0",
+      "casos": 17,
+      "mediana_caso": 0.023,
+      "max_caso": 0.83,
+      "total": 1.12
+    },
+    {
+      "fichero": "test_audit_comando_fix_brackets",
+      "nivel": "L1",
+      "casos": 1,
+      "mediana_caso": 1.105,
+      "max_caso": 1.1,
+      "total": 1.1
+    },
+    {
+      "fichero": "test_indice_seccion_lf",
+      "nivel": "L1",
+      "casos": 1,
+      "mediana_caso": 1.091,
+      "max_caso": 1.09,
+      "total": 1.09
+    },
+    {
+      "fichero": "test_tags_rename_acentos",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.289,
+      "max_caso": 0.49,
+      "total": 1.04
+    },
+    {
+      "fichero": "test_grafo_dominio",
+      "nivel": "L0",
+      "casos": 12,
+      "mediana_caso": 0.024,
+      "max_caso": 0.49,
+      "total": 1.02
+    },
+    {
+      "fichero": "test_normas_de_audit_ejercitadas",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.049,
+      "max_caso": 0.87,
+      "total": 1.01
+    },
+    {
+      "fichero": "test_orphan_registries",
+      "nivel": "L0",
+      "casos": 36,
+      "mediana_caso": 0.009,
+      "max_caso": 0.46,
+      "total": 0.98
+    },
+    {
+      "fichero": "test_ledger_ilegible",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.484,
+      "max_caso": 0.96,
+      "total": 0.97
+    },
+    {
+      "fichero": "test_registro_de_proyectos",
+      "nivel": "L0",
+      "casos": 9,
+      "mediana_caso": 0.019,
+      "max_caso": 0.44,
+      "total": 0.97
+    },
+    {
+      "fichero": "test_audit_resuelve_como_obsidian",
+      "nivel": "L0",
+      "casos": 9,
+      "mediana_caso": 0.091,
+      "max_caso": 0.22,
+      "total": 0.95
+    },
+    {
+      "fichero": "TestDryRun",
+      "nivel": "L0",
+      "casos": 1,
+      "mediana_caso": 0.955,
+      "max_caso": 0.95,
+      "total": 0.95
+    },
+    {
+      "fichero": "test_append_updated_at",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.226,
+      "max_caso": 0.24,
+      "total": 0.94
+    },
+    {
+      "fichero": "test_gobernanza_dominio",
+      "nivel": "L0",
+      "casos": 10,
+      "mediana_caso": 0.028,
+      "max_caso": 0.47,
+      "total": 0.91
+    },
+    {
+      "fichero": "TestStubCreation",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.226,
+      "max_caso": 0.45,
+      "total": 0.91
+    },
+    {
+      "fichero": "test_ap52_envelope_mutado",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.449,
+      "max_caso": 0.87,
+      "total": 0.9
+    },
+    {
+      "fichero": "test_ap21_ruta_necesaria",
+      "nivel": "L0",
+      "casos": 8,
+      "mediana_caso": 0.044,
+      "max_caso": 0.33,
+      "total": 0.89
+    },
+    {
+      "fichero": "test_doc_counts_evidencia",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.445,
+      "max_caso": 0.89,
+      "total": 0.89
+    },
+    {
+      "fichero": "test_ap46_editores",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.17,
+      "max_caso": 0.36,
+      "total": 0.88
+    },
+    {
+      "fichero": "test_indice_con_resumen",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.002,
+      "max_caso": 0.86,
+      "total": 0.87
+    },
+    {
+      "fichero": "test_ap16_prevencion_dice_lo_que_hace",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.005,
+      "max_caso": 0.85,
+      "total": 0.86
+    },
+    {
+      "fichero": "test_noop_audit",
+      "nivel": "L0",
+      "casos": 14,
+      "mediana_caso": 0.005,
+      "max_caso": 0.8,
+      "total": 0.86
+    },
+    {
+      "fichero": "test_criterios_yaml",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.003,
+      "max_caso": 0.84,
+      "total": 0.85
+    },
+    {
+      "fichero": "test_init_version_valida",
+      "nivel": "L0",
+      "casos": 15,
+      "mediana_caso": 0.003,
+      "max_caso": 0.69,
+      "total": 0.81
+    },
+    {
+      "fichero": "TestSkillExecution",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.403,
+      "max_caso": 0.78,
+      "total": 0.81
+    },
+    {
+      "fichero": "test_search_sin_indice",
+      "nivel": "L0",
+      "casos": 1,
+      "mediana_caso": 0.801,
+      "max_caso": 0.8,
+      "total": 0.8
+    },
+    {
+      "fichero": "test_graph_merge_sugerencias",
+      "nivel": "L0",
+      "casos": 10,
+      "mediana_caso": 0.071,
+      "max_caso": 0.13,
+      "total": 0.78
+    },
+    {
+      "fichero": "test_append_salto_final",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.256,
+      "max_caso": 0.31,
+      "total": 0.77
+    },
+    {
+      "fichero": "test_cli_salida_utf8",
+      "nivel": "L0",
+      "casos": 1,
+      "mediana_caso": 0.762,
+      "max_caso": 0.76,
+      "total": 0.76
+    },
+    {
+      "fichero": "test_parsers_frontmatter",
+      "nivel": "L0",
+      "casos": 9,
+      "mediana_caso": 0.104,
+      "max_caso": 0.16,
+      "total": 0.75
+    },
+    {
+      "fichero": "test_vault_write_slug_canonico",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.172,
+      "max_caso": 0.39,
+      "total": 0.74
+    },
+    {
+      "fichero": "test_lock_borrado_pendiente",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.025,
+      "max_caso": 0.32,
+      "total": 0.73
+    },
+    {
+      "fichero": "test_audit_material_ajeno",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.216,
+      "max_caso": 0.32,
+      "total": 0.73
+    },
+    {
+      "fichero": "test_read_directorio_no_es_nota",
+      "nivel": "L0",
+      "casos": 1,
+      "mediana_caso": 0.731,
+      "max_caso": 0.73,
+      "total": 0.73
+    },
+    {
+      "fichero": "test_sbom",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.134,
+      "max_caso": 0.2,
+      "total": 0.73
+    },
+    {
+      "fichero": "test_clean_install_gate_mide_el_repo",
+      "nivel": "L0",
+      "casos": 1,
+      "mediana_caso": 0.721,
+      "max_caso": 0.72,
+      "total": 0.72
+    },
+    {
+      "fichero": "test_lock_conocimiento_compartido",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.348,
+      "max_caso": 0.35,
+      "total": 0.71
+    },
+    {
+      "fichero": "test_installed_query_parse",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.015,
+      "max_caso": 0.68,
+      "total": 0.71
+    },
+    {
+      "fichero": "test_contrato_que_no_miente",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.004,
+      "max_caso": 0.67,
+      "total": 0.68
+    },
+    {
+      "fichero": "test_ingest_lock",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.145,
+      "max_caso": 0.36,
+      "total": 0.68
+    },
+    {
+      "fichero": "test_standard_upgrade_path",
+      "nivel": "L0",
+      "casos": 16,
+      "mediana_caso": 0.003,
+      "max_caso": 0.29,
+      "total": 0.65
+    },
+    {
+      "fichero": "test_log_error_idempotente",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.143,
+      "max_caso": 0.35,
+      "total": 0.64
+    },
+    {
+      "fichero": "test_diagram_save_guard",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.105,
+      "max_caso": 0.22,
+      "total": 0.64
+    },
+    {
+      "fichero": "TestLoadSaveRelations",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.019,
+      "max_caso": 0.61,
+      "total": 0.64
+    },
+    {
+      "fichero": "test_filtro_de_expresiones_regulares",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.003,
+      "max_caso": 0.56,
+      "total": 0.63
+    },
+    {
+      "fichero": "TestContextPack",
+      "nivel": "L0",
+      "casos": 10,
+      "mediana_caso": 0.077,
+      "max_caso": 0.08,
+      "total": 0.63
+    },
+    {
+      "fichero": "test_write_path_contenido",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.075,
+      "max_caso": 0.28,
+      "total": 0.6
+    },
+    {
+      "fichero": "test_indice_ajeno_preservado",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.121,
+      "max_caso": 0.24,
+      "total": 0.59
+    },
+    {
+      "fichero": "test_escritura_atomica_lf",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.288,
+      "max_caso": 0.57,
+      "total": 0.58
+    },
+    {
+      "fichero": "test_nombres_con_caja",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.139,
+      "max_caso": 0.17,
+      "total": 0.58
+    },
+    {
+      "fichero": "test_lock_caduca_por_reloj_de_pared",
+      "nivel": "L0",
+      "casos": 1,
+      "mediana_caso": 0.571,
+      "max_caso": 0.57,
+      "total": 0.57
+    },
+    {
+      "fichero": "test_indice_compartido_concurrente",
+      "nivel": "L0",
+      "casos": 20,
+      "mediana_caso": 0.018,
+      "max_caso": 0.14,
+      "total": 0.57
+    },
+    {
+      "fichero": "test_onboard_legacy_frontmatter",
+      "nivel": "L0",
+      "casos": 15,
+      "mediana_caso": 0.003,
+      "max_caso": 0.21,
+      "total": 0.56
+    },
+    {
+      "fichero": "test_clave_de_nombre_mcp",
+      "nivel": "L0",
+      "casos": 1,
+      "mediana_caso": 0.546,
+      "max_caso": 0.55,
+      "total": 0.55
+    },
+    {
+      "fichero": "test_autoria_dominio",
+      "nivel": "L0",
+      "casos": 9,
+      "mediana_caso": 0.02,
+      "max_caso": 0.23,
+      "total": 0.55
+    },
+    {
+      "fichero": "test_note_moved_guard",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.272,
+      "max_caso": 0.28,
+      "total": 0.54
+    },
+    {
+      "fichero": "test_pat2_stub_con_plazo",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.013,
+      "max_caso": 0.52,
+      "total": 0.54
+    },
+    {
+      "fichero": "test_indices_dominio",
+      "nivel": "L0",
+      "casos": 30,
+      "mediana_caso": 0.013,
+      "max_caso": 0.06,
+      "total": 0.53
+    },
+    {
+      "fichero": "test_vault_move_contencion",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.044,
+      "max_caso": 0.29,
+      "total": 0.51
+    },
+    {
+      "fichero": "TestIdentidadConflicto",
+      "nivel": "L0",
+      "casos": 10,
+      "mediana_caso": 0.047,
+      "max_caso": 0.07,
+      "total": 0.49
+    },
+    {
+      "fichero": "test_calidad_resuelve_como_obsidian",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.097,
+      "max_caso": 0.14,
+      "total": 0.48
+    },
+    {
+      "fichero": "test_skills_catalogo",
+      "nivel": "L0",
+      "casos": 16,
+      "mediana_caso": 0.027,
+      "max_caso": 0.08,
+      "total": 0.48
+    },
+    {
+      "fichero": "test_mensaje_de_envelope",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.077,
+      "max_caso": 0.4,
+      "total": 0.48
+    },
+    {
+      "fichero": "TestApplyClassifiedFixes",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.232,
+      "max_caso": 0.44,
+      "total": 0.46
+    },
+    {
+      "fichero": "test_cn01_minusculas",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.225,
+      "max_caso": 0.26,
+      "total": 0.45
+    },
+    {
+      "fichero": "test_historia_un_criterio",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.021,
+      "max_caso": 0.2,
+      "total": 0.44
+    },
+    {
+      "fichero": "test_sin_texto_corrupto",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.003,
+      "max_caso": 0.43,
+      "total": 0.44
+    },
+    {
+      "fichero": "TestYamlYEncoding",
+      "nivel": "L0",
+      "casos": 12,
+      "mediana_caso": 0.034,
+      "max_caso": 0.05,
+      "total": 0.42
+    },
+    {
+      "fichero": "test_ap37_lo_emitido",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.07,
+      "max_caso": 0.21,
+      "total": 0.41
+    },
+    {
+      "fichero": "test_produccion_iso",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.007,
+      "max_caso": 0.39,
+      "total": 0.41
+    },
+    {
+      "fichero": "test_fix_brackets_ruta",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.039,
+      "max_caso": 0.17,
+      "total": 0.4
+    },
+    {
+      "fichero": "test_ap02_versiones_misma_carpeta",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.042,
+      "max_caso": 0.31,
+      "total": 0.39
+    },
+    {
+      "fichero": "test_ap46_interpolacion_cruda",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.194,
+      "max_caso": 0.39,
+      "total": 0.39
+    },
+    {
+      "fichero": "TestSubgraph",
+      "nivel": "L0",
+      "casos": 13,
+      "mediana_caso": 0.029,
+      "max_caso": 0.06,
+      "total": 0.39
+    },
+    {
+      "fichero": "test_audit_accion_huerfana",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.196,
+      "max_caso": 0.2,
+      "total": 0.39
+    },
+    {
+      "fichero": "test_audit_acciones_de_movimiento",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.128,
+      "max_caso": 0.13,
+      "total": 0.39
+    },
+    {
+      "fichero": "test_tags_recuperacion_y_conteo",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.084,
+      "max_caso": 0.17,
+      "total": 0.39
+    },
+    {
+      "fichero": "test_project_status_identidad",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.045,
+      "max_caso": 0.29,
+      "total": 0.38
+    },
+    {
+      "fichero": "TestSystemFiles",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.183,
+      "max_caso": 0.19,
+      "total": 0.37
+    },
+    {
+      "fichero": "test_infra_map_vacio",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.18,
+      "max_caso": 0.21,
+      "total": 0.36
+    },
+    {
+      "fichero": "test_ingest_v40_16",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.004,
+      "max_caso": 0.35,
+      "total": 0.36
+    },
+    {
+      "fichero": "test_tag_vocabulary",
+      "nivel": "L0",
+      "casos": 46,
+      "mediana_caso": 0.002,
+      "max_caso": 0.06,
+      "total": 0.35
+    },
+    {
+      "fichero": "test_ap20_esqueleto_de_lista",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.024,
+      "max_caso": 0.3,
+      "total": 0.33
+    },
+    {
+      "fichero": "TestHubNotes",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.163,
+      "max_caso": 0.17,
+      "total": 0.33
+    },
+    {
+      "fichero": "test_durabilidad_dominio",
+      "nivel": "L0",
+      "casos": 30,
+      "mediana_caso": 0.006,
+      "max_caso": 0.07,
+      "total": 0.32
+    },
+    {
+      "fichero": "test_audit_contrato",
+      "nivel": "L0",
+      "casos": 8,
+      "mediana_caso": 0.038,
+      "max_caso": 0.05,
+      "total": 0.32
+    },
+    {
+      "fichero": "test_audit_no_resuelve_por_parecido",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.073,
+      "max_caso": 0.09,
+      "total": 0.31
+    },
+    {
+      "fichero": "test_section_index_rendimiento",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.155,
+      "max_caso": 0.16,
+      "total": 0.31
+    },
+    {
+      "fichero": "test_skills_versionadas",
+      "nivel": "L0",
+      "casos": 18,
+      "mediana_caso": 0.005,
+      "max_caso": 0.13,
+      "total": 0.3
+    },
+    {
+      "fichero": "test_audit_no_integradas",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.061,
+      "max_caso": 0.07,
+      "total": 0.29
+    },
+    {
+      "fichero": "test_cuarentena_frontmatter",
+      "nivel": "L0",
+      "casos": 1,
+      "mediana_caso": 0.266,
+      "max_caso": 0.27,
+      "total": 0.27
+    },
+    {
+      "fichero": "test_ap17_sustituida",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.035,
+      "max_caso": 0.04,
+      "total": 0.25
+    },
+    {
+      "fichero": "test_instantaneas_un_criterio",
+      "nivel": "L0",
+      "casos": 8,
+      "mediana_caso": 0.032,
+      "max_caso": 0.04,
+      "total": 0.25
+    },
+    {
+      "fichero": "test_read_por_nombre",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.05,
+      "max_caso": 0.06,
+      "total": 0.25
+    },
+    {
+      "fichero": "test_test_save_tipo_del_contrato",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.127,
+      "max_caso": 0.25,
+      "total": 0.25
+    },
+    {
+      "fichero": "test_tomar_lock",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.02,
+      "max_caso": 0.21,
+      "total": 0.25
+    },
+    {
+      "fichero": "test_capa4_audit_ejercitada",
+      "nivel": "L0",
+      "casos": 9,
+      "mediana_caso": 0.025,
+      "max_caso": 0.04,
+      "total": 0.24
+    },
+    {
+      "fichero": "TestVaultNormsRebuildIdempotency",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.121,
+      "max_caso": 0.13,
+      "total": 0.24
+    },
+    {
+      "fichero": "test_clave_de_nombre",
+      "nivel": "L0",
+      "casos": 23,
+      "mediana_caso": 0.002,
+      "max_caso": 0.14,
+      "total": 0.22
+    },
+    {
+      "fichero": "test_cli_resolver",
+      "nivel": "L0",
+      "casos": 8,
+      "mediana_caso": 0.011,
+      "max_caso": 0.13,
+      "total": 0.22
+    },
+    {
+      "fichero": "test_kernel_escritura",
+      "nivel": "L0",
+      "casos": 14,
+      "mediana_caso": 0.007,
+      "max_caso": 0.08,
+      "total": 0.22
+    },
+    {
+      "fichero": "test_ap17_identidad_declarada",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.032,
+      "max_caso": 0.04,
+      "total": 0.21
+    },
+    {
+      "fichero": "TestLosCuatroDefectos",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.031,
+      "max_caso": 0.06,
+      "total": 0.21
+    },
+    {
+      "fichero": "test_vault_graph_fix",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.009,
+      "max_caso": 0.17,
+      "total": 0.21
+    },
+    {
+      "fichero": "test_durabilidad_declarada",
+      "nivel": "L0",
+      "casos": 16,
+      "mediana_caso": 0.01,
+      "max_caso": 0.03,
+      "total": 0.19
+    },
+    {
+      "fichero": "test_ap07_criterio_adr",
+      "nivel": "L0",
+      "casos": 16,
+      "mediana_caso": 0.003,
+      "max_caso": 0.07,
+      "total": 0.19
+    },
+    {
+      "fichero": "test_graph_merge_ontologia",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.059,
+      "max_caso": 0.06,
+      "total": 0.18
+    },
+    {
+      "fichero": "test_contrato_sin_seccion",
+      "nivel": "L0",
+      "casos": 18,
+      "mediana_caso": 0.002,
+      "max_caso": 0.12,
+      "total": 0.18
+    },
+    {
+      "fichero": "TestReservedStructuralNames",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.025,
+      "max_caso": 0.04,
+      "total": 0.18
+    },
+    {
+      "fichero": "test_grafo_un_solo_escaneo",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.068,
+      "max_caso": 0.1,
+      "total": 0.18
+    },
+    {
+      "fichero": "test_audit_placeholder_no_traga_notas_reales",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.054,
+      "max_caso": 0.07,
+      "total": 0.18
+    },
+    {
+      "fichero": "test_secciones_propias_registro",
+      "nivel": "L0",
+      "casos": 27,
+      "mediana_caso": 0.007,
+      "max_caso": 0.01,
+      "total": 0.18
+    },
+    {
+      "fichero": "test_ci_python_matrix",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.03,
+      "max_caso": 0.05,
+      "total": 0.17
+    },
+    {
+      "fichero": "test_grafo_superpuesto",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.037,
+      "max_caso": 0.06,
+      "total": 0.17
+    },
+    {
+      "fichero": "test_impact_nota_fuera_del_grafo",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.038,
+      "max_caso": 0.05,
+      "total": 0.16
+    },
+    {
+      "fichero": "test_calidad_no_castiga_el_vocabulario_canonico",
+      "nivel": "L0",
+      "casos": 95,
+      "mediana_caso": 0.001,
+      "max_caso": 0.02,
+      "total": 0.15
+    },
+    {
+      "fichero": "test_ap08_prosa_universo",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.077,
+      "max_caso": 0.15,
+      "total": 0.15
+    },
+    {
+      "fichero": "test_fase2_logs_saneados",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.071,
+      "max_caso": 0.13,
+      "total": 0.14
+    },
+    {
+      "fichero": "test_write_ledger",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.019,
+      "max_caso": 0.05,
+      "total": 0.14
+    },
+    {
+      "fichero": "test_aristas_unicas",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.004,
+      "max_caso": 0.06,
+      "total": 0.13
+    },
+    {
+      "fichero": "test_identidad_ambigua",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.002,
+      "max_caso": 0.06,
+      "total": 0.13
+    },
+    {
+      "fichero": "test_grafo_raiz_con_punto",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.064,
+      "max_caso": 0.07,
+      "total": 0.13
+    },
+    {
+      "fichero": "TestFileLock",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.018,
+      "max_caso": 0.1,
+      "total": 0.13
+    },
+    {
+      "fichero": "test_ap49_rutas_al_usarse",
+      "nivel": "L0",
+      "casos": 8,
+      "mediana_caso": 0.014,
+      "max_caso": 0.02,
+      "total": 0.12
+    },
+    {
+      "fichero": "test_checkpoints",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.018,
+      "max_caso": 0.02,
+      "total": 0.11
+    },
+    {
+      "fichero": "test_ap17_convencion_de_nombres",
+      "nivel": "L0",
+      "casos": 26,
+      "mediana_caso": 0.002,
+      "max_caso": 0.04,
+      "total": 0.11
+    },
+    {
+      "fichero": "test_lock_un_bucle",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.018,
+      "max_caso": 0.02,
+      "total": 0.11
+    },
+    {
+      "fichero": "test_read_frontmatter_ilegible",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.039,
+      "max_caso": 0.04,
+      "total": 0.11
+    },
+    {
+      "fichero": "test_ap67_conocimiento_del_material",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.048,
+      "max_caso": 0.06,
+      "total": 0.1
+    },
+    {
+      "fichero": "test_installed_memory",
+      "nivel": "L0",
+      "casos": 8,
+      "mediana_caso": 0.007,
+      "max_caso": 0.04,
+      "total": 0.1
+    },
+    {
+      "fichero": "test_mermaid_sanacion",
+      "nivel": "L0",
+      "casos": 18,
+      "mediana_caso": 0.003,
+      "max_caso": 0.02,
+      "total": 0.1
+    },
+    {
+      "fichero": "test_protocolo_de_sesion",
+      "nivel": "L0",
+      "casos": 13,
+      "mediana_caso": 0.002,
+      "max_caso": 0.06,
+      "total": 0.1
+    },
+    {
+      "fichero": "test_validate_criterio_consumidor",
+      "nivel": "L0",
+      "casos": 10,
+      "mediana_caso": 0.009,
+      "max_caso": 0.03,
+      "total": 0.1
+    },
+    {
+      "fichero": "test_catalogo_sin_copia_local",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.007,
+      "max_caso": 0.04,
+      "total": 0.09
+    },
+    {
+      "fichero": "TestLoQueNoEsConflicto",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.013,
+      "max_caso": 0.02,
+      "total": 0.09
+    },
+    {
+      "fichero": "test_ap64_responsable",
+      "nivel": "L0",
+      "casos": 11,
+      "mediana_caso": 0.002,
+      "max_caso": 0.07,
+      "total": 0.09
+    },
+    {
+      "fichero": "test_normas_sin_registro_a_mano",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.013,
+      "max_caso": 0.02,
+      "total": 0.09
+    },
+    {
+      "fichero": "test_mermaid_flowchart_parser",
+      "nivel": "L0",
+      "casos": 27,
+      "mediana_caso": 0.002,
+      "max_caso": 0.01,
+      "total": 0.09
+    },
+    {
+      "fichero": "TestBuildWikiLinkGraph",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.031,
+      "max_caso": 0.04,
+      "total": 0.09
+    },
+    {
+      "fichero": "TestFixVaultEndToEnd",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.021,
+      "max_caso": 0.03,
+      "total": 0.09
+    },
+    {
+      "fichero": "TestWriterExtensibility",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.04,
+      "max_caso": 0.04,
+      "total": 0.08
+    },
+    {
+      "fichero": "test_documentacion_por_seccion",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.002,
+      "max_caso": 0.07,
+      "total": 0.08
+    },
+    {
+      "fichero": "test_degradacion_declarada",
+      "nivel": "L0",
+      "casos": 8,
+      "mediana_caso": 0.008,
+      "max_caso": 0.03,
+      "total": 0.07
+    },
+    {
+      "fichero": "TestLoQueVe",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.013,
+      "max_caso": 0.02,
+      "total": 0.06
+    },
+    {
+      "fichero": "test_exposicion_mcp",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.013,
+      "max_caso": 0.02,
+      "total": 0.06
+    },
+    {
+      "fichero": "test_graph_fix_scorer",
+      "nivel": "L0",
+      "casos": 25,
+      "mediana_caso": 0.002,
+      "max_caso": 0.01,
+      "total": 0.06
+    },
+    {
+      "fichero": "test_folder_registry_dice_lo_que_escribe",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.029,
+      "max_caso": 0.04,
+      "total": 0.06
+    },
+    {
+      "fichero": "test_skills_contract",
+      "nivel": "L0",
+      "casos": 21,
+      "mediana_caso": 0.003,
+      "max_caso": 0.01,
+      "total": 0.06
+    },
+    {
+      "fichero": "test_traza_no_crea_el_vault",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.031,
+      "max_caso": 0.04,
+      "total": 0.06
+    },
+    {
+      "fichero": "TestGenerateReport",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.015,
+      "max_caso": 0.02,
+      "total": 0.06
+    },
+    {
+      "fichero": "TestAtomicWriteText",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.014,
+      "max_caso": 0.02,
+      "total": 0.06
+    },
+    {
+      "fichero": "test_fase2_paridad_fail_closed",
+      "nivel": "L0",
+      "casos": 23,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.05
+    },
+    {
+      "fichero": "test_lifecycle_registry",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.002,
+      "max_caso": 0.02,
+      "total": 0.05
+    },
+    {
+      "fichero": "test_graph_merge_fuzzy_cache",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.011,
+      "max_caso": 0.04,
+      "total": 0.05
+    },
+    {
+      "fichero": "test_lock_sin_residuo",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.017,
+      "max_caso": 0.02,
+      "total": 0.05
+    },
+    {
+      "fichero": "test_mapa_manifiesto",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.014,
+      "max_caso": 0.02,
+      "total": 0.05
+    },
+    {
+      "fichero": "test_instalacion_limpia_canales_de_salida",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.009,
+      "max_caso": 0.03,
+      "total": 0.05
+    },
+    {
+      "fichero": "test_mermaid_oraculo",
+      "nivel": "L0",
+      "casos": 14,
+      "mediana_caso": 0.003,
+      "max_caso": 0.01,
+      "total": 0.05
+    },
+    {
+      "fichero": "test_documentacion_no_es_vault",
+      "nivel": "L0",
+      "casos": 20,
+      "mediana_caso": 0.002,
+      "max_caso": 0.01,
+      "total": 0.05
+    },
+    {
+      "fichero": "TestVaultModelProfileResolve",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.009,
+      "max_caso": 0.02,
+      "total": 0.05
+    },
+    {
+      "fichero": "test_calidad_no_puntua_derivados",
+      "nivel": "L0",
+      "casos": 1,
+      "mediana_caso": 0.039,
+      "max_caso": 0.04,
+      "total": 0.04
+    },
+    {
+      "fichero": "test_ingest_rutas_unicas",
+      "nivel": "L0",
+      "casos": 1,
+      "mediana_caso": 0.037,
+      "max_caso": 0.04,
+      "total": 0.04
+    },
+    {
+      "fichero": "test_normas_prevencion_ejecutable",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.009,
+      "max_caso": 0.02,
+      "total": 0.04
+    },
+    {
+      "fichero": "test_predicado_wikilink",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.002,
+      "max_caso": 0.03,
+      "total": 0.04
+    },
+    {
+      "fichero": "test_propiedad_docs",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.006,
+      "max_caso": 0.02,
+      "total": 0.04
+    },
+    {
+      "fichero": "TestRelationTypes",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.021,
+      "max_caso": 0.04,
+      "total": 0.04
+    },
+    {
+      "fichero": "TestGenerators",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.008,
+      "max_caso": 0.02,
+      "total": 0.04
+    },
+    {
+      "fichero": "test_vault_validate_contenido",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.018,
+      "max_caso": 0.03,
+      "total": 0.04
+    },
+    {
+      "fichero": "test_calidad_nota_ilegible",
+      "nivel": "L0",
+      "casos": 1,
+      "mediana_caso": 0.031,
+      "max_caso": 0.03,
+      "total": 0.03
+    },
+    {
+      "fichero": "test_casa_de_los_vaults",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.004,
+      "max_caso": 0.01,
+      "total": 0.03
+    },
+    {
+      "fichero": "test_ejes_documentacion",
+      "nivel": "L0",
+      "casos": 9,
+      "mediana_caso": 0.003,
+      "max_caso": 0.01,
+      "total": 0.03
+    },
+    {
+      "fichero": "test_encoding_union_ortografica",
+      "nivel": "L0",
+      "casos": 10,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.03
+    },
+    {
+      "fichero": "TestElLimiteDeclarado",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.008,
+      "max_caso": 0.02,
+      "total": 0.03
+    },
+    {
+      "fichero": "TestLoQueDestapoElQADeV40_16",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.009,
+      "max_caso": 0.01,
+      "total": 0.03
+    },
+    {
+      "fichero": "test_escaneo_grafo_fuera_de_vault_lib",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.013,
+      "max_caso": 0.02,
+      "total": 0.03
+    },
+    {
+      "fichero": "test_fase2_politica_qg",
+      "nivel": "L0",
+      "casos": 15,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.03
+    },
+    {
+      "fichero": "test_mcp_param_con_descripcion",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.013,
+      "max_caso": 0.02,
+      "total": 0.03
+    },
+    {
+      "fichero": "TestWikilinkSyntaxErrors",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.009,
+      "max_caso": 0.01,
+      "total": 0.03
+    },
+    {
+      "fichero": "TestScopeReporting",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.017,
+      "max_caso": 0.02,
+      "total": 0.03
+    },
+    {
+      "fichero": "TestSiloDetection",
+      "nivel": "L0",
+      "casos": 1,
+      "mediana_caso": 0.034,
+      "max_caso": 0.03,
+      "total": 0.03
+    },
+    {
+      "fichero": "TestIntegrityReport",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.009,
+      "max_caso": 0.02,
+      "total": 0.03
+    },
+    {
+      "fichero": "test_cli_pistas_de_resolucion",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.009,
+      "max_caso": 0.01,
+      "total": 0.02
+    },
+    {
+      "fichero": "test_manifiesto_pasa_ap25",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.01,
+      "max_caso": 0.01,
+      "total": 0.02
+    },
+    {
+      "fichero": "test_distribution_metadata",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.003,
+      "max_caso": 0.01,
+      "total": 0.02
+    },
+    {
+      "fichero": "test_frontmatter_editar",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.002,
+      "max_caso": 0.01,
+      "total": 0.02
+    },
+    {
+      "fichero": "test_normas_enlaces_sin_solape",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.002,
+      "max_caso": 0.01,
+      "total": 0.02
+    },
+    {
+      "fichero": "test_orden_frontmatter_contrato",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.008,
+      "max_caso": 0.01,
+      "total": 0.02
+    },
+    {
+      "fichero": "test_mermaid_reglas_parsers",
+      "nivel": "L0",
+      "casos": 10,
+      "mediana_caso": 0.002,
+      "max_caso": 0.01,
+      "total": 0.02
+    },
+    {
+      "fichero": "test_mermaid_state_contract",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.002,
+      "max_caso": 0.01,
+      "total": 0.02
+    },
+    {
+      "fichero": "test_read_frontmatter_no_utf8",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.006,
+      "max_caso": 0.01,
+      "total": 0.02
+    },
+    {
+      "fichero": "test_safety_union_ortografica",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.02
+    },
+    {
+      "fichero": "test_scripts_no_colision",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.005,
+      "max_caso": 0.01,
+      "total": 0.02
+    },
+    {
+      "fichero": "TestSanitizeFilename",
+      "nivel": "L0",
+      "casos": 9,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.02
+    },
+    {
+      "fichero": "test_vault_frontmatter_dates",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.02
+    },
+    {
+      "fichero": "test_tool_spec_cabecera",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.005,
+      "max_caso": 0.01,
+      "total": 0.02
+    },
+    {
+      "fichero": "TestMigrationExclusion",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.002,
+      "max_caso": 0.01,
+      "total": 0.02
+    },
+    {
+      "fichero": "TestFrontmatterParsing",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.02
+    },
+    {
+      "fichero": "TestDetectBracketAnomalies",
+      "nivel": "L0",
+      "casos": 8,
+      "mediana_caso": 0.002,
+      "max_caso": 0.01,
+      "total": 0.02
+    },
+    {
+      "fichero": "TestValidateWikilink",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.002,
+      "max_caso": 0.01,
+      "total": 0.02
+    },
+    {
+      "fichero": "TestModelMapping",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.003,
+      "max_caso": 0.01,
+      "total": 0.02
+    },
+    {
+      "fichero": "TestSecretScan",
+      "nivel": "L0",
+      "casos": 9,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.02
+    },
+    {
+      "fichero": "test_arch_llamadas_de_escritura",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "test_cifras_sin_vigilar",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.004,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "test_cli_tools_solo_mcp",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.005,
+      "max_caso": 0.01,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestTipos",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "test_ap05_fuente_unica",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.003,
+      "max_caso": 0.01,
+      "total": 0.01
+    },
+    {
+      "fichero": "test_extracto_de_una_linea",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.005,
+      "max_caso": 0.01,
+      "total": 0.01
+    },
+    {
+      "fichero": "test_f8_criterio_sin_decidir",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.006,
+      "max_caso": 0.01,
+      "total": 0.01
+    },
+    {
+      "fichero": "test_ap21_dentro_de_fence",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.003,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "ContratoVocabulario",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.003,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "test_history_filename",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "test_index_subcarpetas_alias_en_tabla",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.002,
+      "max_caso": 0.01,
+      "total": 0.01
+    },
+    {
+      "fichero": "test_onboard_diagram_helpers",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "test_drift_detect_catalogo",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.003,
+      "max_caso": 0.01,
+      "total": 0.01
+    },
+    {
+      "fichero": "test_recuperacion_invalid_folder",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.003,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "test_regex_espacios_en_links_lineal",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.005,
+      "max_caso": 0.01,
+      "total": 0.01
+    },
+    {
+      "fichero": "test_separar_frontmatter",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "test_reindex_timeout",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.006,
+      "max_caso": 0.01,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestDuenosCanonicos",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "test_status_enum",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "test_mermaid_er_contract",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.002,
+      "max_caso": 0.01,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestStripBom",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestSanitizeContent",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestDecodeSafely",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestDetectIssues",
+      "nivel": "L0",
+      "casos": 7,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "test_toolkit_audit_deuda_saldada",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.004,
+      "max_caso": 0.01,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestClassifyBroken",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestWizardPick",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestWikiLinkSplitting",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.003,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestFindTarget",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestReplaceWikiLink",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestBracketFixer",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.003,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestPathAnchoredFixer",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestShingles",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestOntologyLoading",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.003,
+      "max_caso": 0.01,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestStemNormalization",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.003,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestFolderToClass",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestClosestPredicate",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestDetectOrphans",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.003,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestNormalizeToNfd",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestNormalizeQuotes",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestNormalizeDashes",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestRemoveInvisibleChars",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.002,
+      "max_caso": 0.01,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestNormalizeNewlines",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestRemoveControlChars",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestNormalizeToNfc",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestNormCatalog",
+      "nivel": "L0",
+      "casos": 6,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestPrefixStripping",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestScoringHelpers",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestDetectPathAnchored",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestSanitizeWikilinkContent",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestFixNestedBrackets",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestFixWhitespaceInLinks",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestIsValidLinkContent",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestExtractWikiLinksStrict",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestValidateAndFix",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestEdgeCases",
+      "nivel": "L0",
+      "casos": 4,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "test_vault_regex",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.003,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestMermaidSymbols",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.003,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestSlugify",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestDetectIsDatabaseLike",
+      "nivel": "L0",
+      "casos": 3,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestGenerateErdMermaid",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.003,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestVaultModelProfileList",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.005,
+      "max_caso": 0.01,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestExpectedOutputs",
+      "nivel": "L0",
+      "casos": 5,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "TestDetectDrift",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.003,
+      "max_caso": 0.0,
+      "total": 0.01
+    },
+    {
+      "fichero": "test_ap04_hipotesis",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.001,
+      "max_caso": 0.0,
+      "total": 0.0
+    },
+    {
+      "fichero": "test_matriz_artefactos",
+      "nivel": "L0",
+      "casos": 1,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.0
+    },
+    {
+      "fichero": "test_instalacion_limpia_lo_que_frena",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.0
+    },
+    {
+      "fichero": "test_product_gates_dentro_de_una_seccion",
+      "nivel": "L0",
+      "casos": 1,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.0
+    },
+    {
+      "fichero": "test_drift_fechas_sin_zona",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.0
+    },
+    {
+      "fichero": "test_validacion_al_crear",
+      "nivel": "L0",
+      "casos": 1,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.0
+    },
+    {
+      "fichero": "TestIntegration",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.0
+    },
+    {
+      "fichero": "TestPredicateCounts",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.0
+    },
+    {
+      "fichero": "TestNormalization",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.0
+    },
+    {
+      "fichero": "TestVaultModelProfileSet",
+      "nivel": "L0",
+      "casos": 2,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.0
+    },
+    {
+      "fichero": "TestFixAllBrackets",
+      "nivel": "L0",
+      "casos": 1,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.0
+    },
+    {
+      "fichero": "TestEntityTypes",
+      "nivel": "L0",
+      "casos": 1,
+      "mediana_caso": 0.002,
+      "max_caso": 0.0,
+      "total": 0.0
+    }
+  ]
+}
