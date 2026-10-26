@@ -5,6 +5,7 @@ Run from repo root:
     python -m pytest tests/test_vault_sdd_init.py -v
 """
 
+import re
 import sys
 import os
 import json
@@ -26,6 +27,31 @@ from vault_sdd_init import (
     generate_readme,
     main,
 )
+
+
+#: El instante de la generacion NO es estado: es el momento de la escritura.
+#: Los generadores del SDD lo estampan en el documento («Generated at»,
+#: «Generado») y en el JSON (`generated_at`), asi que comparar dos generaciones
+#: byte a byte comparaba tambien el reloj: si las dos caian en segundos
+#: distintos, el test fallaba sin que el contenido hubiera cambiado. Medido el
+#: 2026-10-26 en la CI (columna de Windows 3.11): «README.md not idempotent»
+#: con una unica diferencia, dos «Generated at» con un segundo de distancia.
+#:
+#: Lo que se sigue comparando es el contenido Y la etiqueta de la linea: solo
+#: se quita el instante. (La otra causa del mismo fallo —una mutacion
+#: concurrente del registro que el SDD cuenta— ya se corrigio en su momento,
+#: con `dry_run=True` en el runner de contexto.)
+_INSTANTE = re.compile(
+    r"((?:Generated at|Generado|Generated)\b[^\d\n]{0,8})\d{4}-\d\d-\d\dT[\d:.]+Z")
+
+
+def _sin_reloj(valor):
+    """El valor de un generador, sin la marca de tiempo de la generacion."""
+    if isinstance(valor, dict):
+        return {k: _sin_reloj(v) for k, v in valor.items() if k != "generated_at"}
+    if isinstance(valor, str):
+        return _INSTANTE.sub(r"\1", valor)
+    return valor
 
 
 class TestExpectedOutputs:
@@ -164,4 +190,4 @@ class TestSkillExecution:
         run1 = {f: GENERATORS[f](tmp_test_dir, drift) for f in GENERATORS}
         run2 = {f: GENERATORS[f](tmp_test_dir, drift) for f in GENERATORS}
         for f in run1:
-            assert run1[f] == run2[f], f"{f} not idempotent"
+            assert _sin_reloj(run1[f]) == _sin_reloj(run2[f]), f"{f} not idempotent"
