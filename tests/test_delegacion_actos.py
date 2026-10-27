@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 sys.stdout.reconfigure(encoding="utf-8")
-ROOT = Path(r"C:\Users\Carlos Ivan\Documents\GitHub\Vault-Obsidian-Architecture")
+ROOT = Path(__file__).resolve().parents[1]
 HUELLA = "c" * 64
 FECHA = "2026-02-02"
 CANAL = "refs/heads/canal/autoridad"
