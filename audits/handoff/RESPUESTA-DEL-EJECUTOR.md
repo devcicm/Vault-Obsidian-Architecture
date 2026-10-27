@@ -63,9 +63,10 @@ CI POR SHA (sin sustituir evidencia de un SHA por otro):
   40464661392 | 09e849c (delta doc.) | completed/failure | 24/25 (carrera de
                | copia del sandbox, corregida en R17)
   40467869545 | 5970dfb (fix R17)     | completed/success | 25/25
-  40472633327 | 2054e8d (HEAD doc.)  | CI_PENDING al cierre de esta ronda
-               | (13 jobs success, 12 en curso, 0 fallos; no se declara
-               | exito antes de su conclusion — el dictamen R17 lo exigia)
+  40472633327 | 2054e8d (HEAD doc.)  | completed/success | 25/25
+  40474701480 | 2f7b155 (HEAD R18)    | completed/success | 25/25
+               | (12 validate + 12 product gates + lint; sin fallidos,
+               | cancelados ni omitidos)
 SUITE:   r14 vigente para el producto (6334/13/0, 6347 collectados);
          collectables actuales: +17 (autoridad) y los de R17
 PUERTAS: 26/26 (r14, vigente — el producto no cambia)

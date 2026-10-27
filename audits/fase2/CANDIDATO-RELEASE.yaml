@@ -77,7 +77,7 @@ verification:
       corridas de los HEAD documentales (correcciones y expedientes). No
       sustituyen la del product_sha: son acreditaciones de SHAs distintos,
       cada una de las suyas. 09e849c quedo en failure por la carrera de copia
-      del sandbox vivo (corregida en R17); 55ad340 y 5970dfb, en 25/25.
+      del sandbox vivo (corregida en R17); los demas, 25/25.
     runs:
     - run_id: 40456389815
       run_sha: 55ad340918caca237ad18bcc4aec64b05a9333d0
@@ -87,6 +87,18 @@ verification:
       successful_jobs: 25
     - run_id: 40467869545
       run_sha: 5970dfbbb835b0ae4958e2ee8384d343ea52fd27
+      status: completed
+      conclusion: success
+      required_jobs: 25
+      successful_jobs: 25
+    - run_id: 40472633327
+      run_sha: 2054e8daa2a4d903c8d30bee84acba32a44e1780
+      status: completed
+      conclusion: success
+      required_jobs: 25
+      successful_jobs: 25
+    - run_id: 40474701480
+      run_sha: 2f7b1550330b2cff0d7c84fd49ddb95184a346e8
       status: completed
       conclusion: success
       required_jobs: 25
