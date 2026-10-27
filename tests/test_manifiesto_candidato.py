@@ -2,8 +2,16 @@
 
 Los campos de identidad llevan SOLO valores (hex puro); las notas viven en
 claves separadas. Este test valida el formato y la existencia real de los
-SHAs, y ejercita los negativos: hash mal formado y SHA ajeno (que no existe
-en git) deben ser RECHAZADOS por el validador.
+SHAs, y ejercita los negativos: hash mal formado, SHA ajeno (que no existe
+en git) y SHA real que NO es ancestro del HEAD documental deben ser
+RECHAZADOS por el validador.
+
+CONTRATO VIGENTE (QA-R16-DOC-01, confirmado en R18 por QA-R17-DOC-01): la
+relación que se comprueba entre el product_sha y el HEAD documental es de
+ASCENDENCIA (`merge-base --is-ancestor`), NO de paternidad inmediata
+(`HEAD^`): entre el producto y el HEAD pueden intercalarse commits
+documentales. `doc_parent_sha` es el commit de publicación inicial de este
+manifiesto, no el padre actual.
 """
 
 import re

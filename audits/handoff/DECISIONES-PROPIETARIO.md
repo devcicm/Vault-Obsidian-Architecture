@@ -87,6 +87,29 @@ fail-closed (QG-00/QG-01/QG-02 BLOCKED; `liberable: false`).
   **umbral de latencia ≤ 5 s por audit**, **ventana de deprecación de una
   versión** y rollback por commit (PLAN-B §12.3-§12.4). Sin ratificación, el
   ejecutor NO ejecuta nada.
+- **Alcance exacto de autorización (lo que la firma habilita y lo que no):**
+  habilita **solo** la alternativa **B** con **I2-a** + **COST-a**, el
+  umbral ≤ 5 s, la ventana de una versión, el criterio de éxito 5→3 cruces y
+  10→0 divergencias **sin tocar el snapshot ni ampliar la baseline**, y la
+  lista de pruebas I1–I5 del §6.1 del plan. **No habilita:** tocar el
+  producto congelado `015b776` (cualquier cambio exige SHA nuevo y
+  re-certificación), re-tomar el snapshot, modificar `catalogo-qg.yaml` /
+  `politica_qg.py` (eso es DEC-03), ni mover datos (DEC-04).
+- **Operaciones permitidas después de ratificar:** implementar el puerto de
+  datos y proceso (núcleo), publicar la superficie de mantenimiento del dueño
+  (I2-a), publicar la superficie ligera de baseline de `vault_smoke`
+  (COST-a), migrar la fachada a consumir el puerto conservando la compat
+  deprecada una versión, y re-certificar (26 puertas, suite, E2E desde wheel,
+  CI del SHA nuevo, recibos, QA).
+- **Criterios de rollback:** por commit (plan §8): el puerto es aditivo y la
+  fachada conserva `_control_ap40/42/43` durante la ventana; revertir al
+  commit previo al consumo del puerto deja el audit funcionando por el
+  camino viejo. Si el puerto falla en producción: volver al commit 1 (el
+  puerto existe y nadie lo consume) y medir de nuevo.
+- **Quality Gates afectados:** QG-00 (identidad/reconciliación), QG-01
+  (arquitectura: `off_port_total` 5→3 y reconciliador 10→0), QG-03/05/06
+  (suite, paridad y E2E desde la wheel con la nueva superficie) y QG-07
+  (CI del SHA nuevo).
 - **Efecto sobre QG:** desbloquea la evaluación de QG-00/QG-01 (no garantiza
   PASS: lo garantiza la ejecución con sus pruebas).
 - **Acción posterior:** si B: ejecutar el §7 del plan con pruebas I1–I5 y
@@ -136,6 +159,38 @@ fail-closed (QG-00/QG-01/QG-02 BLOCKED; `liberable: false`).
   criterio de ratificación formal de arriba incorporado** (la preferencia
   registrada por el propietario — `cc05eab` — sigue siendo preferencia, no
   ratificación).
+- **Estado de autoridad (R18, QA-R17-QG02-01):** la propuesta separa ya
+  ESQUEMA de **AUTORIDAD**: un residuo solo se acepta si su decisión se
+  verifica contra una fuente confiable declarada por el propietario
+  (`audits/fase2/autoridades-de-decision.yaml` +
+  `audits/fase2/verificador_actos.py`): la autoridad debe constar en el
+  registro con canal, el acto debe existir como commit, ser alcanzable desde
+  ese canal y **nombrar el residuo con su huella**, no estar revocado, y la
+  custodia debe ser **otro** acto con contenido propio (`custodia.verificada:
+  true` del mismo recibo ya no basta). Sin fuente declarada el veredicto es
+  **BLOCKED**. Mecanismo probado con objetos git reales en un repositorio
+  descartable (44 pruebas en total: 27 de esquema y coherencia + 17 de
+  autoridad). **Límite declarado:** ejecutor y propietario comparten
+  identidad git y permisos de push, así que el canal es un control
+  **administrativo**, no criptográfico — queda a la ratificación del
+  propietario elegir yvigilar el canal.
+- **Alcance exacto de autorización (lo que la firma habilita y lo que no):**
+  habilita **solo** aplicar la opción C al QG-02 de producción: el diff
+  propuesto del dosier §5 (catálogo, política, colector y tests) y el
+  verificador de actos con el registro que el propietario declare.
+  **No habilita:** ratificar el residuo AP-36 (eso es DEC-04), excepcionar
+  ninguna violación, ni tocar el producto congelado.
+- **Operaciones permitidas después de ratificar:** redactar el diff formal
+  de catálogo/política/colector, añadir los negativos de integración, aplicar
+  el cambio, reemitir los recibos QG-02 con el veredicto compuesto y
+  someterlo a QA antes de considerarlo conforme.
+- **Criterios de rollback:** el cambio de política es reversible por commit
+  (el catálogo y la política vuelven a su estado anterior y el evaluador
+  anterior sigue vigente); mientras el residuo no esté decidido, el
+  veredicto compuesto BLOCKED y el QG-02 permanece bloqueado — no hay estado
+  intermedio que permita un PASS accidental.
+- **Quality Gates afectados:** QG-02 (sujeto y contrato), y por arrastre
+  QG-07 (que exige QG-00..06).
 - **Efecto sobre QG:** QG-02 sigue BLOCKED hasta ratificación + resolución del
   residuo (DEC-04) o registro diferenciado si C se ratifica.
 - **Acción posterior:** si C: proponer el cambio formal de catálogo/política
@@ -170,11 +225,40 @@ fail-closed (QG-00/QG-01/QG-02 BLOCKED; `liberable: false`).
 - **Recomendación:** (c) archivar con verificación de hashes y después purgar,
   dejando el acto asentado aquí — solo si el propietario de los datos lo
   autoriza. **El ejecutor no toca el directorio sin esta decisión.**
+- **Actos separados (R18):** la autorización se puede dar por ACTOS, no de
+  golpe, y cada uno lleva su propia evidencia y su propia reversión:
+  1. **PRESERVACIÓN** (lectura + hashing + acta de inventario): ya hecha en
+     lectura (R14/R15); es inocua y no requiere autorización para repetirse.
+  2. **CUSTODIA** (nombrar quién responde del residuo y en qué canal
+     publica sus actos): requiere que el propietario designe al custodio y
+     declare el canal; sin eso, el residuo queda sin fuente de autoridad y
+     QG-02 BLOCKED.
+  3. **ARCHIVO** (crear el archivo de preservación y verificarlo contra los
+     hashes del apéndice A): requiere autorización expresa del custodio; no
+     toca el original.
+  4. **TRASLADO / PURGA** (retirar el original): requiere autorización
+     **separada** de la del archivo, con destino, plan de recuperación y
+     evidencia previa; nunca implícita.
+- **Alcance exacto de autorización (lo que la firma habilita y lo que no):**
+  habilita **solo** los actos que se nomeen en la firma, con su alcance
+  (ficheros, destino, fecha). **No habilita:** purgar sin archivo, mover sin
+  inventario previo, ni que la desaparición de la carpeta se cuente como
+  certificación: la re-auditoría debe acreditar las postcondiciones.
+- **Operaciones permitidas después de ratificar:** re-inventariar (solo
+  lectura), generar el archivo y verificarlo, registrar el acta de custodia,
+  y — solo con su acto propio — trasladar o purgar; después, re-auditar los
+  escenarios A y B.
+- **Criterios de rollback:** el archivo verificado ES el rollback: si el
+  traslado o la purga se ejecutan y el archivo no restituye el inventario
+  (66 ficheros, hashes del apéndice A), se restaura desde él y se anula el
+  acto. Hasta la verificación del archivo, el original no se toca.
 - **Efecto sobre QG:** QG-02 (escenario A) dejaría de tener la violación; la
   puerta se re-evaluaría con el verificador real, no con una exención.
 - **Acción posterior:** la que el propietario elija, ejecutada por quien él
   designe (por defecto, el ejecutor SOLO para las opciones con autorización
   escrita en esta ficha).
+- **Quality Gates afectados:** QG-02 (el hallazgo INC-0001 y, con DEC-03, el
+  sujeto de certificación) y QG-07 por arrastre.
 
 **Decisión:** ─── (a / b / c / d + ubicación o archivo acordado) · Fecha: ───
 

@@ -1,20 +1,30 @@
 """El contrato PROPUESTO de certificacion compuesta (opcion C, DEC-03) es
-fail-closed: cada escenario que la orden prohibe termina sin PASS, y el caso
-positivo usa una decision FORMAL SINTETICA (fixture descartable), nunca una
-preferencia o una decision pendiente.
+fail-closed: cada escenario que la orden prohibe termina sin PASS.
 
-Escenarios exigidos por el GOAL R17 §2 y §3:
-  - QA-R16-QG02-01 (ratificacion): decision_ref nulo, ausente, "pendiente",
-    referencia no verificable, decision ajena (mismo id, otra ruta), registro
-    vacio/incompleto/no ratificado, custodia sin vinculo o no verificada,
-    identidad de residuo ambigua, decision de otro residuo.
-  - QA-R16-QG02-02 (coherencia): conteo ausente, negativo, no entero; array
-    ausente; conteo cero con hallazgos; conteo positivo sin detalles;
-    conteo que no cuadra; auditoria incompleta; evidencia de otro SHA.
-  - ESCAPE NUEVO sigue siendo FAIL; un residuo pendiente nunca PASS.
-  - POSITIVO: auditoria limpia + decision formal completa y verificable.
+ESQUEMA vs AUTORIDAD (QA-R17-QG02-01): el esquema (id, estado, firmante,
+fecha, referencia, alcance, custodia) NO demuestra que el acto exista ni que
+el propietario lo autorizara. Por eso hay DOS familias de pruebas:
+
+  - ESQUEMA: las del esquema usan un verificador SINTETICO explicito. Prueban
+    el cableado y el parseo, NUNCA una ratificacion real.
+  - AUTORIDAD: las nuevas usan el verificador REAL sobre git, en un
+    repositorio DESCARTABLE (tmp_path), con actos y custodias reales de ese
+    repo de prueba. Demuestran la MECANICA (existencia, canal, contenido,
+    custodia independiente, revocacion, identidad) — no que el propietario
+    haya ratificado nada en este repositorio.
+
+Escenarios exigidos por el GOAL R18 §1:
+  - SHA hexadecimal inexistente.
+  - Commit existente pero ajeno (no alcanzable desde el canal declarado).
+  - Firmante no autorizado (autoridad ausente del registro).
+  - Custodia autoafirmada (mismo SHA que el acto / `verificada: true` sin
+    acta).
+  - Acto sin contenido coincidente (no nombra el residuo) o revocado.
+  - Sin fuente de autoridad -> BLOCKED.
+  - Positivo: mecanismo sobre objetos git reales, con decision formal.
 """
 import importlib.util
+import subprocess
 import sys
 from pathlib import Path
 
@@ -25,32 +35,55 @@ ACT = "d" * 40          # SHA del acto de decision (sintetico)
 CUSTODIA = "e" * 40     # SHA del acta de custodia (sintetico)
 
 
-def _cargar_contrato():
-    ruta = ROOT / "audits" / "fase2" / "politica_certificacion_compuesta.py"
-    spec = importlib.util.spec_from_file_location(
-        "politica_certificacion_compuesta", ruta)
+def _cargar(nombre):
+    ruta = ROOT / "audits" / "fase2" / f"{nombre}.py"
+    spec = importlib.util.spec_from_file_location(nombre, ruta)
     modulo = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(modulo)
     return modulo
 
 
-contrato = _cargar_contrato()
+contrato = _cargar("politica_certificacion_compuesta")
+verificador_mod = _cargar("verificador_actos")
 
 
 def _decision(**cambios):
-    """Decision formal sintetica y COMPLETA (la que si habilita el residuo)."""
+    """Decision formal sintetica y COMPLETA (la que si habilita el residuo).
+
+    OJO: esto es un FIXTURE DE ESQUEMA. Los tests de esquema usan un
+    verificador sintetico explicito y NUNCA demuestran una ratificacion real.
+    """
     base = {
         "id": "DEC-99-SINTETICA",
         "estado": "RATIFICADO",
-        "firmante": "fixture QA (autoridad sintetica)",
+        "firmante": "autoridad-sintetica",
         "fecha": "2026-01-15",
         "referencia": ACT,
         "alcance": {"residuo": "INC-0001", "norma": "AP-36",
                     "ruta": "../../vault-backups", "huella": HUELLA},
-        "custodia": {"referencia": CUSTODIA, "verificada": True},
+        "custodia": {"id": "ACTA-SINTETICA", "referencia": CUSTODIA,
+                     "verificada": True},
     }
     base.update(cambios)
     return base
+
+
+class _VerificadorSintetico:
+    """Verificador SINTETICO: aprueba cualquier acto bien formado.
+
+    Solo existe para probar el ESQUEMA y el cableado. No demuestra nada
+    sobre la realidad: por eso los tests que lo usan lo dicen.
+    """
+
+    def __init__(self, ok_acto=True, ok_custodia=True):
+        self.ok_acto = ok_acto
+        self.ok_custodia = ok_custodia
+
+    def verificar_acto(self, decision, hallazgo):
+        return (self.ok_acto, [] if self.ok_acto else ["ACTO_NO_VERIFICADO"])
+
+    def verificar_custodia(self, decision, hallazgo):
+        return (self.ok_custodia, [] if self.ok_custodia else ["CUSTODIA_NO_VERIFICADA"])
 
 
 def _hallazgo(hallazgos=True):
@@ -80,13 +113,14 @@ def _registro(decision=None, **extra):
 
 
 def _evaluar(runtime=None, sandbox=None, residuos=None, historicos=None,
-             sha_objetivo=SHA):
+             sha_objetivo=SHA, verificador=None):
     return contrato.evaluar_certificacion_compuesta(
         sha_objetivo=sha_objetivo,
         auditoria_runtime=runtime if runtime is not None else _auditoria(),
         auditoria_sandbox=sandbox if sandbox is not None else _auditoria(),
         residuos_registrados=residuos or [],
-        residuos_historicos_sin_decision=historicos or [])
+        residuos_historicos_sin_decision=historicos or [],
+        verificador_actos=verificador)
 
 
 def _sandbox_con_residuo():
@@ -298,13 +332,16 @@ def test_un_runtime_con_violaciones_es_fail():
 
 
 def test_el_positivo_usa_una_decision_formal_y_sintetica():
-    """Caso positivo: auditoria limpia + decision formal completa y verificable.
+    """Caso positivo DE ESQUEMA: auditoria limpia + decision formal completa.
 
     El residuo queda LISTADO con su decision y su custodia: el PASS no es
-    silencioso. No se simula ninguna decision pendiente.
+    silencioso. El verificador es SINTETICO: esto prueba el parseo y el
+    cableado, NO una ratificacion real (eso lo prueba la familia de
+    autoridad, con objetos git reales).
     """
     r = _evaluar(sandbox=_sandbox_con_residuo(),
-                 residuos=[_registro(decision=_decision())])
+                 residuos=[_registro(decision=_decision())],
+                 verificador=_VerificadorSintetico())
     assert r["estado"] == "PASS", r["motivos"]
     assert len(r["residuos_declarados"]) == 1
     decl = r["residuos_declarados"][0]
@@ -313,6 +350,31 @@ def test_el_positivo_usa_una_decision_formal_y_sintetica():
     assert decl["decision_referencia"] == ACT
     assert decl["custodia_referencia"] == CUSTODIA
     assert "no es silencioso" in r["nota"]
+
+
+def test_sin_fuente_de_autoridad_no_hay_pass():
+    """Sin fuente confiable, el esquema no basta: BLOCKED (QA-R17-QG02-01)."""
+    r = _evaluar(sandbox=_sandbox_con_residuo(),
+                 residuos=[_registro(decision=_decision())],
+                 verificador=None)
+    assert r["estado"] == "BLOCKED"
+    assert any("SIN_FUENTE_DE_AUTORIDAD" in m for m in r["motivos"])
+
+
+def test_un_verificador_que_rechaza_el_acto_bloquea():
+    r = _evaluar(sandbox=_sandbox_con_residuo(),
+                 residuos=[_registro(decision=_decision())],
+                 verificador=_VerificadorSintetico(ok_acto=False))
+    assert r["estado"] == "BLOCKED"
+    assert any("ACTO_NO_VERIFICADO" in m for m in r["motivos"])
+
+
+def test_un_verificador_que_rechaza_la_custodia_bloquea():
+    r = _evaluar(sandbox=_sandbox_con_residuo(),
+                 residuos=[_registro(decision=_decision())],
+                 verificador=_VerificadorSintetico(ok_custodia=False))
+    assert r["estado"] == "BLOCKED"
+    assert any("CUSTODIA_NO_VERIFICADA" in m for m in r["motivos"])
 
 
 def test_el_positivo_sin_residuo_tambien_es_pass():

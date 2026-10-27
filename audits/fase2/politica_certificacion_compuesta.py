@@ -33,7 +33,7 @@ CONTRATO DE UNA DECISION FORMAL (todo obligatorio, todo comprobable):
     "decision": {
       "id": "DEC-04",                  # identificador del acto
       "estado": "RATIFICADO",         # exacto; PENDING/NOT_GIVEN/"" no vale
-      "firmante": "<autoridad>",      # quien firma
+      "firmante": "<autoridad>",      # debe ser un id REGISTRADO
       "fecha": "YYYY-MM-DD",          # fecha del acto (ISO, parseable)
       "referencia": "<40 hex>",       # SHA inmutable del commit del acto
       "alcance": {                    # el alcance debe COINCIDIR con el
@@ -43,13 +43,32 @@ CONTRATO DE UNA DECISION FORMAL (todo obligatorio, todo comprobable):
         "huella": "<huella del hallazgo>"
       },
       "custodia": {                   # vinculo con la custodia
+        "id": "ACTA-0007",
         "referencia": "<40 hex>",     # SHA del acta de custodia
-        "verificada": true
+        "verificada": true            # dato DECLARADO: no basta por si solo
       }
     }
 
 Una referencia de texto libre NO es una firma: `decision_ref: "DEC-04
 (pendiente de firma...)"` no es una decision y deja la puerta BLOCKED.
+
+ESQUEMA VS AUTORIDAD (QA-R17-QG02-01): lo anterior es el ESQUEMA. Que la
+forma sea correcta NO demuestra que el acto exista ni que el propietario lo
+haya autorizado. Por eso el evaluador exige una FUENTE CONFIABLE
+(`verificador_actos`, ver `audits/fase2/verificador_actos.py` y el registro
+`audits/fase2/autoridades-de-decision.yaml`):
+
+  - la autoridad debe constar en el registro, con canal declarado;
+  - el acto debe EXISTIR como commit, ser alcanzable desde ese canal y su
+    contenido debe nombrar la decision y el residuo (id, norma, ruta,
+    huella); un acto revocado no ratifica;
+  - la custodia debe ser OTRO acto, existente, alcanzable y con contenido que
+    nombre el residuo: `custodia.verificada: true` aportado por el mismo
+    recibo NO es una verificacion independiente.
+
+Sin fuente confiable, el veredicto es **BLOCKED** (no PASS). Los fixtures
+sinteticos sirven para probar el esquema y la MECANICA de verificacion, y
+nunca como prueba de una ratificacion real.
 """
 from __future__ import annotations
 
@@ -202,6 +221,7 @@ def evaluar_certificacion_compuesta(
     auditoria_sandbox: Dict[str, Any],
     residuos_registrados: List[Dict[str, Any]],
     residuos_historicos_sin_decision: List[str] | None = None,
+    verificador_actos: Any = None,
 ) -> Dict[str, Any]:
     """Veredicto de la puerta QG-02 bajo la opcion C (PROPUESTA, no aplicada).
 
@@ -209,6 +229,11 @@ def evaluar_certificacion_compuesta(
     Cada entrada declara la identidad del hallazgo (id, norma, ruta, huella) y
     su `decision` formal (ver el contrato del modulo). Un registro SIN decision
     formal valida NO acredita nada: el residuo queda BLOCKED.
+
+    `verificador_actos`: FUENTE CONFIABLE para comprobar que el acto existe y
+    que lo ratifico quien puede (ver `audits/fase2/verificador_actos.py`). Sin
+    ella —o si no hay fuente declarada— el residuo queda BLOCKED: el esquema
+    no es autoridad (QA-R17-QG02-01).
     """
     motivos: List[str] = []
     residuos_en_salida: List[Dict[str, Any]] = []
@@ -300,6 +325,31 @@ def evaluar_certificacion_compuesta(
                     f"REGISTRO_NO_COINCIDE_CON_HALLAZGO: {campo} del registro "
                     f"({identidad_registro.get(campo)!r}) no es el del hallazgo "
                     f"({identidad_hallazgo.get(campo)!r})")
+
+        # El ESQUEMA no es la AUTORIDAD: el acto y la custodia se comprueban
+        # contra una fuente confiable (QA-R17-QG02-01). Sin fuente, no hay
+        # acreditacion y el residuo queda BLOCKED.
+        if not fallos:
+            if verificador_actos is None:
+                fallos.append(
+                    "SIN_FUENTE_DE_AUTORIDAD: no hay fuente confiable para "
+                    "comprobar el acto y su custodia; sin ella el esquema no "
+                    "acredita una ratificacion")
+            else:
+                decision = registro.get("decision") or {}
+                try:
+                    ok_acto, motivos_acto = verificador_actos.verificar_acto(
+                        decision, v)
+                    ok_custodia, motivos_custodia = verificador_actos.verificar_custodia(
+                        decision, v)
+                except Exception as exc:  # noqa: BLE001
+                    ok_acto, motivos_acto = False, [f"VERIFICADOR_FALLIDO: {exc}"]
+                    ok_custodia, motivos_custodia = False, []
+                if not ok_acto:
+                    fallos.extend(motivos_acto or ["ACTO_NO_VERIFICADO"])
+                if not ok_custodia:
+                    fallos.extend(motivos_custodia or ["CUSTODIA_NO_VERIFICADA"])
+
         if fallos:
             # Cada motivo se expone POR SEPARADO (con el residuo como
             # contexto): una consumer puede clasificar cada uno sin tener que

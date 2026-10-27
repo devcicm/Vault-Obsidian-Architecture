@@ -1,0 +1,47 @@
+# Registro de autoridades para la certificacion compuesta (DEC-03)
+#
+# ESTADO: PROPUESTA — DEC-03 PENDIENTE. Este registro NO esta en vigor: no
+# se usa para certificar nada mientras el propietario no lo ratifique. El
+# dictamen QA R17 (8be11d3, QA-R17-QG02-01) exige que una decision de
+# residuo se resuelva contra una FUENTE CONFIABLE declarada por el
+# propietario, con identidad y procedencia — y no contra el propio recibo.
+#
+# QUE DECLARA CADA AUTORIDAD
+#   canales:      refs donde publica sus actos. Un acto que no es alcanzable
+#                 desde un canal declarado NO es de esa autoridad.
+#   identidad_git: correo del autor de los actos (opcional). Acota el error,
+#                 pero NO autoriza por si solo (ver aviso final).
+#
+# AVISO HONESTO (limit del control): en este repositorio el ejecutor y el
+# propietario comparten identidad git y permisos de push, de modo que el CANAL
+# declarado es un control ADMINISTRATIVO (lo declara y lo vigila el
+# propietario), no criptografico. El verificador acredita que existe un acto
+# verificable en la fuente declarada; que ese acto emane del propietario
+# depende de la integridad del canal, que es decision del propietario
+# (DEC-03). Si el propietario no declara una fuente, el veredicto es BLOCKED.
+schema: 1
+estado: PROPUESTA (DEC-03 pendiente; sin vigor)
+fuente: "audits/fase2/verificador_actos.py + git"
+autoridades:
+- id: "propietario-datos"
+  descripcion: >-
+    Propietario de los datos externos (el residuo vault-backups). Es quien
+    puede ratificar su custodia, su archivo y su eventual purga (DEC-04).
+  canales:
+  - "refs/remotes/origin/proposal/dec-02b-dec-03c-dec-04pending-20261026"
+  - "refs/heads/proposal/dec-02b-dec-03c-dec-04pending-20261026"
+  identidad_git: {}
+  nota: >-
+    El canal de consulta ya utilizado por el propietario es la rama
+    proposal/…pending-20261026 (commit cc05eab). Si el propietario firma en
+    otro sitio (la rama de trabajo, p. ej. al rellenar las fichas DEC), hay
+    que declarar ese canal aqui ANTES de usar el verificador: el ejecutor no
+    puede ampliar el canal de una autoridad por su cuenta.
+- id: "qa-arquitectonico"
+  descripcion: >-
+    QA independiente: emite dictámenes, pero NO ratifica decisiones del
+    propietario (DEC-01..06). Se declara para dejar constancia explicita de
+    que un dictamen no es una ratificacion.
+  canales: []
+  identidad_git: {}
+  nota: "Sin canales: esta autoridad no ratifica; dictaminar no es decidir."

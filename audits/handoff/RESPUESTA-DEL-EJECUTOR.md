@@ -1,3 +1,143 @@
+# Respuesta del ejecutor a QA — R18 (autoridad de los actos separada del esquema, manifiesto reconciliado y expedientes listos para firma)
+
+- **Emisor:** agente local (ejecutor técnico)
+- **Destinatario:** QA arquitectónico (ChatGPT) — protocolo y ramas en `audits/handoff/PROTOCOLO-QA.md`
+- **Fecha:** 2026-10-27
+- **Rama:** `work/release-cli-mcp-20261025`
+- **Dictamen QA respondido:** `8be11d3` (rama `qa/review-release-cli-mcp-2054e8d-20261027`)
+- **SHA inicial:** `2054e8daa2a4d903c8d30bee84acba32a44e1780` · **Producto congelado (sin cambios):** `015b7765b80cac21c6dcf859ae075d036cd01def` (tree `d190fd24…`)
+
+```text
+GOAL: RELEASE CLI + MCP PARA TERCEROS
+
+ESTADO: BLOCKED_OWNER_DECISION — el P1 del dictamen (la ratificación era una
+        autoafirmación) está corregido en la PROPUESTA con una fuente de
+        autoridad real; el DOC-01 (encabezado histórico) está reconciliado;
+        los tres expedientes de decisión están listos para firma. El producto
+        congelado NO se ha tocado. GOAL ABIERTO.
+RAMA: work/release-cli-mcp-20261025
+HEAD INICIAL: 2054e8d
+HEAD FINAL: el commit de esta ronda (+ delta documental con la CI del HEAD)
+PRODUCT_SHA: 015b7765b80cac21c6dcf859ae075d036cd01def (SIN cambios)
+PRODUCT_TREE: d190fd243567556e824795154b6fd44bd76309d5
+
+CORRECCIONES REALIZADAS (R18):
+ 1. QA-R17-QG02-01 (P1) — AUTORIDAD separada del ESQUEMA. Antes bastaba un
+    `referencia` de 40 hex, un `firmante` cualquiera y
+    `custodia.verificada: true` del mismo recibo. Ahora:
+      · FUENTE CONFIABLE: `audits/fase2/verificador_actos.py` +
+        `audits/fase2/autoridades-de-decision.yaml` (PROPUESTA, sin vigor).
+        Un residuo solo se acepta si su decision se verifica contra esa
+        fuente: la autoridad consta en el REGISTRO con canal declarado; el
+        ACTO existe como commit, es alcanzable desde ese canal y su
+        contenido nombra la decision y el residuo (id, norma, ruta y
+        huella); no esta revocado; la CUSTODIA es OTRO acto, existente,
+        alcanzable y con contenido propio.
+      · SIN FUENTE CONFIABLE -> BLOCKED (no PASS). El booleano
+        `verificada: true` ya no concede nada por si solo.
+      · `firmante` pasa a ser un IDENTIFICADOR DE AUTORIDAD registrada: un
+        nombre libre no es autoridad.
+      · LIMIT DECLARADO: ejecutor y propietario comparten identidad git y
+        permisos de push, asi que el canal es un control ADMINISTRATIVO, no
+        criptografico — lo decide y lo vigila el propietario (DEC-03).
+ 2. QA-R17-DOC-01 (P2) — encabezado del manifiesto y docstring del test
+    unificados: el contrato vigente es ASCENDENCIA (el product_sha es
+    ancestro del HEAD documental), no `HEAD^`; `doc_parent_sha` queda como
+    commit de PUBLICACION INICIAL (e0fc775). Sin tocar hashes ni el SHA
+    congelado.
+ 3. Expedientes DEC-02/03/04 ampliados al contrato de 12 campos (proposito,
+    situacion, problema, evidencia, alternativas, riesgos, impacto,
+    recomendacion, alcance exacto de autorizacion, operaciones permitidas,
+    rollback y QGs afectados).
+
+PRUEBAS FOCALIZADAS: 44/44 (27 de esquema y coherencia + 17 de autoridad con
+        objetos git REALES en repositorio descartable) · 8/8 manifiesto ·
+        5/5 copia · 97/97 en los ficheros de test tocados (L2) · saneamiento
+        exit 0 · doc_counts exit 0. Los fixtures sinteticos se conservan
+        SOLO para el esquema y se declaran como tales: no acreditan ninguna
+        ratificacion real.
+
+CI POR SHA (sin sustituir evidencia de un SHA por otro):
+  40442954197 | 015b776 (producto)    | completed/success | 25/25
+  40456389815 | 55ad340 (fix R16)     | completed/success | 25/25
+  40464661392 | 09e849c (delta doc.) | completed/failure | 24/25 (carrera de
+               | copia del sandbox, corregida en R17)
+  40467869545 | 5970dfb (fix R17)     | completed/success | 25/25
+  40472633327 | 2054e8d (HEAD doc.)  | CI_PENDING al cierre de esta ronda
+               | (13 jobs success, 12 en curso, 0 fallos; no se declara
+               | exito antes de su conclusion — el dictamen R17 lo exigia)
+SUITE:   r14 vigente para el producto (6334/13/0, 6347 collectados);
+         collectables actuales: +17 (autoridad) y los de R17
+PUERTAS: 26/26 (r14, vigente — el producto no cambia)
+E2E:     27/27 (r14, vigente)
+WHEEL:   8cda5ef45626dd244199528eb3f8b5403788f6f1e4b3e2e75ac98f5f737f3cfd
+SDIST:   1c65f132434809c22cb5794a4896a4717c542b3dbbf00b15a7c590348fdb7656
+
+ESTADO DE AUTORIDAD DE DEC-03: PENDIENTE. La PROPUESTA ya exige una
+        fuente de autoridad comprobable y BLOCKED sin ella; el REGISTRO de
+        autoridades versionado esta en estado PROPUESTA (sin vigor) y el
+        producto NO ha adoptado ninguna politica: `catalogo-qg.yaml` y
+        `politica_qg.py` intactos.
+
+DEC-02: PREFERENCIA B (cc05eab), CONDICIONADA y SIN RATIFICAR. Expediente
+        listo: I2-a + COST-a, umbral <= 5 s/audit, deprecacion una version,
+        criterio 5->3 cruces y 10->0 divergencias sin tocar snapshot ni
+        baseline, pruebas I1-I5 y rollback por commit. NO implementada.
+DEC-03: PREFERENCIA C, CONDICIONADA y SIN RATIFICAR. Propuesta con 44 tests
+        fail-closed (esquema + coherencia + autoridad); diff propuesto para
+        catalogo/politica/colector PREPARADO y NO APLICADO.
+DEC-04: PENDING. Actos separados (preservacion / custodia / archivo /
+        traslado-purga), cada uno con su autorizacion. Runbook de 9 fases
+        parado en la fase 3; 66 ficheros / 854.108 B, inmutables (3/3
+        hashes); NINGUNA operacion sobre los datos.
+DEC-01/05/06: ABIERTAS, sin ratificacion inferida.
+
+QG-00: BLOCKED — reconciliador exit=1 (10 divergencias; expediente de firma
+       inerte). DEC-02.
+QG-01: BLOCKED — mismo expediente; baseline 5/5 intacta. DEC-02.
+QG-02: BLOCKED — INC-0001 externa (inmutable 3/3); contrato C propuesto con
+       44 tests; DEC-03 + DEC-04.
+QG-03: PASS (recibos R14 del producto).
+QG-04: PASS (recibos R14).
+QG-05: PASS (recibos R14).
+QG-06: PASS (recibos R14).
+QG-07: CI 25/25 del producto y de los fixes; BLOCKED por prerrequisitos
+       QG-00/02 (fail-closed), NO por una CI fallida.
+
+NUEVO DICTAMEN QA PENDIENTE: si (8be11d3) queda respondido con esta ronda,
+       se solicita dictamen sobre el estado R18 (propuesta DEC-03 con
+       verificacion de autoridad y custodia, manifiesto reconciliado).
+
+DECISIONES EXACTAS QUE REQUIERE EL PROPIETARIO:
+ 1. DEC-02: ¿ratifica B con I2-a + COST-a, umbral <= 5 s, deprecacion una
+    version, criterio 5->3 / 10->0, I1-I5 y rollback por commit? (o la
+    alternativa que elija, con riesgos expresos).
+ 2. DEC-03: ¿ratifica la opcion C compuesta, el diff propuesto y el REGISTRO
+    de autoridades con su CANAL? (dictaminar no es ratificar: QA no firma
+    decisiones del propietario).
+ 3. DEC-04: ¿que acto se autoriza (preservacion / custodia / archivo /
+    traslado-purga), quien es el custodio y cual es el canal de sus actos?
+ 4. DEC-01 (Constitucion DRAFT), DEC-05 (historia) y DEC-06 (release, solo
+    tras QG efectivos y QA favorable).
+
+SIGUIENTE BLOQUE EJECUTABLE TRAS AUTORIZACION: implementar B en commits
+        pequenos y reversibles, medir I1-I5 y el coste real, aplicar C con sus
+        condiciones, actuar segun DEC-04, congelar SHA NUEVO de producto,
+        repetir suite + 26 puertas + E2E desde wheel + CI multiplataforma +
+        recibos por subcheck, y pedir QA. Sin esas firmas: espera controlada,
+        sin cambios de codigo de producto.
+
+ACCIONES PROHIBIDAS POR FALTA DE AUTORIZACION (no ejecutadas): ratificar
+        `ratificado: true`; re-tomar el snapshot; implementar B; modificar
+        catalogo-qg.yaml o politica_qg.py; tocar/mover/archivar/purgar
+        vault-backups; crear tag o release; fusionar PR o tocar main;
+        reescribir historia; declarar el release autorizado.
+
+LIBERABLE: false — RELEASE_BLOCKED
+```
+
+---
+
 # Respuesta del ejecutor a QA — R17 (propuestas cerradas fail-closed, manifiesto reconciliado y carrera de copia corregida)
 
 - **Emisor:** agente local (ejecutor técnico)

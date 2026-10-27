@@ -1,18 +1,22 @@
-# Manifiesto del candidato de release — ronda R14/QA-R14-DOC-02
+# Manifiesto del candidato de release — ronda R14/QA-R14-DOC-02, contrato
+# de ascendencia reconciliado en R17/R18 (QA-R16-DOC-01 y QA-R17-DOC-01)
 #
 # Contrato del GOAL R14 §5, corregido por el dictamen e47d62f (QA-R14-DOC-02):
 # los campos destinados a validación automática contienen SOLO el valor
 # (hex puro, sin prosa); los metadatos y las notas viven en claves separadas.
 #
-# Convención anti-circularidad: este manifiesto vive DENTRO del árbol; el
-# product_sha es el commit de congelación (padre del commit documental que
-# fija este fichero). El SHA del commit que fija el manifiesto no puede
-# escribirse a sí mismo: se obtiene de git en tiempo de validación (HEAD de
-# la rama) y debe cumplir HEAD^ == product_sha.
+# CONVENCIÓN ANTI-CIRCULARIDAD (vigente): este manifiesto vive DENTRO del
+# árbol, así que el SHA del commit que lo fija no puede escribirse a sí
+# mismo: se obtiene de git en tiempo de validación (HEAD de la rama).
+# La relación que se comprueba es de ASCENDENCIA — el product_sha es
+# ANCESTRO del HEAD documental, no necesariamente su padre inmediato (puede
+# haber commits documentales entre medias). El campo `doc_parent_sha` es el
+# commit de PUBLICACIÓN INICIAL de este manifiesto, no el padre actual.
 #
 # Validación: tests/test_manifiesto_candidato.py (formato hex, existencia del
-# commit en git, relación HEAD^ == product_sha, y negativos de hash mal
-# formado y SHA ajeno).
+# commit en git, ascendencia del product_sha respecto al HEAD documental,
+# existencia del commit de publicación inicial, y negativos de hash mal
+# formado, SHA ajeno y SHA real que no es ancestro).
 
 release_candidate:
   product_sha: 015b7765b80cac21c6dcf859ae075d036cd01def
