@@ -104,8 +104,14 @@ capturas `subprocess` con `text=True` sin `encoding` (líneas 63 y 73), y el
 guard de portabilidad (`test_ningun_sitio_decodifica_con_la_locale`) las cazó
 en las doce columnas. Corregido en R16 con `encoding="utf-8"` explícito
 (28/28 en las dos suites focalizadas; L2 31/31). **El producto no cambió**:
-los 13 jobs de producto (wheel) pasaron en esa misma corrida. La corrida del
-HEAD corregido se registra en el buzón R16 al concluir.
+los 13 jobs de producto (wheel) pasaron en esa misma corrida.
+
+**La corrida del HEAD corregido:** `40456389815` sobre
+`55ad340918caca237ad18bcc4aec64b05a9333d0` → **`completed/success`, 25/25**
+(`total_count: 25`, 25 jobs `success`, sin fallidos, cancelados ni omitidos:
+12 `Validate Vault Spec` + 12 `Product gates (wheel)` + `Lint Python`). Con
+ello, el HEAD vuelve a tener corrida concluyente propia y la regresión de
+codificación queda cerrada con evidencia de CI, no solo local.
 
 ### Análisis de impacto producto ↔ documentación (GOAL R16 §4)
 
@@ -379,7 +385,7 @@ OWNER_AUTHORIZED ≠ PUBLISHED**.
 | REL-04 | Seguridad | QG-04 | `015b776` | saneamiento 0; pip-audit limpio; contención PASS; destructivas PASS — TD-0008 resuelto y verificado en wheel | QG-04 **PASS** (recibo) | aceptado; cierre TD-0008 pendiente de dictamen explícito | Seguridad | dictamen sobre el cierre TD-0008 |
 | REL-05 | Paridad | QG-05 | `015b776` | paridad PASS; AP-40 exit 0 | QG-05 **PASS** (recibo) | aceptado (5 escenarios, no 97 tools) | Ejecutor | — |
 | REL-06 | Distribución | QG-06 | `015b776` | build + instalación limpia + 706/706 | QG-06 **PASS** (recibo) | aceptado | Empaquetado | — |
-| REL-07 | Matriz CI | QG-07 | `015b776` | run `40442954197`: `completed/success`, **25/25** (recibo con jobs nombrados); el HEAD documental exige su corrida propia (CI_PENDING al cierre de R15; regresión de codificación corregida en R16) | evidencia **CI_PASS**; política BLOCKED por prerrequisitos | `CI_MATRIX_25_OF_25=VERIFIED` (sobre `015b776`) | CI | QG-00/02 para el QG_PASS global |
+| REL-07 | Matriz CI | QG-07 | `015b776` | run `40442954197`: `completed/success`, **25/25** (recibo con jobs nombrados). HEAD documental: `40456389815` sobre `55ad340` → **`completed/success`, 25/25** (12 validate + 12 product gates + Lint; sin fallidos/cancelados/omitidos) | evidencia **CI_PASS** para ambos; política BLOCKED por prerrequisitos | `CI_MATRIX_25_OF_25=VERIFIED` (sobre `015b776`; HEAD re-verificado) | CI | QG-00/02 para el QG_PASS global |
 | REL-08 | Dictamen QA | QG-07 | `e47d62f` | último dictamen: P1 aceptado (`ACCEPTED_SCOPED`), release BLOCKED por decisiones; DOC-01..03 + PORT-01 corregidos en R15/R16 | — | **QA_REVIEW_REQUIRED** | QA | nuevo dictamen sobre el estado R16 |
 | REL-09 | Aprobación | QG-07 | `cc05eab` | fichas DEC-01..06 vacías + **anexo consultivo del propietario** (rama `proposal/dec-02b-dec-03c-dec-04pending-20261026`: preferencias B/C condicionadas, `OWNER_RATIFICATION=NOT_GIVEN`) | — | — | Propietario | DEC-01..06 (elección I2/costo de B; firma del contrato C; DEC-04; resto) |
 | REL-10 | Publicación | Gobierno release | — | sin tag, sin release | — | — | Release manager | tras REL-09 |

@@ -11,13 +11,14 @@
 ```text
 GOAL: RELEASE CLI + MCP PARA TERCEROS
 
-ESTADO: BLOCKED_OWNER_DECISION — regresion R15 corregida en causa; CI del
-        HEAD corregido en curso al cierre (se registra su run_id en el
-        siguiente delta o la consulta QA la ve concluida); expedientes
-        DEC-01..06 servidos para firma.
+ESTADO: BLOCKED_OWNER_DECISION — regresion R15 corregida en causa y
+        verificada en CI: la corrida del HEAD corregido, 40456389815 sobre
+        55ad340, es completed/success con 25/25. Expedientes DEC-01..06
+        servidos para firma; el GOAL sigue ABIERTO.
 RAMA: work/release-cli-mcp-20261025
 HEAD INICIAL: e0fc775
-HEAD FINAL: el commit de esta ronda (fix de codificacion + expedientes)
+HEAD FINAL: 55ad340918caca237ad18bcc4aec64b05a9333d0 (fix) + este delta
+            documental (el HEAD definitivo cuando QA dicte)
 PRODUCT_SHA: 015b7765b80cac21c6dcf859ae075d036cd01def (SIN cambios en R15/R16)
 PRODUCT_TREE: d190fd243567556e824795154b6fd44bd76309d5
 
@@ -29,13 +30,16 @@ CAUSA RAIZ: tests/test_manifiesto_candidato.py (R15) con dos capturas
             producto pasaron: el artefacto no se toco)
 CORRECCION: encoding="utf-8" explicito en ambas llamadas; sin tocar
             aserciones ni el detector
-COMMIT:     el de esta ronda
-REGRESIONES: L1 28/28 (manifiesto 7 + portabilidad 21); L2 31/31
+COMMIT:     55ad340918caca237ad18bcc4aec64b05a9333d0 (fix) + este delta
+REGRESIONES: L1 28/28 (manifiesto 7 + portabilidad 21); L2 31/31;
+             CI del HEAD: 40456389815 25/25 success
 
 CI_RUN:      40442954197 (producto 015b776): 25/25 success — vigente
 CI_SHA:      015b7765b80cac21c6dcf859ae075d036cd01def
 CI_JOBS:     25 (12 validate + 12 product gates + lint)
-CI_CONCLUSION: success; la corrida del HEAD corregido se registra al concluir
+CI_CONCLUSION: success; ademas, la del HEAD corregido 55ad340:
+              run 40456389815, completed/success, 25/25 (total_count 25, sin
+              fallidos, cancelados ni omitidos) — regresion cerrada en CI
 
 SUITE:   r14 vigente para el producto (6334/13/0); collectables hoy 6363
          (+16 de expediente)

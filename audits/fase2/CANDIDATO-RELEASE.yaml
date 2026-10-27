@@ -59,6 +59,17 @@ verification:
     conclusion: success
     required_jobs: 25
     successful_jobs: 25
+  ci_head_documental:
+    note: >-
+      corrida del HEAD documental (correccion de la regresion de portabilidad
+      introducida en R15). No sustituye la del product_sha: son acreditaciones
+      de SHAs distintos, cada una de las suyas.
+    run_id: 40456389815
+    run_sha: 55ad340918caca237ad18bcc4aec64b05a9333d0
+    status: completed
+    conclusion: success
+    required_jobs: 25
+    successful_jobs: 25
 
 governance:
   qg_statuses:
