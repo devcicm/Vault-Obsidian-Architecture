@@ -48,9 +48,9 @@ diciendo «116»/«117» y «9 tools JS-native» (son 2): son cifras caducadas d
 
 | Métrica | Valor | Fuente |
 |---|---|---|
-| Suite completa | **6330 passed / 13 skipped / 0 failed** en **1342,9 s** | JUnit `r13b` sobre el árbol del commit candidato (6343 collectados, 0 fallos, 0 errores) |
-| Puertas del estándar | **26/26** en 766,1 s | `vault_gate.py --strict` sobre el árbol del commit candidato; en CI, en las columnas de Windows y Linux de la corrida `40340865847` |
-| E2E de terceros | **27/27** con wheel reconstruida desde el código (el guion construye la wheel desde HEAD) | `recorrido_terceros_r07.py`; wheel `3a9f2dda…f39d`, sdist `7f209433…b293` |
+| Suite completa | **6334 passed / 13 skipped / 0 failed** en **1441,4 s** | JUnit `r14` sobre el árbol del commit candidato (6347 collectados, 0 fallos, 0 errores) |
+| Puertas del estándar | **26/26** en 743,8 s + re-medición del conteo (6347) | `vault_gate.py --strict` sobre el árbol del commit candidato; en CI, en las columnas de Windows y Linux de la corrida `40442954197` |
+| E2E de terceros | **27/27** con wheel reconstruida desde el código (el guion construye la wheel desde HEAD) | `recorrido_terceros_r07.py`; wheel `8cda5efa…3cfd`, sdist `1c65f132…7656` |
 | Equivalencia del paquete | **706 miembros, 0 ficheros con contenido distinto** entre la wheel del E2E y la reconstruida | la construcción **no es reproducible** (el ZIP lleva marcas de tiempo): el hash de referencia es el de la construcción certificada, y lo que se comparó es el contenido |
 | AP-39 (defecto de producto) | **corregido**: 0 violaciones en runtime limpio con 75 ficheros | re-auditoría con código actual (commit `2174bb1`) |
 | Sandbox canónico | **1** violación, y es externa: `vault-backups` dos niveles por encima del repo | audit con código actual; los 13 de contenido **corregidos** (§4) |
@@ -318,18 +318,17 @@ OWNER_AUTHORIZED ≠ PUBLISHED**.
 | REL-04 | Seguridad | QG-04 | Contención y dependencias conformes | saneamiento exit 0; pip-audit; contención (self-test); operaciones destructivas; SP-04 intacto (20/20) | este commit | **PASS** (con riesgo TD-0008 declarado, dueño propietario) | Seguridad | TD-0008 antes de beta de terceros (dictamen) |
 | REL-05 | Paridad | QG-05 | CLI/MCP equivalentes | paridad CLI↔MCP sobre la wheel instalada; AP-40 exit 0 | este commit | **PASS** (paridad de 5 escenarios, no de las 97 tools) | Ejecutor | Limites declarados en §5.3 |
 | REL-06 | Distribución | QG-06 | Wheel instalada y usable | build + hashes del manifiesto; instalación limpia; 706/706 miembros | este commit | **PASS** | Empaquetado | — |
-| REL-07 | Matriz CI | QG-07 | Jobs requeridos completados y exitosos | para `e198ffb`: run `40430269201` **CI_PASS 25/25** (dictamen lo aceptó). Para el candidato de esta ronda: la corrida se lanza al publicar el commit | `e198ffb` ✓ · candidato: pendiente | **CI_PENDING** (candidato) | CI | Conseguir 25/25 del candidato nuevo |
-| REL-08 | Dictamen QA | QG-07 | Sin bloqueantes | dictamen `7dc1a25`: matriz aceptada, **QA-R13-06 abierto (corregido en esta ronda)**; nuevo dictamen requerido sobre el candidato | `7dc1a25` (sobre `e198ffb`) | **QA_REVIEW_REQUIRED** | QA | Dictaminar sobre el candidato nuevo |
+| REL-07 | Matriz CI | QG-07 | Jobs requeridos completados y exitosos | **candidato `015b776`: run `40442954197` — `completed/success`, 25/25** (recibo QG-07 del colector con los jobs nombrados). Antecedente: `e198ffb` run `40430269201` 25/25, aceptado por QA | `015b776` | **CI_PASS** | CI | — |
+| REL-08 | Dictamen QA | QG-07 | Sin bloqueantes | dictamen `7dc1a25`: matriz de `e198ffb` aceptada, QA-R13-06 abierto → **corregido y verificado en la corrida del candidato**; solicitud de nuevo dictamen sobre `015b776` en `PROTOCOLO-QA.md` §5 | `015b776` | **QA_REVIEW_REQUIRED** | QA | Dictaminar sobre `015b776` |
 | REL-09 | Aprobación | QG-07 | Autorización expresa | fichas DEC-01..06 (`audits/handoff/DECISIONES-PROPIETARIO.md`), espacios de decisión vacíos | — | **OWNER_DECISION_REQUIRED** | Propietario | DEC-06 tras dictamen favorable |
 | REL-10 | Publicación | Gobierno release | Artefactos aprobados publicados | — | — | **NOT_RUN** (no autorizado; sin tag ni release) | Release manager | Tras REL-09 |
 | REL-11 | Activación | Contratos runtime | Instalación y datos íntegros | — | — | **NOT_RUN** | Operador | Tras REL-10 |
 | REL-12 | Seguimiento | Observabilidad | Estabilidad y errores monitorizados | — | — | **NOT_RUN** | Operador | Tras REL-11 |
 | REL-13 | Relanzamiento | Nueva versión | Compatibilidad, migración, QA y autorización | — | — | **NOT_RUN** | Propietario | Nuevo ciclo |
 
-**Lectura fail-closed:** las filas REL-03..06 son las únicas en PASS, y lo
-están **por recibos del SHA**, no por declaración. REL-01/02 siguen BLOCKED
-por decisiones del propietario (no por trabajo del ejecutor). REL-07 para el
-candidato nuevo es CI_PENDING hasta que su corrida concluya: el 25/25 de
-`e198ffb` es evidencia de OTRO SHA y no se reutiliza (NEG-08). El estado
+**Lectura fail-closed:** las filas REL-03..07 son las únicas en PASS, y lo
+están **por recibos y corrida del SHA `015b776`**, no por declaración.
+REL-01/02 siguen BLOCKED por decisiones del propietario (no por trabajo del
+ejecutor). REL-08 espera el dictamen sobre el candidato nuevo. El estado
 global del release es **RELEASE_BLOCKED** (bloqueos de decisión en REL-01/02,
-QA pendiente en REL-08, autorización en REL-09).
+dictamen pendiente en REL-08, autorización en REL-09).

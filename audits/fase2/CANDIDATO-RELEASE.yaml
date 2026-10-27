@@ -14,33 +14,37 @@
 #                       corrida y este manifiesto definitivo.
 
 release_candidate:
-  product_sha: "PENDIENTE — se fija en el delta documental tras la CI (el commit de congelación es el que publica este manifiesto)"
-  documentation_sha: "PENDIENTE — delta documental post-CI"
-  source_tree_sha: "PENDIENTE — git rev-parse <product_sha>^{tree} en el delta"
+  product_sha: "015b7765b80cac21c6dcf859ae075d036cd01def (commit de congelación: fix(R14) QA-R13-06 + reconciliación)"
+  documentation_sha: "el HEAD de esta rama cuando QA dicte — es el commit que fija este manifiesto definitivo; su PADRE es el product_sha"
+  source_tree_sha: "d190fd243567556e824795154b6fd44bd76309d5"
   wheel_sha256: "8cda5ef45626dd244199528eb3f8b5403788f6f1e4b3e2e75ac98f5f737f3cfd (construcción del E2E; el dist del árbol del candidato es 452004252b33552b…b41de — contenido idéntico 706/706, 0 miembros distintos)"
   sdist_sha256: "1c65f132434809c22cb5794a4896a4717c542b3dbbf00b15a7c590348fdb7656"
 
 verification:
   suite_junit_sha256: "fa321a023d97e8b7bf635ce1eaa6e834b79b7bc9ca9f5232fd044d024f817b78 (JUnit r14: 6334 passed / 13 skipped / 0 failed, 6347 collectados)"
-  gates_manifest_sha256: "PENDIENTE_RECIBOS — sha256 del artefacto agregado del recibo QG-02 del colector (el gate vault_gate --strict corre dentro del colector sobre este SHA)"
+  gates_manifest_sha256: "dcb05295e1593939caa43e6d7f6eae9122511418a97caf34f7c4ae52aabc3ec3 (artefacto del subcheck puertas_26 del recibo QG-02 del colector: las 26 puertas sobre este SHA)"
   e2e_manifest_sha256: "9d6a3c3fd2f70422fd3b15a40083fb475908f9e6ebcc9bf816abe75e820cc721 (e2e.json del recorrido 27/27)"
-  ci_run_id: null
-  ci_run_sha: ""
-  ci_status: ""
-  ci_conclusion: ""
+  ci_run_id: 40442954197
+  ci_run_sha: "015b7765b80cac21c6dcf859ae075d036cd01def"
+  ci_status: "completed"
+  ci_conclusion: "success"
   ci_required_jobs: 25
-  ci_successful_jobs: null
+  ci_successful_jobs: 25
 
 governance:
   qg_statuses:
-    QG-00: "BLOCKED (divergencias DIV-01..10 sin ratificar — DEC-02)"
-    QG-01: "BLOCKED (mismo bloqueo de QG-00; los invariantes del guard en verde 5/5)"
-    QG-02: "BLOCKED (INC-0001 AP-36 externo — DEC-03/DEC-04)"
-    QG-03: "PASS_LOCAL (recibo por emitir: suite r14 6334 passed / 13 skipped / 0 failed; E2E 27/27 esperado)"
-    QG-04: "PASS_LOCAL (recibo por emitir: saneamiento 0, pip-audit, contención, destructivas)"
-    QG-05: "PASS_LOCAL (recibo por emitir: paridad CLI/MCP sobre wheel instalada; AP-40 exit 0)"
-    QG-06: "PASS_LOCAL (recibo por emitir: build + instalación limpia + contenido)"
-    QG-07: "CI_PENDING para este candidato (el 25/25 de e198ffb es evidencia de OTRO SHA: corrida 40430269201, aceptada por el dictamen 7dc1a25)"
+    QG-00: "BLOCKED (recibo FAIL solo en reconciliador_archify: 10 divergencias sin ratificar — DEC-02; identidad, árbol y saneamiento ejecutados OK)"
+    QG-01: "BLOCKED (mismo bloqueo; vault_arch verde 5/5 baseline)"
+    QG-02: "BLOCKED (recibo FAIL solo en sin_violaciones: total_violations=1, la externa AP-36 — DEC-03/DEC-04; 26/26 puertas y controles ejecutado)"
+    QG-03: "PASS (recibo: JUnit r14 + E2E 27/27)"
+    QG-04: "PASS (recibo: saneamiento 0, pip-audit, contención, destructivas)"
+    QG-05: "PASS (recibo: paridad CLI/MCP sobre wheel instalada; AP-40 exit 0)"
+    QG-06: "PASS (recibo: build + contenido + instalación limpia)"
+    QG-07: "CI 25/25 success (40442954197, este SHA); la política lo deja BLOCKED por el prerrequisito QG-00 (fail-closed, sin waiver)"
+  ci_result:
+    run_id: 40442954197
+    sha: "015b7765b80cac21c6dcf859ae075d036cd01def"
+    resultado: "25/25 jobs success (completed/success)"
   qa_verdict_ref: "7dc1a25 (rama qa/review-release-cli-mcp-e198ffb-20261026): CI_MATRIX_25_OF_25=ACCEPTED; QA-R13-06=OPEN_P1 — corregido en este candidato"
   owner_decision_ref: "audits/handoff/DECISIONES-PROPIETARIO.md (DEC-01..DEC-06, espacios de decisión vacíos)"
   release_authorized: false

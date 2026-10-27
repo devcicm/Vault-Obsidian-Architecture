@@ -76,30 +76,29 @@ release actual).
 
 - **Solicitud:** dictamen de cierre del release CLI+MCP.
 - **Sobre:** rama `work/release-cli-mcp-20261025` — **candidato de producto
-  `e198ffb`** (código de `9c65401` más el drenaje del cuerpo en el rechazo
-  del servicio de tokens y la documentación de la ronda; el único commit que
-  sigue es documental, el que publica este protocolo actualizado).
-- **Estado de la ronda R13:** los seis defectos de la ronda corregidos, cada
-  uno con su causa comprobada y su regresión: el lock que moría con EINVAL en
-  macOS (R13-03a), el escáner legacy cuyo recuento dependía del orden del
-  sistema de ficheros porque la propia pasada creaba los ficheros que contaba
-  (R13-02), el servicio de tokens sin diagnóstico de arranque y con carrera de
-  puerto (R13-01), la copia del sandbox vivo cogida en mitad en Windows 3.10
-  (R13-03b), la clasificación de CI que llamaba «pendiente» a una corrida ya
-  concluida en rojo (R13-04) y el rechazo de SP-04 que en Windows 3.10 cortaba
-  la conexión a RST porque mandaba el 403 sin leer el cuerpo (R13-05). La
-  corrida de verificación del fix, `40420024458`, dejó **24 de 25** — y la
-  corrida final, `40430269201` **sobre el candidato `e198ffb`, es 25/25:
-  `completed/success` con las cuatro columnas de macOS en verde** por primera
-  vez. Detalle y evidencia:
-  `audits/handoff/RESPUESTA-DEL-EJECUTOR.md` (ronda R13),
-  `audits/fase2/CI-diagnostico.md` (reesrito con las fichas D1–D10 +
-  R13-01..05) y `audits/architecture/PLAN-B-MIGRACION-CRUZES.md` (criterio de
-  independencia semántica y operacional añadido §6.1).
-- **Base del dictamen anterior:** `e30e668` (rama
-  `qa/review-release-cli-mcp-408eb23-20261026`). Los hallazgos quedan
-  respondidos en la R13.
-- Nombre candidato por convención: se publica con el buzón R13.
+  `015b776`** (`fix(R14)`: QA-R13-06 corregido + reconciliación y paquete de
+  decisiones). Identidad completa en `audits/fase2/CANDIDATO-RELEASE.yaml`.
+- **Estado de la ronda R14:** el P1 del dictamen `7dc1a25` (QA-R13-06) está
+  corregido en causa — el cuerpo se consume UNA vez al llegar, con techo de
+  1 MiB y plazo de 5 s; el 404 ya no re-drena; `payload_too_large` → 413;
+  SP-04 intacto — con 4 regresiones nuevas HTTP crudas (L1 20/20, L2 121/121)
+  y re-certificación integral: suite `r14` **6334/13/0**, puertas **26/26**,
+  E2E **27/27**, y **CI 25/25 `completed/success`** en la corrida
+  `40442954197` **del propio candidato** (el 25/25 de `e198ffb` no se
+  reutiliza). Recibos del SHA: QG-03..QG-06 **PASS**; QG-00/QG-01 fallan solo
+  por el reconciliador (10 divergencias sin ratificar) y QG-02 solo por la
+  violación externa de `vault-backups` — política `liberable: false`
+  (fail-closed, sin waiver). Para la decisión DEC-02, el plan B lleva ahora
+  la identidad DIV-01..10, la **evidencia I2 medida** (el puerto propuesto no
+  funciona fuera del checkout tal como está especificado) y el **coste
+  medido** (§11.3: ~60× sin las enmiendas). Expedientes: buzón R14
+  (`RESPUESTA-DEL-EJECUTOR.md`), matriz formal REL-00..13 (informe §10),
+  `QG-02-ESCENARIOS-Y-VAULT-BACKUPS.md`, `RECIBOS-R13-MANIFIESTO.md` y
+  `RECIBOS-R14-MANIFIESTO.md`.
+- **Base del dictamen anterior:** `7dc1a25` (rama
+  `qa/review-release-cli-mcp-e198ffb-20261026`). Su hallazgo P1 queda
+  respondido en la R14.
+- Nombre candidato por convención: `qa/review-release-cli-mcp-015b776-20261027`.
 - **Prerrequisitos que NO dependen de QA:** decisiones del propietario
   (divergencias A/B/C con el criterio §6.1 del plan B, política de QG-02,
   `vault-backups`), la Constitución arquitectónica y la matriz completa 25/25.

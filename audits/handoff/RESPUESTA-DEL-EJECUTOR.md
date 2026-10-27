@@ -13,20 +13,21 @@ GOAL:       R14 — cierre de readiness, reconciliacion arquitectonica y release
             controlado: corregir el P1 del dictamen, reconciliar docs,
             preparar las decisiones del propietario y consolidar la matriz
             formal de liberacion. ABIERTO hasta certificacion y autorizacion.
-ESTADO:     AVANCE — P1 corregido y certificado en local (suite + puertas +
-            E2E); pendiente: CI del candidato nuevo, recibos del SHA, nuevo
-            dictamen QA y decisiones del propietario.
+ESTADO:     AVANCE — P1 corregido y certificado; CI del candidato 25/25;
+            recibos del SHA emitidos; pendiente: nuevo dictamen QA y
+            decisiones del propietario.
 RAMA:       work/release-cli-mcp-20261025
 SHA INICIAL: 76669e4
-SHA FINAL:  el commit que publica este buzon (identidad en el manifiesto)
-PRODUCT_SHA: el mismo commit (ver CANDIDATO-RELEASE.yaml; se fija en el delta)
-DOCUMENTATION_SHA: el delta documental post-CI
+SHA FINAL:  015b7765b80cac21c6dcf859ae075d036cd01def (candidato de producto)
+PRODUCT_SHA: 015b7765b80cac21c6dcf859ae075d036cd01def (tree d190fd24)
+DOCUMENTATION_SHA: el HEAD documental cuando QA dicte (el commit que fija el
+            manifiesto definitivo; su padre es el product_sha)
 
 CI:         para e198ffb: corrida 40430269201, 25/25, ACCEPTED por QA.
-            para el candidato de esta ronda: la corrida se lanza al publicar;
-            el 25/25 anterior NO se reutiliza (NEG-08).
+            para el candidato de esta ronda: corrida 40442954197 (015b776),
+            completed/success, 25/25 — la matriz completa del candidato nuevo
 MATRIZ:     12 Validate Vault Spec + 12 Product gates (wheel) + Lint
-RESULTADO:  e198ffb: completed/success 25/25 · candidato: CI_PENDING
+RESULTADO:  25/25 jobs success en AMBAS corridas (40430269201 y 40442954197)
 
 SUITE:      r14 — 6334 passed / 13 skipped / 0 failed (6347 collectados)
 PUERTAS:    26/26 (conteos re-medido tras el fix; conteo de tests 6347)
@@ -35,14 +36,14 @@ WHEEL:      8cda5ef45626dd244199528eb3f8b5403788f6f1e4b3e2e75ac98f5f737f3cfd
             (equivalencia de contenido 706/706, 0 distintos vs el dist local)
 SDIST:      1c65f132434809c22cb5794a4896a4717c542b3dbbf00b15a7c590348fdb7656
 
-QG-00: BLOCKED (divergencias sin ratificar — DEC-02)
-QG-01: BLOCKED (mismo bloqueo; guard verde 5/5 baseline)
-QG-02: BLOCKED (INC-0001 AP-36 externo — DEC-03/DEC-04)
-QG-03: PASS por recibos (suite + E2E del SHA)
-QG-04: PASS por recibos (saneamiento, pip-audit, contencion, destructivas)
-QG-05: PASS por recibos (paridad CLI/MCP + AP-40)
-QG-06: PASS por recibos (build + instalacion limpia + contenido)
-QG-07: CI_PENDING del candidato (25/25 de e198ffb: ACCEPTED por QA)
+QG-00: BLOCKED (recibo: reconciliador exit=1 por divergencias sin ratificar)
+QG-01: BLOCKED (mismo bloqueo; vault_arch verde 5/5 baseline)
+QG-02: BLOCKED (recibo: total_violations=1, la externa AP-36)
+QG-03: PASS (recibo: JUnit r14 + E2E del SHA)
+QG-04: PASS (recibo: saneamiento, pip-audit, contencion, destructivas)
+QG-05: PASS (recibo: paridad CLI/MCP + AP-40)
+QG-06: PASS (recibo: build + instalacion limpia + contenido)
+QG-07: CI 25/25 del SHA (40442954197); BLOCKED en politica por QG-00
 
 DIVERGENCIAS: 10 (DIV-01..10), identidad y coste en PLAN-B §11; sin ratificar
 AP-36: 1 hallazgo externo (vault-backups), ficha completa con inventario y
@@ -62,8 +63,9 @@ RECIBOS:    R13 en audits/fase2/RECIBOS-R13-MANIFIESTO.md; R14 tras el
             colector (delta documental)
 
 ACCIONES NEGATIVAS: NEG-03 aplicado (CI_PENDING no reutilizado); NEG-08
-              aplicado (el run de e198ffb no acredita al candidato nuevo);
-              conteos roja por cifra desfasada -> re-medida (NEG-01 menor)
+              aplicado (el run de e198ffb no acredita al candidato nuevo:
+              se consiguio corrida propia); conteos roja por cifra desfasada
+              -> re-medida (NEG-01 menor)
 CAUSAS RAIZ: doble consumo del cuerpo (orden _payload/drenaje); cifra de
               tests publicada anterior a la ronda
 ACCIONES CORRECTIVAS: ver corrective_action en la seccion 1 de esta ronda
@@ -72,8 +74,8 @@ RIESGOS ABIERTOS: TD-0008 (P1, propietario), capacidades PRD sin E2E,
 DECISIONES DEL PROPIETARIO: DEC-01..06 en DECISIONES-PROPIETARIO.md, vacias
 
 LIBERABLE: false
-SOLICITUD QA: nuevo dictamen sobre el candidato de esta ronda cuando la CI
-              concluya (PROTOCOLO-QA.md §5)
+SOLICITUD QA: nuevo dictamen sobre el candidato 015b776 — CI 25/25 concluida
+              (40442954197) y recibos emitidos (PROTOCOLO-QA.md §5)
 ```
 
 ## 1. QA-R13-06 corregido (P1 del dictamen `7dc1a25`)
@@ -99,17 +101,17 @@ corrective_action:
     de 1 MiB y plazo de 5 s (_drenar_cuerpo con deadline por chunk);
     _payload decodifica lo ya leído (payload_too_large -> 413); el 404 NO
     re-drena; _autorizado ya no lee bytes."
-  implementation_commit: "el commit de congelación de esta ronda"
+  implementation_commit: "015b7765b80cac21c6dcf859ae075d036cd01def"
   validation_commands:
     - "python -m pytest tests/test_token_service_seguridad.py -q   # 20/20"
     - "python -m pytest tests/test_produccion_iso.py tests/test_noop_audit.py tests/test_smoke.py tests/test_mcp_sin_servicios_largos.py tests/test_context_memory.py -q   # 121/121"
     - "python -m pytest tests/ -q -n auto   # 6334 passed / 13 skipped / 0 failed"
     - "python scripts/vault_gate.py --strict   # 26/26"
-  evidence: ["JUnit r14", "E2E 27/27", "recibos R14 (delta documental)", "CI del candidato"]
+  evidence: ["JUnit r14 (fa321a02…)", "E2E 27/27 (9d6a3c3f…)", "recibos R14: QG-03..06 PASS, QG-00/01/02 fail-closed por decisiones", "CI 40442954197: 25/25 success", "audits/fase2/RECIBOS-R14-MANIFIESTO.md"]
   rollback_strategy: "revertir el commit de congelación: el servicio vuelve al
     drenaje R13-05 (defecto conocido, documentado en el dictamen)"
   owner_decision_required: false
-  final_status: "IN_PROGRESS (pendiente CI del candidato y dictamen)"
+  final_status: "IMPLEMENTADO Y VERIFICADO (CI 25/25 + recibos); el dictamen QA del candidato queda solicitado"
 ```
 
 Los cuatro tests nuevos ejercitan los cinco criterios de cierre del dictamen:
