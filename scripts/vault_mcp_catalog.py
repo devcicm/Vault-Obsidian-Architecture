@@ -5589,6 +5589,11 @@ def check_params(json_path: Optional[str] = None) -> Dict[str, Any]:
     if not ruta.is_file():
         result["ok"] = False
         result["problems"].append({"tool": "-", "problem": f"no existe {ruta}"})
+        result["problemas"] = [
+            {"clave": f"tools-catalog#{p.get('tool', '-')}",
+             "detalle": str(p.get("problem") or "")}
+            for p in result["problems"] if isinstance(p, dict)]
+        result["hallazgos"] = len(result["problemas"])
         return result
 
     catalogo = json.loads(ruta.read_text(encoding="utf-8"))
@@ -5650,6 +5655,14 @@ def check_params(json_path: Optional[str] = None) -> Dict[str, Any]:
                     "problem": f"--{param}: valores publicados que la CLI rechaza: {', '.join(ajenos)}",
                     "fix": "python scripts/vault_mcp_catalog.py --sync",
                 })
+    # Contrato del puerto de controles (DEC-02): `problemas` en la forma
+    # {clave, detalle} que el nucleo normaliza. `problems` se conserva
+    # intacto: es el campo que ya consumen los tests de AP-40.
+    result["problemas"] = [
+        {"clave": f"tools-catalog#{p.get('tool', '-')}",
+         "detalle": str(p.get("problem") or "")}
+        for p in result["problems"] if isinstance(p, dict)]
+    result["hallazgos"] = len(result["problemas"])
     return result
 
 

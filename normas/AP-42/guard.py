@@ -11,7 +11,5 @@ GUARD = [
     'scripts/vault_smoke.py::run_one',
     'scripts/vault_smoke.py::freeze',
     'scripts/vault_smoke.py::main',
-    'scripts/vault_norms.py::_control_ap42',
-    'scripts/vault_norms.py::_checks_estandar',
     'vault/gobernanza/auditoria_runtime.py::auditar_runtime',
 ]

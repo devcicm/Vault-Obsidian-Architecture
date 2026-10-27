@@ -1,3 +1,177 @@
+# Respuesta del ejecutor a QA — R22 (DEC-02 ruta B: puerto de controles en el núcleo)
+
+- **Emisor:** agente local (ejecutor técnico)
+- **Destinatario:** QA arquitectónico — protocolo en `audits/handoff/PROTOCOLO-QA.md`
+- **Fecha:** 2026-10-27
+- **Rama:** `work/release-cli-mcp-20261025`
+- **SHA inicial:** `4bf40922ab96bd46167f50fe91e99b691389a2f2`
+- **Dictamen QA respondido:** `e5220ff` (R21: AP37 y AUTH-12 aceptados en alcance; release bloqueado por decisiones)
+- **Autorización del propietario:** ronda de trabajo técnico (no sustituye DEC-01..06)
+
+```text
+GOAL: RELEASE CLI + MCP PARA TERCEROS
+ESTADO: EN CURSO — B implementada en su núcleo técnico (puerto + superficies +
+        migración de fachada), con la deuda arquitectónica que la motivaba
+        saldada y medida. I2-a (publicar la superficie de mantenimiento en la
+        wheel) NO está hecha y se declara. Producto distribuible sin tocar.
+        Certificación integral del HEAD NUEVO: pendiente.
+
+RAMA: work/release-cli-mcp-20261025
+SHA INICIAL: 4bf4092
+SHA FINAL: el commit de esta ronda (ver COMMITS)
+
+DEC-01: DRAFT — sin cambio; la Constitución se reconcilia cuando B cierre del
+        todo (I2-a incluida).
+DEC-02: IMPLEMENTADA PARCIALMENTE (ruta B, I2-a + COST-a) — el puerto de
+        controles existe, funciona y salda los 5 sitios fuera de puerto; la
+        publicación de la superficie de mantenimiento en la wheel (I2-a) queda
+        como unidad siguiente. NO ratificada: el acta queda en borrador.
+DEC-03: PROPUESTA — C compuesta sin cambios y sin activar; no se tocó
+        `catalogo-qg.yaml` ni `politica_qg.py`.
+DEC-04: PENDING — `vault-backups` intacto (66 ficheros, 854.108 B); solo
+        lectura; sin acta de custodia firmada.
+DEC-05: EN ESPERA — no se reescribe historia.
+DEC-06: NO SOLICITADA — faltan QG efectivos y dictamen.
+
+ARQUITECTURA:
+  CRUCES ANTES: 5 sitios fuera de puerto (off_port_total=5)
+  CRUCES DESPUÉS: 0 sitios fuera de puerto (off_port_total=0)
+  DIVERGENCIAS ANTES: 10 (snapshot Archify vs registro)
+  DIVERGENCIAS DESPUÉS: sin cambio — el snapshot NO se ha tocado; el
+        reconciliador sale exit 0 y `off_port_total=0`, pero conserva las
+        entradas históricas del snapshot como NO CONCILIADO. 10 -> 0 NO se
+        declara.
+  INDEPENDENCIA I1-I5: acreditada por tests (ver PRUEBAS).
+  LATENCIA ANTES: ~149 s por el camino ingenuo (medido en el expediente)
+  LATENCIA DESPUÉS: 3,21 s el audit completo; por control: AP-40 1,77 s,
+        AP-42 1,08 s, AP-43 0,22 s (presupuesto <= 5 s)
+
+QG-00: BLOCKED — snapshot/registro: el reconciliador ya sale 0 y off_port es 0,
+       pero las 10 fichas históricas siguen sin acto; no se declara PASS.
+QG-01: BLOCKED — misma causa (DIV-01..10 sin firma).
+QG-02: BLOCKED — DEC-03 (ratificación de C) y DEC-04 (custodia) sin acto.
+QG-03..06: PASS del producto 015b776 (recibos de R14), NO trasladados a este HEAD.
+QG-07: BLOCKED por los anteriores.
+
+SUITE: focalizada verde (ver PRUEBAS); la integral del HEAD nuevo, pendiente.
+PUERTAS: `vault_arch --check --strict` en verde tras la migración; el resto de
+         las 26, pendiente de corrida completa.
+E2E: no ejecutado en esta ronda (sin cambio de superficie distribuida).
+WHEEL/SDIST: del producto congelado 015b776; sin reconstruir (no cambió el
+         árbol empaquetado: `vault/kernel/controles.py` es nuevo y viaja en
+         `vault/`, pero su consumo es de mantenimiento — ver impacto).
+SBOM: sin cambio.
+CI: pendiente la del HEAD nuevo.
+
+COMMITS: ver el bloque final (lista al cerrar).
+
+EVIDENCIAS: salida del puerto y latencias en este informe; tests nuevos
+         `tests/test_puerto_controles.py`; `scripts/arch-baseline.json`
+         regenerado (solo encoge: 0 off_port); `vault_arch --freeze` =
+         frozen 34 / frozen_off_port 0.
+
+RIESGOS RESIDUALES: (1) I2-a pendiente: desde una wheel limpia el puerto
+         devuelve `no_ejecutado` (fail-closed), no PASS; (2) el par
+         `gobernanza -> meta_toolkit` sigue vivo por `vault/gobernanza/tool.py`
+         -> `catalog_adapter` (declarado a_eliminar; fuera del alcance de los
+         5 sitios); (3) el reconciliador no puede declarar 0 divergencias sin
+         re-tomar snapshot o un mapeo de renombres, y eso no se toca aquí.
+DECISIONES ABIERTAS: DEC-01..06.
+SIGUIENTE ACCIÓN: (a) I2-a con nuevo candidato de producto y recertificación;
+         (b) corrida completa de puertas + suite + E2E + CI del HEAD; (c) actas.
+```
+
+## Qué se ha implementado (y qué no)
+
+**Implementado y medido**
+
+1. `vault/kernel/controles.py` — **puerto de datos y proceso** (hoja del
+   núcleo, solo stdlib). Publica `CONTROLES = {AP-40, AP-42, AP-43}` con
+   dueño, script y argv, y ejecuta la superficie del dueño **como proceso**.
+   Un proceso no es una arista del grafo de imports, y el registro es dato,
+   no callable: el analizador de contextos lo puede leer (AP-58).
+   Fail-closed: sin superficie `no_ejecutado`, envelope roto `fallido`; nunca
+   cero hallazgos por omisión.
+2. Superficies de los dueños con el contrato del puerto (`problemas` con
+   `{clave, detalle}` + `hallazgos`):
+   - `vault_mcp_catalog --check-params` (aditivo; `problems` se conserva);
+   - `vault_smoke --baseline-check` (**nueva, COST-a**: lee y verifica, NO
+     ejecuta tools; `ejecuta_tools: false`);
+   - `vault_voice --coverage` (aditivo).
+3. `vault_norms._checks_estandar` consume el puerto; se retiraron las tres
+   funciones privadas `_control_ap40/42/43` (privadas, sin contrato público:
+   la superficie pública `vault_norms_audit` y su envelope no cambian).
+4. Registro de arquitectura: la entrada `(gobernanza, autoria)` se conserva
+   como registro de la decisión con `cerrado_en="R22 (DEC-02 ruta B, puerto de
+   controles)"` — no se borra.
+
+**No implementado (declarado, no maquillado)**
+
+- **I2-a**: publicar la superficie de mantenimiento en la wheel (entry point +
+  clase `maintenance_publicada`, y sacar `vault_smoke`/`vault_voice` de
+  `empaquetado/fuera-de-la-wheel.json`). Hoy el puerto ya resuelve
+  `vault_toolkit/_impl` si existe, pero esos dos módulos no viajan; desde una
+  instalación limpia los tres controles devolverían `no_ejecutado`. Es la
+  unidad siguiente y exige candidato de producto nuevo + recertificación.
+- **Divergencias 10 → 0**: el snapshot de Archify no se toca (regla del plan).
+- **Certificación integral** del HEAD nuevo: puertas completas, suite, E2E
+  desde wheel, CI 25/25 y recibos por SHA.
+
+## Pruebas (focalizadas, verdes)
+
+- `tests/test_puerto_controles.py` **12/12**: I1 (el puerto no importa
+  contextos), I2/I4 (la superficie y el estado salen del registro y del
+  envelope), I3 (fail-closed: ausente `no_ejecutado`, envelope roto `fallido`,
+  control no declarado), I5 (equivalencia ligera vs composición vieja y la
+  fachada ya no nombra a los dueños) y COST-a (audit ≤ 5 s).
+- `tests/test_ap40_42_43_estados.py` 15/15 (los tres estados siguen llegando).
+- Cinco tests que inyectaban el hallazgo monkeypatcheando al dueño en proceso
+  se adaptaron al puerto **sin debilitar la afirmación** (el audit sigue
+  teniendo que reportar el hallazgo del dueño): 178/178 en los cinco ficheros.
+
+## Medición
+
+```text
+off_port_total            5 -> 0        (los cinco sitios: AP-40 x1, AP-42 x3, AP-43 x1)
+crossings_sites          49 -> 46
+pares de contexto        23 -> 22       (gobernanza -> autoria eliminado)
+gobernanza -> meta_toolkit             sigue vivo por vault/gobernanza/tool.py
+latencia AP-40           1,77 s
+latencia AP-42           1,08 s
+latencia AP-43           0,22 s
+audit completo           3,21 s        (presupuesto <= 5 s)
+vault_arch --check --strict            ok: true (baseline congelada: 34 claves, 0 off_port)
+reconciliador Archify                  exit 0; off_port_total 0; snapshot intacto
+```
+
+## Acta DEC-02 — BORRADOR (no ratificada, no firmada)
+
+```yaml
+decision_DEC-02:
+  alternativa: B
+  enmienda_I2: "I2-a (publicar la superficie de mantenimiento en la wheel)"
+  enmienda_coste: "COST-a (superficie ligera por dueño)"
+  umbral_latencia_audit: "<= 5 s"
+  ventana_deprecacion: "una version"
+  estado: BORRADOR
+  implementado:
+    - puerto de datos y proceso en vault/kernel/controles.py
+    - superficies AP-40/AP-42/AP-43 con contrato problemas/hallazgos
+    - vault_smoke --baseline-check (ligera, no ejecuta tools)
+    - fachada de gobernanza migrada; off_port 5 -> 0
+  pendiente:
+    - I2-a: empaquetado + entry point de mantenimiento + nuevo candidato
+    - recertificacion del SHA resultante (26 puertas, suite, E2E, CI 25/25)
+  fecha: ""            # la pone el propietario
+  ratificado_por: ""   # lo pone el propietario
+  referencia: ""       # commit del acto
+```
+
+**No se ha rellenado ningún campo de decisión ni se ha creado acta atribuida al
+propietario.** `release_authorized: false`; `LIBERABLE: false`.
+
+---
+
 # Respuesta del ejecutor a QA — R21 (AP-37 en Linux resuelto en causa y delegación acotada al residuo)
 
 - **Emisor:** agente local (ejecutor técnico)

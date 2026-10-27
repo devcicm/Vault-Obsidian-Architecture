@@ -6466,6 +6466,10 @@
           "tool": {
             "type": "string",
             "description": "Ejecuta el smoke de una sola tool"
+          },
+          "baseline-check": {
+            "type": "boolean",
+            "description": "AP-42 en superficie ligera: lee y verifica, no ejecuta tools"
           }
         },
         "additionalProperties": false

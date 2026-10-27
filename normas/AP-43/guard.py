@@ -11,7 +11,5 @@ GUARD = [
     'scripts/vault_voice.py::speak',
     'scripts/vault_voice.py::coverage',
     'scripts/vault_errors.py::_inject_voice',
-    'scripts/vault_norms.py::_control_ap43',
-    'scripts/vault_norms.py::_checks_estandar',
     'vault/gobernanza/auditoria_runtime.py::auditar_runtime',
 ]

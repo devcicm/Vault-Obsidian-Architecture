@@ -211,7 +211,21 @@ def test_el_audit_reporta_una_norma_muda(tmp_path, monkeypatch):
     for sec in ("00_System", "01_Projects", "99_Index"):
         (root / sec).mkdir(parents=True)
     (root / "01_Projects" / "index.md").write_text("---\ntitle: idx\n---\n# idx\n", encoding="utf-8")
-    monkeypatch.setattr(voz, "coverage", lambda: {"silent": ["AP-99"]})
+    from vault.kernel import controles as puerto
+
+    real = puerto.ejecutar
+
+    def falso(codigo, **kw):
+        if codigo == "AP-43":
+            return {"control": "AP-43", "estado": "ejecutado", "detalle": None,
+                    "hallazgos": 1,
+                    "problemas": [{"clave": "vault_norms.NORM_CATALOG#AP-99",
+                                   "detalle": "AP-99 no la pronuncia ninguna tool."}],
+                    "envelope": None, "exit_code": 0, "segundos": 0.0,
+                    "superficie": "vault_voice.py"}
+        return real(codigo, **kw)
+
+    monkeypatch.setattr(puerto, "ejecutar", falso)
     r = vn.vault_norms_audit(root)
     assert "AP-43" in r["by_norm"]
     assert any("AP-99" in v["detail"] for v in r["violations"] if v["norm"] == "AP-43")

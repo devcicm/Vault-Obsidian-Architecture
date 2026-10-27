@@ -190,12 +190,20 @@ def test_el_audit_de_normas_conoce_ap40():
 
     assert vault_norms_catalog.norma_por_codigo("AP-40")["code"] == "AP-40"
 
-    # TD-0003: la composición de AP-40 vive en la fachada de mantenimiento
-    # (`vault_norms`), no en el motor empaquetado, porque `vault_mcp_catalog`
-    # no viaja en la wheel de producto.
+    # DEC-02 (ruta B): la composición de AP-40 se declara en el PUERTO del
+    # núcleo —dato, no símbolo— y la fachada lo consume como proceso. Que el
+    # nombre del dueño ya NO aparezca en `vault_norms` es exactamente lo que
+    # elimina el cruce `gobernanza -> meta_toolkit`; se comprueban las dos
+    # mitades por separado para que declarar sin medir siga siendo imposible.
+    puerto = gi.codigo_de(
+        SCRIPTS.parent / "vault" / "kernel" / "controles.py"
+    ).read_text(encoding="utf-8")
+    assert '"AP-40"' in puerto
+    assert "vault_mcp_catalog" in puerto and "--check-params" in puerto
     motor = gi.codigo_de(SCRIPTS / "vault_norms.py").read_text(encoding="utf-8")
-    assert '"AP-40"' in motor
-    assert "check_params" in motor
+    assert "from vault.kernel import controles" in motor
+    assert "check_params" not in motor, (
+        "la fachada no puede volver a nombrar al dueño: es el cruce que se cerró")
 
 
 def test_el_schema_json_se_deriva_no_se_copia():

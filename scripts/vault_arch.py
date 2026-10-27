@@ -1906,8 +1906,12 @@ _cruce("gobernanza", "autoria", "a_eliminar", "gobernanza",
        "ninguna tool pronuncia debe llegar al punto de uso desde el meta-toolkit, "
        "no desde el motor de normas. PENDIENTE DE RATIFICACIÓN DEL PROPIETARIO "
        "(mismas alternativas A/B/C). Ver audits/architecture/"
-       "QA-RC-03-CRUZES.md.",
-       fecha_limite="2027-06-30")
+       "QA-RC-03-CRUZES.md. CERRADO en la ronda R22 por la alternativa B "
+       "(DEC-02, I2-a + COST-a): el puerto `vault.kernel.controles` lanza la "
+       "superficie del dueño como proceso y la arista desaparece del grafo. "
+       "La entrada se CONSERVA como registro de la decisión (no se borra); "
+       "`presupuesto_de_cruces_huerfano()` la reporta como par ya resuelto.",
+       fecha_limite="2027-06-30", cerrado_en="R22 (DEC-02 ruta B, puerto de controles)")
 
 _cruce("autoria", "gobernanza", "permanente", "autoria",
        "Validar mermaid al escribir y registrar el cambio: la escritura no puede "

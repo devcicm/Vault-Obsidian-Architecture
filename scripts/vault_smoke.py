@@ -411,6 +411,48 @@ def smoke(tools: Optional[List[str]] = None) -> Dict[str, Any]:
     }
 
 
+def baseline_check() -> Dict[str, Any]:
+    """AP-42 en superficie LIGERA (COST-a): lee y verifica, NO ejecuta tools.
+
+    Es lo que el puerto de controles lanza como proceso (DEC-02). Debe dar los
+    mismos hallazgos que la composicion pesada de `vault_norms` sin pagar el
+    coste de ejecutar el catalogo entero (~149 s medidos en el camino ingenuo).
+
+    Un hallazgo por cada entrada congelada en la baseline y por cada tool con
+    `script` cuyo `example` no permite derivar invocacion. No ejecuta nada: la
+    equivalencia con el camino pesado la fija `tests/test_puerto_controles.py`.
+    """
+    baseline = load_baseline()
+    problemas: List[Dict[str, str]] = []
+    for tool in baseline:
+        problemas.append({
+            "clave": f"smoke-baseline#{tool}",
+            "detalle": (f"{tool} esta congelada como deuda: su ejemplo "
+                        "documentado no emite un JSON con `ok`. La baseline "
+                        "solo puede encoger."),
+        })
+    for tool in sorted(TOOLS_CATALOG):
+        if tool in SIN_SMOKE:
+            continue
+        if invocation(tool) is None and (TOOLS_CATALOG[tool] or {}).get("script"):
+            problemas.append({
+                "clave": f"vault_mcp_catalog.TOOLS_CATALOG#{tool}",
+                "detalle": (f"{tool} no tiene un `example` del que derivar "
+                            "una invocacion."),
+            })
+    return {
+        "ok": not problemas,
+        "tool": "vault_smoke",
+        "action": "baseline-check",
+        "modo": "ligero",
+        "ejecuta_tools": False,
+        "tools": len(TOOLS_CATALOG),
+        "baseline": len(baseline),
+        "hallazgos": len(problemas),
+        "problemas": problemas,
+    }
+
+
 def freeze() -> Dict[str, Any]:
     r = smoke()
     fallando = sorted(f["tool"] for f in r["failures"])
@@ -436,7 +478,14 @@ def main() -> int:
     p.add_argument("--strict", action="store_true", help="Exit 1 si la deuda creció")
     p.add_argument("--freeze", action="store_true", help="Recongela la baseline")
     p.add_argument("--tool", help="Ejecuta el smoke de una sola tool")
+    p.add_argument("--baseline-check", action="store_true",
+                   help="AP-42 en superficie ligera: lee y verifica, no ejecuta tools")
     args = p.parse_args()
+
+    if args.baseline_check:
+        r = baseline_check()
+        print(json.dumps(r, ensure_ascii=False, indent=2))
+        return 0 if r["ok"] else 1
 
     if args.freeze:
         r = freeze()

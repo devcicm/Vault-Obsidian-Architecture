@@ -144,7 +144,22 @@ def test_el_audit_reporta_la_deuda_congelada(tmp_path, monkeypatch):
     for sec in ("00_System", "01_Projects", "99_Index"):
         (root / sec).mkdir(parents=True)
     (root / "01_Projects" / "index.md").write_text("---\ntitle: idx\n---\n# idx\n", encoding="utf-8")
-    monkeypatch.setattr(smoke, "load_baseline", lambda: ["vault_x"])
+    from vault.kernel import controles as puerto
+
+    real = puerto.ejecutar
+
+    def falso(codigo, **kw):
+        if codigo == "AP-42":
+            return {"control": "AP-42", "estado": "ejecutado", "detalle": None,
+                    "hallazgos": 1,
+                    "problemas": [{"clave": "smoke-baseline#vault_x",
+                                   "detalle": ("vault_x esta congelada como "
+                                               "deuda: su ejemplo no emite ok")}],
+                    "envelope": None, "exit_code": 0, "segundos": 0.0,
+                    "superficie": "vault_smoke.py"}
+        return real(codigo, **kw)
+
+    monkeypatch.setattr(puerto, "ejecutar", falso)
     r = vn.vault_norms_audit(root)
     assert "AP-42" in r["by_norm"]
     assert any("vault_x" in v["detail"] for v in r["violations"] if v["norm"] == "AP-42")

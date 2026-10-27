@@ -205,11 +205,22 @@ def test_el_detector_ve_los_dos_estilos_de_import(tmp_path, monkeypatch):
     que hay que conservar es la CAPACIDAD de detección: que el detector siga
     viendo las dos formas de importar.
     """
-    fuera = arch.cruces_fuera_de_puerto()
     # Estilo `import X as _alias` + `_alias.attr` — el que el detector no veía
-    # hasta v40.9. El ejemplo vivo es `vault_smoke.load_baseline`, uno de los
-    # cinco cruces que siguen congelados (D–H de la auditoría 2026-10-24).
-    assert [x for x in fuera if x["symbol"] == "vault_smoke.load_baseline"]
+    # hasta v40.9. Hasta R22 había un ejemplo VIVO (`vault_smoke.load_baseline`);
+    # el puerto de controles lo saldó (off_port 5 -> 0), así que la CAPACIDAD de
+    # detección se prueba con un fichero sintético: si alguien "arreglara" el
+    # cero estrechando la medida, este caso dejaría de ver el símbolo.
+    alias = tmp_path / "vault_alias.py"
+    alias.write_text(
+        "import vault_smoke as _smoke\n\n\ndef f():\n"
+        "    return _smoke.load_baseline()\n", encoding="utf-8")
+    ctx_smoke = arch.contexto_de("vault_smoke")
+    monkeypatch.setattr(arch, "arboles_medidos", lambda: [alias])
+    monkeypatch.setattr(
+        arch, "_mapa_modulos",
+        lambda: {"vault_alias": "gobernanza", "vault_smoke": ctx_smoke})
+    assert [h["symbol"] for h in arch.cruces_fuera_de_puerto()] == [
+        "vault_smoke.load_baseline"]
     # Estilo `from X import y`: hoy no queda ningún cruce vivo que lo use —los
     # cinco que quedan son todos `import X as _alias`—, así que la rama se
     # prueba con un fichero sintético, que es donde todavía se puede provocar

@@ -109,6 +109,12 @@ def coverage() -> Dict[str, Any]:
         "norms_total": len(todas),
         "norms_spoken": len(dichas),
         "silent": mudas,
+        # Contrato del puerto de controles (DEC-02): un elemento por hallazgo,
+        # en la forma que `vault.kernel.controles` normaliza sin interpretar.
+        "problemas": [{"clave": f"vault_norms.NORM_CATALOG#{codigo}",
+                       "detalle": f"{codigo} no la pronuncia ninguna tool."}
+                      for codigo in mudas],
+        "hallazgos": len(mudas),
         "uncovered_declared": descubiertas,
         "hint": (
             "Una norma que ninguna tool nombra no llega nunca al agente: "

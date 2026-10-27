@@ -73,13 +73,23 @@ def test_audit_clean_vault(tmp_path):
 
 def test_runtime_audit_no_arrastra_observabilidad_del_estandar(tmp_path, monkeypatch):
     """AP-42/AP-43 siguen en la fachada legacy, no en un vault consumidor."""
-    import vault_smoke
-    import vault_voice
+    from vault.kernel import controles as puerto
 
     root = _make_vault(tmp_path)
     _sync_index(root)
-    monkeypatch.setattr(vault_smoke, "load_baseline", lambda: ["vault_x"])
-    monkeypatch.setattr(vault_voice, "coverage", lambda: {"silent": ["AP-99"]})
+    real = puerto.ejecutar
+
+    def falso(codigo, **kw):
+        if codigo in ("AP-42", "AP-43"):
+            return {"control": codigo, "estado": "ejecutado", "detalle": None,
+                    "hallazgos": 1,
+                    "problemas": [{"clave": f"{codigo}#x",
+                                   "detalle": f"{codigo} hallazgo inyectado"}],
+                    "envelope": None, "exit_code": 0, "segundos": 0.0,
+                    "superficie": "doble.py"}
+        return real(codigo, **kw)
+
+    monkeypatch.setattr(puerto, "ejecutar", falso)
 
     runtime = auditar_runtime(root)
     legacy = vault_norms_audit(root)

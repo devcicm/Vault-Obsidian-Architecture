@@ -18,9 +18,6 @@
     "vault_context_pack -> vault_search",
     "vault_errors -> vault/autoria",
     "vault_mcp -> vault_mcp_context",
-    "vault_norms -> vault_mcp_catalog",
-    "vault_norms -> vault_smoke",
-    "vault_norms -> vault_voice",
     "vault_norms_coherence -> vault_norms",
     "vault_onboard -> vault_reindex",
     "vault_onboard -> vault_section_index",
@@ -41,13 +38,7 @@
   ],
   "frozen_bindings": [],
   "duplicate_paths": [],
-  "off_port_crossings": [
-    "vault_norms -> vault_mcp_catalog.check_params",
-    "vault_norms -> vault_smoke.SIN_SMOKE",
-    "vault_norms -> vault_smoke.invocation",
-    "vault_norms -> vault_smoke.load_baseline",
-    "vault_norms -> vault_voice.coverage"
-  ],
+  "off_port_crossings": [],
   "excepcion_de_alcance": {
     "version": "v40.30",
     "entrada": "cli/registry -> vault_mcp_catalog",
