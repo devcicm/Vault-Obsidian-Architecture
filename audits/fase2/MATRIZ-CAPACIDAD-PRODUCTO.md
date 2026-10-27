@@ -5,6 +5,25 @@
 fueron reclasificadas como NO empaquetadas (QA-R14-PORT-01). El corte anterior
 (2026-10-26) queda como histórico en el git de este fichero.
 
+### Clasificación de alcance del release (GOAL R16 §11)
+
+| Capacidad | Etiqueta | Base |
+|---|---|---|
+| CLI de producto (`init`, `doctor`, `status`, `tools`, `run`, `mcp-path`) | `SHIPPED_AND_TESTED` | E2E 27/27 + CI 12 columnas |
+| MCP stdio JSON-RPC (97 tools + 7 recursos `vault://`) | `SHIPPED_AND_TESTED` | E2E + `test_mcp_runner` + `test_mcp_recursos` |
+| Runtime standalone + persistencia + cuarentena/restore | `SHIPPED_AND_TESTED` | E2E + `test_vault_init_clean` |
+| SP-04 del servicio de tokens | `SHIPPED_AND_TESTED` | 20/20 con los 5 criterios del dictamen |
+| SSE/HTTP (`--port` del servidor MCP) | `SHIPPED_NOT_TESTED` | único `NOT_RUN` de la superficie distribuida: declarado, sin prueba |
+| `python -m cli` (`groups/find/show/doctor/run/plan/batch/scan`) | `NOT_SHIPPED` | el paquete `cli/` no viaja en la wheel (verificado) |
+| `--verify-integrity`, scheduler de olas, `--stop-on-error`, salida 130 | `NOT_SHIPPED` | ídem (superficie de mantenimiento del checkout) |
+| Superficie de mantenimiento (`vault_norms --audit`, gates, audits) | `NOT_SHIPPED` | `installed: false` en la wheel; propia del checkout |
+| Quick Start «checkout» del README (TD-0009/DOC-0001) | `OUT_OF_SCOPE` (canal wheel) | corregir la documentación, no el paquete |
+| Tools retiradas (`vault_backup_base64`, `vault_restore_base64`) | `DEPRECATED` | superseded_by en el catálogo |
+
+Ninguna capacidad `SHIPPED_NOT_TESTED` se anuncia como certificada: si el
+propietario quiere incorporar SSE/HTTP al canal, el incremento exige su
+recorrido E2E + impacto en QG-03/05/06/07 y un nuevo candidato.
+
 **Fecha de la medición base:** 2026-10-26 · **Rama:** `work/release-cli-mcp-20261025`
 **Cómo se mide:** cada fila dice de dónde sale el dato. Lo que no se ha ejecutado
 figura `NOT_RUN`; lo que existe en el código pero no se ha ejercitado figura

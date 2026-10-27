@@ -140,3 +140,65 @@ lectura.)
 **Comando del inventario (solo lectura):** listado recursivo con tamaño,
 mtime y SHA-256 por fichero; ninguna escritura. El directorio no fue movido,
 modificado ni purgado: sigue exactamente como lo midió el detector.
+
+## 4. Runbook no destructivo para DEC-04 (GOAL R16 §9)
+
+**Nada de esto se ejecuta sin autorización escrita del dueño de los datos.**
+Fases 1-3 ya están hechas (inventario, hashes, verificación de inmutabilidad
+en R14 y R15); el procedimiento completo, para cuando el propietario decida:
+
+```text
+FASE 1 (HECHA, R14/R15)  INVENTARIO ORIGINAL
+                         66 ficheros, 21 dirs, 854.108 B, mtimes junio 2026
+FASE 2 (HECHA, R14/R15)  HASHES ORIGINALES
+                         sha256 por fichero (apéndice A + evidencia del ejecutor)
+FASE 3 (HECHA, R15)      VERIFICACION DE INMUTABILIDAD
+                         re-lectura 2026-10-27: 3/3 hashes clave identicos
+FASE 4 (PENDIENTE)       ARCHIVO DE PRESERVACION
+                         ZIP/ASAR del arbol completo + manifiesto con los
+                         sha256 de FASE 2; destino propuesto: donde el dueno
+                         indique (nunca dentro del vault ni del repo)
+FASE 5 (PENDIENTE)       VERIFICACION DEL ARCHIVO
+                         descompresion en arena desechable + comparacion de
+                         los 66 sha256 uno a uno contra FASE 2
+FASE 6 (PENDIENTE)       REGISTRO DE CUSTODIA
+                         acta con: origen, destino, hashes, fecha, firmante,
+                         referencia de la autorizacion (DEC-04 firmada)
+FASE 7 (PENDIENTE)       AUTORIZACION DEL PROPIETARIO
+                         firma explicita del traslado/purga sobre el acta
+FASE 8 (PENDIENTE)       TRASLADO / PURGA AUTORIZADA
+                         solo la operacion autorizada; la purga exige
+                         autorizacion SEPARADA de la del traslado
+FASE 9 (PENDIENTE)       RE-AUDITORIA AP-36
+                         auditoria del sandbox A + runtime B con el codigo
+                         vigente; la desaparicion de la carpeta NO es el
+                         criterio: se acreditan las postcondiciones y el
+                         origen de la nueva medicion
+```
+
+## 5. Propuesta de diff para DEC-03 (preparada, NO aplicada)
+
+Si el propietario ratifica la opción C, estos son los cambios que se
+propondrían — como diff formal a revisión de QA, nunca aplicados sin ese
+acto (lo exige también el anexo del propietario, `cc05eab`):
+
+1. **`catalogo-qg.yaml` (QG-02)**: el check «estado del sandbox» pasa a
+   referenciar el **veredicto compuesto** (`politica_certificacion_compuesta.py`)
+   con tres entradas: auditoría del runtime, auditoría del sandbox y registro
+   de residuos. `pass_criteria`: runtime 0 violaciones + sandbox sin escapes
+   nuevos + controles `ejecutado` + `completo: true` + **todo residuo
+   listado con su `decision_ref`**. Un residuo sin decisión sigue BLOCKED.
+2. **`politica_qg.py`**: el estado de QG-02 consume el veredicto compuesto
+   (mismo fail-closed; los degradados y `completo: false` siguen bloqueando).
+3. **`POLITICA-CERTIFICACION-PRODUCTO.md`**: pasa de PROPUESTA a aplicada con
+   la matriz de los dos sujetos y el registro diferenciado de residuos.
+4. **Colector**: nuevo subcheck de QG-02 que ejecuta el veredicto compuesto
+   con las auditorías del SHA (procedencia igual que hoy).
+5. **Tests**: los 9 de `test_politica_certificacion_compuesta.py` más los
+   negativos de integración del colector (evidencia de otro SHA, control
+   degradado, residuo sin decisión).
+
+Punto clave que la propuesta fija: **un nuevo escape de contención nunca
+obtiene PASS** (clase grave, FAIL), y un residuo histórico solo transita a
+PASS-declarado con decisión firmada — y aun así queda listado por nombre en
+el veredicto y en el manifiesto de release.

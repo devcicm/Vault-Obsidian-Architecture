@@ -1,3 +1,101 @@
+# Respuesta del ejecutor a QA — R16 (regresión de codificación corregida, matriz REL al contrato completo y expedientes de firma servidos)
+
+- **Emisor:** agente local (ejecutor técnico)
+- **Destinatario:** QA arquitectónico (ChatGPT) — protocolo y ramas en `audits/handoff/PROTOCOLO-QA.md`
+- **Fecha:** 2026-10-27
+- **Rama:** `work/release-cli-mcp-20261025`
+- **Dictamen QA respondido:** `e47d62f` (rama `qa/review-release-cli-mcp-015b776-20261027`)
+- **Registro del propietario tomado en cuenta:** anexo consultivo `cc05eab` (rama `proposal/dec-02b-dec-03c-dec-04pending-20261026`): preferencias DEC-02=B y DEC-03=C **condicionadas y SIN ratificar**; DEC-04=PENDING. No se ha fusionado esa rama ni se ha actuado sobre sus preferencias sin el acto formal.
+- **SHA inicial:** `e0fc775` · **Producto (sin cambios):** `015b7765b80cac21c6dcf859ae075d036cd01def` (tree `d190fd24…`)
+
+```text
+GOAL: RELEASE CLI + MCP PARA TERCEROS
+
+ESTADO: BLOCKED_OWNER_DECISION — regresion R15 corregida en causa; CI del
+        HEAD corregido en curso al cierre (se registra su run_id en el
+        siguiente delta o la consulta QA la ve concluida); expedientes
+        DEC-01..06 servidos para firma.
+RAMA: work/release-cli-mcp-20261025
+HEAD INICIAL: e0fc775
+HEAD FINAL: el commit de esta ronda (fix de codificacion + expedientes)
+PRODUCT_SHA: 015b7765b80cac21c6dcf859ae075d036cd01def (SIN cambios en R15/R16)
+PRODUCT_TREE: d190fd243567556e824795154b6fd44bd76309d5
+
+REGRESION R15: run 40451686234 (e0fc775) — 12 jobs Validate en rojo
+CAUSA RAIZ: tests/test_manifiesto_candidato.py (R15) con dos capturas
+            subprocess text=True SIN encoding (lineas 63 y 73); el guard de
+            portabilidad (test_ningun_sitio_decodifica_con_la_locale) las
+            detecto en TODAS las plataformas (12/12 validate; los 13 jobs de
+            producto pasaron: el artefacto no se toco)
+CORRECCION: encoding="utf-8" explicito en ambas llamadas; sin tocar
+            aserciones ni el detector
+COMMIT:     el de esta ronda
+REGRESIONES: L1 28/28 (manifiesto 7 + portabilidad 21); L2 31/31
+
+CI_RUN:      40442954197 (producto 015b776): 25/25 success — vigente
+CI_SHA:      015b7765b80cac21c6dcf859ae075d036cd01def
+CI_JOBS:     25 (12 validate + 12 product gates + lint)
+CI_CONCLUSION: success; la corrida del HEAD corregido se registra al concluir
+
+SUITE:   r14 vigente para el producto (6334/13/0); collectables hoy 6363
+         (+16 de expediente)
+PUERTAS: 26/26 (r14, vigente)
+E2E:     27/27 (r14, vigente)
+WHEEL:   8cda5ef45626dd244199528eb3f8b5403788f6f1e4b3e2e75ac98f5f737f3cfd
+SDIST:   1c65f132434809c22cb5794a4896a4717c542b3dbbf00b15a7c590348fdb7656
+
+QG-00: BLOCKED — reconciliador exit=1 (10 divergencias); identidad/arbol/
+       saneamiento OK; EXPEDIENTE DE FIRMA servido (inerte hasta firma)
+QG-01: BLOCKED — mismo expediente; baseline 5/5 intacta; propuesta B revisada
+       servida (PLAN-B §12: I2-a/b/c y COST-a/b/c con coste/riesgos/pruebas)
+QG-02: BLOCKED — INC-0001 externa (inmutabilidad 3/3); contrato C propuesto
+       + 9 tests; propuesta de diff para catalogo/politica/colector preparada
+       SIN aplicar (QG-02-ESCENARIOS §5); runbook DEC-04 no destructivo §4
+QG-03: PASS (recibos R14 del producto; sin cambios de producto)
+QG-04: PASS (recibos R14; TD-0008 verificado en la wheel distribuida)
+QG-05: PASS (recibos R14)
+QG-06: PASS (recibos R14)
+QG-07: CI 25/25 del producto; BLOCKED por prerrequisitos QG-00/02 (fail-closed)
+
+REL-00..REL-13: matriz al contrato completo (13 campos por etapa) en el
+        informe §10; estados separados TEST_PASS/CI_PASS/QG_PASS/QA_APPROVED/
+        OWNER_AUTHORIZED/PUBLISHED
+CAPACIDADES DISTRIBUIBLES: SHIPPED_AND_TESTED (CLI producto, MCP stdio,
+        runtime, SP-04) · SHIPPED_NOT_TESTED (SSE/HTTP, unico NOT_RUN)
+CAPACIDADES FUERA DE ALCANCE: NOT_SHIPPED (python -m cli completa: plan/
+        batch/verify-integrity/130; mantenimiento) · DEPRECATED (base64) ·
+        OUT_OF_SCOPE (Quick Start checkout)
+
+DEC-01: abierta (Constitucion DRAFT) — ficha lista
+DEC-02: PREFERENCIA B del propietario, CONDICIONADA a eleccion I2 (a/b/c) y
+        coste (a/b/c): eleccion servida en PLAN-B §12 con coste/riesgos/
+        pruebas/plantilla de firma; expediente de firma de las 10
+        divergencias inerte hasta `ratificado: true`
+DEC-03: PREFERENCIA C, CONDICIONADA: contrato ejecutable + 9 tests + propuesta
+        de diff SIN aplicar (§5 del dosier QG-02)
+DEC-04: PENDING: runbook no destructivo de 9 fases (§4 dosier); fases 1-3
+        hechas (inventario/hashes/inmutabilidad 3/3); sin tocar datos
+DEC-05: abierta (historia publicada: conservar con riesgo documentado)
+DEC-06: abierta (autorizacion de distribucion, solo tras QG + QA)
+
+EVIDENCIAS: r15-reconciliador-check.* (exit 1, 10 divergencias), log del job
+            validate fallido (2 sitios exactos), 28/28 + 31/31 focalizadas,
+            inventario vault-backups 3/3 hashes, manifiesto + contrato C en
+            el repo con sus tests
+RIESGOS: SSE/HTTP unico NOT_RUN distribuido (declarado); DEC sin firmar;
+         corrida del HEAD en curso al cierre (CI_PENDING honesto)
+BLOQUEOS: ver §QG-00/01/02 y DEC-01..06 — todos de decision del propietario
+         salvo el dictamen QA
+SIGUIENTE ACCIÓN: con DEC-02 (I2+coste) y DEC-03/04 firmadas: implementar B,
+         re-freeze, certificacion integral y CI; sin ellas, espera controlada
+SOLICITUD QA: dictamen sobre el estado R16 (producto 015b776 sin cambios +
+         derivas corregidas + expedientes servidos)
+
+LIBERABLE: false — RELEASE_BLOCKED
+```
+
+---
+
 # Respuesta del ejecutor a QA — R15 (derivas documentales corregidas, contrato C propuesto y expedientes de firma preparados)
 
 - **Emisor:** agente local (ejecutor técnico)

@@ -61,7 +61,8 @@ def test_el_product_sha_existe_en_git_y_coincide_con_el_arbol():
     rc = _cargar()["release_candidate"]
     assert _commit_existe(rc["product_sha"]), "el product_sha no existe en git"
     p = subprocess.run(["git", "rev-parse", f"{rc['product_sha']}^{{tree}}"],
-                       cwd=str(REPO), capture_output=True, text=True)
+                       cwd=str(REPO), capture_output=True, text=True,
+                       encoding="utf-8")
     assert p.returncode == 0
     assert p.stdout.strip() == rc["product_tree_sha"], "el tree del manifiesto no coincide"
 
@@ -71,7 +72,7 @@ def test_el_head_documental_tiene_al_candidato_como_padre():
     m = _cargar()
     rc = m["release_candidate"]
     padre = subprocess.run(["git", "rev-parse", "HEAD^"], cwd=str(REPO),
-                           capture_output=True, text=True)
+                           capture_output=True, text=True, encoding="utf-8")
     # El manifiesto definitivo puede estar en el propio commit candidato
     # (primera publicacion) o en un delta documental posterior.
     if padre.returncode == 0 and padre.stdout.strip() == rc["product_sha"]:

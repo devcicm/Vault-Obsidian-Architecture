@@ -97,6 +97,31 @@ horas, y ese estado puntual se tomó por «no arrancan»), y cuando corren
 fallan con defectos reales del producto. El diagnóstico completo, con la
 traza de cada uno, está en `audits/fase2/CI-diagnostico.md`.
 
+**La corrida del HEAD documental (R16):** `40451686234` sobre `e0fc775`
+terminó `completed/failure` con **12 validate en rojo por una sola causa
+raíz**: la ronda R15 introdujo en `tests/test_manifiesto_candidato.py` dos
+capturas `subprocess` con `text=True` sin `encoding` (líneas 63 y 73), y el
+guard de portabilidad (`test_ningun_sitio_decodifica_con_la_locale`) las cazó
+en las doce columnas. Corregido en R16 con `encoding="utf-8"` explícito
+(28/28 en las dos suites focalizadas; L2 31/31). **El producto no cambió**:
+los 13 jobs de producto (wheel) pasaron en esa misma corrida. La corrida del
+HEAD corregido se registra en el buzón R16 al concluir.
+
+### Análisis de impacto producto ↔ documentación (GOAL R16 §4)
+
+La separación candidato/producto ↔ HEAD documental solo vale con el análisis
+de impacto delante. Delta `015b776 → HEAD`:
+
+| Zona | Ficheros | ¿Afecta al distribuible? |
+|---|---|---|
+| `scripts/`, `vault/`, `mcp/`, `pyproject.toml` | **ninguno** | **NO**: la wheel del candidato sigue siendo la certificada |
+| `tests/` | `test_manifiesto_candidato.py` (nuevo en R15, corregido en R16), `test_politica_certificacion_compuesta.py` (nuevo) | **NO** al artefacto; **SÍ** a la suite: por eso el HEAD exige corrida propia (los guards la ejercitan) |
+| `audits/`, `docs/` | manifiestos, informes, expedientes DEC, PRDs (notas) | **NO** ejecutable; integridad documental verificada (saneamiento + conteos) |
+
+Conclusión: la certificación de producto (suite/puertas/E2E/recibos/CI de
+`015b776`) **se conserva** para el artefacto; la CI del HEAD se exige para
+validar los guards y la suite ampliada, no para recertificar el artefacto.
+
 **El cierre de la ronda:** la corrida del commit final `e198ffb`,
 `40430269201`, terminó **completed/success con 25/25** — las cuatro columnas
 de macOS verdes incluidas, y el arreglo de R13-05 verificado en la matriz
@@ -319,31 +344,48 @@ certificado son decisiones del propietario (§6) y el dictamen de QA; ninguna
 de las dos cosas la puede cerrar el ejecutor, y ninguna se resuelve con un
 documento que afirme lo contrario.
 
-## 10. Matriz formal de release (REL-00..13) — estado R14
+## 10. Matriz formal de release (REL-00..13) — estado R16
 
-Contrato del GOAL R14 §6. Estados medidos sobre el **candidato de esta ronda**
-(el SHA del commit que publica esta tabla; identidad completa en
-`audits/fase2/CANDIDATO-RELEASE.yaml`). Los estados provienen de
-verificadores y decisiones identificables — nunca de la prosa de este
-informe. Distinción obligatoria: **CI_PASS ≠ QG07_PASS ≠ QA_APPROVED ≠
+Contrato del GOAL R14 §6 ampliado por R16 §6. Cada etapa declara: propósito
+(la «Etapa»), norma aplicable, requisito, criterio de aceptación, verificador
+real, SHA de evidencia, resultado observado, estado QG, veredicto QA (cuando
+existe), autoridad y bloqueo/acción. Los estados provienen de verificadores y
+decisiones identificables — nunca de la prosa de este informe. Distinción
+obligatoria: **TEST_PASS ≠ CI_PASS ≠ QG_PASS ≠ QA_APPROVED ≠
 OWNER_AUTHORIZED ≠ PUBLISHED**.
 
-| ID | Etapa | Norma / QG | Criterio | Evidencia | SHA | Estado | Responsable | Acción pendiente |
+**Requisito, criterio de aceptación y verificador por etapa:**
+
+| ID | Requisito | Criterio de aceptación | Verificador |
+|---|---|---|---|
+| REL-00 | versión y producto identificados; alcance declarado | manifiesto mecanizable (hex puro) con SHAs reales y `release_authorized: false` | `tests/test_manifiesto_candidato.py` (7 tests, con negativos) |
+| REL-01 | fronteras, puertos y propiedad conciliadas | `vault_arch` verde + reconciliador exit 0 + baseline sin crecer | `vault_arch.py --check --strict`; `reconciliar_archify.py --check` |
+| REL-02 | controles obligatorios ejecutados y contenido conforme | 26/26 + controles `ejecutado` + `completo: true` + violaciones limitadas al residuo decidido | `vault_gate.py --strict`; `vault_norms --audit`; colector |
+| REL-03 | suite íntegra sin fallos + recuperación | JUnit 0 failed/0 errors; E2E completo desde wheel | `pytest --junitxml`; `recorrido_terceros_r07.py` |
+| REL-04 | contención, dependencias y destructivas conformes | saneamiento 0; pip-audit limpio; contención PASS; destructivas PASS | colector (subchecks); `comprobar_saneamiento.py` |
+| REL-05 | CLI y MCP equivalentes sobre lo instalado | paridad PASS + AP-40 exit 0 | `paridad_cli_mcp.py`; `vault_mcp_catalog --check-params` |
+| REL-06 | wheel instalable, usable y de contenido acreditado | build OK + instalación limpia + contenido íntegro | colector (subchecks) |
+| REL-07 | matriz CI completa del SHA | run del SHA `completed/success`, 25/25, sin omitidos | `colector_qg.estado_ci` (endpoint de jobs con total_count) |
+| REL-08 | dictamen QA independiente sin bloqueantes | dictamen publicado en rama QA | QA (revisión independiente) |
+| REL-09 | autorización expresa del propietario | fichas DEC firmadas (fecha + referencia) | propietario |
+| REL-10..13 | publicación, activación, seguimiento, relanzamiento | según canal aprobado y contratos runtime | release manager / operador |
+
+| ID | Etapa | Norma / QG | SHA de evidencia | Resultado observado | Estado QG | Veredicto QA | Autoridad | Bloqueo → Acción para desbloquear |
 |---|---|---|---|---|---|---|---|---|
-| REL-00 | Identidad y alcance | Constitución, QG-00 | Versión y producto identificados | `CANDIDATO-RELEASE.yaml` (manifiesto) | este commit | **MEDIDO** (manifiesto creado; QG-00 sigue BLOCKED por las divergencias) | Ejecutor | Ratificaciones DEC-01/02 |
-| REL-01 | Arquitectura | QG-01 | Contratos y cruces conciliados | `reconciliar_archify.py --check` (exit 1: 10 divergencias sin firma — expediente de firma preparado en `divergencias-aceptadas.yaml`, inerte hasta `ratificado: true`), `vault_arch --check` verde (5/5 baseline) | este commit | **BLOCKED** (decisión) | Arquitectura / propietario | DEC-02: firmar las 10 u ordenar el re-take del snapshot; luego enmiendas I2/coste del plan B §11 |
-| REL-02 | Gobernanza | QG-02 | Controles completos, conformes | recibos QG-02 (1 violación AP-36 externa; controles `ejecutado`, 0 hallazgos); runtime limpio 0 violaciones | este commit | **BLOCKED** (decisión) | Gobernanza / propietario | DEC-03 (contrato) + DEC-04 (residuo) |
-| REL-03 | Integridad | QG-03 | Suite, regresiones, recuperación | JUnit `r14`: **6334 passed / 13 skipped / 0 failed** (6347 collectados); E2E **27/27** | este commit | **PASS** | Ejecutor | — |
-| REL-04 | Seguridad | QG-04 | Contención y dependencias conformes | saneamiento exit 0; pip-audit; contención (self-test); operaciones destructivas; SP-04 intacto (20/20) | este commit | **PASS** (con riesgo TD-0008 declarado, dueño propietario) | Seguridad | TD-0008 antes de beta de terceros (dictamen) |
-| REL-05 | Paridad | QG-05 | CLI/MCP equivalentes | paridad CLI↔MCP sobre la wheel instalada; AP-40 exit 0 | este commit | **PASS** (paridad de 5 escenarios, no de las 97 tools) | Ejecutor | Limites declarados en §5.3 |
-| REL-06 | Distribución | QG-06 | Wheel instalada y usable | build + hashes del manifiesto; instalación limpia; 706/706 miembros | este commit | **PASS** | Empaquetado | — |
-| REL-07 | Matriz CI | QG-07 | Jobs requeridos completados y exitosos | **candidato `015b776`: run `40442954197` — `completed/success`, 25/25** (recibo QG-07 del colector con los jobs nombrados). Antecedente: `e198ffb` run `40430269201` 25/25, aceptado por QA | `015b776` | **CI_PASS** | CI | — |
-| REL-08 | Dictamen QA | QG-07 | Sin bloqueantes | dictamen `7dc1a25`: matriz de `e198ffb` aceptada, QA-R13-06 abierto → **corregido y verificado en la corrida del candidato**; solicitud de nuevo dictamen sobre `015b776` en `PROTOCOLO-QA.md` §5 | `015b776` | **QA_REVIEW_REQUIRED** | QA | Dictaminar sobre `015b776` |
-| REL-09 | Aprobación | QG-07 | Autorización expresa | fichas DEC-01..06 (`audits/handoff/DECISIONES-PROPIETARIO.md`), espacios de decisión vacíos | — | **OWNER_DECISION_REQUIRED** | Propietario | DEC-06 tras dictamen favorable |
-| REL-10 | Publicación | Gobierno release | Artefactos aprobados publicados | — | — | **NOT_RUN** (no autorizado; sin tag ni release) | Release manager | Tras REL-09 |
-| REL-11 | Activación | Contratos runtime | Instalación y datos íntegros | — | — | **NOT_RUN** | Operador | Tras REL-10 |
-| REL-12 | Seguimiento | Observabilidad | Estabilidad y errores monitorizados | — | — | **NOT_RUN** | Operador | Tras REL-11 |
-| REL-13 | Relanzamiento | Nueva versión | Compatibilidad, migración, QA y autorización | — | — | **NOT_RUN** | Propietario | Nuevo ciclo |
+| REL-00 | Identidad y alcance | Constitución, QG-00 | `015b776` | manifiesto validable (7/7 tests, QA-R14-DOC-02 corregida) | QG-00 parcial: identidad OK, reconciliación BLOCKED | pendiente de re-visión | Ejecutor | — |
+| REL-01 | Arquitectura | QG-01 | `015b776` | reconciliador **exit 1** (10 divergencias sin firma; expediente `divergencias-aceptadas.yaml` inerte hasta firma); guard verde (baseline 5/5 intacta) | QG-01 **BLOCKED** | BLOCKED, requiere DEC-02 | Arquitectura / propietario | **DEC-02**: firmar las 10 u ordenar re-take del snapshot; luego enmiendas I2/coste (plan B §11-§12) |
+| REL-02 | Gobernanza | QG-02 | `015b776` | 1 violación AP-36 externa (inmutable, 3/3 hashes); controles `ejecutado` 0 hallazgos; runtime limpio 0; contrato C propuesto + 9 tests | QG-02 **BLOCKED** | BLOCKED, requiere DEC-03/04 | Gobernanza / propietario | **DEC-03** (ratificar C) + **DEC-04** (custodia del residuo) |
+| REL-03 | Integridad | QG-03 | `015b776` | JUnit r14: 6334/13/0 (6347); E2E 27/27; el HEAD corregido exige corrida propia (guards) | QG-03 **PASS** (recibo) | aceptado como reportado | Ejecutor | — |
+| REL-04 | Seguridad | QG-04 | `015b776` | saneamiento 0; pip-audit limpio; contención PASS; destructivas PASS — TD-0008 resuelto y verificado en wheel | QG-04 **PASS** (recibo) | aceptado; cierre TD-0008 pendiente de dictamen explícito | Seguridad | dictamen sobre el cierre TD-0008 |
+| REL-05 | Paridad | QG-05 | `015b776` | paridad PASS; AP-40 exit 0 | QG-05 **PASS** (recibo) | aceptado (5 escenarios, no 97 tools) | Ejecutor | — |
+| REL-06 | Distribución | QG-06 | `015b776` | build + instalación limpia + 706/706 | QG-06 **PASS** (recibo) | aceptado | Empaquetado | — |
+| REL-07 | Matriz CI | QG-07 | `015b776` | run `40442954197`: `completed/success`, **25/25** (recibo con jobs nombrados); el HEAD documental exige su corrida propia (CI_PENDING al cierre de R15; regresión de codificación corregida en R16) | evidencia **CI_PASS**; política BLOCKED por prerrequisitos | `CI_MATRIX_25_OF_25=VERIFIED` (sobre `015b776`) | CI | QG-00/02 para el QG_PASS global |
+| REL-08 | Dictamen QA | QG-07 | `e47d62f` | último dictamen: P1 aceptado (`ACCEPTED_SCOPED`), release BLOCKED por decisiones; DOC-01..03 + PORT-01 corregidos en R15/R16 | — | **QA_REVIEW_REQUIRED** | QA | nuevo dictamen sobre el estado R16 |
+| REL-09 | Aprobación | QG-07 | `cc05eab` | fichas DEC-01..06 vacías + **anexo consultivo del propietario** (rama `proposal/dec-02b-dec-03c-dec-04pending-20261026`: preferencias B/C condicionadas, `OWNER_RATIFICATION=NOT_GIVEN`) | — | — | Propietario | DEC-01..06 (elección I2/costo de B; firma del contrato C; DEC-04; resto) |
+| REL-10 | Publicación | Gobierno release | — | sin tag, sin release | — | — | Release manager | tras REL-09 |
+| REL-11 | Activación | Contratos runtime | — | — | — | — | Operador | tras REL-10 |
+| REL-12 | Seguimiento | Observabilidad | — | — | — | — | Operador | tras REL-11 |
+| REL-13 | Relanzamiento | Nueva versión | — | — | — | — | Propietario | nuevo ciclo |
 
 **Lectura fail-closed:** las filas REL-03..07 son las únicas en PASS, y lo
 están **por recibos y corrida del SHA `015b776`**, no por declaración.

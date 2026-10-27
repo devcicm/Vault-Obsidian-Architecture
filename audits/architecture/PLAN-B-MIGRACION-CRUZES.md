@@ -308,6 +308,55 @@ Con esta medición, la recomendación B queda **condicionada también a la
 elección de coste**, además de a la enmienda I2 de §11.2: sin ellas, B
 canjea una deuda arquitectónica por un coste operativo de ~60× en cada audit.
 
+---
+
+## 12. Propuesta B revisada — lista para decisión formal (R16)
+
+El anexo del propietario (`proposal/dec-02b-dec-03c-dec-04pending-20261026`,
+commit `cc05eab`) registra la preferencia **B condicionada** y exige elegir
+EXPRESAMENTE la enmienda I2 y la de coste antes de implementar. Esta §12
+entrega esa elección servida: cada subopción con su viabilidad, coste,
+riesgos y pruebas, para que la decisión sea firmar una fila, no diseñar.
+
+### 12.1 La enmienda I2 (cómo llega el contrato al paquete instalado)
+
+| Subopción | Qué es | Viabilidad medida/analizada | Coste | Riesgos | Pruebas que exigiría |
+|---|---|---|---|---|---|
+| **I2-a** Publicar la superficie de mantenimiento en la wheel (p. ej. entry point `vault-maintenance` o `vault run --maintenance`) | los tres dueños (AP-40/42/43) quedan invocables desde la instalación | factible: son módulos que YA viajan en `_impl/`; lo que falta es el entry point y su clase de catálogo | empaquetado + contrato de catálogo (`installed: false` → nueva clase `maintenance_publicada`); sin cambios de producto runtime | ampliar la superficie pública del paquete (decisión de producto); tests de instalación | I2 con venv limpio: invocar las tres superficies desde la wheel (el fallo actual exit 3/`tool desconocida` debe desaparecer) |
+| **I2-b** Restringir el puerto a la distribución de mantenimiento (checkout/editable), declarándolo en el contrato del puerto | el puerto NO pretende funcionar desde la wheel; la auditoría de gobernanza no es superficie de terceros | ya es la realidad medida: `vault_norms` es `maintenance`/`installed: false` y el audit solo corre en desarrollo | cero de empaquetado | el dictamen puede objetar que I2 queda satisfecho «por definición de sujeto»; hay que escribirlo en el contrato y aceptarlo | I2 redefinido: mismo contrato en checkout e instalación editable (módulos idénticos), documentado en el manifiesto del puerto |
+| **I2-c** Registro en proceso con arista declarada (§3.1) | el dueño se registra en el núcleo al importarse; sin subprocesos | factible con el snag conocido: quien compone fuerza importar al dueño → la arista vuelve al grafo | coste ~0 en latencia | NO elimina el cruce: lo formaliza; contradice el `objetivo: a_eliminar` salvo que el propietario re-clasifique el par | I1/I2 reinterpretados; el guard seguiría viendo la arista (requeriría reclasificar el par → otra decisión) |
+
+### 12.2 La enmienda de coste (cómo no pagar ~60× por audit)
+
+| Subopción | Qué es | Coste esperado | Riesgos | Pruebas que exigiría |
+|---|---|---|---|---|
+| **COST-a** Superficie ligera por dueño: `vault_smoke` publica un argv de solo-baseline (lectura + verificación, SIN ejecutar tools); análogo para voice/mcp_catalog si hace falta | el audit lanza tres subprocesos ligeros | ~2,5-4 s por audit (tres arranques + lecturas); medición obligatoria antes de cerrar | nueva superficie pública del dueño (meta_toolkit); riesgo de divergencia entre la lectura ligera y el smoke completo → prueba de equivalencia entre ambas | benchmark antes/después; equivalencia hallazgos-ligero vs smoke-completo en un sandbox |
+| **COST-b** Ejecución diferida: el audit declara identidad+estado y la ejecución pesada vive en la puerta (que ya corre el smoke) | el audit no lanza procesos; el envelope declara `ejecutado_en_puerta` | ~0 adicional | cambio de contrato del envelope (vecino de TD-0003); el consumidor del audit debe aceptar el nuevo estado; QA debe revisar que no falsee `ejecutado` | tests del envelope con el estado nuevo; negativa: puerta que no corrió → `no_ejecutado`, nunca PASS |
+| **COST-c** No migrar AP-42, migrar solo AP-40/43 (los baratos) y dejar el par `gobernanza→meta_toolkit` parcialmente | elimina 1 de 2 pares | intermedio | deja la deuda a medias: `off_port_total` 5→4, no 3; el `a_eliminar` del par de AP-42 sigue | igual que B con alcance menor |
+
+### 12.3 Lo que la decisión debe nombrar (plantilla de firma)
+
+```yaml
+decision_DEC-02:
+  alternativa: B
+  enmienda_I2: "I2-a | I2-b | I2-c"        # una, con motivo
+  enmienda_coste: "COST-a | COST-b | COST-c"  # una, con motivo
+  umbral_latencia_audit: "<s>"
+  ventana_deprecacion: "<versiones>"
+  fecha: ""
+  ratificado_por: ""
+  referencia: ""
+```
+
+Con la fila firmada, la implementación sigue el §7 del plan (commits
+pequeños reversibles) + las pruebas §6.1 (I1-I5) + §6.2 (equivalencia,
+negativa de la negativa, grafo, reconciliador, suite, E2E desde wheel,
+efectos laterales) y cierra con re-certificación integral y CI del SHA
+resultante. Rollback: §8 (cada commit reversible; el snapshot no se toca).
+
+**Sin esa firma, el ejecutor no implementa nada**: este documento es el
+expediente, no un permiso.
+
 ## 10. La decisión que se pide
 
 Al propietario, con la evidencia de `QA-RC-03-CRUZES.md` y este plan:
