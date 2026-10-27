@@ -23,6 +23,8 @@ from pathlib import Path
 
 import pytest
 
+from sandbox_fixture import copiar_vault
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
@@ -53,8 +55,7 @@ def copia_con_proyecto(tmp_path_factory):
     ultimo_error = None
     for intento in range(5):
         try:
-            shutil.copytree(ROOT / "vault-sandbox", v,
-                            ignore=shutil.ignore_patterns(".locks"))
+            copiar_vault(ROOT / "vault-sandbox", v)
             ultimo_error = None
             break
         except PermissionError as exc:

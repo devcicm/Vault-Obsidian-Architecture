@@ -30,6 +30,8 @@ from pathlib import Path
 
 import pytest
 
+from sandbox_fixture import copiar_vault
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -51,11 +53,9 @@ def vault(tmp_path):
     # 40349132455): `shutil.Error: ... vault-sandbox/00_System/.locks` — el
     # directorio se borro entre dos ficheros de la copia. El estado de bloqueo
     # es de EJECUCION, no contenido: no se copia (mismo criterio que usa la
-    # auditoria del toolkit al copiar el sandbox).
-    shutil.copytree(
-        REPO_ROOT / "vault-sandbox", destino,
-        ignore=shutil.ignore_patterns(".locks", "*.lock"),
-    )
+    # auditoria del toolkit al copiar el sandbox). El conjunto canonico lo
+    # decide UN sitio: sandbox_fixture.copiar_vault.
+    copiar_vault(REPO_ROOT / "vault-sandbox", destino)
     return destino
 
 

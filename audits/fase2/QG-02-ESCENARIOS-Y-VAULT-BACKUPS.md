@@ -194,9 +194,15 @@ acto (lo exige también el anexo del propietario, `cc05eab`):
    la matriz de los dos sujetos y el registro diferenciado de residuos.
 4. **Colector**: nuevo subcheck de QG-02 que ejecuta el veredicto compuesto
    con las auditorías del SHA (procedencia igual que hoy).
-5. **Tests**: los 9 de `test_politica_certificacion_compuesta.py` más los
+5. **Tests**: los 27 de `test_politica_certificacion_compuesta.py` más los
    negativos de integración del colector (evidencia de otro SHA, control
-   degradado, residuo sin decisión).
+   degradado, residuo sin decisión). El ejecutable de referencia ya exige
+   **decisión formal** (id, estado `RATIFICADO`, firmante, fecha ISO,
+   referencia SHA de 40 hex, alcance coincidente con id/norma/ruta/huella y
+   custodia verificada) y **coherencia de la evidencia** (conteo entero no
+   negativo, array presente, conteo consistente, `completo: true`, controles
+   ejecutados, SHA coincidente): una contradicción interna bloquea y nunca
+   pasa (QA-R16-QG02-01/02).
 
 Punto clave que la propuesta fija: **un nuevo escape de contención nunca
 obtiene PASS** (clase grave, FAIL), y un residuo histórico solo transita a

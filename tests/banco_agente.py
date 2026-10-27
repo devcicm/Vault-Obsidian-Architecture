@@ -43,6 +43,8 @@ from pathlib import Path
 
 import yaml
 
+from sandbox_fixture import copiar_vault
+
 TESTS = Path(__file__).resolve().parent
 REPO_ROOT = TESTS.parent
 for _p in (str(TESTS), str(REPO_ROOT), str(REPO_ROOT / "scripts")):
@@ -384,7 +386,7 @@ def huella(raiz: Path) -> str:
 def correr_sobre_copia(original: Path, trabajo: Path) -> dict:
     antes = huella(original)
     copia = trabajo / "copia"
-    shutil.copytree(original, copia, ignore=shutil.ignore_patterns(".git"))
+    copiar_vault(original, copia, ignore_extra=(".git",))
     informe = correr(copia, ajeno=True)
     despues = huella(original)
     informe["original"] = {"ruta": str(original), "sha256": antes,

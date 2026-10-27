@@ -27,6 +27,30 @@ DERIVED_FILES = (
     "tool-contracts.json",
     "tag-registry.json",
 )
+#: Estado de EJECUCION de un vault vivo: no es contenido. El directorio
+#: `.locks/` y los ficheros `*.lock` los crea y retira el proceso que escribe;
+#: una copia que los arrastre falla cuando desaparecen a mitad (WinError 3 /
+#: ENOENT), no por el contenido. Misma clase que el defecto R13-03b del
+#: backup, ya corregido alli: aqui se centraliza para que TODOS los sitios
+#: que copian un vault vivo usen el MISMO conjunto.
+ESTADO_DE_EJECUCION = (".locks", "*.lock")
+
+
+def copiar_vault(origen: Path, destino: Path, *,
+                  ignore_extra: tuple[str, ...] = (),
+                  symlinks: bool = False) -> Path:
+    """Copia un vault ignorando el estado de ejecucion (locks).
+
+    Un solo sitio decide que se ignora: si cada copia inventa su patron, la
+    carrera reaparece (medido el 2026-10-27: `test_durabilidad_caracterizacion`
+    ignoraba `*.lock` pero no `.locks/`, y la corrida 40464661392 loDemonstró
+    en Windows 3.10 con `shutil.Error`).
+    """
+    patrones = tuple(ESTADO_DE_EJECUCION) + tuple(ignore_extra)
+    shutil.copytree(origen, destino,
+                    ignore=shutil.ignore_patterns(*patrones),
+                    symlinks=symlinks)
+    return destino
 
 
 def default_root() -> Path:

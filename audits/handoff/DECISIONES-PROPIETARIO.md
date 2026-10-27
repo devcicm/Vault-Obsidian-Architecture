@@ -80,7 +80,12 @@ fail-closed (QG-00/QG-01/QG-02 BLOCKED; `liberable: false`).
   demostrar I1–I5 (la independencia semántica y operacional, no solo la
   ausencia de aristas) **y a las dos enmiendas medidas en R14** (§11.2 del
   plan: I2 — las superficies no están publicadas en la wheel; §11.3: el coste
-  del camino de proceso ingenuo es ~60× el actual). Sin ratificación, el
+  del camino de proceso ingenuo es ~60× el actual). **Propuesta sustentada
+  (R17): I2-a** (publicar la superficie de mantenimiento en la wheel, la
+  única que acredita el producto distribuido) **+ COST-a** (superficie ligera
+  de baseline, que devuelve el audit a su orden de magnitud), con
+  **umbral de latencia ≤ 5 s por audit**, **ventana de deprecación de una
+  versión** y rollback por commit (PLAN-B §12.3-§12.4). Sin ratificación, el
   ejecutor NO ejecuta nada.
 - **Efecto sobre QG:** desbloquea la evaluación de QG-00/QG-01 (no garantiza
   PASS: lo garantiza la ejecución con sus pruebas).
@@ -101,7 +106,21 @@ fail-closed (QG-00/QG-01/QG-02 BLOCKED; `liberable: false`).
 - **Causa:** el contrato original de QG-02 no distinguió los dos sujetos; la
   propuesta dual (`POLITICA-CERTIFICACION-PRODUCTO.md`) no está aplicada.
 - **Evidencia:** `QG-02-ESCENARIOS-Y-VAULT-BACKUPS.md` §1 y §3 (mediciones
-  separadas A/B/B' y las tres opciones); recibos QG-02 del candidato.
+  separadas A/B/B' y las tres opciones) y §5 (propuesta de diff **sin
+  aplicar**); recibos QG-02 del candidato; ejecutable de referencia
+  `audits/fase2/politica_certificacion_compuesta.py` con **27 pruebas
+  fail-closed** (`tests/test_politica_certificacion_compuesta.py`).
+- **Criterio de ratificación exigido (R17, QA-R16-QG02-01/02):** una
+  decisión de residuo solo vale si es **formal**: identificador, estado
+  `RATIFICADO`, firmante, fecha ISO, **referencia inmutable (SHA de 40
+  hex)**, alcance que COINCIDE con el residuo concreto (id, norma, ruta y
+  huella) y vínculo con la custodia verificada. Una referencia de texto libre
+  no es firma; `PENDING`, `NOT_GIVEN`, campos vacíos, decisiones ajenas o
+  registros mal formados dejan la puerta **BLOCKED**. La coherencia de la
+  evidencia (conteo presente, entero, no negativo, array presente y
+  consistente con el conteo, `completo: true`, controles ejecutados, SHA
+  coincidente) es condición previa: una contradicción interna **nunca**
+  produce PASS. Un escape nuevo sigue siendo **FAIL**.
 - **Alternativas:** **A** solo sandbox; **B** solo runtime (debilita la
   detección: no recomendada); **C** compuesto: runtime limpio + ausencia de
   efectos externos nuevos + registro diferenciado del residuo histórico.
@@ -110,8 +129,13 @@ fail-closed (QG-00/QG-01/QG-02 BLOCKED; `liberable: false`).
   tests negativos antes de aplicarla.
 - **Impacto:** desbloquea (o no) la evaluación de QG-02 junto con DEC-04.
 - **Costos:** C: redacción de la política ejecutable + tests + someter a QA
-  (≈ una ronda corta).
-- **Recomendación:** **C**, por las tres razones del dosier §3.
+  (≈ una ronda corta). R17 deja el ejecutable y los tests listos: la
+  ratificación no requiere escribir código nuevo, solo el acto y el diff
+  formal de §5 del dosier.
+- **Recomendación:** **C**, por las tres razones del dosier §3, **con el
+  criterio de ratificación formal de arriba incorporado** (la preferencia
+  registrada por el propietario — `cc05eab` — sigue siendo preferencia, no
+  ratificación).
 - **Efecto sobre QG:** QG-02 sigue BLOCKED hasta ratificación + resolución del
   residuo (DEC-04) o registro diferenciado si C se ratifica.
 - **Acción posterior:** si C: proponer el cambio formal de catálogo/política

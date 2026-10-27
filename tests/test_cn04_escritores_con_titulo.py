@@ -20,6 +20,8 @@ from pathlib import Path
 
 import pytest
 
+from sandbox_fixture import copiar_vault
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -63,7 +65,7 @@ def _foto(v: Path) -> dict:
 @pytest.fixture(scope="module")
 def copia(tmp_path_factory):
     v = tmp_path_factory.mktemp("cn04") / "vault"
-    shutil.copytree(ROOT / "vault-sandbox", v, ignore=shutil.ignore_patterns(".locks"))
+    copiar_vault(ROOT / "vault-sandbox", v)
     return v
 
 

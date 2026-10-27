@@ -124,7 +124,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-40** — Contrato publicado que la CLI rechaza | guard+audit | `contratos`, `framework` | `test_ap40_42_43_estados.py`, `test_catalog_params.py`, `test_fase2_paridad_fail_closed.py` |
 | **AP-41** — Máquina de estados declarada sin verificar | guard+audit | `framework` | `test_status_machine.py`, `test_voice.py` |
 | **AP-42** — Tool publicada sin haberse ejecutado nunca | guard+audit | `framework` | `test_ap40_42_43_estados.py`, `test_fase2_politica_qg.py`, `test_politica_certificacion_compuesta.py`, `test_smoke.py`, `test_vault_norms_audit.py`, `test_vault_toolkit_audit.py` |
-| **AP-43** — Norma sin refuerzo en el punto de uso | guard+audit | `framework` | `test_ap39_registro_en_el_write_path.py`, `test_ap40_42_43_estados.py`, `test_politica_certificacion_compuesta.py`, `test_vault_norms_audit.py`, `test_voice.py` |
+| **AP-43** — Norma sin refuerzo en el punto de uso | guard+audit | `framework` | `test_ap39_registro_en_el_write_path.py`, `test_ap40_42_43_estados.py`, `test_vault_norms_audit.py`, `test_voice.py` |
 | **AP-44** — Verificación autoconsistente — la tool se certifica a sí misma | guard+audit | `framework` | `test_ap44_verificacion_autoconsistente.py`, `test_kernel.py`, `test_norms_coherence.py`, `test_procesos_git.py`, `test_puente_sin_hogar.py` |
 | **AP-45** — Cobertura sin evidencia — la nota existe para llenar la sección | guard+audit | `framework` | `test_ap45_cobertura_sin_evidencia.py` |
 | **AP-46** — Frontmatter a mano — cada tool es su propio escritor | guard+audit | `framework` | `test_ap46_escritores_migrados.py`, `test_ap46_interpolacion_cruda.py`, `test_ap46_write_path_unico.py`, `test_norms_coherence.py`, `test_vault_sanacion.py` |
@@ -157,7 +157,7 @@ rojo, y una puerta en rojo se desactiva.
 | **SP-04** — Sesión MCP por HTTP sin credencial — cualquier proceso local la abre | guard | `produccion` | `test_mcp_http_seguridad.py`, `test_token_service_seguridad.py` |
 | **CN-01** — Kebab-case filenames — nombres de archivo en minúsculas con guiones | guard | — | `test_ap46_escritores_migrados.py`, `test_cn01_cn04_audit_informativo.py`, `test_cn04_escritores_con_titulo.py`, `test_meta_contrato.py`, `test_vault_norms.py` |
 | **CN-02** — Numbered folder structure — secciones numeradas como únicos destinos | guard+audit | `framework` | `test_blueprint.py`, `test_fix_brackets_ruta.py`, `test_raiz_no_seccion.py`, `test_vault_norms.py`, `test_vault_norms_audit.py` |
-| **CN-03** — Standard status vocabulary — vocabulario canónico de meta.status | audit | `framework` | `test_calidad_no_castiga_el_vocabulario_canonico.py`, `test_norms_coherence.py`, `test_politica_certificacion_compuesta.py`, `test_vault_norms.py`, `test_vault_norms_audit.py`, `test_vault_sanacion.py` |
+| **CN-03** — Standard status vocabulary — vocabulario canónico de meta.status | audit | `framework` | `test_calidad_no_castiga_el_vocabulario_canonico.py`, `test_norms_coherence.py`, `test_vault_norms.py`, `test_vault_norms_audit.py`, `test_vault_sanacion.py` |
 | **CN-04** — Note opens with its title — la nota abre con su título como H1 | guard | — | `test_cn01_cn04_audit_informativo.py`, `test_cn04_escritores_con_titulo.py`, `test_cn04_nota_abre_con_titulo.py` |
 
 Sin puerta ni test (1): `AP-04`.

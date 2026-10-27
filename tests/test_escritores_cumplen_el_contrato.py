@@ -20,6 +20,8 @@ from pathlib import Path
 
 import pytest
 
+from sandbox_fixture import copiar_vault
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = REPO_ROOT / "scripts"
 if str(SCRIPTS) not in sys.path:
@@ -62,8 +64,10 @@ def test_la_nota_que_escribe_cumple_el_contrato_vigente(tool, tmp_path):
     # `.tmp.*` también fuera de la copia: un escritor atómico concurrente
     # (worker con -n auto) tiene uno entre mkdir y rename, y el copytree
     # abortaba con WinError 2 midiéndose a sí mismo (v41.17, O1b).
-    shutil.copytree(REPO_ROOT / "vault-sandbox", vault,
-                    ignore=shutil.ignore_patterns(".locks", ".tmp.*"))
+    # El conjunto canonico (locks + ficheros de lock) lo decide UN sitio:
+    # sandbox_fixture.copiar_vault.
+    copiar_vault(REPO_ROOT / "vault-sandbox", vault,
+                 ignore_extra=(".tmp.*",))
     antes = _foto(vault)
     argv = _invocacion(tool)
     assert argv and argv[-1] != "--help", f"{tool} sin ejemplo ejecutable en el catálogo"

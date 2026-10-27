@@ -67,20 +67,26 @@ def test_el_product_sha_existe_en_git_y_coincide_con_el_arbol():
     assert p.stdout.strip() == rc["product_tree_sha"], "el tree del manifiesto no coincide"
 
 
-def test_el_head_documental_tiene_al_candidato_como_padre():
-    """El commit que fija el manifiesto (HEAD) desciende del product_sha."""
+def test_el_product_sha_es_ancestro_del_head_documental():
+    """El product_sha es ANCESTRO del HEAD documental (no su padre inmediato).
+
+    QA-R16-DOC-01: el comentario del manifiesto decia `HEAD^ == product_sha`
+    mientras la prueba admitia ascendencia. Aqui el contrato es UNICO: se
+    comprueba ascendencia con `merge-base --is-ancestor`, y el manifiesto
+    declara lo mismo (`documentation.product_ancestor_of_head: true`).
+    """
     m = _cargar()
     rc = m["release_candidate"]
-    padre = subprocess.run(["git", "rev-parse", "HEAD^"], cwd=str(REPO),
-                           capture_output=True, text=True, encoding="utf-8")
-    # El manifiesto definitivo puede estar en el propio commit candidato
-    # (primera publicacion) o en un delta documental posterior.
-    if padre.returncode == 0 and padre.stdout.strip() == rc["product_sha"]:
-        return
-    rama = subprocess.run(["git", "merge-base", "--is-ancestor",
-                           rc["product_sha"], "HEAD"], cwd=str(REPO),
-                          capture_output=True)
-    assert rama.returncode == 0, "el product_sha no es ancestro del HEAD documental"
+    assert m["release_candidate"]["documentation"]["product_ancestor_of_head"] is True
+    p = subprocess.run(["git", "merge-base", "--is-ancestor",
+                        rc["product_sha"], "HEAD"], cwd=str(REPO),
+                       capture_output=True)
+    assert p.returncode == 0, "el product_sha no es ancestro del HEAD documental"
+    # El doc_parent_sha declarado (publicacion inicial del manifiesto) tiene
+    # que existir en git: no se fabrica una relacion de paternidad.
+    inicial = m["release_candidate"]["documentation"]["doc_parent_sha"]
+    _validar_hex(inicial, SHA1_RE, "documentation.doc_parent_sha")
+    assert _commit_existe(inicial), "el doc_parent_sha no existe en git"
 
 
 def test_negativo_hash_mal_formado_es_rechazado():
@@ -100,6 +106,30 @@ def test_negativo_sha_ajeno_no_existe_en_git():
     ajeno = "0" * 40
     assert SHA1_RE.match(ajeno), "el formato acepta el sha sintetico"
     assert not _commit_existe(ajeno), "el sha sintetico no debe existir en git"
+
+
+def test_negativo_un_sha_producto_ajeno_que_existe_no_puede_certificar():
+    """QA-R16-DOC-01: reforzar el negativo para un SHA producto ajeno.
+
+    La punta de la rama de dictamen QA es un commit REAL de este
+    repositorio que NO es ancestro del HEAD de la rama de trabajo: usarlo
+    como product_sha tiene que fallar la comprobacion de ascendencia.
+    (origin/main NO sirve como negativo: la rama de trabajo nace de main,
+    asi que main SI es ancestro.)
+    """
+    import subprocess as _sp
+    p = _sp.run(["git", "rev-parse",
+                 "origin/qa/review-release-cli-mcp-09e849c-20261027"],
+                cwd=str(REPO), capture_output=True, text=True, encoding="utf-8")
+    if p.returncode != 0:
+        return  # sin esa rama en este clon: el negativo no aplica
+    ajeno = p.stdout.strip()
+    assert SHA1_RE.match(ajeno)
+    assert _commit_existe(ajeno), "el commit ajeno deberia existir"
+    r = _sp.run(["git", "merge-base", "--is-ancestor", ajeno, "HEAD"],
+                cwd=str(REPO), capture_output=True)
+    assert r.returncode != 0, ("la punta de la rama QA no deberia ser ancestro "
+                               "del HEAD de la rama de trabajo")
 
 
 def test_negativo_la_prosa_no_se_cuela_en_los_campos_de_identidad():

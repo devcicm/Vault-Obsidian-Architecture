@@ -334,7 +334,31 @@ riesgos y pruebas, para que la decisión sea firmar una fila, no diseñar.
 | **COST-b** Ejecución diferida: el audit declara identidad+estado y la ejecución pesada vive en la puerta (que ya corre el smoke) | el audit no lanza procesos; el envelope declara `ejecutado_en_puerta` | ~0 adicional | cambio de contrato del envelope (vecino de TD-0003); el consumidor del audit debe aceptar el nuevo estado; QA debe revisar que no falsee `ejecutado` | tests del envelope con el estado nuevo; negativa: puerta que no corrió → `no_ejecutado`, nunca PASS |
 | **COST-c** No migrar AP-42, migrar solo AP-40/43 (los baratos) y dejar el par `gobernanza→meta_toolkit` parcialmente | elimina 1 de 2 pares | intermedio | deja la deuda a medias: `off_port_total` 5→4, no 3; el `a_eliminar` del par de AP-42 sigue | igual que B con alcance menor |
 
-### 12.3 Lo que la decisión debe nombrar (plantilla de firma)
+### 12.3 Recomendación sustentada y valores propuestos (NO son la decisión)
+
+La recomendación técnica sigue siendo **B**, pero condicionada a la elección
+expresa de una subopción I2 y una de coste. Con lo medido:
+
+- **I2-a** es la única que permite acreditar el producto DISTRIBUIDO (publicar
+  la superficie de mantenimiento en la wheel). Es la que el anexo del
+  propietario prefiere si se quiere compatibilidad con terceros.
+- **COST-a** (superficie ligera de baseline) es la que devuelve el audit a
+  su orden de magnitud actual; COST-b además toca el contrato del envelope.
+- **I2-c** no elimina el cruce real (lo formaliza) y **COST-c** deja deuda a
+  medias: ambas contradicen el `objetivo: a_eliminar` y la fecha límite
+  2027-06-30, salvo que el propietario lo re-clasifique expresamente.
+
+**Valores propuestos** (para que la decisión se tome sobre cifras, no sobre
+sensaciones; los firma quien decide):
+
+| Parámetro | Valor propuesto | Por qué |
+|---|---|---|
+| `umbral_latencia_audit` | **≤ 5 s por audit** | el actual mide 2,42 s; 5 s deja margen para la lectura ligera sin aceptar el camino de ~149 s (60×) |
+| `ventana_deprecacion` | **una versión** (la siguiente a la que introduce el puerto) | la compat deprecada de `_control_ap40/42/43` es lo que mantiene el cruce en el grafo; mientras exista, `off_port_total` no baja (plan B §7, paso 6) |
+| `criterio_de_exito` | `off_port_total` 5 → 3 y divergencias 10 → 0 **sin tocar el snapshot ni ampliar la baseline**, con I1–I5 acreditadas y E2E desde wheel | es el resultado que el plan ya define (§9) |
+| `rollback` | por commit (plan B §8): revertir al commit previo al consumo del puerto | el puerto es aditivo; el audit sigue funcionando por el camino viejo |
+
+### 12.4 Plantilla de firma (lo que debe nombrar el acto)
 
 ```yaml
 decision_DEC-02:

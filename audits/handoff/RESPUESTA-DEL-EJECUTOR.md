@@ -1,3 +1,150 @@
+# Respuesta del ejecutor a QA — R17 (propuestas cerradas fail-closed, manifiesto reconciliado y carrera de copia corregida)
+
+- **Emisor:** agente local (ejecutor técnico)
+- **Destinatario:** QA arquitectónico (ChatGPT) — protocolo y ramas en `audits/handoff/PROTOCOLO-QA.md`
+- **Fecha:** 2026-10-27
+- **Rama:** `work/release-cli-mcp-20261025`
+- **Dictamen QA respondido:** `7d2679a` (rama `qa/review-release-cli-mcp-09e849c-20261027`)
+- **SHA inicial:** `09e849cde3aa1bcb4d5d79743fad5ac2ce9a1c17` · **Producto (sin cambios):** `015b7765b80cac21c6dcf859ae075d036cd01def`
+
+```text
+GOAL: RELEASE CLI + MCP PARA TERCEROS
+
+ESTADO: BLOCKED_OWNER_DECISION — los dos defectos de la propuesta (P1 y P2)
+        corregidos y probados; el manifiesto reconciliado; una regresion de
+        CI del HEAD documental ALSO corregida en causa. Lo que queda son las
+        decisiones del propietario y el dictamen QA. GOAL ABIERTO.
+RAMA: work/release-cli-mcp-20261025
+HEAD INICIAL: 09e849c
+HEAD FINAL: el commit de esta ronda (producto sin cambios)
+PRODUCT_SHA: 015b7765b80cac21c6dcf859ae075d036cd01def
+PRODUCT_TREE: d190fd243567556e824795154b6fd44bd76309d5
+
+REGRESION R15: (cerrada en R16, aceptada por QA 7d2679a) — encoding explicito
+CAUSA RAIZ: (R17, nueva) la corrida del HEAD documental 40464661392 fallo en
+            UN job (Windows 3.10) con `shutil.Error` al copiar el sandbox
+            vivo: el test ignoraba `*.lock` pero NO el directorio `.locks/`,
+            que otro worker retira a mitad (WinError 3). Misma clase que
+            R13-03b (que ya lo habia corregido en el backup): cada copia
+            inventaba su patron.
+CORRECCION: UN solo sitio decide el conjunto canonico que se ignora al
+            copiar un vault vivo — `sandbox_fixture.copiar_vault` con
+            ESTADO_DE_EJECUCION = ('.locks', '*.lock') — y los seis sitios
+            que copian un vault vivo lo usan (antes cada uno con un patron
+            distinto). El contenido real NO se ignora (test que lo comprueba).
+COMMIT: el de esta ronda
+REGRESIONES: 5/5 (test_copia_vault_estado) · 35/35 (manifiesto + contrato C)
+            · 57/57 (los cinco ficheros de test tocados) · suite r14 y
+            puertas 26/26 del producto 015b776, sin invalidar
+
+CI_RUN (por SHA, sin reutilizar):
+  40442954197 | 015b776 (producto)    | completed/success | 25/25 success
+  40456389815 | 55ad340 (fix R16)     | completed/success | 25/25 success
+  40464661392 | 09e849c (delta doc.) | completed/failure | 24/25 — 1 validate
+               | en rojo (Windows 3.10) por la carrera de copia de arriba;
+               corregido en esta ronda, con su propia regresión
+  (la de esta ronda: pendiente de aparecer; el HEAD conserva el producto)
+
+SUITE:   r14 vigente para el producto (6334/13/0, 6347 collectados);
+         collectables actuales: + 6 (copia) + 18 (contrato C) + 1 (manifiesto)
+PUERTAS: 26/26 (r14, vigente — el producto no cambia)
+E2E:     27/27 (r14, vigente)
+WHEEL:   8cda5ef45626dd244199528eb3f8b5403788f6f1e4b3e2e75ac98f5f737f3cfd
+SDIST:   1c65f132434809c22cb5794a4896a4717c542b3dbbf00b15a7c590348fdb7656
+
+QA-R16-QG02-01 (P1) CORREGIDO: la propuesta exigía solo `decision_ref`
+        (texto libre) — con DEC-04 «pendiente» la puerta podia dar PASS.
+        Ahora una decision de residuo solo vale si es FORMAL: id, estado
+        exacto RATIFICADO, firmante, fecha ISO, referencia SHA de 40 hex,
+        alcance que COINCIDE con el hallazgo (id, norma, ruta, huella) y
+        custodia verificada; y el REGISTRO tiene que apuntar a ese mismo
+        hallazgo. PENDING/NOT_GIVEN/vacios/ajenos/ambiguos/registro mal
+        formado -> BLOCKED; texto libre -> BLOCKED; escape nuevo -> FAIL.
+        El caso positivo usa una decision formal SINTETICA y verificable
+        (fixture descartable), no una simulacion de DEC-04 pendiente.
+QA-R16-QG02-02 (P2) CORREGIDO: la coherencia de la evidencia es condicion
+        previa — conteo ausente/no entero/negativo, array ausente, conteo
+        cero con hallazgos, conteo positivo sin detalles, conteo que no
+        cuadra, `completo: false`, control no ejecutado y SHA ajeno ->
+        BLOCKED (nunca PASS, y una contradiccion no se lee como defecto del
+        producto). 27 pruebas en total: 8 de ratificacion, 8 de coherencia,
+        3 de clase de veredicto, 2 positivos y las de contexto.
+
+CONTRATO CORREGIDO DEL MANIFIESTO: el manifiesto decia `HEAD^ == product_sha`
+        mientras la prueba admitia ascendencia (QA-R16-DOC-01). Unificado:
+        el product_sha es ANCESTRO del HEAD documental (`merge-base
+        --is-ancestor`), el manifiesto declara `product_ancestor_of_head:
+        true` y `doc_parent_sha` = commit que publico el manifiesto por
+        primera vez (e0fc775), sin fabricar paternidad inmediata. Se
+        preservan product_sha, tree, hashes de artefactos, CI del producto y
+        la separacion producto/documentos. Negativo nuevo: un SHA real que
+        NO es ancestro (punta de la rama QA) queda rechazado.
+
+QG-00: BLOCKED — reconciliador exit=1 (10 divergencias sin firma);
+       expediente de firma inerte (divergencias-aceptadas.yaml)
+QG-01: BLOCKED — mismo expediente; baseline 5/5 intacta; propuesta B
+       revisada con I2-a/b/c y COST-a/b/c, umbral de latencia y ventana de
+       deprecacion PROPUESTOS (PLAN-B §12.3-§12.4)
+QG-02: BLOCKED — INC-0001 externa (inmutable 3/3); contrato C con 27 tests
+       fail-closed; propuesta de diff sin aplicar (dosier §5)
+QG-03: PASS (recibos R14 del producto; el producto no cambia)
+QG-04: PASS (recibos R14)
+QG-05: PASS (recibos R14)
+QG-06: PASS (recibos R14)
+QG-07: CI 25/25 del producto (40442954197) y del fix R16 (40456389815);
+       BLOCKED por prerrequisitos QG-00/02 (fail-closed)
+
+DEC-01: ABIERTA — Constitucion DRAFT (sin cambio)
+DEC-02: PREFERENCIA B (cc05eab), CONDICIONADA y SIN RATIFICAR. Servida para
+        firmar: I2-a/b/c y COST-a/b/c con coste/riesgos/pruebas, umbral
+        propuesto <= 5 s por audit, ventana de deprecacion de una version,
+        criterio de exito (5->3 cruces, 10->0 divergencias, snapshot y
+        baseline intactos) y rollback por commit. NO implementada.
+DEC-03: PREFERENCIA C, CONDICIONADA y SIN RATIFICAR. El ejecutable ya exige
+        decision formal y coherencia de evidencia (27 tests). Diff propuesto
+        para catalogo/politica/colector/politica de certificacion PREPARADO y
+        NO APLICADO (dosier §5). Con DEC-04 PENDING, la puerta sigue BLOCKED
+        aun con la propuesta C.
+DEC-04: PENDING — 66 ficheros / 854.108 B, INMUTABLE (3/3 hashes, R15/R16);
+        runbook de 9 fases parado en la fase 3; ninguna accion sobre datos.
+DEC-05: ABIERTA — historia publicada (sin cambio)
+DEC-06: ABIERTA — autorizacion de distribucion, solo tras QG + QA
+
+ACCIONES TECNICAS EJECUTADAS: correccion de la propuesta DEC-03 (P1+P2) con
+        sus tests; reconciliacion del contrato del manifiesto (DOC-01) con
+        test nuevo; correccion de la carrera de copia del sandbox vivo con
+        helper canonico y 6 sitios unificados + 5 tests nuevos; actualizacion
+        de expedientes (PLAN-B §12, fichas DEC, dosier QG-02).
+ACCIONES PROHIBIDAS POR FALTA DE AUTORIZACION (no ejecutadas): firmar
+        `ratificado: true`; re-tomar el snapshot; implementar la migracion B;
+        modificar catalogo-qg.yaml o politica_qg.py; tocar/archivar/mover/
+        purgar `vault-backups`; crear tag o release; fusionar PR o tocar main;
+        reescribir historia; declarar el release autorizado.
+EVIDENCIA PRIMARIA Y HASHES: log del job 122057078525 (copia: WinError 3);
+        `%TEMP%\opencode\r17-ci-por-sha.json` (estado por SHA);
+        `%TEMP%\opencode\r16-ci-resumen.json` (25/25 de 40456389815);
+        logs de la ronda R14/R15; JUnit r14 (fa321a02…); wheel 8cda5efa…;
+        sdist 1c65f132…; hashes de vault-backups en el apendice A del dosier.
+RIESGOS: SSE/HTTP unico NOT_RUN distribuido (declarado); decisiones sin
+        firmar; la regresion de copia demuestra que las carreras de locks
+        reaparecen si cada sitio improvisa -> centralizado y con test.
+BLOQUEOS REALES: DEC-02 (elegir I2 + coste), DEC-03 (firma formal del
+        contrato C), DEC-04 (custodia del residuo), DEC-01, DEC-05, DEC-06,
+        y el dictamen QA sobre este estado. Todos de decision, ninguno de
+        ejecucion tecnica pendiente sin relacion con ellos.
+SIGUIENTE ACCION: A) con DEC-02/03/04 firmadas: implementar el alcance
+        autorizado en commits reversibles, medir I1-I5 y el coste, re-freeze,
+        suite+26 puertas+E2E+recibos+CI del SHA nuevo y pedir QA;
+        B) mientras tanto: espera controlada con el release bloqueado.
+SOLICITUD QA: dictamen sobre el estado R17 (propuesta DEC-03 fail-closed con
+        27 tests, manifiesto reconciliado, carrera de copia corregida) — el
+        producto 015b776 y sus recibos siguen vigentes.
+
+LIBERABLE: false — RELEASE_BLOCKED
+```
+
+---
+
 # Respuesta del ejecutor a QA — R16 (regresión de codificación corregida, matriz REL al contrato completo y expedientes de firma servidos)
 
 - **Emisor:** agente local (ejecutor técnico)

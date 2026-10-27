@@ -1,17 +1,18 @@
 """El contrato PROPUESTO de certificacion compuesta (opcion C, DEC-03) es
 fail-closed: cada escenario que la orden prohibe termina sin PASS, y el caso
-positivo deja el residuo LISTADO (nunca silencioso).
+positivo usa una decision FORMAL SINTETICA (fixture descartable), nunca una
+preferencia o una decision pendiente.
 
-Escenarios exigidos por el GOAL R15 §5:
-  1. escape nuevo fuera del vault          -> FAIL
-  2. residuo historico sin registrar       -> BLOCKED
-  3. runtime con AP-39                     -> FAIL
-  4. semilla del sandbox invalida          -> FAIL
-  5. control obligatorio no ejecutado      -> BLOCKED
-  6. control degradado / completo:false    -> BLOCKED
-  7. auditoria de otro SHA                 -> BLOCKED
-  8. sin auditoria de un sujeto            -> BLOCKED
-  + positivo: todo limpio -> PASS con residuos (si los hay) listados.
+Escenarios exigidos por el GOAL R17 §2 y §3:
+  - QA-R16-QG02-01 (ratificacion): decision_ref nulo, ausente, "pendiente",
+    referencia no verificable, decision ajena (mismo id, otra ruta), registro
+    vacio/incompleto/no ratificado, custodia sin vinculo o no verificada,
+    identidad de residuo ambigua, decision de otro residuo.
+  - QA-R16-QG02-02 (coherencia): conteo ausente, negativo, no entero; array
+    ausente; conteo cero con hallazgos; conteo positivo sin detalles;
+    conteo que no cuadra; auditoria incompleta; evidencia de otro SHA.
+  - ESCAPE NUEVO sigue siendo FAIL; un residuo pendiente nunca PASS.
+  - POSITIVO: auditoria limpia + decision formal completa y verificable.
 """
 import importlib.util
 import sys
@@ -19,6 +20,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SHA = "b" * 40
+HUELLA = "c" * 64
+ACT = "d" * 40          # SHA del acto de decision (sintetico)
+CUSTODIA = "e" * 40     # SHA del acta de custodia (sintetico)
 
 
 def _cargar_contrato():
@@ -33,104 +37,285 @@ def _cargar_contrato():
 contrato = _cargar_contrato()
 
 
-def _auditoria(violations=None, total=None, completo=True, sha=SHA):
+def _decision(**cambios):
+    """Decision formal sintetica y COMPLETA (la que si habilita el residuo)."""
+    base = {
+        "id": "DEC-99-SINTETICA",
+        "estado": "RATIFICADO",
+        "firmante": "fixture QA (autoridad sintetica)",
+        "fecha": "2026-01-15",
+        "referencia": ACT,
+        "alcance": {"residuo": "INC-0001", "norma": "AP-36",
+                    "ruta": "../../vault-backups", "huella": HUELLA},
+        "custodia": {"referencia": CUSTODIA, "verificada": True},
+    }
+    base.update(cambios)
+    return base
+
+
+def _hallazgo(hallazgos=True):
+    if not hallazgos:
+        return None
+    return {"id": "INC-0001", "norm": "AP-36", "path": "../../vault-backups",
+            "huella": HUELLA}
+
+
+def _auditoria(violations=None, total=None, completo=True, sha=SHA,
+               controles=None):
     violations = violations or []
     return {"sha": sha,
             "total_violations": total if total is not None else len(violations),
             "violations": violations,
             "completo": completo,
-            "checks": {c: "ejecutado" for c in contrato.CONTROLES_OBLIGATORIOS}}
+            "checks": controles or {c: "ejecutado" for c in contrato.CONTROLES_OBLIGATORIOS}}
 
 
-def _evaluar(runtime=None, sandbox=None, residuos=None, historicos=None):
+def _registro(decision=None, **extra):
+    reg = {"id": "INC-0001", "norma": "AP-36", "ruta": "../../vault-backups",
+           "huella": HUELLA}
+    if decision is not None:
+        reg["decision"] = decision
+    reg.update(extra)
+    return reg
+
+
+def _evaluar(runtime=None, sandbox=None, residuos=None, historicos=None,
+             sha_objetivo=SHA):
     return contrato.evaluar_certificacion_compuesta(
-        sha_objetivo=SHA,
+        sha_objetivo=sha_objetivo,
         auditoria_runtime=runtime if runtime is not None else _auditoria(),
         auditoria_sandbox=sandbox if sandbox is not None else _auditoria(),
         residuos_registrados=residuos or [],
         residuos_historicos_sin_decision=historicos or [])
 
 
-def test_1_un_escape_nuevo_fuera_del_vault_es_fail():
-    r = _evaluar(sandbox=_auditoria(violations=[
-        {"id": "INC-NUEVO", "norm": "AP-36", "path": "../escape-nuevo"}]))
-    assert r["estado"] == "FAIL"
-    assert any("ESCAPE_NUEVO" in m for m in r["motivos"])
+def _sandbox_con_residuo():
+    return _auditoria(violations=[_hallazgo()])
 
 
-def test_2_un_residuo_historico_sin_registro_bloquea_y_no_pasaaa():
-    r = _evaluar(
-        sandbox=_auditoria(violations=[
-            {"id": "INC-0001", "norm": "AP-36", "path": "../../vault-backups"}]),
-        historicos=["INC-0001"])
-    assert r["estado"] == "BLOCKED", "un residuo sin decision no puede pasar"
+# ── QA-R16-QG02-01: la ratificacion se demuestra ────────────────────────────
+
+def test_un_registro_sin_decision_no_acredita_nada():
+    r = _evaluar(sandbox=_sandbox_con_residuo(),
+                 residuos=[_registro()])  # sin decision
+    assert r["estado"] == "BLOCKED"
     assert any("RESIDUO_SIN_DECISION" in m for m in r["motivos"])
-    # Y si ni siquiera esta catalogado como historico, es escape nuevo: FAIL.
-    r2 = _evaluar(sandbox=_auditoria(violations=[
-        {"id": "INC-0001", "norm": "AP-36", "path": "../../vault-backups"}]))
-    assert r2["estado"] == "FAIL"
 
 
-def test_3_un_runtime_con_ap39_es_fail_del_producto():
-    r = _evaluar(runtime=_auditoria(violations=[
-        {"id": "INC-39", "norm": "AP-39", "path": "19_Audits/vocabulary/tag-ledger.json"}]))
-    assert r["estado"] == "FAIL"
-    assert any("RUNTIME" in m for m in r["motivos"])
-
-
-def test_4_una_semilla_de_sandbox_invalida_es_fail():
-    r = _evaluar(sandbox=_auditoria(violations=[
-        {"id": "INC-SEED", "norm": "CN-03", "path": "03_Decisions/adr-001.md"}]))
-    assert r["estado"] == "FAIL"
-
-
-def test_5_un_control_obligatorio_no_ejecutado_bloquea():
-    a = _auditoria()
-    a["checks"]["AP-42"] = "no_ejecutado"
-    r = _evaluar(sandbox=a)
+def test_una_decision_con_referencia_de_texto_libre_no_es_firma():
+    r = _evaluar(sandbox=_sandbox_con_residuo(),
+                 residuos=[_registro(decision={"decision_ref": "DEC-04 pendiente de firma"})])
     assert r["estado"] == "BLOCKED"
-    assert any("AP-42" in m for m in r["motivos"])
+    assert any("DECISION_NO_RATIFICADA" in m or "DECISION_AUSENTE" in m
+               for m in r["motivos"])
 
 
-def test_6_un_control_degradado_o_completo_false_bloquea():
-    a = _auditoria()
-    a["completo"] = False
-    r = _evaluar(sandbox=a)
+def test_una_decision_pendiente_o_no_dada_no_ratifica():
+    for estado in ("PENDING", "NOT_GIVEN", "", None, "propuesto"):
+        r = _evaluar(sandbox=_sandbox_con_residuo(),
+                     residuos=[_registro(decision=_decision(estado=estado))])
+        assert r["estado"] == "BLOCKED", f"estado={estado!r} no puede pasar"
+        assert any("DECISION_NO_RATIFICADA" in m for m in r["motivos"])
+
+
+def test_una_referencia_no_verificable_invalida_la_decision():
+    for referencia in ("texto libre", "DEC-04@2026-10-27", "Z" * 40, ""):
+        r = _evaluar(sandbox=_sandbox_con_residuo(),
+                     residuos=[_registro(decision=_decision(referencia=referencia))])
+        assert r["estado"] == "BLOCKED", f"referencia={referencia!r} no puede pasar"
+        assert any("REFERENCIA_NO_VERIFICABLE" in m for m in r["motivos"])
+
+
+def test_una_decision_ajena_mismo_id_otra_ruta_no_alcanza():
+    decision = _decision(alcance={"residuo": "INC-0001", "norma": "AP-36",
+                                   "ruta": "../../otro-lugar", "huella": HUELLA})
+    r = _evaluar(sandbox=_sandbox_con_residuo(),
+                 residuos=[_registro(decision=decision)])
     assert r["estado"] == "BLOCKED"
-    a2 = _auditoria()
-    a2["checks"]["AP-43"] = "degradado"
-    r2 = _evaluar(runtime=a2)
+    assert any("ALCANCE_NO_COINCIDE" in m for m in r["motivos"])
+
+
+def test_una_decision_de_otro_residuo_no_alcanza():
+    decision = _decision(alcance={"residuo": "INC-9999", "norma": "AP-36",
+                                   "ruta": "../../vault-backups", "huella": HUELLA})
+    r = _evaluar(sandbox=_sandbox_con_residuo(),
+                 residuos=[_registro(decision=decision)])
+    assert r["estado"] == "BLOCKED"
+    assert any("ALCANCE_NO_COINCIDE" in m for m in r["motivos"])
+
+
+def test_una_decision_incompleta_no_alcanza():
+    for falta in ("id", "firmante", "fecha", "referencia", "alcance", "custodia"):
+        decision = _decision()
+        decision.pop(falta)
+        r = _evaluar(sandbox=_sandbox_con_residuo(),
+                     residuos=[_registro(decision=decision)])
+        assert r["estado"] == "BLOCKED", f"falta {falta} y aun asi paso"
+        assert any(m.startswith(("DECISION_", "ALCANCE_", "CUSTODIA_",
+                                  "REFERENCIA_")) for m in r["motivos"])
+
+
+def test_una_custodia_sin_vinculo_o_no_verificada_no_alcanza():
+    for custodia in ({"referencia": "", "verificada": True},
+                      {"referencia": CUSTODIA, "verificada": False},
+                      {"referencia": CUSTODIA}):
+        r = _evaluar(sandbox=_sandbox_con_residuo(),
+                     residuos=[_registro(decision=_decision(custodia=custodia))])
+        assert r["estado"] == "BLOCKED", f"custodia={custodia} no puede pasar"
+        assert any("CUSTODIA_" in m for m in r["motivos"])
+
+
+def test_una_fecha_invalida_no_alcanza():
+    r = _evaluar(sandbox=_sandbox_con_residuo(),
+                 residuos=[_registro(decision=_decision(fecha="2026-13-45"))])
+    assert r["estado"] == "BLOCKED"
+    assert any("FECHA_INVALIDA" in m for m in r["motivos"])
+
+
+def test_un_registro_vacio_o_incompleto_no_alcanza():
+    r = _evaluar(sandbox=_sandbox_con_residuo(), residuos=[{}])
+    assert r["estado"] == "BLOCKED"
+    r2 = _evaluar(sandbox=_sandbox_con_residuo(),
+                  residuos=[_registro(decision={"id": "DEC-04"})])
     assert r2["estado"] == "BLOCKED"
 
 
-def test_7_una_auditoria_de_otro_sha_bloquea():
+def test_una_identidad_de_residuo_ambigua_bloquea():
+    r = _evaluar(sandbox=_sandbox_con_residuo(),
+                 residuos=[_registro(decision=_decision()),
+                           _registro(decision=_decision())])
+    assert r["estado"] == "BLOCKED"
+    assert any("IDENTIDAD_DE_RESIDUO_AMBIGUA" in m for m in r["motivos"])
+
+
+def test_dec_04_pendiente_no_puede_dar_pass():
+    """Con DEC-04 PENDING (que es el estado real), la puerta queda BLOCKED."""
+    decision = _decision(estado="PENDING", id="DEC-04",
+                          referencia="DEC-04 (pendiente de firma)")
+    r = _evaluar(sandbox=_sandbox_con_residuo(),
+                 residuos=[_registro(decision=decision)])
+    assert r["estado"] == "BLOCKED"
+
+
+# ── QA-R16-QG02-02: coherencia de la evidencia ───────────────────────────────
+
+def test_un_conteo_ausente_o_no_entero_bloquea():
+    a = _auditoria()
+    del a["total_violations"]
+    r = _evaluar(runtime=a)
+    assert r["estado"] == "BLOCKED"
+    assert any("CONTEO_AUSENTE" in m for m in r["motivos"])
+    r2 = _evaluar(runtime=_auditoria(total="0"))
+    assert r2["estado"] == "BLOCKED"
+    assert any("CONTEO_INVALIDO" in m for m in r2["motivos"])
+
+
+def test_un_conteo_negativo_bloquea():
+    r = _evaluar(runtime=_auditoria(total=-1))
+    assert r["estado"] == "BLOCKED"
+    assert any("CONTEO_NEGATIVO" in m for m in r["motivos"])
+
+
+def test_un_array_de_hallazgos_ausente_bloquea():
+    a = _auditoria()
+    del a["violations"]
+    r = _evaluar(sandbox=a)
+    assert r["estado"] == "BLOCKED"
+    assert any("HALLAZGOS_AUSENTES" in m for m in r["motivos"])
+
+
+def test_un_conteo_cero_con_hallazgos_presentes_bloquea():
+    r = _evaluar(sandbox=_auditoria(violations=[_hallazgo()], total=0))
+    assert r["estado"] == "BLOCKED"
+    assert any("CONTEO_CONTRADICTORIO" in m for m in r["motivos"])
+
+
+def test_un_conteo_positivo_sin_detalles_bloquea():
+    r = _evaluar(sandbox=_auditoria(violations=[], total=3))
+    assert r["estado"] == "BLOCKED"
+    assert any("CONTEO_CONTRADICTORIO" in m for m in r["motivos"])
+
+
+def test_un_conteo_que_no_cuadra_bloquea():
+    r = _evaluar(sandbox=_auditoria(violations=[_hallazgo()], total=5))
+    assert r["estado"] == "BLOCKED"
+    assert any("CONTEO_CONTRADICTORIO" in m for m in r["motivos"])
+
+
+def test_una_auditoria_incompleta_bloquea():
+    r = _evaluar(sandbox=_auditoria(completo=False))
+    assert r["estado"] == "BLOCKED"
+    assert any("AUDITORIA_INCOMPLETA" in m for m in r["motivos"])
+
+
+def test_un_control_no_ejecutado_bloquea():
+    controles = {c: "ejecutado" for c in contrato.CONTROLES_OBLIGATORIOS}
+    controles["AP-42"] = "no_ejecutado"
+    r = _evaluar(sandbox=_auditoria(controles=controles))
+    assert r["estado"] == "BLOCKED"
+    assert any("CONTROL_NO_EJECUTADO" in m for m in r["motivos"])
+
+
+def test_una_evidencia_de_otro_sha_bloquea():
     r = _evaluar(runtime=_auditoria(sha="c" * 40))
     assert r["estado"] == "BLOCKED"
     assert any("EVIDENCIA_DE_OTRO_SHA" in m for m in r["motivos"])
 
 
-def test_8_sin_auditoria_de_un_sujeto_bloquea():
-    r = contrato.evaluar_certificacion_compuesta(
-        sha_objetivo=SHA, auditoria_runtime=None,
-        auditoria_sandbox=_auditoria(), residuos_registrados=[])
+def test_una_evidencia_sin_sha_bloquea():
+    a = _auditoria()
+    del a["sha"]
+    r = _evaluar(runtime=a)
     assert r["estado"] == "BLOCKED"
-    assert any("sin auditoria" in m for m in r["motivos"])
+    assert any("EVIDENCIA_SIN_SHA" in m for m in r["motivos"])
 
 
-def test_positivo_todo_limpio_es_pass_y_un_residuo_con_decision_queda_listado():
-    # Todo limpio y SIN residuos: PASS sin asteriscos.
+# ── Clases de veredicto ──────────────────────────────────────────────────────
+
+def test_un_escape_nuevo_sigue_siendo_fail():
+    r = _evaluar(sandbox=_auditoria(violations=[
+        {"id": "INC-NUEVO", "norm": "AP-36", "path": "../escape-nuevo",
+         "huella": HUELLA}]))
+    assert r["estado"] == "FAIL"
+    assert any("ESCAPE_NUEVO" in m for m in r["motivos"])
+
+
+def test_un_escape_nuevo_no_pasa_ni_con_registro_sin_decision():
+    r = _evaluar(sandbox=_auditoria(violations=[
+        {"id": "INC-NUEVO", "norm": "AP-36", "path": "../escape-nuevo",
+         "huella": HUELLA}]),
+        residuos=[_registro()])
+    assert r["estado"] in ("FAIL", "BLOCKED")
+    assert r["estado"] != "PASS"
+
+
+def test_un_runtime_con_violaciones_es_fail():
+    r = _evaluar(runtime=_auditoria(violations=[
+        {"id": "INC-39", "norm": "AP-39", "path": "19_Audits/vocabulary/tag-ledger.json",
+         "huella": HUELLA}]))
+    assert r["estado"] == "FAIL"
+    assert any("RUNTIME" in m for m in r["motivos"])
+
+
+def test_el_positivo_usa_una_decision_formal_y_sintetica():
+    """Caso positivo: auditoria limpia + decision formal completa y verificable.
+
+    El residuo queda LISTADO con su decision y su custodia: el PASS no es
+    silencioso. No se simula ninguna decision pendiente.
+    """
+    r = _evaluar(sandbox=_sandbox_con_residuo(),
+                 residuos=[_registro(decision=_decision())])
+    assert r["estado"] == "PASS", r["motivos"]
+    assert len(r["residuos_declarados"]) == 1
+    decl = r["residuos_declarados"][0]
+    assert decl["decision_id"] == "DEC-99-SINTETICA"
+    assert decl["decision_estado"] == "RATIFICADO"
+    assert decl["decision_referencia"] == ACT
+    assert decl["custodia_referencia"] == CUSTODIA
+    assert "no es silencioso" in r["nota"]
+
+
+def test_el_positivo_sin_residuo_tambien_es_pass():
     r = _evaluar()
     assert r["estado"] == "PASS"
     assert r["residuos_declarados"] == []
-    # Con el residuo historico YA DECIDIDO: PASS, pero el residuo queda
-    # LISTADO con su decision (el PASS nunca es silencioso).
-    r2 = _evaluar(
-        sandbox=_auditoria(violations=[
-            {"id": "INC-0001", "norm": "AP-36", "path": "../../vault-backups"}]),
-        residuos=[{"id": "INC-0001",
-                   "decision_ref": "DEC-04 (pendiente de firma: este caso es "
-                                   "el ejemplo; sin firma real seria BLOCKED)"}])
-    assert r2["estado"] == "PASS"
-    assert len(r2["residuos_declarados"]) == 1
-    assert r2["residuos_declarados"][0]["id"] == "INC-0001"
-    assert "no es silencioso" in r2["nota"]

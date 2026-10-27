@@ -20,10 +20,19 @@ release_candidate:
   version: 41.23
   rama: work/release-cli-mcp-20261025
   documentation:
-    doc_parent_sha: 015b7765b80cac21c6dcf859ae075d036cd01def
+    # El product_sha es ANCESTRO del HEAD documental, no necesariamente su
+    # padre inmediato: entre el producto y el HEAD pueden intercalarse
+    # commits documentales. La prueba lo comprueba con `merge-base
+    # --is-ancestor`, NO con `HEAD^` (QA-R16-DOC-01).
+    product_ancestor_of_head: true
+    doc_parent_sha: e0fc775551217ee0a778ca3dece0da3f0a63ba38
+    doc_parent_sha_note: >-
+      commit que publico por primera vez este manifiesto (R15). Es la
+      publicacion inicial, no una relacion de paternidad con el HEAD.
     note: >-
-      el SHA del commit documental que fija este manifiesto se lee de git
-      (HEAD) en tiempo de validación; su padre debe ser product_sha.
+      el SHA del commit que fija este manifiesto se lee de git en tiempo de
+      validacion (HEAD de la rama); su relacion con product_sha es de
+      ASCENDENCIA, y ese es el unico contrato que se comprueba.
 
 artifacts:
   wheel:

@@ -18,6 +18,8 @@ import sys
 from pathlib import Path
 
 import pytest
+
+from sandbox_fixture import copiar_vault
 pytestmark = pytest.mark.slow  # carril rápido (-m "not slow"): el perfil de la suite del 2026-10-20 midió aquí llamadas > 25 s
 
 
@@ -29,10 +31,12 @@ SCRIPTS = REPO_ROOT / "scripts"
 def vault(tmp_path):
     destino = tmp_path / "vault"
     # Los locks son estado transitorio de proceso, no contenido: otro worker
-    # puede estar escribiendo su `.tool-trace.json.lock` en el sandbox canonico
-    # mientras se copia, y la copia fallaria por eso (no por el contenido).
-    shutil.copytree(REPO_ROOT / "vault-sandbox", destino,
-                    ignore=shutil.ignore_patterns("*.lock"))
+    # puede estar escribiendo su `.tool-trace.json.lock` o retirando su
+    # `.locks/` en el sandbox canonico mientras se copia, y la copia fallaria
+    # por eso (no por el contenido). El conjunto que se ignora lo decide UN
+    # sitio (sandbox_fixture.copiar_vault): aqui se ignoraba `*.lock` pero
+    # no `.locks/`, y la corrida 40464661392 loDemonstró en Windows 3.10.
+    copiar_vault(REPO_ROOT / "vault-sandbox", destino)
     return destino
 
 
