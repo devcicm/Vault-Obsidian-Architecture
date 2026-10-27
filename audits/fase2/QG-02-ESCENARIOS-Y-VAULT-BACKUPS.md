@@ -211,6 +211,13 @@ el veredicto y en el manifiesto de release.
 
 ## 6. Endurecimiento de la autoridad (R19, QA-R18-AUTH-01..04)
 
+> **Nota de vigencia (R20):** estos contratos evolucionaron en R20 con los
+> hallazgos `AUTH-05..11` del dictamen `222094f` (custodio **designado** con
+> identidad y canal propios, acta de ratificación completa del registro,
+> vigencia completa, campos duplicados rechazados y **revocación** definida y
+> probada). La descripción vigente está en el buzón del ejecutor, ronda R20
+> (`audits/handoff/RESPUESTA-DEL-EJECUTOR.md`).
+
 La versión de R17 verificaba el ESQUEMA y dejaba la ratificación como una
 autoafirmación. R19 separa las cuatro capas que el dictamen exigía:
 

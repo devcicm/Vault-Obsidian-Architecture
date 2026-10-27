@@ -158,18 +158,15 @@ def _motivos_decision(decision: Any, hallazgo: Dict[str, Any]) -> List[str]:
 
     if not str(decision.get("id") or "").strip():
         motivos.append("DECISION_SIN_IDENTIFICADOR")
-    # AUTH-02: identificador de autoridad UNICO. `autoridad` es el canonico y
-    # `firmante` un alias: si aparecen los dos, tienen que ser el mismo
-    # identificador (la resolucion contra el registro —alias incluidos— la
-    # hace el verificador).
+    # AUTH-08: `autoridad` es el identificador canonico y `firmante` un alias.
+    # El esquema NO compara las cadenas: un alias legitimo de la MISMA
+    # autoridad es valido, y la normalizacion (mas el rechazo de alias
+    # libres, ambiguos o de otra autoridad) la hace el verificador contra el
+    # registro.
     canonico = str(decision.get("autoridad") or "").strip()
     alias = str(decision.get("firmante") or "").strip()
     if not canonico and not alias:
         motivos.append("AUTORIDAD_AUSENTE")
-    elif canonico and alias and canonico != alias:
-        motivos.append(
-            f"IDENTIDADES_CONTRADICTORIAS: la decision declara autoridad "
-            f"{canonico!r} y firmante {alias!r} y no son el mismo identificador")
     if decision.get("estado") != ESTADO_RATIFICADO:
         motivos.append(
             f"DECISION_NO_RATIFICADA: estado={decision.get('estado')!r} "

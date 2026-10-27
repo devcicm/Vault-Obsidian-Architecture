@@ -38,9 +38,37 @@
 #          ESTADO: RATIFICADO
 #          OBJETO: <id de este registro>
 #          VERSION: <version de este registro>
-#          FECHA: YYYY-MM-DD
+#          FECHA: <la misma que ratificacion.fecha>
+#          CANAL: <el mismo que ratificacion.canal>
 #      y lo firme la identidad declarada en `ratificacion.ratificado_por`.
-#   3. Anadir al registro el `custodios` que el propietario designe (DEC-04).
+#   3. Designar los CUSTODIOS (plantilla abajo). Con `custodios: []` —el
+#      estado actual— NINGUNA custodia puede acreditarse.
+#
+# CUSTODIOS DESIGNADOS (AUTH-05, AUTH-06): una autoridad registrada NO es
+# custodio. Para firmar un acta de custodia, el custodio tiene que estar
+# DESIGNADO aqui, con su IDENTIDAD (para comprobar QUIEN firma) y su CANAL
+# (para comprobar la procedencia). Si firma por delegacion, la delegacion
+# exige un acto verificable con alcance concreto.
+#
+# PLANTILLA de designacion (la rellena el propietario, no el ejecutor):
+#   custodios:
+#   - id: custodio-datos
+#     identidad_git: {correo: "<correo del custodio>"}
+#     canales: ["refs/heads/..."]        # o el canal de la autoridad, si delega
+#     delega:                            # opcional: si firma por delegacion
+#       de: propietario-datos
+#       acto: "<40 hex del acta de delegacion>"
+#       alcance: ["residuo INC-0001"]
+#
+# AVISO HONESTO (limite del control): en este repositorio el ejecutor y el
+# propietario comparten identidad git y permisos de push, de modo que el CANAL
+# declarado es un control ADMINISTRATIVO (lo declara y lo vigila el
+# propietario), no criptografico. El verificador acredita que existe un acto
+# verificable en la fuente declarada; que ese acto emane del propietario
+# depende de la integridad del canal — y de una decision explicita del
+# propietario sobre custodia y permisos del canal (DEC-03 / DEC-04), que sigue
+# PENDIENTE. El mecanismo recomendado para separarlos (canal protegido,
+# identidad verificable, reglas de custodia) esta en el buzon del ejecutor.
 schema: 1
 id: autoridades-de-decision-v1
 version: "1"
