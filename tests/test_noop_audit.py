@@ -161,3 +161,74 @@ def test_freeze_se_niega_a_congelar_deuda_sin_precedente(tmp_path, monkeypatch):
     monkeypatch.setattr(na, "BASELINE_PATH", falsa)
     assert na.freeze(admitir_nuevos=True)["ok"] is True
     assert json.loads(falsa.read_text(encoding="utf-8"))["tools"] == ["vault_inventada"]
+
+
+# ── QA-R20-CI-01: idempotencia DECLARADA con indicador observable ───────────
+
+def test_vault_graph_esta_declarada_como_idempotente_con_motivo_medido():
+    """El no-op de vault_graph no se declara a ciegas: hay motivo medido."""
+    regla = vna.IDEMPOTENTES_DECLARADAS.get("vault_graph")
+    assert regla is not None, "vault_graph debe estar en IDEMPOTENTES_DECLARADAS"
+    assert "written=0/unchanged=1" in regla["motivo"], (
+        "el motivo tiene que citar la medicion del no-op (pasadas 1 y 2)")
+    assert regla["no_op"] == {"written": 0}
+    assert regla["minimos"] == {"unchanged": 1}
+
+
+def test_el_no_op_exige_el_indicador_y_no_basta_con_no_escribir():
+    """Sin escritura y SIN el indicador exigido -> no es un no-op declarado."""
+    sin_datos = [{"argv": [], "tool_ok": True, "datos": None}]
+    assert vna._no_op_declarado("vault_graph", sin_datos) == (False, {})
+    sin_indicador = [{"argv": [], "tool_ok": True, "datos": {"ok": True}}]
+    assert vna._no_op_declarado("vault_graph", sin_indicador) == (False, {})
+    # `written: 0` pero sin `unchanged` -> tampoco
+    parcial = [{"datos": {"written": 0}}]
+    assert vna._no_op_declarado("vault_graph", parcial) == (False, {})
+
+
+def test_el_no_op_con_el_indicador_exigido_es_aceptado():
+    ok = [{"argv": [], "tool_ok": True,
+           "datos": {"ok": True, "written": 0, "updated": 0, "unchanged": 1}}]
+    declarado, indicadores = vna._no_op_declarado("vault_graph", ok)
+    assert declarado is True
+    assert indicadores == {"written": 0, "unchanged": 1}
+
+
+def test_una_tool_no_declarada_nunca_es_noop_declarado():
+    ok = [{"datos": {"written": 0, "unchanged": 1}}]
+    assert vna._no_op_declarado("vault_fuente_unica", ok) == (False, {})
+
+
+def test_una_idempotente_que_declara_cero_habiendo_escrito_es_ofensora():
+    """La idempotencia FALSA se castiga: escribir y decir `written: 0`.
+
+    Se reproduce la clasificacion sin ejecutar el banco: la regla del registro
+    exige que, si escribio, no haya declarado el no-op.
+    """
+    regla = vna.IDEMPOTENTES_DECLARADAS["vault_graph"]["no_op"]
+    datos_mentirosos = {"written": 0, "unchanged": 1}
+    escribio_con_declaracion = all(datos_mentirosos.get(k) == v
+                                   for k, v in regla.items())
+    assert escribio_con_declaracion, (
+        "el detector tiene que reconocer el caso: written=0 con cambiadas no vacias"
+    )
+
+
+def test_la_clasificacion_no_acepta_el_silencio_de_una_tool_nueva():
+    """Una tool con side effects que no escribe y no esta declarada sigue roja."""
+    assert "vault_inventada_no_declarada" not in vna.SIN_ESCRITURA_DECLARADA
+    assert "vault_inventada_no_declarada" not in vna.IDEMPOTENTES_DECLARADAS
+    # La invariante del banco: `sin_escritura` sin motivo -> rojo.
+    assert vna.SIN_ESCRITURA_DECLARADA.get("vault_fuente_unica")
+
+
+def test_el_banco_sigue_viendo_trabajo_real():
+    """El banco no se ha vuelto permisivo: hay medidas en la ejecucion real."""
+    d = vna.ejecutado()
+    assert d["ok"] is True, d.get("sin_escritura_sin_motivo")
+    assert d["medidas"], "sin medidas el banco no ha visto nada (AP-60)"
+    # vault_graph o midio (escribio) o declaro su no-op con indicador; nunca
+    # puede quedar en el limbo.
+    en_limbo = ("vault_graph" in d.get("sin_escritura", [])
+                or "vault_graph" in d.get("ofensores", []))
+    assert not en_limbo, "vault_graph no puede quedar sin clasificar"

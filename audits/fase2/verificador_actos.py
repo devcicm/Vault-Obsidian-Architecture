@@ -513,7 +513,8 @@ class VerificadorActosGit:
             canales += [str(c) for c in (delegacion.get("canales") or []) if str(c).strip()]
         return canales
 
-    def _delega_verificada(self, custodio: str, datos: Dict[str, Any]) -> Tuple[bool, List[str]]:
+    def _delega_verificada(self, custodio: str, datos: Dict[str, Any],
+                            hallazgo: Dict[str, Any]) -> Tuple[bool, List[str]]:
         """Si el custodio actua por delegacion, el acto de delegacion tiene que
         ser verificable y con alcance concreto (AUTH-06)."""
         delegacion = datos.get("delega")
@@ -546,8 +547,86 @@ class VerificadorActosGit:
             motivos.append(motivo)
         elif valor_delegado != custodio:
             motivos.append("DELEGACION_DELEGADO_NO_COINCIDE")
-        if not (campos.get("ALCANCE") or []):
-            motivos.append("DELEGACION_SIN_ALCANCE: la delegacion no declara alcance")
+
+        # AUTH-12: el alcance tiene que ser el del residuo EVALUADO, no
+        # cualquier alcance declarado. Se exigen residuo + norma + huella.
+        delegado_datos = self.custodios.get(custodio) or {}
+        for clave, esperado in (
+            ("RESIDUO", str(hallazgo.get("id") or "")),
+            ("NORMA", str(hallazgo.get("norm") or "")),
+            ("HUELLA", str(hallazgo.get("huella") or "")),
+            ("ALCANCE", str(delegacion.get("alcance") or "")),
+        ):
+            ok, valor_campo, motivo_campo = self._exige(campos, clave)
+            if not ok:
+                motivos.append(f"DELEGACION_SIN_{clave}")
+                continue
+            if valor_campo != esperado:
+                motivos.append(
+                    f"DELEGACION_FUERA_DE_ALCANCE: {clave} del acta "
+                    f"({valor_campo!r}) no es el del residuo evaluado "
+                    f"({esperado!r})")
+
+        # El ALCANCE configurado en el registro tiene que coincidir con el del
+        # acta (correspondencia configuracion <-> acta).
+        alcance_cfg = delegacion.get("alcance")
+        ok_alc, valor_alc, _ = self._exige(campos, "ALCANCE")
+        if ok_alc and isinstance(alcance_cfg, str) and valor_alc != alcance_cfg:
+            motivos.append(
+                f"DELEGACION_ALCANCE_NO_COINCIDE: el registro declara "
+                f"{alcance_cfg!r} y el acta {valor_alc!r}")
+
+        # Autoridad REAL del delegante: registrada y con canal.
+        delegante = str(delegacion.get("de") or "")
+        if delegante not in self.autoridades:
+            motivos.append(
+                f"DELEGACION_DELEGANTE_NO_AUTORIZADO: {delegante!r} no es una "
+                "autoridad registrada")
+        elif not self._canales_de(delegante):
+            motivos.append(
+                f"DELEGACION_DELEGANTE_SIN_CANAL: {delegante} no declara canal")
+
+        # Procedencia: el acta la publica el delegante (o el delegado en su
+        # canal), y la firma el DELEGANTE (quien delega).
+        canales_delegante = self._canales_de(delegante)
+        canales_delegado = self._canales_del_custodio(custodio, delegado_datos)
+        if not self._alcanzable_desde(acto, canales_delegante + canales_delegado):
+            motivos.append(
+                "DELEGACION_AJENA: el acta no es alcanzable desde el canal del "
+                "delegante ni del delegado")
+        identidad_delegante = (self.autoridades.get(delegante) or {}).get("identidad_git")
+        if isinstance(identidad_delegante, dict) and identidad_delegante:
+            ok_id, motivo_id = self._identidad_coincide(delegante, acto,
+                                                        identidad_delegante)
+            if not ok_id:
+                motivos.append(motivo_id)
+
+        # Vigencia aplicable: si el acta declara VIGENCIA, tiene que cubrir hoy.
+        valores_vigencia = campos.get("VIGENCIA") or []
+        if valores_vigencia:
+            if len(valores_vigencia) > 1:
+                motivos.append("DELEGACION_CAMPO_DUPLICADO: VIGENCIA")
+            else:
+                partes = [v.strip() for v in valores_vigencia[0].replace(" ", "").split("/")]
+                if len(partes) != 2:
+                    motivos.append("DELEGACION_VIGENCIA_INVALIDA")
+                else:
+                    inicio, fin = _fecha(partes[0]), _fecha(partes[1])
+                    if inicio is None or fin is None:
+                        motivos.append("DELEGACION_VIGENCIA_INVALIDA")
+                    elif inicio > fin:
+                        motivos.append("DELEGACION_VIGENCIA_INVERTIDA")
+                    elif inicio > _hoy():
+                        motivos.append("DELEGACION_VIGENCIA_FUTURA")
+                    elif fin < _hoy():
+                        motivos.append("DELEGACION_EXPIRADA")
+
+        # Revocacion aplicable al propio acta de delegacion.
+        revocacion = self._esta_revocado(acto, delegante)
+        if revocacion:
+            motivos.append(
+                f"DELEGACION_REVOCADA: el acta {acto[:12]}… fue revocada por "
+                f"{revocacion[:12]}…")
         return (not motivos, motivos)
 
     def _valida_contrato_custodia(self, campos: Dict[str, List[str]], decision: Dict[str, Any],
@@ -676,7 +755,7 @@ class VerificadorActosGit:
             motivos.append(
                 "CUSTODIA_AJENA: el acta de custodia no es alcanzable desde el "
                 "canal del custodio")
-        ok_delegacion, motivos_delegacion = self._delega_verificada(custodio, datos)
+        ok_delegacion, motivos_delegacion = self._delega_verificada(custodio, datos, hallazgo)
         if not ok_delegacion:
             motivos.extend(motivos_delegacion)
         motivos.extend(self._valida_contrato_custodia(

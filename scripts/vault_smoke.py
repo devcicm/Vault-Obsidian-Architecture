@@ -304,7 +304,11 @@ def run_one(tool: str, arbol: bool = False, argv: Optional[List[str]] = None,
     # Los campos devueltos viajan con el resultado para que `--contract` pueda
     # contrastarlos sin volver a ejecutar las 91 tools.
     resultado = {"tool": tool, "ok": True, "tool_ok": datos["ok"], "error_code": codigo,
-                 "returned": sorted(datos), "exit_code": proc.returncode}
+                 "returned": sorted(datos), "exit_code": proc.returncode,
+                 # El envelope completo viaja para que los consumidores del
+                 # banco (AP-37, QA-R20-CI-01) puedan comprobar los valores de
+                 # los indicadores de trabajo, no solo sus nombres.
+                 "datos": datos}
     if arbol:
         resultado["cambiadas"] = cambiadas
     return resultado

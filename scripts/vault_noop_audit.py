@@ -239,6 +239,68 @@ _CONTENIDOS = {
 #: lista suelta: una tool nueva cuyo ejemplo no hace nada se sumaba sin que
 #: nadie preguntara por qué. Ahora la que no está aquí deja el banco en rojo, y
 #: la que está aquí y escribió también: la declaración ya no es cierta.
+#: Tools IDEMPOTENTES POR CONTRATO (QA-R20-CI-01): su ejemplo puede no
+#: escribir cuando el artefacto YA está al día —y entonces DEBEN publicar el
+#: indicador de no-op—, y escriben cuando hay trabajo. Es una clase propia,
+#: distinta de `SIN_ESCRITURA_DECLARADA` (que declara "nunca escribe"):
+#:
+#:   - sin escritura + indicador exigido presente  -> `noop_declarado` (verde,
+#:     con la evidencia del indicador registrada);
+#:   - sin escritura + indicador ausente           -> rojo (oculta el no-op);
+#:   - escribió y declaró el no-op                 -> rojo (idempotencia falsa);
+#:   - escribió y lo dijo                          -> `medida` (verde).
+#:
+#: MOTIVO MEDIDO (no declarado a ciegas) — Linux + Python 3.12, sandbox
+#: descartable, 2026-10-27: pasada 1 sobre el grafo del checkout
+#: `written: 1, updated: 1`; pasada 2 (grafo ya regenerado)
+#: `written: 0, unchanged: 1, updated: 0` con el sha256 de graph.json
+#: IDÉNTICO antes y después; pasada 3 tras añadir un enlace roto a una nota
+#: `written: 1, updated: 1` (brokenLinks 11->12) con el sha256 cambiado. El
+#: trabajo existe cuando hay cambio; el no-op es el contrato de idempotencia
+#: del escritor atómico, y la tool lo publica. Sin esta evidencia no se
+#: declara (ver el informe del ejecutor, ronda R21).
+IDEMPOTENTES_DECLARADAS: Dict[str, Dict[str, Any]] = {
+    "vault_graph": {
+        "motivo": (
+            "el grafo del sandbox puede estar ya al día: `atomic_write_json` "
+            "conserva el fichero cuando el documento es idéntico (contrato de "
+            "idempotencia). Medido en Linux 3.12: written=1 en la primera "
+            "pasada, written=0/unchanged=1 en la segunda con sha256 idéntico, "
+            "y written=1 tras modificar una nota"
+        ),
+        #: valores EXIGIDOS en el envelope cuando no escribe
+        "no_op": {"written": 0},
+        #: mínimos exigidos en el envelope cuando no escribe
+        "minimos": {"unchanged": 1},
+    },
+}
+
+
+def _no_op_declarado(tool: str, respuestas: List[Dict[str, Any]]) -> tuple[bool, Dict[str, Any]]:
+    """¿La tool declaró el no-op con los indicadores EXIGIDOS por su registro?
+
+    El no-op no basta con "no escribió": tiene que publicar el indicador (y con
+    el valor esperado) para que el banco pueda distinguir la idempotencia del
+    silencio (QA-R20-CI-01).
+    """
+    regla = IDEMPOTENTES_DECLARADAS.get(tool)
+    if not regla:
+        return (False, {})
+    for respuesta in respuestas:
+        datos = respuesta.get("datos")
+        if not isinstance(datos, dict):
+            continue
+        exigidos = regla.get("no_op") or {}
+        minimos = regla.get("minimos") or {}
+        if not all(datos.get(k) == v for k, v in exigidos.items()):
+            continue
+        if not all(isinstance(datos.get(k), int) and not isinstance(datos.get(k), bool)
+                   and datos.get(k) >= v for k, v in minimos.items()):
+            continue
+        return (True, {k: datos.get(k) for k in list(exigidos) + list(minimos)})
+    return (False, {})
+
+
 SIN_ESCRITURA_DECLARADA: Dict[str, str] = {
     "vault_code_sync": "el ejemplo sincroniza un repo que el proyecto del banco no tiene enlazado; sin repo no hay nada que copiar",
     "vault_diagram_export": "mi-api no tiene diagramas propios y la línea con --path solo devuelve la configuración de exportación",
@@ -357,6 +419,7 @@ def ejecutado(herramientas: Optional[Dict[str, Dict]] = None) -> Dict:
     medidas: List[str] = []
     sin_escritura: List[str] = []
     lineas_sin_escritura: Dict[str, List[Dict]] = {}
+    noop_declarado: Dict[str, Dict[str, Any]] = {}
     sin_invocacion: List[Dict] = []
     ofensores: List[Dict] = []
     fuera_del_vault: List[str] = []
@@ -379,25 +442,55 @@ def ejecutado(herramientas: Optional[Dict[str, Dict]] = None) -> Dict:
             escribio = False
             callo = None
             respuestas = []
+            respuestas_escritura: List[Dict] = []
             for argv in lineas:
                 r = vault_smoke.run_one(name, arbol=True, argv=argv,
                                         preparar=_preparar(name), origen=origen)
+                datos = r.get("datos")
                 if not r.get("cambiadas"):
                     respuestas.append({"argv": argv[2:], "tool_ok": r.get("tool_ok"),
                                        "error_code": r.get("error_code"),
-                                       "problem": r.get("problem")})
+                                       "problem": r.get("problem"), "datos": datos})
                     continue
                 escribio = True
+                respuestas_escritura.append({"argv": argv[2:], "datos": datos,
+                                             "cambiadas": r.get("cambiadas")})
                 if not set(r["returned"]) & WORK_INDICATORS and callo is None:
                     callo = {"tool": name, "argv": argv[2:], "cambiadas": r["cambiadas"],
                              "returned": r["returned"]}
             if callo:
                 ofensores.append(callo)
-            elif escribio:
-                medidas.append(name)
-            else:
-                sin_escritura.append(name)
-                lineas_sin_escritura[name] = respuestas
+                continue
+            if escribio:
+                # Idempotencia FALSA: escribió y a la vez declaró `written: 0`.
+                falsa = None
+                for respuesta in respuestas_escritura:
+                    datos = respuesta.get("datos")
+                    if not isinstance(datos, dict):
+                        continue
+                    exigidos = (IDEMPOTENTES_DECLARADAS.get(name) or {}).get("no_op") or {}
+                    if exigidos and all(datos.get(k) == v for k, v in exigidos.items()):
+                        falsa = {"tool": name, "argv": respuesta["argv"],
+                                 "cambiadas": respuesta["cambiadas"],
+                                 "declarado": {k: datos.get(k) for k in exigidos}}
+                        break
+                if falsa:
+                    ofensores.append(falsa)
+                else:
+                    medidas.append(name)
+                continue
+            # Sin escritura: o es un no-op DECLARADO con su indicador, o es un
+            # silencio (rojo).
+            if name in IDEMPOTENTES_DECLARADAS:
+                declarado, indicadores = _no_op_declarado(name, respuestas)
+                if declarado:
+                    noop_declarado[name] = indicadores
+                    continue
+                respuestas = respuestas + [{
+                    "problem": "declarada idempotente y NO publicó el indicador de "
+                               "no-op exigido por su registro"}]
+            sin_escritura.append(name)
+            lineas_sin_escritura[name] = respuestas
     finally:
         import shutil
 
@@ -414,10 +507,13 @@ def ejecutado(herramientas: Optional[Dict[str, Dict]] = None) -> Dict:
         "norm": "AP-37",
         "modo": "ejecutado",
         "total": (len(medidas) + len(sin_escritura) + len(sin_invocacion)
-                  + len(ofensores) + len(fuera_del_vault)),
+                  + len(ofensores) + len(fuera_del_vault) + len(noop_declarado)),
         "medidas": medidas,
         "sin_escritura": sin_escritura,
         "lineas_sin_escritura": lineas_sin_escritura,
+        "noop_declarado": noop_declarado,
+        "noop_declarado_motivos": {t: IDEMPOTENTES_DECLARADAS[t]["motivo"]
+                                   for t in noop_declarado},
         "sin_escritura_declarada": {t: SIN_ESCRITURA_DECLARADA[t] for t in sin_escritura
                                     if t in SIN_ESCRITURA_DECLARADA},
         "sin_escritura_sin_motivo": sin_motivo,

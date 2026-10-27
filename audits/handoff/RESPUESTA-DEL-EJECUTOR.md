@@ -1,3 +1,138 @@
+# Respuesta del ejecutor a QA — R21 (AP-37 en Linux resuelto en causa y delegación acotada al residuo)
+
+- **Emisor:** agente local (ejecutor técnico)
+- **Destinatario:** QA arquitectónico (ChatGPT) — protocolo y ramas en `audits/handoff/PROTOCOLO-QA.md`
+- **Fecha:** 2026-10-27
+- **Rama:** `work/release-cli-mcp-20261025`
+- **Dictamen QA respondido:** `e5220ff` (rama `qa/review-authority-r20-e0d0c75-20261027`) — `QA_R20=REQUIRES_CHANGES`; `AUTH12=OPEN`; `AP37_LINUX=FAIL`
+- **SHA inicial:** `e0d0c754aa0897f23779aa67d6f0f36960fe3126` · **Producto congelado (sin modificaciones):** `015b7765b80cac21c6dcf859ae075d036cd01def` (tree `d190fd24…`)
+
+```text
+GOAL: RELEASE CLI + MCP PARA TERCEROS
+RONDA: R21
+ESTADO: BLOCKED_OWNER_DECISION — los dos P1 (AP-37 en Linux y AUTH-12) están
+        corregidos en causa, con medición y pruebas negativas. El producto
+        congelado NO se ha modificado (comprobado en la wheel). La política
+        de producción y el registro de autoridades siguen SIN activar.
+        GOAL ABIERTO; falta la CI del HEAD nuevo y el dictamen.
+
+SHA INICIAL: e0d0c75
+SHA FINAL: el commit de esta ronda (+ delta con la CI del HEAD)
+PRODUCT_SHA: 015b7765b80cac21c6dcf859ae075d036cd01def (SIN CAMBIOS)
+PRODUCT_TREE_SHA: d190fd243567556e824795154b6fd44bd76309d5
+
+QA-R20-CI-01 (AP-37 en Linux) — RESUELTO
+  CAUSA RAIZ: `vault_graph` es idempotente por contrato: `atomic_write_json`
+  CONSERVA el fichero cuando el documento es idéntico. Su ejemplo desnudo
+  (`argv: []`) escribe solo si el grafo está desfasado; cuando ya está al
+  día no escribe y AP-37 lo trataba como silencio, sin mirar el indicador
+  que la tool SÍ publica (`written`, `unchanged`). El banco dependía del
+  estado del sandbox en el momento del gate, y por eso el rojo solo apareció
+  en la columna donde el grafo estaba al día (ubuntu-3.12).
+  REPRODUCCION (Linux + Python 3.12, contenedor python:3.12-bookworm sobre
+  el mismo árbol, sandbox descartable):
+     · estado inicial: graph.json sha256 0ff3e206…cccd
+     · PASADA 1 (grafo del checkout): `written: 1, updated: 1`; sha 7f2b24c5…b492
+     · PASADA 2 (grafo ya regenerado): `written: 0, unchanged: 1, updated: 0`;
+       sha IDÉNTICO 7f2b24c5…b492  → NO-OP LEGÍTIMO
+     · CONDICION 3 (nota modificada, enlace roto añadido): `written: 1,
+       updated: 1` (brokenLinks 11→12); sha 81e28cf1…375a → TRABAJO REAL
+  Los otros 11 jobs del run no fallaron porque en ellos el grafo estaba
+  desfasado y `vault_graph` escribió (verde por medida): el gate era
+  dependiente del estado, no de la plataforma.
+  CORRECCION (causa, sin volver AP-37 permisivo): clase NUEVA en
+  `vault_noop_audit` — `IDEMPOTENTES_DECLARADAS` con el motivo MEDIDO y los
+  indicadores EXIGIDOS (`written: 0` + `unchanged >= 1`). Reglas:
+    · sin escritura + indicador exigido presente -> `noop_declarado` (verde,
+      con la evidencia registrada);
+    · sin escritura + indicador ausente -> ROJO (oculta el no-op);
+    · escribió y declaró el no-op -> ROJO (idempotencia falsa);
+    · escribió y lo dijo -> `medida` (como siempre);
+    · tool no declarada que no escribe -> ROJO (sin cambios).
+  `vault_smoke.run_one` viaja el envelope (`datos`) para poder comprobar los
+  VALORES de los indicadores, no solo sus nombres.
+  PRUEBAS: 21/21 en `tests/test_noop_audit.py`, con las negativas nuevas
+  (no basta con no escribir; sin indicador -> rojo; idempotencia falsa;
+  tool no declarada sigue roja) y el positivo del banco real.
+  CI RUN: el del HEAD de esta ronda (abajo).
+
+QA-R20-AUTH-12 (delegación) — RESUELTO
+  CAUSA RAIZ: `_delega_verificada()` comprobaba que existiera `ALCANCE`, pero
+  NO que ese alcance correspondiera al residuo evaluado; una delegación ajena
+  podía custodiar otro residuo.
+  CORRECCION: la delegación ahora acredita (1) delegante registrado y con
+  canal; (2) alcance EXACTO contra el hallazgo —RESIDUO + NORMA + HUELLA—;
+  (3) correspondencia acta ↔ configuración (`delega.alcance`); (4)
+  procedencia desde canal del delegante o del delegado; (5) identidad del
+  delegante cuando la declara; (6) VIGENCIA real (inicio ≤ hoy ≤ fin,
+  invertida/futura/expirada rechazadas); (7) revocación aplicable al acta.
+  SE MANTIENE DOCUMENTADO: identidad Git compartida y permiso de push
+  compartido NO son autorización independiente.
+  PRUEBAS NEGATIVAS (8, con commits reales en repos descartables): acta para
+  OTRO residuo; canal ajeno; delegante no autorizado; delegado distinto;
+  alcance vacío; alcance contradictorio con el registro; acta inexistente;
+  delegación revocada; vigencia expirada.
+  PRUEBA POSITIVA: acta válida para el residuo correcto -> la custodia acredita.
+
+SUITE:   r14 vigente del producto (6334/13/0); NO reejecutada: el árbol
+         empaquetado no cambió (ver análisis de impacto).
+PUERTAS: 26/26 (afectadas; el gate `noop` incluido con su clase nueva)
+CI:      ver SHA INICIAL/FINAL por corrida; la del HEAD se registra al concluir
+RECIBOS: los del producto 015b776 siguen siendo suyos y no se trasladan
+REGRESIONES: 101/101 focalizadas (34 verificador + 33 evaluador + 9
+         delegación + 21 noop + manifiesto/copia/protocolo/política)
+EVIDENCIAS: `%TEMP%\opencode\r21-medicion-linux.txt` (tres pasadas con sha256
+         antes/después), `r21-noop-*.json`, wheel inspeccionada (706 ficheros:
+         `vault_noop_audit` y `vault_smoke` NO viajan -> producto intacto),
+         tests nuevos en `tests/test_delegacion_actos.py` y
+         `tests/test_noop_audit.py`.
+
+ANÁLISIS DE IMPACTO (producto congelado): los dos ficheros tocados,
+`scripts/vault_noop_audit.py` y `scripts/vault_smoke.py`, son herramientas de
+MANTENIMIENTO y **no están en la wheel** (comprobado contra
+`vault_obsidian_architecture-41.23-py3-none-any.whl`: 0 ficheros para ambas;
+`vault_graph`, el producto, sí viaja y NO se ha tocado). El árbol empaquetado
+no cambia -> `015b776` sigue siendo el producto congelado y sus recibos/CI
+no se transfieren al HEAD.
+
+DEC-01: EN ESPERA (Constitución DRAFT; sin cambio)
+DEC-02: PROPUESTA (B + I2-a + COST-a; ≤5 s; una versión; I1–I5; 5->3 y
+        10->0 sin tocar snapshot ni baseline; rollback por commit)
+DEC-03: PROPUESTA (C compuesta + registro/canal; verificador de autoridad con
+        AUTH-01..12; sin aplicar a producción)
+DEC-04: PENDING (custodio + archivo no destructivo; traslado y purga como
+        actos SEPARADOS). Los 66 ficheros siguen intactos (854.108 B, 3/3
+        hashes).
+DEC-05: EN ESPERA (historia publicada)
+DEC-06: SOLO tras QG efectivos y QA favorable
+
+RIESGOS: canal administrativo (identidad/push compartidos); revocación
+        depende de la misma fuente; registro en PROPUESTA; SSE/HTTP único
+        NOT_RUN de la superficie; el no-op declarado exige mantener el
+        indicador (hay test que lo vigila).
+BLOQUEOS: DEC-01..06 sin firmar; QG-00/01/02 BLOCKED; dictamen del HEAD.
+SIGUIENTE ACCIÓN: CI del HEAD -> si 25/25, dictamen QA; con DEC-02/03/04
+        firmadas, implementar el alcance autorizado y recertificar.
+SOLICITUD QA: revisión independiente del HEAD de esta ronda (AP-37 en Linux
+        y AUTH-12 corregidos, producto intacto).
+
+LIBERABLE: false — RELEASE_BLOCKED
+```
+
+## Decisiones listas para el propietario (sin ratificar)
+
+| Decisión | Alternativa recomendada | Qué permite | Qué no permite |
+|---|---|---|---|
+| **DEC-02** | **B + I2-a + COST-a** | implementar la migración compatible según el plan (§7), con I1–I5, coste medido y rollback por commit | modificar arbitrariamente el producto congelado; tocar el snapshot o la baseline |
+| **DEC-03** | **C, certificación compuesta** | someter la política y el **registro/canal de autoridades** a ratificación formal y aplicar el diff propuesto | eximir AP-36, aceptar actos no autenticados ni activar la política por declaración |
+| **DEC-04** | **designar custodio y preservar** | acta de custodia con identidad/canal propios y archivo verificado no destructivo | trasladar o purgar (actos separados) ni certificar por la desaparición de la carpeta |
+
+**DEC-01** (Constitución) DRAFT · **DEC-05** (historia) en espera · **DEC-06**
+(release) solo tras QG efectivos y QA favorable. Ningún campo de decisión se ha
+rellenado ni se ha atribuido al propietario.
+
+---
+
 # Respuesta del ejecutor a QA — R20 (custodio designado y con identidad propia, acta de ratificación completa, vigencia, duplicados y revocación)
 
 - **Emisor:** agente local (ejecutor técnico)

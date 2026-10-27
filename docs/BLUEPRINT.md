@@ -141,7 +141,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-57** — Criterio con dueño, reimplementado en la medida | guard | `criterios` | `test_ap57_criterios.py`, `test_criterios_fronteras.py`, `test_grafo_import.py` |
 | **AP-58** — Ciclo esquivado con un import diferido | guard | `ciclos` | `test_ciclos.py` |
 | **AP-59** — Núcleo declarado sin contraste | guard+audit | `kernel` | `test_kernel.py` |
-| **AP-60** — El guard cobra por declarar y regala el silencio | guard+audit | `norms_coherence` | `test_ap08_prosa_universo.py`, `test_norms_coherence.py` |
+| **AP-60** — El guard cobra por declarar y regala el silencio | guard+audit | `norms_coherence` | `test_ap08_prosa_universo.py`, `test_noop_audit.py`, `test_norms_coherence.py` |
 | **AP-61** — El guard cae con el dato que vino a medir | guard+audit | `excepcion_declarada` | `test_excepcion_declarada.py` |
 | **AP-62** — El consumidor paga el fan-out del productor | guard+audit | `recursos` | `test_recursos.py` |
 | **AP-63** — El nombre de un proyecto como texto libre | guard+audit | — | `test_project_registrado.py`, `test_vault_project.py` |
