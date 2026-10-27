@@ -1898,20 +1898,15 @@ _cruce("gobernanza", "meta_toolkit", "a_eliminar", "gobernanza",
        "declarado; (C) excepción formal con plazo y riesgo. Ver "
        "audits/architecture/QA-RC-03-CRUZES.md y las fichas DIV-01..DIV-10.",
        fecha_limite="2027-06-30")
-_cruce("gobernanza", "autoria", "a_eliminar", "gobernanza",
-       "La FACHADA de mantenimiento (`vault_norms`) -> `vault_voice` para "
-       "ejecutar AP-43: presentación de la fachada, fuera de la wheel de "
-       "producto. El sitio se movió desde `vault_norms_engine` (commit "
-       "667a6a5); el adeudado es el MISMO y sigue vigente: una norma que "
-       "ninguna tool pronuncia debe llegar al punto de uso desde el meta-toolkit, "
-       "no desde el motor de normas. PENDIENTE DE RATIFICACIÓN DEL PROPIETARIO "
-       "(mismas alternativas A/B/C). Ver audits/architecture/"
-       "QA-RC-03-CRUZES.md. CERRADO en la ronda R22 por la alternativa B "
-       "(DEC-02, I2-a + COST-a): el puerto `vault.kernel.controles` lanza la "
-       "superficie del dueño como proceso y la arista desaparece del grafo. "
-       "La entrada se CONSERVA como registro de la decisión (no se borra); "
-       "`presupuesto_de_cruces_huerfano()` la reporta como par ya resuelto.",
-       fecha_limite="2027-06-30", cerrado_en="R22 (DEC-02 ruta B, puerto de controles)")
+# CERRADO en R22 (DEC-02, ruta B — puerto de controles). El par
+# `gobernanza -> autoria` existia solo porque `vault_norms` importaba
+# `vault_voice` para ejecutar AP-43. El puerto `vault.kernel.controles` lanza
+# la superficie del dueno como proceso y la arista desaparecio del grafo
+# (off_port 5 -> 0). La entrada se RETIRA de `PRESUPUESTO_DE_CRUCES` porque
+# `presupuesto_de_cruces_huerfano()` y `test_arquitectura` exigen que un par
+# resuelto no siga explicando una frontera que ya no existe; el registro de la
+# decision queda en `audits/architecture/PLAN-B-MIGRACION-CRUZES.md` (R22) y
+# en `audits/handoff/RESPUESTA-DEL-EJECUTOR.md`.
 
 _cruce("autoria", "gobernanza", "permanente", "autoria",
        "Validar mermaid al escribir y registrar el cambio: la escritura no puede "
