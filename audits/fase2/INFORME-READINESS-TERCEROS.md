@@ -48,10 +48,9 @@ diciendo «116»/«117» y «9 tools JS-native» (son 2): son cifras caducadas d
 
 | Métrica | Valor | Fuente |
 |---|---|---|
-| Suite completa | **6319 passed / 13 skipped / 0 failed** en **994,9 s** | JUnit `r12h` sobre el SHA final `408eb23` (6332 collectados, 0 fallos, 0 errores) |
-| Suite completa (candidatos intermedios) | 6319/13/0 en 1033,9 s (`r12e`, `701f5d4`), 1030,7 s (`r12d`, `89fbe4c`), 1001,9 s (`r12g`, `8b87b24`) | JUnit; el delta entre candidatos no tocaba el código bajo prueba |
-| Puertas del estándar | **26/26** | `vault_gate.py --strict` (532,9 s) y, en CI, en las 8 columnas win/ub de la corrida `40340865847` |
-| E2E de terceros | **27/27** con wheel reconstruida desde el código (el guion construye la wheel desde HEAD) | `recorrido_terceros_r07.py`; wheel `6389a9ce…e6ae`, sdist `8b91c07a…1151` |
+| Suite completa | **6330 passed / 13 skipped / 0 failed** en **1342,9 s** | JUnit `r13b` sobre el árbol del commit candidato (6343 collectados, 0 fallos, 0 errores) |
+| Puertas del estándar | **26/26** en 766,1 s | `vault_gate.py --strict` sobre el árbol del commit candidato; en CI, en las columnas de Windows y Linux de la corrida `40340865847` |
+| E2E de terceros | **27/27** con wheel reconstruida desde el código (el guion construye la wheel desde HEAD) | `recorrido_terceros_r07.py`; wheel `3a9f2dda…f39d`, sdist `7f209433…b293` |
 | Equivalencia del paquete | **706 miembros, 0 ficheros con contenido distinto** entre la wheel del E2E y la reconstruida | la construcción **no es reproducible** (el ZIP lleva marcas de tiempo): el hash de referencia es el de la construcción certificada, y lo que se comparó es el contenido |
 | AP-39 (defecto de producto) | **corregido**: 0 violaciones en runtime limpio con 75 ficheros | re-auditoría con código actual (commit `2174bb1`) |
 | Sandbox canónico | **1** violación, y es externa: `vault-backups` dos niveles por encima del repo | audit con código actual; los 13 de contenido **corregidos** (§4) |
@@ -65,23 +64,27 @@ diciendo «116»/«117» y «9 tools JS-native» (son 2): son cifras caducadas d
 
 | Corrida | SHA | Jobs | Resultado | Conclusión |
 |---|---|---|---|---|
-| `40299732445` | `36c91e0` | 25 | **9 verdes · 8 rojos · 8 en cola** | los 8 rojos: checkout superficial + MCP + SystemRoot (§3.2). Los 8 en cola: **macOS**, que no arranca |
-| `40317033977` | `9e0bcd7` | 25 | 9 verdes · 8 rojos · 8 en cola | los 8 rojos: **suite verde** y fallo en `conteos` (D7) o en la contención (D8) |
-| `40326462714` | `0fffbc3` | 25 | 13 verdes · 3 rojos · 8 en cola · 1 en curso | los 3 rojos de Windows: el paso `vault_norms --list` (D9) |
-| `40335869688` | `8b87b24` | 25 | 13 verdes · 1 rojo · 8 en cola · 3 en curso | el rojo: el flake de la idempotencia del SDD (D10) |
-| `40340865847` | **`408eb23`** | 25 | **17 verdes · 8 en cola** | los 8 en cola son **macOS**, que sigue sin arrancar. Ningún job en rojo |
+| `40299732445` | `36c91e0` | 25 | 9 verdes · 8 rojos · 8 en cola | los 8 rojos: checkout superficial + MCP + SystemRoot (§3.2). |
+| `40317033977` | `9e0bcd7` | 25 | 9 verdes · 8 rojos · 8 en cola | suite **verde** en las 8 columnas; los rojos eran la puerta `conteos` (D7) y la contención (D8) |
+| `40326462714` | `0fffbc3` | 25 | 13 verdes · 3 rojos | los 3 rojos de Windows: el quoting del paso `vault_norms --list` (D9) |
+| `40335869688` | `8b87b24` | 25 | 13 verdes · 1 rojo | el rojo: el flake de la idempotencia del SDD (D10) |
+| `40340865847` | `408eb23` | 25 | **21 verdes · 4 rojos · 0 pendientes** | los 4 rojos: **las cuatro columnas `validate` de macOS** (§3.2, R13-01/02/03) |
+| `40349132455` | `dfc6a06` | 25 | 20 verdes · 5 rojos | los 4 de macOS + Windows 3.10 (R13-03b) |
+| `40420024458` | `9c65401` | 25 | **24 verdes · 1 rojo · 0 pendientes** | las 4 columnas de macOS **pasan**; el 1 rojo es Windows 3.10 con el defecto nuevo R13-05 (§3.2), corregido después |
 
-**Lo que esto refuta:** la hipótesis de que la CI estaba bloqueada por
-facturación. La cuenta ejecuta y los jobs de Windows y Linux **terminan**. El
-límite real es otro: **los 8 jobs `macos-latest` no arrancan**, en cinco
-corridas seguidas (40 jobs de macOS en cola, ninguno jamás asignado a un
-runner, mientras 40+ jobs de Windows y Linux sí se ejecutaron en paralelo).
-Eso es infraestructura del repositorio/plan — una cuenta que ejecuta macOS
-cuesta 10× — y es del propietario. Consecuencia: **la matriz multiplataforma
-no está completa** y QG-07 no puede cerrarse (su check exige CI con
-conclusión, y la conclusión no llega mientras macOS no arranque).
+**Lo que esto refuta (y lo que la ronda anterior afirmaba):** la hipótesis de
+que la CI estaba bloqueada por facturación. La CI **corre**: los jobs de
+Windows y Linux terminan, y **los de macOS también ejecutan** — tardan en
+recibir runner (en las corridas intermedias se les veía en `queued` durante
+horas, y ese estado puntual se tomó por «no arrancan»), y cuando corren
+fallan con defectos reales del producto. El diagnóstico completo, con la
+traza de cada uno, está en `audits/fase2/CI-diagnostico.md`.
 
-### 3.2 Los diez defectos reales que la CI destapó
+**Lo que sigue faltando:** la corrida del commit final de la ronda — con
+`9c65401` la matriz llega a **24 de 25** y el único rojo (R13-05, corregido)
+se verifica en la corrida del commit que cierra la ronda.
+
+### 3.2 Los defectos reales que la CI destapó — D1..D10 (R12) y R13-01..05 (R13)
 
 | # | Síntoma | Causa comprobada | Corrección | Cómo se comprobó |
 |---|---|---|---|---|
@@ -94,29 +97,45 @@ conclusión, y la conclusión no llega mientras macOS no arranque).
 | D9 | Paso «Run vault_norms --list» rojo en **las cuatro** columnas de Windows y verde en las de Ubuntu, con el mismo código: `SyntaxError: '[' was never closed` | el paso usa `python -c "..."` con comillas dobles escapadas; con el shell por defecto de Windows (PowerShell) las comillas se pierden al pasar el argumento al proceso nativo y el código llega partido. En bash funciona | el paso declara `shell: bash` (que está en los tres runners) y el código usa comillas simples | verificado en el bash local («AP norms registered: 76», exit 0) y en CI: windows-3.12 en verde con ese paso en `success` |
 | D10 | `test_vault_sdd_init.py::test_skill_idempotency` rojo en Windows 3.11: «README.md not idempotent», con una única diferencia (dos «Generated at» con un segundo de distancia) | los generadores del SDD estampan el instante de la escritura y el test comparaba dos generaciones byte a byte: el resultado dependía del **segundo** en que caían, no del código | la comparación normaliza **solo el instante** (la etiqueta y el resto del texto se siguen comparando) | dos generaciones con 1,2 s de diferencia: contenido crudo distinto, contenido normalizado idéntico en los doce generadores; 15/15 tres veces seguidas |
 
-Ninguno de los diez se arregló con sleeps, reintentos, baselines más amplias
-ni tests relajados. Los diez se arreglaron en su causa.
+| R13-01 | macOS (3.9-3.12): `RuntimeError: el servicio no abrió el puerto` + 11 errores de fixture; el proceso quedaba vivo y sin escuchar, sin decir por qué | **sin causa demostrada** (lo dice el dictamen). Medido: el servicio arranca en 0,017 s en local; el test esperaba un puerto que él mismo elegía (carrera) y agotaba 30 s sin reportar nada | el servicio **enlaza antes de publicar** el fichero de puerto (señal de readiness) y registra sus tiempos de arranque en stderr; el test pide puerto 0, espera la señal y, si no llega, dice código de salida, liveness, puerto, fichero de puerto y stderr acotado, con el token redactado | `test_el_arranque_que_falla_dice_el_codigo_y_el_stderr` |
+| R13-02 | macOS (3.9-3.12): el escáner legacy contaba **5** notas donde hay **3** | la cascada de cada escritura crea ficheros (`index.md` de sección, notas de sistema) **mientras el `rglob` perezoso sigue recorriendo**: en APFS los ve, en ext4/NTFS no. Reproducido en local (una segunda pasada contaba 6 = 3 + los 3 creados) | el inventario se **materializa** antes de curar; los artefactos derivados se excluyen por su dueño; el escaner **publica el inventario** (ruta, clase, motivo) | `test_heal_legacy_no_cuenta_lo_que_la_pasada_crea`, `test_heal_legacy_publica_el_inventario_exacto` |
+| R13-03 | macOS 3.11: el segundo proceso del test de exclusión **moría** con `OSError: [Errno 22] Invalid argument: .../.locks/contador.txt.lock`; Windows 3.10: la copia del sandbox vivo fallaba con `shutil.Error: ... 00_System/.locks` | en macOS, cuando `.locks/` se retira mientras otra ruta se resuelve, `mkdir` responde **EINVAL/ENOTDIR** (en Linux es ENOENT, ya contemplado): el proceso debía **esperar su turno**. En Windows, la copia del sandbox se cogía en mitad porque otra prueba en paralelo tomaba y soltaba locks | EINVAL/ENOTDIR se compiten otra vez, con el plazo como único freno; el estado de bloqueo es de **ejecución**, no de contenido, y la copia lo ignora | `test_un_einval_al_crear_el_lock_se_compite_otra_vez` (positiva), `test_un_einval_permanente_no_espera_sin_fin` (negativa) |
+| R13-04 | (política): toda conclusión de CI que no fuera `success` se etiquetaba `CI_PENDIENTE`, incluida una corrida ya concluida en **rojo** | el colector solo miraba runs exitosos: `completed/failure` salía `no_verificable` y la política leía «pendiente» | tres clases (`CI_PENDING` / `CI_FAILED` / `CI_PASS`) en política y colector; fail-closed intacto: solo `success` pasa | 4 tests de política + 2 del colector |
+| R13-05 | Windows 3.10 (verificación `40420024458`): `ConnectionAbortedError: [WinError 10053]` en vez del 403 esperado | el rechazo (Origin ajeno → 403) cerraba la conexión con el **cuerpo sin leer** → RST del núcleo → el cliente pierde la respuesta. Carrera: solo 1 de 8 columnas la vio | el camino de rechazo de SP-04 **drena el cuerpo** antes de responder | el propio test, pedido 5 veces |
+
+Ninguno se arregló con sleeps, reintentos, baselines más amplias
+ni tests relajados. Todos se arreglaron en su causa.
 
 ### 3.3 Lo que la CI NO demuestra todavía
 
-- **macOS**: `NOT_RUN`. Ni un solo job `macos-latest` ha ejecutado una línea.
-  El PRD y el README no deben prometer macOS mientras esto siga así.
+- **macOS**: `EXECUTED_FAILED`, no `NOT_RUN`. Las cuatro columnas ejecutan y
+  fallan con tres defectos reales (R13-01, R13-02, R13-03a), corregidos en
+  esta ronda con su regresión. Hasta que la matriz de macOS dé 25/25, el
+  producto no puede declararse multiplataforma.
 - El job `validate` corre la suite **sin `-n auto`** (secuencial, ~27 min por
   columna). Es correcto para CI, pero significa que la CI no mide el
   paralelismo del que habla §2.
 
 ### 3.4 Corrida de verificación de los arreglos
 
-**`40340865847` (SHA final `408eb23`): 17 de 25 jobs en verde** — lint, los 8
-de producto (wheel) y **los 8 `validate` de Windows y Linux**, que pasaron la
-suite completa, las 26 puertas, el AP-40, el smoke de las 126 tools, la
-auditoría de contención, la validación del runtime recién creado, el paso de
-`vault_norms --list` y el AP-25 del manifiesto. **Ningún job en rojo.** Los 8
-restantes son los de macOS, en cola desde el principio y sin arrancar nunca.
+**`40340865847` (SHA `408eb23`): 21 de 25 jobs en verde** — lint, los 8 de
+producto (wheel) y los **8 `validate` de Windows y Linux**, que pasaron la suite
+completa, las 26 puertas, el AP-40, el smoke de las 126 tools, la auditoría de
+contención, la validación del runtime recién creado, el paso de
+`vault_norms --list` y el AP-25 del manifiesto. **Los 4 que faltan son las
+cuatro columnas `validate` de macOS, y fallan con defectos reales** (los de
+R13-01/02/03, con su traza en `audits/fase2/CI-diagnostico.md`).
 
-Es decir: **los diez defectos que la CI destapó están corregidos y la propia CI
-lo demuestra**. Lo que sigue sin llegar es la conclusión de la corrida (y, con
-ella, el cierre de QG-07), y la causa es externa: los runners de macOS.
+Es decir: **los diez defectos de la ronda anterior están corregidos y la CI lo
+demuestra**. Lo que quedaba eran macOS, y macOS no estaba «sin runner»: estaba
+fallando por cosas del producto y del harness, que es un sitio mejor para
+estar.
+
+**`40420024458` (SHA `9c65401`): 24 de 25 jobs en verde** — incluidas, por
+primera vez, **las cuatro columnas de macOS**. El único rojo es Windows 3.10
+con un defecto nuevo de esta ronda (R13-05: el RST del rechazo de SP-04),
+corregido con su ficha en §3.2. La corrida del commit final de R13 es la que
+verifica ese arreglo en la matriz completa.
 
 ## 4. QG-02: los 14 hallazgos del sandbox, desglosados y corregidos
 
@@ -169,7 +188,7 @@ sin release y sin dictamen QA de cierre.
 |---|---|---|
 | Windows | **medido** | suite + E2E locales (esta máquina) y las **4 columnas de la CI en verde** (corrida `40340865847`) |
 | Linux | **medido** | las **4 columnas de la CI en verde** (corrida `40340865847`) |
-| macOS | **`NOT_RUN`** | los 8 jobs `macos-latest` no arrancan en cinco corridas seguidas (§3.1) |
+| macOS | **`EXECUTED_FAILED`** | las 4 columnas ejecutan y fallan con tres defectos reales (R13-01/02/03), corregidos en esta ronda; la verificación está en la corrida `40420024458` |
 
 ### 5.3 Lo que NO garantizamos aún
 

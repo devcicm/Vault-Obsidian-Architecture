@@ -206,8 +206,20 @@ def test_con_token_se_atiende(servicio):
 
 
 def test_una_peticion_de_navegador_se_rechaza_aun_con_token(servicio):
-    estado, _ = servicio.pedir("POST", "/stop", {**CON_TOKEN, "Origin": "https://evil.example"}, {})
-    assert estado == 403
+    """Un navegador puede mandar `POST /stop` con formulario —y el cuerpo que
+    trae no puede convertir el rechazo en una conexión cortada a RST.
+
+    Medido el 2026-10-26 en la CI (Windows 3.10, corrida `40420024458`): el
+    servicio respondía 403 cerrando la conexión con el cuerpo SIN LEER, el
+    núcleo respondía RST (WinError 10053) y el cliente veía
+    `ConnectionAbortedError` en vez del 403 — solo en 1 de 8 columnas, porque
+    es la carrera del RST contra la lectura del cliente. El servicio ahora
+    drena el cuerpo antes de responder; el test lo pide varias veces para que
+    la carrera, si volviera, no se esconda tras el azar.
+    """
+    for _ in range(5):
+        estado, _ = servicio.pedir("POST", "/stop", {**CON_TOKEN, "Origin": "https://evil.example"}, {})
+        assert estado == 403
 
 
 def test_un_host_ajeno_se_rechaza_anti_dns_rebinding(servicio):

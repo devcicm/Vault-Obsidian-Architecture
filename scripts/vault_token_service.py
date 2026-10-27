@@ -248,9 +248,29 @@ class TokenHandler(BaseHTTPRequestHandler):
 
     server_version = "VaultTokenService/1.0"
 
+    def _drenar_cuerpo(self) -> None:
+        """Consume el cuerpo pendiente antes de responder con un rechazo.
+
+        Al rechazar una petición que trae cuerpo (p. ej. `POST /stop` con
+        `Origin` ajeno), la respuesta se manda y la conexión se cierra con los
+        bytes del cuerpo SIN LEER: el núcleo de TCP responde con RST y el
+        cliente ve la conexión abortada en vez del 403 (Windows: WinError
+        10053). Medido el 2026-10-26 en la CI (Windows 3.10,
+        `ConnectionAbortedError` donde el test esperaba 403, y solo en una
+        corrida de ocho columnas: la carrera del RST contra la lectura del
+        cliente). Leer el cuerpo antes de responder lo quita.
+        """
+        try:
+            length = int(self.headers.get("Content-Length", "0") or "0")
+            if length > 0:
+                self.rfile.read(min(length, 1 << 20))
+        except (OSError, ValueError):
+            pass
+
     def _autorizado(self) -> bool:
         # SP-04: Origin → 403, Host ajeno → 403, sin Bearer válido → 401.
         if self.headers.get("Origin") is not None:
+            self._drenar_cuerpo()
             self._send(403, {"ok": False, "error": "origin_rejected"})
             return False
         host, port = self.server.server_address[:2]
@@ -258,12 +278,14 @@ class TokenHandler(BaseHTTPRequestHandler):
         if host not in ("", "0.0.0.0", "::"):
             validos.add(f"{host}:{port}")
         if (self.headers.get("Host") or "").lower() not in validos:
+            self._drenar_cuerpo()
             self._send(403, {"ok": False, "error": "host_rejected"})
             return False
         esperado = getattr(self.server, "token", "") or ""
         cabecera = self.headers.get("Authorization") or ""
         dado = cabecera[7:] if cabecera.startswith("Bearer ") else ""
         if not esperado or not hmac.compare_digest(dado.encode("utf-8"), esperado.encode("utf-8")):
+            self._drenar_cuerpo()
             self._send(401, {"ok": False, "error": "unauthorized"})
             return False
         return True
@@ -322,6 +344,7 @@ class TokenHandler(BaseHTTPRequestHandler):
             self._send(200, {"ok": True, "stopping": True})
             threading.Thread(target=self.server.shutdown, daemon=True).start()
             return
+        self._drenar_cuerpo()
         self._send(404, {"ok": False, "error": "not_found"})
 
     def log_message(self, fmt: str, *args: Any) -> None:

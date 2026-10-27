@@ -68,29 +68,38 @@ Ramas auxiliares históricas del ejecutor: `audit/archify-governance-20261024`
 y `fase2/deuda-y-product-readiness-20261025` (cerradas; no participan en el
 release actual).
 
+| Rama de revisión | Qué contiene |
+|---|---|
+| `qa/review-release-cli-mcp-408eb23-20261026` | dictamen `e30e668` (R12 auditada: macOS ejecutó y falló — 21/25 jobs, 4 columnas de macOS en rojo); la ronda R13 es su respuesta |
+
 ## 5. Solicitud QA abierta (pendiente)
 
 - **Solicitud:** dictamen de cierre del release CLI+MCP.
-- **Sobre:** rama `work/release-cli-mcp-20261025` — **candidato de producto
-  `408eb23`** (HEAD de la rama `6660abf`, un commit documental por delante).
-- **Estado de la ronda R12:** los **diez** defectos reales que la CI destapó
-  están corregidos y comprobados (checkout superficial, detector MCP sin
-  PyYAML en Windows, env de hijo sin `SystemRoot` en 3.9/3.10, cifra de tests
-  dependiente del sistema, contenido no canónico de la semilla del sandbox,
-  quoting del paso `vault_norms --list`, idempotencia del SDD que comparaba el
-  reloj, y el defecto de `vault://graph` en el servidor MCP). La CI del
-  candidato, corrida `40340865847`, deja **17 de 25 jobs en verde** — los 8
-  `validate` de Windows y Linux entre ellos, sin un solo job en rojo—; los 8
-  que quedan son los de macOS, que no arrancan en cinco corridas seguidas.
-  Detalle y evidencia: `audits/handoff/RESPUESTA-DEL-EJECUTOR.md` (ronda R12),
-  `audits/fase2/INFORME-READINESS-TERCEROS.md` y los recibos por subcheck.
-- **Base del dictamen anterior:** `defc657` (rama
-  `qa/review-release-cli-mcp-316623a-20261026`). Los diez defectos de CI
-  quedan respondidos en la R12; el dictamen `9919c57` (QA-ARC) quedó respondido
-  en la R11.
-- Nombre candidato por convención: `qa/review-release-cli-mcp-408eb23-20261026`.
-- **Prerrequisitos que NO dependen de QA:** decisiones del propietario del
-  informe §6 (divergencias A/B/C, contrato de QG-02, `vault-backups`, runners
-  de macOS) y la Constitución arquitectónica. Si siguen abiertas, el dictamen
-  de cierre deberá declararlas `BLOCKED` con esas causas — que es el dictamen
-  correcto.
+- **Sobre:** rama `work/release-cli-mcp-20261025` — **candidato de producto: el
+  commit que publica este protocolo actualizado** (código de `9c65401` más el
+  drenaje del cuerpo en el rechazo del servicio de tokens, con la
+  documentación de la ronda).
+- **Estado de la ronda R13:** los seis defectos de la ronda corregidos, cada
+  uno con su causa comprobada y su regresión: el lock que moría con EINVAL en
+  macOS (R13-03a), el escáner legacy cuyo recuento dependía del orden del
+  sistema de ficheros porque la propia pasada creaba los ficheros que contaba
+  (R13-02), el servicio de tokens sin diagnóstico de arranque y con carrera de
+  puerto (R13-01), la copia del sandbox vivo cogida en mitad en Windows 3.10
+  (R13-03b), la clasificación de CI que llamaba «pendiente» a una corrida ya
+  concluida en rojo (R13-04) y el rechazo de SP-04 que en Windows 3.10 cortaba
+  la conexión a RST porque mandaba el 403 sin leer el cuerpo (R13-05). La
+  corrida de verificación del fix, `40420024458`, dejó **24 de 25**: las
+  cuatro columnas de macOS **pasan** por primera vez. Detalle y evidencia:
+  `audits/handoff/RESPUESTA-DEL-EJECUTOR.md` (ronda R13),
+  `audits/fase2/CI-diagnostico.md` (reesrito con las fichas D1–D10 +
+  R13-01..05) y `audits/architecture/PLAN-B-MIGRACION-CRUZES.md` (criterio de
+  independencia semántica y operacional añadido §6.1).
+- **Base del dictamen anterior:** `e30e668` (rama
+  `qa/review-release-cli-mcp-408eb23-20261026`). Los hallazgos quedan
+  respondidos en la R13.
+- Nombre candidato por convención: se publica con el buzón R13.
+- **Prerrequisitos que NO dependen de QA:** decisiones del propietario
+  (divergencias A/B/C con el criterio §6.1 del plan B, política de QG-02,
+  `vault-backups`), la Constitución arquitectónica y la matriz completa 25/25.
+  Si siguen abiertas, el dictamen de cierre deberá declararlas `BLOCKED` con
+  esas causas — que es el dictamen correcto.

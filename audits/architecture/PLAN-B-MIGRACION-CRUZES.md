@@ -105,13 +105,39 @@ recomendada: no depende de quién importa a quién.
 
 ## 6. Pruebas
 
-1. **Equivalencia**: el mismo vault produces el mismo conjunto de hallazgos por
-   el camino viejo (import) y por el nuevo (puerto). Un test que corre ambos y
-   compara conjuntos de `(norm, path, detail)`.
-2. **Estado de ejecución (TD-0003)**: si un control no está registrado o su
-   proceso falla, el envelope dice `CONTROL_OBLIGATORIO_NO_VERIFICADO` y el
-   audit sale con error. Hay un test **negativo** que quita un control del
-   registro y comprueba que el audit no sale verde.
+### 6.1 Criterio de independencia — semántico, no solo ausencia de aristas
+
+El dictamen QA (R13) tiene razón sobre el riesgo de este plan: **reemplazar
+imports de símbolos por invocaciones de procesos puede ESCONDER una dependencia
+real en vez de quitarla**. Un import que desaparece del grafo no es prueba de
+independencia: puede ser el mismo acoplamiento con otro disfraz. Por eso el
+criterio se enuncia como lo que tiene que ser VERDAD, no como lo que tiene que
+faltar:
+
+| # | Criterio | Cómo se comprueba | Qué prohíbe |
+|---|---|---|---|
+| I1 | **Independencia semántica**: el contexto que consume puede decidir *si* verifica sin saber *cómo* verifica el dueño. No conoce sus internos, ni su fichero, ni su módulo. | Un test que comprueba que el lado de gobernanza referencia SOLO el contrato publicado (los datos del puerto) y que ningún símbolo del verificador es importable desde él (chequeo estático de la dirección) | Un puerto que, para servir, reexporte los nombres del verificador |
+| I2 | **Independencia operacional**: la frontera sobrevive al empaquetado. La superficie consumida existe en el artefacto INSTALADO, con el mismo contrato que en el checkout. | Un test que construye la wheel, la instala en un venv limpio FUERA del checkout y ejecuta el control por la superficie publicada | Un puerto que solo exista en el checkout (el mismo defecto que `vault_norms_engine` tenía con los módulos excluidos) |
+| I3 | **Retorno observable**: el resultado del control llega como DATO comprobable (código, hallazgos, detalle), no como efecto sobre una estructura compartida. | Un test que corre el control dos veces y compara los datos recibidos, y que verifica que los hallazgos llevan la identidad del dueño (quién verificó) | Un puerto que devuelve «se ejecutó» sin decir qué encontró |
+| I4 | **Efectos laterales declarados**: todo lo que el control escribe es parte del contrato publicado (qué rutas toca, qué locks toma, qué deja detrás). | Un test que ejecuta el control e inventaría las escrituras, comparándolas con la lista declarada | Un control que escribe fuera de su alcance «porque es un subproceso» |
+| I5 | **Fail-closed**: si el verificador falta, está roto o le falta su dependencia, el control NO se ejecuta y la puerta lo dice. | Un test negativo que retira el verificador y comprueba que la puerta reporta el control como no ejecutado, no como ejecutado | Un subproceso que «sale bien» porque no pudo arrancar |
+
+**Lo que esto cambia en el plan:** el puerto de §3 no es solo una estructura de
+datos: es un contrato publicado con dueño, efectos laterales declarados,
+retorno observable y camino fail-closed. Y el test de equivalencia de §6.2 no
+basta: pasaría igual si los dos caminos estuvieran mal del mismo modo. Los
+tests de I1-I5 son los que distinguen «la dependencia se fue» de «la
+dependencia se mudó».
+
+### 6.2 Las pruebas de la migración
+
+1. **Equivalencia**: el mismo vault produce el mismo conjunto de hallazgos por
+   el camino viejo (import) y por el nuevo (puerto), comparados como conjuntos
+   de `(norm, path, detail)`. **Necesaria, no suficiente** (ver §6.1).
+2. **Negativa de la negativa** (I5): sin verificador disponible, el control
+   se declara NO ejecutado y la puerta se pone roja — el fallo que se vio en
+   R12 (un control que no podía cargar su dependencia informaba cero
+   hallazgos y parecía verde).
 3. **Grafo**: `vault_arch --check --strict` verde y `off_port_total` de 5 a 3
    (los dos pares eliminados), sin ampliaciar ninguna baseline.
 4. **Reconciliador**: `audits/fase2/reconciliar_archify.py --check` en verde
@@ -120,7 +146,9 @@ recomendada: no depende de quién importa a quién.
    ejemplos documentados de las tools se ejecutan de verdad).
 6. **Producto**: E2E desde la wheel (`recorrido_terceros_r07.py`), porque el
    audit por puerto tiene que funcionar con la instalación empaquetada, donde
-   `vault_mcp_catalog` vive en `_impl/`.
+   `vault_mcp_catalog` vive en `_impl/` (I2).
+7. **Efectos laterales**: el inventario de escrituras del control se compara
+   con el declarado, en el checkout y en el artefacto instalado (I4).
 
 ## 7. Orden de commits (propuesta, a ejecutar tras la ratificación)
 
