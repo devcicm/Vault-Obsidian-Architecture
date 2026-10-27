@@ -110,15 +110,18 @@ ni tests relajados. Todos se arreglaron en su causa.
 
 ### 3.3 Lo que la CI NO demuestra todavía
 
-- **macOS**: `EXECUTED_FAILED`, no `NOT_RUN`. Las cuatro columnas ejecutan y
-  fallan con tres defectos reales (R13-01, R13-02, R13-03a), corregidos en
-  esta ronda con su regresión. Hasta que la matriz de macOS dé 25/25, el
-  producto no puede declararse multiplataforma.
+- **El candidato vigente no es `e198ffb`.** El dictamen R13 (`7dc1a25`) abrió
+  QA-R13-06 (P1: el cuerpo del POST se consumía dos veces y un POST
+  autenticado a ruta desconocida podía retener al worker para siempre). La
+  corrección viaja en el commit de esta ronda, y el 25/25 de `40430269201`
+  acredita a `e198ffb`, **no** al nuevo SHA: la matriz hay que volver a
+  conseguirla para el candidato nuevo. (Regla del GOAL: no se reutiliza el run
+  de un SHA para certificar otro.)
 - El job `validate` corre la suite **sin `-n auto`** (secuencial, ~27 min por
   columna). Es correcto para CI, pero significa que la CI no mide el
   paralelismo del que habla §2.
 
-### 3.4 Corrida de verificación de los arreglos
+### 3.4 Corridas de la ronda R13 (historia) y la corrida que cerró la matriz
 
 **`40340865847` (SHA `408eb23`): 21 de 25 jobs en verde** — lint, los 8 de
 producto (wheel) y los **8 `validate` de Windows y Linux**, que pasaron la suite
@@ -136,8 +139,13 @@ estar.
 **`40420024458` (SHA `9c65401`): 24 de 25 jobs en verde** — incluidas, por
 primera vez, **las cuatro columnas de macOS**. El único rojo es Windows 3.10
 con un defecto nuevo de esta ronda (R13-05: el RST del rechazo de SP-04),
-corregido con su ficha en §3.2. La corrida del commit final de R13 es la que
-verifica ese arreglo en la matriz completa.
+corregido con su ficha en §3.2.
+
+**`40430269201` (SHA `e198ffb`): 25 de 25, `completed/success`** — la matriz
+completa en verde por primera vez: 12 `Validate Vault Spec` + 12 `Product
+gates (wheel)` + Lint, las cuatro columnas de macOS incluidas. Es la corrida
+que el dictamen R13 aceptó como `CI_MATRIX_25_OF_25=ACCEPTED`, y la que el
+candidato nuevo de esta ronda tiene que volver a ganar.
 
 ## 4. QG-02: los 14 hallazgos del sandbox, desglosados y corregidos
 
@@ -186,15 +194,23 @@ sin release y sin dictamen QA de cierre.
 
 ### 5.2 Multiplataforma, con la evidencia de cada sistema
 
+Estado vigente: la corrida `40430269201` (SHA `e198ffb`) dejó las **12
+columnas en verde — las tres plataformas y los cuatro Pythons**. La fila de
+macOS ya no es `EXECUTED_FAILED`: lo fue en `40340865847`, se corrigió en la
+ronda R13 y la corrida final lo verificó. La historia de ese estado está en
+§3.4 y en `CI-diagnostico.md`; el estado vigente es este:
+
 | Sistema | Estado | Evidencia |
 |---|---|---|
-| Windows | **medido** | suite + E2E locales (esta máquina) y las **4 columnas de la CI en verde** (corrida `40340865847`) |
-| Linux | **medido** | las **4 columnas de la CI en verde** (corrida `40340865847`) |
-| macOS | **`EXECUTED_FAILED`** | las 4 columnas ejecutan y fallan con tres defectos reales (R13-01/02/03), corregidos en esta ronda; la verificación está en la corrida `40420024458` |
+| Windows | **CI_PASS** | 4 columnas en verde en `40430269201` (y suite + E2E locales en cada ronda) |
+| Linux | **CI_PASS** | 4 columnas en verde en `40430269201` |
+| macOS | **CI_PASS** | 4 columnas en verde en `40430269201` (primera matriz completa: antes `EXECUTED_FAILED` en `40340865847`, ver §3.4) |
 
 ### 5.3 Lo que NO garantizamos aún
 
-1. **macOS** (arriba): `NOT_RUN`, no «funciona».
+1. **La matriz del candidato nuevo.** El 25/25 acredita a `e198ffb`; el
+   candidato de esta ronda (con QA-R13-06 corregido) tiene que volver a
+   ganarla (§3.3).
 2. **Un dictamen QA formal de cierre** del candidato: pendiente (§9).
 3. **Algunas capacidades del PRD no están ejercitadas por el E2E**: `plan`,
    `batch` (olas, `--stop-on-error`), `--verify-integrity`, SSE/HTTP y la
@@ -206,23 +222,30 @@ sin release y sin dictamen QA de cierre.
 
 ## 6. Decisiones reservadas al propietario
 
+Estado vigente: las seis siguen **ABIERTAS**; la 3 (macOS) perdió su motivo —
+la matriz ya está medida — y se cierra sola con la evidencia de §5.2. Las
+fichas formales, con alternativas, riesgos, costos y espacio de decisión, están
+en `audits/handoff/DECISIONES-PROPIETARIO.md` (DEC-01..DEC-06).
+
 | # | Decisión | Opciones | Recomendación técnica | Estado |
 |---|---|---|---|---|
-| 1 | **10 divergencias DIV-01..10** (cruces heredados del movimiento `667a6a5`) | **A** eliminar · **B** migrar a un puerto · **C** excepción formal con plazo | **B**, con el matiz de que el puerto tiene que ser de **datos y proceso**, no de símbolos: la alternativa A del análisis crea el cruce que hay que eliminar. Plan completo en `audits/architecture/PLAN-B-MIGRACION-CRUZES.md` | **ABIERTA** |
-| 2 | **Contrato de QG-02** | política propuesta en `POLITICA-CERTIFICACION-PRODUCTO.md`: los dos alcances se miden, no se sustituyen | ratificar: 13 de los 14 hallazgos eran contenido nuestro y ya están corregidos | **ABIERTA** |
-| 3 | **macOS en la CI** | habilitar runners macOS en el repositorio / declarar el límite y publicar el alcance como Windows+Linux | habilitar: mientras 8 jobs no arrancan, QG-07 no tiene conclusión posible | **ABIERTA** (la former «facturación» queda **descartada**) |
-| 4 | **Ratificar la Constitución arquitectónica** (DRAFT) | ratificar, corregir o rechazar con motivo | decide el propietario tras el dictamen QA de cierre | **ABIERTA** |
-| 5 | **Purga de `vault-backups`** (AP-36) | purgar / mover / declarar como histórico con fecha y dueño | **declarar**: son datos de una ejecución previa y borrarlos es decisión de quien los tiene | **ABIERTA** |
-| 6 | Reescritura del historial publicado | sí / no | riesgo documental (fichas históricas), solo el propietario | **ABIERTA** |
+| 1 | **10 divergencias DIV-01..10** (cruces heredados del movimiento `667a6a5`) | **A** eliminar · **B** migrar a un puerto · **C** excepción formal con plazo | **B**, con el matiz de que el puerto tiene que ser de **datos y proceso**, no de símbolos: la alternativa A del análisis crea el cruce que hay que eliminar. Plan completo en `audits/architecture/PLAN-B-MIGRACION-CRUZES.md` (+ identidad y coste medido en su §11) | **ABIERTA** (DEC-02) |
+| 2 | **Contrato de QG-02** | A solo sandbox · B solo runtime · **C compuesto** (runtime limpio + sin efectos nuevos + residuo histórico registrado) | **C**: mantiene la detección que encontró el escape y separa lo que un tercero consume de lo que pasa en el anfitrión (`QG-02-ESCENARIOS-Y-VAULT-BACKUPS.md` §3) | **ABIERTA** (DEC-03) |
+| 3 | **macOS en la CI** | — | **CERRADA POR EVIDENCIA**: los runners existen y ejecutan; la matriz 25/25 está medida en `40430269201`. La hipótesis «no arrancan» y la de facturación quedan descartadas | **CERRADA** (§3.4, §5.2) |
+| 4 | **Ratificar la Constitución arquitectónica** (DRAFT) | ratificar, corregir o rechazar con motivo | decide el propietario tras el dictamen QA de cierre | **ABIERTA** (DEC-01) |
+| 5 | **`vault-backups`** (AP-36) | conservar / mover / **archivar y purgar** / purgar | **archivar con hashes y después purgar**, solo con autorización escrita del dueño de los datos (ficha completa: `QG-02-ESCENARIOS-Y-VAULT-BACKUPS.md` §2) | **ABIERTA** (DEC-04) |
+| 6 | Reescritura del historial publicado | sí / no | conservar con riesgo documentado: sin credenciales detectadas, el coste de la reescritura supera su beneficio | **ABIERTA** (DEC-05) |
 
 ## 7. Riesgos residuales (con dueño y estado)
 
 | Riesgo | Dueño | Estado |
 |---|---|---|
-| macOS sin medir: 8 jobs que no arrancan | propietario (infraestructura del repositorio) | abierto; bloquea QG-07 y la promesa multiplataforma |
+| ~~macOS sin medir~~ **CERRADO**: la matriz 25/25 está medida en `40430269201`; el candidato nuevo tiene que repetirla (§3.3) | CI | **cerrado** para `e198ffb`; pendiente de repetir para el candidato nuevo |
 | 10 divergencias sin ratificar | propietario (arquitectura) | abierto; bloquea QG-00/QG-01 |
-| `vault-backups` externo (AP-36) | dueño de los datos | abierto; decisión 5 |
+| `vault-backups` externo (AP-36) | dueño de los datos | abierto; decisión 5 (DEC-04) |
+| QA-R13-06 (doble lectura del cuerpo del POST) | ejecutor | **corregido en esta ronda** con regresión focalizada; pendiente de re-certificación integral y CI del candidato nuevo |
 | Capacidades del PRD sin recorrido que las ejerza (`plan`, `batch`, `--verify-integrity`, SSE, 130) | el propio repo | identificado y medido; deuda de verificación |
+| TD-0008 `--clean` destructivo (diseñado, no implementado) | propietario (prioridad) | abierto; P1 vigente del dictamen antes de cualquier beta de terceros |
 | Duplicación gates-dentro-de-tests (5 casos únicos > 100 s) | revisión futura del harness | identificado; sin ejecutar |
 | Planificador por impacto sobre grafo desfasado | el propio repo | mitigado por conservadurismo: sin impacto determinable exige suite completa |
 | Baselines congeladas con deuda declarada | apuntalar cada ronda | los decrementos son la dirección (solo encogen) |
@@ -276,3 +299,37 @@ documentación dice la verdad sobre su estado. Lo que falta para un release
 certificado son decisiones del propietario (§6) y el dictamen de QA; ninguna
 de las dos cosas la puede cerrar el ejecutor, y ninguna se resuelve con un
 documento que afirme lo contrario.
+
+## 10. Matriz formal de release (REL-00..13) — estado R14
+
+Contrato del GOAL R14 §6. Estados medidos sobre el **candidato de esta ronda**
+(el SHA del commit que publica esta tabla; identidad completa en
+`audits/fase2/CANDIDATO-RELEASE.yaml`). Los estados provienen de
+verificadores y decisiones identificables — nunca de la prosa de este
+informe. Distinción obligatoria: **CI_PASS ≠ QG07_PASS ≠ QA_APPROVED ≠
+OWNER_AUTHORIZED ≠ PUBLISHED**.
+
+| ID | Etapa | Norma / QG | Criterio | Evidencia | SHA | Estado | Responsable | Acción pendiente |
+|---|---|---|---|---|---|---|---|---|
+| REL-00 | Identidad y alcance | Constitución, QG-00 | Versión y producto identificados | `CANDIDATO-RELEASE.yaml` (manifiesto) | este commit | **MEDIDO** (manifiesto creado; QG-00 sigue BLOCKED por las divergencias) | Ejecutor | Ratificaciones DEC-01/02 |
+| REL-01 | Arquitectura | QG-01 | Contratos y cruces conciliados | `reconciliar_archify.py --check` (exit 1: 10 divergencias sin ratificar), `vault_arch --check` verde (5/5 baseline) | este commit | **BLOCKED** (decisión) | Arquitectura / propietario | DEC-02 (A/B/C) + enmiendas I2/coste del plan B §11 |
+| REL-02 | Gobernanza | QG-02 | Controles completos, conformes | recibos QG-02 (1 violación AP-36 externa; controles `ejecutado`, 0 hallazgos); runtime limpio 0 violaciones | este commit | **BLOCKED** (decisión) | Gobernanza / propietario | DEC-03 (contrato) + DEC-04 (residuo) |
+| REL-03 | Integridad | QG-03 | Suite, regresiones, recuperación | JUnit `r14`: **6334 passed / 13 skipped / 0 failed** (6347 collectados); E2E **27/27** | este commit | **PASS** | Ejecutor | — |
+| REL-04 | Seguridad | QG-04 | Contención y dependencias conformes | saneamiento exit 0; pip-audit; contención (self-test); operaciones destructivas; SP-04 intacto (20/20) | este commit | **PASS** (con riesgo TD-0008 declarado, dueño propietario) | Seguridad | TD-0008 antes de beta de terceros (dictamen) |
+| REL-05 | Paridad | QG-05 | CLI/MCP equivalentes | paridad CLI↔MCP sobre la wheel instalada; AP-40 exit 0 | este commit | **PASS** (paridad de 5 escenarios, no de las 97 tools) | Ejecutor | Limites declarados en §5.3 |
+| REL-06 | Distribución | QG-06 | Wheel instalada y usable | build + hashes del manifiesto; instalación limpia; 706/706 miembros | este commit | **PASS** | Empaquetado | — |
+| REL-07 | Matriz CI | QG-07 | Jobs requeridos completados y exitosos | para `e198ffb`: run `40430269201` **CI_PASS 25/25** (dictamen lo aceptó). Para el candidato de esta ronda: la corrida se lanza al publicar el commit | `e198ffb` ✓ · candidato: pendiente | **CI_PENDING** (candidato) | CI | Conseguir 25/25 del candidato nuevo |
+| REL-08 | Dictamen QA | QG-07 | Sin bloqueantes | dictamen `7dc1a25`: matriz aceptada, **QA-R13-06 abierto (corregido en esta ronda)**; nuevo dictamen requerido sobre el candidato | `7dc1a25` (sobre `e198ffb`) | **QA_REVIEW_REQUIRED** | QA | Dictaminar sobre el candidato nuevo |
+| REL-09 | Aprobación | QG-07 | Autorización expresa | fichas DEC-01..06 (`audits/handoff/DECISIONES-PROPIETARIO.md`), espacios de decisión vacíos | — | **OWNER_DECISION_REQUIRED** | Propietario | DEC-06 tras dictamen favorable |
+| REL-10 | Publicación | Gobierno release | Artefactos aprobados publicados | — | — | **NOT_RUN** (no autorizado; sin tag ni release) | Release manager | Tras REL-09 |
+| REL-11 | Activación | Contratos runtime | Instalación y datos íntegros | — | — | **NOT_RUN** | Operador | Tras REL-10 |
+| REL-12 | Seguimiento | Observabilidad | Estabilidad y errores monitorizados | — | — | **NOT_RUN** | Operador | Tras REL-11 |
+| REL-13 | Relanzamiento | Nueva versión | Compatibilidad, migración, QA y autorización | — | — | **NOT_RUN** | Propietario | Nuevo ciclo |
+
+**Lectura fail-closed:** las filas REL-03..06 son las únicas en PASS, y lo
+están **por recibos del SHA**, no por declaración. REL-01/02 siguen BLOCKED
+por decisiones del propietario (no por trabajo del ejecutor). REL-07 para el
+candidato nuevo es CI_PENDING hasta que su corrida concluya: el 25/25 de
+`e198ffb` es evidencia de OTRO SHA y no se reutiliza (NEG-08). El estado
+global del release es **RELEASE_BLOCKED** (bloqueos de decisión en REL-01/02,
+QA pendiente en REL-08, autorización en REL-09).

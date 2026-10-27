@@ -192,6 +192,122 @@ misma `fecha_limite` que ya declara el registro.
 amplía baselines, no toca el snapshot, no reescribe historia y no cambia la
 superficie pública de CLI ni MCP.
 
+---
+
+## 11. Apéndice R14 — identidad de las divergencias, coste y la evidencia I2
+
+Añadido para el GOAL R14 (§3.1): lo que la decisión del propietario necesita
+medido, no prometido. Nada de esto ejecuta el plan.
+
+### 11.1 Identidad exacta de DIV-01..10 (fuente: `divergencias-archify.yaml`)
+
+Una causa raíz común: el movimiento `667a6a5` (la composición pasó de
+`vault_norms_engine` a la fachada `vault_norms`) no está conciliado con el
+snapshot de Archify (`f049b1bd`). Las diez divergencias son cosvisibilidades
+de ESE movimiento, no diez problemas:
+
+| ID | Tipo | Clave | Naturaleza | Riesgo de actualizar el inventario |
+|---|---|---|---|---|
+| DIV-01 | ficha de par | `[gobernanza, autoria]` | ficha desactualizada: el adeudado NO cambió | bajo |
+| DIV-02 | ficha de par | `[gobernanza, meta_toolkit]` | ficha desactualizada: el adeudado NO cambió | bajo |
+| DIV-03 | acceso | `vault_norms_engine -> vault_mcp_catalog.check_params` | movimiento (mismo par, otro módulo) | bajo |
+| DIV-04 | acceso | `vault_norms_engine -> vault_smoke.SIN_SMOKE` | movimiento | bajo |
+| DIV-05 | acceso | `vault_norms_engine -> vault_smoke.invocation` | movimiento | bajo |
+| DIV-06 | acceso | `vault_norms_engine -> vault_smoke.load_baseline` | movimiento | bajo |
+| DIV-07 | acceso | `vault_norms_engine -> vault_voice.coverage` | movimiento | bajo |
+| DIV-08 | dependencia (fichero) | `vault_norms_engine -> vault_mcp_catalog` | movimiento; granularidad del snapshot ≠ del registro | medio |
+| DIV-09 | dependencia (fichero) | `vault_norms_engine -> vault_smoke` | movimiento; ídem | medio |
+| DIV-10 | dependencia (fichero) | `vault_norms_engine -> vault_voice` | movimiento; ídem | medio |
+
+Las diez declaran `accion_requerida: ratificacion del propietario` y
+`ratificado: false`. Los cruces reales que B elimina son los DOS pares de §1
+(que hoy producen **5** aristas fuera de puerto `off_port_total=5`,
+`off_port_baseline=5`): la eliminación de los pares hace converger también el
+inventario (DIV-01..10 → 0, §9), sin tocar el snapshot.
+
+### 11.2 Evidencia I2 medida: el puerto propuesto NO funciona fuera del checkout tal como está escrito
+
+El criterio I2 (§6.1) exige que la superficie consumida exista en el artefacto
+INSTALADO. Medido el 2026-10-27 contra la wheel del candidato `e198ffb`
+instalada en un venv limpio fuera del checkout (el `paridad-venv` de los
+recibos R13):
+
+- Los tres dueños de control son tools de clase **`maintenance`** con
+  **`installed: false`** en la instalación: `vault_mcp_catalog`,
+  `vault_smoke` y `vault_voice` salen en `vault tools list` con
+  `"installed": false`.
+- Invocar la superficie de AP-40 por el CLI instalado falla:
+  `vault run vault_mcp_catalog --check-params` → exit 3,
+  `INVALID_ACTION`, `tool desconocida: vault_mcp_catalog`.
+- El MÓDULO sí viaja en la wheel, pero como interno:
+  `site-packages/vault_toolkit/_impl/vault_mcp_catalog.py`. Consumir esa ruta
+  sería depender de la maquetación interna (viola I1).
+- La superficie runtime de gobernanza SÍ está publicada
+  (`vault_gobernanza.exe`, validación de contenido), pero no es la
+  composición de auditoría que el puerto quiere mover.
+
+**Consecuencia para el plan:** la §3 tal cual (`superficie: {"script":
+"vault_mcp_catalog", "argv": ["--check-params"]}` ejecutada como proceso)
+**fallaría I2 en la instalación empaquetada**. Es exactamente el defecto que
+§6.1 prohíbe: un puerto que solo existe en el checkout. Antes de ejecutar B,
+el propietario tiene que elegir una de estas enmiendas:
+
+1. **Publicar la superficie de mantenimiento en la wheel** (clase
+   `maintenance` con entry point real, p. ej. `vault run --maintenance ...`):
+   decisión de empaquetado — cambia el producto, no solo el puerto.
+2. **Declarar el entorno operativo del puerto** = distribución de
+   mantenimiento (checkout o instalación editable), dejando I2 satisfecho
+   «por definición de sujeto»: honesto, pero hay que escribirlo en el
+   contrato del puerto y en DEC-02.
+3. **La variante de registro del §3.1** (el dueño se registra en el núcleo al
+   importarse), asumiendo la arista de vuelta declarada que allí se describe.
+
+La recomendación sigue siendo B, **condicionada a esta elección**; sin ella,
+la migración podría pasar los guards del checkout y seguir sin funcionar donde
+un tercero instala.
+
+### 11.3 Coste operativo medido del mecanismo propuesto (R3)
+
+Medido el 2026-10-27 con el mismo intérprete, sin carga paralela, mediana de
+tres corridas por comando (máquina del ejecutor, Windows):
+
+| Mecanismo | Mediana |
+|---|---|
+| Referencia: arranque de Python sin trabajo | 0,21 s |
+| AP-40 como subproceso (`vault_mcp_catalog --check-params`) | 1,97 s |
+| AP-42 como subproceso (`vault_smoke --check`) | **147,22 s** |
+| AP-43 como subproceso (`vault_voice --tool vault_norms`) | 0,21 s |
+| **Suma del camino propuesto (tres subprocesos)** | **≈ 149,4 s** |
+| Camino actual (audit completo con los tres controles en proceso) | **2,42 s** |
+
+**Lectura:** el puerto de proceso, tal cual lo especifica la §3, multiplicaría
+el coste del audit por ~60: el dominante es AP-42, porque `vault_smoke
+--check` NO es una lectura de baseline sino el smoke completo (ejecuta las
+tools del catálogo — es el paso de ~2,5 min que la puerta `noop` ya corre).
+Además, ninguna de las dos superficies de AP-42 que el control realmente
+necesita (baseline y tools sin invocación derivable) está publicada hoy como
+argv: el plan tendría que **crear esas superficies** (p. ej. `vault_smoke
+--baseline-check`), que es trabajo del dueño, no del consumidor.
+
+**Enmiendas posibles para DEC-02** (elegir ANTES de ratificar B):
+
+1. **Superficies ligeras por dueño**: publicar en `vault_smoke` un argv de
+   solo-baseline (lectura + verificación, sin ejecutar tools). Coste
+   esperado del audit por puerto: ~2,5 s (tres arranques + lecturas).
+   Requiere commit del dueño (meta_toolkit).
+2. **Ejecución diferida**: el audit declara el control con su identidad y su
+   estado, y la EJECUCIÓN pesada se hace en la puerta (que ya corre el smoke
+   completo); el envelope del audit no miente (declara `ejecutado_en_puerta`)
+   — requiere un cambio de contrato del envelope (TD-0003 vecinos).
+3. **La variante de registro del §3.1** (in-proceso con arista de vuelta
+   declarada): coste ~0, pero conserva el cruce en el grafo con la arista
+   pública — no lo elimina, lo formaliza; solo sirve si el propietario
+   re-clasifica el par.
+
+Con esta medición, la recomendación B queda **condicionada también a la
+elección de coste**, además de a la enmienda I2 de §11.2: sin ellas, B
+canjea una deuda arquitectónica por un coste operativo de ~60× en cada audit.
+
 ## 10. La decisión que se pide
 
 Al propietario, con la evidencia de `QA-RC-03-CRUZES.md` y este plan:

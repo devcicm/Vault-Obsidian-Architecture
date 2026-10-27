@@ -27,6 +27,15 @@ DEFAULT_PORT = 8765
 # SP-04: sin esta variable el servicio genera el token al arrancar y lo deja
 # en `_token_file()`, de donde lo lee el cliente.
 ENV_TOKEN = "VAULT_TOKEN_SERVICE_TOKEN"
+# Presupuesto del cuerpo de una peticion. QA-R13-06 (dictamen 7dc1a25, P1):
+# sin limite de bytes ni plazo, un cliente que declara `Content-Length` y no
+# lo llena retiene el worker indefinidamente, y un cuerpo mayor que el limite
+# dejaba bytes sin leer tras responder (RST contra el cliente). Politica: el
+# cuerpo se consume UNA sola vez por peticion, al llegar, con techo de bytes y
+# de tiempo; lo que no quepa se declara (413) y la conexion se cierra.
+MAX_CUERPO = 1 << 20
+MAX_ESPERA_CUERPO = 5.0
+CHUNK_CUERPO = 64 * 1024
 
 
 
@@ -248,29 +257,79 @@ class TokenHandler(BaseHTTPRequestHandler):
 
     server_version = "VaultTokenService/1.0"
 
-    def _drenar_cuerpo(self) -> None:
-        """Consume el cuerpo pendiente antes de responder con un rechazo.
+    def _reiniciar_cuerpo(self) -> None:
+        """Estado del cuerpo por peticion (la conexion no lo es: keep-alive)."""
+        self._cuerpo_leido = False
+        self._cuerpo = b""
+        self._cuerpo_enorme = False
 
-        Al rechazar una petición que trae cuerpo (p. ej. `POST /stop` con
-        `Origin` ajeno), la respuesta se manda y la conexión se cierra con los
-        bytes del cuerpo SIN LEER: el núcleo de TCP responde con RST y el
-        cliente ve la conexión abortada en vez del 403 (Windows: WinError
-        10053). Medido el 2026-10-26 en la CI (Windows 3.10,
-        `ConnectionAbortedError` donde el test esperaba 403, y solo en una
-        corrida de ocho columnas: la carrera del RST contra la lectura del
-        cliente). Leer el cuerpo antes de responder lo quita.
+    def _drenar_cuerpo(self) -> None:
+        """Consume el cuerpo declarado UNA vez, con techo de bytes y plazo.
+
+        Politica del cuerpo (QA-R13-06, dictamen `7dc1a25`): se lee al llegar
+        la peticion, una sola vez, como mucho `MAX_CUERPO` bytes y dentro de
+        `MAX_ESPERA_CUERPO` segundos. Esto resuelve tres cosas a la vez:
+
+        - R13-05: responder un rechazo con el cuerpo sin leer produce un RST
+          contra el cliente (Windows: WinError 10053) en lugar del 403/401 —
+          medido en la CI el 2026-10-26, corrida `40420024458`.
+        - QA-R13-06 a): el cuerpo de un POST autenticado se consumia dos veces
+          (`_payload` y luego el 404 re-drenando), y la segunda lectura, sin
+          bytes que leer, bloqueaba al worker para siempre: el 404 nunca
+          llegaba. `_payload` ya no re-drena: usa lo consumido aqui.
+        - QA-R13-06 b): un cliente que declara `Content-Length` y no lo llena
+          ya no retiene el worker mas alla del plazo; y un cuerpo mayor que
+          el techo se marca `_cuerpo_enorme` para que `_payload` devuelva 413
+          en vez de leerlo entero.
         """
+        if getattr(self, "_cuerpo_leido", False):
+            return
+        self._cuerpo_leido = True
+        self._cuerpo = b""
+        self._cuerpo_enorme = False
         try:
             length = int(self.headers.get("Content-Length", "0") or "0")
-            if length > 0:
-                self.rfile.read(min(length, 1 << 20))
+        except ValueError:
+            # Cabecera sin sentido: no se lee nada; la respuesta y el cierre
+            # del socket se llevan el problema.
+            return
+        if self.headers.get("Transfer-Encoding"):
+            # Cuerpos por trozos no se leen: sin Content-Length no hay
+            # presupuesto. Se responde y se cierra.
+            return
+        if length <= 0:
+            return
+        self._cuerpo_enorme = length > MAX_CUERPO
+        quedan = min(length, MAX_CUERPO)
+        plazo = time.monotonic() + MAX_ESPERA_CUERPO
+        try:
+            previo = self.connection.gettimeout()
+        except OSError:
+            previo = None
+        try:
+            while quedan > 0:
+                restante = plazo - time.monotonic()
+                if restante <= 0:
+                    break
+                self.connection.settimeout(restante)
+                pedazo = self.rfile.read(min(CHUNK_CUERPO, quedan))
+                if not pedazo:
+                    break
+                self._cuerpo += pedazo
+                quedan -= len(pedazo)
         except (OSError, ValueError):
             pass
+        finally:
+            try:
+                self.connection.settimeout(previo)
+            except OSError:
+                pass
 
     def _autorizado(self) -> bool:
         # SP-04: Origin → 403, Host ajeno → 403, sin Bearer válido → 401.
+        # El cuerpo ya fue consumido al llegar la peticion (do_GET/do_POST
+        # lo drenan antes de despachar), asi que ningun rechazo lee bytes.
         if self.headers.get("Origin") is not None:
-            self._drenar_cuerpo()
             self._send(403, {"ok": False, "error": "origin_rejected"})
             return False
         host, port = self.server.server_address[:2]
@@ -278,14 +337,12 @@ class TokenHandler(BaseHTTPRequestHandler):
         if host not in ("", "0.0.0.0", "::"):
             validos.add(f"{host}:{port}")
         if (self.headers.get("Host") or "").lower() not in validos:
-            self._drenar_cuerpo()
             self._send(403, {"ok": False, "error": "host_rejected"})
             return False
         esperado = getattr(self.server, "token", "") or ""
         cabecera = self.headers.get("Authorization") or ""
         dado = cabecera[7:] if cabecera.startswith("Bearer ") else ""
         if not esperado or not hmac.compare_digest(dado.encode("utf-8"), esperado.encode("utf-8")):
-            self._drenar_cuerpo()
             self._send(401, {"ok": False, "error": "unauthorized"})
             return False
         return True
@@ -299,15 +356,21 @@ class TokenHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _payload(self) -> Tuple[bool, Dict[str, Any]]:
+        # El cuerpo ya se consumio al llegar (ver `_drenar_cuerpo`): aqui solo
+        # se decodifica lo leido. NUNCA se vuelve a leer del socket: la segunda
+        # lectura, sin bytes, bloqueaba al worker para siempre (QA-R13-06).
+        if self._cuerpo_enorme:
+            return False, {"error": "payload_too_large", "limite": MAX_CUERPO}
         try:
-            length = int(self.headers.get("Content-Length", "0"))
-            raw = self.rfile.read(length).decode("utf-8") if length else "{}"
+            raw = self._cuerpo.decode("utf-8") or "{}"
             data = json.loads(raw)
             return isinstance(data, dict), data if isinstance(data, dict) else {}
-        except Exception as exc:
-            return False, {"error": str(exc)}
+        except (UnicodeDecodeError, ValueError) as exc:
+            return False, {"error": "invalid_json", "detalle": str(exc)}
 
     def do_GET(self) -> None:
+        self._reiniciar_cuerpo()
+        self._drenar_cuerpo()
         if not self._autorizado():
             return
         parsed = urlparse(self.path)
@@ -322,12 +385,15 @@ class TokenHandler(BaseHTTPRequestHandler):
         self._send(404, {"ok": False, "error": "not_found"})
 
     def do_POST(self) -> None:
+        self._reiniciar_cuerpo()
+        self._drenar_cuerpo()
         if not self._autorizado():
             return
         parsed = urlparse(self.path)
         ok, payload = self._payload()
         if not ok:
-            self._send(400, {"ok": False, "error": "invalid_json", **payload})
+            estado = 413 if payload.get("error") == "payload_too_large" else 400
+            self._send(estado, {"ok": False, **payload})
             return
         if parsed.path == "/flows/start":
             self._send(200, start_flow(payload))
@@ -344,7 +410,8 @@ class TokenHandler(BaseHTTPRequestHandler):
             self._send(200, {"ok": True, "stopping": True})
             threading.Thread(target=self.server.shutdown, daemon=True).start()
             return
-        self._drenar_cuerpo()
+        # QA-R13-06: sin re-drenar aqui. El cuerpo ya se consumio al llegar;
+        # volver a leerlo bloqueaba al worker y el 404 nunca salia.
         self._send(404, {"ok": False, "error": "not_found"})
 
     def log_message(self, fmt: str, *args: Any) -> None:

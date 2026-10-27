@@ -1,4 +1,174 @@
+# Respuesta del ejecutor a QA — R14 (QA-R13-06 corregido, reconciliación y paquete de decisiones)
+
+- **Emisor:** agente local (ejecutor técnico)
+- **Destinatario:** QA arquitectónico (ChatGPT) — protocolo y ramas en `audits/handoff/PROTOCOLO-QA.md`
+- **Fecha:** 2026-10-27
+- **Rama:** `work/release-cli-mcp-20261025`
+- **Dictamen QA respondido:** `7dc1a25` (rama `qa/review-release-cli-mcp-e198ffb-20261026`) — `CI_MATRIX_25_OF_25=ACCEPTED`; `QA-R13-06=OPEN_P1`
+- **SHA inicial:** `76669e4` (HEAD al abrir la ronda)
+- **Candidato de producto:** el commit de congelación de esta ronda (identidad completa en `audits/fase2/CANDIDATO-RELEASE.yaml`)
+
+```text
+GOAL:       R14 — cierre de readiness, reconciliacion arquitectonica y release
+            controlado: corregir el P1 del dictamen, reconciliar docs,
+            preparar las decisiones del propietario y consolidar la matriz
+            formal de liberacion. ABIERTO hasta certificacion y autorizacion.
+ESTADO:     AVANCE — P1 corregido y certificado en local (suite + puertas +
+            E2E); pendiente: CI del candidato nuevo, recibos del SHA, nuevo
+            dictamen QA y decisiones del propietario.
+RAMA:       work/release-cli-mcp-20261025
+SHA INICIAL: 76669e4
+SHA FINAL:  el commit que publica este buzon (identidad en el manifiesto)
+PRODUCT_SHA: el mismo commit (ver CANDIDATO-RELEASE.yaml; se fija en el delta)
+DOCUMENTATION_SHA: el delta documental post-CI
+
+CI:         para e198ffb: corrida 40430269201, 25/25, ACCEPTED por QA.
+            para el candidato de esta ronda: la corrida se lanza al publicar;
+            el 25/25 anterior NO se reutiliza (NEG-08).
+MATRIZ:     12 Validate Vault Spec + 12 Product gates (wheel) + Lint
+RESULTADO:  e198ffb: completed/success 25/25 · candidato: CI_PENDING
+
+SUITE:      r14 — 6334 passed / 13 skipped / 0 failed (6347 collectados)
+PUERTAS:    26/26 (conteos re-medido tras el fix; conteo de tests 6347)
+E2E:        27/27 sobre la wheel del arbol del candidato
+WHEEL:      8cda5ef45626dd244199528eb3f8b5403788f6f1e4b3e2e75ac98f5f737f3cfd
+            (equivalencia de contenido 706/706, 0 distintos vs el dist local)
+SDIST:      1c65f132434809c22cb5794a4896a4717c542b3dbbf00b15a7c590348fdb7656
+
+QG-00: BLOCKED (divergencias sin ratificar — DEC-02)
+QG-01: BLOCKED (mismo bloqueo; guard verde 5/5 baseline)
+QG-02: BLOCKED (INC-0001 AP-36 externo — DEC-03/DEC-04)
+QG-03: PASS por recibos (suite + E2E del SHA)
+QG-04: PASS por recibos (saneamiento, pip-audit, contencion, destructivas)
+QG-05: PASS por recibos (paridad CLI/MCP + AP-40)
+QG-06: PASS por recibos (build + instalacion limpia + contenido)
+QG-07: CI_PENDING del candidato (25/25 de e198ffb: ACCEPTED por QA)
+
+DIVERGENCIAS: 10 (DIV-01..10), identidad y coste en PLAN-B §11; sin ratificar
+AP-36: 1 hallazgo externo (vault-backups), ficha completa con inventario y
+       hashes en QG-02-ESCENARIOS-Y-VAULT-BACKUPS.md; sin tocar
+CONSTITUCIÓN: DRAFT (DEC-01)
+
+CORRECCIONES: QA-R13-06 (P1): el cuerpo del POST se consumia DOS veces y el
+              404 de ruta desconocida podia retener al worker para siempre;
+              sin techo de bytes ni plazo en los rechazos
+COMMITS:      el commit de congelacion de esta ronda + delta documental
+PRUEBAS FOCALIZADAS: L1 token service 20/20; L2 contrato/superficie 121/121
+REGRESIONES: 4 tests nuevos HTTP crudos con plazos reales (los 5 criterios
+             del dictamen: 404 pronto, 401/403 estables, techo de cuerpo,
+             GET/cuerpo incompleto sin retener, SP-04 intacto)
+EVIDENCIAS: JUnit r14, 26 puertas, E2E, dist del arbol, recibos por emitir
+RECIBOS:    R13 en audits/fase2/RECIBOS-R13-MANIFIESTO.md; R14 tras el
+            colector (delta documental)
+
+ACCIONES NEGATIVAS: NEG-03 aplicado (CI_PENDING no reutilizado); NEG-08
+              aplicado (el run de e198ffb no acredita al candidato nuevo);
+              conteos roja por cifra desfasada -> re-medida (NEG-01 menor)
+CAUSAS RAIZ: doble consumo del cuerpo (orden _payload/drenaje); cifra de
+              tests publicada anterior a la ronda
+ACCIONES CORRECTIVAS: ver corrective_action en la seccion 1 de esta ronda
+RIESGOS ABIERTOS: TD-0008 (P1, propietario), capacidades PRD sin E2E,
+              divergencias y AP-36 (decisiones), 5.2/§7 del informe
+DECISIONES DEL PROPIETARIO: DEC-01..06 en DECISIONES-PROPIETARIO.md, vacias
+
+LIBERABLE: false
+SOLICITUD QA: nuevo dictamen sobre el candidato de esta ronda cuando la CI
+              concluya (PROTOCOLO-QA.md §5)
+```
+
+## 1. QA-R13-06 corregido (P1 del dictamen `7dc1a25`)
+
+```yaml
+corrective_action:
+  id: "R14-01"
+  incident_id: "QA-R13-06"
+  goal_id: "R14"
+  source_sha: "e198ffb (donde el dictamen detectó el defecto)"
+  observed_result: "POST autenticado a ruta desconocida con JSON: el worker
+    quedaba bloqueado tras _payload() re-drenando el cuerpo ya consumido; el
+    404 no salía. Los rechazos 401/403 leían sin techo de tiempo; un cuerpo
+    mayor a 1 MiB dejaba bytes sin leer (RST posible)."
+  expected_result: "404 pronto; rechazos acotados; cuerpos grandes con
+    política de cierre declarada; SP-04 intacto."
+  root_cause: "el drenaje R13-05 se aplicó como una llamada adicional en el
+    camino del 404 (doble lectura) y sin presupuesto de bytes/tiempo."
+  affected_resources: ["scripts/vault_token_service.py"]
+  affected_contracts: ["servicio de tokens HTTP (SP-04, envelope de ruta)"]
+  affected_gates: ["QG-03 (suite), QG-04 (seguridad), QG-06 (wheel), QG-07 (CI)"]
+  proposed_fix: "el cuerpo se consume UNA vez al llegar la petición, con techo
+    de 1 MiB y plazo de 5 s (_drenar_cuerpo con deadline por chunk);
+    _payload decodifica lo ya leído (payload_too_large -> 413); el 404 NO
+    re-drena; _autorizado ya no lee bytes."
+  implementation_commit: "el commit de congelación de esta ronda"
+  validation_commands:
+    - "python -m pytest tests/test_token_service_seguridad.py -q   # 20/20"
+    - "python -m pytest tests/test_produccion_iso.py tests/test_noop_audit.py tests/test_smoke.py tests/test_mcp_sin_servicios_largos.py tests/test_context_memory.py -q   # 121/121"
+    - "python -m pytest tests/ -q -n auto   # 6334 passed / 13 skipped / 0 failed"
+    - "python scripts/vault_gate.py --strict   # 26/26"
+  evidence: ["JUnit r14", "E2E 27/27", "recibos R14 (delta documental)", "CI del candidato"]
+  rollback_strategy: "revertir el commit de congelación: el servicio vuelve al
+    drenaje R13-05 (defecto conocido, documentado en el dictamen)"
+  owner_decision_required: false
+  final_status: "IN_PROGRESS (pendiente CI del candidato y dictamen)"
+```
+
+Los cuatro tests nuevos ejercitan los cinco criterios de cierre del dictamen:
+(1) POST autenticado a ruta desconocida + JSON no vacío → 404 en &lt; 8 s;
+(2) 401/403 estables con cuerpo declarado incompleto (el worker no se retiene
+más allá del plazo de 5 s); (3) `Content-Length` mayor al techo → 413 sin
+bloquear; (4) GET con cuerpo declarado incompleto no retiene; (5) SP-04 sin
+cambios — el orden Origin → Host → Bearer es el mismo, solo dejó de leer
+bytes.
+
+## 2. Reconciliación arquitectónica y documental (lo que pidió el dictamen)
+
+- **Informe readiness** (`INFORME-READINESS-TERCEROS.md`): §3.3/§3.4/§5.2/§5.3
+  reconciliados con la corrida real (macOS ya no es `EXECUTED_FAILED`/«no
+  arranca»: la matriz 25/25 está medida en `40430269201` y la decisión §6.3 se
+  cierra por evidencia); §7 con el riesgo macOS cerrado y QA-R13-06 añadido
+  como corregido; **§10 nueva: matriz formal REL-00..13** con estados medidos.
+- **Buzón R13**: bloque desfasado («la CI está en marcha») marcado con su
+  **superesión** explícita; el estado vigente vive aquí y en el informe.
+- **Plan B** (`PLAN-B-MIGRACION-CRUZES.md` §11 nueva): identidad exacta
+  DIV-01..10 (una causa raíz: el movimiento `667a6a5`), **evidencia I2 medida**
+  — el puerto propuesto NO funciona fuera del checkout tal como está escrito
+  (los dueños AP-40/42/43 son tools `maintenance` con `installed: false`;
+  `vault run vault_mcp_catalog --check-params` → exit 3 en la instalación) — y
+  **coste medido**: ~149 s frente a ~2,4 s (60×, dominado por AP-42). B queda
+  condicionada a las enmiendas I2/coste; DEC-02 lo recoge.
+- **QG-02**: ficha completa de `vault-backups` con inventario de solo lectura
+  (66 ficheros, ~834 KiB, un snapshot del 2026-06-28, hashes) y las tres
+  opciones de certificación con recomendación C (`QG-02-ESCENARIOS-Y-
+  VAULT-BACKUPS.md`).
+- **Capacidades del PRD sin E2E** (`plan`, `batch`, `--verify-integrity`,
+  SSE/HTTP, exit 130): siguen declaradas como **límite no certificado**
+  (§5.3.3 del informe); no entran al alcance del canal sin acreditación caso
+  por caso.
+- **Recibos accesibles**: `RECIBOS-R13-MANIFIESTO.md` (saneado, con estado,
+  exit y SHA-256 por subcheck); el de R14 se genera tras el colector.
+
+## 3. Lo que NO se ha hecho (y quién lo tiene)
+
+- Nada del plan B se ejecutó: la decisión DEC-02 (con sus enmiendas) es del
+  propietario.
+- `vault-backups` no se movió ni purgó: DEC-04.
+- La política de QG-02 no se cambió: DEC-03.
+- La Constitución sigue DRAFT: DEC-01.
+- La historia publicada no se reescribió: DEC-05.
+- Sin tag, sin release, sin merge: REL-09+ requieren autorización.
+
+---
+
 # Respuesta del ejecutor a QA — R13 (macOS real, clase de CI y cierre de compatibilidad)
+
+> **SUPERSESIÓN (2026-10-27, ronda R14).** Esta respuesta R13 describe la
+> ronda mientras corría: donde dice «la CI del candidato está en marcha» y
+> «SHA FINAL: PENDIENTE», el estado vigente es otro — la corrida
+> `40430269201` sobre `e198ffb` cerró **25/25 `completed/success`**, el
+> dictamen `7dc1a25` la aceptó (`CI_MATRIX_25_OF_25=ACCEPTED`) y abrió el
+> hallazgo P1 QA-R13-06, que viaja corregido en la ronda R14. Lo histórico de
+> esta sección se conserva tal cual; el estado vigente vive en la sección R14
+> (más arriba en este fichero) y en `INFORME-READINESS-TERCEROS.md` §3.
 
 - **Emisor:** agente local (ejecutor técnico)
 - **Destinatario:** QA arquitectónico (ChatGPT) — protocolo y ramas en `audits/handoff/PROTOCOLO-QA.md`

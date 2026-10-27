@@ -222,6 +222,113 @@ def test_una_peticion_de_navegador_se_rechaza_aun_con_token(servicio):
         assert estado == 403
 
 
+# ── QA-R13-06: el cuerpo se consume UNA vez, con techo de bytes y plazo ──────
+
+def test_post_autenticado_a_ruta_desconocida_con_json_da_404_pronto(servicio):
+    """QA-R13-06 (1): POST autenticado a ruta inexistente con JSON no vacío
+    responde 404 PRONTO. Con la corrección R13-05 tal cual, el cuerpo se
+    consumía DOS veces (`_payload` y el 404 re-drenando) y la segunda lectura,
+    sin bytes, bloqueaba al worker: el 404 no llegaba nunca. El plazo del test
+    (8 s) es más holgado que el del servicio (5 s): un cuelgue se ve como
+    timeout, no como un 404 tarde.
+    """
+    with socket.create_connection(("127.0.0.1", servicio.port), timeout=8) as s:
+        cuerpo = b'{"x": "y"}'
+        cab = (f"POST /ruta-que-no-existe HTTP/1.0\r\n"
+               f"Host: 127.0.0.1:{servicio.port}\r\n"
+               f"Authorization: {CON_TOKEN['Authorization']}\r\n"
+               f"Content-Length: {len(cuerpo)}\r\n\r\n").encode("utf-8")
+        s.sendall(cab + cuerpo)
+        t0 = time.monotonic()
+        s.settimeout(8)
+        datos = b""
+        while b"\r\n\r\n" not in datos:
+            pedazo = s.recv(65536)
+            if not pedazo:
+                break
+            datos += pedazo
+        primera = datos.split(b"\r\n", 1)[0].decode("latin-1")
+        tardado = time.monotonic() - t0
+    assert " 404 " in primera, primera
+    assert tardado < 8.0, f"el 404 tardó {tardado:.1f} s: el worker se quedó esperando"
+
+
+def test_rechazo_con_cuerpo_declarado_incompleto_no_retien_el_worker(servicio):
+    """QA-R13-06 (2, 4): un cliente que declara más cuerpo del que envía no
+    retiene al worker más allá del plazo del servicio (5 s): la respuesta
+    llega dentro del plazo del test y el servicio sigue vivo después.
+    """
+    with socket.create_connection(("127.0.0.1", servicio.port), timeout=12) as s:
+        cab = (f"POST /events HTTP/1.0\r\n"
+               f"Host: 127.0.0.1:{servicio.port}\r\n"
+               f"Content-Length: 100\r\n\r\n").encode("utf-8")
+        s.sendall(cab + b'{"x": "y", "pa')  # 15 de los 100 bytes declarados
+        t0 = time.monotonic()
+        s.settimeout(12)
+        datos = b""
+        while b"\r\n\r\n" not in datos:
+            pedazo = s.recv(65536)
+            if not pedazo:
+                break
+            datos += pedazo
+        primera = datos.split(b"\r\n", 1)[0].decode("latin-1")
+        tardado = time.monotonic() - t0
+    assert " 401 " in primera, primera
+    assert tardado < 12.0, f"el rechazo tardó {tardado:.1f} s: el plazo no mordió"
+    assert servicio.proc.poll() is None, "el servicio murió durante el drenaje"
+
+
+def test_get_con_cuerpo_declarado_incompleto_no_retien(servicio):
+    """QA-R13-06 (4): un GET con cuerpo declarado y no enviado tampoco retiene
+    al worker: drena con el mismo presupuesto y responde 200 de /status.
+    """
+    with socket.create_connection(("127.0.0.1", servicio.port), timeout=12) as s:
+        cab = (f"GET /status HTTP/1.0\r\n"
+               f"Host: 127.0.0.1:{servicio.port}\r\n"
+               f"Authorization: {CON_TOKEN['Authorization']}\r\n"
+               f"Content-Length: 10\r\n\r\n").encode("utf-8")
+        s.sendall(cab + b"abc")
+        t0 = time.monotonic()
+        s.settimeout(12)
+        datos = b""
+        while b"\r\n\r\n" not in datos:
+            pedazo = s.recv(65536)
+            if not pedazo:
+                break
+            datos += pedazo
+        primera = datos.split(b"\r\n", 1)[0].decode("latin-1")
+        tardado = time.monotonic() - t0
+    assert " 200 " in primera, primera
+    assert tardado < 12.0, f"/status tardó {tardado:.1f} s con un GET cuerpo roto"
+
+
+def test_cuerpo_mayor_que_el_limite_da_413_sin_bloquear(servicio):
+    """QA-R13-06 (3): un cuerpo mayor que el techo (1 MiB) no se lee entero ni
+    bloquea: el drenaje para en el techo, `_payload` lo marca y responde 413.
+    El cliente envía poco (200 KiB) pero declara 2 MiB: el drenaje espera su
+    plazo, no hay bytes en vuelo y la respuesta llega sin carrera de RST.
+    """
+    with socket.create_connection(("127.0.0.1", servicio.port), timeout=12) as s:
+        cuerpo = b'{"nota": "' + b"x" * (200 * 1024) + b'"}'
+        cab = (f"POST /flows/start HTTP/1.0\r\n"
+               f"Host: 127.0.0.1:{servicio.port}\r\n"
+               f"Authorization: {CON_TOKEN['Authorization']}\r\n"
+               f"Content-Length: {2 * 1024 * 1024}\r\n\r\n").encode("utf-8")
+        s.sendall(cab + cuerpo)
+        t0 = time.monotonic()
+        s.settimeout(12)
+        datos = b""
+        while b"\r\n\r\n" not in datos:
+            pedazo = s.recv(65536)
+            if not pedazo:
+                break
+            datos += pedazo
+        primera = datos.split(b"\r\n", 1)[0].decode("latin-1")
+        tardado = time.monotonic() - t0
+    assert " 413 " in primera, primera
+    assert tardado < 12.0, f"el 413 tardó {tardado:.1f} s"
+
+
 def test_un_host_ajeno_se_rechaza_anti_dns_rebinding(servicio):
     estado, _ = servicio.pedir("GET", "/status", CON_TOKEN, host=f"evil.example:{servicio.port}")
     assert estado == 403
