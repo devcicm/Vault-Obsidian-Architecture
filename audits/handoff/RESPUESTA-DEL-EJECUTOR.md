@@ -16,7 +16,7 @@ ESTADO: BLOCKED_OWNER_DECISION — los dos defectos de la propuesta (P1 y P2)
         decisiones del propietario y el dictamen QA. GOAL ABIERTO.
 RAMA: work/release-cli-mcp-20261025
 HEAD INICIAL: 09e849c
-HEAD FINAL: el commit de esta ronda (producto sin cambios)
+HEAD FINAL: 5970dfbbb835b0ae4958e2ee8384d343ea52fd27 (+ este delta documental)
 PRODUCT_SHA: 015b7765b80cac21c6dcf859ae075d036cd01def
 PRODUCT_TREE: d190fd243567556e824795154b6fd44bd76309d5
 
@@ -40,10 +40,13 @@ REGRESIONES: 5/5 (test_copia_vault_estado) · 35/35 (manifiesto + contrato C)
 CI_RUN (por SHA, sin reutilizar):
   40442954197 | 015b776 (producto)    | completed/success | 25/25 success
   40456389815 | 55ad340 (fix R16)     | completed/success | 25/25 success
-  40464661392 | 09e849c (delta doc.) | completed/failure | 24/25 — 1 validate
-               | en rojo (Windows 3.10) por la carrera de copia de arriba;
-               corregido en esta ronda, con su propia regresión
-  (la de esta ronda: pendiente de aparecer; el HEAD conserva el producto)
+  40464661392 | 09e849c (delta doc.) | completed/FAILURE | 24/25 — 1 validate
+               | en rojo (Windows 3.10) por la carrera de copia de abajo;
+               corregida en esta ronda, con su propia regresión
+  40467869545 | 5970dfb (HEAD R17)    | completed/success | 25/25 success
+               | (12 validate + 12 product gates + lint; sin fallidos,
+               | cancelados ni omitidos) — la carrera de copia ya no se
+               | reproduce en ninguna columna
 
 SUITE:   r14 vigente para el producto (6334/13/0, 6347 collectados);
          collectables actuales: + 6 (copia) + 18 (contrato C) + 1 (manifiesto)

@@ -113,6 +113,20 @@ los 13 jobs de producto (wheel) pasaron en esa misma corrida.
 ello, el HEAD vuelve a tener corrida concluyente propia y la regresión de
 codificación queda cerrada con evidencia de CI, no solo local.
 
+**La carrera de copia del sandbox vivo (R17):** la corrida del delta
+documental `09e849c` (`40464661392`) terminó **completed/failure con 24/25**:
+un validate en rojo (Windows 3.10) por `shutil.Error` al copiar el sandbox
+canónico — el estado de ejecución (`.locks/`) se retiraba a mitad de la copia
+(WinError 3). Es la misma clase que R13-03b (corregido en el backup) y la
+causa era que **cada copia inventaba su patrón de exclusión** (`*.lock` sin
+`.locks/`). Corregido en R17 con un único sitio que decide el conjunto
+canónico (`tests/sandbox_fixture.py::copiar_vault`), usado por los seis
+sitios que copian un vault vivo, con regresión propia
+(`tests/test_copia_vault_estado.py`); la corrida del HEAD corregido
+(`40467869545` sobre `5970dfb`) es **25/25 success** y la carrera ya no se
+reproduce en ninguna columna. El producto no cambia: la certificación de
+`015b776` sigue vigente.
+
 ### Análisis de impacto producto ↔ documentación (GOAL R16 §4)
 
 La separación candidato/producto ↔ HEAD documental solo vale con el análisis
@@ -385,7 +399,7 @@ OWNER_AUTHORIZED ≠ PUBLISHED**.
 | REL-04 | Seguridad | QG-04 | `015b776` | saneamiento 0; pip-audit limpio; contención PASS; destructivas PASS — TD-0008 resuelto y verificado en wheel | QG-04 **PASS** (recibo) | aceptado; cierre TD-0008 pendiente de dictamen explícito | Seguridad | dictamen sobre el cierre TD-0008 |
 | REL-05 | Paridad | QG-05 | `015b776` | paridad PASS; AP-40 exit 0 | QG-05 **PASS** (recibo) | aceptado (5 escenarios, no 97 tools) | Ejecutor | — |
 | REL-06 | Distribución | QG-06 | `015b776` | build + instalación limpia + 706/706 | QG-06 **PASS** (recibo) | aceptado | Empaquetado | — |
-| REL-07 | Matriz CI | QG-07 | `015b776` | run `40442954197`: `completed/success`, **25/25** (recibo con jobs nombrados). HEAD documental: `40456389815` sobre `55ad340` → **`completed/success`, 25/25** (12 validate + 12 product gates + Lint; sin fallidos/cancelados/omitidos) | evidencia **CI_PASS** para ambos; política BLOCKED por prerrequisitos | `CI_MATRIX_25_OF_25=VERIFIED` (sobre `015b776`; HEAD re-verificado) | CI | QG-00/02 para el QG_PASS global |
+| REL-07 | Matriz CI | QG-07 | `015b776` | run `40442954197`: `completed/success`, **25/25** (recibo con jobs nombrados). Fix R16 `55ad340`: `40456389815` 25/25 success. Delta `09e849c`: `40464661392` **failure 24/25** (carrera de copia del sandbox, corregida en R17). HEAD R17 `5970dfb`: `40467869545` **25/25 success** | evidencia **CI_PASS** del producto y del HEAD; política BLOCKED por prerrequisitos | `CI_MATRIX_25_OF_25=VERIFIED` (producto `015b776`; HEAD re-verificado) | CI | QG-00/02 para el QG_PASS global |
 | REL-08 | Dictamen QA | QG-07 | `e47d62f` | último dictamen: P1 aceptado (`ACCEPTED_SCOPED`), release BLOCKED por decisiones; DOC-01..03 + PORT-01 corregidos en R15/R16 | — | **QA_REVIEW_REQUIRED** | QA | nuevo dictamen sobre el estado R16 |
 | REL-09 | Aprobación | QG-07 | `cc05eab` | fichas DEC-01..06 vacías + **anexo consultivo del propietario** (rama `proposal/dec-02b-dec-03c-dec-04pending-20261026`: preferencias B/C condicionadas, `OWNER_RATIFICATION=NOT_GIVEN`) | — | — | Propietario | DEC-01..06 (elección I2/costo de B; firma del contrato C; DEC-04; resto) |
 | REL-10 | Publicación | Gobierno release | — | sin tag, sin release | — | — | Release manager | tras REL-09 |

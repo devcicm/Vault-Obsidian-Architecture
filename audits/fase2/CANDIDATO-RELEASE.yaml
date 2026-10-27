@@ -70,15 +70,30 @@ verification:
     successful_jobs: 25
   ci_head_documental:
     note: >-
-      corrida del HEAD documental (correccion de la regresion de portabilidad
-      introducida en R15). No sustituye la del product_sha: son acreditaciones
-      de SHAs distintos, cada una de las suyas.
-    run_id: 40456389815
-    run_sha: 55ad340918caca237ad18bcc4aec64b05a9333d0
-    status: completed
-    conclusion: success
-    required_jobs: 25
-    successful_jobs: 25
+      corridas de los HEAD documentales (correcciones y expedientes). No
+      sustituyen la del product_sha: son acreditaciones de SHAs distintos,
+      cada una de las suyas. 09e849c quedo en failure por la carrera de copia
+      del sandbox vivo (corregida en R17); 55ad340 y 5970dfb, en 25/25.
+    runs:
+    - run_id: 40456389815
+      run_sha: 55ad340918caca237ad18bcc4aec64b05a9333d0
+      status: completed
+      conclusion: success
+      required_jobs: 25
+      successful_jobs: 25
+    - run_id: 40467869545
+      run_sha: 5970dfbbb835b0ae4958e2ee8384d343ea52fd27
+      status: completed
+      conclusion: success
+      required_jobs: 25
+      successful_jobs: 25
+    - run_id: 40464661392
+      run_sha: 09e849cde3aa1bcb4d5d79743fad5ac2ce9a1c17
+      status: completed
+      conclusion: failure
+      required_jobs: 25
+      successful_jobs: 24
+      cause: "carrera de copia del sandbox vivo (.locks retirado a mitad): corregida en R17"
 
 governance:
   qg_statuses:
