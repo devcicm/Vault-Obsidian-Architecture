@@ -589,6 +589,30 @@ def estado_ci(sha: str, consultar: Optional[Callable[[str], Any]] = None,
                           for r in propios})
         if any(r.get("status") in ("queued", "in_progress") for r in propios):
             return {"conclusion": "queued", "detalle": f"estados={estados}"}
+        # Un run CONCLUIDO en rojo es un veredicto, no una espera. Medido el
+        # 2026-10-26: la CI del candidato termino con 4 jobs rojos (las cuatro
+        # columnas de macOS) y el evaluador de la política lo etiqueto como
+        # «CI_PENDIENTE» porque solo miraba runs exitosos. Ahora se leen sus
+        # jobs para decir cuales fallaron.
+        fallidos = [r for r in propios
+                    if r.get("status") == "completed"
+                    and r.get("conclusion") != "success"]
+        if fallidos:
+            run = fallidos[-1]
+            run_id = run.get("databaseId")
+            nombres = []
+            try:
+                respuesta = (consultar_jobs(run_id) if consultar_jobs is not None
+                              else jobs_de_run(run_id, raiz))
+                jobs = (respuesta.get("jobs") if isinstance(respuesta, dict)
+                        else respuesta) or []
+                nombres = sorted(str(j.get("name")) for j in jobs
+                                 if j.get("conclusion") not in (None, "success"))
+            except (OSError, ValueError):
+                pass
+            return {"conclusion": "failure", "run_id": run_id,
+                    "detalle": (f"estados={estados}"
+                                + (f" jobs_en_rojo={nombres}" if nombres else ""))}
         return {"conclusion": "no_verificable", "detalle": f"estados={estados}"}
 
     run = exitosos[-1]

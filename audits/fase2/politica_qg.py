@@ -14,7 +14,9 @@ en prosa y nadie ejecutaba:
       degradado: queda BLOCKED con CONTROL_OBLIGATORIO_NO_VERIFICADO. Las 26
       puertas verdes no sustituyen al estado de ejecucion (TD-0003).
   R4. QG-07 exige QG-00..QG-06 en PASS para ESE SHA y CI con conclusion. Con
-      la CI en `queued` no hay veredicto: BLOCKED con CI_PENDIENTE.
+      la CI en `queued` no hay veredicto: BLOCKED con CI_PENDING. Una CI que
+      ya termino en rojo es CI_FAILED (no una espera), y solo `success` es
+      CI_PASS.
 
 Fail-closed: NOT_RUN y BLOCKED nunca se convierten en PASS; solo `success` de
 la CI es conclusion valida; una entrada ausente es NOT_RUN, no PASS.
@@ -64,6 +66,44 @@ def _sha_de_evidencia(estado: Dict[str, Any], gate: str) -> str | None:
 def _ci_concluyente(estado: Dict[str, Any]) -> bool:
     """Solo `success` es conclusion; `queued`/`pending`/ausente no lo son."""
     return (estado.get("ci") or {}).get("conclusion") == "success"
+
+
+#: Conclusiones de GitHub que son TERMINALES: la corrida acabo, con el
+#: veredicto que tenga. Una conclusion terminal que no sea `success` no es una
+#: espera: es un fallo (o una cancelacion, que tampoco es un PASS).
+CONCLUSIONES_TERMINALES = frozenset({
+    "failure", "cancelled", "timed_out", "action_required", "start_up_failure",
+    "stale", "neutral", "skipped",
+})
+
+
+def _clase_ci(estado: Dict[str, Any]) -> tuple[str, str]:
+    """La CI en tres clases: `CI_PENDING`, `CI_FAILED` y `CI_PASS`.
+
+    Antes todo lo que no fuera `success` era `CI_PENDIENTE`, incluida una
+    corrida que ya habia terminado con jobs rojos (medido el 2026-10-26: el
+    candidato termino con 4 columnas de macOS en rojo y el veredicto decia
+    «pendiente»). Un workflow fallido no es una espera de runner: se dice
+    fallido, y el motivo lleva la conclusion y los jobs en rojo.
+
+    `CI_PASS` exige conclusion `success`: la matriz completa la comprueba el
+    verificador de la CI (que exige los 25 jobs del run), no este evaluador.
+    """
+    ci = estado.get("ci") or {}
+    conclusion = str(ci.get("conclusion") or "").strip()
+    status = str(ci.get("status") or "").strip()
+    detalle = str(ci.get("detalle") or "").strip()
+    if conclusion == "success":
+        return "CI_PASS", "conclusion=success"
+    if conclusion in CONCLUSIONES_TERMINALES:
+        return "CI_FAILED", (f"conclusion={conclusion}"
+                             + (f" status={status}" if status else "")
+                             + (f" {detalle}" if detalle else ""))
+    # Sin conclusion terminal: esta en cola, en curso, o no hay dato. En los
+    # tres casos el veredicto esta PENDIENTE — y el gate sigue sin pasar.
+    return "CI_PENDING", (f"status={status or 'sin dato'} "
+                          f"conclusion={conclusion or 'sin dato'}"
+                          + (f" {detalle}" if detalle else ""))
 
 
 def _qg02_control_verificado(estado: Dict[str, Any]) -> tuple[bool, str]:
@@ -148,8 +188,8 @@ def evaluar_politica(estado: Dict[str, Any]) -> Dict[str, Any]:
             motivos["QG-07"].append(f"QG_PENDIENTE:{','.join(pendientes)}")
         elif not _ci_concluyente(estado):
             finales["QG-07"] = BLOCKED
-            conclusion = (estado.get("ci") or {}).get("conclusion") or "sin dato"
-            motivos["QG-07"].append(f"CI_PENDIENTE: conclusion={conclusion}")
+            clase, detalle = _clase_ci(estado)
+            motivos["QG-07"].append(f"{clase}: {detalle}")
 
     preparado = finales["QG-07"] == PASS
     return {

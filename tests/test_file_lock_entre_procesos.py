@@ -18,6 +18,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
 N = 12
@@ -82,3 +84,69 @@ def test_un_lock_sin_owner_recien_creado_no_se_roba(tmp_path):
         robado = False
     assert robado is False
     assert lock_dir.is_dir()
+
+
+def test_un_einval_al_crear_el_lock_se_compite_otra_vez(tmp_path, monkeypatch):
+    """macOS responde EINVAL cuando `.locks/` se retira bajo los pies.
+
+    Medido el 2026-10-26 en la CI (macOS 3.11): el segundo proceso del test
+    de exclusion mutua MORIA con `OSError: [Errno 22] Invalid argument:
+    .../.locks/contador.txt.lock` en `bloqueo.adquirir`, cuando lo que le
+    tocaba era ESPERAR su turno: el lock estaba tomado y `.locks/` se estaba
+    retirando. En Linux el mismo caso sale como ENOENT (FileNotFoundError) y se
+    reintenta desde v41.3; en macOS el codigo es otro y no lo contemplaba
+    nadie, asi que el error se escapaba y mataba al proceso.
+
+    Aqui se simula el EINVAL de macOS en cualquier sistema: la toma tiene que
+    salir adelante, no morir.
+    """
+    import errno
+
+    sys.path.insert(0, str(SCRIPTS))
+    from vault_fs import file_lock
+    import vault.kernel.bloqueo as bloqueo
+
+    objetivo = tmp_path / "nota.md"
+    objetivo.write_text("contenido\n", encoding="utf-8")
+
+    real_mkdir = os.mkdir
+    disparado = {"n": 0}
+
+    def mkdir_con_einval(path, *args, **kwargs):
+        if str(path).endswith(".lock") and disparado["n"] == 0:
+            disparado["n"] += 1
+            raise OSError(errno.EINVAL, "Invalid argument", str(path))
+        return real_mkdir(path, *args, **kwargs)
+
+    monkeypatch.setattr(bloqueo.os, "mkdir", mkdir_con_einval)
+    with file_lock(objetivo, timeout=5):
+        pass
+    assert disparado["n"] == 1, "el EINVAL de macOS no se reintentó"
+
+
+def test_un_einval_permanente_no_espera_sin_fin(tmp_path, monkeypatch):
+    """El reintento del EINVAL no puede tapar un nombre de verdad inválido.
+
+    Si el mkdir falla siempre con EINVAL, la toma debe salir por su plazo (el
+    mismo final que un lock que nadie suelta), no por un bucle infinito.
+    """
+    import errno
+
+    sys.path.insert(0, str(SCRIPTS))
+    from vault_fs import file_lock
+    import vault.kernel.bloqueo as bloqueo
+
+    objetivo = tmp_path / "nota.md"
+    objetivo.write_text("contenido\n", encoding="utf-8")
+
+    real_mkdir = os.mkdir
+
+    def mkdir_siempre_einval(path, *args, **kwargs):
+        if str(path).endswith(".lock"):
+            raise OSError(errno.EINVAL, "Invalid argument", str(path))
+        return real_mkdir(path, *args, **kwargs)
+
+    monkeypatch.setattr(bloqueo.os, "mkdir", mkdir_siempre_einval)
+    with pytest.raises(TimeoutError):
+        with file_lock(objetivo, timeout=0.5):
+            pass

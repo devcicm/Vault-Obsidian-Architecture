@@ -45,7 +45,17 @@ def _mcp():
 @pytest.fixture
 def vault(tmp_path):
     destino = tmp_path / "vault"
-    shutil.copytree(REPO_ROOT / "vault-sandbox", destino)
+    # La copia del sandbox VIVO puede cogerse en mitad: las pruebas que corren
+    # en paralelo toman y sueltan locks, y `.locks/` aparece y desaparece
+    # mientras se copia. Medido el 2026-10-26 en la CI (Windows 3.10, run
+    # 40349132455): `shutil.Error: ... vault-sandbox/00_System/.locks` — el
+    # directorio se borro entre dos ficheros de la copia. El estado de bloqueo
+    # es de EJECUCION, no contenido: no se copia (mismo criterio que usa la
+    # auditoria del toolkit al copiar el sandbox).
+    shutil.copytree(
+        REPO_ROOT / "vault-sandbox", destino,
+        ignore=shutil.ignore_patterns(".locks", "*.lock"),
+    )
     return destino
 
 

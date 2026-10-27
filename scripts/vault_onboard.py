@@ -53,7 +53,7 @@ from vault_io import (
 )
 from vault_norms_catalog import compute_norm_refs
 from vault.kernel import procesos_git
-from vault_registry import ORDERED_SECTIONS
+from vault_registry import ORDERED_SECTIONS, es_artefacto_derivado
 from vault_write import tipo_por_carpeta
 
 #: Secciones que un onboard NO puebla, con el motivo de cada una. Se derivan
@@ -1386,15 +1386,38 @@ def _heal_legacy_pass(dry_run: bool = False) -> Dict[str, Any]:
     saltadas = 0
     problemas: List[Dict[str, str]] = []
     secciones: Dict[str, int] = {}
+    inventario: List[Dict[str, str]] = []
 
-    for path in raiz.rglob("*.md"):
+    # El inventario se MATERIALIZA antes de curar. Medido el 2026-10-26 en la
+    # CI (macOS): la pasada escaneaba 5 notas donde había 3, y la diferencia
+    # eran dos ficheros que la propia pasada acababa de crear —la cascada que
+    # dispara cada escritura regenera el `index.md` de la sección y escribe las
+    # notas de sistema—. El `rglob` es perezoso: sigue recorriendo el árbol
+    # mientras la pasada escribe, así que en un sistema de ficheros que
+    # devuelve las entradas en otro orden (APFS) los ve y en otros (ext4,
+    # NTFS) no. Repro local: una segunda pasada sobre el mismo vault cuenta 6
+    # (3 + los 3 que la primera creo). Una pasada no puede cambiar su propio
+    # inventario: lo que había al empezar es lo que se cura.
+    rutas = sorted(raiz.rglob("*.md"))
+    for path in rutas:
+        rel = str(path.relative_to(raiz)).replace("\\", "/")
         # Rutas donde el frontmatter roto es el dato, no el defecto: la
         # instantánea la define su dueño (`vault_io.is_snapshot_path`, AP-57);
         # la cuarentena se suma aquí a propósito — no es una instantánea, es
         # contenido retenido sin destino seguro.
         if is_snapshot_path(path) or "20_Quarantine" in path.parts:
+            inventario.append({"ruta": rel, "clase": "excluida",
+                               "motivo": "instantanea o cuarentena"})
+            continue
+        # Los artefactos derivados los regenera su tool: curarlos sería pelear
+        # con el generador (`vault_registry.es_artefacto_derivado`).
+        if es_artefacto_derivado(rel):
+            inventario.append({"ruta": rel, "clase": "excluida",
+                               "motivo": "artefacto derivado: lo regenera su tool"})
             continue
         escaneadas += 1
+        inventario.append({"ruta": rel, "clase": "nota",
+                           "motivo": "nota del vault"})
         try:
             texto = path.read_text(encoding="utf-8", errors="replace")
         except Exception as exc:
@@ -1427,6 +1450,11 @@ def _heal_legacy_pass(dry_run: bool = False) -> Dict[str, Any]:
         "saltadas_sin_cambios": saltadas,
         "errores": problemas,
         "curadas_por_seccion": secciones,
+        # El inventario exacto de lo que se encontro: ruta relativa, clase y
+        # motivo de inclusion. Sin el, un recuento que no cuadra no se puede
+        # distinguir de un defecto del escaner (medido el 2026-10-26 en macOS:
+        # 5 escaneadas donde habia 3, sin saber cuales eran las dos de mas).
+        "inventario": inventario,
     }
 
 

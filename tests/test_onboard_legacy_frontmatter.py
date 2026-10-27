@@ -353,6 +353,70 @@ def test_heal_legacy_paso_curar_todas_las_notas_legacy(tmp_path, monkeypatch):
     assert "status: active" in (tmp_path / "07_Knowledge" / "c.md").read_text(encoding="utf-8")
 
 
+def test_heal_legacy_no_cuenta_lo_que_la_pasada_crea(tmp_path, monkeypatch):
+    """Una pasada no puede cambiar su propio inventario.
+
+    Medido el 2026-10-26 en la CI (macOS): la pasada escaneaba 5 notas donde
+    el vault tenía 3. Las dos de más eran ficheros que la propia pasada
+    acababa de crear —la cascada de cada escritura regenera el `index.md` de
+    la sección—: el `rglob` es perezoso y en APFS ve lo que se crea mientras
+    recorre. Aquí el `index.md` ya existe DE ANTES: es un artefacto derivado
+    (lo regenera `vault_section_index`), no una nota que curar, y el
+    inventario lo dice con su motivo.
+    """
+    monkeypatch.setenv("VAULT_ROOT", str(tmp_path))
+    monkeypatch.setenv("VAULT_STRICT_ROOT", "1")
+    (tmp_path / "00_System").mkdir()
+    (tmp_path / "01_Projects").mkdir()
+    (tmp_path / "01_Projects" / "a.md").write_text(
+        "---\ntitle: Concepto\ntype: concept\n"
+        "updatedAt: 2026-01-01T00:00:00.000Z\n---\n\n# Concepto\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "01_Projects" / "index.md").write_text(
+        "# 01_Projects\n\n| Nota | Tipo |\n|---|---|\n",
+        encoding="utf-8",
+    )
+
+    from vault_io import set_vault_root
+    set_vault_root(str(tmp_path))
+
+    resultado = vault_onboard._heal_legacy_pass(dry_run=False)
+
+    assert resultado["escaneadas"] == 1, resultado["inventario"]
+    clases = {i["ruta"]: i for i in resultado["inventario"]}
+    assert clases["01_Projects/index.md"]["clase"] == "excluida", clases
+    assert "derivado" in clases["01_Projects/index.md"]["motivo"], clases
+    assert clases["01_Projects/a.md"]["clase"] == "nota", clases
+
+
+def test_heal_legacy_publica_el_inventario_exacto(tmp_path, monkeypatch):
+    """El inventario dice qué ficheros se encontraron y por qué se contaron.
+
+    Sin él, un recuento que no cuadra (5 donde había 3) no se puede
+    distinguir de un defecto del escáner: el dato que faltaba era la lista.
+    """
+    monkeypatch.setenv("VAULT_ROOT", str(tmp_path))
+    monkeypatch.setenv("VAULT_STRICT_ROOT", "1")
+    (tmp_path / "00_System").mkdir()
+    (tmp_path / "07_Knowledge").mkdir()
+    (tmp_path / "07_Knowledge" / "c.md").write_text(
+        "---\ntitle: OK\ntype: concept\nstatus: active\ntags: [a]\n"
+        "updatedAt: 2026-01-01T00:00:00.000Z\n---\n\n# OK\n",
+        encoding="utf-8",
+    )
+
+    from vault_io import set_vault_root
+    set_vault_root(str(tmp_path))
+
+    resultado = vault_onboard._heal_legacy_pass(dry_run=False)
+
+    rutas = [i["ruta"] for i in resultado["inventario"]]
+    assert rutas == ["07_Knowledge/c.md"], resultado["inventario"]
+    assert resultado["inventario"][0]["clase"] == "nota"
+    assert resultado["inventario"][0]["motivo"]
+
+
 def test_heal_legacy_no_toca_rutas_exentas(tmp_path, monkeypatch):
     """Las notas en .history, vault-backups y 20_Quarantine no se curan:
     ahí el frontmatter roto es el dato, no el defecto."""

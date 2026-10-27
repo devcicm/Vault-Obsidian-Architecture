@@ -9,6 +9,7 @@ import re
 import secrets
 import sys
 import threading
+import time
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -328,19 +329,44 @@ class TokenHandler(BaseHTTPRequestHandler):
 
 
 def serve(host: str, port: int) -> int:
+    t0 = time.monotonic()
     _usage_dir().mkdir(parents=True, exist_ok=True)
-    _pid_file().write_text(str(os.getpid()), encoding="utf-8")
-    _port_file().write_text(str(port), encoding="utf-8")
+    t_rutas = time.monotonic()
+    # El socket se enlaza ANTES de escribir los ficheros: el `token-service.port`
+    # es la señal de "el servicio ya escucha" (la usa el cliente para
+    # encontrarlo), y si se escribiera antes, un cliente podría leer un puerto
+    # que todavía no acepta conexiones. Medido el 2026-10-26 en la CI (macOS):
+    # el servicio llegaba a enlazar, pero el test no lo encontraba a tiempo y
+    # fallaba sin decir nada (12 arranques por job, 12 fallos).
     server = ThreadingHTTPServer((host, port), TokenHandler)
+    t_bind = time.monotonic()
     server.token = os.environ.get(ENV_TOKEN, "").strip()
-    if not server.token:
+    generado = not server.token
+    if generado:
         # Generado, no fijo: solo lo conoce quien puede leer el vault.
         server.token = secrets.token_urlsafe(32)
+    _pid_file().write_text(str(os.getpid()), encoding="utf-8")
+    # El puerto que se publica es el ENLAZADO, no el pedido: con `--port 0`
+    # (que es lo que usa el test) son distintos, y publicar el pedido
+    # escribiria un 0 donde el cliente debe ir a buscar.
+    _port_file().write_text(str(server.server_address[1]), encoding="utf-8")
+    if generado:
         _token_file().write_text(server.token, encoding="utf-8")
         try:
             os.chmod(_token_file(), 0o600)
         except OSError:
             pass
+    t_ficheros = time.monotonic()
+    # Los tiempos de arranque van al stderr: NUNCA al stdout (que es el
+    # protocolo) y NUNCA con el token. Si el servicio tarda en abrir el
+    # puerto, esto dice en qué fase se fue el tiempo.
+    print(
+        f"[vault_token_service] listo en {t_ficheros - t0:.3f} s "
+        f"(import+rutas {t_rutas - t0:.3f} s, enlace {t_bind - t_rutas:.3f} s, "
+        f"ficheros {t_ficheros - t_bind:.3f} s) en "
+        f"{server.server_address[0]}:{server.server_address[1]}",
+        file=sys.stderr, flush=True,
+    )
     try:
         server.serve_forever()
     except KeyboardInterrupt:

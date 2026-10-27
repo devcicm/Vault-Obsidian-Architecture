@@ -16,6 +16,7 @@ Hoja del núcleo: solo stdlib.
 
 from __future__ import annotations
 
+import errno
 import json
 import os
 import socket
@@ -64,6 +65,17 @@ def crear_carpeta_de_locks(raiz: Path) -> None:
             raiz.mkdir(parents=True, exist_ok=True)
             return
         except (FileExistsError, PermissionError):
+            if time.monotonic() >= hasta:
+                raise
+            time.sleep(0.01)
+        except OSError as exc:
+            # macOS responde EINVAL (y ENOTDIR) cuando el directorio padre se
+            # retira mientras esta misma ruta se resuelve: el vnode que el
+            # proceso tenía deja de valer a mitad de la busqueda. En Linux lo
+            # mismo sale como ENOENT. No es un nombre invalido: es el mismo
+            # "el padre se movio" de arriba, con otro codigo.
+            if exc.errno not in (errno.EINVAL, errno.ENOTDIR):
+                raise
             if time.monotonic() >= hasta:
                 raise
             time.sleep(0.01)
@@ -377,6 +389,26 @@ def adquirir(objetivo: Path, timeout: float, caduca_tras: float = CADUCA_TRAS) -
             if time.monotonic() >= limite:
                 raise TimeoutError(f"Timeout waiting for lock: {lock_dir}")
             time.sleep(0.05)
+            continue
+        except OSError as exc:
+            # macOS responde EINVAL (y ENOTDIR) cuando `.locks/` se retira
+            # mientras esta ruta se resuelve: el vnode que el proceso tenía deja
+            # de valer a mitad de la busqueda. En Linux el mismo caso sale como
+            # ENOENT (el FileNotFoundError de arriba). No es un nombre
+            # invalido: es el mismo "el padre se movio" con otro codigo.
+            # Medido el 2026-10-26 en la CI (macOS 3.11):
+            # `OSError: [Errno 22] Invalid argument: .../.locks/contador.txt.lock`
+            # mataba al segundo proceso del test de exclusion mutua, que
+            # debia ESPERAR (el lock tomado) y no morir. Por eso se compite
+            # otra vez, con el plazo como unico freno: un nombre de verdad
+            # invalido sale por el timeout, no por un bucle infinito.
+            if exc.errno not in (errno.EINVAL, errno.ENOTDIR):
+                raise
+            if time.monotonic() >= limite:
+                raise TimeoutError(
+                    f"Timeout waiting for lock: {lock_dir} "
+                    f"(el padre se movio: {exc})")
+            crear_carpeta_de_locks(raiz)
             continue
         try:
             (lock_dir / "owner.json").write_text(

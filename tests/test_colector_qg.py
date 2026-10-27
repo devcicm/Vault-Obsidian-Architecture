@@ -322,6 +322,34 @@ def test_ci_en_cola_es_bloqueante():
     assert dato["conclusion"] == "queued"
 
 
+def test_un_run_concluido_en_rojo_se_dice_failure_y_cuales_jobs_fallaron():
+    """Una CI que terminó en rojo es un veredicto, no una espera.
+
+    Medido el 2026-10-26: el candidato terminó con las cuatro columnas de
+    macOS en rojo y el evaluador solo miraba runs exitosos: la evidencia de CI
+    salía `no_verificable` sin decir qué había fallado. Ahora el veredicto es
+    `failure` y nombra los jobs en rojo.
+    """
+    jobs = _matriz()
+    jobs["jobs"][0]["conclusion"] = "failure"
+    jobs["jobs"][1]["conclusion"] = "failure"
+    dato = c.estado_ci(SHA, consultar=lambda s: [
+        _run(status="completed", conclusion="failure")],
+        consultar_jobs=lambda r: jobs)
+    assert dato["conclusion"] == "failure", dato
+    assert "jobs_en_rojo" in dato["detalle"], dato
+    assert jobs["jobs"][0]["name"] in dato["detalle"], dato
+
+
+def test_un_run_concluido_en_rojo_sin_jobs_sigue_diciendo_failure():
+    """Aun sin poder leer los jobs, la conclusion es `failure`."""
+    dato = c.estado_ci(SHA, consultar=lambda s: [
+        _run(status="completed", conclusion="failure")],
+        consultar_jobs=lambda r: {"jobs": [], "total_count": 0})
+    assert dato["conclusion"] == "failure", dato
+    assert "completed/failure" in dato["detalle"], dato
+
+
 def test_sin_permisos_para_jobs_es_bloqueante():
     def _falla(run_id):
         raise OSError("HTTP 403")

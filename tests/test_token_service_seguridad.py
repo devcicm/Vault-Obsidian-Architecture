@@ -44,24 +44,104 @@ def _entorno(vault: Path, token):
 
 
 class Servicio:
-    def __init__(self, vault: Path, token=TOKEN):
+    #: Techo de espera del arranque. NO es una espera: el test sondea la
+    #: conexión cada 100 ms y vuelve en cuanto el servicio escucha. El techo
+    #: estaba en 30 s y en macOS (run 40299732445 → 40340865847) el servicio
+    #: tardaba mas: el test fallaba 12 veces por job —1 FAIL y 11 ERROR— sin
+    #: decir ni por que. Con el techo de 120 s el caso lento pasa; y si el
+    #: servicio no llega, el mensaje dice el codigo de salida, si el proceso
+    #: sigue vivo, su stderr acotado y el tiempo que tardo.
+    PLAZO_ARRANQUE = 120.0
+    #: Cuanto stderr se guarda para el diagnostico (el pipe puede ser enorme).
+    MAX_STDERR = 4096
+
+    def __init__(self, vault: Path, token=TOKEN, port=None):
         self.vault = vault
-        self.port = _puerto_libre()
+        self.token = token
+        # Puerto 0: que lo elija el sistema y lo publique el servicio. Elegir
+        # un puerto "libre" y cerrarlo antes de que lo tome el servicio es una
+        # carrera (8 workers en paralelo y 12 servicios por worker en el mismo
+        # job): el otro puede ocuparlo y el servicio no puede enlazar. Con
+        # puerto 0 no hay carrera, y el fichero de puerto dice el que se usó.
+        self.pedido = 0 if port is None else port
+        self.port = self.pedido
         self.proc = subprocess.Popen(
-            [sys.executable, str(SCRIPTS / "vault_token_service.py"), "--port", str(self.port)],
+            [sys.executable, str(SCRIPTS / "vault_token_service.py"),
+             "--port", str(self.pedido)],
             stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
             env=_entorno(vault, token), cwd=str(vault),
         )
-        limite = time.time() + 30
+        inicio = time.time()
+        limite = inicio + self.PLAZO_ARRANQUE
         while time.time() < limite:
-            try:
-                with socket.create_connection(("127.0.0.1", self.port), timeout=0.5):
-                    return
-            except OSError:
-                if self.proc.poll() is not None:
-                    raise RuntimeError(self.proc.stderr.read().decode("utf-8", "replace"))
-                time.sleep(0.1)
-        raise RuntimeError("el servicio no abrió el puerto")
+            # El servicio escribe el fichero de puerto DESPUES de enlazar: su
+            # aparicion es la senal de "ya escucha".
+            leido = self._puerto_del_fichero()
+            if leido:
+                try:
+                    with socket.create_connection(("127.0.0.1", leido), timeout=0.5):
+                        self.port = leido
+                        return
+                except OSError:
+                    pass
+            if self.proc.poll() is not None:
+                raise RuntimeError(self._diagnostico(inicio, "el proceso termino"))
+            time.sleep(0.1)
+        raise RuntimeError(self._diagnostico(inicio, "el servicio no abrio el puerto"))
+
+    def _puerto_del_fichero(self):
+        try:
+            texto = (self.vault / "00_System" / "token-usage" /
+                     "token-service.port").read_text(encoding="utf-8").strip()
+            return int(texto) if texto else None
+        except (OSError, ValueError):
+            return None
+
+    def _diagnostico(self, inicio: float, motivo: str) -> str:
+        """Por que no arranca, con lo que se puede saber SIN el token.
+
+        El token (fijo o generado) no aparece: se redacta del stderr. Se
+        informa del codigo de salida, de si el proceso sigue vivo, del stderr
+        acotado, del puerto pedido, de si el fichero de puerto existe (el
+        servicio lo escribe DESPUES de enlazar: su presencia significa "ya
+        escucha") y del tiempo transcurrido.
+        """
+        elapsed = time.time() - inicio
+        vivo = self.proc.poll() is None
+        codigo = self.proc.poll()
+        stderr = b""
+        try:
+            if not vivo:
+                stderr = self.proc.stderr.read() or b""
+        except (OSError, ValueError):
+            stderr = b""
+        texto = stderr.decode("utf-8", "replace")[-self.MAX_STDERR:]
+        # El token no sale: el generado esta en su fichero y el fijo lo sabe
+        # el test. Se redacta lo que se parezca a el.
+        for valor in self._tokens_posibles():
+            if valor:
+                texto = texto.replace(valor, "<TOKEN>")
+        fichero_puerto = self.vault / "00_System" / "token-usage" / "token-service.port"
+        try:
+            puerto_en_fichero = fichero_puerto.read_text(encoding="utf-8").strip()
+        except OSError:
+            puerto_en_fichero = "(sin fichero de puerto)"
+        return (
+            f"{motivo} en {elapsed:.1f} s | puerto pedido {self.pedido} | "
+            f"vivo={vivo} codigo={codigo} | "
+            f"fichero de puerto: {puerto_en_fichero} | "
+            f"stderr (ultimos {self.MAX_STDERR} bytes): {texto.strip() or '(vacio)'}"
+        )
+
+    def _tokens_posibles(self):
+        """Los tokens que pueden aparecer en el stderr: el pedido y el generado."""
+        valores = [self.token or ""]
+        try:
+            valores.append((self.vault / "00_System" / "token-usage" /
+                             "token-service.token").read_text(encoding="utf-8").strip())
+        except OSError:
+            pass
+        return [v for v in valores if v]
 
     def pedir(self, metodo, ruta, cabeceras=None, cuerpo=None, host=None):
         c = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
@@ -174,6 +254,30 @@ def test_sin_token_configurado_se_genera_uno_que_el_cliente_encuentra(tmp_path):
 def test_el_auto_test_del_cliente_sigue_en_verde(tmp_path):
     resultado = _cliente(_vault(tmp_path), "self-test")
     assert resultado.get("ok") is True, resultado
+
+
+def test_el_arranque_que_falla_dice_el_codigo_y_el_stderr(tmp_path):
+    """Un arranque que no llega tiene que explicar por que, no solo fallar.
+
+    Medido el 2026-10-26 en la CI (macOS): `RuntimeError: el servicio no
+    abrió el puerto` y nada mas —ni codigo de salida, ni si el proceso
+    seguía vivo, ni su stderr— en 12 arranques por job. Aquí el servicio
+    recibe un puerto YA OCUPADO: no puede enlazar y muere; el diagnostico
+    tiene que decir el codigo, la salida y que el fichero de puerto no esta
+    (el servicio lo escribe DESPUES de enlazar).
+    """
+    vault = _vault(tmp_path)
+    with socket.socket() as ocupado:
+        ocupado.bind(("127.0.0.1", 0))
+        puerto = ocupado.getsockname()[1]
+        with pytest.raises(RuntimeError) as exc:
+            Servicio(vault, token=TOKEN, port=puerto)
+    mensaje = str(exc.value)
+    assert "el proceso termino" in mensaje, mensaje
+    assert "codigo=" in mensaje, mensaje
+    assert "fichero de puerto" in mensaje, mensaje
+    # El token NO sale en el diagnostico.
+    assert TOKEN not in mensaje, mensaje
 
 
 def test_la_ruta_del_token_cuelga_del_vault(tmp_path):

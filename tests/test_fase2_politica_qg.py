@@ -77,7 +77,51 @@ def test_qg02_sin_estados_de_ejecucion_es_bloqueado():
 def test_ci_pendiente_deja_qg07_bloqueado():
     veredicto = politica_qg.evaluar_politica(_estado(ci={"conclusion": "queued"}))
     assert veredicto["qg07"] == "BLOCKED"
-    assert any("CI_PENDIENTE" in m for m in veredicto["motivos"]["QG-07"])
+    assert any("CI_PENDING" in m for m in veredicto["motivos"]["QG-07"])
+    assert veredicto["liberable"] is False
+
+
+def test_una_ci_concluida_en_rojo_es_fallida_y_no_pendiente():
+    """Un workflow que terminó con jobs rojos NO es una espera de runner.
+
+    Medido el 2026-10-26: el candidato terminó con las cuatro columnas de
+    macOS en rojo (`completed/failure`) y el veredicto lo etiquetaba como
+    `CI_PENDING`, que escondía que la CI se había ejecutado y había
+    fallado. La clase correcta es `CI_FAILED`; el gate sigue BLOCKED igual,
+    pero el motivo dice la verdad.
+    """
+    veredicto = politica_qg.evaluar_politica(_estado(ci={
+        "conclusion": "failure", "status": "completed",
+        "detalle": "jobs_en_rojo=['Validate Vault Spec (macos-latest, 3.9)']",
+    }))
+    assert veredicto["gates"]["QG-07"] == "BLOCKED", veredicto["gates"]["QG-07"]
+    motivos = veredicto["motivos"]["QG-07"]
+    assert any("CI_FAILED" in m for m in motivos), motivos
+    assert not any("CI_PENDING" in m for m in motivos), motivos
+    assert any("macos-latest" in m for m in motivos), motivos
+
+
+def test_una_ci_cancelada_tambien_es_fallida_y_no_pendiente():
+    """Cancelada tampoco es un PASS, pero es una conclusion: no una espera."""
+    veredicto = politica_qg.evaluar_politica(_estado(ci={
+        "conclusion": "cancelled", "status": "completed"}))
+    motivos = veredicto["motivos"]["QG-07"]
+    assert any("CI_FAILED" in m for m in motivos), motivos
+    assert veredicto["liberable"] is False
+
+
+def test_una_ci_en_curso_es_pendiente_y_no_fallida():
+    veredicto = politica_qg.evaluar_politica(_estado(ci={
+        "conclusion": "", "status": "in_progress"}))
+    motivos = veredicto["motivos"]["QG-07"]
+    assert any("CI_PENDING" in m for m in motivos), motivos
+    assert not any("CI_FAILED" in m for m in motivos), motivos
+
+
+def test_sin_dato_de_ci_no_hay_pass():
+    """Sin veredicto de CI, QG-07 no pasa: lo que no se mide no se presume."""
+    veredicto = politica_qg.evaluar_politica(_estado(ci={}))
+    assert veredicto["gates"]["QG-07"] == "BLOCKED", veredicto["gates"]["QG-07"]
     assert veredicto["liberable"] is False
 
 
