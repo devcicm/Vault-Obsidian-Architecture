@@ -54,6 +54,7 @@ __all__ = [
     "ESTADOS",
     "contrato_del_puerto",
     "ejecutar",
+    "ejecutar_todos",
 ]
 
 ESTADOS = ("ejecutado", "degradado", "fallido", "no_ejecutado")
@@ -154,6 +155,25 @@ def contrato_del_puerto() -> Dict[str, Any]:
             for codigo, datos in CONTROLES.items()
         },
     }
+
+
+def ejecutar_todos(codigos: Optional[List[str]] = None,
+                   raiz: Optional[Path] = None,
+                   timeout: int = TIMEOUT) -> Dict[str, Dict[str, Any]]:
+    """Ejecuta los controles EN PARALELO y devuelve `{codigo: resultado}`.
+
+    Los tres controles son procesos independientes y de solo lectura, así que
+    lanzarlos a la vez no puede cambiar lo que miden: el audit pasa a costar el
+    más lento en vez de la suma (COST-a). Se conserva el orden de `CONTROLES`
+    en el diccionario devuelto, que es el que publica el envelope.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
+    objetivo = list(codigos or CONTROLES)
+    with ThreadPoolExecutor(max_workers=max(1, len(objetivo))) as pool:
+        futuros = {codigo: pool.submit(ejecutar, codigo, raiz, timeout)
+                   for codigo in objetivo}
+        return {codigo: futuros[codigo].result() for codigo in objetivo}
 
 
 def ejecutar(codigo: str, raiz: Optional[Path] = None,

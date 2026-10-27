@@ -490,8 +490,9 @@ def _checks_estandar(flag, registrar=None) -> list:
     from vault.kernel import controles as _puerto
 
     checks = []
+    resultados = _puerto.ejecutar_todos()
     for codigo in _puerto.CONTROLES:
-        resultado = _puerto.ejecutar(codigo)
+        resultado = resultados[codigo]
         for problema in resultado.get("problemas") or []:
             flag(codigo, problema.get("clave") or f"{codigo}#?",
                  problema.get("detalle") or "")
