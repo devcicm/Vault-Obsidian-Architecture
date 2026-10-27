@@ -15,7 +15,10 @@ ESTADO: BLOCKED_OWNER_DECISION — los seis defectos preactivación
         (AUTH-11) está definida, implementada y probada en el canal
         declarado, con su límite escrito. El registro sigue en PROPUESTA;
         la política de producción NO se ha tocado; el producto congelado
-        NO se ha modificado. GOAL ABIERTO.
+        NO se ha modificado. **La CI del HEAD R20 (efae502) quedó 24/25 con
+        un hallazgo ABIERTO en el gate `noop` (`vault_graph`), ajeno a la
+        propuesta y no reproducible en esta máquina: ver el detalle abajo.**
+        GOAL ABIERTO.
 RAMA: work/release-cli-mcp-20261025
 HEAD INICIAL: ab2e30c
 HEAD FINAL: el commit de esta ronda (+ delta documental con la CI del HEAD)
@@ -88,7 +91,32 @@ CI POR SHA (sin sustituir evidencia entre SHAs): 40442954197 (producto
         015b776) 25/25 · 40456389815 25/25 · 40464661392 failure 24/25
         (carrera de copia, corregida) · 40467869545 25/25 · 40472633327 25/25
         · 40474701480 25/25 · 40481751486 25/25 · 40488879515 (HEAD R19)
-        25/25. La corrida de esta ronda se lanza al publicar.
+        25/25 · 40494674454 (delta R19 ab2e30c) 25/25 ·
+        **40499964653 (HEAD R20 efae502): 24/25 — ROJO, 1 job** (ver abajo).
+
+HALLAZGO ABIERTO (no se oculta): la corrida del HEAD R20 deja un job en rojo,
+        `Validate Vault Spec (ubuntu-latest, 3.12)`, y NO por la propuesta:
+        el paso `vault_gate --strict` dio 25/26 con el gate **`noop`** (AP-37)
+        en rojo. El detalle del envelope acusa a **`vault_graph`** en
+        `sin_escritura_sin_motivo` con su ejemplo desnudo (`argv: []`,
+        `tool_ok: true`) y sin escritura observada en la ejecucion.
+        CLASIFICACION: condicion de estado/plataforma, NO reproducida en esta
+        maquina: el mismo chequeo `vault_noop_audit --ejecutado` en Windows
+        pasa DOS veces seguidas (`ok: true`, `sin_escritura_sin_motivo: []`,
+        `vault_graph` ni aparece). El comportamiento depende de si el grafo
+        del sandbox ya esta al dia (si lo esta, el ejemplo no escribe, y AP-37
+        lo exige declarado con su motivo medido: es el mismo patron que
+        `vault_section_index`, ya declarado por idempotencia). No se ha
+        "arreglado" con una declaracion a ciegas — seria un falso verde: la
+        declaracion exige el motivo MEDIDO en la plataforma donde se observa y
+        se comprueba en las dos direcciones (si luego escribe, el banco se
+        pone rojo).
+        SIGUIENTE ACCION (definida): reproducir en Linux la idempotencia del
+        ejemplo desnudo de `vault_graph` (dos pasadas sobre la misma copia y
+        comparacion de bytes del grafo); con la medida, o se le da un efecto
+        determinista al ejemplo o se declara con su motivo; despues, nueva
+        corrida del HEAD. Mientras tanto: el HEAD R20 NO tiene CI concluyente
+        en verde y asi se declara.
 SUITE:   r14 vigente para el producto congelado (6334/13/0); NO se ha
          reejecutado: el árbol y los contratos ejecutables del producto no
          han cambiado (solo audits/ y tests de la propuesta).
@@ -134,9 +162,12 @@ RIESGO RESIDUAL: (a) el canal es administrativo mientras no se aplique el
         mecanismo de §5; (b) la revocación depende de esa misma fuente;
         (c) el registro sigue en PROPUESTA y por tanto no acredita nada;
         (d) SSE/HTTP sigue siendo el único NOT_RUN de la superficie
-        distribuida.
+        distribuida; (e) **el gate `noop`/`vault_graph` puede ponerse rojo
+        por estado del sandbox (ejemplo idempotente sin declarar): hallazgo
+        ABIERTO con su siguiente acción definida, no declarado como verde.**
 ESTADO DEL DICTAMEN: los seis hallazgos y la revocación quedan respondidos
-        en la propuesta; se solicita dictamen sobre este HEAD.
+        en la propuesta; se solicita dictamen sobre este HEAD, declarando
+        expresamente el rojo de la CI (24/25) y su clasificación.
 
 LIBERABLE: false — RELEASE_BLOCKED
 ```
