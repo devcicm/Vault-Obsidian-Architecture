@@ -11,13 +11,15 @@
 GOAL: RELEASE CLI + MCP PARA TERCEROS
 RONDA: R21
 ESTADO: BLOCKED_OWNER_DECISION — los dos P1 (AP-37 en Linux y AUTH-12) están
-        corregidos en causa, con medición y pruebas negativas. El producto
+        corregidos en causa, con medición y pruebas negativas; la suite
+        integral del HEAD pasó en las 12 columnas de la CI y la corrida
+        final es **25/25 completed/success** (`40580542007`). El producto
         congelado NO se ha modificado (comprobado en la wheel). La política
         de producción y el registro de autoridades siguen SIN activar.
-        GOAL ABIERTO; falta la CI del HEAD nuevo y el dictamen.
+        GOAL ABIERTO: faltan las decisiones del propietario y el dictamen.
 
 SHA INICIAL: e0d0c75
-SHA FINAL: el commit de esta ronda (+ delta con la CI del HEAD)
+SHA FINAL: cd98ff09e771e5dc8570be7c09cd09f78c1d12b2 (+ este delta documental)
 PRODUCT_SHA: 015b7765b80cac21c6dcf859ae075d036cd01def (SIN CAMBIOS)
 PRODUCT_TREE_SHA: d190fd243567556e824795154b6fd44bd76309d5
 
@@ -54,7 +56,19 @@ QA-R20-CI-01 (AP-37 en Linux) — RESUELTO
   PRUEBAS: 21/21 en `tests/test_noop_audit.py`, con las negativas nuevas
   (no basta con no escribir; sin indicador -> rojo; idempotencia falsa;
   tool no declarada sigue roja) y el positivo del banco real.
-  CI RUN: el del HEAD de esta ronda (abajo).
+  CI RUN: 
+  · `ab95c1c` (primer HEAD de la ronda) — run **40575556783**: **FAILURE**, 12
+    validate en rojo. Causa: **dos regresiones MÍAS**, no la propuesta —
+    (a) `scripts/vault_noop_audit.py` usaba `Any` sin importarlo (NameError en
+    el banco: 5 fallos por columna, confirmados en el JUnit de la CI); (b)
+    `tests/test_delegacion_actos.py` publicaba una ruta absoluta personal
+    (`test_publicacion_limpia`). Corregidas en `cd98ff0`.
+  · `cd98ff0` (HEAD final) — run **40580542007**: **completed/success,
+    25/25** (`total_count: 25`; 12 validate + 12 product gates + lint; sin
+    fallidos, cancelados ni omitidos). El gate `noop` pasó en **todas** las
+    columnas, incluida ubuntu-3.12 (el rojo de R20 queda cerrado con
+    evidencia de CI).
+  · El producto `015b776` conserva su evidencia: run 40442954197, 25/25.
 
 QA-R20-AUTH-12 (delegación) — RESUELTO
   CAUSA RAIZ: `_delega_verificada()` comprobaba que existiera `ALCANCE`, pero
@@ -74,10 +88,16 @@ QA-R20-AUTH-12 (delegación) — RESUELTO
   delegación revocada; vigencia expirada.
   PRUEBA POSITIVA: acta válida para el residuo correcto -> la custodia acredita.
 
-SUITE:   r14 vigente del producto (6334/13/0); NO reejecutada: el árbol
-         empaquetado no cambió (ver análisis de impacto).
-PUERTAS: 26/26 (afectadas; el gate `noop` incluido con su clase nueva)
-CI:      ver SHA INICIAL/FINAL por corrida; la del HEAD se registra al concluir
+SUITE:   **suite integral local del HEAD: 6427 passed / 13 skipped / 2 failed**
+         en la primera corrida (las dos regresiones mías, arriba); tras la
+         corrección, **574/574** en los cuatro ficheros afectados y la
+         **suite completa en las 12 columnas de la CI** del HEAD final
+         (`40580542007`). El producto `015b776` conserva su JUnit r14
+         (6334/13/0) y sus recibos, que NO se trasladan al HEAD.
+PUERTAS: 26/26 (afectadas; `noop` incluido con su clase nueva) — y 26/26 en
+         la CI del HEAD final.
+CI:      40580542007 (cd98ff0): completed/success 25/25 · 40575556783
+         (ab95c1c): failure 12 validate (regresiones mías, corregidas)
 RECIBOS: los del producto 015b776 siguen siendo suyos y no se trasladan
 REGRESIONES: 101/101 focalizadas (34 verificador + 33 evaluador + 9
          delegación + 21 noop + manifiesto/copia/protocolo/política)
