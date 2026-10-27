@@ -16,7 +16,7 @@ ESTADO: BLOCKED_OWNER_DECISION — los cuatro defectos preactivacion
         mecanismo queda LISTO PARA RATIFICACIÓN, no ratificado. GOAL ABIERTO.
 RAMA: work/release-cli-mcp-20261025
 HEAD INICIAL: b4f7302
-HEAD FINAL: el commit de esta ronda (+ delta documental con la CI del HEAD)
+HEAD FINAL: 515f19646730e459a09f8fe45dbfd95946283b25 (+ este delta documental)
 PRODUCT_SHA: 015b7765b80cac21c6dcf859ae075d036cd01def (SIN MODIFICACIONES)
 PRODUCT_TREE: d190fd243567556e824795154b6fd44bd76309d5
 
@@ -82,7 +82,10 @@ CI POR SHA (sin sustituir evidencia entre SHAs):
   40467869545 | 5970dfb (fix R17)     | completed/success | 25/25
   40472633327 | 2054e8d (HEAD doc.)  | completed/success | 25/25
   40474701480 | 2f7b155 (HEAD R18)    | completed/success | 25/25
-  (la de esta ronda: se lanza al publicar)
+  40481751486 | b4f7302 (delta R18)   | completed/success | 25/25
+  40488879515 | 515f196 (HEAD R19)    | completed/success | 25/25
+               | (12 validate + 12 product gates + lint; sin fallidos,
+               | cancelados ni omitidos)
 SUITE:   r14 vigente para el producto (6334/13/0, 6347 collectados)
 PUERTAS: 26/26 (r14, vigente)
 E2E:     27/27 (r14, vigente)
