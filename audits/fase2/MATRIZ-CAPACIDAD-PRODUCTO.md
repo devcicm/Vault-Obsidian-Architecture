@@ -1,6 +1,11 @@
 # Matriz de capacidad del producto — qué se promete, qué hay, qué está probado
 
-**Fecha de la medición:** 2026-10-26 · **Rama:** `work/release-cli-mcp-20261025`
+**Estado vigente (R15, 2026-10-27):** candidato `015b7765b80cac21c6dcf859ae075d036cd01def`, CI 25/25
+(`40442954197`). **macOS está medido**; las filas de superficie `python -m cli`
+fueron reclasificadas como NO empaquetadas (QA-R14-PORT-01). El corte anterior
+(2026-10-26) queda como histórico en el git de este fichero.
+
+**Fecha de la medición base:** 2026-10-26 · **Rama:** `work/release-cli-mcp-20261025`
 **Cómo se mide:** cada fila dice de dónde sale el dato. Lo que no se ha ejecutado
 figura `NOT_RUN`; lo que existe en el código pero no se ha ejercitado figura
 `implementado, no probado`. Ninguna fila se completa con una cifra del PRD.
@@ -33,16 +38,16 @@ catálogo publica es 126.
 
 | Capacidad | DECLARADA (PRD) | IMPLEMENTADA | EMPAQUETADA | PROBADA | SOPORTADA | EVIDENCIA | RIESGO |
 |---|---|---|---|---|---|---|---|
-| Entry point `vault` | ✅ `[project.scripts]` | ✅ `vault = vault.product_cli:main` | ✅ wheel | ✅ E2E (27/27) | Windows ✅ · Linux ✅ (CI) · macOS ❌ | `pyproject.toml`, E2E R11 | bajo |
+| Entry point `vault` | ✅ `[project.scripts]` | ✅ `vault = vault.product_cli:main` | ✅ wheel | ✅ E2E (27/27) | Windows ✅ · Linux ✅ · macOS ✅ (CI 25/25, corrida `40442954197`) | `pyproject.toml`, E2E, CI | bajo |
 | Comandos de producto (`init`, `doctor`, `status`, `tools`, `run`, `mcp-path`) | ✅ | ✅ | ✅ | ✅ E2E | idem | `vault/product_cli.py` | bajo |
-| Comandos del toolkit (`groups`, `find`, `show`, `doctor`, `run`, `plan`, `batch`, `scan`) | ✅ Scope IN | ✅ (8 subcomandos en `python -m cli --help`) | ✅ | ⚠️ el E2E ejercita `run` y `doctor`; `plan`/`batch`/`scan` no están en el recorrido | idem | `python -m cli --help` (medido) | **medio**: superficie anunciada sin recorrido que la ejercite |
+| Comandos del toolkit (`groups`, `find`, `show`, `doctor`, `run`, `plan`, `batch`, `scan`) | ✅ Scope IN | ✅ (8 subcomandos en `python -m cli --help`) | ❌ **NO empaquetada**: `python -m cli` no existe en site-packages (verificado 2026-10-27 contra la wheel del candidato; el paquete `cli/` no viaja) | ✅ en el checkout (`run`, `doctor`); el resto sin recorrido | **fuera del alcance del producto distribuido**: superficie de mantenimiento del checkout, no del paquete | `cli/vault_cli.py`; listing de site-packages | **corregido (QA-R14-PORT-01)**: el PRD la anunciaba como empaquetada |
 | Pre-vuelo: AP-36, anti-poison, `required_args` | ✅ | ✅ `cli/safety.py` | ✅ | ✅ E2E (contención) | idem | E2E + `tests/test_vault_containment.py` | bajo |
-| `--verify-integrity` (hash antes/después) | ✅ Scope IN, ❌ DoD | ✅ presente en la CLI (`batch --verify-integrity`) | ✅ | ⚠️ **no ejercitado en el E2E** | idem | `python -m cli --help` | **medio**: el PRD lo marca pendiente y el código lo ofrece |
-| Scheduler de olas / concurrencia | ✅ | ✅ `cli/scheduler.py` | ✅ | ⚠️ no ejercitado en el E2E | idem | `cli/scheduler.py` | **medio** |
-| `--stop-on-error` en lote | ✅ | ✅ presente | ✅ | ⚠️ no ejercitado | idem | `cli/` | medio |
+| `--verify-integrity` (hash antes/después) | ✅ Scope IN, ❌ DoD | ✅ presente en la CLI (`batch --verify-integrity`) | ❌ **NO empaquetada** (misma razón: `cli/` no viaja en la wheel) | ⚠️ no ejercitado | fuera del alcance del producto distribuido | `cli/vault_cli.py` | **corregido**: no bloquea el release |
+| Scheduler de olas / concurrencia | ✅ | ✅ `cli/scheduler.py` | ❌ **NO empaquetada** | ⚠️ no ejercitado | fuera del alcance del producto distribuido | `cli/scheduler.py` | **corregido** |
+| `--stop-on-error` en lote | ✅ | ✅ presente | ❌ **NO empaquetada** | ⚠️ no ejercitado | fuera del alcance del producto distribuido | `cli/` | **corregido** |
 | `VAULT_TIMEOUT` / `--timeout` | ✅ | ✅ `--timeout` (CLI) y presupuesto en el registro de entorno | ✅ | ✅ (presupuesto medido por `test_o8_presupuesto`) | idem | `vault/kernel/entorno.py` | bajo |
 | Salida JSON `{ok, tool, …}` | ✅ | ✅ | ✅ | ✅ E2E | idem | E2E | bajo |
-| Códigos de salida 0/1/2/130 | ✅ | ✅ | ✅ | ⚠️ 130 (interrumpido) no medido | idem | `cli/runner.py` | bajo |
+| Códigos de salida 0/1/2/130 | 0/1/2 ✅ · 130 ✅ (CLI del toolkit) | ✅ | 0/1/2 ✅ en la wheel · 130 ❌ (vive en `cli/runner.py`, no empaquetado) | ✅ 0/1/2 E2E · ⚠️ 130 no medido (y fuera del paquete) | 0/1/2 ✅ · 130 fuera del alcance del producto distribuido | `cli/runner.py`, `vault/product_cli.py` | **corregido**: el 130 no es superficie del paquete |
 | Sin dependencias fuera de stdlib + PyYAML | ✅ | ✅ | ✅ `PyYAML` declarado | ✅ | idem | `pyproject.toml` | bajo |
 
 ## 3. Matriz MCP
@@ -69,7 +74,7 @@ catálogo publica es 126.
 | Piso de Python | `>=3.9` | ✅ | ✅ | ✅ matriz CI 3.9–3.12 | 3.9–3.12 ✅ · 3.14 ✅ local | `pyproject.toml`, `tests/test_piso_python.py` | bajo |
 | Windows | implícito | ✅ | ✅ | ✅ suite + E2E locales, y CI | ✅ | E2E, CI | bajo |
 | Linux | implícito | ✅ | ✅ | ✅ CI (jobs `ubuntu-latest` verdes en la corrida medida) | ✅ | CI | bajo |
-| macOS | implícito | ✅ | ✅ | ❌ **NOT_RUN**: los 8 jobs `macos-latest` no arrancan en la CI | ❌ | CI (jobs en cola) | **alto**: el estándar promete multi-plataforma y macOS no está medido |
+| macOS | implícito | ✅ | ✅ | ✅ **CI_PASS**: las 4 columnas `macos-latest` en verde en la corrida `40442954197` del candidato `015b776` (12 `Validate` + 12 `Product gates` + Lint = 25/25) | ✅ | CI | **resuelto**: la matriz multiplataforma está medida (antes `NOT_RUN`, historia en `CI-diagnostico.md`) |
 | Instalación fuera del checkout | ✅ | ✅ | ✅ | ✅ venv externo en el E2E | idem | E2E | bajo |
 | MCP empaquetado (sin checkout) | ✅ | ✅ `vault mcp-path` | ✅ | ✅ `tests/test_mcp_instalado.py` (8/8) | idem | idem | bajo |
 
@@ -79,21 +84,27 @@ catálogo publica es 126.
 
 | Elemento | Propuesta | Por qué |
 |---|---|---|
-| Versión pública | **`41.24`** (la línea vigente; `41.23` es la instalada y publicada como base) | el producto sigue en la línea `v41.x` del manifiesto; saltar a `1.0.0` prometería una madurez que la matriz multiplataforma todavía no respalda (macOS sin medir) |
+| Versión pública | **`41.24`** (la línea vigente; `41.23` es la instalada y publicada como base) | el producto sigue en la línea `v41.x` del manifiesto; saltar a `1.0.0` prometería una madurez que las decisiones de gobernanza pendientes (DEC-01..06) todavía no respaldan |
 | Canal | **PyPI**, en un canal de prueba primero (TestPyPI o un índice propio), con el token del propietario | publicar en el canal público es una decisión suya, y un release sin QA de cierre no debe salir |
-| Condición previa | **dictamen QA de cierre + QG-07 con CI concluida** (hoy, macOS) | el GOAL es explícito: CI fallida significa que el release no puede aprobarse |
+| Condición previa | **dictamen QA de cierre + QG-00..QG-07 en PASS efectivos + autorización del propietario** (la CI ya está: 25/25 del candidato) | el GOAL es explícito: CI aprobada no es autorización de publicación |
 | Qué NO se hace aquí | ni tag, ni `gh release`, ni `twine upload`, ni cambio de `version` en `pyproject.toml` | no hay autorización para publicar, y `vault_release_bump` existe para hacerlo con el proceso del repo |
 | Si el propietario quiere `1.0.0` | entonces el PRD v1.0 se cumple, y el cambio de versión va por `vault_release_bump` con su changelog | el versionado público se cambia con la tool del repo, no a mano |
 
 ### 5.2 Resumen para la decisión de publicación
 
 - **Publicable hoy, con Honestidad en el rótulo**: wheel + sdist, instalación
-  limpia fuera del checkout, CLI de producto y MCP por JSON-RPC, en Windows
-  (medido) y Linux (medido en CI). Es un **uso controlado por terceros
-  técnicos**, no una distribución pública autorizada: no hay tag, ni release,
-  ni dictamen QA de cierre, y las decisiones del propietario (divergencias,
-  política de QG-02) siguen abiertas.
-- **No publicable como multiplataforma**: macOS no tiene ni una sola
-  medición. La CI lo demuestra con los 8 jobs `macos-latest` en cola.
+  limpia fuera del checkout, CLI de producto y MCP por JSON-RPC, **medidos en
+  las tres plataformas** (Windows, Linux y macOS: corrida `40442954197`,
+  25/25). Es un **uso controlado por terceros técnicos**, no una distribución
+  pública autorizada: no hay tag, ni release, ni dictamen QA de cierre, y las
+  decisiones del propietario (divergencias, política de QG-02) siguen
+  abiertas.
+- **Alcance explícito (QA-R14-PORT-01)**: la superficie distribuida es el CLI
+  de producto + MCP stdio. La superficie `python -m cli` (con `plan`,
+  `batch`, `--verify-integrity`, scheduler y el código de salida 130) **no
+  viaja en la wheel**: es superficie de mantenimiento del checkout y queda
+  FUERA del alcance del release (corregido en §2-3; el PRD la anunciaba como
+  empaquetada). El único `NOT_RUN` de la superficie distribuida es
+  **SSE/HTTP** (`--port` del servidor MCP): declarado, sin prueba.
 - **La versión pública no se cambia aquí**: `41.23` es la vigente y cualquier
   tag o release exige la autorización que este GOAL no incluye.

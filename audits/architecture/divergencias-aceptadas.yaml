@@ -7,31 +7,133 @@
 # el snapshot queda viejo y el reconciliador lo reporta: eso es correcto, no es
 # un fallo del instrumento.
 #
-# Este archivo es el mecanismo DECLARADO para aceptar divergencias Concreteas:
+# Este archivo es el mecanismo DECLARADO para aceptar divergencias concretas:
 # cada entrada nombra la divergencia, su causa, la evidencia y la accion que
 # requiere ratificacion. Una entrada NO ratificada NO silencia la divergencia:
 # el reconciliador solo la omite si `ratificado: true` Y existe su evidencia.
 #
-# MIENTRAS ESTE ARCHIVO ESTE VACIO (o sus entradas no esten ratificadas), el
-# reconciliador se comporta igual que antes: sale con codigo distinto de cero y
-# lista las divergencias. Este archivo NO es una via para maquillar el conteo.
+# MIENTRAS LAS ENTRadas NO ESTEN RATIFICADAS, el reconciliador se comporta
+# igual que antes: sale con codigo distinto de cero y lista las divergencias.
+# Este archivo NO es una via para maquillar el conteo.
 #
-# DECISION PENDIENTE DEL PROPIETARIO (ver audits/architecture/QA-RC-03-CRUZES.md):
-#   (A) eliminar los cruces componiendo desde el meta-toolkit;
-#   (B) migrarlos a un owner con puerto declarado;
-#   (C) excepcion formal con plazo, riesgo y dueno.
+# ESTADO (R15, 2026-10-27): EXPEDIENTE DE FIRMA PREPARADO. Las 10 entradas de
+# DIV-01..10 estan escritas con su causa y evidencia, TODAS con
+# `ratificado: false`. Verificado tras escribirlas: el reconciliador sigue en
+# exit 1 y la baseline en 5/5 — el fichero es inerte hasta la firma.
+#
+# DECISION PENDIENTE DEL PROPIETARIO (DEC-02, ficha en
+# audits/handoff/DECISIONES-PROPIETARIO.md; ver tambien
+# audits/architecture/QA-RC-03-CRUZES.md y PLAN-B-MIGRACION-CRUZES.md §11):
+#   (a) FIRMAR estas 10 entradas (aceptar que son la cosvisibilidad del
+#       movimiento 667a6a5 — NO acepta los cruces: la baseline 5/5 y su
+#       fecha limite 2027-06-30 quedan intactas);
+#   (b) ordenar RE-TOMAR el snapshot de Archify como revision nueva,
+#       preservando f049b1bd y su procedencia;
+#   (c) elegir la ruta A/B/C del plan para los dos pares.
+# Ninguna de las dos primeras salidas se ejecuta sin su acto expreso.
 schema: 1
 generado_por: "revision manual; cada entrada exige evidencia y ratificacion"
-divergencias: []
-# Plantilla de entrada (comentada; no activa):
-#
-# - id: DIV-01
-#   divergencia: "acceso no conciliado: vault_norms_engine -> vault_smoke.invocation"
-#   causa: "movimiento legitimo del sitio del cruce (commit 667a6a5)"
-#   evidencia:
-#     - "audits/architecture/DIVERGENCIAS-ARCHIFY.md#div-01"
-#     - "commits/667a6a5"
-#   accion_requerida: "ratificacion del propietario (A/B/C)"
-#   ratificado: false
-#   ratificado_por: ""
-#   ratificado_en: ""
+expediente: "DEC-02 — preparado en R15 sobre el candidato 015b7765b80cac21c6dcf859ae075d036cd01def"
+divergencias:
+- id: DIV-01
+  divergencia: "ficha divergente: ['gobernanza', 'autoria']"
+  causa: "ficha desactualizada: el adeudado NO cambio (59d0465 + 667a6a5)"
+  evidencia:
+  - "audits/architecture/divergencias-archify.yaml#DIV-01"
+  - "commits/59d0465"
+  - "commits/667a6a5"
+  accion_requerida: "ratificacion del propietario"
+  ratificado: false
+  ratificado_por: ""
+  ratificado_en: ""
+- id: DIV-02
+  divergencia: "ficha divergente: ['gobernanza', 'meta_toolkit']"
+  causa: "ficha desactualizada: el adeudado NO cambio (59d0465 + 667a6a5)"
+  evidencia:
+  - "audits/architecture/divergencias-archify.yaml#DIV-02"
+  - "commits/59d0465"
+  - "commits/667a6a5"
+  accion_requerida: "ratificacion del propietario"
+  ratificado: false
+  ratificado_por: ""
+  ratificado_en: ""
+- id: DIV-03
+  divergencia: "acceso no conciliado: vault_norms_engine -> vault_mcp_catalog.check_params"
+  causa: "movimiento legitimo del sitio del cruce (commit 667a6a5)"
+  evidencia:
+  - "audits/architecture/divergencias-archify.yaml#DIV-03"
+  - "commits/667a6a5"
+  accion_requerida: "ratificacion del propietario"
+  ratificado: false
+  ratificado_por: ""
+  ratificado_en: ""
+- id: DIV-04
+  divergencia: "acceso no conciliado: vault_norms_engine -> vault_smoke.SIN_SMOKE"
+  causa: "movimiento legitimo del sitio del cruce (commit 667a6a5)"
+  evidencia:
+  - "audits/architecture/divergencias-archify.yaml#DIV-04"
+  - "commits/667a6a5"
+  accion_requerida: "ratificacion del propietario"
+  ratificado: false
+  ratificado_por: ""
+  ratificado_en: ""
+- id: DIV-05
+  divergencia: "acceso no conciliado: vault_norms_engine -> vault_smoke.invocation"
+  causa: "movimiento legitimo del sitio del cruce (commit 667a6a5)"
+  evidencia:
+  - "audits/architecture/divergencias-archify.yaml#DIV-05"
+  - "commits/667a6a5"
+  accion_requerida: "ratificacion del propietario"
+  ratificado: false
+  ratificado_por: ""
+  ratificado_en: ""
+- id: DIV-06
+  divergencia: "acceso no conciliado: vault_norms_engine -> vault_smoke.load_baseline"
+  causa: "movimiento legitimo del sitio del cruce (commit 667a6a5)"
+  evidencia:
+  - "audits/architecture/divergencias-archify.yaml#DIV-06"
+  - "commits/667a6a5"
+  accion_requerida: "ratificacion del propietario"
+  ratificado: false
+  ratificado_por: ""
+  ratificado_en: ""
+- id: DIV-07
+  divergencia: "acceso no conciliado: vault_norms_engine -> vault_voice.coverage"
+  causa: "movimiento legitimo del sitio del cruce (commit 667a6a5)"
+  evidencia:
+  - "audits/architecture/divergencias-archify.yaml#DIV-07"
+  - "commits/667a6a5"
+  accion_requerida: "ratificacion del propietario"
+  ratificado: false
+  ratificado_por: ""
+  ratificado_en: ""
+- id: DIV-08
+  divergencia: "dependencia NO CONCILIABLE: vault_norms_engine -> vault_mcp_catalog"
+  causa: "movimiento legitimo; la granularidad del snapshot (fichero) no coincide con la del registro (par de contextos)"
+  evidencia:
+  - "audits/architecture/divergencias-archify.yaml#DIV-08"
+  - "commits/667a6a5"
+  accion_requerida: "ratificacion del propietario"
+  ratificado: false
+  ratificado_por: ""
+  ratificado_en: ""
+- id: DIV-09
+  divergencia: "dependencia NO CONCILIABLE: vault_norms_engine -> vault_smoke"
+  causa: "movimiento legitimo; granularidad del snapshot != del registro"
+  evidencia:
+  - "audits/architecture/divergencias-archify.yaml#DIV-09"
+  - "commits/667a6a5"
+  accion_requerida: "ratificacion del propietario"
+  ratificado: false
+  ratificado_por: ""
+  ratificado_en: ""
+- id: DIV-10
+  divergencia: "dependencia NO CONCILIABLE: vault_norms_engine -> vault_voice"
+  causa: "movimiento legitimo; granularidad del snapshot != del registro"
+  evidencia:
+  - "audits/architecture/divergencias-archify.yaml#DIV-10"
+  - "commits/667a6a5"
+  accion_requerida: "ratificacion del propietario"
+  ratificado: false
+  ratificado_por: ""
+  ratificado_en: ""

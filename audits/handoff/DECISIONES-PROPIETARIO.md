@@ -201,10 +201,15 @@ fail-closed (QG-00/QG-01/QG-02 BLOCKED; `liberable: false`).
   rechazarla; aprobar con condiciones (alcance limitado, p. ej. sin
   capacidades no ejercidas por el E2E: `plan`, `batch`, `--verify-integrity`,
   SSE/HTTP, exit 130).
-- **Riesgos:** publicar con riesgos residuales no tratados (TD-0008
-  `--clean` destructivo sigue diseñado-sin-implementar: P1 vigente que el
-  dictamen recomienda resolver antes de cualquier beta de terceros);
-  capacidades del PRD sin acreditación caso por caso.
+- **Riesgos:** publicar con riesgos residuales no tratados. **TD-0008 ya no
+  es uno de ellos en su forma original**: el `--clean` transaccional está
+  implementado (commit `cc85491`: preflight, cuarentena verificada por hash,
+  `--confirm`/`--dry-run`, rollback) con 22 tests, pasos E2E y la misma
+  implementación en la wheel distribuida; el registro de deuda quedó
+  reconciliado (QA-R14-DOC-01). La aceptación QA explícita de ese cierre
+  sigue pendiente de dictamen. Las capacidades del PRD sin acreditación caso
+  por caso (`plan`, `batch`, `--verify-integrity`, SSE/HTTP, salida 130)
+  siguen como límite de alcance declarado.
 - **Impacto:** habilita REL-10..REL-13 (publicación, activación, seguimiento,
   relanzamiento).
 - **Costos:** los de publicación + soporte del alcance aprobado.

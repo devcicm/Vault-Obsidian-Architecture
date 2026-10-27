@@ -1,3 +1,127 @@
+# Respuesta del ejecutor a QA — R15 (derivas documentales corregidas, contrato C propuesto y expedientes de firma preparados)
+
+- **Emisor:** agente local (ejecutor técnico)
+- **Destinatario:** QA arquitectónico (ChatGPT) — protocolo y ramas en `audits/handoff/PROTOCOLO-QA.md`
+- **Fecha:** 2026-10-27
+- **Rama:** `work/release-cli-mcp-20261025`
+- **Dictamen QA respondido:** `e47d62f` (rama `qa/review-release-cli-mcp-015b776-20261027`) — `QA-R13-06=ACCEPTED_SCOPED`; `CI_MATRIX_25_OF_25=VERIFIED`; `QA-RELEASE=BLOCKED`
+- **SHA inicial:** `08f8cef` (HEAD al abrir la ronda)
+- **Producto:** **sin cambios en R15** — el candidato sigue siendo `015b7765b80cac21c6dcf859ae075d036cd01def` (CI 25/25, run `40442954197`): todas las correcciones de esta ronda son documentales, de expediente y de prueba
+
+```text
+GOAL:       R15 — desbloqueo QG-00/01/02/07 y cierre integral. ABIERTO.
+ESTADO:     BLOCKED_OWNER_DECISION — el trabajo tecnico ejecutable sin
+            ratificacion esta hecho; lo que queda exige DEC-01..05 y el
+            dictamen QA. No hay FALSE PASS: los bloqueos estan a la vista.
+RAMA:       work/release-cli-mcp-20261025
+SHA INICIAL: 08f8cef
+SHA PRODUCTO: 015b7765b80cac21c6dcf859ae075d036cd01def (tree d190fd24)
+SHA DOCUMENTACION: el HEAD al dictar (delta de esta ronda; su padre es el producto)
+
+QG-00: BLOCKED — reconciliador --check exit=1 (10 divergencias sin firma);
+       identidad/arbol/saneamiento OK; EXPEDIENTE DE FIRMA preparado
+       (divergencias-aceptadas.yaml, ratificado:false en las 10; el
+       verificador las ignora hasta firma — verificado: sigue exit=1) y
+       alternativa equivalente documentada (re-tomar snapshot, preservando
+       f049b1bd). Lo desbloquea: DEC-02 (firmar u ordenar el re-take).
+QG-01: BLOCKED — mismo expediente; vault_arch verde con baseline 5/5 INTACTA
+       (los 5 cruces siguen a la vista, a_eliminar 2027-06-30); plan B §11
+       con las enmiendas I2 y coste medidas. Lo desbloquea: DEC-02.
+QG-02: BLOCKED — INC-0001 (AP-36 externa, inmutabilidad reverificada 3/3
+       hashes). CONTRATO C PROPUESTO y probado:
+       politica_certificacion_compuesta.py + 9 tests fail-closed (los 8
+       negativos del GOAL + positivo con residuo listado). No toca catalogo
+       ni politica. Lo desbloquea: DEC-03 + DEC-04.
+QG-03: PASS (recibos R14 del SHA vigentes: la ronda no cambio producto)
+QG-04: PASS (recibos R14; TD-0008 ademas verificado EN LA WHEEL distribuida)
+QG-05: PASS (recibos R14; paridad CLI/MCP del SHA)
+QG-06: PASS (recibos R14; build + contenido 706/706 + instalacion limpia)
+QG-07: CI 25/25 del SHA (40442954197); la politica lo deja BLOCKED por el
+       prerrequisito QG-00/02 (fail-closed, sin waiver)
+
+DIVERGENCIAS RESUELTAS: 0 resueltas (exigen firma); las 10 caracterizadas
+              (8 movimientos legitimos + 2 fichas desactualizadas, causa raiz
+              667a6a5) con su expediente de firma listo
+CRUCES VIGENTES: 5 (2 pares, a_eliminar 2027-06-30, baseline SIN tocar)
+VIOLACIONES: 1 — INC-0001 (AP-36, externa al repo, decision del dueno)
+RESPALDOS EXTERNOS: vault-backups reverificado: existe, 66 ficheros /
+              854.108 B, INMUTABLE (3/3 hashes clave identicos al dosier R14,
+              mtimes de junio), sin mover ni purgar
+
+SUITE:      r14 vigente (6334/13/0, 6347 collectados) + 16 tests nuevos de
+            expediente (7 manifiesto + 9 contrato C) = 6363 collectables
+PUERTAS:    26/26 (r14; el hook regenera el conteo al commitear)
+E2E:        27/27 (r14, vigente)
+WHEEL:      8cda5ef45626dd244199528eb3f8b5403788f6f1e4b3e2e75ac98f5f737f3cfd
+SDIST:      1c65f132434809c22cb5794a4896a4717c542b3dbbf00b15a7c590348fdb7656
+CI:         40442954197 (015b776) 25/25 success · 40448611081 (08f8cef) en
+            curso al cierre de esta entrega
+RUN ID:     40442954197
+
+PRD:            reconciliado por nota (los objetivos de septiembre se
+                preservan; manda MATRIZ-CAPACIDAD-PRODUCTO.md)
+ARQUITECTURA:   plan B §11 (I2 medida: el puerto no funciona desde wheel;
+                coste medido: ~60x sin enmiendas); expediente de firma DEC-02
+CONSTITUCIÓN:   DRAFT (DEC-01)
+TD-0008:        RESUELTO — implementacion cc85491 verificada en el repo Y en
+                la wheel distribuida; 22 tests + E2E; registro de deuda
+                reconciliado (QA-R14-DOC-01); aceptacion QA explicita
+                pendiente de dictamen
+
+DECISIONES DEL PROPIETARIO: DEC-01..06 abiertas; expedientes listos para firma
+RIESGOS:        SSE/HTTP es el unico NOT_RUN de la superficie distribuida;
+                divergencias y AP-36 (decision); el resto en informe §7
+EVIDENCIAS:     r15-reconciliador-check.txt (exit 1, 10 divergencias),
+                inventario vault-backups (3/3 hashes), 16 tests nuevos,
+                manifiesto y contrato C en el repo
+COMMITS:        015b776 (producto, R14) + delta documental de esta ronda
+BLOQUEOS REALES: DEC-02 (firmar las 10 divergencias u ordenar el re-take del
+                snapshot), DEC-03 + DEC-04 (contrato C y residuo), DEC-01,
+                DEC-05, DEC-06, y el dictamen QA del estado resultante
+
+LIBERABLE: false
+SOLICITUD QA: revisar esta entrega documental sobre el producto 015b776 (los
+              recibos R14 siguen vigentes: sin cambios de producto)
+```
+
+## 1. Las cuatro derivas del dictamen (`QA-R14-DOC-01..03`, `PORT-01`) — corregidas
+
+1. **TD-0008** (`inventario-deuda.yaml`): entrada con `status: resuelto` y
+   bloque `resolution` (commit `cc85491`, 22 tests, E2E, wheel verificada),
+   preservando los campos históricos como observación de su SHA de origen
+   (`ef77a7b`). DEC-06 e informe §7 actualizados. **Verificado además que la
+   wheel distribuida lleva la misma implementación** (`_impl/vault_init.py`).
+2. **Manifiesto** (`CANDIDATO-RELEASE.yaml`): rehecho con campos de identidad
+   **hex puro** (sin prosa anexada), metadatos en claves separadas
+   (`artifact_filename`, `digest`, `evidence_note`, `doc_parent_sha`), la
+   convención anti-circularidad documentada, y **7 tests** de validación con
+   negativos (hash mal formado, mayúsculas, SHA ajeno, prosa contaminada).
+3. **Cabeceras de readiness**: el informe abre con el **estado canónico**
+   (product_sha `015b776`, dictamen `e47d62f`, tres plataformas medidas) y el
+   corte R12 queda rotulado **HISTÓRICO**; `MATRIZ-CAPACIDAD-PRODUCTO.md` con
+   cabecera vigente y fila macOS `CI_PASS`.
+4. **PORT-01 — alcance explícito**: verificado contra la wheel que la
+   superficie `python -m cli` (`plan`, `batch`, `--verify-integrity`,
+   scheduler, salida 130) **no viaja empaquetada**: queda fuera del alcance
+   del release (no como deuda del paquete). El único `NOT_RUN` de la
+   superficie distribuida es **SSE/HTTP** (`--port` del servidor MCP),
+   declarado. PRDs con nota de reconciliación (objetivos preservados; manda
+   la matriz). Filas de la matriz de capacidad corregidas.
+
+## 2. QG-00/QG-01: qué lo desbloquea exactamente (DEC-02)
+
+El reconciliador está **fail-closed por diseño**: sus 10 divergencias solo
+salen por (a) firma del propietario en `divergencias-aceptadas.yaml`
+(mecanismo propio de la herramienta, que exige `ratificado: true` +
+`evidencia`) o (b) una orden de re-tomar el snapshot de Archify como revisión
+nueva preservando `f049b1bd` — ambas salidas son las que el propio registro
+declara (`recomendacion`). **Preparado para firma**: el expediente con las 10
+entradas (`ratificado: false`), verificado que hasta la firma el verificador
+sigue en exit 1 y la baseline en 5/5. Medición de la ronda: exit `--check`=1,
+10 divergencias, `off_port_total=5 = off_port_baseline=5`.
+
+---
+
 # Respuesta del ejecutor a QA — R14 (QA-R13-06 corregido, reconciliación y paquete de decisiones)
 
 - **Emisor:** agente local (ejecutor técnico)

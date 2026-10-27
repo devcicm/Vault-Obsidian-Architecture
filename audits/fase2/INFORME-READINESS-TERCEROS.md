@@ -1,22 +1,38 @@
 # Informe de readiness para terceros — GOAL CLI + MCP
 
-**Fecha:** 2026-10-26 (ronda R12) · **Rama:** `work/release-cli-mcp-20261025`
-**HEAD de trabajo / candidato congelado:** `408eb23` (los commits posteriores
-de esta entrega son documentales)
-**Dictámenes vigentes:** `defc657` (QA sobre `316623a`: CI real, MCP/PyYAML en
-Windows, checkout superficial y reconciliación documental) · `9919c57` (8
-hallazgos QA-ARC, respondidos en R11) · `a9e0143`
-**Protocolo QA:** `audits/handoff/PROTOCOLO-QA.md` — reconciliado con
-`audits/fase2/catalogo-qg.yaml` y con un guard que falla ante la deriva
-(`tests/test_protocolo_qg_contra_catalogo.py`).
+**ESTADO VIGENTE — ronda R15 (2026-10-27).** Candidato de producto:
+**`015b7765b80cac21c6dcf859ae075d036cd01def`** (tree `d190fd24…`), con CI
+**25/25 `completed/success`** (run `40442954197`) y recibos por subcheck
+(QG-03..06 PASS; QG-00/01/02 fail-closed por decisiones pendientes).
+Identidad completa: `audits/fase2/CANDIDATO-RELEASE.yaml`. Dictamen vigente:
+`e47d62f` (`qa/review-release-cli-mcp-015b776-20261027`): P1 QA-R13-06
+`ACCEPTED_SCOPED`, CI `VERIFIED`, release `BLOCKED` por DEC-02/03/04.
+**Las tres plataformas están medidas** (Windows, Linux y macOS: 12 columnas
+en verde en la matriz del candidato). Estado formal del release:
+`RELEASE_BLOCKED` — bloqueos de decisión, no de ejecución. Manifiesto de
+capacidades: §5.3 y `MATRIZ-CAPACIDAD-PRODUCTO.md`.
 
-**Estado general:** **ADVANCE — uso controlado por terceros técnicos, con la
-wheel, en Windows y Linux medidos; macOS sin medir.** No es una distribución
-pública: no hay tag, no hay release, no hay dictamen QA de cierre, y las
-decisiones reservadas al propietario (divergencias de arquitectura y política
-de QG-02) siguen abiertas. Lo que este informe afirma es lo que está medido;
-lo que no, `NOT_RUN`.
-
+> **HISTÓRICO — corte R12 (2026-10-26).** Lo que sigue en este bloque es el
+> estado de aquella ronda, conservado tal cual; NO es el estado vigente (el
+> vigente es el de arriba y el §3/§9/§10 de este informe).
+>
+> **Fecha:** 2026-10-26 (ronda R12) · **Rama:** `work/release-cli-mcp-20261025`
+> **HEAD de trabajo / candidato congelado:** `408eb23` (los commits posteriores
+> de esta entrega son documentales)
+> **Dictámenes vigentes:** `defc657` (QA sobre `316623a`: CI real, MCP/PyYAML en
+> Windows, checkout superficial y reconciliación documental) · `9919c57` (8
+> hallazgos QA-ARC, respondidos en R11) · `a9e0143`
+> **Protocolo QA:** `audits/handoff/PROTOCOLO-QA.md` — reconciliado con
+> `audits/fase2/catalogo-qg.yaml` y con un guard que falla ante la deriva
+> (`tests/test_protocolo_qg_contra_catalogo.py`).
+>
+> **Estado general:** **ADVANCE — uso controlado por terceros técnicos, con la
+> wheel, en Windows y Linux medidos; macOS sin medir.** No es una distribución
+> pública: no hay tag, no hay release, no hay dictamen QA de cierre, y las
+> decisiones reservadas al propietario (divergencias de arquitectura y política
+> de QG-02) siguen abiertas. Lo que este informe afirma es lo que está medido;
+> lo que no, `NOT_RUN`.
+>
 > **Corrección de la ronda anterior:** este informe decía que «la CI nunca ha
 > completado un run» y que el bloqueo era «la facturación de GitHub Actions».
 > **Era falso**: la CI corre. La corrida `40299732445` (sobre `36c91e0`)
@@ -212,11 +228,14 @@ ronda R13 y la corrida final lo verificó. La historia de ese estado está en
    candidato de esta ronda (con QA-R13-06 corregido) tiene que volver a
    ganarla (§3.3).
 2. **Un dictamen QA formal de cierre** del candidato: pendiente (§9).
-3. **Algunas capacidades del PRD no están ejercitadas por el E2E**: `plan`,
-   `batch` (olas, `--stop-on-error`), `--verify-integrity`, SSE/HTTP y la
-   salida 130. Están implementadas; no hay recorrido que las mida. Está
-   declarado en `audits/fase2/MATRIZ-CAPACIDAD-PRODUCTO.md` §2-3, y es deuda
-   de verificación, no de producto.
+3. **Alcance distribuido, con los límites en la cara (QA-R14-PORT-01)**: la
+   wheel distribuye el CLI de producto y el MCP stdio. La superficie
+   `python -m cli` del checkout —`plan`, `batch` (olas, `--stop-on-error`),
+   `--verify-integrity` y el código de salida 130— **no viaja en la wheel**
+   (verificado: no hay paquete `cli` en site-packages): queda FUERA del
+   alcance del release, no como deuda del paquete. Dentro de la superficie
+   distribuida queda UN `NOT_RUN` declarado: **SSE/HTTP** (`--port` del
+   servidor MCP). Detalle: `MATRIZ-CAPACIDAD-PRODUCTO.md` §2-3.
 4. **No es un servicio de almacenamiento seguro**: la fiabilidad del vault es
    la del markdown plano más auditoría; **no cifrado, no multiusuario**.
 
@@ -244,8 +263,8 @@ en `audits/handoff/DECISIONES-PROPIETARIO.md` (DEC-01..DEC-06).
 | 10 divergencias sin ratificar | propietario (arquitectura) | abierto; bloquea QG-00/QG-01 |
 | `vault-backups` externo (AP-36) | dueño de los datos | abierto; decisión 5 (DEC-04) |
 | QA-R13-06 (doble lectura del cuerpo del POST) | ejecutor | **corregido en esta ronda** con regresión focalizada; pendiente de re-certificación integral y CI del candidato nuevo |
-| Capacidades del PRD sin recorrido que las ejerza (`plan`, `batch`, `--verify-integrity`, SSE, 130) | el propio repo | identificado y medido; deuda de verificación |
-| TD-0008 `--clean` destructivo (diseñado, no implementado) | propietario (prioridad) | abierto; P1 vigente del dictamen antes de cualquier beta de terceros |
+| ~~TD-0008 `--clean` destructivo~~ **RESUELTO**: implementación transaccional `cc85491` (cuarentena verificada por hash, `--confirm`/`--dry-run`, rollback), 22 tests + E2E + misma implementación en la wheel; registro de deuda reconciliado (QA-R14-DOC-01). Aceptación QA explícita del cierre: pendiente de dictamen | ciclo_de_vida / QA | resuelto-técnicamente; dictamen pendiente |
+| Capacidades del PRD sin recorrido que las ejerza (`plan`, `batch`, `--verify-integrity`, SSE, 130) | el propio repo | identificado y medido; deuda de verificación — alcance PORT-01 (§5.3) |
 | Duplicación gates-dentro-de-tests (5 casos únicos > 100 s) | revisión futura del harness | identificado; sin ejecutar |
 | Planificador por impacto sobre grafo desfasado | el propio repo | mitigado por conservadurismo: sin impacto determinable exige suite completa |
 | Baselines congeladas con deuda declarada | apuntalar cada ronda | los decrementos son la dirección (solo encogen) |
@@ -312,7 +331,7 @@ OWNER_AUTHORIZED ≠ PUBLISHED**.
 | ID | Etapa | Norma / QG | Criterio | Evidencia | SHA | Estado | Responsable | Acción pendiente |
 |---|---|---|---|---|---|---|---|---|
 | REL-00 | Identidad y alcance | Constitución, QG-00 | Versión y producto identificados | `CANDIDATO-RELEASE.yaml` (manifiesto) | este commit | **MEDIDO** (manifiesto creado; QG-00 sigue BLOCKED por las divergencias) | Ejecutor | Ratificaciones DEC-01/02 |
-| REL-01 | Arquitectura | QG-01 | Contratos y cruces conciliados | `reconciliar_archify.py --check` (exit 1: 10 divergencias sin ratificar), `vault_arch --check` verde (5/5 baseline) | este commit | **BLOCKED** (decisión) | Arquitectura / propietario | DEC-02 (A/B/C) + enmiendas I2/coste del plan B §11 |
+| REL-01 | Arquitectura | QG-01 | Contratos y cruces conciliados | `reconciliar_archify.py --check` (exit 1: 10 divergencias sin firma — expediente de firma preparado en `divergencias-aceptadas.yaml`, inerte hasta `ratificado: true`), `vault_arch --check` verde (5/5 baseline) | este commit | **BLOCKED** (decisión) | Arquitectura / propietario | DEC-02: firmar las 10 u ordenar el re-take del snapshot; luego enmiendas I2/coste del plan B §11 |
 | REL-02 | Gobernanza | QG-02 | Controles completos, conformes | recibos QG-02 (1 violación AP-36 externa; controles `ejecutado`, 0 hallazgos); runtime limpio 0 violaciones | este commit | **BLOCKED** (decisión) | Gobernanza / propietario | DEC-03 (contrato) + DEC-04 (residuo) |
 | REL-03 | Integridad | QG-03 | Suite, regresiones, recuperación | JUnit `r14`: **6334 passed / 13 skipped / 0 failed** (6347 collectados); E2E **27/27** | este commit | **PASS** | Ejecutor | — |
 | REL-04 | Seguridad | QG-04 | Contención y dependencias conformes | saneamiento exit 0; pip-audit; contención (self-test); operaciones destructivas; SP-04 intacto (20/20) | este commit | **PASS** (con riesgo TD-0008 declarado, dueño propietario) | Seguridad | TD-0008 antes de beta de terceros (dictamen) |

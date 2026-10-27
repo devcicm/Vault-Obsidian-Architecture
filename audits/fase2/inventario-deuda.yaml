@@ -363,7 +363,7 @@
   title: vault_init --clean destruye el runtime sin copia previa (gap D3 de v36.0, vigente)
   category: security
   severity: P1
-  status: vigente
+  status: resuelto — ver `resolution` al final de la entrada (los campos de arriba conservan la observación de su SHA de origen, ef77a7b, tal como se detectó)
   owner: ciclo_de_vida - vault_init
   context: 'Operacion destructiva del producto: `vault init --clean`'
   source_file: scripts/vault_init.py
@@ -406,6 +406,18 @@
   - 'PENDIENTE: prueba negativa de recuperacion tras un --clean accidental.'
   quality_gate: QG-03
   decision: pending
+  resolution:
+    estado: RESUELTO (implementado y verificado; la aceptación QA explícita del cierre queda pendiente de dictamen)
+    commit_correctivo: cc85491
+    que_se_implemento: 'vault_init --clean transaccional: preflight, cuarentena hermana por rename atomico (con fallback por copia ante EXDEV), VERIFY_BACKUP por hash, maquina de estados PRECHECK->BACKUP->VERIFY_BACKUP->READY->CLEAN->VERIFIED, contrato --confirm/--dry-run, rollback y manifiesto .cuarentena.json'
+    simbolo_vigente: '_preparar_clean() (el shutil.rmtree entrada a entrada ya no existe en el camino de --clean)'
+    pruebas:
+    - 'tests/test_vault_init_clean.py: 22 passed / 1 skipped (medido 2026-10-27 sobre 015b776)'
+    - 'E2E de terceros (recorrido_terceros_r07.py): clean --dry-run READY, clean --confirm VERIFIED, cuarentena creada, nota conservada por hash, restore con inventario identico, reinstalacion conserva datos (pasos OK del recorrido 27/27)'
+    - 'recibos QG-04 del candidato 015b776: subcheck operaciones_destructivas PASS'
+    distribucion: 'la wheel instalada (site-packages/vault_toolkit/_impl/vault_init.py) lleva la misma implementacion: _preparar_clean presente, lineas identicas (verificado 2026-10-27 contra el paridad-venv del candidato)'
+    dictamenes: 'R06 (2026-10-25) lo acepto COMO DISEÑO cuando aun no habia codigo; el dictamen R14 (e47d62f, QA-R14-DOC-01) detecto la deriva del registro y ordeno esta reconciliacion'
+    nota_historica: 'Los campos de arriba (symbol, observed_behavior, evidence) describen el estado OBSERVADO en ef77a7b y se conservan como ficha historica: no describen el codigo vigente.'
 - id: TD-0009
   title: El Quick Start del README mezcla la superficie del checkout con la del producto instalado
   category: documentation

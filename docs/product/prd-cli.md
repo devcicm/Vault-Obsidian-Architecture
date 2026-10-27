@@ -6,6 +6,13 @@
 **Versión target:** v1.0
 **Fecha:** 2026-09-20
 
+> **RECONCILIACIÓN (2026-10-27, R15).** PRD de objetivos con fecha: no se
+> reescribe. El estado medido de la superficie CLI distribuida (entry point
+> `vault` con `init/doctor/status/tools/run/mcp-path`; la CLI de mantenimiento
+> `python -m cli` NO viaja en la wheel) está en
+> `audits/fase2/MATRIZ-CAPACIDAD-PRODUCTO.md`, que gobierna las promesas de
+> capacidad.
+
 ---
 
 ## 1. Problem Statement

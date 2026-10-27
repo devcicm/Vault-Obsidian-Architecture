@@ -1,58 +1,87 @@
-# Manifiesto del candidato de release — ronda R14 (QA-R13-06)
+# Manifiesto del candidato de release — ronda R14/QA-R14-DOC-02
 #
-# Contrato del GOAL R14 §5. Cada valor viene de un verificador o de un
-# recibo; los campos marcados PENDIENTE se fijan en el delta documental que
-# sigue a la conclusión de la corrida de CI del product_sha (no se reutilizan
-# corridas de otro SHA: NEG-08).
+# Contrato del GOAL R14 §5, corregido por el dictamen e47d62f (QA-R14-DOC-02):
+# los campos destinados a validación automática contienen SOLO el valor
+# (hex puro, sin prosa); los metadatos y las notas viven en claves separadas.
 #
-# Convención de identidad (el manifiesto vive DENTRO del commit candidato):
-#   product_sha       = el commit de congelación del código de producto (se
-#                       fija en el delta documental tras la CI, porque el
-#                       hash del commit que contiene este manifiesto no puede
-#                       autoreferenciarse).
-#   documentation_sha = el commit documental que publica el resultado de la
-#                       corrida y este manifiesto definitivo.
+# Convención anti-circularidad: este manifiesto vive DENTRO del árbol; el
+# product_sha es el commit de congelación (padre del commit documental que
+# fija este fichero). El SHA del commit que fija el manifiesto no puede
+# escribirse a sí mismo: se obtiene de git en tiempo de validación (HEAD de
+# la rama) y debe cumplir HEAD^ == product_sha.
+#
+# Validación: tests/test_manifiesto_candidato.py (formato hex, existencia del
+# commit en git, relación HEAD^ == product_sha, y negativos de hash mal
+# formado y SHA ajeno).
 
 release_candidate:
-  product_sha: "015b7765b80cac21c6dcf859ae075d036cd01def (commit de congelación: fix(R14) QA-R13-06 + reconciliación)"
-  documentation_sha: "el HEAD de esta rama cuando QA dicte — es el commit que fija este manifiesto definitivo; su PADRE es el product_sha"
-  source_tree_sha: "d190fd243567556e824795154b6fd44bd76309d5"
-  wheel_sha256: "8cda5ef45626dd244199528eb3f8b5403788f6f1e4b3e2e75ac98f5f737f3cfd (construcción del E2E; el dist del árbol del candidato es 452004252b33552b…b41de — contenido idéntico 706/706, 0 miembros distintos)"
-  sdist_sha256: "1c65f132434809c22cb5794a4896a4717c542b3dbbf00b15a7c590348fdb7656"
+  product_sha: 015b7765b80cac21c6dcf859ae075d036cd01def
+  product_tree_sha: d190fd243567556e824795154b6fd44bd76309d5
+  version: 41.23
+  rama: work/release-cli-mcp-20261025
+  documentation:
+    doc_parent_sha: 015b7765b80cac21c6dcf859ae075d036cd01def
+    note: >-
+      el SHA del commit documental que fija este manifiesto se lee de git
+      (HEAD) en tiempo de validación; su padre debe ser product_sha.
+
+artifacts:
+  wheel:
+    artifact_filename: vault_obsidian_architecture-41.23-py3-none-any.whl
+    digest: 8cda5ef45626dd244199528eb3f8b5403788f6f1e4b3e2e75ac98f5f737f3cfd
+    evidence_note: >-
+      construcción del E2E (recorrido_terceros_r07.py). El dist del árbol del
+      candidato tiene otro hash de fichero (452004252b33552bb94a5027a34daf1d
+      7f508dab69c34c6d44f51d40cacb41de) porque el ZIP no es reproducible byte
+      a byte: la equivalencia acreditada es de CONTENIDO (706/706 miembros, 0
+      distintos).
+  sdist:
+    artifact_filename: vault_obsidian_architecture-41.23.tar.gz
+    digest: 1c65f132434809c22cb5794a4896a4717c542b3dbbf00b15a7c590348fdb7656
 
 verification:
-  suite_junit_sha256: "fa321a023d97e8b7bf635ce1eaa6e834b79b7bc9ca9f5232fd044d024f817b78 (JUnit r14: 6334 passed / 13 skipped / 0 failed, 6347 collectados)"
-  gates_manifest_sha256: "dcb05295e1593939caa43e6d7f6eae9122511418a97caf34f7c4ae52aabc3ec3 (artefacto del subcheck puertas_26 del recibo QG-02 del colector: las 26 puertas sobre este SHA)"
-  e2e_manifest_sha256: "9d6a3c3fd2f70422fd3b15a40083fb475908f9e6ebcc9bf816abe75e820cc721 (e2e.json del recorrido 27/27)"
-  ci_run_id: 40442954197
-  ci_run_sha: "015b7765b80cac21c6dcf859ae075d036cd01def"
-  ci_status: "completed"
-  ci_conclusion: "success"
-  ci_required_jobs: 25
-  ci_successful_jobs: 25
+  suite:
+    junit_digest: fa321a023d97e8b7bf635ce1eaa6e834b79b7bc9ca9f5232fd044d024f817b78
+    junit_evidence_note: >-
+      JUnit r14: 6334 passed / 13 skipped / 0 failed; 6347 collectados.
+  gates:
+    manifest_digest: dcb05295e1593939caa43e6d7f6eae9122511418a97caf34f7c4ae52aabc3ec3
+    gates_evidence_note: >-
+      artefacto del subcheck puertas_26 del recibo QG-02 del colector (las 26
+      puertas sobre este SHA).
+  e2e:
+    manifest_digest: 9d6a3c3fd2f70422fd3b15a40083fb475908f9e6ebcc9bf816abe75e820cc721
+    e2e_evidence_note: e2e.json del recorrido 27/27 sobre la wheel del candidato.
+  ci:
+    run_id: 40442954197
+    run_sha: 015b7765b80cac21c6dcf859ae075d036cd01def
+    status: completed
+    conclusion: success
+    required_jobs: 25
+    successful_jobs: 25
 
 governance:
   qg_statuses:
-    QG-00: "BLOCKED (recibo FAIL solo en reconciliador_archify: 10 divergencias sin ratificar — DEC-02; identidad, árbol y saneamiento ejecutados OK)"
-    QG-01: "BLOCKED (mismo bloqueo; vault_arch verde 5/5 baseline)"
-    QG-02: "BLOCKED (recibo FAIL solo en sin_violaciones: total_violations=1, la externa AP-36 — DEC-03/DEC-04; 26/26 puertas y controles ejecutado)"
-    QG-03: "PASS (recibo: JUnit r14 + E2E 27/27)"
-    QG-04: "PASS (recibo: saneamiento 0, pip-audit, contención, destructivas)"
-    QG-05: "PASS (recibo: paridad CLI/MCP sobre wheel instalada; AP-40 exit 0)"
-    QG-06: "PASS (recibo: build + contenido + instalación limpia)"
-    QG-07: "CI 25/25 success (40442954197, este SHA); la política lo deja BLOCKED por el prerrequisito QG-00 (fail-closed, sin waiver)"
-  ci_result:
-    run_id: 40442954197
-    sha: "015b7765b80cac21c6dcf859ae075d036cd01def"
-    resultado: "25/25 jobs success (completed/success)"
-  qa_verdict_ref: "7dc1a25 (rama qa/review-release-cli-mcp-e198ffb-20261026): CI_MATRIX_25_OF_25=ACCEPTED; QA-R13-06=OPEN_P1 — corregido en este candidato"
-  owner_decision_ref: "audits/handoff/DECISIONES-PROPIETARIO.md (DEC-01..DEC-06, espacios de decisión vacíos)"
+    QG-00: BLOCKED
+    QG-01: BLOCKED
+    QG-02: BLOCKED
+    QG-03: PASS
+    QG-04: PASS
+    QG-05: PASS
+    QG-06: PASS
+    QG-07: BLOCKED
+  qg_status_note: >-
+    QG-00/QG-01: recibo FAIL solo en reconciliador_archify (10 divergencias
+    sin ratificar — DEC-02; el mecanismo de aceptación exige ratificado:true,
+    fail-closed). QG-02: recibo FAIL solo en sin_violaciones
+    (total_violations=1, la externa AP-36 — DEC-03/DEC-04). QG-07: la CI del
+    SHA es 25/25 success pero la política lo deja BLOCKED por el prerrequisito
+    QG-00. Detalle por subcheck: RECIBOS-R14-MANIFIESTO.md.
+  qa_verdict_ref: e47d62f
+  qa_verdict_ref_note: >-
+    rama qa/review-release-cli-mcp-015b776-20261027 (dictamen R14):
+    QA-R13-06=ACCEPTED_SCOPED; CI_MATRIX_25_OF_25=VERIFIED; QA-RELEASE=BLOCKED.
+  owner_decision_ref: audits/handoff/DECISIONES-PROPIETARIO.md
+  owner_decision_ref_note: DEC-01..DEC-06 con espacios de decisión vacíos.
   release_authorized: false
-
-# Notas de integridad:
-# - La wheel NO es reproducible byte a byte (el ZIP lleva marcas de tiempo):
-#   el hash del fichero cambia entre construcciones. Lo que se acredita como
-#   equivalencia es el CONTENIDO (miembros y bytes de cada miembro), y los
-#   hashes del artefacto certificado son los de la construcción del E2E.
-# - La diferencia entre product_sha y documentation_sha es documental, pero
-#   los SHA no son intercambiables: la CI exigida corresponde al product_sha.
+  publication_status: CANDIDATE
