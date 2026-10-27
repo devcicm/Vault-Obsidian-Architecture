@@ -18,6 +18,7 @@ aquel con la evidencia de la API y los logs de las corridas concluidas.
 | `40340865847` | `408eb23` | **21** | **4** | 0 | `completed/failure` |
 | `40349132455` | `dfc6a06` | 20 | 5 | 0 | `completed/failure` |
 | `40420024458` | `9c65401` | **24** | **1** | 0 | las 4 columnas de macOS **pasan**; el rojo es el defecto nuevo R13-05 (Windows 3.10) |
+| `40430269201` | `e198ffb` | **25** | **0** | 0 | `completed/success` — **matriz completa en verde** por primera vez |
 
 **Lo que esto desmonta:** la hipótesis de la ronda anterior («la CI está
 bloqueada por facturación»). Los jobs de Windows y de Linux **ejecutan y
@@ -26,10 +27,11 @@ las corridas intermedias se les veía en `queued` durante horas, y ese estado
 puntual se tomó por «no arranca»). Cuando por fin corren, fallan —y esos
 fallos son del producto y del harness, no de la infraestructura.
 
-**Lo que sigue faltando:** la corrida del commit final de la ronda. Con
-`9c65401` la matriz llega a **24 de 25** (las cuatro columnas de macOS
-pasan); el arreglo del defecto nuevo R13-05 viaja en el commit final, cuya
-corrida es la que debe cerrar el **25/25**.
+**El cierre de la ronda:** la corrida del commit final `e198ffb`,
+`40430269201`, terminó **completed/success con 25/25 jobs** — las cuatro
+columnas de macOS verdes incluidas. El defecto R13-05 quedó verificado en la
+misma corrida: la regresión del drenaje corre en las 12 columnas `Validate`
+de la matriz completa.
 
 ## 2. Los defectos, con su ficha
 
@@ -47,7 +49,7 @@ corrida es la que debe cerrar el **25/25**.
 | **R13-03a** | macOS 3.11 | `test_file_lock_no_deja_entrar_a_dos_procesos`: el segundo proceso **moría** con `OSError: [Errno 22] Invalid argument: .../.locks/contador.txt.lock` | en macOS, cuando `.locks/` se retira mientras otra ruta se resuelve, `mkdir` responde **EINVAL/ENOTDIR**; en Linux el mismo caso es ENOENT, que el código ya contemplaba. El proceso debía **esperar su turno** | EINVAL/ENOTDIR se compiten otra vez, con el plazo como único freno | `test_un_einval_al_crear_el_lock_se_compite_otra_vez` (positiva) y `test_un_einval_permanente_no_espera_sin_fin` (negativa) | corrida `40340865847` | CORREGIDO (verificado en la CI de R13) |
 | **R13-03b** | Windows 3.10 | `test_backup_base64`: `shutil.Error: ... vault-sandbox/00_System/.locks` — el directorio desaparece mientras se copia | la copia del sandbox **vivo** se coge en mitad: otra prueba en paralelo toma y suelta locks | el estado de bloqueo es de **ejecución**, no de contenido: la copia lo ignora (igual que la auditoría del toolkit) | el mismo test, con la copia coherente | corrida `40349132455` | CORREGIDO (verificado en la CI de R13) |
 | **R13-04** | (política, no plataforma) | toda conclusion de CI que no fuera `success` se etiquetaba `CI_PENDIENTE`, incluida una corrida **ya concluida en rojo** | el colector solo miraba runs exitosos: una CI `completed/failure` salia `no_verificable` y la política leia «pendiente» | tres clases en la política y el colector: `CI_PENDING` (en cola o en curso), `CI_FAILED` (concluida, con los jobs en rojo nombrados) y `CI_PASS` (conclusion `success`); fail-closed intacto | 4 tests de política + 2 del colector | corrida `40340865847` | CORREGIDO |
-| **R13-05** | Windows 3.10 (verificación `40420024458`) | `test_una_peticion_de_navegador_se_rechaza_aun_con_token`: `ConnectionAbortedError: [WinError 10053]` en vez del **403** esperado | al rechazar (Origin ajeno → 403), el servicio cerraba la conexión con el **cuerpo sin leer**: el núcleo TCP responde RST y el cliente lee la conexión abortada, la respuesta la pierde. Carrera del RST contra la lectura: 1 de 8 columnas la vio | el camino de rechazo de SP-04 **drena el cuerpo** (`Content-Length`, acotado) antes de responder, en los tres rechazos y el 404 de `do_POST` | el propio test, pedido 5 veces | log del job `121911857070` | CORREGIDO |
+| **R13-05** | Windows 3.10 (verificación `40420024458`) | `test_una_peticion_de_navegador_se_rechaza_aun_con_token`: `ConnectionAbortedError: [WinError 10053]` en vez del **403** esperado | al rechazar (Origin ajeno → 403), el servicio cerraba la conexión con el **cuerpo sin leer**: el núcleo TCP responde RST y el cliente lee la conexión abortada, la respuesta la pierde. Carrera del RST contra la lectura: 1 de 8 columnas la vio | el camino de rechazo de SP-04 **drena el cuerpo** (`Content-Length`, acotado) antes de responder, en los tres rechazos y el 404 de `do_POST` | el propio test, pedido 5 veces | log del job `121911857070`; verificado en la corrida `40430269201` | CORREGIDO (verificado en la CI de R13) |
 
 ## 3. La clase de CI: tres, no una (R13)
 

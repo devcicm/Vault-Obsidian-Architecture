@@ -84,10 +84,20 @@ PUERTAS: 26/26 en 766,11 s
 E2E:     27/27 con la wheel reconstruida desde el codigo del candidato
 WHEEL:   3a9f2ddad28d78fcad7ebfc2e4e106960c2b51cee0d7c7092d36ea41b52ef39d
 SDIST:   7f20943359fd5d8e4b5d73771f684e332e99a61ec2c4bb94e2f612662bc6b293
-CI:      corrida de verificacion 40420024458 (9c65401): 24/25 — las 4 macOS
-         pasan; el rojo (Windows 3.10, R13-05) se corrigio y su verificacion
-         es la corrida del commit final de la ronda (objetivo: 25/25)
+CI:      corrida 40430269201 (e198ffb): 25/25 — completed/success, cero
+         jobs en rojo; las cuatro columnas de macOS pasan por primera vez.
 ```
+
+Recibos por subcheck del SHA `e198ffb` (colector R13): QG-03, QG-04, QG-05,
+QG-06 y QG-07 **PASS** con artefacto y SHA-256 por subcheck; la QG-07 acredita
+el run `40430269201` (`completed/success`, `total_count: 25`, los 25 jobs
+nombrados). QG-00 y QG-01 fallan **solo** por el reconciliador (las 10
+divergencias sin ratificar — mismas fichas, mismo exit=1 que la R12) y QG-02
+**solo** por la violación externa de `vault-backups` (`total_violations=1`,
+la externa). La política de los recibos: los mismos BLOCKED de la R12 —
+`liberable: false` por `PREREQUISITO_NO_CUMPLIDO:QG-00` — que es el estado
+honesto: lo que bloquea el release son las decisiones del propietario, no el
+trabajo del ejecutor.
 
 Sobre el hash del paquete: la construccion **no es reproducible** (el ZIP lleva
 marcas de tiempo), asi que el sha256 del fichero cambia entre construcciones;

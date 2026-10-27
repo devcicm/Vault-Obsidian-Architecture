@@ -75,10 +75,10 @@ release actual).
 ## 5. Solicitud QA abierta (pendiente)
 
 - **Solicitud:** dictamen de cierre del release CLI+MCP.
-- **Sobre:** rama `work/release-cli-mcp-20261025` — **candidato de producto: el
-  commit que publica este protocolo actualizado** (código de `9c65401` más el
-  drenaje del cuerpo en el rechazo del servicio de tokens, con la
-  documentación de la ronda).
+- **Sobre:** rama `work/release-cli-mcp-20261025` — **candidato de producto
+  `e198ffb`** (código de `9c65401` más el drenaje del cuerpo en el rechazo
+  del servicio de tokens y la documentación de la ronda; el único commit que
+  sigue es documental, el que publica este protocolo actualizado).
 - **Estado de la ronda R13:** los seis defectos de la ronda corregidos, cada
   uno con su causa comprobada y su regresión: el lock que moría con EINVAL en
   macOS (R13-03a), el escáner legacy cuyo recuento dependía del orden del
@@ -88,8 +88,10 @@ release actual).
   (R13-03b), la clasificación de CI que llamaba «pendiente» a una corrida ya
   concluida en rojo (R13-04) y el rechazo de SP-04 que en Windows 3.10 cortaba
   la conexión a RST porque mandaba el 403 sin leer el cuerpo (R13-05). La
-  corrida de verificación del fix, `40420024458`, dejó **24 de 25**: las
-  cuatro columnas de macOS **pasan** por primera vez. Detalle y evidencia:
+  corrida de verificación del fix, `40420024458`, dejó **24 de 25** — y la
+  corrida final, `40430269201` **sobre el candidato `e198ffb`, es 25/25:
+  `completed/success` con las cuatro columnas de macOS en verde** por primera
+  vez. Detalle y evidencia:
   `audits/handoff/RESPUESTA-DEL-EJECUTOR.md` (ronda R13),
   `audits/fase2/CI-diagnostico.md` (reesrito con las fichas D1–D10 +
   R13-01..05) y `audits/architecture/PLAN-B-MIGRACION-CRUZES.md` (criterio de

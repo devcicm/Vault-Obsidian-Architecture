@@ -71,6 +71,7 @@ diciendo «116»/«117» y «9 tools JS-native» (son 2): son cifras caducadas d
 | `40340865847` | `408eb23` | 25 | **21 verdes · 4 rojos · 0 pendientes** | los 4 rojos: **las cuatro columnas `validate` de macOS** (§3.2, R13-01/02/03) |
 | `40349132455` | `dfc6a06` | 25 | 20 verdes · 5 rojos | los 4 de macOS + Windows 3.10 (R13-03b) |
 | `40420024458` | `9c65401` | 25 | **24 verdes · 1 rojo · 0 pendientes** | las 4 columnas de macOS **pasan**; el 1 rojo es Windows 3.10 con el defecto nuevo R13-05 (§3.2), corregido después |
+| `40430269201` | `e198ffb` | 25 | **25 verdes · 0 rojos · 0 pendientes** | `completed/success` — **la matriz completa en verde**, por primera vez la ronda cierra en 25/25 |
 
 **Lo que esto refuta (y lo que la ronda anterior afirmaba):** la hipótesis de
 que la CI estaba bloqueada por facturación. La CI **corre**: los jobs de
@@ -80,9 +81,10 @@ horas, y ese estado puntual se tomó por «no arrancan»), y cuando corren
 fallan con defectos reales del producto. El diagnóstico completo, con la
 traza de cada uno, está en `audits/fase2/CI-diagnostico.md`.
 
-**Lo que sigue faltando:** la corrida del commit final de la ronda — con
-`9c65401` la matriz llega a **24 de 25** y el único rojo (R13-05, corregido)
-se verifica en la corrida del commit que cierra la ronda.
+**El cierre de la ronda:** la corrida del commit final `e198ffb`,
+`40430269201`, terminó **completed/success con 25/25** — las cuatro columnas
+de macOS verdes incluidas, y el arreglo de R13-05 verificado en la matriz
+completa.
 
 ### 3.2 Los defectos reales que la CI destapó — D1..D10 (R12) y R13-01..05 (R13)
 
@@ -101,7 +103,7 @@ se verifica en la corrida del commit que cierra la ronda.
 | R13-02 | macOS (3.9-3.12): el escáner legacy contaba **5** notas donde hay **3** | la cascada de cada escritura crea ficheros (`index.md` de sección, notas de sistema) **mientras el `rglob` perezoso sigue recorriendo**: en APFS los ve, en ext4/NTFS no. Reproducido en local (una segunda pasada contaba 6 = 3 + los 3 creados) | el inventario se **materializa** antes de curar; los artefactos derivados se excluyen por su dueño; el escaner **publica el inventario** (ruta, clase, motivo) | `test_heal_legacy_no_cuenta_lo_que_la_pasada_crea`, `test_heal_legacy_publica_el_inventario_exacto` |
 | R13-03 | macOS 3.11: el segundo proceso del test de exclusión **moría** con `OSError: [Errno 22] Invalid argument: .../.locks/contador.txt.lock`; Windows 3.10: la copia del sandbox vivo fallaba con `shutil.Error: ... 00_System/.locks` | en macOS, cuando `.locks/` se retira mientras otra ruta se resuelve, `mkdir` responde **EINVAL/ENOTDIR** (en Linux es ENOENT, ya contemplado): el proceso debía **esperar su turno**. En Windows, la copia del sandbox se cogía en mitad porque otra prueba en paralelo tomaba y soltaba locks | EINVAL/ENOTDIR se compiten otra vez, con el plazo como único freno; el estado de bloqueo es de **ejecución**, no de contenido, y la copia lo ignora | `test_un_einval_al_crear_el_lock_se_compite_otra_vez` (positiva), `test_un_einval_permanente_no_espera_sin_fin` (negativa) |
 | R13-04 | (política): toda conclusión de CI que no fuera `success` se etiquetaba `CI_PENDIENTE`, incluida una corrida ya concluida en **rojo** | el colector solo miraba runs exitosos: `completed/failure` salía `no_verificable` y la política leía «pendiente» | tres clases (`CI_PENDING` / `CI_FAILED` / `CI_PASS`) en política y colector; fail-closed intacto: solo `success` pasa | 4 tests de política + 2 del colector |
-| R13-05 | Windows 3.10 (verificación `40420024458`): `ConnectionAbortedError: [WinError 10053]` en vez del 403 esperado | el rechazo (Origin ajeno → 403) cerraba la conexión con el **cuerpo sin leer** → RST del núcleo → el cliente pierde la respuesta. Carrera: solo 1 de 8 columnas la vio | el camino de rechazo de SP-04 **drena el cuerpo** antes de responder | el propio test, pedido 5 veces |
+| R13-05 | Windows 3.10 (verificación `40420024458`): `ConnectionAbortedError: [WinError 10053]` en vez del 403 esperado | el rechazo (Origin ajeno → 403) cerraba la conexión con el **cuerpo sin leer** → RST del núcleo → el cliente pierde la respuesta. Carrera: solo 1 de 8 columnas la vio | el camino de rechazo de SP-04 **drena el cuerpo** antes de responder | el propio test, pedido 5 veces; verificado en `40430269201` |
 
 Ninguno se arregló con sleeps, reintentos, baselines más amplias
 ni tests relajados. Todos se arreglaron en su causa.
@@ -240,33 +242,37 @@ sin release y sin dictamen QA de cierre.
 
 - **Congelado y re-certificado en R11:** `36c91e0` — suite **6307 passed / 13
   skipped / 0 failed** (JUnit `r11d`) y **puertas 26/26**; E2E 27/27.
-- **Ronda R12 (esta) — SHA final `408eb23`:** corregidos los **diez** defectos
-  que la CI destapó (§3.2: checkout superficial, detector MCP sin PyYAML, env
-  de hijo sin SystemRoot, cifra de tests dependiente del sistema, contenido no
-  canónico de la semilla del sandbox, quoting del paso `vault_norms --list` y
-  la idempotencia del SDD que comparaba el reloj), más el defecto de
-  `vault://graph` en el servidor MCP; reconciliados el protocolo QA (con guard
-  de deriva), el informe, la matriz de capacidad y la política de QG-02.
-  Medición sobre el SHA final: **suite 6319 passed / 13 skipped / 0 failed**
-  (JUnit `r12h`, 994,9 s), **puertas 26/26**, **E2E 27/27** con wheel
-  reconstruida y contenido del paquete idéntico miembro a miembro (706/706),
-  y **CI con 17 de 25 jobs en verde** (los 8 `validate` de Windows y Linux
-  incluidos), sin un solo job en rojo.
-- **Recibos externos por subcheck** del mismo SHA: QG-03, QG-04, QG-05 y QG-06
-  **PASS** (con artefacto y SHA-256 por subcheck); QG-00 y QG-01 fallan **solo**
-  por el reconciliador (las 10 divergencias sin ratificar) y QG-02 **solo** por
-  la violación externa de `vault-backups`. La política los deja
-  **BLOCKED** y `liberable: false` — que es el estado honesto.
+- **Ronda R12 — SHA intermedio `408eb23`:** corregidos los **diez** defectos
+  que la CI destapó (§3.2); su corrida terminó 21/25 (macOS en rojo), que es
+  lo que la ronda R13 heredó y resolvió.
+- **Ronda R13 — candidato de producto `e198ffb`** (`9c65401` + el drenaje de
+  R13-05): los **seis** defectos de la ronda corregidos en causa (§3.2) y
+  medidos con:
+  **suite 6330 passed / 13 skipped / 0 failed** (JUnit `r13b`;
+  0 fallos, 0 errores), **puertas 26/26 en 766,1 s**, **E2E 27/27** con wheel
+  reconstruida (`3a9f2dda…`), paquete **706/706 miembros iguales** contra la
+  wheel del dist del candidato, y **CI 25/25 en verde** en la corrida real
+  `40430269201` — las cuatro columnas de macOS pasan por primera vez y con
+  ellas la matriz completa: 12 `Validate Vault Spec` + 12 `Product gates
+  (wheel)` + Lint, sin un solo job en rojo ni cancelado.
+- **Recibos externos por subcheck** del mismo SHA: QG-03, QG-04, QG-05, QG-06
+  y **QG-07 PASS** (con artefacto y SHA-256 por subcheck; la QG-07 acredita el
+  run `40430269201`, `completed/success`, 25/25 con los jobs nombrados en el
+  recibo). QG-00 y QG-01 fallan **solo** por el reconciliador (las 10
+  divergencias sin ratificar, fichas §6 del plan B) y QG-02 **solo** por la
+  violación externa de `vault-backups` (AP-36 fuera del repo). La política los
+  deja **BLOCKED** y `liberable: false` — que es el estado honesto y el mismo
+  bloqueo que dejó la R12, ahora sin ninguna deuda de CI del lado del
+  ejecutor.
 - **Lo que falta, y no lo puede cerrar el ejecutor:** el dictamen QA de cierre
-  sobre este SHA; la ratificación de las decisiones §6 (divergencias,
-  política de QG-02, `vault-backups`); y la matriz de macOS, cuyos 8 jobs no
-  arrancan en cinco corridas seguidas. Si macOS no se habilita, el dictamen
-  correcto del QA es `BLOCKED` con esa causa, y el alcance publicable se
-  declara como Windows + Linux.
+  sobre `e198ffb` y la ratificación de las decisiones §6 (divergencias,
+  política de QG-02, `vault-backups`). La matriz de macOS ya no es un
+  bloqueo: está verde en la corrida del candidato.
 
-**Veredicto:** el producto técnico está en verde, sus diez defectos de CI
-concretos están corregidos y comprobados con evidencia de la propia CI, y la
+**Veredicto:** el producto técnico está en verde —ci incluida la matriz macOS
+de 25/25—, los diez defectos de CI de la ronda anterior y los seis de esta
+están corregidos y comprobados con evidencia de la propia CI, y la
 documentación dice la verdad sobre su estado. Lo que falta para un release
-certificado son decisiones del propietario (§6) y la matriz de macOS; ninguna
+certificado son decisiones del propietario (§6) y el dictamen de QA; ninguna
 de las dos cosas la puede cerrar el ejecutor, y ninguna se resuelve con un
 documento que afirme lo contrario.
