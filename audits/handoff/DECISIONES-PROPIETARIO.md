@@ -159,21 +159,29 @@ fail-closed (QG-00/QG-01/QG-02 BLOCKED; `liberable: false`).
   criterio de ratificación formal de arriba incorporado** (la preferencia
   registrada por el propietario — `cc05eab` — sigue siendo preferencia, no
   ratificación).
-- **Estado de autoridad (R18, QA-R17-QG02-01):** la propuesta separa ya
-  ESQUEMA de **AUTORIDAD**: un residuo solo se acepta si su decisión se
-  verifica contra una fuente confiable declarada por el propietario
-  (`audits/fase2/autoridades-de-decision.yaml` +
-  `audits/fase2/verificador_actos.py`): la autoridad debe constar en el
-  registro con canal, el acto debe existir como commit, ser alcanzable desde
-  ese canal y **nombrar el residuo con su huella**, no estar revocado, y la
-  custodia debe ser **otro** acto con contenido propio (`custodia.verificada:
-  true` del mismo recibo ya no basta). Sin fuente declarada el veredicto es
-  **BLOCKED**. Mecanismo probado con objetos git reales en un repositorio
-  descartable (44 pruebas en total: 27 de esquema y coherencia + 17 de
-  autoridad). **Límite declarado:** ejecutor y propietario comparten
-  identidad git y permisos de push, así que el canal es un control
-  **administrativo**, no criptográfico — queda a la ratificación del
-  propietario elegir yvigilar el canal.
+- **Estado de autoridad (R19, QA-R18-AUTH-01..04):** la propuesta separa ya
+  las cuatro capas: **esquema** (forma de la decisión), **existencia y
+  contenido del acto** (commit real, alcanzable por el canal y con un
+  CONTRATO de acta explícito: tipo, acción expresa, estado, decisión,
+  autoridad, alcance, residuo, norma, ruta, huella, fecha y canal),
+  **identidad y autorización** (un identificador único de autoridad:
+  `autoridad` canónico y `firmante` alias, con correspondencia obligatoria) y
+  **estado efectivo** (el registro tiene que estar EN VIGOR: `estado:
+  RATIFICADO` más un acto de ratificación propio, existente y alcanzable;
+  `PROPUESTA`/`DRAFT`/`PENDING`/desconocidos se rechazan y la mera presencia
+  de autoridades no pone nada en vigor). La custodia es un **segundo acto**
+  con contrato propio (custodio admitido, autoridad, id, residuo, norma, ruta,
+  huella, operaciones autorizadas, vigencia temporal, canal) y **no autoriza
+  archivar, trasladar ni purgar** (eso exige actos independientes de DEC-04).
+  Mecanismo probado con objetos git reales en un repositorio descartable
+  (**57 pruebas**: 32 de esquema/coherencia + 25 de autoridad; los negativos
+  cubren registro no ratificado, autoactivación, acta consultiva, estados
+  PROPUESTO/CONSULTADO/RECHAZADO/REVOCADO, alias contradictorio, custodio no
+  admitido, custodia expirada y custodia con operaciones destructivas).
+  **Límite declarado:** ejecutor y propietario comparten identidad git y
+  permisos de push, así que el canal es un control **administrativo**, no
+  criptográfico — el propietario debe decidir sobre custodia y permisos del
+  canal antes de ratificar (queda como decisión explícita en DEC-03/DEC-04).
 - **Alcance exacto de autorización (lo que la firma habilita y lo que no):**
   habilita **solo** aplicar la opción C al QG-02 de producción: el diff
   propuesto del dosier §5 (catálogo, política, colector y tests) y el
@@ -225,14 +233,17 @@ fail-closed (QG-00/QG-01/QG-02 BLOCKED; `liberable: false`).
 - **Recomendación:** (c) archivar con verificación de hashes y después purgar,
   dejando el acto asentado aquí — solo si el propietario de los datos lo
   autoriza. **El ejecutor no toca el directorio sin esta decisión.**
-- **Actos separados (R18):** la autorización se puede dar por ACTOS, no de
+- **Actos separados (R19):** la autorización se puede dar por ACTOS, no de
   golpe, y cada uno lleva su propia evidencia y su propia reversión:
   1. **PRESERVACIÓN** (lectura + hashing + acta de inventario): ya hecha en
      lectura (R14/R15); es inocua y no requiere autorización para repetirse.
-  2. **CUSTODIA** (nombrar quién responde del residuo y en qué canal
-     publica sus actos): requiere que el propietario designe al custodio y
-     declare el canal; sin eso, el residuo queda sin fuente de autoridad y
-     QG-02 BLOCKED.
+  2. **CUSTODIA** (nombrar quién responde del residuo, en qué canal publica
+     sus actos y con qué operaciones): requiere que el propietario designe
+     al custodio y lo declare en el registro (`custodios` + canal). Sin eso,
+     el residuo queda sin fuente de autoridad y QG-02 BLOCKED. El contrato
+     del acta de custodia (R19, AUTH-04) exige custodio, autoridad, id,
+     residuo, norma, ruta, huella, operaciones, vigencia, canal y commit, y
+     **no autoriza archivar, trasladar ni purgar**.
   3. **ARCHIVO** (crear el archivo de preservación y verificarlo contra los
      hashes del apéndice A): requiere autorización expresa del custodio; no
      toca el original.

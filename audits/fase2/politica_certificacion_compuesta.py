@@ -158,6 +158,18 @@ def _motivos_decision(decision: Any, hallazgo: Dict[str, Any]) -> List[str]:
 
     if not str(decision.get("id") or "").strip():
         motivos.append("DECISION_SIN_IDENTIFICADOR")
+    # AUTH-02: identificador de autoridad UNICO. `autoridad` es el canonico y
+    # `firmante` un alias: si aparecen los dos, tienen que ser el mismo
+    # identificador (la resolucion contra el registro —alias incluidos— la
+    # hace el verificador).
+    canonico = str(decision.get("autoridad") or "").strip()
+    alias = str(decision.get("firmante") or "").strip()
+    if not canonico and not alias:
+        motivos.append("AUTORIDAD_AUSENTE")
+    elif canonico and alias and canonico != alias:
+        motivos.append(
+            f"IDENTIDADES_CONTRADICTORIAS: la decision declara autoridad "
+            f"{canonico!r} y firmante {alias!r} y no son el mismo identificador")
     if decision.get("estado") != ESTADO_RATIFICADO:
         motivos.append(
             f"DECISION_NO_RATIFICADA: estado={decision.get('estado')!r} "
@@ -336,6 +348,24 @@ def evaluar_certificacion_compuesta(
                     "comprobar el acto y su custodia; sin ella el esquema no "
                     "acredita una ratificacion")
             else:
+                # AUTH-01: aunque haya verificador, el REGISTRO tiene que
+                # estar EN VIGOR (ratificado por un acto propio). Un
+                # registro propuesto no acredita nada. Y un verificador que
+                # no sepa decir si el registro esta en vigor NO vale: sin esa
+                # comprobacion no hay acreditacion (fail-closed).
+                en_vigor = getattr(verificador_actos, "en_vigor", None)
+                if not callable(en_vigor):
+                    fallos.append(
+                        "VERIFICADOR_SIN_VERIFICACION_DE_VIGENCIA: no puede "
+                        "acreditar que el registro este ratificado")
+                elif not en_vigor():
+                    motivos_vigor = []
+                    motivos_funcion = getattr(verificador_actos, "motivos_vigor", None)
+                    if callable(motivos_funcion):
+                        motivos_vigor = motivos_funcion()
+                    fallos.append(
+                        "REGISTRO_NO_EN_VIGOR: " + "; ".join(motivos_vigor or
+                                                             ["registro no ratificado"]))
                 decision = registro.get("decision") or {}
                 try:
                     ok_acto, motivos_acto = verificador_actos.verificar_acto(

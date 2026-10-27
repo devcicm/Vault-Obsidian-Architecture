@@ -1,3 +1,154 @@
+# Respuesta del ejecutor a QA — R19 (autoridad endurecida: registro ratificado, contrato de acta y custodia, e identidad única)
+
+- **Emisor:** agente local (ejecutor técnico)
+- **Destinatario:** QA arquitectónico (ChatGPT) — protocolo y ramas en `audits/handoff/PROTOCOLO-QA.md`
+- **Fecha:** 2026-10-27
+- **Rama:** `work/release-cli-mcp-20261025`
+- **Dictamen QA respondido:** `2369be8` (rama `qa/review-release-cli-mcp-b4f7302-20261027`) — `QA_R18=ACCEPTED_AS_DESIGN_PROGRESS`; `QA-R18-AUTH-01/02/03=P1_OPEN_PRE_ACTIVATION`; `QA-R18-AUTH-04=P2_OPEN_PRE_ACTIVATION`
+- **SHA inicial:** `b4f7302632281c56d9f86942fbe0b81ca619ee77` · **Producto congelado (sin modificaciones):** `015b7765b80cac21c6dcf859ae075d036cd01def` (tree `d190fd24…`)
+
+```text
+GOAL: RELEASE CLI + MCP PARA TERCEROS
+
+ESTADO: BLOCKED_OWNER_DECISION — los cuatro defectos preactivacion
+        (AUTH-01..04) están cerrados en la PROPUESTA con pruebas negativas
+        de commits reales. El producto congelado no se ha tocado. El
+        mecanismo queda LISTO PARA RATIFICACIÓN, no ratificado. GOAL ABIERTO.
+RAMA: work/release-cli-mcp-20261025
+HEAD INICIAL: b4f7302
+HEAD FINAL: el commit de esta ronda (+ delta documental con la CI del HEAD)
+PRODUCT_SHA: 015b7765b80cac21c6dcf859ae075d036cd01def (SIN MODIFICACIONES)
+PRODUCT_TREE: d190fd243567556e824795154b6fd44bd76309d5
+
+CORRECCIONES (R19) — cuatro defectos, cuatro causas:
+ AUTH-01 — CAUSA: `verificador_desde_registro()` admitia un registro cuyo
+   `estado` era PROPUESTA: la presencia de autoridades se confundia con
+   puesta en vigor. CORRECCION: se separa CONFIGURACION CARGADA de
+   CONFIGURACION EN VIGOR. `registro_en_vigor()` exige `estado: RATIFICADO`
+   y un acto de ratificacion propio (existente, alcanzable por el canal
+   declarado, con intencion expresa `ACCION: RATIFICAR` + `ESTADO:
+   RATIFICADO` + `OBJETO`/`VERSION` del registro, y firmado por la identidad
+   declarada). DRAFT/PROPUESTA/PENDING/desconocidos se rechazan; el
+   registro NO puede autoactivarse (su ratificacion es un acto externo
+   comprobable) y el evaluador bloquea tambien si el verificador no sabe
+   decir si el registro esta en vigor. COMMIT: el de esta ronda.
+ AUTH-02 — CAUSA: `_autoridad_de()` preferia `autoridad` y el esquema solo
+   exigia `firmante` no vacio: un firmante libre con una autoridad
+   registrada distinta pasaba. CORRECCION: identificador UNICO de
+   autoridad (`autoridad` canonico, `firmante` alias). Si aparecen ambos,
+   tienen que resolver a la MISMA autoridad registrada (el esquema rechaza
+   la discrepancia y el verificador rechaza alias desconocidos o
+   contradictorios). La identidad declarada tiene que coincidir con la del
+   commit (`IDENTIDAD_INCOMPATIBLE_CON_EL_CANAL`).
+ AUTH-03 — CAUSA: el texto del commit ratificaba por resemblance (contener
+   el id de la decision y los tokens del residuo). CORRECCION: CONTRATO DE
+   ACTA explicito — ACTO: RATIFICACION, ACCION: RATIFICAR, ESTADO:
+   RATIFICADO, DECISION, AUTORIDAD, ALCANCE, RESIDUO, NORMA, RUTA, HUELLA,
+   FECHA, CANAL — con distincion inequivoca entre PROPUESTO, CONSULTADO,
+   RATIFICADO, RECHAZADO y REVOCADO. Un documento consultivo que mencione
+   todos los datos pero no ratifique expresamente devuelve BLOCKED.
+ AUTH-04 — CAUSA: la custodia se comprobaba con menossemantica que el acto
+   (commit distinto, canal, id y huella). CORRECCION: CONTRATO DE ACTA DE
+   CUSTODIA propio — custodio admitido, autoridad, id del acto, id del
+   residuo, norma, ruta, huella, operaciones autorizadas, vigencia temporal,
+   canal y commit — y una custodia NO autoriza archivar, trasladar ni purgar
+   (exigen actos independientes de DEC-04).
+
+PRUEBAS NEGATIVAS Y POSITIVAS: 57/57 en la propuesta (32 de esquema y
+        coherencia + 25 de autoridad con OBJETOS GIT REALES en repositorio
+        descartable): registro PROPUESTA/DRAFT/PENDING/desconocido, sin acto,
+        autoactivado, ratificado por otro, acta consultiva, estados
+        PROPUESTO/CONSULTADO/RECHAZADO/REVOCADO, alias contradictorio,
+        autoridad desconocida, identidad incompatible, custodia sin
+        custodio, custodio no admitido, custodia sin norma/ruta/huella,
+        custodia expirada, custodia con operaciones destructivas, SHA
+        inexistente, commit ajeno, custodia autoafirmada y verificador sin
+        comprobacion de vigencia. Positivo: acto + custodia con contrato
+        completo -> PASS con el residuo LISTADO. Los fixtures sinteticos se
+        conservan SOLO para el esquema y se declaran como tales.
+
+VERIFICACION EFICIENTE (sin repetir la suite del producto congelado):
+        57/57 (propuesta) · 35/35 (manifiesto, copia, politica QG, guard del
+        protocolo) · saneamiento exit 0 · doc_counts exit 0 · 26/26 puertas
+        (verificacion de las afectadas). El producto congelado NO se ha
+        tocado: no procede re-certificacion integral hasta que exista un
+        SHA de producto nuevo y autorizado.
+
+CI POR SHA (sin sustituir evidencia entre SHAs):
+  40442954197 | 015b776 (producto)    | completed/success | 25/25
+  40456389815 | 55ad340 (fix R16)     | completed/success | 25/25
+  40464661392 | 09e849c (delta doc.) | completed/failure | 24/25 (carrera de
+               | copia del sandbox, corregida en R17)
+  40467869545 | 5970dfb (fix R17)     | completed/success | 25/25
+  40472633327 | 2054e8d (HEAD doc.)  | completed/success | 25/25
+  40474701480 | 2f7b155 (HEAD R18)    | completed/success | 25/25
+  (la de esta ronda: se lanza al publicar)
+SUITE:   r14 vigente para el producto (6334/13/0, 6347 collectados)
+PUERTAS: 26/26 (r14, vigente)
+E2E:     27/27 (r14, vigente)
+WHEEL:   8cda5ef45626dd244199528eb3f8b5403788f6f1e4b3e2e75ac98f5f737f3cfd
+SDIST:   1c65f132434809c22cb5794a4896a4717c542b3dbbf00b15a7c590348fdb7656
+
+ESTADO DEL REGISTRO DE AUTORIDADES: PROPUESTA, SIN VIGOR. Con el estado
+        actual, `verificador_desde_registro()` devuelve None y el veredicto
+        compuesto es BLOCKED: un registro propuesto nunca acredita un PASS.
+        Lo que falta para que entre en vigor es un ACTO DEL PROPIETARIO con
+        `ACCION: RATIFICAR`, `ESTADO: RATIFICADO`, `OBJETO:
+        autoridades-de-decision-v1`, `VERSION: 1`, `FECHA`, firmado por la
+        identidad declarada, alcanzable desde el canal declarado.
+FUENTE Y CANAL PROPUESTOS: registro `audits/fase2/autoridades-de-decision.yaml`
+        (fuente: git + registro), autoridad `propietario-datos` con canal
+        `refs/(remotes/origin|heads)/proposal/dec-02b-dec-03c-dec-04pending-20261026`
+        (la rama consultiva ya usada por el propietario, commit cc05eab);
+        `qa-arquitectonico` SIN canales (dictaminar no es ratificar). El
+        ejecutor no puede ampliar el canal de una autoridad por su cuenta.
+LIMITACIONES DE IDENTIDAD COMPARTIDA: ejecutor y propietario comparten
+        identidad git y permisos de push: el canal es un control
+        ADMINISTRATIVO, no criptografico. El verificador acredita que existe
+        un acto verificable en la fuente declarada; que emane del propietario
+        depende de la integridad del canal — de ahi que DEC-04 exija designar
+        custodio y decidir sobre custodia y permisos del canal.
+
+ESTADO DE LOS QG: QG-00 BLOCKED (DEC-02) · QG-01 BLOCKED (DEC-02) ·
+        QG-02 BLOCKED (DEC-03 + DEC-04) · QG-03 PASS · QG-04 PASS ·
+        QG-05 PASS · QG-06 PASS · QG-07 BLOCKED por prerrequisitos (no por
+        una CI fallida). La politica de produccion NO se ha tocado:
+        `catalogo-qg.yaml` y `politica_qg.py` intactos.
+
+DEC-01: EN ESPERA (Constitucion DRAFT; sin cambio unilateral)
+DEC-02: PROPUESTA — B con I2-a + COST-a, latencia <= 5 s/audit, compat una
+        version, invariantes I1-I5, criterio 5->3 cruces y 10->0
+        divergencias sin tocar snapshot ni baseline, rollback por commit.
+        NO implementada (requiere DEC-02 expresa).
+DEC-03: PROPUESTA — C compuesta, sujeta al verificador de autoridad
+        corregido (AUTH-01..04 cerrados), a un canal RATIFICADO y a la
+        separacion real de decisiones. NO aplicada a produccion.
+DEC-04: PENDING — designacion de custodio y opcion de archivo no destructivo;
+        traslado y purga son decisiones POSTERIORES e independientes. Los 66
+        ficheros siguen intactos (854.108 B, inmutables 3/3 hashes) y NO se
+        archivan, trasladan ni purgan.
+DEC-05: EN ESPERA (historia publicada; sin cambio unilateral)
+DEC-06: SOLO tras todos los QG efectivos y dictamen QA favorable
+
+EVIDENCIAS Y ENLACES: `audits/fase2/verificador_actos.py` (verificador) ·
+        `audits/fase2/autoridades-de-decision.yaml` (registro, PROPUESTA) ·
+        `audits/fase2/politica_certificacion_compuesta.py` (contrato) ·
+        `tests/test_verificador_actos.py` (25) y
+        `tests/test_politica_certificacion_compuesta.py` (32) ·
+        `audits/fase2/QG-02-ESCENARIOS-Y-VAULT-BACKUPS.md` §6 (contratos) ·
+        `audits/handoff/DECISIONES-PROPIETARIO.md` (fichas) ·
+        JUnit r14 (fa321a02…), wheel 8cda5efa…, sdist 1c65f132… ·
+        hashes de vault-backups en el apendice A del dosier.
+
+SOLICITUD QA: dictamen sobre el nuevo HEAD (propuesta con AUTH-01..04
+        cerrados y 57 pruebas de la propuesta). El producto 015b776 y sus
+        recibos siguen vigentes: no se ha tocado codigo de producto.
+
+LIBERABLE: false — RELEASE_BLOCKED
+```
+
+---
+
 # Respuesta del ejecutor a QA — R18 (autoridad de los actos separada del esquema, manifiesto reconciliado y expedientes listos para firma)
 
 - **Emisor:** agente local (ejecutor técnico)

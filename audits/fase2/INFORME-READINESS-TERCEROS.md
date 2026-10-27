@@ -147,6 +147,13 @@ validar los guards y la suite ampliada, no para recertificar el artefacto.
 de macOS verdes incluidas, y el arreglo de R13-05 verificado en la matriz
 completa.
 
+**R19 — la ratificación ya no es una autoafirmación:** la propuesta de
+certificación compuesta (DEC-03) separa esquema, existencia del acto,
+identidad de autoridad, estado efectivo y custodia; el registro de
+autoridades queda en **PROPUESTA** y, por tanto, no acredita nada (el
+veredicto compuesto es BLOCKED). Contratos y límites:
+`audits/fase2/QG-02-ESCENARIOS-Y-VAULT-BACKUPS.md` §6.
+
 ### 3.2 Los defectos reales que la CI destapó — D1..D10 (R12) y R13-01..05 (R13)
 
 | # | Síntoma | Causa comprobada | Corrección | Cómo se comprobó |
@@ -394,7 +401,7 @@ OWNER_AUTHORIZED ≠ PUBLISHED**.
 |---|---|---|---|---|---|---|---|---|
 | REL-00 | Identidad y alcance | Constitución, QG-00 | `015b776` | manifiesto validable (8/8 tests con negativos; QA-R14-DOC-01 corregido: el contrato es **ascendencia**, no paternidad inmediata) | QG-00 parcial: identidad OK, reconciliación BLOCKED | pendiente de re-visión | Ejecutor | — |
 | REL-01 | Arquitectura | QG-01 | `015b776` | reconciliador **exit 1** (10 divergencias sin firma; expediente `divergencias-aceptadas.yaml` inerte hasta firma); guard verde (baseline 5/5 intacta) | QG-01 **BLOCKED** | BLOCKED, requiere DEC-02 | Arquitectura / propietario | **DEC-02**: firmar las 10 u ordenar re-take del snapshot; luego enmiendas I2/coste (plan B §11-§12) |
-| REL-02 | Gobernanza | QG-02 | `015b776` | 1 violación AP-36 externa (inmutable, 3/3 hashes); controles `ejecutado` 0 hallazgos; runtime limpio 0; contrato C propuesto con **44 tests fail-closed** (esquema + coherencia de evidencia + **verificación de autoridad y custodia** contra fuente declarada) | QG-02 **BLOCKED** | BLOCKED, requiere DEC-03/04 | Gobernanza / propietario | **DEC-03** (ratificar C + el registro/canal de autoridades) y **DEC-04** (custodia del residuo) |
+| REL-02 | Gobernanza | QG-02 | `015b776` | 1 violación AP-36 externa (inmutable, 3/3 hashes); controles `ejecutado` 0 hallazgos; runtime limpio 0; contrato C propuesto con **57 pruebas fail-closed** (esquema + coherencia + **autoridad**: registro ratificado, contrato de acta, identidad única y custodia con contrato propio) | QG-02 **BLOCKED** | BLOCKED, requiere DEC-03/04 | Gobernanza / propietario | **DEC-03** (ratificar C + el registro/canal de autoridades) y **DEC-04** (custodio y custodia del residuo) |
 | REL-03 | Integridad | QG-03 | `015b776` | JUnit r14: 6334/13/0 (6347); E2E 27/27; el HEAD corregido exige corrida propia (guards) | QG-03 **PASS** (recibo) | aceptado como reportado | Ejecutor | — |
 | REL-04 | Seguridad | QG-04 | `015b776` | saneamiento 0; pip-audit limpio; contención PASS; destructivas PASS — TD-0008 resuelto y verificado en wheel | QG-04 **PASS** (recibo) | aceptado; cierre TD-0008 pendiente de dictamen explícito | Seguridad | dictamen sobre el cierre TD-0008 |
 | REL-05 | Paridad | QG-05 | `015b776` | paridad PASS; AP-40 exit 0 | QG-05 **PASS** (recibo) | aceptado (5 escenarios, no 97 tools) | Ejecutor | — |

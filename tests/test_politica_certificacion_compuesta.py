@@ -75,9 +75,16 @@ class _VerificadorSintetico:
     sobre la realidad: por eso los tests que lo usan lo dicen.
     """
 
-    def __init__(self, ok_acto=True, ok_custodia=True):
+    def __init__(self, ok_acto=True, ok_custodia=True, en_vigor=True):
         self.ok_acto = ok_acto
         self.ok_custodia = ok_custodia
+        self._en_vigor = en_vigor
+
+    def en_vigor(self):
+        return self._en_vigor
+
+    def motivos_vigor(self):
+        return [] if self._en_vigor else ["REGISTRO_NO_EN_VIGOR (sintetico)"]
 
     def verificar_acto(self, decision, hallazgo):
         return (self.ok_acto, [] if self.ok_acto else ["ACTO_NO_VERIFICADO"])
@@ -367,6 +374,33 @@ def test_un_verificador_que_rechaza_el_acto_bloquea():
                  verificador=_VerificadorSintetico(ok_acto=False))
     assert r["estado"] == "BLOCKED"
     assert any("ACTO_NO_VERIFICADO" in m for m in r["motivos"])
+
+
+def test_un_verificador_sin_comprobacion_de_vigencia_bloquea():
+    """Fail-closed: sin poder comprobar la vigencia del registro, no hay
+    acreditacion (AUTH-01)."""
+
+    class _SinVigor:
+        def verificar_acto(self, decision, hallazgo):
+            return (True, [])
+
+        def verificar_custodia(self, decision, hallazgo):
+            return (True, [])
+
+    r = _evaluar(sandbox=_sandbox_con_residuo(),
+                 residuos=[_registro(decision=_decision())],
+                 verificador=_SinVigor())
+    assert r["estado"] == "BLOCKED"
+    assert any("VERIFICADOR_SIN_VERIFICACION_DE_VIGENCIA" in m
+               for m in r["motivos"])
+
+
+def test_un_registro_que_no_esta_en_vigor_bloquea():
+    r = _evaluar(sandbox=_sandbox_con_residuo(),
+                 residuos=[_registro(decision=_decision())],
+                 verificador=_VerificadorSintetico(en_vigor=False))
+    assert r["estado"] == "BLOCKED"
+    assert any("REGISTRO_NO_EN_VIGOR" in m for m in r["motivos"])
 
 
 def test_un_verificador_que_rechaza_la_custodia_bloquea():

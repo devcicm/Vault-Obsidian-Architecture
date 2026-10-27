@@ -208,3 +208,36 @@ Punto clave que la propuesta fija: **un nuevo escape de contención nunca
 obtiene PASS** (clase grave, FAIL), y un residuo histórico solo transita a
 PASS-declarado con decisión firmada — y aun así queda listado por nombre en
 el veredicto y en el manifiesto de release.
+
+## 6. Endurecimiento de la autoridad (R19, QA-R18-AUTH-01..04)
+
+La versión de R17 verificaba el ESQUEMA y dejaba la ratificación como una
+autoafirmación. R19 separa las cuatro capas que el dictamen exigía:
+
+| Capa | Qué exige | Dónde vive |
+|---|---|---|
+| **Esquema** | forma de la decisión: id, estado, firmante/autoridad, fecha, referencia, alcance, custodia | `politica_certificacion_compuesta._motivos_decision` |
+| **Existencia y contenido del acto** | el acto existe como commit, es alcanzable desde el canal declarado y su contenido cumple un **contrato de acta** (tipo, acción expresa, estado, decisión, autoridad, alcance, residuo, norma, ruta, huella, fecha, canal) | `verificador_actos.VerificadorActosGit.verificar_acto` |
+| **Identidad y autorización** | un identificador **único** de autoridad (`autoridad` canónico, `firmante` alias; si ambos, tienen que resolver a la misma) registrada en el registro; la identidad declarada tiene que coincidir con la del commit | `_resuelve_autoridad` + `_identidad_coincide` |
+| **Estado efectivo de ratificación** | el registro tiene que estar **EN VIGOR**: `estado: RATIFICADO` y un acto de ratificación propio, existente, alcanzable, con intención expresa y con la identidad del ratificador. `PROPUESTA`/`DRAFT`/`PENDING`/desconocidos se rechazan | `registro_en_vigor` + `VerificadorActosGit._evaluar_vigor` |
+| **Custodia** | segundo acto con contrato propio: custodio admitido, autoridad, id, residuo, norma, ruta, huella, operaciones autorizadas, vigencia temporal, canal y commit. Una custodia **no** autoriza archivar, trasladar ni purgar | `verificar_custodia` |
+
+**Distinción de estados de un acto:** `PROPUESTO`, `CONSULTADO`,
+`RATIFICADO`, `RECHAZADO`, `REVOCADO` — un documento consultivo que mencione
+todos los datos pero no declare `ACCION: RATIFICAR` + `ESTADO: RATIFICADO`
+devuelve **BLOCKED**.
+
+**Estado del registro en el repo:** `autoridades-de-decision.yaml` está en
+**PROPUESTA** (con la plantilla de lo que el propietario tiene que ratificar:
+`estado: RATIFICADO`, `ratificacion.{acto,canal,fecha,ratificado_por}` y los
+`custodios` que designe). Con el registro en PROPUESTA, `verificador_desde_registro()`
+devuelve `None` y el veredicto es **BLOCKED**: la mera presencia de
+autoridades no pone nada en vigor.
+
+**Límite declarado (no se vende más de lo que es):** ejecutor y propietario
+comparten identidad git y permisos de push en este repositorio, así que el
+canal es un control **administrativo**, no criptográfico. El verificador
+acredita que existe un acto verificable en la fuente declarada; que ese acto
+emane del propietario depende de la integridad del canal — y de una decisión
+explícita del propietario sobre **custodia y permisos del canal** (DEC-03 /
+DEC-04), que queda como pendiente declarada.

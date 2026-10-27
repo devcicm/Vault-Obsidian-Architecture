@@ -1,32 +1,64 @@
 # Registro de autoridades para la certificacion compuesta (DEC-03)
 #
-# ESTADO: PROPUESTA — DEC-03 PENDIENTE. Este registro NO esta en vigor: no
-# se usa para certificar nada mientras el propietario no lo ratifique. El
-# dictamen QA R17 (8be11d3, QA-R17-QG02-01) exige que una decision de
-# residuo se resuelva contra una FUENTE CONFIABLE declarada por el
-# propietario, con identidad y procedencia — y no contra el propio recibo.
+# ESTADO: PROPUESTA — DEC-03 PENDIENTE. Este registro NO esta en vigor: el
+# verificador (`audits/fase2/verificador_actos.py`) RECHAZA cualquier
+# registro que no declare `estado: RATIFICADO` con un acto de ratificacion
+# propio, existente, alcanzable por el canal declarado, con intencion expresa
+# y con la identidad del ratificador (QA-R18-AUTH-01). La mera presencia de
+# autoridades NO pone nada en vigor.
 #
 # QUE DECLARA CADA AUTORIDAD
+#   id:           identificador CANONICO (el campo `autoridad` de una decision;
+#                `firmante` es un alias y ambos tienen que resolver aqui).
+#   alias:        otros nombres aceptados para la misma autoridad.
 #   canales:      refs donde publica sus actos. Un acto que no es alcanzable
 #                 desde un canal declarado NO es de esa autoridad.
 #   identidad_git: correo del autor de los actos (opcional). Acota el error,
 #                 pero NO autoriza por si solo (ver aviso final).
 #
-# AVISO HONESTO (limit del control): en este repositorio el ejecutor y el
+# CUSTODIOS ADMITIDOS (AUTH-04): ids que pueden firmar un ACTA DE CUSTODIA.
+# Un custodio que no este aqui no puede custodiar el residuo. Y una custodia
+# NO autoriza archivar, trasladar ni purgar: esas operaciones exigen actos
+# independientes (DEC-04).
+#
+# AVISO HONESTO (limite del control): en este repositorio el ejecutor y el
 # propietario comparten identidad git y permisos de push, de modo que el CANAL
 # declarado es un control ADMINISTRATIVO (lo declara y lo vigila el
 # propietario), no criptografico. El verificador acredita que existe un acto
 # verificable en la fuente declarada; que ese acto emane del propietario
-# depende de la integridad del canal, que es decision del propietario
-# (DEC-03). Si el propietario no declara una fuente, el veredicto es BLOCKED.
+# depende de la integridad del canal — y de una decision del propietario sobre
+# custodia y permisos del canal (DEC-03/DEC-04).
+#
+# QUE FALTA PARA QUE ESTE REGISTRO ENTRE EN VIGOR (acto del propietario):
+#   1. Poner `estado: RATIFICADO` y rellenar `ratificacion`.
+#   2. Que el ACTO de ratificacion exista como commit, sea alcanzable desde
+#      `ratificacion.canal` y contenga, con intencion expresa:
+#          ACTO: RATIFICACION
+#          ACCION: RATIFICAR
+#          ESTADO: RATIFICADO
+#          OBJETO: <id de este registro>
+#          VERSION: <version de este registro>
+#          FECHA: YYYY-MM-DD
+#      y lo firme la identidad declarada en `ratificacion.ratificado_por`.
+#   3. Anadir al registro el `custodios` que el propietario designe (DEC-04).
 schema: 1
-estado: PROPUESTA (DEC-03 pendiente; sin vigor)
+id: autoridades-de-decision-v1
+version: "1"
+estado: PROPUESTA
 fuente: "audits/fase2/verificador_actos.py + git"
+ratificacion:
+  acto: ""
+  canal: ""
+  fecha: ""
+  ratificado_por: ""
+  nota: "plantilla: la ratificacion la firma el PROPIETARIO con un commit propio"
+custodios: []
 autoridades:
 - id: "propietario-datos"
   descripcion: >-
     Propietario de los datos externos (el residuo vault-backups). Es quien
     puede ratificar su custodia, su archivo y su eventual purga (DEC-04).
+  alias: []
   canales:
   - "refs/remotes/origin/proposal/dec-02b-dec-03c-dec-04pending-20261026"
   - "refs/heads/proposal/dec-02b-dec-03c-dec-04pending-20261026"
@@ -42,6 +74,7 @@ autoridades:
     QA independiente: emite dictámenes, pero NO ratifica decisiones del
     propietario (DEC-01..06). Se declara para dejar constancia explicita de
     que un dictamen no es una ratificacion.
+  alias: []
   canales: []
   identidad_git: {}
   nota: "Sin canales: esta autoridad no ratifica; dictaminar no es decidir."
