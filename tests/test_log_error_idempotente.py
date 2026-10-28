@@ -10,7 +10,6 @@ toca nota nueva: eso es un suceso distinto, no una repetición.
 """
 
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -24,11 +23,22 @@ from vault.autoria.log_error import (  # noqa: E402
     texto_estable_de_error,
 )
 
-#: La nota de error lleva la FECHA del día en su nombre: el nombre sale del
-#: reloj, no de un día fijado en el test — un test con la fecha escrita pasa
-#: hasta que llega el día siguiente (O8: lo detectó la suite al rodar al día
-#: siguiente).
-HOY = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+def nota_de_error(vault, titulo="NullPointerException"):
+    """La nota que la tool acaba de escribir, por patron y no por fecha fija.
+
+    El nombre lleva la fecha del dia EN QUE SE ESCRIBE. Fijarla al importar el
+    modulo hacia que una corrida que cruza las 00:00 UTC buscara el fichero con
+    la fecha de ayer (rojo en la CI de cc8c770, ubuntu y windows). El sujeto del
+    test no es el nombre: es que la nota exista y que re-loggear el mismo suceso
+    no la reescriba.
+    """
+    candidatas = sorted((vault / "02_Observability" / "errors").glob(
+        f"*-{titulo.lower()}.md"))
+    assert candidatas, (
+        f"no se creo ninguna nota para {titulo!r} en "
+        f"{vault / '02_Observability' / 'errors'}")
+    assert len(candidatas) == 1, f"notas inesperadas: {candidatas}"
+    return candidatas[0]
 
 
 @pytest.fixture()
@@ -62,8 +72,8 @@ def loguea(vault, **cambios):
 
 def test_re_loggear_el_mismo_error_no_reescribe_la_nota(vault):
     primero = loguea(vault)
-    nota = vault / "02_Observability" / "errors" / (
-        f"{HOY}-nullpointerexception.md")
+    assert primero["ok"] is True, primero
+    nota = nota_de_error(vault)
     assert nota.exists()
     contenido = nota.read_bytes()
 
@@ -74,14 +84,16 @@ def test_re_loggear_el_mismo_error_no_reescribe_la_nota(vault):
     # anotado para el auditor; aquí manda el criterio del consumidor: bytes.)
     assert nota.read_bytes() == contenido
     assert segundo["unchanged"] >= 1
-    assert segundo["path"].replace("\\", "/") == (
-        f"02_Observability/errors/{HOY}-nullpointerexception.md")
+    # La ruta publicada se comprueba por FORMA (carpeta y sufijo), no por
+    # fecha: el nombre la toma del reloj al escribir.
+    ruta = segundo["path"].replace("\\", "/")
+    assert ruta.startswith("02_Observability/errors/"), ruta
+    assert ruta.endswith("-nullpointerexception.md"), ruta
 
 
 def test_un_suceso_distinto_si_reescribe(vault):
     loguea(vault)
-    nota = vault / "02_Observability" / "errors" / (
-        f"{HOY}-nullpointerexception.md")
+    nota = nota_de_error(vault)
     antes = nota.read_text(encoding="utf-8")
 
     loguea(vault, description="Fallo distinto: timeout en la pasarela")
