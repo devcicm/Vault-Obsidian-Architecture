@@ -31,6 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import vault_baseline
 import vault_grafo_import
+from vault.kernel import rutas
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPTS_DIR.parent
@@ -51,7 +52,7 @@ ARBOLES_MEDIDOS: tuple[tuple[str, str], ...] = (
     ("scripts", "vault_*.py"),
     ("vault", "**/*.py"),
     ("cli", "*.py"),
-    ("mcp/python", "**/*.py"),
+    (f"{rutas.MCP}/python", "**/*.py"),
 )
 
 

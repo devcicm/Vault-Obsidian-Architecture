@@ -71,6 +71,9 @@ from vault_lib import (  # dueños únicos de sus criterios (AP-57)
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.kernel import rutas
 from vault_errors import emit_error, wrap_main
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -459,7 +462,7 @@ material que el estandar genera no contrasta nada.
         # vencer. El recibo es lo que `vault_release` mira para decidir si la
         # evidencia de consumidor está vigente (regla 7, v41.20).
         destino_recibo = (Path(__file__).resolve().parent.parent
-                          / "docs" / "contrastes" / "ultimo-contraste.json")
+                          / rutas.DOCS / "contrastes" / "ultimo-contraste.json")
         destino_recibo.parent.mkdir(parents=True, exist_ok=True)
         recibo = {
             "ok": True,

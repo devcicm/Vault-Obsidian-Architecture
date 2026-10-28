@@ -62,6 +62,11 @@ from typing import Any, Dict, List
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.kernel import rutas
+from vault.kernel.rutas import cita_repo
+
 from vault_errors import emit_error, wrap_main
 
 
@@ -453,10 +458,10 @@ def check(strict: bool = False) -> Dict[str, Any]:
     destino_doc.with_suffix(".regenerado.md").unlink(missing_ok=True)
     doc_drift = None
     if not destino_doc.is_file():
-        doc_drift = "docs/GOBIERNO.md no existe: regenera con --doc"
+        doc_drift = f"{cita_repo(rutas.DOCS, 'GOBIERNO.md')} no existe: regenera con --doc"
     elif destino_doc.read_text(encoding="utf-8") != regenerado:
         doc_drift = (
-            "docs/GOBIERNO.md difiere de lo que los registros producirían: "
+            f"{cita_repo(rutas.DOCS, 'GOBIERNO.md')} difiere de lo que los registros producirían: "
             "regenera con --doc. Lo escrito a mano se pierde — el registro es "
             "la fuente")
 

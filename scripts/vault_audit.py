@@ -98,6 +98,8 @@ PLACEHOLDER_PATTERNS = [
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from vault.kernel import rutas
+
 
 from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
 # AP-57: el nombre de índice lo decide su dueño; sin copia de respaldo, que
@@ -1255,7 +1257,7 @@ def _detect_malformed_wikilinks(notes: List[Path]) -> List[Dict[str, Any]]:
             or rel.startswith("scripts/")
             or ".bak" in rel
             or ".vault-fix-backup-" in rel
-            or "vault-sandbox" in rel
+            or rutas.SANDBOX in rel
         ):
             continue
 
@@ -1562,7 +1564,7 @@ def _detect_empty_indexes(
 
             # Skip backup directories created by vault_init --clean or
             # manual copies. These shouldn't be treated as vault sections.
-            if name.endswith(".bak") or ".bak-" in name or name == "vault-sandbox":
+            if name.endswith(".bak") or ".bak-" in name or name == rutas.SANDBOX:
                 continue
 
             # Secciones dirigidas por eventos: se pueblan cuando ocurre el

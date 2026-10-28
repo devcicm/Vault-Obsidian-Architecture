@@ -27,6 +27,7 @@ from pathlib import Path
 from vault_errors import wrap_main
 from vault_io import resolve_tool_spec, tool_spec_path
 import vault_grafo_import
+from vault.kernel import rutas
 
 # El catálogo se lee y se escribe donde vive su código, que tras la deuda #12
 # puede no ser `scripts/` (AP-44).
@@ -188,7 +189,7 @@ def main() -> int:
         return 0
 
     if args.write:
-        out_path = Path("scripts/vault_mcp_catalog.py")
+        out_path = rutas.ruta_repo(rutas.SCRIPTS) / "vault_mcp_catalog.py"
         out_path.write_text(rendered, encoding="utf-8")
         print(f"Wrote {len(rendered)} chars to {out_path}")
         return 0

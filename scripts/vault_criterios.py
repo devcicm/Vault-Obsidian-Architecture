@@ -57,7 +57,10 @@ from typing import Any, Dict, List
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import vault_baseline
+from vault.kernel import rutas
 import vault_grafo_import
 from vault_errors import emit_error, wrap_main
 
@@ -179,7 +182,7 @@ FUNCIONES_CON_DUENO: List[Dict[str, Any]] = [
 ]
 
 #: Dónde se buscan definiciones: el código que viaja o que se ejecuta.
-_ZONAS_DE_DEFINICION = ("scripts", "vault", "vault_toolkit", "cli")
+_ZONAS_DE_DEFINICION = (rutas.SCRIPTS, "vault", "vault_toolkit", rutas.CLI)
 
 
 # ── Fronteras de lenguaje (v40.19) ───────────────────────────────────────────
@@ -211,7 +214,7 @@ FRONTERAS: List[Dict[str, Any]] = [
         "frontera": "python->nodejs",
         "lenguaje": "javascript",
         "zona_dueña": "meta_toolkit",
-        "zona_ajena": ("mcp/nodejs", "*.mjs"),
+        "zona_ajena": (f"{rutas.MCP}/nodejs", "*.mjs"),
         "norma": "AP-57",
         "criterios": [
             {
@@ -380,8 +383,8 @@ def _yaml_de_datos(ruta: Path) -> bool:
 #: Se listan una a una y con motivo: una exclusión por patrón se traga lo que
 #: venga después.
 FUERA_DE_FRONTERA = {
-    "vault-sandbox": "vault de pruebas: contenido generado, no código del toolkit",
-    "docs/sdd": "artefactos SDD derivados",
+    rutas.SANDBOX: "vault de pruebas: contenido generado, no código del toolkit",
+    f"{rutas.DOCS}/sdd": "artefactos SDD derivados",
     # Excluidos de git por sensibles y ajenos al estándar. Sin esta entrada, el
     # plugin de un vault de terceros que vive ahí dentro entraba como
     # `frontera_no_declarada`: un hallazgo verdadero sobre código que este repo

@@ -27,6 +27,7 @@ import vault_grafo_import
 from vault_version import CURRENT_VERSION
 from vault_registry import runtime_seed_projection
 from vault.kernel import rutas
+from vault.kernel.rutas import cita_repo
 
 #: Raíz del repo — el guard de `js_native_tools` cruza a `mcp/nodejs/`.
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -2190,7 +2191,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             },
         },
         "guards": ["AP-42"],
-        "side_effects": ["scripts/smoke-baseline.json"],
+        "side_effects": [cita_repo(rutas.SCRIPTS, "smoke-baseline.json")],
         "example": ("python vault_smoke.py --tool vault_write\n"
                     "python vault_smoke.py --tool vault_search"),
         "related": ["vault_mcp_catalog", "vault_noop_audit"],
@@ -2261,8 +2262,8 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": ["AP-42", "AP-37", "AP-47"],
         "side_effects": [
-            "scripts/toolkit-audit-baseline.json",
-            "scripts/toolkit-audit-last.json",
+            cita_repo(rutas.SCRIPTS, "toolkit-audit-baseline.json"),
+            cita_repo(rutas.SCRIPTS, "toolkit-audit-last.json"),
         ],
         "example": "python vault_toolkit_audit.py --tools vault_voice",
         "related": ["vault_smoke", "vault_noop_audit", "vault_mcp_catalog", "vault_baseline"],
@@ -2635,7 +2636,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "se imprimen, y lo declara en vez de prometer una precision que no tiene",
             "Se excluye a si misma y a vault_errors*, cuyos literales SON el contrato",
         ],
-        "side_effects": ["scripts/error-contract-baseline.json (solo con --freeze)"],
+        "side_effects": [f'{cita_repo(rutas.SCRIPTS, "error-contract-baseline.json")} (solo con --freeze)'],
         "example": (
             "python vault_error_contract.py --check\n"
             "python vault_error_contract.py --check --strict\n"
@@ -2793,7 +2794,8 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "No reimplementa guards: delega en vault_arch, vault_mcp_catalog y "
             "vault_servicio para no ser una segunda fuente de verdad (AP-05)",
         ],
-        "side_effects": ["docs/BLUEPRINT.md", "scripts/blueprint-baseline.json"],
+        "side_effects": [cita_repo(rutas.DOCS, "BLUEPRINT.md"),
+                            cita_repo(rutas.SCRIPTS, "blueprint-baseline.json")],
         "example": (
             "python vault_blueprint.py --blueprint\n"
             "python vault_blueprint.py --check --strict\n"
@@ -2848,7 +2850,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "vault-backups porque restaurar de ahi es su trabajo — no es copia",
             "Baseline que solo encoge: una copia nueva se importa, no se congela",
         ],
-        "side_effects": ["scripts/criterios-baseline.json"],
+        "side_effects": [cita_repo(rutas.SCRIPTS, "criterios-baseline.json")],
         "example": (
             "python vault_criterios.py --check\n"
             "python vault_criterios.py --check --strict\n"
@@ -2906,7 +2908,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "congela, y subir el import tampoco lo arregla — solo lo hace "
             "visible al arrancar",
         ],
-        "side_effects": ["scripts/ciclos-baseline.json"],
+        "side_effects": [cita_repo(rutas.SCRIPTS, "ciclos-baseline.json")],
         "example": (
             "python vault_ciclos.py --check\n"
             "python vault_ciclos.py --check --strict\n"
@@ -3033,7 +3035,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "publica sin congelarse, porque no lo es mientras los dos modulos "
             "compartan contexto",
         ],
-        "side_effects": ["scripts/recursos-baseline.json"],
+        "side_effects": [cita_repo(rutas.SCRIPTS, "recursos-baseline.json")],
         "example": (
             "python vault_recursos.py --check\n"
             "python vault_recursos.py --ranking\n"
@@ -3087,7 +3089,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "Un esquema en schemas/ sin version en el contrato no se borra: se "
             "informa en unknown",
         ],
-        "side_effects": ["schemas/"],
+        "side_effects": [f"{rutas.SCHEMAS}/"],
         "example": (
             "python vault_esquema.py --check --strict\n"
             "python vault_esquema.py --sync"
@@ -3139,7 +3141,8 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "Lo vencido y lo desactualizado se publica en alertas sin poner la "
             "puerta en rojo",
         ],
-        "side_effects": ["scripts/metricas-observaciones.json", "docs/METRICAS.md"],
+        "side_effects": [cita_repo(rutas.SCRIPTS, "metricas-observaciones.json"),
+                            cita_repo(rutas.DOCS, "METRICAS.md")],
         "example": (
             "python vault_metricas.py --check --strict\n"
             "python vault_metricas.py --doc"
@@ -3251,7 +3254,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "Una promesa `descubierta` con motivo escrito no rompe la puerta: "
             "declarar un hueco no puede salir mas caro que callarlo",
         ],
-        "side_effects": ["docs/GUIA-DE-PRODUCCION.md"],
+        "side_effects": [cita_repo(rutas.DOCS, "GUIA-DE-PRODUCCION.md")],
         "example": (
             "python vault_produccion.py --check\n"
             "python vault_produccion.py --check --strict\n"
@@ -3308,7 +3311,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "Baseline que solo encoge, y nace vacia: los doce sitios que habia "
             "se corrigieron en v40.23 en vez de congelarse",
         ],
-        "side_effects": ["scripts/excepcion-declarada-baseline.json"],
+        "side_effects": [cita_repo(rutas.SCRIPTS, "excepcion-declarada-baseline.json")],
         "example": (
             "python vault_excepcion_declarada.py --check\n"
             "python vault_excepcion_declarada.py --check --strict\n"
@@ -3379,7 +3382,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "kernel se publican como informativos y no bloquean, porque el "
             "mecanismo que los cerraria todavia no existe",
         ],
-        "side_effects": ["scripts/kernel-baseline.json"],
+        "side_effects": [cita_repo(rutas.SCRIPTS, "kernel-baseline.json")],
         "example": (
             "python vault_kernel.py --check\n"
             "python vault_kernel.py --check --strict\n"
@@ -3447,7 +3450,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "codigo preguntando a sus duenos canonicos (AP-57)",
             "Baseline que solo encoge: un conflicto nuevo se resuelve con PAT-1",
         ],
-        "side_effects": ["scripts/fuente-unica-baseline.json"],
+        "side_effects": [cita_repo(rutas.SCRIPTS, "fuente-unica-baseline.json")],
         "example": (
             "python vault_fuente_unica.py --check\n"
             "python vault_fuente_unica.py --report\n"
@@ -3504,7 +3507,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "Los pesos se leen de vault_audit.PENALIZACIONES, no se copian: "
             "el peso lo declara quien lo aplica",
         ],
-        "side_effects": ["scripts/norms-coherence-baseline.json"],
+        "side_effects": [cita_repo(rutas.SCRIPTS, "norms-coherence-baseline.json")],
         "example": (
             "python vault_norms_coherence.py --check\n"
             "python vault_norms_coherence.py --check --strict\n"
@@ -5105,7 +5108,7 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
     default_output = output_path is None
     if output_path is None:
         output_path = os.path.join(
-            os.path.dirname(__file__), "..", "mcp", "nodejs", "tools-catalog.json"
+            os.path.dirname(__file__), "..", rutas.MCP, "nodejs", "tools-catalog.json"
         )
 
     # Leer tool-spec.json del vault para obtener status de cada tool.
@@ -5241,7 +5244,7 @@ def _js_native_del_servidor():
     distinto. Devuelve None si no se encuentra — que el fichero no esté no es
     lo mismo que que esté vacío (AP-51).
     """
-    ruta = REPO_ROOT / "mcp" / "nodejs" / "vault-mcp-server.mjs"
+    ruta = REPO_ROOT / rutas.MCP / "nodejs" / "vault-mcp-server.mjs"
     try:
         texto = ruta.read_text(encoding="utf-8")
     except OSError:
@@ -5261,7 +5264,7 @@ def check_sync(json_path: Optional[str] = None) -> Dict[str, Any]:
     default_json = json_path is None
     if json_path is None:
         json_path = os.path.join(
-            os.path.dirname(__file__), "..", "mcp", "nodejs", "tools-catalog.json"
+            os.path.dirname(__file__), "..", rutas.MCP, "nodejs", "tools-catalog.json"
         )
 
     result = {"ok": True, "diffs": [], "missing_in_json": [], "missing_in_py": []}
@@ -5650,7 +5653,7 @@ def check_params(json_path: Optional[str] = None) -> Dict[str, Any]:
     en las dos copias a la vez.
     """
     ruta = Path(json_path) if json_path else (
-        Path(__file__).resolve().parent.parent / "mcp" / "nodejs" / "tools-catalog.json"
+        rutas.ruta_repo(rutas.MCP) / "nodejs" / "tools-catalog.json"
     )
     result: Dict[str, Any] = {
         "ok": True, "tool": "vault_mcp_catalog", "action": "check-params",

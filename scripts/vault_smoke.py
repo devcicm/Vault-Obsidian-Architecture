@@ -50,6 +50,10 @@ import tempfile
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.kernel import rutas
+
 sys.path.insert(0, str(Path(__file__).parent))
 
 # La configuración se lee del registro único, no con un default por punto
@@ -63,7 +67,7 @@ from vault_mcp_catalog import TOOLS_CATALOG
 SCRIPTS_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPTS_DIR.parent
 BASELINE_PATH = SCRIPTS_DIR / "smoke-baseline.json"
-SANDBOX = REPO_ROOT / "vault-sandbox"
+SANDBOX = REPO_ROOT / rutas.SANDBOX
 SMOKE_TIMEOUT = _env("VAULT_SMOKE_TIMEOUT")
 
 

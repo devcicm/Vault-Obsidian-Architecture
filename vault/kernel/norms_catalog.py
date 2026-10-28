@@ -32,6 +32,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
 import vault_grafo_import
+from vault.kernel import rutas
 
 # ─── La norma como paquete (deuda #10, piloto AP-65) ──────────────────────────
 #
@@ -47,6 +48,11 @@ import vault_grafo_import
 # vivía en `scripts/`; desde `vault/kernel/` su abuelo es `vault/`.
 
 #: Carpeta de los paquetes de norma, hermana del directorio del programa.
+#: **No** se pide a `vault.kernel.rutas`: esa hoja describe el checkout y
+#: en la wheel el layout se reubica (`vault_toolkit/_impl` y
+#: `vault_toolkit/normas` son hermanos, no el repo y sus carpetas). Quien
+#: necesita la ruta de una carpeta del repo la pide a su dueño; quien
+#: necesita la carpeta que está junto al programa, la pide al programa.
 RAIZ_NORMAS = (vault_grafo_import.DIRECTORIO.parent / "normas").resolve()
 
 #: Códigos que el catálogo carga desde su paquete, en el orden en que los carga.
@@ -90,7 +96,7 @@ def forma_de_paquetes(raiz: Optional[Path] = None,
     """
     raiz = Path(raiz) if raiz else RAIZ_NORMAS
     cargadas = list(NORMAS_EN_PAQUETE if cargadas is None else cargadas)
-    if raiz_repo is None and raiz == RAIZ_NORMAS and (raiz.parent / "scripts").is_dir():
+    if raiz_repo is None and raiz == RAIZ_NORMAS and rutas.ruta_repo(rutas.SCRIPTS).is_dir():
         raiz_repo = raiz.parent
     problemas: List[Dict[str, str]] = []
 

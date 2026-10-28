@@ -79,6 +79,11 @@ from typing import Any, Callable, Dict, List
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.kernel import rutas
+from vault.kernel.rutas import cita_repo
+
 sys.path.insert(0, str(Path(__file__).parent))
 
 from vault_errors import emit_error, wrap_main
@@ -233,7 +238,7 @@ def _mcp_en_la_wheel() -> bool:
     están las tools instaladas. Que funcione de verdad lo ejerce la product
     gate de instalación limpia con una sesión stdio."""
     proj = (RAIZ / "pyproject.toml").read_text(encoding="utf-8")
-    servidor = RAIZ / "mcp" / "nodejs" / "vault-mcp-server.mjs"
+    servidor = RAIZ / rutas.MCP / "nodejs" / "vault-mcp-server.mjs"
     return (
         '"vault_toolkit.mcp" = "mcp/nodejs"' in proj
         and '"vault_toolkit.mcp" = ["vault-mcp-server.mjs"' in proj
@@ -253,11 +258,11 @@ def _wheel_sin_gobernanza() -> bool:
         return False
     try:
         lista = json.loads(
-            (RAIZ / "empaquetado" / "fuera-de-la-wheel.json").read_text(encoding="utf-8")
+            (RAIZ / rutas.EMPAQUETADO / "fuera-de-la-wheel.json").read_text(encoding="utf-8")
         )
     except (OSError, ValueError):
         return False
-    return bool(lista.get("modulos")) and _existe("empaquetado/construir.py")
+    return bool(lista.get("modulos")) and _existe(cita_repo(rutas.EMPAQUETADO, "construir.py"))
 
 
 def _vault_run_resuelve_el_producto() -> bool:
@@ -276,7 +281,7 @@ def _vault_run_resuelve_el_producto() -> bool:
         catalogo = json.loads(
             (RAIZ / "vault" / "meta_toolkit" / "tools-catalog.json").read_text(encoding="utf-8"))
         fuera = set(json.loads(
-            (RAIZ / "empaquetado" / "fuera-de-la-wheel.json").read_text(encoding="utf-8")
+            (RAIZ / rutas.EMPAQUETADO / "fuera-de-la-wheel.json").read_text(encoding="utf-8")
         )["modulos"])
     except (OSError, ValueError, KeyError):
         return False
@@ -326,7 +331,7 @@ def _sbom_en_la_ci() -> bool:
     comprueba que el generador mide en vez de suponer. Que el documento sea
     correcto lo dice tests/test_sbom.py; aquí, que alguien lo produzca."""
     ci = RAIZ / ".github" / "workflows" / "vault-ci.yml"
-    if not (ci.is_file() and _existe("empaquetado/sbom.py") and _existe("tests/test_sbom.py")):
+    if not (ci.is_file() and _existe(cita_repo(rutas.EMPAQUETADO, "sbom.py")) and _existe(cita_repo(rutas.TESTS, "test_sbom.py"))):
         return False
     texto = ci.read_text(encoding="utf-8")
     return ("python empaquetado/sbom.py --salida dist/sbom.spdx.json" in texto
@@ -351,9 +356,9 @@ def _politica_de_vulnerabilidades() -> bool:
 def _superficie_autenticada() -> bool:
     """Los dos servicios HTTP exigen token y sus tests contra el real existen."""
     # SP-04: sin estos ejecutores la promesa vuelve a ser un párrafo.
-    return (_existe("tests/test_mcp_http_seguridad.py")
-            and "tokenValido" in (RAIZ / "mcp" / "nodejs" / "vault-mcp-server.mjs").read_text(encoding="utf-8")
-            and _existe("tests/test_token_service_seguridad.py")
+    return (_existe(cita_repo(rutas.TESTS, "test_mcp_http_seguridad.py"))
+            and "tokenValido" in (RAIZ / rutas.MCP / "nodejs" / "vault-mcp-server.mjs").read_text(encoding="utf-8")
+            and _existe(cita_repo(rutas.TESTS, "test_token_service_seguridad.py"))
             and "_autorizado" in (RAIZ / "scripts" / "vault_token_service.py").read_text(encoding="utf-8"))
 
 
@@ -412,8 +417,8 @@ PREGUNTAS: List[Dict[str, Any]] = [
             "repo_root_fallback y las escrituras aterrizaban DENTRO del "
             "toolkit, y el servidor MCP inventariaba el disco del usuario."
         ),
-        "ejerce": lambda: _existe("README.md") and _existe("tests/test_portabilidad_v4030.py"),
-        "quien": "tests/test_portabilidad_v4030.py + README.md (instrucciones de instalación inlined)",
+        "ejerce": lambda: _existe("README.md") and _existe(cita_repo(rutas.TESTS, "test_portabilidad_v4030.py")),
+        "quien": f"{cita_repo(rutas.TESTS, 'test_portabilidad_v4030.py')} + README.md (instrucciones de instalación inlined)",
         "estado": "cubierta",
     },
     {
@@ -425,7 +430,7 @@ PREGUNTAS: List[Dict[str, Any]] = [
             "veces: vault-sandbox/ lo genera este repo y comparte sus "
             "supuestos, así que no puede exhibir el fallo que la medida tiene."
         ),
-        "ejerce": lambda: _existe("scripts/vault_foreign_check.py"),
+        "ejerce": lambda: _existe(cita_repo(rutas.SCRIPTS, "vault_foreign_check.py")),
         "quien": "vault_foreign_check --root <vault ajeno>, o --self-test sin uno a mano",
         "estado": "cubierta",
     },
@@ -478,8 +483,8 @@ PREGUNTAS: List[Dict[str, Any]] = [
         ),
         "ejerce": _superficie_autenticada,
         "quien": (
-            "tests/test_mcp_http_seguridad.py (servidor real por HTTP) + "
-            "tests/test_token_service_seguridad.py (servicio de tokens real) + README.md"
+            f"{cita_repo(rutas.TESTS, 'test_mcp_http_seguridad.py')} (servidor real por HTTP) + "
+            f"{cita_repo(rutas.TESTS, 'test_token_service_seguridad.py')} (servicio de tokens real) + README.md"
         ),
         "estado": "cubierta",
     },
@@ -561,8 +566,8 @@ PREGUNTAS: List[Dict[str, Any]] = [
             "después — la copia queda en el historial, en los forks y en la "
             "caché de quien lo indexó."
         ),
-        "ejerce": lambda: _existe("tests/test_publicacion_limpia.py"),
-        "quien": "tests/test_publicacion_limpia.py (mide el índice de git, no el disco)",
+        "ejerce": lambda: _existe(cita_repo(rutas.TESTS, "test_publicacion_limpia.py")),
+        "quien": f"{cita_repo(rutas.TESTS, 'test_publicacion_limpia.py')} (mide el índice de git, no el disco)",
         "estado": "cubierta",
         "hueco_conocido": (
             "Mide el índice de HOY. Lo que ya esté en un commit anterior del "
@@ -573,14 +578,14 @@ PREGUNTAS: List[Dict[str, Any]] = [
     {
         "id": "wheel_instalada_funciona",
         "pregunta": "¿Funciona la wheel instalada en un venv limpio fuera del repo?",
-        "promesa": "tests/run_product_gates.py ejecuta la wheel en venv aislado",
+        "promesa": f"{cita_repo(rutas.TESTS, 'run_product_gates.py')} ejecuta la wheel en venv aislado",
         "por_que": (
             "La wheel puede armarse mal y pasar los tests del repo (que usan el "
             "source) pero fallar en un venv limpio (que solo tiene lo instalado)."
         ),
         "ejerce": _wheel_probada_sin_la_fuente,
         "quien": (
-            "tests/run_product_gates.py (clean_install + memory_e2e) + job "
+            f"{cita_repo(rutas.TESTS, 'run_product_gates.py')} (clean_install + memory_e2e) + job "
             "'product-gates' en vault-ci.yml"
         ),
         "estado": "cubierta",
@@ -625,8 +630,8 @@ PREGUNTAS: List[Dict[str, Any]] = [
         ),
         "ejerce": _wheel_sin_gobernanza,
         "quien": (
-            "empaquetado/construir.py + vault_servicio --check (invariante 11) + "
-            "tests/clean_install_gate.py"
+            f"{cita_repo(rutas.EMPAQUETADO, 'construir.py')} + vault_servicio --check (invariante 11) + "
+            f"{cita_repo(rutas.TESTS, 'clean_install_gate.py')}"
         ),
         "estado": "cubierta",
     },
@@ -645,7 +650,8 @@ PREGUNTAS: List[Dict[str, Any]] = [
             "puertas: las puertas miran el repo, no al agente."
         ),
         "ejerce": _banco_de_agente,
-        "quien": "tests/banco_agente.py (sesión MCP con VAULT_MCP_PERFIL=agente) + tests/test_banco_agente.py",
+        "quien": f"{cita_repo(rutas.TESTS, 'banco_agente.py')} (sesión MCP con VAULT_MCP_PERFIL=agente) + "
+            f"{cita_repo(rutas.TESTS, 'test_banco_agente.py')}",
         "estado": "cubierta",
         "hueco_conocido": (
             "La suite ejerce las cinco tareas sobre un vault que crea el propio "
@@ -667,7 +673,8 @@ PREGUNTAS: List[Dict[str, Any]] = [
             "envejece en la dirección cómoda, como cualquier cifra (AP-47)."
         ),
         "ejerce": _sbom_en_la_ci,
-        "quien": "empaquetado/sbom.py en el job product-gates de la CI + tests/test_sbom.py",
+        "quien": f"{cita_repo(rutas.EMPAQUETADO, 'sbom.py')} en el job product-gates de la CI + "
+            f"{cita_repo(rutas.TESTS, 'test_sbom.py')}",
         "estado": "cubierta",
         "hueco_conocido": (
             "El SBOM se publica como artefacto de la CI, no viaja dentro de la "
@@ -791,7 +798,7 @@ def _contraste_ajeno_vigente() -> bool:
     """
     from datetime import date
 
-    recibo = RAIZ / "docs" / "contrastes" / "ultimo-contraste.json"
+    recibo = RAIZ / rutas.DOCS / "contrastes" / "ultimo-contraste.json"
     if not recibo.is_file():
         return False
     try:
@@ -933,7 +940,8 @@ AFIRMADAS: List[Dict[str, Any]] = [
             "informe era el README de una dependencia."
         ),
         "ejerce": _contraste_ajeno_vigente,
-        "quien": "docs/contrastes/ultimo-contraste.json (vault_foreign_check "
+        "quien": f"{cita_repo(rutas.DOCS, 'contrastes/ultimo-contraste.json')} "
+                "(vault_foreign_check "
                  "--registrar-contraste; mismo plazo de 60 días que vault_release)",
         "estado": "con_puerta",
     },

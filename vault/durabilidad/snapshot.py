@@ -21,6 +21,7 @@ import shutil
 from pathlib import Path
 from typing import Sequence
 
+from ..kernel import rutas
 from ..kernel.contexto import VaultContext
 from ..kernel.fallos import FalloDeDominio
 from .modelo import Backup
@@ -40,7 +41,7 @@ VOLATILES = frozenset({
 
 #: Lo que no entra al snapshot: copias previas —evitaría la recursión ahora que
 #: los backups viven DENTRO del vault (AP-36)— y sandboxes.
-NO_COPIAR = ("vault-backups", "vault-sandbox")
+NO_COPIAR = ("vault-backups", rutas.SANDBOX)
 
 
 # ── La huella ────────────────────────────────────────────────────────────────

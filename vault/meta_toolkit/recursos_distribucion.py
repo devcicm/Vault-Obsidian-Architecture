@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import PurePosixPath
 
+from vault.kernel import rutas
+
 CLASES_RECURSO = frozenset({
     "runtime_operational", "toolkit", "bootstrap", "migration",
     "standard_maintenance", "repo_only", "test",
@@ -15,7 +17,7 @@ def clasificar_recurso(ruta: str) -> str:
     p = PurePosixPath(ruta.replace("\\", "/"))
     partes = p.parts
     nombre = p.name
-    if "tests" in partes or "vault-sandbox" in partes:
+    if rutas.TESTS in partes or rutas.SANDBOX in partes:
         return "test"
     if nombre == "vault_ontology.json":
         return "bootstrap"
@@ -25,9 +27,9 @@ def clasificar_recurso(ruta: str) -> str:
         return "migration"
     if nombre.endswith("-baseline.json"):
         return "standard_maintenance"
-    if partes and partes[0] in {"docs", ".github"}:
+    if partes and partes[0] in {rutas.DOCS, ".github"}:
         return "repo_only"
-    if partes and partes[0] in {"vault", "cli", "vault_toolkit"}:
+    if partes and partes[0] in {"vault", rutas.CLI, "vault_toolkit"}:
         return "toolkit"
     return "repo_only"
 

@@ -18,12 +18,13 @@ import json
 import shutil
 from pathlib import Path
 
+from ..kernel import rutas
 from ..kernel.contexto import VaultContext
 from ..kernel.fallos import FalloDeDominio
 from .repositorio import CARPETA_BACKUPS, FICHERO_MANIFIESTO, RepositorioDurabilidad
 
 #: Lo que el barrido previo al restore no toca nunca.
-NO_BORRAR = {"vault-backups", "vault-sandbox"}
+NO_BORRAR = {"vault-backups", rutas.SANDBOX}
 
 
 class ServicioRestauracion:

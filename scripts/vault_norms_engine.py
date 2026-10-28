@@ -33,6 +33,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 import yaml  # el criterio del consumidor, no un regex (AP-44)
 
 from vault_errors import emit_error
+from vault.kernel import rutas
 from vault_io import (
     is_snapshot_path,
     normalize_stem,
@@ -330,7 +331,7 @@ def caras_desfasadas(raiz: Optional[Path] = None,
     """
     raiz = Path(raiz) if raiz else RAIZ_NORMAS
     raiz_repo = Path(raiz_repo) if raiz_repo else raiz.parent
-    if not (raiz_repo / "scripts").is_dir() or not raiz.is_dir():
+    if not (raiz_repo / rutas.SCRIPTS).is_dir() or not raiz.is_dir():
         return []
     problemas: List[Dict[str, str]] = []
     for carpeta in sorted(p for p in raiz.iterdir()

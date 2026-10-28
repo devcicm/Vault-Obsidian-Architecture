@@ -5,23 +5,23 @@
   "sites": [
     {
       "firma": "vault_audit.py::_aliases_de::08d90f38",
-      "visto_en": "vault_audit.py:384"
+      "visto_en": "vault_audit.py:386"
     },
     {
       "firma": "vault_audit.py::_detect_empty_indexes::a36080b0",
-      "visto_en": "vault_audit.py:1606"
+      "visto_en": "vault_audit.py:1608"
     },
     {
       "firma": "vault_audit.py::_detect_graph_knowledge_antipatterns::a36080b0",
-      "visto_en": "vault_audit.py:1725"
+      "visto_en": "vault_audit.py:1727"
     },
     {
       "firma": "vault_audit.py::_detect_mermaid_errors::a36080b0",
-      "visto_en": "vault_audit.py:1636"
+      "visto_en": "vault_audit.py:1638"
     },
     {
       "firma": "vault_audit.py::_read_propagation_pending::08d90f38",
-      "visto_en": "vault_audit.py:2202"
+      "visto_en": "vault_audit.py:2204"
     },
     {
       "firma": "vault_encoding.py::log_encoding_fixes::a36080b0",
@@ -101,7 +101,7 @@
     },
     {
       "firma": "vault_spec_generate_catalog.py::_extract_dict_from_source::f1f60e49",
-      "visto_en": "vault_spec_generate_catalog.py:70"
+      "visto_en": "vault_spec_generate_catalog.py:71"
     },
     {
       "firma": "vault_spec_memory.py::_get_description::a36080b0",
@@ -109,15 +109,15 @@
     },
     {
       "firma": "vault_standard_upgrade.py::_live_identity::f1f60e49",
-      "visto_en": "vault_standard_upgrade.py:93"
+      "visto_en": "vault_standard_upgrade.py:95"
     },
     {
       "firma": "vault_standard_upgrade.py::_run_compliance_check::a36080b0",
-      "visto_en": "vault_standard_upgrade.py:718"
+      "visto_en": "vault_standard_upgrade.py:720"
     },
     {
       "firma": "vault_standard_upgrade.py::vault_standard_upgrade::a36080b0",
-      "visto_en": "vault_standard_upgrade.py:943"
+      "visto_en": "vault_standard_upgrade.py:945"
     },
     {
       "firma": "vault_voice.py::_catalog::08d90f38",

@@ -56,6 +56,9 @@ from typing import Dict, List
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.kernel import rutas
 from vault_errors import emit_error, wrap_main
 from vault_arch import arboles_medidos, clave_de_modulo
 from vault_firma_sitio import (
@@ -351,7 +354,7 @@ def codigos_fuera_del_catalogo(raiz: Path = None) -> List[Dict]:
                     if isinstance(v, ast.Constant) and isinstance(v.value, str):
                         anotar(ruta, nodo.lineno, v.value)
 
-    for ruta in sorted((raiz / "mcp" / "nodejs").glob("*.mjs")):
+    for ruta in sorted((raiz / rutas.MCP / "nodejs").glob("*.mjs")):
         for n, linea in enumerate(ruta.read_text(encoding="utf-8").splitlines(), 1):
             for m in _CODIGO_JS.finditer(linea):
                 anotar(ruta, n, m.group(1))

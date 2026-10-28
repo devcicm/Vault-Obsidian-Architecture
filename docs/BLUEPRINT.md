@@ -435,8 +435,8 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1471 | — *no aplica*: No es deuda: es el contrato de campos estables con los repos consumidores y crece por diseño cada vez que una tool publica un campo nuevo (1334 → 1410 entre 2026-08-30 y 2026-10-08). Lo que la puerta vigila es que ningún campo desaparezca sin `superseded_fields`, no su tamaño. Declarado el 2026-10-09 con la deuda #8. | 1427 → 1435 → 1437 → 1436 → 1448 → 1471 (crece, Δ+137) |
 | `scripts/excepcion-declarada-baseline.json` | AP-61 — la excepción declarada no es la que escapa | 0 | ≤ 0 para 2027-06-30 · cada 180 d · gobernanza → **cumple** | 0 → 0 (plana, Δ+0) |
 | `scripts/recursos-baseline.json` | AP-62 — el consumidor cruza para leer un recurso y paga el fan-out | 2 | ≤ 0 para 2027-03-31 · cada 90 d · meta_toolkit — vault_recursos → **en_plazo** | 2 → 2 (plana, Δ+0) |
-| `scripts/rutas-baseline.json` | v41.21 — el layout del repo escrito como literal fuera de su dueño vault/kernel/rutas.py; solo encoge | 175 | ≤ 0 para 2027-06-30 · cada 90 d · meta_toolkit — vault.kernel.rutas → **en_plazo** | 177 → 175 (encoge, Δ-2) |
-| `scripts/clones-baseline.json` | CN-05 — cuerpos duplicados que no se pueden fusionar sin cruzar una frontera | 4 | ≤ 2 para 2027-03-31 · cada 90 d · meta_toolkit ? vault_clones → **en_plazo** | — *1 muestra* |
+| `scripts/rutas-baseline.json` | v41.21 — el layout del repo escrito como literal fuera de su dueño vault/kernel/rutas.py; solo encoge | 16 | ≤ 16 para 2027-06-30 · cada 90 d · meta_toolkit — vault.kernel.rutas → **cumple** | 177 → 175 → 16 (encoge, Δ-161) |
+| `scripts/clones-baseline.json` | CN-05 — cuerpos duplicados que no se pueden fusionar sin cruzar una frontera | 3 | ≤ 2 para 2027-03-31 · cada 90 d · meta_toolkit ? vault_clones → **en_plazo** | 4 → 3 (encoge, Δ-1) |
 
 Todas encogen y ninguna crece sin decirlo: los tres audits con baseline indexan
 por firma de sitio —`módulo::función::hash de `ast.unparse``— así que mover un

@@ -105,3 +105,25 @@ def test_la_baseline_solo_encoge_y_no_incluye_fantasmas():
             f"la baseline congela {len(fantasma)} sitios que ya no existen: "
             f"{fantasma[:5]} — encógela en el mismo commit de la migración"
         )
+
+
+def test_todo_sitio_congelado_dice_por_que_se_queda():
+    """Un sitio sin motivo escrito es una excepción sin dueño.
+
+    Los que quedan tras la consolidación no son rutas del repo: son claves de
+    contrato, secciones de un vault, canales y unidades de métrica que
+    coinciden con un nombre del layout. Eso se declara —y un sitio sin
+    `motivos` es un sitio que nadie vuelve a mirar—.
+    """
+    datos = json.loads(BASELINE.read_text(encoding="utf-8"))
+    motivos = datos.get("motivos") or {}
+    sin_motivo = sorted(s for s in baseline() if not str(motivos.get(s, "")).strip())
+    assert not sin_motivo, (
+        f"sitios congelados sin motivo escrito: {sin_motivo[:8]} — o se "
+        "migran al dueño, o se dice por qué se quedan"
+    )
+    sobrantes = sorted(set(motivos) - baseline())
+    assert not sobrantes, (
+        f"motivos de sitios que ya no están congelados: {sobrantes[:8]} — "
+        "encoge la baseline y sus motivos en el mismo commit"
+    )

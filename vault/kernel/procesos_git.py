@@ -54,6 +54,7 @@ import re
 import subprocess
 from typing import Any
 
+from vault.kernel import rutas
 from vault.kernel.subproceso import CODIFICACION, ERRORES
 
 #: Los verbos de git que el toolkit usa en lectura, tomados del inventario de
@@ -324,7 +325,7 @@ def sitios_git_fuera_del_dueno(raices: "list[str] | None" = None,
 
     base_rel = pathlib.Path(raiz_repo).resolve() if raiz_repo else None
     hallazgos: list[str] = []
-    for base in (raices or ["scripts", "cli", "vault", "mcp"]):
+    for base in (raices or list(rutas.CARPETAS_DE_CODIGO_Y_MCP)):
         # Con `raiz_repo` las raíces son relativas a él, no al directorio desde
         # el que se invoque: un guard que mide el cwd mide el sitio que
         # casualmente lo llamó, que no es lo que se le pidió.

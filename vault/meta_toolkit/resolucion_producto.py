@@ -11,6 +11,8 @@ import importlib.util
 from dataclasses import dataclass
 from pathlib import Path
 
+from vault.kernel import rutas
+
 from .catalogo_producto import ToolProducto, obtener_tool
 
 
@@ -42,7 +44,7 @@ def _imports_scripts(source: Path) -> bool:
             names = (node.module,)
         else:
             continue
-        if any(name == "scripts" or name.startswith("scripts.") for name in names):
+        if any(name == rutas.SCRIPTS or name.startswith(f"{rutas.SCRIPTS}.") for name in names):
             return True
     return False
 
@@ -70,7 +72,7 @@ def resolver_producto(nombre: str) -> ResolucionProducto:
         return ResolucionProducto(INVALID_INSTALLED_TARGET, tool=tool,
                                   detail="módulo instalado no resoluble")
     origin = Path(spec.origin).resolve()
-    if any(part == "scripts" for part in origin.parts) or _imports_scripts(origin):
+    if any(part == rutas.SCRIPTS for part in origin.parts) or _imports_scripts(origin):
         return ResolucionProducto(INVALID_INSTALLED_TARGET, tool=tool,
                                   detail="el destino instalado depende de scripts/")
     return ResolucionProducto(INSTALLED, tool=tool, module=tool.execution_module)

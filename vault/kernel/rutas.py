@@ -30,13 +30,39 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-#: Los nombres de directorio del layout de este repo. Lista cerrada: un
-#: nombre nuevo entra aquí en el diff que lo estrena, con su motivo si hace
-#: falta — como los mutadores de `procesos_git`.
+#: Los nombres de directorio del layout de este repo, **uno a uno**. Lista
+#: cerrada: un nombre nuevo entra aquí en el diff que lo estrena, con su
+#: motivo si hace falta — como los mutadores de `procesos_git`.
+#:
+#: Son constantes y no literales sueltos porque hay dos formas de nombrar el
+#: layout: la que pide el nombre (`ruta_repo`) y la que lo **cita** en prosa o
+#: en un registro (`cita_repo`). Las dos salen de aquí. `NOMBRES` se arma con
+#: ellas y no al revés: un solo sitio donde el layout se nombra, que es lo que
+#: esta hoja promete ser.
+SCRIPTS = "scripts"
+CLI = "cli"
+DOCS = "docs"
+MCP = "mcp"
+NORMAS = "normas"
+SCHEMAS = "schemas"
+TESTS = "tests"
+EMPAQUETADO = "empaquetado"
+SANDBOX = "vault-sandbox"
+
 NOMBRES = frozenset({
-    "scripts", "docs", "schemas", "normas", "empaquetado", "tests",
-    "vault-sandbox", "mcp", "cli",
+    SCRIPTS, CLI, DOCS, MCP, NORMAS, SCHEMAS, TESTS, EMPAQUETADO, SANDBOX,
 })
+
+#: Las carpetas del repo donde vive **código**, para los barridos que
+#: miden el código. `vault/` no está en `NOMBRES` —el guard de rutas no lo
+#: reconoce como layout— pero es una carpeta del repo como las otras, y
+#: los barridos la necesitan. Los dos conjuntos se usan enteros: quien
+#: barre los dos, no uno y medio.
+CARPETAS_DE_CODIGO = (SCRIPTS, CLI, "vault", TESTS)
+
+#: Las mismas, más el servidor MCP: el guard de git mira también el `.mjs`,
+#: que no es Python pero sí es código de este repo.
+CARPETAS_DE_CODIGO_Y_MCP = (SCRIPTS, CLI, "vault", MCP)
 
 #: Patrón de las combinaciones `padre/hijo` que los módulos escriben a mano:
 #: `docs/sdd`, `vault-sandbox/00_System`, `scripts/README.md`… El guard las
@@ -69,6 +95,27 @@ def ruta_repo(nombre: str) -> Path:
             "lo revisa'; aquí vale el mismo criterio)."
         )
     return raiz_repo() / nombre
+
+
+def cita_repo(directorio: str, relativo: str) -> str:
+    """La ruta de un fichero del repo **citada como la citan los registros**:
+    relativa a la raíz y con el directorio del layout delante.
+
+    `cita_repo("tests", "test_x.py::test_y")` devuelve `"tests/test_x.py::test_y"`.
+    El directorio se pide por su nombre —validado contra la lista cerrada— y
+    el resto del camino es lo que el registro cita: la cita no se inventa aquí,
+    solo se le pone delante el directorio que le corresponde.
+
+    Es la forma de citar sin escribir el layout a mano: un registro que cita
+    un test lo pide al dueño, y si el layout cambiara, la cita cambiaría con
+    él en vez de quedarse apuntando a un sitio que ya no existe.
+    """
+    if directorio not in NOMBRES:
+        raise ValueError(
+            f"{directorio!r} no es un directorio del layout del repo; los que hay "
+            f"son {sorted(NOMBRES)}. Si el layout estiró uno, se declara en "
+            "NOMBRES en el mismo diff que lo usa.")
+    return f"{directorio}/{relativo}"
 
 
 def es_layout_repo(texto: str) -> bool:

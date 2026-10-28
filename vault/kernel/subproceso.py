@@ -46,6 +46,8 @@ from __future__ import annotations
 import subprocess
 from typing import Any
 
+from .rutas import CARPETAS_DE_CODIGO
+
 #: Cómo se decodifica todo hijo de este toolkit. Un solo sitio.
 CODIFICACION = "utf-8"
 
@@ -92,7 +94,7 @@ def sitios_sin_codificacion(raices: "list[str] | None" = None) -> list[str]:
     import pathlib
 
     hallazgos: list[str] = []
-    for base in (raices or ["scripts", "cli", "vault", "tests"]):
+    for base in (raices or list(CARPETAS_DE_CODIGO)):
         for ruta in sorted(pathlib.Path(base).rglob("*.py")):
             if ruta.name == pathlib.Path(__file__).name:
                 continue

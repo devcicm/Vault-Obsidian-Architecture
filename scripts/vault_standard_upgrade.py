@@ -20,6 +20,8 @@ import json
 import re
 import sys
 from vault_errors import emit_error, wrap_main
+from vault.kernel import rutas
+from vault.kernel.rutas import cita_repo
 from vault_entorno import agente_por_defecto
 from vault_lib import parse_frontmatter, utcnow
 from vault_contrato_nota import clase_de_nota, contrato_de_version, faltantes
@@ -342,7 +344,7 @@ MIGRATIONS: Dict[str, Dict[str, Any]] = {
             "vault_fix_brackets.py: AP-26 auto-fix (pipes sin escapar, brackets)",
             "vault_history_compact.py: rotación .history/ (10 versiones/nota)",
             "Skill vault-sdd-init en 00_System/skills/ con logo ASCII",
-            "docs/sdd/ generado con 14 archivos bilingües (ES/EN)",
+            f"{rutas.DOCS}/sdd/ generado con 14 archivos bilingües (ES/EN)",
         ],
     },
     "v37": {
@@ -354,7 +356,7 @@ MIGRATIONS: Dict[str, Dict[str, Any]] = {
         "tools_count": "76",
         "update_identity": True,
         "notes": [
-            "mcp/nodejs/vault-mcp-server.mjs: expone el catálogo como MCP tools",
+            f"{rutas.MCP}/nodejs/vault-mcp-server.mjs: expone el catálogo como MCP tools",
             "Catálogo canónico sincronizado desde vault_mcp_catalog.py --sync",
             "Sin cambios estructurales en el vault: no hay carpetas ni datos que migrar",
         ],
@@ -437,7 +439,7 @@ MIGRATIONS: Dict[str, Dict[str, Any]] = {
             "vault_arch.py (NUEVO): registro CONTEXTS + guard de fronteras por AST + blueprint",
             "vault/ (NUEVO paquete): VaultContext inmutable, puertos Protocol y un repositorio por contexto",
             "AP-49 (NUEVA): vinculo resuelto en tiempo de import — 82 vinculos congelados en 62 modulos, saldados a 0",
-            "docs/ARQUITECTURA.md (NUEVO): derivado de `vault_arch --blueprint`, no escrito a mano",
+            f"{cita_repo(rutas.DOCS, 'ARQUITECTURA.md')} (NUEVO): derivado de `vault_arch --blueprint`, no escrito a mano",
             "La prohibicion del Meta-toolkit deja de ser prosa: se mide por AST (forbidden_writes)",
             "Puerta nueva de AP-05 sobre rutas declaradas en dos repositorios de dominio",
             "Ni un fichero se mueve de scripts/, ni un envelope cambia: los consumidores no se enteran",
@@ -457,7 +459,7 @@ MIGRATIONS: Dict[str, Dict[str, Any]] = {
             "AP-27/AP-29: type y status requeridos en notas de contenido",
             "Por presencia, no por valor: vault_audit sigue juzgando el valor",
             "vault_validate --contrato vNN valida contra el contrato de cualquier version desde v18",
-            "schemas/: JSON Schema desde v18; de v18 a v24 el contrato es AP-12 del manifiesto",
+            f"{rutas.SCHEMAS}/: JSON Schema desde v18; de v18 a v24 el contrato es AP-12 del manifiesto",
             "v41.1 — clase sin_seccion: un .md fuera de toda seccion (README de la raiz, "
             "carpeta no registrada) lleva identidad y timestamps, sin CIA, agent, tags, type ni status",
             "vigente_desde (opcional): version del proyecto desde la que rige una nota de "

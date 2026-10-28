@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from vault_errors import emit_error, wrap_main, proyecto_registrado
+from vault.kernel import rutas
 from vault_io import (
     assert_within_vault,
     escritura_atomica,
@@ -85,7 +86,8 @@ _NOMBRE_ORACULO = "mermaid-core"
 def _helper_oraculo() -> Optional[Path]:
     """La ruta de `mmd_validate.mjs`, o `None` si no está instalado."""
     base = Path(__file__).resolve().parents[1]
-    for relativa in ("mcp/nodejs/mmd_validate.mjs", "mcp/mmd_validate.mjs"):
+    for relativa in (f"{rutas.MCP}/nodejs/mmd_validate.mjs",
+                     f"{rutas.MCP}/mmd_validate.mjs"):
         candidato = base / relativa
         if candidato.is_file():
             return candidato

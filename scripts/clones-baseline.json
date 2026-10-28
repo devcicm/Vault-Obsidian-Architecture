@@ -3,7 +3,6 @@
  "sitios": [
   "clone|2cf4e732|2|vault/install.py::_run,vault/uninstall.py::_run",
   "clone|6352b7f2|4|scripts/vault_code_map.py::load_index,scripts/vault_code_module.py::load_index,scripts/vault_code_query.py::load_index,scripts/vault_code_relation.py::load_index",
-  "clone|aa2ed9b7|2|cli/resolver.py::_imports_scripts,vault/meta_toolkit/resolucion_producto.py::_imports_scripts",
   "clone|d4e1dd74|2|scripts/vault_code_module.py::save_index,scripts/vault_code_relation.py::save_index"
  ],
  "motivos": {

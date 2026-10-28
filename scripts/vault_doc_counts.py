@@ -29,6 +29,10 @@ from typing import Callable, Dict, List, Optional
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.kernel import rutas
+from vault.kernel.rutas import cita_repo
 from vault_errors import wrap_main
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -164,7 +168,7 @@ def count_scripts() -> int:
 def count_tests() -> int:
     """Conteo real de la suite. Lento: solo se evalúa si algún doc lo afirma."""
     proc = vault_subproceso.ejecutar(
-        [sys.executable, "-m", "pytest", "tests/", "--collect-only", "-q"],
+        [sys.executable, "-m", "pytest", f"{rutas.TESTS}/", "--collect-only", "-q"],
         cwd=str(REPO_ROOT),
         capture_output=True,
     )
@@ -385,11 +389,11 @@ COUNTED_FACTS: List[Dict] = [
 WATCHED_DOCS = [
     "README.md",
     "AGENTS.md",
-    "cli/README.md",
-    "cli/COMMANDS.md",
-    "docs/SKILLS.md",
-    "mcp/PLAN.md",
-    "scripts/README.md",
+    cita_repo(rutas.CLI, "README.md"),
+    cita_repo(rutas.CLI, "COMMANDS.md"),
+    cita_repo(rutas.DOCS, "SKILLS.md"),
+    cita_repo(rutas.MCP, "PLAN.md"),
+    cita_repo(rutas.SCRIPTS, "README.md"),
     "vault-obsidian-architecture.md",
 ]
 

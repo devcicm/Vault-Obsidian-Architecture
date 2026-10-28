@@ -50,8 +50,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import vault_baseline
+from vault.kernel import rutas
+from vault.kernel.rutas import cita_repo
 from vault_errors import emit_error, wrap_main
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
@@ -86,7 +89,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "estado": "saldada",
         "saldada_en": "v41.14",
         "sostenida_por": [
-            "tests/test_toolkit_audit_deuda_saldada.py::test_la_deuda_del_barrido_esta_saldada",
+            cita_repo(rutas.TESTS, "test_toolkit_audit_deuda_saldada.py::test_la_deuda_del_barrido_esta_saldada"),
         ],
         "desde": "v41.12",
         "capa": "4",
@@ -115,7 +118,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "estado": "saldada",
         "saldada_en": "v40.29",
         "sostenida_por": [
-            "tests/test_ap52_contrato_de_error.py::test_la_deuda_de_ap52_esta_saldada",
+            cita_repo(rutas.TESTS, "test_ap52_contrato_de_error.py::test_la_deuda_de_ap52_esta_saldada"),
         ],
         "desde": "v40.9",
         "capa": "5",
@@ -150,8 +153,8 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "estado": "saldada",
         "saldada_en": "v40.23",
         "sostenida_por": [
-            "tests/test_cli_package.py::test_un_spec_ilegible_no_se_confunde_con_uno_ausente",
-            "tests/test_cli_package.py::test_con_el_contrato_ilegible_la_validacion_falla_cerrado",
+            cita_repo(rutas.TESTS, "test_cli_package.py::test_un_spec_ilegible_no_se_confunde_con_uno_ausente"),
+            cita_repo(rutas.TESTS, "test_cli_package.py::test_con_el_contrato_ilegible_la_validacion_falla_cerrado"),
         ],
         "desde": "v40.9",
         "capa": "5",
@@ -175,13 +178,13 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "estado": "saldada",
         "saldada_en": "v41.4",
         "sostenida_por": [
-            "tests/test_ap08_version_pinned.py::test_ap08_vigencia_nombra_la_nota_anclada_a_una_version_que_ya_paso",
-            "tests/test_ap08_version_pinned.py::test_ap08_un_universo_vacio_se_publica_y_no_sale_verde_en_silencio",
-            "tests/test_ap08_version_pinned.py::test_ap08_vault_write_emite_version_pinned",
-            "tests/test_ap08_vigencia.py::test_ap08_vigencia_nombra_la_nota_que_no_acompano_al_cambio",
-            "tests/test_ap01_prosa.py::test_ap01_la_ruta_citada_en_prosa_que_no_existe_se_nombra",
-            "tests/test_ap01_prosa.py::test_ap01_la_cobertura_parcial_declara_la_prosa_medida",
-            "tests/test_ap04_hipotesis.py::test_ap04_no_tiene_detector_y_lo_declara",
+            cita_repo(rutas.TESTS, "test_ap08_version_pinned.py::test_ap08_vigencia_nombra_la_nota_anclada_a_una_version_que_ya_paso"),
+            cita_repo(rutas.TESTS, "test_ap08_version_pinned.py::test_ap08_un_universo_vacio_se_publica_y_no_sale_verde_en_silencio"),
+            cita_repo(rutas.TESTS, "test_ap08_version_pinned.py::test_ap08_vault_write_emite_version_pinned"),
+            cita_repo(rutas.TESTS, "test_ap08_vigencia.py::test_ap08_vigencia_nombra_la_nota_que_no_acompano_al_cambio"),
+            cita_repo(rutas.TESTS, "test_ap01_prosa.py::test_ap01_la_ruta_citada_en_prosa_que_no_existe_se_nombra"),
+            cita_repo(rutas.TESTS, "test_ap01_prosa.py::test_ap01_la_cobertura_parcial_declara_la_prosa_medida"),
+            cita_repo(rutas.TESTS, "test_ap04_hipotesis.py::test_ap04_no_tiene_detector_y_lo_declara"),
         ],
         "desde": "v40.11",
         "capa": "4",
@@ -256,11 +259,11 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "estado": "saldada",
         "saldada_en": "v41.3",
         "sostenida_por": [
-            "tests/test_arch_escrituras_de_sistema.py::test_un_contexto_que_escribe_la_subruta_de_otro_es_un_cruce",
-            "tests/test_arch_escrituras_de_sistema.py::test_la_puerta_frena_un_cruce_nuevo_y_no_los_congelados",
-            "tests/test_sistema_un_solo_escritor.py::test_la_subruta_la_escribe_solo_su_dueno",
-            "tests/test_arch_escrituras_por_parametro.py::test_el_caso_medido_tool_spec_tiene_dueno_y_escritor_visible",
-            "tests/test_arch_escrituras_por_parametro.py::test_la_funcion_importada_se_resuelve_un_nivel",
+            cita_repo(rutas.TESTS, "test_arch_escrituras_de_sistema.py::test_un_contexto_que_escribe_la_subruta_de_otro_es_un_cruce"),
+            cita_repo(rutas.TESTS, "test_arch_escrituras_de_sistema.py::test_la_puerta_frena_un_cruce_nuevo_y_no_los_congelados"),
+            cita_repo(rutas.TESTS, "test_sistema_un_solo_escritor.py::test_la_subruta_la_escribe_solo_su_dueno"),
+            cita_repo(rutas.TESTS, "test_arch_escrituras_por_parametro.py::test_el_caso_medido_tool_spec_tiene_dueno_y_escritor_visible"),
+            cita_repo(rutas.TESTS, "test_arch_escrituras_por_parametro.py::test_la_funcion_importada_se_resuelve_un_nivel"),
         ],
         "desde": "v40.9",
         "capa": "3",
@@ -314,7 +317,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "estado": "saldada",
         "saldada_en": "v40.23",
         "sostenida_por": [
-            "tests/test_excepcion_declarada.py::test_ninguna_tool_cae_con_un_frontmatter_muy_anidado",
+            cita_repo(rutas.TESTS, "test_excepcion_declarada.py::test_ninguna_tool_cae_con_un_frontmatter_muy_anidado"),
         ],
         "desde": "v40.9",
         "capa": "5",
@@ -336,10 +339,10 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "estado": "saldada",
         "saldada_en": "v41.3",
         "sostenida_por": [
-            "tests/test_frontmatter_lector_unico.py::test_ap57_hoy_nadie_lee_el_frontmatter_a_mano",
-            "tests/test_vault_write_slug_canonico.py::test_la_nota_nueva_usa_el_slug_canonico",
-            "tests/test_aliases_superseded_sin_uso.py::test_nadie_lee_los_nombres_superseded",
-            "tests/test_aliases_superseded_sin_uso.py::test_los_nombres_viejos_siguen_definidos_y_anotados",
+            cita_repo(rutas.TESTS, "test_frontmatter_lector_unico.py::test_ap57_hoy_nadie_lee_el_frontmatter_a_mano"),
+            cita_repo(rutas.TESTS, "test_vault_write_slug_canonico.py::test_la_nota_nueva_usa_el_slug_canonico"),
+            cita_repo(rutas.TESTS, "test_aliases_superseded_sin_uso.py::test_nadie_lee_los_nombres_superseded"),
+            cita_repo(rutas.TESTS, "test_aliases_superseded_sin_uso.py::test_los_nombres_viejos_siguen_definidos_y_anotados"),
         ],
         "desde": "v40.9",
         "capa": "7",
@@ -375,10 +378,10 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "estado": "saldada",
         "saldada_en": "v41.3",
         "sostenida_por": [
-            "tests/test_ap51_culpar_al_dato.py::test_ap51_el_detector_js_distingue_silencio_de_motivo",
-            "tests/test_ap51_culpar_al_dato.py::test_ap51_la_frontera_js_no_tiene_deuda_y_bloquea_la_puerta",
-            "tests/test_mcp_descubrimiento.py::test_un_recuento_parcial_de_notas_se_declara",
-            "tests/test_mcp_guard_enlaces.py::test_un_directorio_ilegible_no_se_publica_como_nota_inexistente",
+            cita_repo(rutas.TESTS, "test_ap51_culpar_al_dato.py::test_ap51_el_detector_js_distingue_silencio_de_motivo"),
+            cita_repo(rutas.TESTS, "test_ap51_culpar_al_dato.py::test_ap51_la_frontera_js_no_tiene_deuda_y_bloquea_la_puerta"),
+            cita_repo(rutas.TESTS, "test_mcp_descubrimiento.py::test_un_recuento_parcial_de_notas_se_declara"),
+            cita_repo(rutas.TESTS, "test_mcp_guard_enlaces.py::test_un_directorio_ilegible_no_se_publica_como_nota_inexistente"),
         ],
         "desde": "v40.9",
         "capa": "7",
@@ -408,8 +411,8 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "estado": "saldada",
         "saldada_en": "v40.24",
         "sostenida_por": [
-            "tests/test_baseline.py::test_un_numero_suelto_no_es_un_objetivo",
-            "tests/test_baseline.py::test_la_pendiente_no_esta_escrita_en_ningun_fichero",
+            cita_repo(rutas.TESTS, "test_baseline.py::test_un_numero_suelto_no_es_un_objetivo"),
+            cita_repo(rutas.TESTS, "test_baseline.py::test_la_pendiente_no_esta_escrita_en_ningun_fichero"),
         ],
         "desde": "v40.20",
         "capa": "7",
@@ -440,9 +443,9 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "estado": "saldada",
         "saldada_en": "v41.3",
         "sostenida_por": [
-            "tests/test_baseline.py::test_ninguna_baseline_del_repo_queda_sin_compromiso",
-            "tests/test_baseline.py::test_dos_baselines_en_un_fichero_tienen_cada_una_su_objetivo",
-            "tests/test_baseline.py::test_una_baseline_que_no_es_deuda_lo_declara_con_motivo",
+            cita_repo(rutas.TESTS, "test_baseline.py::test_ninguna_baseline_del_repo_queda_sin_compromiso"),
+            cita_repo(rutas.TESTS, "test_baseline.py::test_dos_baselines_en_un_fichero_tienen_cada_una_su_objetivo"),
+            cita_repo(rutas.TESTS, "test_baseline.py::test_una_baseline_que_no_es_deuda_lo_declara_con_motivo"),
         ],
         "desde": "v40.24",
         "capa": "7",
@@ -473,7 +476,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "estado": "saldada",
         "saldada_en": "v40.27",
         "sostenida_por": [
-            "tests/test_arquitectura.py::test_el_catalogo_de_normas_es_una_hoja_del_nucleo",
+            cita_repo(rutas.TESTS, "test_arquitectura.py::test_el_catalogo_de_normas_es_una_hoja_del_nucleo"),
         ],
         "desde": "v40.20",
         "capa": "7",
@@ -510,11 +513,11 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "estado": "saldada",
         "saldada_en": "v41.4",
         "sostenida_por": [
-            "tests/test_normas_caras.py::test_todo_paquete_tiene_sus_cinco_caras",
-            "tests/test_normas_caras.py::test_las_caras_en_disco_son_las_derivadas",
-            "tests/test_normas_caras.py::test_un_sanador_que_no_nombra_la_norma_falla_la_forma",
-            "tests/test_normas_caras.py::test_una_cara_editada_a_mano_se_detecta",
-            "tests/test_normas_paquete.py::test_la_guarda_ve_la_cara_que_falta",
+            cita_repo(rutas.TESTS, "test_normas_caras.py::test_todo_paquete_tiene_sus_cinco_caras"),
+            cita_repo(rutas.TESTS, "test_normas_caras.py::test_las_caras_en_disco_son_las_derivadas"),
+            cita_repo(rutas.TESTS, "test_normas_caras.py::test_un_sanador_que_no_nombra_la_norma_falla_la_forma"),
+            cita_repo(rutas.TESTS, "test_normas_caras.py::test_una_cara_editada_a_mano_se_detecta"),
+            cita_repo(rutas.TESTS, "test_normas_paquete.py::test_la_guarda_ve_la_cara_que_falta"),
         ],
         "desde": "v40.20",
         "capa": "7",
@@ -578,9 +581,9 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "estado": "saldada",
         "saldada_en": "v41.4",
         "sostenida_por": [
-            "tests/test_sanacion_orden_por_nucleo.py::test_la_fase_8_repara_primero_las_notas_del_nucleo",
-            "tests/test_sanacion_orden_por_nucleo.py::test_sin_nucleo_el_orden_es_por_enlaces_rotos_y_lo_dice",
-            "tests/test_sanacion_orden_por_nucleo.py::test_el_plan_sigue_siendo_de_solo_lectura",
+            cita_repo(rutas.TESTS, "test_sanacion_orden_por_nucleo.py::test_la_fase_8_repara_primero_las_notas_del_nucleo"),
+            cita_repo(rutas.TESTS, "test_sanacion_orden_por_nucleo.py::test_sin_nucleo_el_orden_es_por_enlaces_rotos_y_lo_dice"),
+            cita_repo(rutas.TESTS, "test_sanacion_orden_por_nucleo.py::test_el_plan_sigue_siendo_de_solo_lectura"),
         ],
         "desde": "v40.20",
         "capa": "7",
@@ -637,11 +640,11 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "estado": "saldada",
         "saldada_en": "v41.8 (2026-10-17)",
         "sostenida_por": [
-            "tests/test_puente_sin_hogar.py::test_el_contrato_del_puente_solo_admite_el_ancla",
-            "tests/test_puente_sin_hogar.py::test_un_modulo_sin_hogar_congelado_sigue_fuera_de_contrato",
-            "tests/test_puente_sin_hogar.py::test_un_ancla_que_encuentra_hogar_bloquea_la_puerta",
-            "tests/test_puente_sin_hogar.py::test_el_ancla_del_puente_no_se_muda",
-            "tests/test_puente_sin_hogar.py::test_lote_d_el_catalogo_de_normas_migra_y_el_puente_solo_guarda_el_ancla",
+            cita_repo(rutas.TESTS, "test_puente_sin_hogar.py::test_el_contrato_del_puente_solo_admite_el_ancla"),
+            cita_repo(rutas.TESTS, "test_puente_sin_hogar.py::test_un_modulo_sin_hogar_congelado_sigue_fuera_de_contrato"),
+            cita_repo(rutas.TESTS, "test_puente_sin_hogar.py::test_un_ancla_que_encuentra_hogar_bloquea_la_puerta"),
+            cita_repo(rutas.TESTS, "test_puente_sin_hogar.py::test_el_ancla_del_puente_no_se_muda"),
+            cita_repo(rutas.TESTS, "test_puente_sin_hogar.py::test_lote_d_el_catalogo_de_normas_migra_y_el_puente_solo_guarda_el_ancla"),
         ],
         "desde": "v40.34",
         "capa": "3",
@@ -792,9 +795,9 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "estado": "saldada",
         "saldada_en": "v41.3",
         "sostenida_por": [
-            "tests/test_cn01_cn04_audit_informativo.py::test_cn01_cn04_se_publican_sin_peso",
-            "tests/test_cn01_cn04_audit_informativo.py::test_cn01_cn04_no_mueven_la_salud",
-            "tests/test_cn04_escritores_con_titulo.py::test_la_nota_que_crea_el_escritor_abre_con_h1",
+            cita_repo(rutas.TESTS, "test_cn01_cn04_audit_informativo.py::test_cn01_cn04_se_publican_sin_peso"),
+            cita_repo(rutas.TESTS, "test_cn01_cn04_audit_informativo.py::test_cn01_cn04_no_mueven_la_salud"),
+            cita_repo(rutas.TESTS, "test_cn04_escritores_con_titulo.py::test_la_nota_que_crea_el_escritor_abre_con_h1"),
         ],
         "desde": "v41.1",
         "capa": "7",
@@ -836,10 +839,10 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "estado": "saldada",
         "saldada_en": "v41.3",
         "sostenida_por": [
-            "tests/test_ap17_identidad_declarada.py::test_un_alias_que_es_el_nombre_de_otra_nota_es_sombra",
-            "tests/test_ap17_identidad_declarada.py::test_el_mismo_conjunto_de_files_es_sombra_y_uno_distinto_no",
-            "tests/test_ap17_identidad_declarada.py::test_el_title_no_es_identidad",
-            "tests/test_ap17_identidad_declarada.py::test_la_identidad_se_publica_sin_peso_y_el_titulo_sigue_pesando",
+            cita_repo(rutas.TESTS, "test_ap17_identidad_declarada.py::test_un_alias_que_es_el_nombre_de_otra_nota_es_sombra"),
+            cita_repo(rutas.TESTS, "test_ap17_identidad_declarada.py::test_el_mismo_conjunto_de_files_es_sombra_y_uno_distinto_no"),
+            cita_repo(rutas.TESTS, "test_ap17_identidad_declarada.py::test_el_title_no_es_identidad"),
+            cita_repo(rutas.TESTS, "test_ap17_identidad_declarada.py::test_la_identidad_se_publica_sin_peso_y_el_titulo_sigue_pesando"),
         ],
         "desde": "v41.1",
         "capa": "4",
@@ -878,9 +881,9 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "estado": "saldada",
         "saldada_en": "v41.3",
         "sostenida_por": [
-            "tests/test_kernel_aviso_del_indice.py::test_el_commit_que_cruza_el_umbral_se_avisa_antes_de_hacerse",
-            "tests/test_kernel_aviso_del_indice.py::test_la_cifra_canonica_no_cuenta_el_indice",
-            "tests/test_kernel_aviso_del_indice.py::test_el_pre_commit_pide_el_aviso_y_no_bloquea",
+            cita_repo(rutas.TESTS, "test_kernel_aviso_del_indice.py::test_el_commit_que_cruza_el_umbral_se_avisa_antes_de_hacerse"),
+            cita_repo(rutas.TESTS, "test_kernel_aviso_del_indice.py::test_la_cifra_canonica_no_cuenta_el_indice"),
+            cita_repo(rutas.TESTS, "test_kernel_aviso_del_indice.py::test_el_pre_commit_pide_el_aviso_y_no_bloquea"),
         ],
         "desde": "v41.1",
         "capa": "7",
@@ -909,9 +912,9 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "estado": "saldada",
         "saldada_en": "v41.3",
         "sostenida_por": [
-            "tests/test_orden_frontmatter_contrato.py::test_type_por_meta_sale_donde_el_type_deducido",
-            "tests/test_orden_frontmatter_contrato.py::test_los_campos_del_contrato_siguen_a_campos_y_los_ajenos_van_al_final",
-            "tests/test_orden_frontmatter_contrato.py::test_sin_campos_del_contrato_en_meta_la_salida_no_cambia",
+            cita_repo(rutas.TESTS, "test_orden_frontmatter_contrato.py::test_type_por_meta_sale_donde_el_type_deducido"),
+            cita_repo(rutas.TESTS, "test_orden_frontmatter_contrato.py::test_los_campos_del_contrato_siguen_a_campos_y_los_ajenos_van_al_final"),
+            cita_repo(rutas.TESTS, "test_orden_frontmatter_contrato.py::test_sin_campos_del_contrato_en_meta_la_salida_no_cambia"),
         ],
         "desde": "v41.1",
         "capa": "5",
@@ -938,9 +941,9 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "estado": "saldada",
         "saldada_en": "v41.3",
         "sostenida_por": [
-            "tests/test_audit_backlinks_como_obsidian.py::test_los_homonimos_no_comparten_entrantes",
-            "tests/test_audit_backlinks_como_obsidian.py::test_un_enlace_ambiguo_cuenta_para_todas_las_homonimas",
-            "tests/test_audit_backlinks_como_obsidian.py::test_una_nota_unica_conserva_su_clave_por_nombre",
+            cita_repo(rutas.TESTS, "test_audit_backlinks_como_obsidian.py::test_los_homonimos_no_comparten_entrantes"),
+            cita_repo(rutas.TESTS, "test_audit_backlinks_como_obsidian.py::test_un_enlace_ambiguo_cuenta_para_todas_las_homonimas"),
+            cita_repo(rutas.TESTS, "test_audit_backlinks_como_obsidian.py::test_una_nota_unica_conserva_su_clave_por_nombre"),
         ],
         "desde": "v41.3",
         "capa": "5",
@@ -984,8 +987,8 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "estado": "saldada",
         "saldada_en": "v41.6 (2026-10-15)",
         "sostenida_por": [
-            "tests/test_f8_vault_write_anota.py::test_vault_write_anota_la_creacion_y_la_actualizacion",
-            "tests/test_f8_vault_write_anota.py::test_f8_registro_matriz_y_manifiesto_dicen_lo_mismo",
+            cita_repo(rutas.TESTS, "test_f8_vault_write_anota.py::test_vault_write_anota_la_creacion_y_la_actualizacion"),
+            cita_repo(rutas.TESTS, "test_f8_vault_write_anota.py::test_f8_registro_matriz_y_manifiesto_dicen_lo_mismo"),
         ],
         "desde": "v41.3",
         "capa": "5",
@@ -1022,14 +1025,14 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "estado": "saldada",
         "saldada_en": "v41.8 (2026-10-17)",
         "sostenida_por": [
-            "tests/test_sanadores_sin_lote.py::test_limite_declarado_sanadores_sin_lote",
-            "tests/test_sanadores_sin_lote.py::test_ap47_fix_brackets_escribe_en_lote",
-            "tests/test_sanadores_sin_lote.py::test_ap47_frontmatter_heal_escribe_en_lote",
-            "tests/test_sanadores_sin_lote.py::test_ap47_project_heal_escribe_en_lote",
-            "tests/test_sanadores_sin_lote.py::test_ap47_graph_fix_apply_fix_escribe_en_lote",
-            "tests/test_sanadores_sin_lote.py::test_las_dos_rutas_de_graph_fix_abren_el_lote",
-            "tests/test_sanadores_sin_lote.py::test_vault_supersede_escribe_una_nota_por_llamada",
-            "tests/test_sanadores_sin_lote.py::test_limite_declarado_heal_ap46_escribe_sin_atomic_write",
+            cita_repo(rutas.TESTS, "test_sanadores_sin_lote.py::test_limite_declarado_sanadores_sin_lote"),
+            cita_repo(rutas.TESTS, "test_sanadores_sin_lote.py::test_ap47_fix_brackets_escribe_en_lote"),
+            cita_repo(rutas.TESTS, "test_sanadores_sin_lote.py::test_ap47_frontmatter_heal_escribe_en_lote"),
+            cita_repo(rutas.TESTS, "test_sanadores_sin_lote.py::test_ap47_project_heal_escribe_en_lote"),
+            cita_repo(rutas.TESTS, "test_sanadores_sin_lote.py::test_ap47_graph_fix_apply_fix_escribe_en_lote"),
+            cita_repo(rutas.TESTS, "test_sanadores_sin_lote.py::test_las_dos_rutas_de_graph_fix_abren_el_lote"),
+            cita_repo(rutas.TESTS, "test_sanadores_sin_lote.py::test_vault_supersede_escribe_una_nota_por_llamada"),
+            cita_repo(rutas.TESTS, "test_sanadores_sin_lote.py::test_limite_declarado_heal_ap46_escribe_sin_atomic_write"),
         ],
         "desde": "v41.4",
         "capa": "5",
@@ -1075,11 +1078,11 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "estado": "saldada",
         "saldada_en": "v41.8 (2026-10-17)",
         "sostenida_por": [
-            "tests/test_ap46_heal.py::test_un_corte_a_mitad_no_deja_la_nota_truncada",
-            "tests/test_ap46_heal.py::test_el_heal_no_sanea_lo_que_no_repara",
-            "tests/test_ap46_heal.py::test_una_nota_con_secreto_no_se_reescribe",
-            "tests/test_ap46_heal.py::test_la_seccion_se_regenera_y_la_raiz_del_proceso_se_devuelve",
-            "tests/test_sanadores_sin_lote.py::test_limite_declarado_heal_ap46_escribe_sin_atomic_write",
+            cita_repo(rutas.TESTS, "test_ap46_heal.py::test_un_corte_a_mitad_no_deja_la_nota_truncada"),
+            cita_repo(rutas.TESTS, "test_ap46_heal.py::test_el_heal_no_sanea_lo_que_no_repara"),
+            cita_repo(rutas.TESTS, "test_ap46_heal.py::test_una_nota_con_secreto_no_se_reescribe"),
+            cita_repo(rutas.TESTS, "test_ap46_heal.py::test_la_seccion_se_regenera_y_la_raiz_del_proceso_se_devuelve"),
+            cita_repo(rutas.TESTS, "test_sanadores_sin_lote.py::test_limite_declarado_heal_ap46_escribe_sin_atomic_write"),
         ],
         "desde": "v41.7",
         "capa": "5",
@@ -1120,9 +1123,9 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "estado": "saldada",
         "saldada_en": "v41.8 (2026-10-17, superseded_by vault_smoke)",
         "sostenida_por": [
-            "tests/test_ci_sin_enmascarar.py::test_returns_match_queda_superseded_por_el_smoke",
-            "tests/test_ci_sin_enmascarar.py::test_spec_validate_no_da_por_ausente_lo_que_no_vive_en_scripts",
-            "tests/test_ci_sin_enmascarar.py::test_spec_validate_es_paso_duro_de_la_ci",
+            cita_repo(rutas.TESTS, "test_ci_sin_enmascarar.py::test_returns_match_queda_superseded_por_el_smoke"),
+            cita_repo(rutas.TESTS, "test_ci_sin_enmascarar.py::test_spec_validate_no_da_por_ausente_lo_que_no_vive_en_scripts"),
+            cita_repo(rutas.TESTS, "test_ci_sin_enmascarar.py::test_spec_validate_es_paso_duro_de_la_ci"),
         ],
         "desde": "v41.6",
         "capa": "5",
@@ -1163,7 +1166,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "estado": "saldada",
         "saldada_en": "v41.9 (2026-10-17)",
         "sostenida_por": [
-            "tests/test_tags_dice_lo_que_escribe.py::test_ap37_la_puerta_mide_lo_emitido_y_salda_la_deuda",
+            cita_repo(rutas.TESTS, "test_tags_dice_lo_que_escribe.py::test_ap37_la_puerta_mide_lo_emitido_y_salda_la_deuda"),
         ],
         "desde": "tras v41.6",
         "capa": "4",
@@ -1210,8 +1213,8 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "estado": "saldada",
         "saldada_en": "v41.7 (2026-10-16)",
         "sostenida_por": [
-            "tests/test_voice.py::test_ap48_la_pronuncia_la_puerta_que_la_ejecuta",
-            "tests/test_vault_onboard.py::test_el_vault_resultante_no_necesita_sanacion",
+            cita_repo(rutas.TESTS, "test_voice.py::test_ap48_la_pronuncia_la_puerta_que_la_ejecuta"),
+            cita_repo(rutas.TESTS, "test_vault_onboard.py::test_el_vault_resultante_no_necesita_sanacion"),
         ],
         "desde": "tras v41.6",
         "capa": "4",
@@ -1238,9 +1241,9 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "estado": "saldada",
         "saldada_en": "v41.7 (2026-10-16)",
         "sostenida_por": [
-            "tests/test_lock_dueno_vivo.py::test_un_salto_del_reloj_no_roba_el_lock_a_un_dueno_vivo",
-            "tests/test_lock_dueno_vivo.py::test_un_dueno_muerto_de_la_misma_maquina_se_recupera_sin_esperar",
-            "tests/test_lock_dueno_vivo.py::test_un_dueno_de_otra_maquina_sigue_caducando_por_edad",
+            cita_repo(rutas.TESTS, "test_lock_dueno_vivo.py::test_un_salto_del_reloj_no_roba_el_lock_a_un_dueno_vivo"),
+            cita_repo(rutas.TESTS, "test_lock_dueno_vivo.py::test_un_dueno_muerto_de_la_misma_maquina_se_recupera_sin_esperar"),
+            cita_repo(rutas.TESTS, "test_lock_dueno_vivo.py::test_un_dueno_de_otra_maquina_sigue_caducando_por_edad"),
         ],
         "desde": "v41.6",
         "capa": "5",
@@ -1778,12 +1781,12 @@ def check(strict: bool = False) -> Dict[str, Any]:
     # 1. El doc publicado no diverge de los registros.
     if not DOC.exists():
         problemas.append(
-            {"kind": "plano_ausente", "detail": "docs/BLUEPRINT.md no existe — "
+            {"kind": "plano_ausente", "detail": f"{cita_repo(rutas.DOCS, 'BLUEPRINT.md')} no existe — "
              "genera con `python scripts/vault_blueprint.py --blueprint`"}
         )
     elif DOC.read_text(encoding="utf-8").strip() != blueprint(c).strip():
         problemas.append(
-            {"kind": "plano_desactualizado", "detail": "docs/BLUEPRINT.md difiere de "
+            {"kind": "plano_desactualizado", "detail": f"{cita_repo(rutas.DOCS, 'BLUEPRINT.md')} difiere de "
              "los registros — regenera con `--blueprint`. Si el cambio se escribió a "
              "mano en el doc, se pierde: el registro es la fuente"}
         )

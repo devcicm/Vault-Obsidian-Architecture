@@ -57,9 +57,13 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.kernel import rutas
+
 SCRIPTS_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPTS_DIR.parent
-SANDBOX = REPO_ROOT / "vault-sandbox"
+SANDBOX = REPO_ROOT / rutas.SANDBOX
 BASELINE_PATH = SCRIPTS_DIR / "toolkit-audit-baseline.json"
 LAST_RUN_PATH = SCRIPTS_DIR / "toolkit-audit-last.json"
 DOC_PATH = REPO_ROOT / "docs" / "auditorias" / "auditoria-toolkit.md"

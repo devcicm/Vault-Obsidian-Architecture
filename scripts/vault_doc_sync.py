@@ -59,8 +59,11 @@ from pathlib import Path
 from typing import Dict, List
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import vault_grafo_import  # noqa: E402
+from vault.kernel import rutas  # noqa: E402
+from vault.kernel.rutas import cita_repo  # noqa: E402
 from vault_errors import emit_error  # noqa: E402
 from vault_mcp_catalog import GROUPS, TOOLS_CATALOG  # noqa: E402
 from vault.meta_toolkit import flags_cli  # extractor único de add_argument (v41.9)  # noqa: E402
@@ -109,7 +112,7 @@ DOCS_CON_COMANDOS = (
     "AGENTS.md",
     "README.md",
     "scripts/README.md",
-    "vault-sandbox/00_System/vault-commands.md",
+    f"{rutas.SANDBOX}/00_System/vault-commands.md",
 )
 
 # `scripts/` es opcional: `scripts/README.md` publica sus ejemplos como
@@ -217,15 +220,15 @@ def comandos_publicados() -> List[Dict]:
 # `vault_norms --explain`, `vault_restore --backup`, `vault_fix_brackets --fix`.
 # Se leen los literales por AST, no las líneas: un comentario que *cita* un
 # flag roto para explicar por qué no existe no es una receta.
-ZONAS_DE_RECETAS = ("scripts", "vault", "cli")
+ZONAS_DE_RECETAS = (rutas.SCRIPTS, "vault", rutas.CLI)
 
 # Sitios que exhiben un comando roto como prueba del defecto que documentan,
 # igual que el changelog del manifiesto. Mundo cerrado: una entrada que ya no
 # aparece falla el test, así que la tabla solo encoge.
 RECETAS_EXHIBIDAS = {
-    ("scripts/vault_doc_sync.py", "vault_audit", "--root"):
+    (cita_repo(rutas.SCRIPTS, "vault_doc_sync.py"), "vault_audit", "--root"):
         "el docstring cita el comando que originó la comprobación 6",
-    ("scripts/vault_doc_sync.py", "vault_quality_check", "--root"):
+    (cita_repo(rutas.SCRIPTS, "vault_doc_sync.py"), "vault_quality_check", "--root"):
         "el docstring cita el comando que originó la comprobación 6",
 }
 
