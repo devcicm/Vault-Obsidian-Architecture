@@ -1,5 +1,9 @@
 # Estado del release candidate — GOAL CLI + MCP para terceros
 
+> **HISTÓRICO (corte del 2026-10-25).** El estado vigente está en
+> `audits/fase2/CANDIDATO-RELEASE.yaml` y en la §9.ter de
+> `INFORME-READINESS-TERCEROS.md` (R23, release v41.23).
+
 **Fecha:** 2026-10-25
 **Rama de trabajo:** `work/release-cli-mcp-20261025`
 **SHA base:** `84f7c298b008b482118b592ba77255b8de805f44` (fase 2 + dictamen QA)

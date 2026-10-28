@@ -11,8 +11,8 @@
 > septiembre y NO se reescriben. El estado medido vigente lo publica
 > `audits/fase2/MATRIZ-CAPACIDAD-PRODUCTO.md`: **97 tools expuestas por MCP**
 > (126 en el catálogo; 2 JS-native), guard chain y recursos `vault://`
-> operativos, verificados por el E2E de terceros y la CI 25/25 del candidato
-> `015b776`. Cualquier promesa de capacidad se rige por esa matriz, no por
+> operativos, verificados por el E2E de terceros y la CI del candidato (R23, 2026-10-28:
+> Windows + Linux, 27 jobs; ver `audits/fase2/CANDIDATO-RELEASE.yaml`). Cualquier promesa de capacidad se rige por esa matriz, no por
 > este PRD.
 
 ---

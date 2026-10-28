@@ -415,3 +415,24 @@ def test_el_positivo_sin_residuo_tambien_es_pass():
     r = _evaluar()
     assert r["estado"] == "PASS"
     assert r["residuos_declarados"] == []
+
+
+def test_checks_en_forma_de_lista_del_envelope_real():
+    """El envelope de `vault_norms --audit` (TD-0003) publica `checks` como
+    lista de {control, estado}. La politica, redactada con un mapa, reventaba
+    con AttributeError al conectarla al colector (R23)."""
+    lista = [{"control": c, "estado": "ejecutado", "hallazgos": 0}
+             for c in contrato.CONTROLES_OBLIGATORIOS]
+    assert _evaluar(runtime=_auditoria(controles=lista),
+                    sandbox=_auditoria(controles=lista))["estado"] == "PASS"
+    degradado = [dict(x) for x in lista]
+    degradado[0]["estado"] = "degradado"
+    veredicto = _evaluar(runtime=_auditoria(controles=degradado),
+                         sandbox=_auditoria(controles=lista))
+    assert veredicto["estado"] == "BLOCKED"
+    assert any("CONTROL_NO_EJECUTADO" in m for m in veredicto["motivos"])
+
+
+def test_checks_con_forma_desconocida_no_acreditan_nada():
+    veredicto = _evaluar(runtime=_auditoria(controles="ejecutado"))
+    assert veredicto["estado"] == "BLOCKED"

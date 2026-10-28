@@ -136,8 +136,18 @@ def _motivos_auditoria(a: Any, nombre: str) -> Tuple[List[str], bool]:
     # Integridad de la ejecucion.
     if a.get("completo") is not True:
         motivos.append(f"AUDITORIA_INCOMPLETA: {nombre} no declara completo=true")
+    # `checks` llega como lista (`[{control, estado, ...}]`, el envelope de
+    # `vault_norms --audit` desde TD-0003) o como mapa control -> estado (la
+    # forma con la que se redacto esta politica). Se aceptan las dos; otra
+    # cosa no acredita ningun control.
+    checks = a.get("checks")
+    if isinstance(checks, list):
+        checks = {c.get("control"): c.get("estado")
+                  for c in checks if isinstance(c, dict)}
+    elif not isinstance(checks, dict):
+        checks = {}
     for control in CONTROLES_OBLIGATORIOS:
-        estado = (a.get("checks") or {}).get(control)
+        estado = checks.get(control)
         if estado != "ejecutado":
             motivos.append(
                 f"CONTROL_NO_EJECUTADO: {nombre} declara {control} en estado "

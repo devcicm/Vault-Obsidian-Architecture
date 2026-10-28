@@ -141,7 +141,7 @@ de su superficie. El catálogo y las normas se comparten.
 - Cobertura de todos los errores posibles
 - Protección de ediciones fuera del toolkit
 - Conteo exacto de tokens para cualquier modelo
-- Instalación completa en todos los entornos (macOS no está en la CI)
+- Instalación en macOS: fuera del alcance de v41.23 (sin runner en la CI ni classifier)
 
 ---
 

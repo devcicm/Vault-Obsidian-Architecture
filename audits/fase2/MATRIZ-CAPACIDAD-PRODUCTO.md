@@ -1,6 +1,12 @@
 # Matriz de capacidad del producto — qué se promete, qué hay, qué está probado
 
-**Estado vigente (R15, 2026-10-27):** candidato `015b7765b80cac21c6dcf859ae075d036cd01def`, CI 25/25
+> **R23 (2026-10-28):** alcance Windows + Linux. macOS salió del classifier y
+> de la CI por decisión del propietario, así que las filas «macOS ✅» de abajo
+> son medidas del candidato `015b776` y ya no son una promesa. La CI vigente
+> tiene 27 jobs (corrida `40630788979`). El candidato vigente está en
+> `CANDIDATO-RELEASE.yaml`.
+
+**Estado anterior (R15, 2026-10-27):** candidato `015b7765b80cac21c6dcf859ae075d036cd01def`, CI 25/25
 (`40442954197`). **macOS está medido**; las filas de superficie `python -m cli`
 fueron reclasificadas como NO empaquetadas (QA-R14-PORT-01). El corte anterior
 (2026-10-26) queda como histórico en el git de este fichero.
