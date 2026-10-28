@@ -692,7 +692,8 @@ scripts/                    ← 167 archivos Python (126 tools del catálogo + 8
 
 | Entorno | Soporte |
 |---|---|
-| Bash / Linux / macOS | Completo |
+| Bash / Linux | Completo |
+| macOS | Fuera de alcance — sin runner en la CI ni classifier; no se promete |
 | PowerShell 5.1 (Windows) | Completo — args JSON con `<>` requieren Bash o archivo temporal |
 | Claude Code (CLI) | Nativo — tools invocables como subprocess |
 | Claude API / GPT / Gemini | Mediante harness que expone las tools como function calls |

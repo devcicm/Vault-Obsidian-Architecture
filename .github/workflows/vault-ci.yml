@@ -6,6 +6,17 @@ on:
   pull_request:
     branches: [main, master]
 
+# Alcance 2026-10-28: Windows + Linux. macOS salió de la matriz y del
+# classifier a la vez (`tests/test_ci_python_matrix.py` exige que coincidan):
+# sus 8 jobs eran los que más esperaban runner y alargaban cada corrida.
+#
+# Un push nuevo a la misma rama/PR cancela la corrida anterior: en R22 siete
+# corridas seguidas sobre la misma rama sumaron horas de cola para validar
+# solo la última.
+concurrency:
+  group: vault-ci-${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     name: Validate Vault Spec
@@ -13,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest]
         # El piso tiene que ejecutarse en algún sitio o no es soporte, es una
         # promesa. `pyproject.toml` dice >=3.9 y aquí solo corría 3.11: seis
         # sitios rompían al IMPORTAR en 3.9 —`ast.AST | None` evaluado al
@@ -88,7 +99,12 @@ jobs:
       # Python↔YAML, y `vault_criterios` lo mide desde v40.19.
       #
       # Una puerta nueva entra aquí sola, el día que entra en el registro.
+      #
+      # Las puertas y el smoke miden el repositorio, no el intérprete: la suite
+      # ya recorre 3.9–3.12 en cada sistema. Se ejecutan una vez por sistema,
+      # en la versión más alta, y bajan ~10 min en seis de las ocho columnas.
       - name: Puertas del estándar (registro vault_gate, todas)
+        if: matrix.python-version == '3.12'
         run: python scripts/vault_gate.py --strict
 
       # AP-40: ningún param publicado por MCP puede ser rechazado por la CLI.
@@ -99,6 +115,7 @@ jobs:
       # AP-42: el ejemplo documentado de cada tool se ejecuta de verdad contra
       # una copia desechable del sandbox. La baseline está en 0: guard duro.
       - name: Smoke de ejecución (AP-42, toda tool se ejecuta)
+        if: matrix.python-version == '3.12'
         run: python scripts/vault_smoke.py --check --strict
 
       # AP-36: falla si algún side-effect se escribió fuera del vault (hasta 2
@@ -176,7 +193,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest]
         python-version: ['3.9', '3.10', '3.11', '3.12']
     steps:
       - uses: actions/checkout@v4

@@ -453,13 +453,9 @@ PREGUNTAS: List[Dict[str, Any]] = [
             "privilegios: 16/16) y otra el 2026-10-15 (wheel 41.5 corregida en "
             "python:3.9-slim con usuario sin privilegios y Node 20: init, "
             "escritura con bitácora, F8, audit, pre-flight y MCP con tools/call); "
-            "en Linux no lo repite ninguna máquina. macOS "
-            "solo lo ejerce el runner macos-latest de la CI, añadido el "
-            "2026-10-15 junto con el classifier explícito que sustituye a «OS "
-            "Independent»; ninguna máquina local lo ha ejecutado. Docker-OSX y "
-            "dockur/macos se descartaron: exigen KVM, que este equipo (Windows "
-            "10 + WSL2) no expone, y la licencia de macOS solo permite "
-            "virtualizarlo sobre hardware Apple. Las instrucciones de "
+            "en Linux no lo repite ninguna máquina. macOS quedó fuera del "
+            "alcance el 2026-10-28: sin classifier ni runner, no se promete. "
+            "Las instrucciones de "
             "instalación están inlined en README.md."
         ),
     },
