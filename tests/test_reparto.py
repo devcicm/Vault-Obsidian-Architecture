@@ -49,7 +49,8 @@ def test_la_union_de_los_trozos_es_la_suite():
             [sys.executable, "-m", "pytest", "--collect-only", "-q", "-o", "addopts=",
              "-p", "no:cacheprovider", "tests/test_reparto.py",
              "tests/test_piso_python.py", "tests/test_ci_python_matrix.py"],
-            cwd=str(RAIZ), env=env, capture_output=True, text=True, timeout=600)
+            cwd=str(RAIZ), env=env, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=600)
         return {l for l in p.stdout.splitlines() if "::" in l}
 
     todo = colectar(None)
