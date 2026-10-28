@@ -215,7 +215,7 @@ def test_el_audit_reporta_una_norma_muda(tmp_path, monkeypatch):
 
     real = puerto.ejecutar
 
-    def falso(codigo, **kw):
+    def falso(codigo, *args, **kw):
         if codigo == "AP-43":
             return {"control": "AP-43", "estado": "ejecutado", "detalle": None,
                     "hallazgos": 1,

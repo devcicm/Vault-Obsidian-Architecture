@@ -371,6 +371,51 @@ certificado son decisiones del propietario (§6) y el dictamen de QA; ninguna
 de las dos cosas la puede cerrar el ejecutor, y ninguna se resuelve con un
 documento que afirme lo contrario.
 
+## 9.bis Actualización R22 — migración B (puerto de controles)
+
+**Candidato nuevo:** `3e92962` (árbol `5557109c`), supersede a `015b776`. Motivo:
+R22 añade un módulo empaquetado (`vault/kernel/controles.py`), así que el
+contenido de la wheel cambia y **el PASS anterior no se transfiere**. La
+evidencia de `015b776` se conserva en `previous_candidate` del manifiesto.
+
+**Qué cambió en arquitectura (medido, no prosa):**
+
+| Métrica | Antes | Después | Verificador |
+|---|---|---|---|
+| `off_port_total` (sitios fuera de puerto) | 5 | **0** | `vault_arch --check --strict` |
+| `crossings_sites` | 49 | 46 | `vault_arch` |
+| pares de contexto | 23 | 22 (`gobernanza -> autoria` eliminado) | `vault_arch`; reconciliador |
+| latencia del audit (aislado) | 149 s (camino ingenuo) | **2,09 s** (tres procesos en paralelo) | `tests/test_puerto_controles.py` |
+| reconciliador Archify | exit 1 (10 divergencias) | **exit 0**, `off_port_total=0` | `audits/fase2/reconciliar_archify.py` |
+
+**Lo que sigue vivo y se declara:** el par `gobernanza -> meta_toolkit` por
+`vault/gobernanza/tool.py -> catalog_adapter` (declarado `a_eliminar`, fuera de
+los cinco sitios que B se propuso saldar). El snapshot de Archify **no se ha
+tocado**: las diez fichas DIV-01..10 siguen sin acto, y por eso QG-00/QG-01 no
+pasan a PASS aunque el reconciliador ya salga 0.
+
+### Matriz REL actualizada (candidato R22)
+
+| ID | Requisito | Verificador | Resultado observado | Estado | Bloqueo / acción |
+|---|---|---|---|---|---|
+| REL-00 | identidad y alcance | `tests/test_manifiesto_candidato.py` | manifiesto con `3e92962`/`5557109c`, hex puro, `release_authorized: false` | **PASS (documental)** | — |
+| REL-01 | arquitectura reconciliada | `vault_arch --check --strict`; reconciliador | `off_port 0`, 34 claves de baseline (solo encoge), reconciliador exit 0 | **PARCIAL** | DIV-01..10 sin acto (DEC-02) |
+| REL-02 | gobernanza conforme | `vault_gate --strict`; `vault_norms --audit` | 26/26 puertas; 3 controles `ejecutado`, `completo: true`, audit 2,09 s | **PASS** | — |
+| REL-03 | suite y E2E | `pytest --junitxml`; `recorrido_terceros_r07.py` | suite del candidato (ver §3 de esta ronda); E2E 27/27 desde wheel | **PASS** | — |
+| REL-04 | seguridad e integridad | colector; saneamiento | sin cambio en esta ronda (los subchecks se re-ejecutan al congelar) | **NOT_RUN (R22)** | recibo por SHA |
+| REL-05 | paridad CLI/MCP | `paridad_cli_mcp.py`; `--check-params` | MCP 97 tools en el E2E; `--check-params` 122 tools, 0 problemas | **PASS** | — |
+| REL-06 | distribución limpia | E2E (venv limpio) | wheel `821cb34e…`, sdist `f778e1b8…`, instalación y 27 pasos | **PASS** | reconstruir tras el árbol final |
+| REL-07 | CI del SHA | `colector_qg.estado_ci` | run del candidato (ver buzón R22) | **PENDIENTE/EN CURSO** | esperar 25/25 |
+| REL-08 | dictamen QA | QA independiente | dictamen R21 acepta AP-37/AUTH-12; el candidato R22 no está dictaminado | **NOT_RUN** | solicitar a QA |
+| REL-09 | autorización | propietario | DEC-01..06 sin firmar | **BLOCKED** | actos del propietario |
+| REL-10..13 | publicación/activación/seguimiento/relanzamiento | release manager | no iniciado | **BLOCKED** | REL-08/09 |
+
+**Regla que no se rompe:** `TEST_PASS ≠ CI_PASS ≠ QG_PASS ≠ QA_APPROVED ≠
+OWNER_AUTHORIZED ≠ PUBLISHED`. Esta sección no adelanta ninguna de las
+siguientes a la anterior.
+
+---
+
 ## 10. Matriz formal de release (REL-00..13) — estado R16
 
 Contrato del GOAL R14 §6 ampliado por R16 §6. Cada etapa declara: propósito

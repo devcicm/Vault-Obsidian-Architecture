@@ -79,7 +79,7 @@ def test_runtime_audit_no_arrastra_observabilidad_del_estandar(tmp_path, monkeyp
     _sync_index(root)
     real = puerto.ejecutar
 
-    def falso(codigo, **kw):
+    def falso(codigo, *args, **kw):
         if codigo in ("AP-42", "AP-43"):
             return {"control": codigo, "estado": "ejecutado", "detalle": None,
                     "hallazgos": 1,

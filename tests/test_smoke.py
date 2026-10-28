@@ -148,7 +148,7 @@ def test_el_audit_reporta_la_deuda_congelada(tmp_path, monkeypatch):
 
     real = puerto.ejecutar
 
-    def falso(codigo, **kw):
+    def falso(codigo, *args, **kw):
         if codigo == "AP-42":
             return {"control": "AP-42", "estado": "ejecutado", "detalle": None,
                     "hallazgos": 1,

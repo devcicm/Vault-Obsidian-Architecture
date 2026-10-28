@@ -176,6 +176,12 @@ def test_los_tres_controles_corren_y_cuentan():
 
 # ── COST-a: presupuesto de latencia ─────────────────────────────────────────
 
+@pytest.mark.skipif(
+    bool(__import__("os").environ.get("PYTEST_XDIST_WORKER")),
+    reason=("medida de latencia serial-only: con 8 workers compitiendo el reloj "
+            "de pared mide a los otros workers (5,1 s frente a 2,09 s en "
+            "aislamiento). Se mide en `pytest tests/test_puerto_controles.py` "
+            "sin -n y en el informe de la ronda; el umbral no se relaja"))
 def test_el_audit_cabe_en_el_presupuesto_de_cinco_segundos():
     """COST-a: la suma del trabajo MEDIDO por el puerto cabe en el presupuesto.
 
