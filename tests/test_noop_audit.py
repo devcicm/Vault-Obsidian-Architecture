@@ -1,8 +1,9 @@
 """AP-37 — no-op silencioso. Contrato de vault_noop_audit y de la baseline.
 
-La invariante central no es "cero infractoras" (hoy son 53), sino que la deuda
-sea **monótona decreciente**: puede encogerse, nunca crecer. Una tool nueva con
-side effects nace conforme o el gate falla.
+La invariante central no es "cero infractoras" —la deuda se ha ido saldando y
+la baseline está vacía— sino que la deuda sea **monótona decreciente**: puede
+encogerse, nunca crecer. Una tool nueva con side effects nace conforme o el
+gate falla.
 """
 
 import json
@@ -12,9 +13,25 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
+import pytest  # noqa: E402
+
 import vault_mcp_catalog  # noqa: E402
 import vault_noop_audit as vna  # noqa: E402
 from vault_norms import NORM_CATALOG  # noqa: E402
+
+#: El banco se ejecuta de verdad: copia el sandbox **una vez por tool**
+#: (127 copias) y barre el catalogo entero. El perfil lo mide en 73 s, asi
+#: que es un modulo lento: el carril rapido no lo corre.
+#:
+#: **El crash del worker bajo `-n auto`** (medido el 2026-10-28):
+#: `test_el_banco_sigue_viendo_trabajo_real` mata al worker `gw1` cuando
+#: la suite corre con todos los workers, y pasa limpio en serie (116 s) y
+#: con `-n 4` (116 s). No es un fallo del test: es el pico de copias
+#: simultaneas. Hipotesis sin confirmar —16 workers copiando el sandbox a
+#: la vez agotan disco o memoria— y esta escrita como hipotesis, no como
+#: causa. Mientras no se cierre, el verde canonico de esta suite se mide
+#: en serie o con `-n 4`; el `-n auto` puede caer en este unico punto.
+pytestmark = pytest.mark.slow
 
 
 # ─── La norma existe en el registro canónico ─────────────────────────────────

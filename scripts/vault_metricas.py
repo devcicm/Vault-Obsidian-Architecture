@@ -114,6 +114,20 @@ METRICAS: List[Dict[str, Any]] = [
      "que": "Normas cuya revisión venció: `revisado_en` más su cadencia ya pasó (R4).",
      "fuente": "vault_norms_catalog.gestion_de_normas",
      "objetivo": _plazo(0)},
+    {"id": "deuda_viva_baselines", "tipo": "desarrollo", "origen": "calculada", "sentido": "menor",
+     "unidad": "sitios",
+     "que": ("Sitios de deuda **vivos** en todas las baselines que declaran ser "
+             "deuda. Una baseline que declara no serlo queda fuera: su contrato "
+             "de estabilidad no es deuda que encoger."),
+     "fuente": "vault_baseline.tamano_congelado sobre vault_blueprint._BASELINES",
+     "objetivo": {"valor": 92, "fecha_limite": "2027-06-30", "cadencia_dias": 90,
+                   "dueno": "meta_toolkit — vault_metricas",
+                   "por_que": ("Medido el 2026-10-28: 92 sitios vivos en ocho "
+                               "baselines de deuda, de 255 antes de la consolidación "
+                               "(la del layout bajó de 175 a 16 sola). El objetivo "
+                               "promete que no crece; el plazo y el dueño de cada "
+                               "deuda viven en su propia baseline, que es donde se "
+                               "reclama el trabajo.")}},
     {"id": "baselines_vencidas", "tipo": "desarrollo", "origen": "calculada", "sentido": "menor",
      "unidad": "baselines",
      "que": "Baselines cuyo objetivo pasó de fecha sin cumplirse.",
@@ -246,6 +260,42 @@ def _deuda_pendiente() -> int:
     return sum(1 for d in vault_blueprint.DEUDA_DECLARADA if d.get("estado") == "pendiente")
 
 
+def _deuda_viva_por_baseline() -> Dict[str, Dict[str, Any]]:
+    """La deuda viva, baseline por baseline.
+
+    Solo cuentan las baselines que **declaran** ser deuda: una con
+    `sin_objetivo_porque` (el contrato de campos con los consumidores) tiene
+    1.471 entradas y ninguna es un sitio que encoger —contarlas inflaría la
+    métrica con un contrato que no se negocia.
+    """
+    import vault_blueprint
+
+    salida: Dict[str, Dict[str, Any]] = {}
+    for fichero, clave, norma in vault_blueprint._BASELINES:
+        ruta = RAIZ / "scripts" / fichero
+        if not ruta.exists():
+            continue
+        estado = vault_baseline.estado_objetivo(ruta, clave, norma)
+        if estado["estado"] == "no_aplica":
+            continue
+        datos = vault_baseline.cargar_datos(ruta, norma)
+        salida.setdefault(fichero, {})[clave] = {
+            "sitios": vault_baseline.tamano_congelado(datos.get(clave)),
+            "estado": estado["estado"],
+            "objetivo": estado.get("objetivo"),
+        }
+    return salida
+
+
+def _deuda_viva_baselines() -> int:
+    """Los sitios de deuda vivos, sumados."""
+    return sum(
+        entrada["sitios"]
+        for claves in _deuda_viva_por_baseline().values()
+        for entrada in claves.values()
+    )
+
+
 def _normas_vencidas() -> int:
     from vault_norms_catalog import gestion_de_normas
     return len(gestion_de_normas()["vencidas"])
@@ -282,6 +332,7 @@ def _promesas_descubiertas() -> int:
 
 CALCULOS: Dict[str, Callable[[], float]] = {
     "deuda_pendiente": _deuda_pendiente,
+    "deuda_viva_baselines": _deuda_viva_baselines,
     "normas_vencidas": _normas_vencidas,
     "baselines_vencidas": lambda: sum(1 for e in _estados_de_baselines() if e == "vencido"),
     "baselines_por_encima_de_objetivo": lambda: sum(
@@ -579,6 +630,7 @@ def check(hoy: Optional[date] = None) -> Dict[str, Any]:
                           "fix": "python scripts/vault_metricas.py --doc"})
     return {"ok": not problemas, "tool": "vault_metricas", "action": "check",
             "metricas": len(METRICAS), "observaciones": len(obs), "filas": filas,
+            "deuda_viva_por_baseline": _deuda_viva_por_baseline(),
             "alertas": alertas, "problems": problemas,
             "hint": ("Verde dice que el registro es coherente y el histórico no se ha "
                      "reescrito; si una métrica cumple lo dice su fila, y lo vencido "

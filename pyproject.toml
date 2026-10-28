@@ -81,7 +81,7 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v --tb=short --timeout=300"
-# Carril rápido: `python -m pytest -m "not slow"` corre la suite sin los 23
+# Carril rápido: `python -m pytest -m "not slow"` corre la suite sin los
 # módulos que el perfil del 2026-10-20 midió con llamadas > 25 s. El carril no
 # sustituye al cierre: el checklist manda `python -m pytest tests/ -q -n auto`.
 markers = [
