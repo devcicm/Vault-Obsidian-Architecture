@@ -18,7 +18,7 @@ ESTADO: EN CURSO — B implementada en su núcleo técnico (puerto + superficies
 
 RAMA: work/release-cli-mcp-20261025
 SHA INICIAL: 4bf4092
-SHA FINAL: a44ead425df5198126631af5ebf512848ddd78a8
+SHA FINAL: 3d332a531269cdb9587c22f8f29eb01d9a077c4d (HEAD documental; el SHA de CÓDIGO certificado es 81ab2ff, ancestro de este)
 
 DEC-01: DRAFT — sin cambio; la Constitución se reconcilia cuando B cierre del
         todo (I2-a incluida).
@@ -63,7 +63,25 @@ WHEEL/SDIST: del producto congelado 015b776; sin reconstruir (no cambió el
 SBOM: sin cambio.
 CI: pendiente la del HEAD nuevo.
 
-COMMITS: ver el bloque final (lista al cerrar).
+COMMITS:
+  · 3e92962 feat(kernel): puerto de controles (DEC-02 ruta B) y fachada de gobernanza migrada
+  · e9ccda2 fix(R22b): el par resuelto se retira del presupuesto (regla del repo) y la latencia se mide con el reloj del puerto
+  · 4c81136 perf(kernel): los tres controles se ejecutan en paralelo (audit 2,1 s) y la latencia se mide mejor-de-3
+  · a44ead4 test(R22c): los dobles del puerto aceptan posicionales y la latencia se mide en serie
+  · cc8c770 docs(R22): manifiesto del candidato a44ead4 y cierre de certificacion en el buzon
+  · 81ab2ff test(R22d): la nota de error se localiza por patron, no por la fecha fijada al importar
+  · 3d332a5 docs(R22): CI del SHA certificado 81ab2ff registrada (run 40611205349, 25/25)
+  CI por SHA (sin omitir rojos):
+  · run 40592265887 · 3e92962 · failure — 12 validate: presupuesto resuelto + latencia bajo xdist
+  · run 40598060271 · e9ccda2 · failure — latencia aún medida bajo xdist
+  · run 40599024605 · 4c81136 · failure — dobles del puerto sin *args
+  · run 40601748818 · a44ead4 · success 25/25
+  · run 40605265453 · cc8c770 · failure — 8 columnas: cruce de medianoche UTC del test de log_error
+  · run 40611205349 · 81ab2ff · success 25/25
+  · run 40615607289 · 3d332a5 · success 25/25
+  HIGIENE: worktrees temporales de rondas anteriores retirados
+  (parche de trazabilidad en %TEMP%\opencode\wt-r1b-iso-20261025.patch);
+  upstream de la rama fijado a origin/work/release-cli-mcp-20261025.
 
 EVIDENCIAS: salida del puerto y latencias en este informe; tests nuevos
          `tests/test_puerto_controles.py`; `scripts/arch-baseline.json`
@@ -93,7 +111,8 @@ PUERTAS:        26/26 (vault_gate --strict; gate sha256 38a752d9…)
 E2E:            27/27 desde wheel en venv limpio (e2e sha256 63f3a91201a99c01…)
 WHEEL:          1afe8a0ff01474b3332e0f671bd09fd4f582e25ad3d30f45c9f4112a5bf90764
 SDIST:          9fccc2ebfe312fee744c4030d3d6e2f96eec60bd7f606910bc3c9ab87af23a34
-CI:             run 40611205349 · completed · success (25/25 jobs, verificado con la API de jobs)
+CI:             run 40611205349 · completed · success (25/25 jobs, verificado con la API de jobs) para el SHA de código 81ab2ff;
+                run 40615607289 · completed · success (25/25) para el HEAD documental 3d332a5.
                 sin conclusión todavía
 ```
 
