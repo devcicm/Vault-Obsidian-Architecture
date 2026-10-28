@@ -18,7 +18,7 @@ ESTADO: EN CURSO — B implementada en su núcleo técnico (puerto + superficies
 
 RAMA: work/release-cli-mcp-20261025
 SHA INICIAL: 4bf4092
-SHA FINAL: el commit de esta ronda (ver COMMITS)
+SHA FINAL: a44ead425df5198126631af5ebf512848ddd78a8
 
 DEC-01: DRAFT — sin cambio; la Constitución se reconcilia cuando B cierre del
         todo (I2-a incluida).
@@ -80,6 +80,45 @@ DECISIONES ABIERTAS: DEC-01..06.
 SIGUIENTE ACCIÓN: (a) I2-a con nuevo candidato de producto y recertificación;
          (b) corrida completa de puertas + suite + E2E + CI del HEAD; (c) actas.
 ```
+
+
+### Cierre de la certificación R22 (candidato final)
+
+```text
+SHA:            a44ead425df5198126631af5ebf512848ddd78a8
+SUITE:          6440 passed / 14 skipped /
+                0 failed / 0 errors
+                (JUnit sha256 3fa9d9c2353f7c65…)
+PUERTAS:        26/26 (vault_gate --strict; gate sha256 38a752d9…)
+E2E:            27/27 desde wheel en venv limpio (e2e sha256 63f3a91201a99c01…)
+WHEEL:          1afe8a0ff01474b3332e0f671bd09fd4f582e25ad3d30f45c9f4112a5bf90764
+SDIST:          9fccc2ebfe312fee744c4030d3d6e2f96eec60bd7f606910bc3c9ab87af23a34
+CI:             run 40601748818 · queued ·
+                sin conclusión todavía
+```
+
+**Lo que esto acredita y lo que no.** Acredita que el árbol del candidato pasa
+la suite completa, las 26 puertas, el E2E desde la wheel y las pruebas del
+puerto; no acredita QG-00/QG-01 (las diez fichas siguen sin acto), ni QG-02
+(DEC-03/DEC-04), ni QG-07 (prerrequisitos), ni autorización de release. La CI
+del SHA se registra arriba con su estado real: si no ha concluido, no se cuenta
+como verde.
+
+**Historial de esta ronda (sin ocultar rojos):** la primera suite del candidato
+(`3e92962`) dio 3 fallos — dos regresiones mías (el par resuelto conservado en
+el presupuesto y la latencia medida bajo xdist) y un worker caído; la segunda
+(`4c81136`) dio 6 — los tres dobles del puerto sin argumentos posicionales, la
+latencia bajo 8 workers y `test_log_error_idempotente` por contención; esta
+tercera corrida es la del árbol final, con las tres clases corregidas. La CI de
+`3e92962` (run 40592265887) quedó en failure por los mismos dos defectos que
+`e9ccda2` ya corrigió; no se oculta ni se atribuye a infraestructura.
+
+**I2-a sigue pendiente** y es la única parte de la enmienda que falta: publicar
+la superficie de mantenimiento (entry point + clase `maintenance_publicada`) y
+sacar `vault_smoke`/`vault_voice` de `empaquetado/fuera-de-la-wheel.json`. El
+puerto ya resuelve `vault_toolkit/_impl` si existe; desde una wheel limpia hoy
+los tres controles devuelven `no_ejecutado` (fail-closed, nunca PASS). Esa
+unidad exige candidato nuevo y su propia recertificación.
 
 ## Qué se ha implementado (y qué no)
 

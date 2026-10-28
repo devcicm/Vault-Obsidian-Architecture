@@ -1,33 +1,22 @@
-# Manifiesto del candidato de release — ronda R14/QA-R14-DOC-02, contrato
-# de ascendencia reconciliado en R17/R18 (QA-R16-DOC-01 y QA-R17-DOC-01)
+# Manifiesto del candidato de release — ronda R22 (DEC-02 ruta B)
 #
-# Contrato del GOAL R14 §5, corregido por el dictamen e47d62f (QA-R14-DOC-02):
-# los campos destinados a validación automática contienen SOLO el valor
-# (hex puro, sin prosa); los metadatos y las notas viven en claves separadas.
+# Candidato: a44ead4 (arbol 195d9e8b). Supersede a 015b776, que NO se
+# borra: su evidencia queda en `previous_candidate`. Motivo: R22 anade un
+# modulo empaquetado (`vault/kernel/controles.py`, el puerto de controles de
+# DEC-02) y cambia el contenido de la wheel. Un PASS de un SHA no se traslada.
 #
-# CONVENCIÓN ANTI-CIRCULARIDAD (vigente): este manifiesto vive DENTRO del
-# árbol, así que el SHA del commit que lo fija no puede escribirse a sí
-# mismo: se obtiene de git en tiempo de validación (HEAD de la rama).
-# La relación que se comprueba es de ASCENDENCIA — el product_sha es
-# ANCESTRO del HEAD documental, no necesariamente su padre inmediato (puede
-# haber commits documentales entre medias). El campo `doc_parent_sha` es el
-# commit de PUBLICACIÓN INICIAL de este manifiesto, no el padre actual.
+# CONVENCION ANTI-CIRCULARIDAD: el SHA del commit que fija este manifiesto se
+# lee de git en tiempo de validacion; la relacion con product_sha es de
+# ASCENDENCIA (merge-base --is-ancestor), no de paternidad inmediata.
 #
-# Validación: tests/test_manifiesto_candidato.py (formato hex, existencia del
-# commit en git, ascendencia del product_sha respecto al HEAD documental,
-# existencia del commit de publicación inicial, y negativos de hash mal
-# formado, SHA ajeno y SHA real que no es ancestro).
+# Validacion: tests/test_manifiesto_candidato.py.
 
 release_candidate:
-  product_sha: 015b7765b80cac21c6dcf859ae075d036cd01def
-  product_tree_sha: d190fd243567556e824795154b6fd44bd76309d5
+  product_sha: a44ead425df5198126631af5ebf512848ddd78a8
+  product_tree_sha: 195d9e8b4beefe6599a95f01e0c4a3b147ebac5b
   version: 41.23
   rama: work/release-cli-mcp-20261025
   documentation:
-    # El product_sha es ANCESTRO del HEAD documental, no necesariamente su
-    # padre inmediato: entre el producto y el HEAD pueden intercalarse
-    # commits documentales. La prueba lo comprueba con `merge-base
-    # --is-ancestor`, NO con `HEAD^` (QA-R16-DOC-01).
     product_ancestor_of_head: true
     doc_parent_sha: e0fc775551217ee0a778ca3dece0da3f0a63ba38
     doc_parent_sha_note: >-
@@ -41,110 +30,79 @@ release_candidate:
 artifacts:
   wheel:
     artifact_filename: vault_obsidian_architecture-41.23-py3-none-any.whl
-    digest: 8cda5ef45626dd244199528eb3f8b5403788f6f1e4b3e2e75ac98f5f737f3cfd
+    digest: 1afe8a0ff01474b3332e0f671bd09fd4f582e25ad3d30f45c9f4112a5bf90764
     evidence_note: >-
-      construcción del E2E (recorrido_terceros_r07.py). El dist del árbol del
-      candidato tiene otro hash de fichero (452004252b33552bb94a5027a34daf1d
-      7f508dab69c34c6d44f51d40cacb41de) porque el ZIP no es reproducible byte
-      a byte: la equivalencia acreditada es de CONTENIDO (706/706 miembros, 0
-      distintos).
+      construccion del E2E (recorrido_terceros_r07.py) sobre el arbol del
+      candidato e instalacion en venv limpio. La equivalencia acreditada es de
+      CONTENIDO: el ZIP no es reproducible byte a byte.
   sdist:
     artifact_filename: vault_obsidian_architecture-41.23.tar.gz
-    digest: 1c65f132434809c22cb5794a4896a4717c542b3dbbf00b15a7c590348fdb7656
+    digest: 9fccc2ebfe312fee744c4030d3d6e2f96eec60bd7f606910bc3c9ab87af23a34
 
 verification:
   suite:
-    junit_digest: fa321a023d97e8b7bf635ce1eaa6e834b79b7bc9ca9f5232fd044d024f817b78
+    junit_digest: 3fa9d9c2353f7c654c4d5ec57ce540216f1724241a46861aae931f3c691bbf80
     junit_evidence_note: >-
-      JUnit r14: 6334 passed / 13 skipped / 0 failed; 6347 collectados.
+      JUnit del candidato: 6440 passed / 14 skipped /
+      0 failed / 0 errors sobre 6454 casos.
+      El skip adicional frente a rondas anteriores es la medida de latencia,
+      declarada serial-only (no es valida con 8 workers compitiendo).
   gates:
-    manifest_digest: dcb05295e1593939caa43e6d7f6eae9122511418a97caf34f7c4ae52aabc3ec3
+    manifest_digest: 38a752d993b76a5725f62598b30b33a6b3bb87c39afa6247f70f4e4f5f79b3e6
     gates_evidence_note: >-
-      artefacto del subcheck puertas_26 del recibo QG-02 del colector (las 26
-      puertas sobre este SHA).
+      salida de `vault_gate --strict`: 26/26, con noop, arquitectura, servicio,
+      kernel, recursos y blueprint incluidos.
   e2e:
-    manifest_digest: 9d6a3c3fd2f70422fd3b15a40083fb475908f9e6ebcc9bf816abe75e820cc721
-    e2e_evidence_note: e2e.json del recorrido 27/27 sobre la wheel del candidato.
+    manifest_digest: 63f3a91201a99c019a9f304c11f9714c5db57935a144573998c9e65669eb277f
+    e2e_evidence_note: >-
+      27/27 pasos desde la wheel instalada en venv limpio: CLI, MCP (97 tools),
+      persistencia, clean/restore con hash y locks, reinstalacion.
   ci:
-    run_id: 40442954197
-    run_sha: 015b7765b80cac21c6dcf859ae075d036cd01def
-    status: completed
-    conclusion: success
+    run_id: 40601748818
+    run_sha: a44ead425df5198126631af5ebf512848ddd78a8
+    status: queued
+    conclusion: en_curso
     required_jobs: 25
-    successful_jobs: 25
-  ci_head_documental:
-    note: >-
-      corridas de los HEAD documentales (correcciones y expedientes). No
-      sustituyen la del product_sha: son acreditaciones de SHAs distintos,
-      cada una de las suyas. 09e849c quedo en failure por la carrera de copia
-      del sandbox vivo (corregida en R17); los demas, 25/25.
-    runs:
-    - run_id: 40456389815
-      run_sha: 55ad340918caca237ad18bcc4aec64b05a9333d0
-      status: completed
-      conclusion: success
-      required_jobs: 25
-      successful_jobs: 25
-    - run_id: 40467869545
-      run_sha: 5970dfbbb835b0ae4958e2ee8384d343ea52fd27
-      status: completed
-      conclusion: success
-      required_jobs: 25
-      successful_jobs: 25
-    - run_id: 40472633327
-      run_sha: 2054e8daa2a4d903c8d30bee84acba32a44e1780
-      status: completed
-      conclusion: success
-      required_jobs: 25
-      successful_jobs: 25
-    - run_id: 40474701480
-      run_sha: 2f7b1550330b2cff0d7c84fd49ddb95184a346e8
-      status: completed
-      conclusion: success
-      required_jobs: 25
-      successful_jobs: 25
-    - run_id: 40481751486
-      run_sha: b4f7302632281c56d9f86942fbe0b81ca619ee77
-      status: completed
-      conclusion: success
-      required_jobs: 25
-      successful_jobs: 25
-    - run_id: 40488879515
-      run_sha: 515f19646730e459a09f8fe45dbfd95946283b25
-      status: completed
-      conclusion: success
-      required_jobs: 25
-      successful_jobs: 25
-    - run_id: 40464661392
-      run_sha: 09e849cde3aa1bcb4d5d79743fad5ac2ce9a1c17
-      status: completed
-      conclusion: failure
-      required_jobs: 25
-      successful_jobs: 24
-      cause: "carrera de copia del sandbox vivo (.locks retirado a mitad): corregida en R17"
+    successful_jobs: null
 
 governance:
   qg_statuses:
     QG-00: BLOCKED
     QG-01: BLOCKED
     QG-02: BLOCKED
-    QG-03: PASS
-    QG-04: PASS
-    QG-05: PASS
-    QG-06: PASS
+    QG-03: NOT_RUN
+    QG-04: NOT_RUN
+    QG-05: NOT_RUN
+    QG-06: NOT_RUN
     QG-07: BLOCKED
   qg_status_note: >-
-    QG-00/QG-01: recibo FAIL solo en reconciliador_archify (10 divergencias
-    sin ratificar — DEC-02; el mecanismo de aceptación exige ratificado:true,
-    fail-closed). QG-02: recibo FAIL solo en sin_violaciones
-    (total_violations=1, la externa AP-36 — DEC-03/DEC-04). QG-07: la CI del
-    SHA es 25/25 success pero la política lo deja BLOCKED por el prerrequisito
-    QG-00. Detalle por subcheck: RECIBOS-R14-MANIFIESTO.md.
-  qa_verdict_ref: e47d62f
+    QG-00/QG-01: el reconciliador sale exit 0 y off_port_total=0, pero las diez
+    fichas DIV-01..10 siguen sin acto y el snapshot no se toca: no se declara
+    PASS. QG-02: DEC-03/DEC-04 sin acto. QG-03..06: los recibos del candidato
+    anterior son SUYOS y no se trasladan; los de este SHA no se han emitido en
+    esta ronda (NOT_RUN, no PASS). QG-07: prerrequisitos.
+  qa_verdict_ref: e5220ffc62ab6835e0d41bba8c877be1a698c5b9
   qa_verdict_ref_note: >-
-    rama qa/review-release-cli-mcp-015b776-20261027 (dictamen R14):
-    QA-R13-06=ACCEPTED_SCOPED; CI_MATRIX_25_OF_25=VERIFIED; QA-RELEASE=BLOCKED.
+    dictamen R21: AP37_LINUX=ACCEPTED_SCOPED; AUTH12=ACCEPTED_SCOPED_STATIC;
+    CI_CD98=VERIFIED_25_OF_25; RELEASE=BLOCKED_OWNER_DECISION. El candidato R22
+    no esta dictaminado.
   owner_decision_ref: audits/handoff/DECISIONES-PROPIETARIO.md
-  owner_decision_ref_note: DEC-01..DEC-06 con espacios de decisión vacíos.
+  owner_decision_ref_note: DEC-01..DEC-06 con espacios de decision vacios.
   release_authorized: false
   publication_status: CANDIDATE
+
+previous_candidate:
+  product_sha: 015b7765b80cac21c6dcf859ae075d036cd01def
+  product_tree_sha: d190fd243567556e824795154b6fd44bd76309d5
+  wheel_digest: 8cda5ef45626dd244199528eb3f8b5403788f6f1e4b3e2e75ac98f5f737f3cfd
+  sdist_digest: 1c65f132434809c22cb5794a4896a4717c542b3dbbf00b15a7c590348fdb7656
+  suite: 6334 passed / 13 skipped / 0 failed (JUnit r14)
+  gates: 26/26
+  e2e: 27/27
+  ci_run: 40442954197
+  ci_result: completed/success 25/25
+  superseded_by: a44ead425df5198126631af5ebf512848ddd78a8
+  superseded_reason: >-
+    R22 anadio `vault/kernel/controles.py` (puerto de controles de DEC-02),
+    modulo empaquetado: el contenido de la wheel cambia y el PASS anterior no
+    se transfiere. Sus recibos QG-03..06 siguen siendo suyos.
