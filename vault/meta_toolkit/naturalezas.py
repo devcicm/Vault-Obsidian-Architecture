@@ -98,7 +98,7 @@ NATURALEZAS: Dict[str, Dict[str, Any]] = {
             "vault_foreign_check", "vault_gate", "vault_noop_audit",
             "vault_norms", "vault_norms_coherence", "vault_criterios",
             "vault_ciclos", "vault_kernel", "vault_excepcion_declarada",
-            "vault_recursos",
+            "vault_recursos", "vault_clones",
             # AP-68: vigila que el git que el toolkit ejecuta pase por su
             # dueño y con verbo declarado. No abre ningún vault; lo que
             # mide es este repositorio y los procesos que lanza.

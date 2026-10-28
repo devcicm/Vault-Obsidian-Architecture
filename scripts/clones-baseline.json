@@ -1,0 +1,22 @@
+{
+ "description": "Cuerpos duplicados que no se pueden fusionar sin cruzar una frontera de contexto o sin crear un módulo para un solo uso. Solo puede encoger: un duplicado nuevo se une a su dueño, no se congela. Cada sitio dice por qué se queda.",
+ "sitios": [
+  "clone|2cf4e732|2|vault/install.py::_run,vault/uninstall.py::_run",
+  "clone|6352b7f2|4|scripts/vault_code_map.py::load_index,scripts/vault_code_module.py::load_index,scripts/vault_code_query.py::load_index,scripts/vault_code_relation.py::load_index",
+  "clone|aa2ed9b7|2|cli/resolver.py::_imports_scripts,vault/meta_toolkit/resolucion_producto.py::_imports_scripts",
+  "clone|d4e1dd74|2|scripts/vault_code_module.py::save_index,scripts/vault_code_relation.py::save_index"
+ ],
+ "motivos": {
+  "clone|2cf4e732|2|vault/install.py::_run,vault/uninstall.py::_run": "Instalador y desinstalador son guiones gemelos ?el mismo programa en dos direcciones?: el segundo corre con el paquete ya instalado y el primero corre mientras se instala. El cuerpo son tres l?neas; un due?o compartido exigir?a un m?dulo que solo usar?a el instalador, y un m?dulo para un solo uso es deuda nueva. Se declara el duplicado; no se borra.",
+  "clone|6352b7f2|4|scripts/vault_code_map.py::load_index,scripts/vault_code_module.py::load_index,scripts/vault_code_query.py::load_index,scripts/vault_code_relation.py::load_index": "Los cuatro m?dulos del grupo de c?digo leen el mismo ?ndice con el mismo cuerpo. Se unifican en `vault_lib.cargar_indice(ruta)` ?la consolidaci?n de ?ndices de la Fase 7?; mientras esa entra, el duplicado queda congelado y con el motivo escrito.",
+  "clone|aa2ed9b7|2|cli/resolver.py::_imports_scripts,vault/meta_toolkit/resolucion_producto.py::_imports_scripts": "Cada lado de la frontera instalable comprueba un fichero distinto ?el wrapper de la CLI y el adaptador de `scripts/`? y cada uno vive en su contexto (`cli/` y `vault/meta_toolkit/`). Un due?o compartido cruzar?a la frontera de contexto (AP-62), que es justo lo que mide el guard de recursos. Se declara el duplicado.",
+  "clone|d4e1dd74|2|scripts/vault_code_module.py::save_index,scripts/vault_code_relation.py::save_index": "Los dos m?dulos del grupo de c?digo escriben el mismo ?ndice con el mismo cuerpo. Se unifican en `vault_lib.guardar_indice(ruta)` ?la consolidaci?n de ?ndices de la Fase 7?; mientras esa entra, el duplicado queda congelado y con el motivo escrito."
+ },
+ "objetivo": {
+  "tamano": 2,
+  "fecha_limite": "2027-03-31",
+  "cadencia_dias": 90,
+  "dueno": "meta_toolkit ? vault_clones",
+  "por_que": "Propuesta medida aprobada por el usuario el 2026-10-28. Medido: 4 grupos de cuerpos id?nticos entre m?dulos ?2 de ?ndices (los unifica la consolidaci?n de la Fase 7) y 2 declarados que no se fusionan sin cruzar una frontera de contexto?. Objetivo: 2, que es el suelo: los otros dos se pagan al unificar los ?ndices."
+ }
+}

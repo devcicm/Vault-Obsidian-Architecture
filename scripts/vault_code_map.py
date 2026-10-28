@@ -64,13 +64,6 @@ def _index_file() -> Path:
     return _code_dir() / ".code-index.json"
 
 
-def slugify(text: str) -> str:
-    # Delega en el slug canónico (`vault_lib.slugify`). La copia que había
-    # aquí divergía del resto: unas borraban los acentos, otras los dejaban
-    # en el nombre de fichero. Una sola fuente, un solo nombre de nota.
-    return slugify_strict(text)
-
-
 def load_index() -> Dict[str, Any]:
     try:
         with open(_index_file(), "r", encoding="utf-8") as f:
@@ -104,7 +97,7 @@ def generate_code_map(project: str, index: Dict[str, Any]) -> str:
     for i, mod in enumerate(modules):
         title = mod.get("title", mod.get("filePath", ""))
 
-        slug = slugify(Path(mod.get("filePath", title)).stem)
+        slug = slugify_strict(Path(mod.get("filePath", title)).stem)
 
         node_id = f"N{i}"
 
@@ -152,7 +145,7 @@ def vault_code_map(project: str) -> Dict[str, Any]:
     es_del = _proyectos.pertenencia_en(_raiz(), project)
     index = load_index()
 
-    safe_project = slugify(project)
+    safe_project = slugify_strict(project)
 
     map_dir = _code_dir() / safe_project
 

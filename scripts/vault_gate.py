@@ -210,6 +210,15 @@ PUERTAS: List[Dict[str, Any]] = [
                "ampliar la baseline no son la solución, solo esconden dónde",
     },
     {
+        "id": "clones",
+        "cmd": ["vault_clones.py", "--check", "--strict"],
+        "mide": "Ningún cuerpo duplicado nuevo: ni sombra dentro de un módulo ni "
+                "clon entre módulos (CN-05)",
+        "fix": "unir los cuerpos en su dueño; si no se puede fusionar —frontera "
+               "de contexto o módulo de un solo uso— se declara con su motivo "
+               "escrito en la baseline, que solo encoge",
+    },
+    {
         "id": "kernel",
         "cmd": ["vault_kernel.py", "--check", "--strict"],
         "mide": "La lista del núcleo no contradice a la forma medida del grafo: "

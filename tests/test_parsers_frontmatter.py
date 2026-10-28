@@ -73,7 +73,7 @@ def test_vault_read_delega_y_conserva_su_propio_contrato_de_cuerpo():
 
     for nota in _corpus():
         texto = nota.read_text(encoding="utf-8", errors="replace")
-        meta, cuerpo = vault_read.parse_frontmatter(texto)
+        meta, cuerpo = vault_read.parse_frontmatter_recortado(texto)
         esperado_meta = parse_frontmatter(texto)
         assert meta == esperado_meta, nota
         assert cuerpo == cuerpo.strip()

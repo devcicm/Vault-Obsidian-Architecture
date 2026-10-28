@@ -78,10 +78,6 @@ def _flows_dir() -> Path:
     return _repo().seccion("13_Flows")
 
 
-def utcnow() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-
-
 FLOW_TYPES = ["workflow", "pipeline", "lifecycle", "dataflow"]
 
 
@@ -91,13 +87,6 @@ MERMAID_HINTS = {
     "lifecycle": "stateDiagram-v2",
     "dataflow": "flowchart TD",
 }
-
-
-def slugify(text: str) -> str:
-    # Delega en el slug canónico (`vault_lib.slugify`). La copia que había
-    # aquí divergía del resto: unas borraban los acentos, otras los dejaban
-    # en el nombre de fichero. Una sola fuente, un solo nombre de nota.
-    return slugify_strict(text)
 
 
 def vault_flow_save(
@@ -119,9 +108,9 @@ def vault_flow_save(
     if flow_type not in FLOW_TYPES:
         return emit_error("vault_flow_save", "INVALID_VALUE", f"Flow type '{flow_type}' not valid. Use: {FLOW_TYPES}")
 
-    safe_project = slugify(project)
+    safe_project = slugify_strict(project)
 
-    safe_name = slugify(name)
+    safe_name = slugify_strict(name)
 
     now = utcnow()
 

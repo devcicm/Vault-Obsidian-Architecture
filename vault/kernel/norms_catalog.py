@@ -274,6 +274,8 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     _desde_paquete("CN-02"),
     _desde_paquete("CN-03"),
     _desde_paquete("CN-04"),
+    # ── Convención de estructura CN-05 — un cuerpo, un dueño (v41.25) ─────────
+    _desde_paquete("CN-05"),
 ]
 
 # Índice rápido por código

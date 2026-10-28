@@ -838,6 +838,52 @@
         "vault_blueprint"
       ]
     },
+    "vault_clones": {
+      "name": "vault_clones",
+      "description": "CN-05: un cuerpo, un dueño. Mide por AST dos cosas: la sombra —dos definiciones del mismo nombre en el mismo modulo, o una que tapa un import— y el clon —funciones de modulos distintos con el mismo cuerpo una vez normalizado—. Medido el 2026-10-28: 39 nombres de funcion definidos en mas de un modulo, 19 de ellos `slugify` —con 15 sombras puras que delegaban en el dueño sin decirlo—, y `vault/kernel/proyectos.py` con un par de definiciones byte a byte identicas que tapaba al primero sin que nada lo dijera. Los duplicados que no se pueden fusionar se declaran con su motivo escrito en una baseline que solo encoge.",
+      "group": "Normas",
+      "script": "vault_clones.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "check": {
+            "type": "boolean",
+            "description": "Mide sombras y clones por AST en scripts/, vault/ y cli/"
+          },
+          "strict": {
+            "type": "boolean",
+            "description": "Exit 1 si aparece un cuerpo duplicado nuevo"
+          },
+          "freeze": {
+            "type": "boolean",
+            "description": "Recongela la baseline de cuerpos duplicados"
+          },
+          "admitir-nuevos": {
+            "type": "boolean",
+            "description": "Permite congelar duplicados sin precedente"
+          }
+        },
+        "additionalProperties": false
+      },
+      "guards": [
+        "Mide el AST estatico: no ve el codigo generado en runtime, ni las copias que viven en otro lenguaje, ni un cuerpo armado con exec",
+        "Dos exenciones, y las dos se publican: contrato sustituido (`superseded_by:` en el docstring) y respaldo declarado (el nombre se reimporta en un `try/except ImportError`)",
+        "Baseline que solo encoge, y un sitio congelado sin motivo escrito hace fallar la puerta: una excepcion sin dueño no es una excepcion"
+      ],
+      "side_effects": [
+        "scripts\\clones-baseline.json"
+      ],
+      "status": "active",
+      "exposed_via_mcp": false,
+      "execution_module": null,
+      "related": [
+        "vault_arch",
+        "vault_norms",
+        "vault_gate",
+        "vault_blueprint",
+        "vault_ciclos"
+      ]
+    },
     "vault_code_map": {
       "name": "vault_code_map",
       "description": "Genera mapa de dependencias entre módulos de código.",
@@ -7464,6 +7510,7 @@
       "vault_norms_coherence",
       "vault_criterios",
       "vault_ciclos",
+      "vault_clones",
       "vault_kernel",
       "vault_excepcion_declarada",
       "vault_recursos",
@@ -7527,7 +7574,7 @@
     "vault_backup_base64",
     "vault_restore_base64"
   ],
-  "standard_version": "v41.23",
+  "standard_version": "v41.25",
   "errors": {
     "AP17_DUPLICATE_TITLE": {
       "category": "governance",

@@ -67,10 +67,13 @@ def _history_dir() -> Path:
     return _repo().dir_historial
 
 
-def parse_frontmatter(content: str) -> tuple[Dict[str, Any], str]:
-    """Frontmatter de una nota. Delega en el dueño canónico (AP-44/AP-57).
+def parse_frontmatter_recortado(content: str) -> tuple[Dict[str, Any], str]:
+    """Frontmatter de una nota con el cuerpo recortado. Delega en el dueño canónico (AP-44/AP-57).
 
-    Hasta v40.23 esto era un regex línea a línea, copiado en seis módulos. Medido
+    El nombre no es el del dueño a propósito: su contrato difiere —aquí el
+    cuerpo sale con `.strip()`— y un sinónimo del nombre canónico con otro
+    contrato es la trampa que CN-05 existe para cazar. Hasta v40.23 esto era
+    un regex línea a línea, copiado en seis módulos. Medido
     sobre el corpus de `vault-sandbox/` (126 notas), devolvía `{{}}` —"esta nota no
     tiene frontmatter"— en **110** de ellas: el patrón `^---
 ` no casa `---

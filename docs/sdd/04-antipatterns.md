@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
 > Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-68 más
-> las familias PAT, SP y CN. Por familia: AP 68, CN 4, PAT 6, SP 4.
+> las familias PAT, SP y CN. Por familia: AP 68, CN 5, PAT 6, SP 4.
 > Bilingual document. Full norm catalog: antipatterns AP-01..AP-68 plus the PAT,
-> SP and CN families. By family: AP 68, CN 4, PAT 6, SP 4.
+> SP and CN families. By family: AP 68, CN 5, PAT 6, SP 4.
 
 ---
 
 ## ES
 
-Total de normas registradas: 82 (AP 68, CN 4, PAT 6, SP 4)
+Total de normas registradas: 83 (AP 68, CN 5, PAT 6, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -851,6 +851,16 @@ El cuerpo de una nota empieza con su título como encabezado H1. Hasta v40.34 `v
 
 **Prevención:** Escribir por las tools: `vault.kernel.contenido.con_titulo` antepone el H1 y respeta uno que ya venga.
 
+### CN-05: One body, one owner -- un cuerpo, un dueño
+
+- **Severidad:** medium
+- **Enforcement:** guard
+- **Detectado por:** sin detector declarado
+
+Un cuerpo de código tiene un dueño, y ese dueño es el único sitio donde se escribe. Medido el 2026-10-28 sobre `scripts/`, `vault/` y `cli/`: 39 nombres de función definidos en más de un módulo --19 de ellos `slugify`, con 15 sombras puras que delegaban en el dueño sin decirlo-- y un par de definiciones byte a byte idénticas en `vault/kernel/proyectos.py`, donde la segunda tapaba a la primera sin que nada lo dijera. Un cuerpo copiado es una promesa de que las dos copias se portan igual; esa promesa se rompe sola, sin ruido, en cuanto una de las dos cambia. Por eso la norma no se conforma con "no escribas el mismo cuerpo dos veces": nombra al dueño, y el guard mide lo que ya está copiado para que la deuda se vea y no se herede.
+
+**Prevención:** Buscar el dueño antes de escribir: si el cuerpo existe, se importa; si no, se escribe en el dueño y se llama desde donde haga falta. `vault_clones` mide por AST lo que se cuela, y los duplicados que no se pueden fusionar --porque fusionarlos cruzaría una frontera de contexto o crearía un módulo para un solo uso-- se declaran con su motivo escrito en una baseline que solo encoge.
+
 ### PAT-1: Canonical source anchoring
 
 - **Severidad:** N/A
@@ -955,7 +965,7 @@ El transporte HTTP/SSE del servidor MCP acepta sesiones sin token, responde con 
 
 ## EN
 
-Total registered norms: 82 (AP 68, CN 4, PAT 6, SP 4)
+Total registered norms: 83 (AP 68, CN 5, PAT 6, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -1796,6 +1806,16 @@ El campo meta.status (o status en frontmatter) debe usar solo valores de vault_n
 El cuerpo de una nota empieza con su título como encabezado H1. Hasta v40.34 `vault_write`, `vault_knowledge_save` y `vault_ai_decision` lo dejaban solo en el frontmatter, y la nota abierta fuera de Obsidian --un editor de texto, un visor de Markdown, un diff-- empezaba en la primera frase o en una línea de metadatos sin decir qué era. El vault tiene que seguir siendo legible sin la herramienta que lo generó.
 
 **Prevention:** Escribir por las tools: `vault.kernel.contenido.con_titulo` antepone el H1 y respeta uno que ya venga.
+
+### CN-05: One body, one owner -- un cuerpo, un dueño
+
+- **Severity:** medium
+- **Enforcement:** guard
+- **Detected by:** sin detector declarado
+
+Un cuerpo de código tiene un dueño, y ese dueño es el único sitio donde se escribe. Medido el 2026-10-28 sobre `scripts/`, `vault/` y `cli/`: 39 nombres de función definidos en más de un módulo --19 de ellos `slugify`, con 15 sombras puras que delegaban en el dueño sin decirlo-- y un par de definiciones byte a byte idénticas en `vault/kernel/proyectos.py`, donde la segunda tapaba a la primera sin que nada lo dijera. Un cuerpo copiado es una promesa de que las dos copias se portan igual; esa promesa se rompe sola, sin ruido, en cuanto una de las dos cambia. Por eso la norma no se conforma con "no escribas el mismo cuerpo dos veces": nombra al dueño, y el guard mide lo que ya está copiado para que la deuda se vea y no se herede.
+
+**Prevention:** Buscar el dueño antes de escribir: si el cuerpo existe, se importa; si no, se escribe en el dueño y se llama desde donde haga falta. `vault_clones` mide por AST lo que se cuela, y los duplicados que no se pueden fusionar --porque fusionarlos cruzaría una frontera de contexto o crearía un módulo para un solo uso-- se declaran con su motivo escrito en una baseline que solo encoge.
 
 ### PAT-1: Canonical source anchoring
 

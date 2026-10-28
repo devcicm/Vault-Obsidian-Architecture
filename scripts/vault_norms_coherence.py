@@ -167,6 +167,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 import vault_baseline
 import vault_grafo_import
 import vault_io
+from vault_mcp_catalog import mapa_de_grupos
 import vault_norms_catalog
 import vault_subproceso
 from vault_errors import TOOL_TIMEOUT_SECONDS, emit_error, wrap_main
@@ -246,12 +247,6 @@ def _catalogo() -> List[Dict[str, Any]]:
     from vault_norms import NORM_CATALOG
 
     return NORM_CATALOG
-
-
-def _tools_del_catalogo() -> Dict[str, Dict[str, Any]]:
-    from vault_mcp_catalog import mapa_de_grupos
-
-    return mapa_de_grupos()
 
 
 def _penalizaciones() -> Dict[str, int]:
@@ -690,7 +685,7 @@ def colisiones_de_sanadores(
 
 def scan() -> Dict[str, Any]:
     catalogo = _catalogo()
-    tools = _tools_del_catalogo()
+    tools = mapa_de_grupos()
     pesos = _penalizaciones()
     por_codigo = {n["code"]: n for n in catalogo}
 

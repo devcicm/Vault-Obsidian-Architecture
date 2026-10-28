@@ -10,6 +10,7 @@ for _r in (RAIZ / "scripts", RAIZ):
 sys.stdout.reconfigure(encoding="utf-8")
 
 import vault_servicio as vs  # noqa: E402
+from vault_gate import PUERTAS  # noqa: E402
 from vault_norms_catalog import NORM_CATALOG  # noqa: E402
 
 
@@ -44,7 +45,10 @@ def test_gobierno_distingue_ley_de_mantenimiento():
     doc = (RAIZ / "docs" / "GOBIERNO.md").read_text(encoding="utf-8")
     assert "Qué es ley para quién" in doc
     assert "gobernanza del meta-toolkit" in doc
-    assert "26 puertas" in doc  # la cifra la publica PUERTAS, no se repite a mano
+    # La cifra la publica `PUERTAS`, y el test la pregunta: repetirla a mano
+    # aquí era una segunda fuente para un número que cambia con cada puerta
+    # nueva —y la primera vez que se añadía una, el test fue el que cayó.
+    assert f"{len(PUERTAS)} puertas" in doc
 
 
 def test_check_ve_la_deriva_si_el_doc_se_edita_a_mano():

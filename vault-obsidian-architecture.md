@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v41.23 - 2026-10-23  
+**Versión:** v41.25 - 2026-10-28  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -3598,7 +3598,7 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **82 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **83 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -7456,6 +7456,31 @@ lo aplican al escribir. Una nota escrita a mano sin H1 no la detecta nadie todav
 
 ---
 
+### CN-05 — One body, one owner — un cuerpo, un dueño
+
+**Regla:** Un cuerpo de código tiene un dueño, y ese dueño es el único sitio donde se
+escribe. Si el cuerpo ya existe, se importa; si no, se escribe en el dueño y se llama
+desde donde haga falta.
+
+Medido el 2026-10-28 sobre `scripts/`, `vault/` y `cli/`: 39 nombres de función definidos
+en más de un módulo —19 de ellos `slugify`, con 15 sombras puras que delegaban en el dueño
+sin decirlo— y un par de definiciones byte a byte idénticas en `vault/kernel/proyectos.py`,
+donde la segunda tapaba a la primera sin que nada lo dijera. Un cuerpo copiado es una
+promesa de que las dos copias se portan igual; esa promesa se rompe sola, sin ruido, en
+cuanto una de las dos cambia.
+
+**Enforcement:** guard — `vault_clones` mide por AST dos cosas: la sombra (dos
+definiciones del mismo nombre en un módulo, o una que tapa un nombre importado) y el clon
+(funciones de módulos distintos con el mismo cuerpo una vez normalizado). Los duplicados
+que no se pueden fusionar —porque fusionarlos cruzaría una frontera de contexto o crearía
+un módulo para un solo uso— se declaran con su motivo escrito en
+`scripts/clones-baseline.json`, y un sitio congelado sin motivo hace fallar la puerta.
+
+**Señal de violación:** dos módulos con la misma función —cuerpo idéntico una vez
+normalizado, sin el docstring— o dos definiciones del mismo nombre dentro de un módulo.
+
+---
+
 ## Inicializar un vault desde cero
 
 Secuencia mínima para crear un vault operativo en un proyecto nuevo (sin documentación preexistente):
@@ -7939,6 +7964,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v41.21 | 2026-10-23 | v41.21 cierra lo que v41.20 dejo abierto. **A** · el skip-path del onboarding baja de 4,44 s a 1,05 s (objetivo 2) y la primera pasada de 8,4 s a 4,2 s: el perfil del 2026-10-23 mostro que la segunda pasada pagaba 59 reconstrucciones de indice de seccion y 50 inventarios de nombres del vault entero para dejar todo como estaba. Ahora una corrida sin escrituras no reindexa y lo declara en `indexes_skipped`, y la pasada que si escribe no rehace el mismo indice dos veces: lo hace `vault_reindex` una sola vez. **B** · el primer contraste real contra un vault ajeno (281 ficheros) encontro un defecto del criterio, no del vault: 261 eran `node_modules` y el unico enlace roto del informe era el README de una dependencia. `vault_io` gana el dueno de que es material ajeno, el informe publica los 261 excluidos en vez de encoger en silencio, y la propiedad de la regla 7 pasa de descubierta a con_puerta con el recibo fechado como ejercidor. **C** · `vault_produccion` estrena el estado `medida`: una propiedad con instrumento, dueno y fecha pero sin puerta que falle. 15 afirmadas: 13 con puerta, 1 medida, 1 descubierta. |
 | v41.22 | 2026-10-23 | v41.22 cierra el eje de propiedad. **ADRs con responsable** (AP-64 aplicado al propio repo, no solo a los vaults de los consumidores): un ADR sin responsable no es una decision, es una intencion. **El changelog publica quien aprobo cada version**, derivado de git —el mismo origen que sello el hash—, sin cambiar el formato de la tabla. **Los docs vivos declaran su dueno** (`<!-- propiedad: ... -->`) y un guard clasifica cada doc en derivado, registro o vivo; el guard encontro tres que estaban mal clasificados, entre ellos los dos modos agenticos. **docs/GOBIERNO.md**, derivado de los registros, responde ahora 'quien responde de que': el propietario sale del banner del manifiesto y los responsables de cada decision, de los ADR. Y **vault/kernel/rutas.py** es el dueno del layout del repo, con un guard cuya baseline (177 literales) solo encoge. El ciclo destapo cinco copias donde tocaba delegar: la lista de origenes de la deteccion de raiz (reescrita a mano en un test,ayedaba 6 de 9), un criterio con dueno re-enunciado, un perfil de MCP que el repo ya recortaba, el compromiso de una baseline y la ruta del disco dentro de un recibo versionado. Cada una se salta preguntando al dueno, no arreglando el sintoma. |
 | v41.23 | 2026-10-23 | v41.23 la saco la reinstalacion limpia probada a ciegas contra la wheel, como manda la guia de instalacion: proyecto consumidor, vault init, primera escritura, MCP por stdio. El ciclo salio con un defecto real y tres falsos positivos del propio piloto que la e2e fue afinando.
+| v41.25 | 2026-10-28 | v41.25 abre la consolidacion del codigo del toolkit con **CN-05 - un cuerpo, un dueno** y su guard \ault_clones\, que mide por AST la sombra dentro de un modulo y el clon entre modulos, con una baseline que solo encoge y ningun sitio congelado sin su motivo escrito. La Fase 5 borro 15 sombras de \slugify\, 9 de \utcnow\ y 5 de \parse_frontmatter\ -todas delegaban en el dueno sin decirlo-, el par byte a byte identico de \ault/kernel/proyectos.py\ que tapaba al primero, y renombro el contrato divergente de \ault_read\. Los duplicados que no se pueden fusionar -el instalador y la frontera instalable- quedan declarados con su motivo. |
 
 **El defecto: `vault run` no pedia `--json` a las tools que hablan en prosa.** El servidor MCP lo pasa por el campo `json_flag` del catalogo, criterio cuyo dueno es `vault_mcp_catalog.acepta_modo_json`; `vault run` viaja en el mismo catálogo empaquetado y no consultaba el campo — la conversion a ToolProducto lo llevaba pero lo soltaba. Medido e2e: `vault run vault_move` respondia 'Movido: …' en texto plano al consumidor al que la guia manda leer JSON, siete tools afectadas. La reparacion pregunta al dueno por las dos vias, MCP y CLI; dos tests nuevos en el fichero que guarda el contrato del modo JSON.
 
@@ -8301,6 +8327,11 @@ temp/
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
 
 ---
+
+### v41.25 — 2026-10-28 `git: pending`
+
+v41.25 abre la consolidacion del codigo del toolkit con **CN-05 - un cuerpo, un dueno** y su guard \ault_clones\, que mide por AST la sombra dentro de un modulo y el clon entre modulos, con una baseline que solo encoge y ningun sitio congelado sin su motivo escrito. La Fase 5 borro 15 sombras de \slugify\, 9 de \utcnow\ y 5 de \parse_frontmatter\ -todas delegaban en el dueno sin decirlo-, el par byte a byte identico de \ault/kernel/proyectos.py\ que tapaba al primero, y renombro el contrato divergente de \ault_read\. Los duplicados que no se pueden fusionar -el instalador y la frontera instalable- quedan declarados con su motivo.
+
 
 ### v41.23 — 2026-10-23 `git: 6ddf04e`
 

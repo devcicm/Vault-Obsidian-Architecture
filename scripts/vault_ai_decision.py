@@ -119,13 +119,6 @@ def _index_file() -> Path:
     return _repo().seccion("16_AI_Governance") / ".decisions-log.json"
 
 
-def slugify(text: str) -> str:
-    # Delega en el slug canónico (`vault_lib.slugify`). La copia que había
-    # aquí divergía del resto: unas borraban los acentos, otras los dejaban
-    # en el nombre de fichero. Una sola fuente, un solo nombre de nota.
-    return slugify_strict(text)
-
-
 # superseded_by: vault_io.indice_compartido
 #
 # Leia/escribia el indice fuera de todo tramo exclusivo, que es justo el
@@ -177,12 +170,12 @@ def vault_ai_decision(
     if impact_level not in IMPACT_LEVELS:
         return emit_error("vault_ai_decision", "INVALID_VALUE", f"impact_level '{impact_level}' not valid. Use: {IMPACT_LEVELS}")
 
-    safe_project = slugify(project)
+    safe_project = slugify_strict(project)
 
     affected = [str(a).strip() for a in (affected or []) if str(a).strip()]
     evaluacion = estado_de_evaluacion(impact_level, affected)
 
-    title_slug = slugify(title)
+    title_slug = slugify_strict(title)
 
     now = utcnow()
 

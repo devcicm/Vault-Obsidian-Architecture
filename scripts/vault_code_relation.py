@@ -87,13 +87,6 @@ RELATION_TYPES = [
 CARDINALITIES = ["1:1", "1:N", "N:1", "N:M"]
 
 
-def slugify(text: str) -> str:
-    # Delega en el slug canónico (`vault_lib.slugify`). La copia que había
-    # aquí divergía del resto: unas borraban los acentos, otras los dejaban
-    # en el nombre de fichero. Una sola fuente, un solo nombre de nota.
-    return slugify_strict(text)
-
-
 # superseded_by: vault_io.indice_compartido
 #
 # Leia/escribia el indice fuera de todo tramo exclusivo, que es justo el
@@ -155,7 +148,7 @@ def generate_code_map(project: str, index: Dict[str, Any]) -> str:
     for i, mod in enumerate(modules):
         title = mod.get("title", mod.get("filePath", ""))
 
-        slug = slugify(Path(mod.get("filePath", title)).stem)
+        slug = slugify_strict(Path(mod.get("filePath", title)).stem)
 
         node_id = f"N{i}"
 
@@ -201,7 +194,7 @@ def generate_code_map(project: str, index: Dict[str, Any]) -> str:
 
 
 def save_code_map(project: str, mermaid_content: str) -> Path:
-    safe_project = slugify(project)
+    safe_project = slugify_strict(project)
 
     map_dir = _code_dir() / safe_project
 

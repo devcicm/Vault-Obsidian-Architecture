@@ -10,16 +10,16 @@ _Derivado de los registros canónicos. Se regenera con `python scripts/vault_ser
 
 ## Las cuatro familias de normas
 
-82 normas vivas, cada una un paquete en `normas/<código>/`. El catálogo derivado completo está en [docs/sdd/04-antipatterns.md](sdd/04-antipatterns.md).
+83 normas vivas, cada una un paquete en `normas/<código>/`. El catálogo derivado completo está en [docs/sdd/04-antipatterns.md](sdd/04-antipatterns.md).
 
-- **AP** · Anti-patrón — Un fallo con nombre, señal, prevención y límites. La unidad normativa principal. (76 vigentes).
+- **AP** · Anti-patrón — Un fallo con nombre, señal, prevención y límites. La unidad normativa principal. (77 vigentes).
 - **PAT** · Patrón — La forma recomendada de resolver algo que el estándar ya resolvió mal una vez. (6 vigentes).
 - **SP** · Protocolo de sesión — Reglas de proceso entre el agente y el vault durante una sesión. (0 vigentes).
 - **CN** · Convención — Un acuerdo de nomenclatura o forma que mantiene el vault legible y predecible. (0 vigentes).
 
 ## La escalera de enforcement
 
-- **guard** (12 normas) — Falla en el punto de uso: la tool se niega a hacerlo mal.
+- **guard** (13 normas) — Falla en el punto de uso: la tool se niega a hacerlo mal.
 - **guard+audit** (32 normas) — Y además una puerta la mide sobre el repo entero.
 - **audit** (32 normas) — Una puerta la mide; se arregla en el siguiente ciclo.
 - **recommended** (6 normas) — Se publica, no se fuerza. La cobertura débil se declara.
@@ -27,11 +27,11 @@ _Derivado de los registros canónicos. Se regenera con `python scripts/vault_ser
 ## Qué es ley para quién
 
 - **Para quien usa el vault**: las normas, aplicadas por las tools de escritura y consulta — contrato de nota, vocabulario de estados, protocolo de borrado.
-- **Para quien mantiene este repositorio**: la gobernanza del meta-toolkit — el conjunto de tools cuya naturaleza es `meta_estandar` (28), que miden este repo y no el vault de nadie, por las 26 puertas de `docs/PUERTAS.md`.
+- **Para quien mantiene este repositorio**: la gobernanza del meta-toolkit — el conjunto de tools cuya naturaleza es `meta_estandar` (29), que miden este repo y no el vault de nadie, por las 27 puertas de `docs/PUERTAS.md`.
 
 ## La superficie que ve el agente por MCP
 
-El catálogo marca `exposed_via_mcp` y el servidor MCP lo respeta: las 28 tools de gobernanza **no** llegan al cliente (el recorte lo deriva de la capacidad `gobernanza_del_estandar`, no de una lista escrita a mano). `VAULT_MCP_PERFIL=agente` reduce el menú a las 14 del protocolo de sesión, y el servidor poda además en runtime las tools cuyo script no existe.
+El catálogo marca `exposed_via_mcp` y el servidor MCP lo respeta: las 29 tools de gobernanza **no** llegan al cliente (el recorte lo deriva de la capacidad `gobernanza_del_estandar`, no de una lista escrita a mano). `VAULT_MCP_PERFIL=agente` reduce el menú a las 14 del protocolo de sesión, y el servidor poda además en runtime las tools cuyo script no existe.
 
 ## El mapa: capacidad → grupo → tool
 
@@ -77,9 +77,9 @@ El catálogo marca `exposed_via_mcp` y el servidor MCP lo respeta: las 28 tools 
 - **Memoria de Contexto (34)** — vault_arquitectura_en, vault_context_pack, vault_ingest, vault_model_profile, vault_preferences, vault_query_parse, vault_subgraph
 - **Tokens (26)** — vault_token_counter, vault_token_service, vault_tokens
 
-### Gobernanza del estándar — 28 tools (`gobernanza_del_estandar`)
+### Gobernanza del estándar — 29 tools (`gobernanza_del_estandar`)
 
-- **Normas (35)** — vault_arch, vault_blame_audit, vault_blueprint, vault_changelog_check, vault_ciclos, vault_code_tag, vault_criterios, vault_doc_counts, vault_doc_staleness, vault_doc_sync, vault_error_contract, vault_esquema, vault_excepcion_declarada, vault_fix_all, vault_foreign_check, vault_gate, vault_kernel, vault_metricas, vault_noop_audit, vault_norms, vault_norms_coherence, vault_procesos_git, vault_produccion, vault_recursos, vault_servicio, vault_smoke, vault_toolkit_audit, vault_voice
+- **Normas (35)** — vault_arch, vault_blame_audit, vault_blueprint, vault_changelog_check, vault_ciclos, vault_clones, vault_code_tag, vault_criterios, vault_doc_counts, vault_doc_staleness, vault_doc_sync, vault_error_contract, vault_esquema, vault_excepcion_declarada, vault_fix_all, vault_foreign_check, vault_gate, vault_kernel, vault_metricas, vault_noop_audit, vault_norms, vault_norms_coherence, vault_procesos_git, vault_produccion, vault_recursos, vault_servicio, vault_smoke, vault_toolkit_audit, vault_voice
 
 ## El vocabulario y su dueño
 
@@ -108,4 +108,4 @@ El catálogo marca `exposed_via_mcp` y el servidor MCP lo respeta: las 28 tools 
 
 ## Las puertas
 
-La gobernanza se ejerce por 26 puertas de cierre, una por registro. El porqué de cada una está en [docs/PUERTAS.md](PUERTAS.md), derivado de `vault_gate.PUERTAS`.
+La gobernanza se ejerce por 27 puertas de cierre, una por registro. El porqué de cada una está en [docs/PUERTAS.md](PUERTAS.md), derivado de `vault_gate.PUERTAS`.

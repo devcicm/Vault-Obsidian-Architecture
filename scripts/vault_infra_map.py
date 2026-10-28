@@ -42,9 +42,6 @@ from typing import Any, Dict, List, Optional
 
 from vault.kernel.frontmatter_escritura import conservar_nota_generada  # noqa: E402
 
-def utcnow() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-
 
 from vault_encoding import sanitize_content
 from vault_io import atomic_write_text, write_report
@@ -105,13 +102,6 @@ TYPE_SHAPES = {
 }
 
 
-def slugify(text: str) -> str:
-    # Delega en el slug canónico (`vault_lib.slugify`). La copia que había
-    # aquí divergía del resto: unas borraban los acentos, otras los dejaban
-    # en el nombre de fichero. Una sola fuente, un solo nombre de nota.
-    return slugify_strict(text)
-
-
 def load_index() -> Dict[str, Any]:
     try:
         with open(_index_file(), "r", encoding="utf-8") as f:
@@ -167,7 +157,7 @@ def generate_infra_map(
         lines.append(f'    subgraph {loc}["{icon} {loc_label}"]')
 
         for comp in comps:
-            name = slugify(comp["name"])
+            name = slugify_strict(comp["name"])
 
             ctype = comp.get("type", "service")
 
@@ -199,9 +189,9 @@ def generate_infra_map(
 
     for comp in components:
         for conn in comp.get("connections", []):
-            from_name = slugify(comp["name"])
+            from_name = slugify_strict(comp["name"])
 
-            to_name = slugify(conn.get("to", ""))
+            to_name = slugify_strict(conn.get("to", ""))
 
             protocol = conn.get("protocol", "TCP")
 

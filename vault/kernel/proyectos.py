@@ -345,49 +345,6 @@ def anotar_vault(raiz: Path, slug: str, ruta: "str | Path") -> Optional[str]:
     return str(destino)
 
 
-def ruta_de_vault(raiz: Path, slug: str) -> Optional[Path]:
-    """La ruta del vault de ese proyecto en esta maquina, o `None`.
-
-    La escribe `vault_project --link --vault <ruta>`, o el puntero
-    `.vault-path` que el repositorio declara (v41.15): son las dos formas de
-    decir donde vive el vault de un proyecto, y la segunda la escribe la
-    persona porque una tool que escribiera fuera del vault romperia la
-    contencion de AP-36.
-    """
-    fichero = Path(raiz) / RUTAS_DE_VAULT
-    try:
-        rutas = json.loads(fichero.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-    valor = rutas.get(slug) if isinstance(rutas, dict) else None
-    return Path(valor) if isinstance(valor, str) and valor else None
-
-
-def anotar_vault(raiz: Path, slug: str, ruta: "str | Path") -> Optional[str]:
-    """Guarda la ruta del vault del proyecto en el registro local.
-
-    Devuelve la ruta guardada, o `None` si no se pudo escribir. No crea el
-    vault: esto declara donde esta, no lo hace.
-    """
-    destino = Path(ruta).expanduser()
-    fichero = Path(raiz) / RUTAS_DE_VAULT
-    rutas: Dict[str, str] = {}
-    if fichero.is_file():
-        try:
-            rutas = json.loads(fichero.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            rutas = {}
-    if not isinstance(rutas, dict):
-        rutas = {}
-    rutas[slug] = str(destino)
-    try:
-        escritura_atomica(fichero, json.dumps(dict(sorted(rutas.items())),
-                                               ensure_ascii=False, indent=1))
-    except OSError:
-        return None
-    return str(destino)
-
-
 def anotar_repo(
     raiz: Path,
     slug: str,

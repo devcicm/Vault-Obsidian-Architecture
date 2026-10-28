@@ -109,15 +109,8 @@ RELATION_MERMAID = {
 }
 
 
-def slugify(text: str) -> str:
-    # Delega en el slug canónico (`vault_lib.slugify`). La copia que había
-    # aquí divergía del resto: unas borraban los acentos, otras los dejaban
-    # en el nombre de fichero. Una sola fuente, un solo nombre de nota.
-    return slugify_strict(text)
-
-
 def load_relations(project: str) -> Dict[str, Any]:
-    project_file = _entity_dir() / f"{slugify(project)}-relations.json"
+    project_file = _entity_dir() / f"{slugify_strict(project)}-relations.json"
 
     # Solo la ausencia es «sin relaciones». Un JSON ilegible se devolvía también
     # como lista vacía, y el alta siguiente lo reescribía con una sola relación:
@@ -134,7 +127,7 @@ def load_relations(project: str) -> Dict[str, Any]:
 def save_relations(project: str, data: Dict[str, Any]) -> None:
     _entity_dir().mkdir(parents=True, exist_ok=True)
 
-    project_file = _entity_dir() / f"{slugify(project)}-relations.json"
+    project_file = _entity_dir() / f"{slugify_strict(project)}-relations.json"
 
     atomic_write_json(project_file, data)
 
@@ -152,9 +145,9 @@ def generate_erd_mermaid(project: str, relations: List[Dict]) -> str:
         lines = ["erDiagram"]
 
         for rel in relations:
-            from_e = slugify(rel["fromEntity"])
+            from_e = slugify_strict(rel["fromEntity"])
 
-            to_e = slugify(rel["toEntity"])
+            to_e = slugify_strict(rel["toEntity"])
 
             rel_symbol = RELATION_MERMAID.get(rel["relationType"], "-->")
 
@@ -166,9 +159,9 @@ def generate_erd_mermaid(project: str, relations: List[Dict]) -> str:
         lines = ["graph TD"]
 
         for rel in relations:
-            from_e = slugify(rel["fromEntity"])
+            from_e = slugify_strict(rel["fromEntity"])
 
-            to_e = slugify(rel["toEntity"])
+            to_e = slugify_strict(rel["toEntity"])
 
             rel_symbol = RELATION_MERMAID.get(rel["relationType"], "-->")
 
@@ -204,7 +197,7 @@ def vault_relation_add(
     # disco quedaban seis. El ERD se regenera dentro del mismo lock para que
     # refleje la lista que quedó escrita, no la que leyó cada proceso.
     _entity_dir().mkdir(parents=True, exist_ok=True)
-    project_file = _entity_dir() / f"{slugify(project)}-relations.json"
+    project_file = _entity_dir() / f"{slugify_strict(project)}-relations.json"
     lock = tomar_lock(project_file, _LOCK_TIMEOUT)
     if lock is None:
         return emit_error(
@@ -231,7 +224,7 @@ def _anadir_bajo_lock(
     except (json.JSONDecodeError, UnicodeDecodeError) as exc:
         return emit_error(
             "vault_relation_add", "DATA_FILE_CORRUPT",
-            f"{slugify(project)}-relations.json no se puede leer ({exc}); "
+            f"{slugify_strict(project)}-relations.json no se puede leer ({exc}); "
             "no se reescribe para no perder las relaciones que guarda",
         )
 
@@ -243,7 +236,7 @@ def _anadir_bajo_lock(
             and rel["toEntity"] == to_entity
             and rel["relationType"] == relation_type
         ):
-            erd_path = _entity_dir() / f"{slugify(project)}-erd.md"
+            erd_path = _entity_dir() / f"{slugify_strict(project)}-erd.md"
 
             return {
                 "ok": True,
@@ -272,7 +265,7 @@ def _anadir_bajo_lock(
 
     erd_content = generate_erd_mermaid(project, relations)
 
-    erd_path = _entity_dir() / f"{slugify(project)}-erd.md"
+    erd_path = _entity_dir() / f"{slugify_strict(project)}-erd.md"
 
     # AP-46: el bloque lo escribe su dueño; aquí solo se declaran los campos.
     erd_frontmatter = [

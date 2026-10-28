@@ -87,15 +87,15 @@ class TestMermaidSymbols:
 
 class TestSlugify:
     def test_basic(self):
-        from vault_relation_add import slugify
+        from vault_lib import slugify_strict as slugify
         assert slugify("Hello World") == "hello-world"
 
     def test_special_chars(self):
-        from vault_relation_add import slugify
+        from vault_lib import slugify_strict as slugify
         assert slugify("Service@API") == "serviceapi"
 
     def test_multiple_spaces(self):
-        from vault_relation_add import slugify
+        from vault_lib import slugify_strict as slugify
         assert slugify("  My   Project  ") == "my-project"
 
 

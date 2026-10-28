@@ -26,9 +26,18 @@ from typing import Any, Dict, List, Optional
 import vault_grafo_import
 from vault_version import CURRENT_VERSION
 from vault_registry import runtime_seed_projection
+from vault.kernel import rutas
 
 #: Raíz del repo — el guard de `js_native_tools` cruza a `mcp/nodejs/`.
 REPO_ROOT = Path(__file__).resolve().parent.parent
+
+#: La baseline de CN-05, escrita con el nombre del directorio **tomado de su
+#: dueño** (`vault.kernel.rutas`): el layout del repo no se nombra a mano en
+#: módulos que no son su dueño —lo vigila `tests/test_rutas_repo.py`— y esta
+#: ruta se declara como lo que es: un fichero dentro de un directorio del
+#: layout, no un literal suelto.
+BASELINE_DE_CLONES = str(
+    rutas.ruta_repo("scripts").relative_to(rutas.raiz_repo()) / "clones-baseline.json")
 
 
 def _product_catalog_path() -> Path:
@@ -2905,6 +2914,66 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         ),
         "related": ["vault_arch", "vault_norms", "vault_gate", "vault_blueprint"],
     },
+    "vault_clones": {
+        "name": "vault_clones",
+        "script": "vault_clones.py",
+        "group": "Normas",
+        "purpose": (
+            "CN-05: un cuerpo, un dueño. Mide por AST dos cosas: la sombra —dos "
+            "definiciones del mismo nombre en el mismo modulo, o una que tapa un "
+            "import— y el clon —funciones de modulos distintos con el mismo "
+            "cuerpo una vez normalizado—. Medido el 2026-10-28: 39 nombres de "
+            "funcion definidos en mas de un modulo, 19 de ellos `slugify` —con 15 "
+            "sombras puras que delegaban en el dueño sin decirlo—, y "
+            "`vault/kernel/proyectos.py` con un par de definiciones byte a byte "
+            "identicas que tapaba al primero sin que nada lo dijera. Los "
+            "duplicados que no se pueden fusionar se declaran con su motivo "
+            "escrito en una baseline que solo encoge."
+        ),
+        "params": {
+            "check": {
+                "type": "boolean",
+                "required": False,
+                "description": "Mide sombras y clones por AST en scripts/, vault/ y cli/",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit 1 si aparece un cuerpo duplicado nuevo",
+                "validators": [],
+            },
+            "freeze": {
+                "type": "boolean",
+                "required": False,
+                "description": "Recongela la baseline de cuerpos duplicados",
+                "validators": [],
+            },
+            "admitir-nuevos": {
+                "type": "boolean",
+                "required": False,
+                "description": "Permite congelar duplicados sin precedente",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "Mide el AST estatico: no ve el codigo generado en runtime, ni las "
+            "copias que viven en otro lenguaje, ni un cuerpo armado con exec",
+            "Dos exenciones, y las dos se publican: contrato sustituido "
+            "(`superseded_by:` en el docstring) y respaldo declarado (el nombre "
+            "se reimporta en un `try/except ImportError`)",
+            "Baseline que solo encoge, y un sitio congelado sin motivo escrito "
+            "hace fallar la puerta: una excepcion sin dueño no es una excepcion",
+        ],
+        "side_effects": [BASELINE_DE_CLONES],
+        "example": (
+            "python vault_clones.py --check\n"
+            "python vault_clones.py --check --strict\n"
+            "python vault_clones.py --freeze"
+        ),
+        "related": ["vault_arch", "vault_norms", "vault_gate", "vault_blueprint",
+                    "vault_ciclos"],
+    },
     "vault_recursos": {
         "name": "vault_recursos",
         "script": "vault_recursos.py",
@@ -4525,6 +4594,7 @@ GROUPS: Dict[str, List[str]] = {
         "vault_norms_coherence",
         "vault_criterios",
         "vault_ciclos",
+        "vault_clones",
         "vault_kernel",
         "vault_excepcion_declarada",
         "vault_recursos",

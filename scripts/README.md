@@ -1,13 +1,13 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture** (versión vigente: `vault_version.CURRENT_VERSION`). Implementan las 126 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture** (versión vigente: `vault_version.CURRENT_VERSION`). Implementan las 127 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **167 archivos Python** — 126 tools del catálogo MCP (124 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
+- **168 archivos Python** — 127 tools del catálogo MCP (125 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
 - **Saneamiento de índices (v38.1)** — `vault_section_index.py --heal [--root]` regenera índices con formato legacy `[[stem|alias]]` o ausentes; el auto-index post-write se auto-cura si un agente escribe `index.md` a mano
-- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 126 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
+- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 127 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault; requiere marcador de CONTENIDO (01_Projects/02_Observability/03_Decisions/.obsidian), no solo 00_System/99_Index (evita el ciclo auto-reforzado de detección); override runtime con `set_vault_root()`/env `VAULT_ROOT`
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -59,7 +59,7 @@ Scripts Python del estándar **Vault Obsidian Architecture** (versión vigente: 
 | [Grupo 32 — Gestión de Carpetas](#grupo-32--gestión-de-carpetas) | vault_folder_registry, vault_section |
 | [Grupo 33 — Corrección Automática](#grupo-33--corrección-automática) | vault_fix_brackets, vault_graph_fix, vault_frontmatter_heal, vault_frontmatter_completar, vault_supersede |
 | [Grupo 34 — Memoria de Contexto](#grupo-34--memoria-de-contexto) | vault_preferences, vault_model_profile, vault_query_parse, vault_subgraph, vault_context_pack, vault_ingest, vault_arquitectura_en |
-| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_changelog_check, vault_error_contract, vault_foreign_check, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_doc_staleness, vault_noop_audit, vault_smoke, vault_toolkit_audit, vault_voice, vault_servicio, vault_blueprint, vault_norms_coherence, vault_criterios, vault_ciclos, vault_kernel, vault_excepcion_declarada, vault_recursos, vault_procesos_git, vault_produccion, vault_esquema, vault_metricas, vault_fix_all |
+| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_changelog_check, vault_error_contract, vault_foreign_check, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_doc_staleness, vault_noop_audit, vault_smoke, vault_toolkit_audit, vault_voice, vault_servicio, vault_blueprint, vault_norms_coherence, vault_criterios, vault_ciclos, vault_clones, vault_kernel, vault_excepcion_declarada, vault_recursos, vault_procesos_git, vault_produccion, vault_esquema, vault_metricas, vault_fix_all |
 | [Grupo 36 — Defectos y Cuarentena](#grupo-36--defectos-y-cuarentena) | vault_bug_save, vault_quarantine |
 | [Grupo 37 — Skills](#grupo-37--skills) | vault_sdd_init, vault_sanacion |
 | [Observabilidad de Tools](#observabilidad-de-tools) | vault_errors |
@@ -2170,7 +2170,7 @@ El vault expone sus herramientas como un **servidor MCP** que las IAs consumen d
 
 **Archivo:** `../mcp/nodejs/vault-mcp-server.mjs` (~1650 líneas, cero dependencias npm)  
 **Plan:** `../mcp/PLAN.md` — documento de evidencia con 8 fases de implementación
-**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (126 tools)
+**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (127 tools)
 
 Los parámetros que el catálogo publica **se derivan del `argparse` de cada script**,
 no se escriben a mano: el servidor compone `--<param>` literal, así que un param
@@ -2225,7 +2225,7 @@ VAULT_MCP_PERFIL=agente node mcp/nodejs/vault-mcp-server.mjs
 
 ### `vault_norms.py`
 
-Registro canónico de las 82 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
+Registro canónico de las 83 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
 
 **Desde v40.26 son tres ficheros y una sola tool.** Eran 5.158 líneas que hacían de catálogo, de motor y de fachada a la vez, con el 60% del fichero ocupado por una constante. Ahora `vault_norms_catalog.py` tiene los datos —`NORM_CATALOG` y el vocabulario de estado, sin leer el vault, sin escribir nada y sin importar ninguna tool—, `vault_norms_engine.py` tiene el motor de `--audit`, el drift del marco y el heal de AP-46, y este módulo se queda con la fachada de datos, la CLI y la **reexportación** de todo lo que el repo consumía antes. Esa reexportación es el punto: la superficie externa real son siete símbolos y los tests usan cinco privados más, así que reexportarlos hace que **ningún llamador se toque** y el diff se lea como movimiento puro. Recortar de paso la superficie que usan los tests habría mezclado dos cambios y hecho imposible saber cuál rompió qué.
 
@@ -2340,7 +2340,7 @@ python vault_doc_counts.py --check --no-slow  # omite el conteo de tests (lanza 
 
 **El changelog y la tabla de versiones quedan fuera del escaneo.** "76 tools" dentro de la entrada de v37 es historia correcta, no drift; reescribirla sería derogar el registro histórico. Los patrones son deliberadamente específicos por el mismo motivo: `"N normas"` a secas también casa con "las 14 normas manuales eliminadas", que es otro hecho. Un patrón laxo produce falsos positivos y el guard acaba desactivado — que es como mueren los guards.
 
-Fuera de esas secciones también hay historia: un censo hecho en una versión concreta («41 de las 126 tools del catálogo no se han ejecutado») casa con el patrón de tools activas, y `--fix` lo reescribió con cada tool nueva hasta que el censo dejó de decir lo que se midió. Una línea así lleva `<!-- cifra histórica: <motivo> -->`: exime solo esa línea, sin motivo no exime, y el envelope la publica en `historic_exempt` para que eximir no sea una forma callada de apagar el guard.
+Fuera de esas secciones también hay historia: un censo hecho en una versión concreta («41 de las 127 tools del catálogo no se han ejecutado») casa con el patrón de tools activas, y `--fix` lo reescribió con cada tool nueva hasta que el censo dejó de decir lo que se midió. Una línea así lleva `<!-- cifra histórica: <motivo> -->`: exime solo esa línea, sin motivo no exime, y el envelope la publica en `historic_exempt` para que eximir no sea una forma callada de apagar el guard.
 
 ### `vault_doc_sync.py`
 
@@ -2805,6 +2805,25 @@ Ese componente de 14 es lo que hacía que `vault_errors_trace` —un escritor de
 **Cómo se salda.** Invirtiendo la dependencia — el módulo de bajo nivel deja de pedirle el módulo entero al de alto y recibe lo que necesita. El corte de v40.17 lo hizo una vez: `vault_raiz`, `vault_fs` y `vault_ledger` salieron de `vault_io` como hojas, `vault_errors_trace` pasó a pedir el mecanismo (`escritura_atomica` con `guarda_secretos`) en vez de la política entera, y el componente bajó de 15 a 14. **Subir el import a nivel de módulo no lo arregla**: solo hace que Python lo denuncie al arrancar.
 
 **El límite, dicho antes de que nadie se apoye en el verde.** Mide el grafo **estático** de módulos de `scripts/`. No ve `importlib`, ni un import construido con una cadena, ni el acoplamiento que pasa por el sistema de ficheros o por una variable global compartida. Dos módulos pueden estar perfectamente atados sin que ningún `import` lo diga, y esta tool los verá sueltos. Verde significa que no crecieron los ciclos que sabemos ver.
+
+### `vault_clones.py`
+
+**Un cuerpo, un dueño (CN-05).** El repo se audita a sí mismo y publica lo que encuentra; lo que no tenía guard era lo más fácil de colar: **un cuerpo copiado**. Medido el 2026-10-28 sobre `scripts/`, `vault/` y `cli/`: 39 nombres de función definidos en más de un módulo —19 de ellos `slugify`, con 15 sombras puras que delegaban en el dueño sin decirlo— y un par de definiciones byte a byte idénticas en `vault/kernel/proyectos.py`, donde la segunda tapaba a la primera sin que nada lo dijera.
+
+```bash
+python vault_clones.py --check                    # sombras y clones, medidos por AST
+python vault_clones.py --check --strict           # exit 1 si aparece un cuerpo duplicado nuevo (puerta 27)
+python vault_clones.py --freeze                   # baseline; solo puede encoger
+python vault_clones.py --freeze --admitir-nuevos  # congela deuda nueva, y la lista
+```
+
+**Dos reglas, porque son dos cosas distintas.** La **sombra** es un nombre definido dos veces en el mismo módulo, o una definición que tapa un nombre importado: siempre es deuda, porque en Python la última gana y nadie lee el fichero entero para saber cuál. El **clon** es una función de un módulo cuyo cuerpo —una vez normalizado con `ast.unparse` y sin el docstring— es idéntico al de otro módulo. La comparación es estructural, no textual: los comentarios y el sangrado se caen, y lo que queda es lo que Python ejecuta.
+
+**Las dos exenciones, y por qué existen.** Una función cuyo docstring dice `superseded_by:` se conserva por no-derogación, y su cuerpo puede coincidir con el de otra sin que eso sea un defecto. Y una función de nivel de módulo cuyo nombre se reimporta después en un `try: ... except ImportError:` es un **respaldo declarado** —el puente de la casa, como los tres de `vault_lib`—, no un clon: hay un test que verifica que las dos copias dan lo mismo. Las dos se **publican** en el envelope con su categoría; una exención silenciosa es un agujero con nombre bonito.
+
+**Los que no se pueden fusionar se declaran.** Un duplicado que cruza una frontera de contexto —el `_imports_scripts` de la CLI y el del meta-toolkit— o que exigiría un módulo para un solo uso —el `_run` del instalador y su gemelo desinstalador— entra en `scripts/clones-baseline.json` **con su motivo escrito**, y la cuenta solo puede bajar. Un sitio congelado sin motivo hace fallar la puerta: una excepción sin dueño no es una excepción.
+
+**El límite, dicho antes de que nadie se apoye en el verde.** Mide el **AST estático** de `scripts/`, `vault/` y `cli/`. No ve el código generado en runtime, ni las copias que viven en otro lenguaje, ni un cuerpo armado con `exec`. Verde significa que no apareció un cuerpo duplicado nuevo entre los que se leen por AST; no significa que el repo no tenga duplicados.
 
 ### `vault_recursos.py`
 

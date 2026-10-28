@@ -75,13 +75,6 @@ def _bibliography_dir() -> Path:
     return _repo().seccion("12_Bibliography")
 
 
-def slugify(text: str) -> str:
-    # Delega en el slug canónico (`vault_lib.slugify`). La copia que había
-    # aquí divergía del resto: unas borraban los acentos, otras los dejaban
-    # en el nombre de fichero. Una sola fuente, un solo nombre de nota.
-    return slugify_strict(text)
-
-
 def vault_bibliography_save(
     title: str,
     url: str,
@@ -114,7 +107,7 @@ def vault_bibliography_save(
 
     folder_path.mkdir(parents=True, exist_ok=True)
 
-    safe_slug = slugify(title)[:60]
+    safe_slug = slugify_strict(title)[:60]
 
     filename = f"{safe_slug}.md"
 

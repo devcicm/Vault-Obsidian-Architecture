@@ -69,6 +69,14 @@ NORMA = {
     "tools_enforcing": ["vault_criterios"],
     "tools_detecting": ["vault_criterios"],
     "distinguido_de": {
+        "CN-05": (
+            "AP-57 mide el **criterio** duplicado —el que decide—; CN-05, el "
+            "**cuerpo** duplicado —el que se ejecuta—. Un criterio repetido en "
+            "dos sitios puede discrepar; un cuerpo repetido hace lo mismo dos "
+            "veces, y el segundo arreglo se lleva por delante al primero sin "
+            "avisar. AP-57 se salda importando al dueño; CN-05, uniendo los "
+            "cuerpos en él."
+        ),
         "AP-62": (
             "AP-57 mira el criterio **escrito dos veces**; AP-62 mira el "
             "criterio escrito una sola vez y **leído por la puerta cara**. "

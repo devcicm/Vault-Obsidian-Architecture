@@ -52,7 +52,7 @@ from vault_lib import destino_mas_corto, indice_de_nombres, inventario_de_nombre
 from vault.kernel.frontmatter_escritura import Frontmatter
 from vault.kernel.frontmatter_parsing import (
     FrontmatterParseError,
-    parse_frontmatter_with_body,
+    parse_frontmatter,
     separar_frontmatter,
 )
 
@@ -67,10 +67,14 @@ def _normalizacion(crudo: bytes) -> List[str]:
 
 
 def _datos(texto: str) -> Dict[str, Any]:
-    """El frontmatter leído como lo lee el consumidor; `{}` si la nota no tiene."""
-    if separar_frontmatter(texto)[0] is None:
-        return {}
-    return parse_frontmatter_with_body(texto)[0] or {}
+    """El frontmatter leído como lo lee el consumidor; `{}` si la nota no tiene.
+
+    El cuerpo es el del dueño: bloque ausente → `{}`, bloque roto →
+    `FrontmatterParseError` (AP-51). La copia que vivía aquí hacía lo mismo
+    con otro nombre, y dos copias de un cuerpo son dos cuerpos que divergen
+    (CN-05).
+    """
+    return parse_frontmatter(texto)
 
 
 def supersede(path: str, by: str, apply: bool = False, replace: bool = False) -> Dict[str, Any]:

@@ -5,7 +5,7 @@
 > falla si diverge. Lo escrito a mano aquí se pierde: el porqué se corrige
 > en el docstring de la tool.
 
-Puertas: 26. Verde en todas no es verde en la suite.
+Puertas: 27. Verde en todas no es verde en la suite.
 
 ## `framework`
 
@@ -214,6 +214,17 @@ AP-05 es `critical` desde v19 y estuvo sin detector hasta v40.15 — la única e
 **vault_ciclos — el ciclo que se esquiva con un import diferido (AP-58).**
 
 Este repo declaraba **cero ciclos de importación**, y era verdad leyendo solo los `import` de nivel de módulo. El cero estaba fabricado: 92 imports metidos dentro del cuerpo de una función, en 40 módulos. Mover un import hacia dentro es el rompe-ciclos manual, y aplicado 92 veces deja de ser una excepción para convertirse en la arquitectura — pero no aparece en ninguna medida, porque la medida solo miraba el nivel superior.
+
+## `clones`
+
+- **Comando:** `python scripts/vault_clones.py --check --strict`
+- **Mide:** Ningún cuerpo duplicado nuevo: ni sombra dentro de un módulo ni clon entre módulos (CN-05).
+- **Se arregla con:** unir los cuerpos en su dueño; si no se puede fusionar —frontera de contexto o módulo de un solo uso— se declara con su motivo escrito en la baseline, que solo encoge
+- **Normas:** [CN-05](../normas/CN-05/porque.md)
+
+**vault_clones — un cuerpo, un dueño (CN-05).**
+
+Este repo se audita a sí mismo y publica lo que encuentra. Lo que no tenía guard era lo más fácil de colar: **un cuerpo copiado**. Medido el 2026-10-28 sobre el árbol de `scripts/`, `vault/` y `cli/`: 39 nombres de función definidos en más de un módulo, 19 de ellos `slugify` —con 15 sombras puras que delegaban en el dueño sin decirlo—, 9 `parse_frontmatter` y 10 `utcnow`. Cada copia era una promesa de que el dueño y la copia se portan igual; la promesa se cumplió hasta que dejó de cumplirse: `vault/kernel/proyectos.py` tenía `ruta_de_vault` y `anotar_vault` **definidos dos veces**, byte a byte, y la segunda pareja tapaba a la primera sin que nada lo dijera.
 
 ## `kernel`
 

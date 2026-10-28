@@ -90,13 +90,6 @@ def _diagrams_dir() -> Path:
     return _repo().seccion("06_Diagrams")
 
 
-def slugify(text: str) -> str:
-    # Delega en el slug canónico (`vault_lib.slugify`). La copia que había
-    # aquí divergía del resto: unas borraban los acentos, otras los dejaban
-    # en el nombre de fichero. Una sola fuente, un solo nombre de nota.
-    return slugify_strict(text)
-
-
 def get_category_folder(category: str) -> Path:
     return _diagrams_dir() / category
 
@@ -104,9 +97,9 @@ def get_category_folder(category: str) -> Path:
 def get_diagram_path(
     project: str, title: str, category: str, diagram_type: str
 ) -> Path:
-    safe_project = slugify(project)
+    safe_project = slugify_strict(project)
 
-    safe_title = slugify(title)
+    safe_title = slugify_strict(title)
 
     ext = "md"
 
@@ -152,9 +145,9 @@ def vault_diagram_save(
 
     timestamp = utcnow()
 
-    safe_project = slugify(project)
+    safe_project = slugify_strict(project)
 
-    safe_title = slugify(title)
+    safe_title = slugify_strict(title)
 
     filename = f"{safe_project}-{safe_title}.md"
 

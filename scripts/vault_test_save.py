@@ -82,10 +82,6 @@ def _index_file() -> Path:
     return _repo().seccion("15_Tests") / ".tests-index.json"
 
 
-def utcnow() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-
-
 TEST_TYPES = ["unit", "integration", "e2e", "performance", "security", "acceptance"]
 
 # El vocabulario se declara una vez y se consume, no se copia. Ver
@@ -93,13 +89,6 @@ TEST_TYPES = ["unit", "integration", "e2e", "performance", "security", "acceptan
 from vault_vocabulario import opciones as _opciones
 
 STATUSES = _opciones("test_result")
-
-
-def slugify(text: str) -> str:
-    # Delega en el slug canónico (`vault_lib.slugify`). La copia que había
-    # aquí divergía del resto: unas borraban los acentos, otras los dejaban
-    # en el nombre de fichero. Una sola fuente, un solo nombre de nota.
-    return slugify_strict(text)
 
 
 # superseded_by: vault_io.indice_compartido
@@ -151,9 +140,9 @@ def vault_test_save(
     if status not in STATUSES:
         return emit_error("vault_test_save", "INVALID_VALUE", f"status '{status}' not valid. Use: {STATUSES}")
 
-    safe_project = slugify(project)
+    safe_project = slugify_strict(project)
 
-    title_slug = slugify(title)
+    title_slug = slugify_strict(title)
 
     now = utcnow()
 

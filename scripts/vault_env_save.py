@@ -62,20 +62,9 @@ def _projects_dir() -> Path:
     return _repo().seccion("01_Projects")
 
 
-def utcnow() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-
-
 PROVIDERS = ["env-file", "k8s-secret", "vault", "ci-secrets", "manual"]
 
 KNOWN_ENVIRONMENTS = ["dev", "staging", "production", "test", "ci"]
-
-
-def slugify(text: str) -> str:
-    # Delega en el slug canónico (`vault_lib.slugify`). La copia que había
-    # aquí divergía del resto: unas borraban los acentos, otras los dejaban
-    # en el nombre de fichero. Una sola fuente, un solo nombre de nota.
-    return slugify_strict(text)
 
 
 def parse_envs_file(content: str) -> Dict[str, Any]:
@@ -155,7 +144,7 @@ def vault_env_save(
         if v.get("provider") and v["provider"] not in PROVIDERS:
             return emit_error("vault_env_save", "INVALID_VALUE", f"Provider inválido: {v['provider']}. Válidos: {PROVIDERS}")
 
-    safe_project = slugify(project)
+    safe_project = slugify_strict(project)
 
     project_dir = _projects_dir() / safe_project
 

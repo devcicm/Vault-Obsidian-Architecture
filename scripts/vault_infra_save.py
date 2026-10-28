@@ -74,10 +74,6 @@ def _index_file() -> Path:
     return _repo().seccion("09_Infrastructure") / ".infra-index.json"
 
 
-def utcnow() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-
-
 COMPONENT_TYPES = {
     "server": "servers",
     "vm": "servers",
@@ -123,13 +119,6 @@ TYPE_SHAPES = {
     "firewall": "{{{name}}}",
     "cdn": "[{name}]",
 }
-
-
-def slugify(text: str) -> str:
-    # Delega en el slug canónico (`vault_lib.slugify`). La copia que había
-    # aquí divergía del resto: unas borraban los acentos, otras los dejaban
-    # en el nombre de fichero. Una sola fuente, un solo nombre de nota.
-    return slugify_strict(text)
 
 
 # superseded_by: vault_io.indice_compartido
@@ -196,7 +185,7 @@ def generate_infra_map(
         lines.append(f'    subgraph {loc}["🏠 {loc_label}"]')
 
         for comp in comps:
-            name = slugify(comp["name"])
+            name = slugify_strict(comp["name"])
 
             ctype = comp.get("type", "service")
 
@@ -228,9 +217,9 @@ def generate_infra_map(
 
     for comp in components:
         for conn in comp.get("connections", []):
-            from_name = slugify(comp["name"])
+            from_name = slugify_strict(comp["name"])
 
-            to_name = slugify(conn.get("to", ""))
+            to_name = slugify_strict(conn.get("to", ""))
 
             protocol = conn.get("protocol", "TCP")
 
@@ -303,7 +292,7 @@ def vault_infra_save(
 
     folder = _infra_dir() / COMPONENT_TYPES[component_type]
 
-    safe_name = slugify(name)
+    safe_name = slugify_strict(name)
 
     filename = f"{safe_name}.md"
 
@@ -479,7 +468,7 @@ def vault_infra_save(
         }
 
         for i, comp in enumerate(index["components"]):
-            if slugify(comp["name"]) == safe_name:
+            if slugify_strict(comp["name"]) == safe_name:
                 # La identidad del componente es estable (v41.12): re-guardar
                 # lo idéntico no fabrica id nuevo ni mueve `updatedAt` — el
                 # C3 del auditor media la reescritura del índice como trabajo.

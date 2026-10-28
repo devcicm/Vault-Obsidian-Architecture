@@ -82,22 +82,11 @@ def _index_file() -> Path:
     return _repo().seccion("14_Requirements") / ".requirements-index.json"
 
 
-def utcnow() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-
-
 REQ_TYPES = ["functional", "non-functional", "constraint", "assumption"]
 
 PRIORITIES = ["must-have", "should-have", "nice-to-have", "wont-have"]
 
 STATUSES = ["draft", "reviewed", "approved", "implemented", "verified", "obsolete"]
-
-
-def slugify(text: str) -> str:
-    # Delega en el slug canónico (`vault_lib.slugify`). La copia que había
-    # aquí divergía del resto: unas borraban los acentos, otras los dejaban
-    # en el nombre de fichero. Una sola fuente, un solo nombre de nota.
-    return slugify_strict(text)
 
 
 # superseded_by: vault_io.indice_compartido
@@ -151,9 +140,9 @@ def vault_requirement_save(
     if status not in STATUSES:
         return emit_error("vault_requirement_save", "INVALID_VALUE", f"status '{status}' not valid. Use: {STATUSES}")
 
-    safe_project = slugify(project)
+    safe_project = slugify_strict(project)
 
-    title_slug = slugify(title)
+    title_slug = slugify_strict(title)
 
     now = utcnow()
 

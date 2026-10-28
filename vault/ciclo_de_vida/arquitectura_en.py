@@ -62,8 +62,7 @@ from vault_lib import Config, indice_de_nombres, resolver_sustitucion
 from vault_norms_catalog import STATUS_TRANSITIONS, normalize_status
 from vault_registry import (SCAFFOLD_TYPE, SECTION_TYPES, SUBFOLDERS, es_artefacto_derivado,
                             regimen_de_estado)
-from vault.kernel.frontmatter_parsing import (FrontmatterParseError, parse_frontmatter_with_body,
-                                              separar_frontmatter)
+from vault.kernel.frontmatter_parsing import (FrontmatterParseError, parse_frontmatter)
 
 TOOL = "vault_arquitectura_en"
 UTC = timezone.utc
@@ -99,11 +98,11 @@ def _datos(texto: str) -> Dict[str, Any]:
     """El frontmatter como lo lee el consumidor; `{}` si la nota no tiene bloque.
 
     Un bloque que no se parsea lanza `FrontmatterParseError`: quien llama lo
-    cuenta como ilegible, no como una nota sin datos (AP-51).
+    cuenta como ilegible, no como una nota sin datos (AP-51). El cuerpo es el
+    del dueño (`parse_frontmatter`); la copia que vivía aquí hacía lo mismo
+    con otro nombre (CN-05).
     """
-    if separar_frontmatter(texto)[0] is None:
-        return {}
-    return parse_frontmatter_with_body(texto)[0] or {}
+    return parse_frontmatter(texto)
 
 
 def _instante(valor: Any) -> Optional[datetime]:

@@ -1742,6 +1742,8 @@ _BASELINES = [
      "AP-62 — el consumidor cruza para leer un recurso y paga el fan-out"),
     ("rutas-baseline.json", "sitios",
      "v41.21 — el layout del repo escrito como literal fuera de su dueño vault/kernel/rutas.py; solo encoge"),
+    ("clones-baseline.json", "sitios",
+     "CN-05 — cuerpos duplicados que no se pueden fusionar sin cruzar una frontera"),
 ]
 
 

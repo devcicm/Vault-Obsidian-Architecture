@@ -621,6 +621,11 @@ CONTEXTS: dict[str, dict] = {
             "vault_norms_coherence",
             "vault_criterios",
             "vault_ciclos",
+            # CN-05 (v41.25). Meta-toolkit por el mismo motivo que los de
+            # arriba: su sujeto es el código de este repo —los cuerpos
+            # duplicados entre módulos—, y no una nota de nadie. No importa
+            # ninguna tool de escritura; solo lee el árbol por AST.
+            "vault_clones",
             # AP-59 (v40.20). Está aquí y no en el kernel a propósito, aunque
             # sea la tool que lo mide: consume `dependencias_del_kernel()` de
             # este mismo módulo, y un módulo del núcleo que importa al

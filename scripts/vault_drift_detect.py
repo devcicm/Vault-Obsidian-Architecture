@@ -61,7 +61,7 @@ import sys
 
 from vault_errors import emit_error, emit_fallo, wrap_main, proyecto_registrado
 from vault_contrato_nota import es_mapa_de_versiones
-from vault_lib import parse_frontmatter, slugify_strict, utcnow
+from vault_lib import parse_frontmatter, utcnow
 from vault_norms_catalog import normalize_status
 from vault.kernel import procesos_git
 from datetime import datetime, timezone
@@ -253,13 +253,6 @@ def _repo(root=None) -> RepositorioGobernanza:
 
 def _snapshot_file() -> Path:
     return _repo().instantanea_sesion
-
-
-def slugify(text: str) -> str:
-    # Delega en el slug canónico (`vault_lib.slugify`). La copia que había
-    # aquí divergía del resto: unas borraban los acentos, otras los dejaban
-    # en el nombre de fichero. Una sola fuente, un solo nombre de nota.
-    return slugify_strict(text)
 
 
 # ─── Git helpers ─────────────────────────────────────────────────────────────

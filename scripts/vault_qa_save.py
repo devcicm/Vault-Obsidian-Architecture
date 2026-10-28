@@ -39,7 +39,7 @@ from vault_io import (
     atomic_write_json,
     assert_within_vault,
 )
-from vault_lib import slugify_strict
+from vault_lib import slugify_strict, utcnow
 from vault_norms_catalog import status_frontmatter_lines
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -72,14 +72,6 @@ def _qa_dir() -> Path:
 
 def _index_file() -> Path:
     return _repo().seccion("21_QA") / ".qa-index.json"
-
-
-def utcnow() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-
-
-def slugify(text: str) -> str:
-    return slugify_strict(text)
 
 
 def load_index() -> Dict[str, Any]:
@@ -123,8 +115,8 @@ def vault_qa_save(
             f"status '{status}' not valid. Use: {QA_STATUSES}",
         )
 
-    safe_project = slugify(project)
-    title_slug = slugify(title)
+    safe_project = slugify_strict(project)
+    title_slug = slugify_strict(title)
     now = utcnow()
 
     with indice_compartido(_index_file(), {"qa": []}) as index:

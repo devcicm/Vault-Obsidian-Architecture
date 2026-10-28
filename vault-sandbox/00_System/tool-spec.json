@@ -1,7 +1,7 @@
 {
-  "version": "v41.23",
+  "version": "v41.25",
   "schema": "1.0",
-  "generated_at": "2026-10-24T05:31:41Z",
+  "generated_at": "2026-10-28T10:42:11Z",
   "description": "Spec-driven tool contracts. Editar este archivo ANTES de implementar una nueva tool. Validar con: python vault_spec_validate.py. v36.0: Added naming convention with explicit suffixes (-runtime, -config, -client, -db, etc.) to eliminate ambiguity. Added detect_ambiguity() and suggest_suffix() functions to vault_migrate.py. Updated manifest with complete disambiguation rules for terms like redis, postgres, nginx, docker, kubernetes, etc.",
   "tools": {
     "vault_ai_decision": {
@@ -530,6 +530,51 @@
         "resolved_since_baseline",
         "tool",
         "top_level_edges",
+        "vault_says"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency",
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F8"
+      ]
+    },
+    "vault_clones": {
+      "group": "Normas",
+      "group_id": 35,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "action",
+        "admitted_new",
+        "baseline_size",
+        "clone_groups",
+        "clone_groups_total",
+        "error_code",
+        "exempt_backup",
+        "exempt_contract",
+        "frozen",
+        "functions_scanned",
+        "hint",
+        "modules_scanned",
+        "new_clones",
+        "new_shadowing",
+        "norm",
+        "ok",
+        "recovery",
+        "resolved_since_baseline",
+        "shadowing_sites",
+        "shadowing_total",
+        "sites_without_motive",
+        "tool",
         "vault_says"
       ],
       "dq": {
@@ -4792,10 +4837,11 @@
     }
   },
   "_counts": {
-    "active": 126,
+    "active": 127,
     "internal": 19,
     "archived": 5,
-    "total": 150,
-    "active_groups": 37
+    "total": 151,
+    "active_groups": 37,
+    "schema_version": "1.0"
   }
 }

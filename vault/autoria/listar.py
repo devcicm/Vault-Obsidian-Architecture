@@ -38,7 +38,7 @@ import sys
 
 from vault_registry import ORDERED_SECTIONS, section_description, secciones_del_vault
 from vault_errors import emit_error, wrap_main
-from vault_lib import parse_frontmatter as _parse_frontmatter
+from vault_lib import parse_frontmatter
 from vault_lib import separar_frontmatter
 from vault_norms_catalog import STATUS_VOCAB, normalize_status
 
@@ -96,24 +96,6 @@ FOLDER_ICONS = {
 }
 
 
-
-
-
-def parse_frontmatter(content: str) -> Dict[str, Any]:
-    """Frontmatter de una nota. Delega en el dueño canónico (AP-44/AP-57).
-
-    Hasta v40.23 esto era un regex línea a línea, copiado en seis módulos. Medido
-    sobre el corpus de `vault-sandbox/` (126 notas), devolvía `{{}}` —"esta nota no
-    tiene frontmatter"— en **110** de ellas: el patrón `^---
-` no casa `---
-`
-    ni sobrevive al BOM que dejan los editores de Windows, y ambas cosas están en
-    el material real. Además leía todo valor como texto: `evergreen: true` salía
-    `'true'`, que es verdadero como cadena aun cuando el dato diga lo contrario.
-    `vault_lib.parse_frontmatter` hace BOM-strip, YAML de verdad, normaliza fechas
-    y contiene `RecursionError` (AP-61).
-    """
-    return _parse_frontmatter(content)
 def get_note_metadata(note_path: Path) -> Dict[str, Any]:
 
     """Get metadata from a note."""

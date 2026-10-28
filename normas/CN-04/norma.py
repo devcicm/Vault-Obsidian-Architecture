@@ -19,6 +19,11 @@ NORMA = {
             "Un H1 no es contenido: la nota que solo tiene título sigue siendo "
             "AP-45."
         ),
+        "CN-05": (
+            "CN-04 fija cómo abre una nota; CN-05, quién es el dueño de un "
+            "cuerpo de código. Una es convención de escritura y la otra de "
+            "estructura del repo: no se solapan ni se contradicen."
+        ),
     },
     "name": "Note opens with its title — la nota abre con su título como H1",
     "type": "antipattern",

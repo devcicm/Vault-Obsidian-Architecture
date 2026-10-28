@@ -31,7 +31,7 @@ import re
 import sys
 
 from vault_errors import emit_error, wrap_main, proyecto_registrado
-from vault_lib import slugify_strict, utcnow
+from vault_lib import slugify_strict
 import uuid
 
 from datetime import datetime, timezone
@@ -272,7 +272,7 @@ def save_findings_to_vault(findings: List[Dict], project: str) -> List[str]:
                 report_lines.append(f"- **Mitigación:** {f['mitigation']}\n")
 
     report_path = (
-        _vulnerabilities_dir() / f"security-scan-{slugify(project)}-{timestamp}.md"
+        _vulnerabilities_dir() / f"security-scan-{slugify_strict(project)}-{timestamp}.md"
     )
 
     # atomic_write_* y no `open(..., "w")`: el escaneo de secretos, el saneado de
@@ -283,7 +283,7 @@ def save_findings_to_vault(findings: List[Dict], project: str) -> List[str]:
 
     for f in findings:
         if f["severity"] in ["critical", "high"]:
-            slug = slugify(f["ruleId"] + "-" + f["category"])
+            slug = slugify_strict(f["ruleId"] + "-" + f["category"])
 
             note_path = _vulnerabilities_dir() / f"{f['ruleId']}-{slug}-{timestamp}.md"
 
@@ -316,13 +316,6 @@ def save_findings_to_vault(findings: List[Dict], project: str) -> List[str]:
             saved_files.append(str(note_path.relative_to(_raiz())))
 
     return saved_files
-
-
-def slugify(text: str) -> str:
-    # Delega en el slug canónico (`vault_lib.slugify`). La copia que había
-    # aquí divergía del resto: unas borraban los acentos, otras los dejaban
-    # en el nombre de fichero. Una sola fuente, un solo nombre de nota.
-    return slugify_strict(text)
 
 
 def vault_security_scan(

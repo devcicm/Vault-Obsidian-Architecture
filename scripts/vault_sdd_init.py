@@ -28,6 +28,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from vault_io import atomic_write_json, atomic_write_text
 from vault_errors import emit_error, wrap_main
+from vault_lib import utcnow
 
 
 SDD_OUTPUT_DIR = "docs/sdd"
@@ -82,11 +83,6 @@ def _raiz() -> Path:
 def _repo(root=None) -> RepositorioCicloDeVida:
     """Resuelve el vault al usarse, no al importarse (AP-49)."""
     return RepositorioCicloDeVida(construir(root))
-
-
-def utcnow() -> str:
-    """Return current UTC timestamp (matches vault_lib.utcnow)."""
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
 def _norm_codes() -> set:

@@ -29,6 +29,7 @@ from vault_contrato_nota import POR_DEFECTO
 from vault_errors import wrap_main
 from vault_fundamentals_catalog import cia_por_defecto
 from vault_io import atomic_write_text, get_vault_root, write_report
+from vault_lib import utcnow
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -71,10 +72,6 @@ def _tests_index() -> Path:
 
 def _dashboard_path() -> Path:
     return _repo().dir_observabilidad / "qa" / "quality-dashboard.md"
-
-
-def utcnow() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
 def _load_json(path: Path) -> Optional[Dict[str, Any]]:
