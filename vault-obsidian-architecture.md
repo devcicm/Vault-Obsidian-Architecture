@@ -8328,7 +8328,7 @@ temp/
 
 ---
 
-### v41.25 — 2026-10-28 `git: pending`
+### v41.25 — 2026-10-28 `git: 666967c`
 
 v41.25 cierra la consolidación del código del toolkit. Nació de medir el repo contra sí mismo: ningún guard miraba el cuerpo duplicado, y había 39 nombres de función definidos en más de un módulo —19 `slugify`, con 15 sombras puras que delegaban en el dueño sin decirlo— y un par de definiciones byte a byte idénticas en `vault/kernel/proyectos.py` donde la segunda tapaba a la primera sin que nada lo dijera.
 
