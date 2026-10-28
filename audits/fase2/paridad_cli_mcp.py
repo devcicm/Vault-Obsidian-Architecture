@@ -486,7 +486,11 @@ def main() -> int:
     runtime = Path(args.runtime)
     py = venv / "Scripts" / "python.exe" if os.name == "nt" else venv / "bin" / "python"
     cli = venv / "Scripts" / "vault.exe" if os.name == "nt" else venv / "bin" / "vault"
-    site = Path(py).parent.parent / "Lib" / "site-packages"
+    # Windows: Lib/site-packages. POSIX: lib/python3.X/site-packages. Solo
+    # estaba la primera: en Linux el verificador arrancaba el MCP sobre un
+    # fichero ausente (mismo defecto que tenia recorrido_terceros_r07).
+    sitios = [venv / "Lib" / "site-packages", *sorted(venv.glob("lib/python3*/site-packages"))]
+    site = next((s for s in sitios if (s / "vault_toolkit").is_dir()), sitios[0])
     mjs = site / "vault_toolkit" / "mcp" / "vault-mcp-server.mjs"
     env = {**os.environ, "VAULT_ROOT": str(runtime), "VAULT_STRICT_ROOT": "1",
            "VAULT_AGENT": "paridad-fase2", "PYTHONIOENCODING": "utf-8"}

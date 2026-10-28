@@ -242,8 +242,13 @@ def main() -> int:
     mjs = (venv / "Lib" / "site-packages" / "vault_toolkit" / "mcp" /
            "vault-mcp-server.mjs")
     if not mjs.is_file():
-        mjs = (venv / "lib" / "python3" / "site-packages" / "vault_toolkit" /
-               "mcp" / "vault-mcp-server.mjs")
+        # POSIX: lib/python3.X/site-packages. La ruta fija `lib/python3` no
+        # existe en ningun venv, y el recorrido solo se habia ejecutado en
+        # Windows: en Linux el cliente MCP arrancaba sobre un fichero ausente.
+        candidatos = sorted(venv.glob("lib/python3*/site-packages/vault_toolkit/"
+                                      "mcp/vault-mcp-server.mjs"))
+        if candidatos:
+            mjs = candidatos[0]
     env_mcp = dict(env, VAULT_MCP_PYTHON=str(py))
     cliente = ClienteMCP(mjs, env_mcp)
     ini = cliente.pedir({"jsonrpc": "2.0", "id": 1, "method": "initialize",
