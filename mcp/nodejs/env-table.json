@@ -72,6 +72,20 @@
       "purpose": "Segundos antes de que una tool se declare colgada. Lo leen `vault_errors` y el servidor MCP, que hasta ahora lo declaraban por separado con el mismo número."
     },
     {
+      "name": "VAULT_LATENCY_NOMINAL_MS",
+      "type": "entero",
+      "default": 2,
+      "context": "kernel",
+      "purpose": "Latencia NOMINAL, en milisegundos, de una llamada a una primitiva caliente del kernel (parse de frontmatter, filtro de regex, resolución de wikilinks, estimación de tokens). Es el objetivo de regresión que mide `test_latencia_primitivas.py` en serie, no el techo: lo que se aleje de aquí sin que nadie lo declare es deuda de latencia silenciosa. Excluidas con motivo declarado las tools gruesas —auditoría, gates, consultas sobre el vault entero—: su presupuesto es `VAULT_TOOL_TIMEOUT`."
+    },
+    {
+      "name": "VAULT_LATENCY_MAX_MS",
+      "type": "entero",
+      "default": 5,
+      "context": "kernel",
+      "purpose": "Techo duro de la misma medida, en milisegundos: una primitiva que tarde más que esto aun con la mejor de N llamadas es un fallo de latencia, no ruido — una primitiva genuinamente lenta no pasa igual porque su mínimo tampoco pasa (COST-a)."
+    },
+    {
       "name": "VAULT_COUNT_TOKENS",
       "type": "bandera",
       "default": false,

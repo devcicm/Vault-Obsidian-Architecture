@@ -141,6 +141,31 @@ VARIABLES: Dict[str, Variable] = {
             "por separado con el mismo número.",
             _entero,
         ),
+        # v41.24 — presupuesto de latencia de las primitivas calientes del
+        # kernel (opción A). El nominal es el objetivo de regresión; el
+        # máximo, el techo duro. Las tools gruesas quedan excluidas con
+        # motivo: su techo es VAULT_TOOL_TIMEOUT.
+        Variable(
+            "VAULT_LATENCY_NOMINAL_MS", "entero", 2, "kernel",
+            "Latencia NOMINAL, en milisegundos, de una llamada a una "
+            "primitiva caliente del kernel (parse de frontmatter, filtro de "
+            "regex, resolución de wikilinks, estimación de tokens). Es el "
+            "objetivo de regresión que mide `test_latencia_primitivas.py` "
+            "en serie, no el techo: lo que se aleje de aquí sin que nadie "
+            "lo declare es deuda de latencia silenciosa. Excluidas con "
+            "motivo declarado las tools gruesas —auditoría, gates, "
+            "consultas sobre el vault entero—: su presupuesto es "
+            "`VAULT_TOOL_TIMEOUT`.",
+            _entero,
+        ),
+        Variable(
+            "VAULT_LATENCY_MAX_MS", "entero", 5, "kernel",
+            "Techo duro de la misma medida, en milisegundos: una primitiva "
+            "que tarde más que esto aun con la mejor de N llamadas es un "
+            "fallo de latencia, no ruido — una primitiva genuinamente "
+            "lenta no pasa igual porque su mínimo tampoco pasa (COST-a).",
+            _entero,
+        ),
         Variable(
             "VAULT_COUNT_TOKENS", "bandera", False, "kernel",
             "Añade el conteo de tokens al envelope de error. Apagado por "
@@ -334,7 +359,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     def es_limite(nombre: str, proposito: str) -> bool:
         texto = (nombre + " " + proposito).lower()
         return any(k in texto for k in (
-            "timeout", "segundos", "minutos", "minutes", "segundo por tool"))
+            "timeout", "segundos", "minutos", "minutes", "segundo por tool",
+            "milisegundos"))
 
     filas = []
     for nombre, v in sorted(VARIABLES.items()):
