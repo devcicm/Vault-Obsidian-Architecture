@@ -179,8 +179,13 @@ def test_la_generacion_detecta_un_arbol_modificado(tmp_path):
     assert "SHA_INEXISTENTE" in p.stdout, p.stdout[-300:]
 
 
-def test_la_constitucion_esta_marcada_como_borrador():
+def test_la_constitucion_declara_su_ratificacion_y_su_acto():
+    """DEC-01 (2026-10-28): ratificada tal cual. El estado tiene que citar el
+    acto que la ratifica; un «RATIFICADA» sin acta seria autoatribucion."""
     texto = (ROOT / "docs" / "architecture" /
              "CONSTITUCION-ARQUITECTONICA.md").read_text(encoding="utf-8")
-    assert "PENDIENTE DE RATIFICACIÓN" in texto
-    assert "DRAFT" in texto
+    assert "ESTADO: RATIFICADA" in texto
+    assert "PENDIENTE DE RATIFICACIÓN" not in texto
+    acta = "ACTA-DECISIONES-PROPIETARIO-2026-10-28.md#DEC-01"
+    assert acta in texto
+    assert (ROOT / "audits" / "handoff" / acta.split("#")[0]).is_file()

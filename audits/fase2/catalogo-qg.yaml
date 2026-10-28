@@ -46,7 +46,7 @@
   checks:
     - "python scripts/vault_arch.py --check --strict"
     - "python audits/fase2/reconciliar_archify.py --check"
-    - "invariantes: new_off_port_crossings == [], off_port_total <= 5, off_port_baseline == 5"
+    - "invariantes: new_off_port_crossings == [], off_port_total <= off_port_baseline (la baseline solo encoge; 0 desde la ruta B, 3e92962)"
   required_evidence: [salida del guard, salida del reconciliador en modo check]
   pass_criteria: ["exit 0 y los tres invariantes"]
   fail_criteria: ["cualquier cruce nuevo, baseline ampliada, o un invariante roto"]
@@ -66,7 +66,8 @@
     - "python scripts/vault_gate.py --strict (las 26 puertas)"
     - "estado del sandbox documentado (bootstrap canonico, verificado)"
     - "el envelope de la auditoria declara el estado de ejecucion por control"
-    - "PENDIENTE (TD-0003): mientras el runtime no publique estados, la puerta queda BLOCKED con CONTROL_OBLIGATORIO_NO_VERIFICADO"
+    - "TD-0003 (implementado en 51b5cd1): sin estados de ejecucion en el envelope, la puerta queda BLOCKED con CONTROL_OBLIGATORIO_NO_VERIFICADO"
+    - "DEC-03 opcion C (ratificada 2026-10-28): runtime recien creado y sandbox auditados por separado con politica_certificacion_compuesta; un escape nuevo es FAIL"
   required_evidence: [salida de vault_gate, documentacion del sandbox, la seccion checks del envelope con el estado de AP-40, AP-42 y AP-43]
   pass_criteria: ["26/26 puertas Y todos los controles obligatorios en estado ejecutado SIN degradados (completo: true)"]
   fail_criteria: ["una puerta tecnica fallida, o un control degradado, o un control no ejecutado, o la ausencia de estados de ejecucion en el envelope (BLOCKED con CONTROL_OBLIGATORIO_NO_VERIFICADO)"]
@@ -106,8 +107,8 @@
     - "comprobar_saneamiento.py sobre las evidencias"
     - "el guard de secretos en la escritura (presente en la wheel)"
     - "contencion: el escape por CLI y MCP es rechazado (medido en el recorrido)"
-    - "la operacion destructiva --clean declara y preserva via de recuperacion (TD-0008, PENDIENTE)"
-    - "auditoria de vulnerabilidades de dependencias (PENDIENTE: pip-audit)"
+    - "la operacion destructiva --clean declara y preserva via de recuperacion (TD-0008, implementado en cc85491: tests/test_vault_init_clean.py)"
+    - "auditoria de vulnerabilidades de dependencias (pip-audit sobre el interprete de la wheel)"
   required_evidence: [salida del verificador, log del recorrido (contencion), METADATA de la wheel, hallazgos de dependencias]
   pass_criteria: ["sin vulnerabilidad confirmada y explotable; los controles criticos ejecutados"]
   fail_criteria: ["una fuga de secretos, un escape de contencion, o un control critico no ejecutado"]
@@ -164,7 +165,7 @@
   scope: [el SHA del release candidate]
   checks:
     - "QG-00..QG-06 en PASS para ESE SHA (QG-00 es prerrequisito: sin identidad verificada, las demas puertas quedan BLOCKED)"
-    - "CI del SHA con conclusion (no queued): matriz multiplataforma, wheel y JSON-RPC"
+    - "CI del SHA con conclusion (no queued): matriz Windows + Linux x Python 3.9-3.12 (alcance del 2026-10-28), wheel y JSON-RPC"
     - "riesgos residuales aceptados y documentados"
     - "documentacion coherente (TD-0005) y versionado definido"
   required_evidence: [los QG previos, el estado de CI del SHA, el inventario de riesgos]

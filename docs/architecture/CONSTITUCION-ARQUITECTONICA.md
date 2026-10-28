@@ -1,8 +1,12 @@
 <!-- propiedad: CARLOS IVAN CM — revisión: manual -->
 # CONSTITUCIÓN ARQUITECTÓNICA — Vault-Obsidian-Architecture
 
-> **ESTADO: DRAFT — PENDIENTE DE RATIFICACIÓN.**
-> Este documento es una **propuesta de norma**, no una imposición retroactiva.
+> **ESTADO: RATIFICADA — 2026-10-28 (DEC-01, opción a: ratificar tal cual).**
+> Acto: `audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-10-28.md#DEC-01`.
+> Hasta esa fecha fue DRAFT (propuesta 0.1 del 2026-10-25); el texto no cambió
+> al ratificarse.
+>
+> Este documento no es una imposición retroactiva.
 > No cambia ningún contrato vigente ni deroga ninguna norma existente: las
 > describe, las ordena y propone las que faltan. Ratificarlo es una decisión
 > del propietario (ver §H, «Autoridad»).

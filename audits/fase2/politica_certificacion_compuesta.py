@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Contrato ejecutable PROPUESTO de certificacion compuesta para QG-02.
 
-ESTADO: PROPUESTA (DEC-03). NO APLICADA. Este modulo NO toca
-`catalogo-qg.yaml` ni `politica_qg.py`: es el expediente ejecutable de la
-opcion C para que el propietario ratifique — o rechace — sabiendo exactamente
-que haria. Sintaxis de la opcion C (GOAL R15 §5):
+ESTADO: RATIFICADA (DEC-03, opcion C, 2026-10-28; acto en
+audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-10-28.md). La aplica el
+subcheck `certificacion_compuesta` de QG-02 en `colector_qg.py`. Historico:
+hasta esa fecha fue PROPUESTA, el expediente ejecutable de la opcion C. Sintaxis de la opcion C (GOAL R15 §5):
 
     El producto se certifica sobre el RUNTIME LIMPIO (lo que consume un
     tercero) y el SANDBOX CANONICO se audita contra el mismo estandar, con

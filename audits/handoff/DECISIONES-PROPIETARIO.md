@@ -1,7 +1,7 @@
 # Decisiones reservadas al propietario — fichas DEC-01..DEC-06
 
-**Estado: ESPERANDO DECISIÓN.** Ninguna de estas fichas es una aprobación ni
-ratifica nada por sí sola. Cada una termina en un espacio de decisión vacío.
+**Estado: DECIDIDAS el 2026-10-28** (acta: [ACTA-DECISIONES-PROPIETARIO-2026-10-28.md](ACTA-DECISIONES-PROPIETARIO-2026-10-28.md)). Hasta esa fecha
+el estado era «ESPERANDO DECISIÓN» y cada ficha terminaba en un espacio vacío.
 El GOAL R14 (§10) define el contrato de estas fichas; los datos vienen de los
 expedientes citados en cada una.
 
@@ -41,7 +41,7 @@ fail-closed (QG-00/QG-01/QG-02 BLOCKED; `liberable: false`).
   ratificado con referencia a la decisión; si (c): registrar la limitación en
   el manifiesto de release.
 
-**Decisión:** ─── (ratificar / enmendar / mantener DRAFT) · Fecha: ───
+**Decisión:** **ratificar** (a) · Fecha: 2026-10-28 · Acta: [ACTA-DECISIONES-PROPIETARIO-2026-10-28.md](ACTA-DECISIONES-PROPIETARIO-2026-10-28.md)#DEC-01
 
 ---
 
@@ -116,7 +116,7 @@ fail-closed (QG-00/QG-01/QG-02 BLOCKED; `liberable: false`).
   re-certificación; si C: redactar la excepción formal (plazo, riesgo, dueño)
   y someterla a QA; si nada: QG-00/QG-01 siguen BLOCKED.
 
-**Decisión:** ─── (A / B / C) · Fecha: ───
+**Decisión:** **B** (implementada en 3e92962) **+ aceptar DIV-01..10** (firmadas en `divergencias-aceptadas.yaml`) · Fecha: 2026-10-28 · Acta: [ACTA-DECISIONES-PROPIETARIO-2026-10-28.md](ACTA-DECISIONES-PROPIETARIO-2026-10-28.md)#DEC-02
 
 ---
 
@@ -204,7 +204,7 @@ fail-closed (QG-00/QG-01/QG-02 BLOCKED; `liberable: false`).
 - **Acción posterior:** si C: proponer el cambio formal de catálogo/política
   con tests; aplicar solo tras aprobación.
 
-**Decisión:** ─── (A / B / C) · Fecha: ───
+**Decisión:** **C** (compuesta; aplicada por el subcheck `certificacion_compuesta` de QG-02) · Fecha: 2026-10-28 · Acta: [ACTA-DECISIONES-PROPIETARIO-2026-10-28.md](ACTA-DECISIONES-PROPIETARIO-2026-10-28.md)#DEC-03
 
 ---
 
@@ -271,7 +271,7 @@ fail-closed (QG-00/QG-01/QG-02 BLOCKED; `liberable: false`).
 - **Quality Gates afectados:** QG-02 (el hallazgo INC-0001 y, con DEC-03, el
   sujeto de certificación) y QG-07 por arrastre.
 
-**Decisión:** ─── (a / b / c / d + ubicación o archivo acordado) · Fecha: ───
+**Decisión:** **(c) archivar con verificación de hashes y purgar** · Fecha: 2026-10-28 · Acta: [ACTA-DECISIONES-PROPIETARIO-2026-10-28.md](ACTA-DECISIONES-PROPIETARIO-2026-10-28.md)#DEC-04 · Ejecución en la máquina del propietario: `audits/handoff/DEC-04-archivar-y-purgar.md`
 
 ---
 
@@ -304,7 +304,7 @@ fail-closed (QG-00/QG-01/QG-02 BLOCKED; `liberable: false`).
 - **Acción posterior:** (a) mantener el saneamiento preventivo y la nota de
   riesgo en el manifiesto de release.
 
-**Decisión:** ─── (a / b) · Fecha: ───
+**Decisión:** **(a) conservar con riesgo documentado** · Fecha: 2026-10-28 · Acta: [ACTA-DECISIONES-PROPIETARIO-2026-10-28.md](ACTA-DECISIONES-PROPIETARIO-2026-10-28.md)#DEC-05
 
 ---
 
@@ -341,4 +341,4 @@ fail-closed (QG-00/QG-01/QG-02 BLOCKED; `liberable: false`).
   release, hashes, SBOM); si se rechaza: registrar motivos y volver a
   planificación.
 
-**Decisión:** ─── (aprobar / aprobar con condiciones / rechazar) · Fecha: ───
+**Decisión:** **aprobar con condiciones** (las cinco del acta) · Fecha: 2026-10-28 · Acta: [ACTA-DECISIONES-PROPIETARIO-2026-10-28.md](ACTA-DECISIONES-PROPIETARIO-2026-10-28.md)#DEC-06

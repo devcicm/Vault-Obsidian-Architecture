@@ -1,0 +1,85 @@
+name: Release
+
+# Publica el GitHub Release cuando el propietario sube un tag `v*`.
+#
+# Por qué un workflow: publicar es un acto del propietario (DEC-06), y el acto
+# es subir el tag. Lo demás —construir, comprobar que el tag es el candidato
+# certificado, hashes, SBOM y notas— lo hace la máquina, igual cada vez.
+#
+# Fail-closed: si el tag no contiene el `product_sha` de
+# audits/fase2/CANDIDATO-RELEASE.yaml, si `release_authorized` no es true o si
+# la versión del tag no es la de pyproject.toml, no se publica nada.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Publicar release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: El tag es el candidato autorizado
+        shell: bash
+        run: |
+          python -m pip install pyyaml
+          python - <<'EOF'
+          import os, subprocess, sys, tomllib, yaml
+          tag = os.environ["GITHUB_REF_NAME"]
+          m = yaml.safe_load(open("audits/fase2/CANDIDATO-RELEASE.yaml", encoding="utf-8"))
+          rc = m["release_candidate"]
+          version = tomllib.load(open("pyproject.toml", "rb"))["project"]["version"]
+          errores = []
+          if tag != f"v{version}":
+              errores.append(f"tag {tag} != v{version} (pyproject.toml)")
+          if str(rc.get("version")) != version:
+              errores.append(f"manifiesto version {rc.get('version')} != {version}")
+          if m.get("governance", {}).get("release_authorized") is not True:
+              errores.append("release_authorized no es true en el manifiesto")
+          sha = rc["product_sha"]
+          if subprocess.run(["git", "merge-base", "--is-ancestor", sha, "HEAD"]).returncode:
+              errores.append(f"product_sha {sha} no es ancestro del tag")
+          if errores:
+              print("NO SE PUBLICA:\n  " + "\n  ".join(errores)); sys.exit(1)
+          print(f"OK: {tag} contiene el candidato {sha[:7]}")
+          EOF
+
+      - name: Construir wheel y sdist
+        run: |
+          python -m pip install build
+          python -m build
+
+      - name: Puertas de producto sobre la wheel instalada
+        shell: bash
+        run: |
+          python -m pip install dist/*.whl
+          python tests/run_product_gates.py
+
+      - name: SBOM, inventario de licencias y SHA-256
+        shell: bash
+        run: |
+          python empaquetado/sbom.py --salida dist/sbom.spdx.json
+          python empaquetado/sbom.py --inventario
+          cd dist && sha256sum *.whl *.tar.gz sbom.spdx.json > SHA256SUMS.txt && cat SHA256SUMS.txt
+
+      - name: Crear el GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notas="audits/release/NOTAS-${GITHUB_REF_NAME}.md"
+          test -f "$notas" || { echo "faltan las notas $notas"; exit 1; }
+          gh release create "$GITHUB_REF_NAME" dist/*.whl dist/*.tar.gz \
+            dist/sbom.spdx.json dist/SHA256SUMS.txt \
+            --title "Vault Obsidian Architecture $GITHUB_REF_NAME" \
+            --notes-file "$notas" --verify-tag

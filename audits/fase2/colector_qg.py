@@ -76,6 +76,9 @@ SUBCONTRATOS: Dict[str, Dict[str, Dict[str, Any]]] = {
         "sin_violaciones": {"tipo": "derivado", "verificador": "sin_violaciones",
                             "origen": "auditoria_completa",
                             "predicado": "total_violations==0"},
+        # DEC-03 (ratificada 2026-10-28): opcion C, runtime limpio + sandbox.
+        "certificacion_compuesta": {"tipo": "interno",
+                                    "verificador": "certificacion_compuesta"},
     },
     "QG-03": {
         "suite_junit": {"tipo": "externo", "verificador": "pytest_junit"},
@@ -100,12 +103,26 @@ SUBCONTRATOS: Dict[str, Dict[str, Dict[str, Any]]] = {
     },
 }
 
-#: Matriz CI obligatoria, contrastada con .github/workflows/vault-ci.yml:
-#: 3 SO x Python 3.9-3.12 en "Validate Vault Spec" y "Product gates (wheel)",
-#: mas el lint.
-MATRIZ_CI = tuple(f"({so}, {py})" for so in
-                  ("ubuntu-latest", "windows-latest", "macos-latest")
-                  for py in ("3.9", "3.10", "3.11", "3.12"))
+def _matriz_del_workflow() -> Tuple[str, ...]:
+    """La matriz obligatoria se LEE del workflow, no se copia.
+
+    Hasta 2026-10-28 era una tupla escrita a mano con macOS; al sacar macOS
+    del alcance (workflow y classifier), la copia habria exigido para siempre
+    ocho jobs que ya no existen. `tests/test_colector_qg.py` fija que coincide.
+    """
+    import yaml
+
+    ci = RAIZ / ".github" / "workflows" / "vault-ci.yml"
+    datos = yaml.safe_load(ci.read_text(encoding="utf-8")) or {}
+    matriz = (((datos.get("jobs") or {}).get("validate") or {})
+              .get("strategy") or {}).get("matrix") or {}
+    return tuple(f"({so}, {py})" for so in matriz.get("os", [])
+                 for py in matriz.get("python-version", []))
+
+
+#: Matriz CI obligatoria: la del job `validate` de .github/workflows/vault-ci.yml
+#: (SO x Python) en "Validate Vault Spec" y "Product gates (wheel)", mas el lint.
+MATRIZ_CI = _matriz_del_workflow()
 WORKFLOW_ESPERADO = "Vault CI"
 JOBS_OBLIGATORIOS = tuple(f"Validate Vault Spec {m}" for m in MATRIZ_CI) + \
     tuple(f"Product gates (wheel) {m}" for m in MATRIZ_CI) + ("Lint Python",)
@@ -217,10 +234,70 @@ def _check_wheel_contenido(sha: str, raiz: Path,
     return {"ok": True, "detalle": None, "datos": {"artefactos": salida}}
 
 
+def _auditar(root: Path, raiz: Path) -> Dict[str, Any]:
+    p = subprocess.run([sys.executable, str(raiz / "scripts" / "vault_norms.py"),
+                        "--audit", "--root", str(root)], cwd=str(raiz),
+                       capture_output=True, text=True, encoding="utf-8",
+                       errors="replace", timeout=1800)
+    try:
+        return json.loads(p.stdout)
+    except ValueError:
+        return {"ok": False, "detalle": f"AUDITORIA_SIN_JSON exit={p.returncode}"}
+
+
+def _check_certificacion_compuesta(sha: str, raiz: Path) -> Dict[str, Any]:
+    """QG-02 bajo la opcion C, ratificada en DEC-03 (2026-10-28).
+
+    Dos sujetos que no se sustituyen: un RUNTIME recien creado con
+    `vault_init` (lo que instala un tercero) y el SANDBOX canonico. Las reglas
+    fail-closed son las de `politica_certificacion_compuesta`; aqui solo se
+    producen las dos auditorias con el SHA examinado. El registro de residuos
+    va vacio: DEC-04 archiva y purga `vault-backups`, asi que un hallazgo
+    externo en el sandbox es ESCAPE_NUEVO y la puerta falla.
+    """
+    import importlib.util
+    import os
+    import tempfile
+
+    spec = importlib.util.spec_from_file_location(
+        "politica_certificacion_compuesta",
+        raiz / "audits" / "fase2" / "politica_certificacion_compuesta.py")
+    politica = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(politica)  # type: ignore[union-attr]
+
+    with tempfile.TemporaryDirectory(prefix="qg02-runtime-") as tmp:
+        runtime = Path(tmp) / "vault-runtime"
+        runtime.mkdir()
+        entorno = dict(os.environ, VAULT_ROOT=str(runtime), VAULT_STRICT_ROOT="1")
+        init = subprocess.run([sys.executable, str(raiz / "scripts" / "vault_init.py")],
+                              cwd=str(raiz), env=entorno, capture_output=True,
+                              text=True, encoding="utf-8", errors="replace",
+                              timeout=600)
+        if init.returncode != 0:
+            return {"ok": False, "detalle": f"VAULT_INIT_FALLIDO exit={init.returncode}"}
+        auditoria_runtime = _auditar(runtime, raiz)
+    auditoria_sandbox = _auditar(raiz / "vault-sandbox", raiz)
+    for a in (auditoria_runtime, auditoria_sandbox):
+        a["sha"] = sha
+    veredicto = politica.evaluar_certificacion_compuesta(
+        sha_objetivo=sha, auditoria_runtime=auditoria_runtime,
+        auditoria_sandbox=auditoria_sandbox, residuos_registrados=[])
+    datos = {"veredicto": veredicto,
+             "runtime": {k: auditoria_runtime.get(k)
+                         for k in ("total_violations", "completo", "violations")},
+             "sandbox": {k: auditoria_sandbox.get(k)
+                         for k in ("total_violations", "completo", "violations")}}
+    if veredicto.get("estado") != "PASS":
+        return {"ok": False, "detalle": f"POLITICA_C_{veredicto.get('estado')}",
+                "datos": datos}
+    return {"ok": True, "detalle": None, "datos": datos}
+
+
 INTERNOS: Dict[str, Callable[..., Dict[str, Any]]] = {
     "identidad_git": _check_identidad_git,
     "arbol_limpio": _check_arbol_limpio,
     "wheel_contenido": _check_wheel_contenido,
+    "certificacion_compuesta": _check_certificacion_compuesta,
 }
 
 

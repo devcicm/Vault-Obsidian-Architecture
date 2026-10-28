@@ -16,6 +16,9 @@
 # igual que antes: sale con codigo distinto de cero y lista las divergencias.
 # Este archivo NO es una via para maquillar el conteo.
 #
+# ESTADO (2026-10-28): RATIFICADO por el propietario (DEC-02, opcion a: firmar
+# las 10 entradas; ver ACTA-DECISIONES-PROPIETARIO-2026-10-28.md). DIV-01 se
+# reescribe con su forma vigente tras la ruta B. Historico:
 # ESTADO (R15, 2026-10-27): EXPEDIENTE DE FIRMA PREPARADO. Las 10 entradas de
 # DIV-01..10 estan escritas con su causa y evidencia, TODAS con
 # `ratificado: false`. Verificado tras escribirlas: el reconciliador sigue en
@@ -36,16 +39,19 @@ generado_por: "revision manual; cada entrada exige evidencia y ratificacion"
 expediente: "DEC-02 — preparado en R15 sobre el candidato 015b7765b80cac21c6dcf859ae075d036cd01def"
 divergencias:
 - id: DIV-01
-  divergencia: "ficha divergente: ['gobernanza', 'autoria']"
-  causa: "ficha desactualizada: el adeudado NO cambio (59d0465 + 667a6a5)"
+  divergencia: "par solo en el snapshot: ['gobernanza', 'autoria']"
+  divergencia_original: "ficha divergente: ['gobernanza', 'autoria']"
+  causa: "el par gobernanza -> autoria lo elimino la ruta B (3e92962, puerto de controles); el snapshot f049b1bd es anterior y aun lo lista"
   evidencia:
   - "audits/architecture/divergencias-archify.yaml#DIV-01"
   - "commits/59d0465"
   - "commits/667a6a5"
+  - "commits/3e92962"
   accion_requerida: "ratificacion del propietario"
-  ratificado: false
-  ratificado_por: ""
-  ratificado_en: ""
+  ratificado: true
+  ratificado_por: "propietario (devcicm)"
+  ratificado_en: "2026-10-28"
+  acto: "audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-10-28.md#DEC-02"
 - id: DIV-02
   divergencia: "ficha divergente: ['gobernanza', 'meta_toolkit']"
   causa: "ficha desactualizada: el adeudado NO cambio (59d0465 + 667a6a5)"
@@ -54,9 +60,10 @@ divergencias:
   - "commits/59d0465"
   - "commits/667a6a5"
   accion_requerida: "ratificacion del propietario"
-  ratificado: false
-  ratificado_por: ""
-  ratificado_en: ""
+  ratificado: true
+  ratificado_por: "propietario (devcicm)"
+  ratificado_en: "2026-10-28"
+  acto: "audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-10-28.md#DEC-02"
 - id: DIV-03
   divergencia: "acceso no conciliado: vault_norms_engine -> vault_mcp_catalog.check_params"
   causa: "movimiento legitimo del sitio del cruce (commit 667a6a5)"
@@ -64,9 +71,10 @@ divergencias:
   - "audits/architecture/divergencias-archify.yaml#DIV-03"
   - "commits/667a6a5"
   accion_requerida: "ratificacion del propietario"
-  ratificado: false
-  ratificado_por: ""
-  ratificado_en: ""
+  ratificado: true
+  ratificado_por: "propietario (devcicm)"
+  ratificado_en: "2026-10-28"
+  acto: "audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-10-28.md#DEC-02"
 - id: DIV-04
   divergencia: "acceso no conciliado: vault_norms_engine -> vault_smoke.SIN_SMOKE"
   causa: "movimiento legitimo del sitio del cruce (commit 667a6a5)"
@@ -74,9 +82,10 @@ divergencias:
   - "audits/architecture/divergencias-archify.yaml#DIV-04"
   - "commits/667a6a5"
   accion_requerida: "ratificacion del propietario"
-  ratificado: false
-  ratificado_por: ""
-  ratificado_en: ""
+  ratificado: true
+  ratificado_por: "propietario (devcicm)"
+  ratificado_en: "2026-10-28"
+  acto: "audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-10-28.md#DEC-02"
 - id: DIV-05
   divergencia: "acceso no conciliado: vault_norms_engine -> vault_smoke.invocation"
   causa: "movimiento legitimo del sitio del cruce (commit 667a6a5)"
@@ -84,9 +93,10 @@ divergencias:
   - "audits/architecture/divergencias-archify.yaml#DIV-05"
   - "commits/667a6a5"
   accion_requerida: "ratificacion del propietario"
-  ratificado: false
-  ratificado_por: ""
-  ratificado_en: ""
+  ratificado: true
+  ratificado_por: "propietario (devcicm)"
+  ratificado_en: "2026-10-28"
+  acto: "audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-10-28.md#DEC-02"
 - id: DIV-06
   divergencia: "acceso no conciliado: vault_norms_engine -> vault_smoke.load_baseline"
   causa: "movimiento legitimo del sitio del cruce (commit 667a6a5)"
@@ -94,9 +104,10 @@ divergencias:
   - "audits/architecture/divergencias-archify.yaml#DIV-06"
   - "commits/667a6a5"
   accion_requerida: "ratificacion del propietario"
-  ratificado: false
-  ratificado_por: ""
-  ratificado_en: ""
+  ratificado: true
+  ratificado_por: "propietario (devcicm)"
+  ratificado_en: "2026-10-28"
+  acto: "audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-10-28.md#DEC-02"
 - id: DIV-07
   divergencia: "acceso no conciliado: vault_norms_engine -> vault_voice.coverage"
   causa: "movimiento legitimo del sitio del cruce (commit 667a6a5)"
@@ -104,9 +115,10 @@ divergencias:
   - "audits/architecture/divergencias-archify.yaml#DIV-07"
   - "commits/667a6a5"
   accion_requerida: "ratificacion del propietario"
-  ratificado: false
-  ratificado_por: ""
-  ratificado_en: ""
+  ratificado: true
+  ratificado_por: "propietario (devcicm)"
+  ratificado_en: "2026-10-28"
+  acto: "audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-10-28.md#DEC-02"
 - id: DIV-08
   divergencia: "dependencia NO CONCILIABLE: vault_norms_engine -> vault_mcp_catalog"
   causa: "movimiento legitimo; la granularidad del snapshot (fichero) no coincide con la del registro (par de contextos)"
@@ -114,9 +126,10 @@ divergencias:
   - "audits/architecture/divergencias-archify.yaml#DIV-08"
   - "commits/667a6a5"
   accion_requerida: "ratificacion del propietario"
-  ratificado: false
-  ratificado_por: ""
-  ratificado_en: ""
+  ratificado: true
+  ratificado_por: "propietario (devcicm)"
+  ratificado_en: "2026-10-28"
+  acto: "audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-10-28.md#DEC-02"
 - id: DIV-09
   divergencia: "dependencia NO CONCILIABLE: vault_norms_engine -> vault_smoke"
   causa: "movimiento legitimo; granularidad del snapshot != del registro"
@@ -124,9 +137,10 @@ divergencias:
   - "audits/architecture/divergencias-archify.yaml#DIV-09"
   - "commits/667a6a5"
   accion_requerida: "ratificacion del propietario"
-  ratificado: false
-  ratificado_por: ""
-  ratificado_en: ""
+  ratificado: true
+  ratificado_por: "propietario (devcicm)"
+  ratificado_en: "2026-10-28"
+  acto: "audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-10-28.md#DEC-02"
 - id: DIV-10
   divergencia: "dependencia NO CONCILIABLE: vault_norms_engine -> vault_voice"
   causa: "movimiento legitimo; granularidad del snapshot != del registro"
@@ -134,6 +148,7 @@ divergencias:
   - "audits/architecture/divergencias-archify.yaml#DIV-10"
   - "commits/667a6a5"
   accion_requerida: "ratificacion del propietario"
-  ratificado: false
-  ratificado_por: ""
-  ratificado_en: ""
+  ratificado: true
+  ratificado_por: "propietario (devcicm)"
+  ratificado_en: "2026-10-28"
+  acto: "audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-10-28.md#DEC-02"

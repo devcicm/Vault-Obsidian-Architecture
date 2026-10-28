@@ -380,3 +380,17 @@ def test_el_colector_no_pasa_jobs_fuera_de_su_interfaz():
     parametros = inspect.signature(c.colectar).parameters
     assert "jobs_ci" not in parametros
     assert "consultar_jobs" in parametros
+
+def test_la_matriz_obligatoria_es_la_del_workflow():
+    """Alcance Windows + Linux (2026-10-28): el colector no exige jobs que el
+    workflow ya no lanza, ni deja de exigir los que lanza."""
+    import yaml
+
+    ci = yaml.safe_load((c.RAIZ / ".github" / "workflows" / "vault-ci.yml")
+                        .read_text(encoding="utf-8"))
+    for job in ("validate", "product-gates"):
+        m = ci["jobs"][job]["strategy"]["matrix"]
+        esperada = {f"({so}, {py})" for so in m["os"] for py in m["python-version"]}
+        assert esperada == set(c.MATRIZ_CI), job
+    assert not [j for j in c.JOBS_OBLIGATORIOS if "macos" in j]
+    assert len(c.JOBS_OBLIGATORIOS) == 2 * len(c.MATRIZ_CI) + 1
