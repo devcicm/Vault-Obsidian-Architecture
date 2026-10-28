@@ -363,6 +363,35 @@ python scripts/vault_norms.py --check-framework    # guard anti-drift registro �
 
 ---
 
+## Novedades v41.25 — Un cuerpo, un dueño
+
+- **CN-05 nace con guard propio.** `vault_clones` (puerta 27) mide por AST dos
+  cosas: la **sombra** —dos definiciones del mismo nombre en un módulo, o una
+  que tapa un import— y el **clon** —funciones de módulos distintos con el
+  mismo cuerpo una vez normalizado—. Medido el 2026-10-28: 39 nombres
+  duplicados en el repo, 19 de ellos `slugify`, y un par de definiciones byte a
+  byte idénticas en `vault/kernel/proyectos.py` donde la segunda tapaba a la
+  primera. Las exenciones (contrato sustituido, respaldo declarado) se
+  publican; los duplicados que no se pueden fusionar se declaran con su motivo
+  en una baseline que solo encoge.
+- **El layout del repo lo nombra su dueño.** 159 literales de `scripts/`,
+  `docs/`, `tests/`… migrados a `vault/kernel/rutas.py` con `ruta_repo()` y
+  `cita_repo()`: la baseline bajó de 175 a 16, y los 16 que quedan no son
+  rutas del repo —claves de contrato, secciones de un vault, canales— y cada
+  uno lleva su motivo escrito, que el guard comprueba.
+- **Las regex salen de los bucles.** 53 llamadas compilaban su patrón dentro
+  de un `for`/`while`: la caché de `re` evita recompilar, pero busca en cada
+  iteración. El guard de regex gana una quinta regla y el repo queda limpio.
+- **Los índices del grupo de código tienen un dueño.** Cuatro `load_index()`
+  copiadas y dos `save_index()` pasan a `vault_io.cargar_indice` y
+  `guardar_indice`.
+- **La deuda viva se mide.** Nueva métrica `deuda_viva_baselines`: 92 sitios
+  vivos en ocho baselines, con su desglose por baseline. Antes nadie la
+  sumaba.
+- **El crash del worker, documentado.** `test_noop_audit` mata al worker
+  `gw1` bajo `-n auto` y pasa limpio en serie y con `-n 4`; el banco copia el
+  sandbox una vez por tool. La hipótesis va marcada como hipótesis.
+
 ## Novedades v41.22–v41.23 — La reinstalación limpia probada a ciegas
 
 - **Una misma regla de salida en las dos vías.** Las tools que contestan en
