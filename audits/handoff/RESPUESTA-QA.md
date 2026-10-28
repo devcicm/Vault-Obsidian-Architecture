@@ -304,3 +304,32 @@ El ejecutor reporta `26/26` puertas y `6203 passed, 12 skipped, 0 failed` en Win
 **Prioridad:** TD-0008 e integridad de datos, TD-0003 y veracidad de gobernanza, CI/seguridad, luego documentación/RC. La exposición histórica de rutas y nombre de cuenta no exige reescritura inmediata sin evidencia de credenciales; documentar y asumir o decidir saneamiento mediante acto expreso del propietario.
 
 **Resultado:** H-F2-04/H-F2-05/H-F2-06 cerrados en alcance de su remediación; aceptación de release **NO** concedida. Este registro QA no modifica producto, tests, baselines, PR ni `main`.
+
+
+---
+
+# QA R22 — Acta de relevo, estado 2f5bd1b (2026-10-27)
+
+**Dictamen:** `QA_HANDOFF_PREPARED / QA_REVIEW_REQUIRED / RELEASE_BLOCKED` — no se concede aprobación global de QG ni autorización de distribución.
+
+**Rama del ejecutor revisada:** `work/release-cli-mcp-20261025`; HEAD `2f5bd1b96938e31c861b26a228c7e4c718ba72eb`; `main` remoto `1c34754258441550139ce895e182ab219c93f9bb` intacto; PR #1 OPEN, #2/#3 DRAFT sin merge.
+
+**Identidad separada:** candidato de código `81ab2ff8caccc88e1364373094351f79dc7004cb`, HEAD documental `3d332a531269cdb9587c22f8f29eb01d9a077c4d`, HEAD actual `2f5bd1b96938e31c861b26a228c7e4c718ba72eb`. Los dos commits posteriores a `81ab2ff` modifican solamente `CANDIDATO-RELEASE.yaml` y `RESPUESTA-DEL-EJECUTOR.md`; no se transfieren recibos QG del candidato `015b776`.
+
+**CI comprobada mediante GitHub:** run `40611205349` de `81ab2ff`: `completed/success`, 25/25 jobs `completed/success`. Run `40615607289` de `3d332a5`: `completed/success`, 25/25. Run `40620231867` de `2f5bd1b`: `in_progress`, 13/25 éxitos y 12 en progreso al consultar; no contarlo PASS hasta concluir. **QA no ha ejecutado localmente la suite, wheel, E2E o controles de Archify.**
+
+**Implementación R22 encontrada:** módulo distribuible `vault/kernel/controles.py` y fachada migrada al puerto de datos/proceso AP-40/42/43; el ejecutor reporta `off_port_total=0`, 26/26 gates, 6440 passed / 14 skipped / 0 failed y E2E de terceros 27/27. La CI acredita el SHA examinado, no una certificación global de QG; esas cifras locales son evidencia reportada, no ejecutada por este QA.
+
+**Bloqueante técnico restante P1 — I2-a:** en `empaquetado/fuera-de-la-wheel.json` persisten `vault_smoke` y `vault_voice`; la superficie del dueño no viaja con la wheel, por lo que AP-40/42/43 quedan `no_ejecutado` en instalación externa. La nueva ronda debe implementar y probar entry point/superficie `maintenance_publicada` desde wheel realmente instalada, con nuevo SHA y certificación completa. No equivale a aprobar la alternativa B por parte del propietario.
+
+**Bloqueantes de gobierno:** DIV-01..10 sin firma/snapshot reconciliado de forma formal (QG-00/01 BLOCKED); DEC-03 y DEC-04 sin acto de certificación/custodia (QG-02 BLOCKED); QG-03..06 del SHA R22 siguen `NOT_RUN` según `CANDIDATO-RELEASE.yaml` (los recibos de 015b776 no se copian); QG-07 BLOCKED por prerrequisitos aunque la matriz CI sí pasó; DEC-01/02/03/04/05/06 no ratificadas, REL-08/09 sin aceptación/autorización.
+
+**Riesgo de relevo:** `PROTOCOLO-QA.md` describe como activo al candidato R14 `015b776` y una rama QA de R12, mientras el producto actual es R22 `81ab2ff`. No ocultar ni reescribir entradas antiguas; actualizar el índice **vigente** en la rama ejecutora. `CANDIDATO-RELEASE.yaml` actualiza product_sha a `81ab2ff`, pero conserva una cabecera antigua. El buzón del ejecutor mezcla cierre intermedio con cierre definitivo: crear índice `CURRENT` versus `HISTORICAL`.
+
+**Acta exhaustiva y tabla de ramas:** [ACTA-RELEVO-QA-R22.md](./ACTA-RELEVO-QA-R22.md) en esta rama QA. Contiene 25 ramas remotas encontradas (20 `qa/` y 5 generales) con su SHA, estado de PR, riesgos del parche local reportado y la secuencia de trabajo del sucesor. **Ninguna rama se borró ni se fusionó.**
+
+**Limitación de autoridad:** el siguiente QA debe ser designado por el propietario, preservar independencia y emitir su propio dictamen. Esta acta no delega permisos ni ratifica decisiones, excepciones, custodios o releases.
+
+**Siguiente acción:** nuevo agente de ramas hace preflight local de solo lectura, preserva worktrees/stash/patches/commits divergentes, actualiza índices documentales sin borrar refs ni realizar merge, y continúa el GOAL en la rama autorizada con I2-a, decisiones expresas, nuevos QG y QA posterior.
+
+**Resultado:** `R22=DELIVERED_WITH_EVIDENCE`, `QA=HANDOFF_ONLY`, `RELEASE=BLOCKED`. **NO MERGE · NO TAG · NO RELEASE · NO FORCE-PUSH · NO FALSE PASS.**
