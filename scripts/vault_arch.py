@@ -2774,18 +2774,24 @@ def costes_que_crecen(rutas: list[Path] | None = None) -> list[dict]:
     return hallazgos
 
 
+def _una_medicion(funcion):
+    """Abre el memo de `_una_vez_por_medicion` mientras corre `funcion`."""
+    import functools
+
+    @functools.wraps(funcion)
+    def envoltura(*args, **kwargs):
+        global _MEMO_DE_MEDICION
+        previo = _MEMO_DE_MEDICION
+        _MEMO_DE_MEDICION = {} if previo is None else previo
+        try:
+            return funcion(*args, **kwargs)
+        finally:
+            _MEMO_DE_MEDICION = previo
+    return envoltura
+
+
+@_una_medicion
 def check(strict: bool = False) -> dict:
-    """Mide el registro entero; ver `_check` para qué mide."""
-    global _MEMO_DE_MEDICION
-    previo = _MEMO_DE_MEDICION
-    _MEMO_DE_MEDICION = {} if previo is None else previo
-    try:
-        return _check(strict)
-    finally:
-        _MEMO_DE_MEDICION = previo
-
-
-def _check(strict: bool = False) -> dict:
     base = set(_leer_baseline().get("crossings", []))
     actuales = cruces()
     claves = {_clave(c) for c in actuales}
