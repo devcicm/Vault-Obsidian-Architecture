@@ -93,7 +93,7 @@ PUERTAS:        26/26 (vault_gate --strict; gate sha256 38a752d9…)
 E2E:            27/27 desde wheel en venv limpio (e2e sha256 63f3a91201a99c01…)
 WHEEL:          1afe8a0ff01474b3332e0f671bd09fd4f582e25ad3d30f45c9f4112a5bf90764
 SDIST:          9fccc2ebfe312fee744c4030d3d6e2f96eec60bd7f606910bc3c9ab87af23a34
-CI:             run 40601748818 · queued ·
+CI:             run 40611205349 · completed · success (25/25 jobs, verificado con la API de jobs)
                 sin conclusión todavía
 ```
 

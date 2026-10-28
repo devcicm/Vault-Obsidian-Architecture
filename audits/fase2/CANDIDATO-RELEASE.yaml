@@ -12,8 +12,8 @@
 # Validacion: tests/test_manifiesto_candidato.py.
 
 release_candidate:
-  product_sha: a44ead425df5198126631af5ebf512848ddd78a8
-  product_tree_sha: 195d9e8b4beefe6599a95f01e0c4a3b147ebac5b
+  product_sha: 81ab2ff8caccc88e1364373094351f79dc7004cb
+  product_tree_sha: b31de5b8e3b6fc20cff88469e0eda5a9c3e75e8d
   version: 41.23
   rama: work/release-cli-mcp-20261025
   documentation:
@@ -33,7 +33,9 @@ artifacts:
     digest: 1afe8a0ff01474b3332e0f671bd09fd4f582e25ad3d30f45c9f4112a5bf90764
     evidence_note: >-
       construccion del E2E (recorrido_terceros_r07.py) sobre el arbol del
-      candidato e instalacion en venv limpio. La equivalencia acreditada es de
+      candidato e instalacion en venv limpio. El build se hizo en a44ead4 y
+      este SHA (81ab2ff) solo difiere en `tests/`, que no viaja en la wheel:
+      el contenido empaquetado es el mismo. La equivalencia acreditada es de
       CONTENIDO: el ZIP no es reproducible byte a byte.
   sdist:
     artifact_filename: vault_obsidian_architecture-41.23.tar.gz
@@ -58,12 +60,12 @@ verification:
       27/27 pasos desde la wheel instalada en venv limpio: CLI, MCP (97 tools),
       persistencia, clean/restore con hash y locks, reinstalacion.
   ci:
-    run_id: 40601748818
-    run_sha: a44ead425df5198126631af5ebf512848ddd78a8
-    status: queued
-    conclusion: en_curso
+    run_id: 40611205349
+    run_sha: 81ab2ff8caccc88e1364373094351f79dc7004cb
+    status: completed
+    conclusion: success
     required_jobs: 25
-    successful_jobs: null
+    successful_jobs: 25
 
 governance:
   qg_statuses:
