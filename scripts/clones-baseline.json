@@ -1,9 +1,7 @@
 {
  "description": "Cuerpos duplicados que no se pueden fusionar sin cruzar una frontera de contexto o sin crear un módulo para un solo uso. Solo puede encoger: un duplicado nuevo se une a su dueño, no se congela. Cada sitio dice por qué se queda.",
  "sitios": [
-  "clone|2cf4e732|2|vault/install.py::_run,vault/uninstall.py::_run",
-  "clone|6352b7f2|4|scripts/vault_code_map.py::load_index,scripts/vault_code_module.py::load_index,scripts/vault_code_query.py::load_index,scripts/vault_code_relation.py::load_index",
-  "clone|d4e1dd74|2|scripts/vault_code_module.py::save_index,scripts/vault_code_relation.py::save_index"
+  "clone|2cf4e732|2|vault/install.py::_run,vault/uninstall.py::_run"
  ],
  "motivos": {
   "clone|2cf4e732|2|vault/install.py::_run,vault/uninstall.py::_run": "Instalador y desinstalador son guiones gemelos ?el mismo programa en dos direcciones?: el segundo corre con el paquete ya instalado y el primero corre mientras se instala. El cuerpo son tres l?neas; un due?o compartido exigir?a un m?dulo que solo usar?a el instalador, y un m?dulo para un solo uso es deuda nueva. Se declara el duplicado; no se borra.",

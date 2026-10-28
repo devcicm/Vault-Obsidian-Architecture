@@ -128,6 +128,45 @@ def _regex_literales():
 REGEX = _regex_literales()
 
 
+def _regex_en_bucle():
+    """Cada `re.<método>(literal)` que vive dentro de un bucle.
+
+    Por AST y no por grep: el patrón tiene que ser **literal** —una variable
+    con el patrón ya compilado no se busca en la caché, se usa— y el bucle
+    tiene que ser un `for`/`while`, no una comprehension.
+    """
+    encontradas = []
+
+    def visitar(nodo, en_bucle):
+        if isinstance(nodo, (ast.For, ast.AsyncFor, ast.While)):
+            en_bucle = True
+        if (en_bucle and isinstance(nodo, ast.Call)
+                and isinstance(nodo.func, ast.Attribute)
+                and nodo.func.attr in _METODOS_RE
+                and getattr(nodo.func.value, "id", "") == "re"
+                and nodo.args
+                and isinstance(nodo.args[0], ast.Constant)
+                and isinstance(nodo.args[0].value, str)):
+            encontradas.append(
+                f"{nodo.lineno}: {nodo.args[0].value[:60]!r}")
+        for hijo in ast.iter_child_nodes(nodo):
+            visitar(hijo, en_bucle)
+
+    for carpeta in ("scripts", "cli", "vault"):
+        raiz = REPO_ROOT / carpeta
+        if not raiz.exists():
+            continue
+        for fichero in sorted(raiz.rglob("*.py")):
+            if "_archived" in fichero.parts:
+                continue
+            try:
+                arbol = ast.parse(fichero.read_text(encoding="utf-8"))
+            except SyntaxError:
+                continue
+            visitar(arbol, False)
+    return encontradas
+
+
 def test_el_barrido_encuentra_regex():
     """Si el extractor se rompe, los otros tres tests pasan vacíos.
 
@@ -198,6 +237,25 @@ def test_ninguna_regex_escala_peor_que_lineal():
         f"regex que tardan más de {_UMBRAL_MS:.0f} ms con {_LARGO} caracteres "
         "hostiles; a escala de una nota real eso es un cuelgue:\n  "
         + "\n  ".join(lentas))
+
+
+def test_ninguna_regex_se_busca_en_la_cache_dentro_de_un_bucle():
+    """En un bucle, el patrón se busca en la caché de `re` en cada iteración.
+
+    La caché existe —512 patrones—, así que no se recompila: lo que se
+    repite es la búsqueda, y se paga por elemento y no por llamada. En un
+    bucle sobre las notas de un vault eso son miles de lookups por llamada.
+
+    La forma correcta es compilar una vez, fuera del bucle, y usar el patrón:
+    `PATRON.match(x)`. Medido el 2026-10-28: 53 llamadas de esa forma en 23
+    ficheros, entre ellas el contador de tokens —que se llama por cada
+    fragmento— y el conteo de palabras de cada nota.
+    """
+    culpables = _regex_en_bucle()
+    assert not culpables, (
+        "regex literales dentro de un bucle: se buscan en la caché de `re` "
+        "por cada elemento. Compila el patrón una vez, fuera del bucle:\n  "
+        + "\n  ".join(culpables))
 
 
 def test_el_extractor_de_wikilinks_tiene_un_solo_dueno():

@@ -122,6 +122,9 @@ from vault.kernel.frontmatter_escritura import (  # noqa: E402
 )
 from vault.kernel.indices_structural import describir_reserva, es_nombre_reservado  # noqa: E402
 
+_RE_VAULT_WRITE_1 = re.compile('^[#\\-\\*\\s|>]+')
+_RE_VAULT_WRITE_2 = re.compile('^#\\s+(.+)$', re.MULTILINE)
+
 
 def _raiz() -> Path:
     """La raiz del vault, resuelta al usarse."""
@@ -180,7 +183,7 @@ def _check_content_gate(content: str, folder: str) -> bool:
     words: List[str] = []
     for line in real_lines:
         # strip heading markers, bullets, table pipes
-        cleaned = re.sub(r"^[#\-\*\s|>]+", "", line)
+        cleaned = _RE_VAULT_WRITE_1.sub('', line)
         for tok in cleaned.split():
             tok = tok.strip("`*~_[]()#").strip(".,;:!?")
             if tok and len(tok) > 1:
@@ -236,7 +239,7 @@ def _content_gate_reason(content: str, folder: str) -> Optional[str]:
         return f"only {len(real_lines)} real line(s) (need ≥3)"
     words: List[str] = []
     for line in real_lines:
-        cleaned = re.sub(r"^[#\-\*\s|>]+", "", line)
+        cleaned = _RE_VAULT_WRITE_1.sub('', line)
         for tok in cleaned.split():
             tok = tok.strip("`*~_[]()#").strip(".,;:!?")
             if tok and len(tok) > 1:
@@ -1588,7 +1591,7 @@ Notas:
 
             # Extract title from first # Heading or use filename
 
-            heading_match = re.search(r"^#\s+(.+)$", file_content, re.MULTILINE)
+            heading_match = _RE_VAULT_WRITE_2.search(file_content)
 
             title = (
                 heading_match.group(1).strip()

@@ -74,6 +74,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.ciclo_de_vida.repositorio import RepositorioCicloDeVida  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 
+_RE_VAULT_SDD_INIT_1 = re.compile('AP-01\\.\\.AP-\\d{2}')
+
 
 def _raiz() -> Path:
     """La raiz del vault, resuelta al usarse."""
@@ -213,7 +215,7 @@ def sdd_coherence(vault_root: Path) -> dict:
         except Exception as exc:  # noqa: BLE001 — un fichero ilegible no es "al día"
             envelope["stale_files"].append({"file": fname, "error": str(exc)})
             continue
-        for rango in set(re.findall(r"AP-01\.\.AP-\d{2}", texto)):
+        for rango in set(_RE_VAULT_SDD_INIT_1.findall(texto)):
             encontrados.add(rango)
             if rango != esperado:
                 envelope["stale_files"].append({"file": fname, "found": rango})

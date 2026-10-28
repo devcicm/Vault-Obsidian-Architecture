@@ -41,6 +41,7 @@ import re
 import sys
 
 from vault_errors import emit_error, wrap_main, proyecto_registrado
+from vault_io import cargar_indice
 from vault_lib import parse_frontmatter
 
 from pathlib import Path
@@ -80,16 +81,8 @@ def _index_file() -> Path:
 
 
 def load_index() -> Dict[str, Any]:
-
-    try:
-
-        with open(_index_file(), "r", encoding="utf-8") as f:
-
-            return json.load(f)
-
-    except (FileNotFoundError, json.JSONDecodeError):
-
-        return {"modules": [], "relations": []}
+    """El índice del grupo de código. El cuerpo es del dueño (`vault_io`)."""
+    return cargar_indice(_index_file(), {"modules": [], "relations": []})
 
 
 def parse_sections(content: str) -> Dict[str, str]:

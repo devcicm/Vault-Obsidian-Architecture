@@ -82,6 +82,8 @@ from vault_graph_inspect import (
 )
 from vault_errors import emit_error, wrap_main
 
+_RE_GRAPH_FIX_1 = re.compile('\\[\\[([^\\]|]+)')
+
 #: Bloques de código: valla triple y `inline`. El criterio de qué es código y
 #: no un enlace lo posee `vault_lib.strip_code_blocks` (AP-57), pero allí
 #: **borra** el bloque, y aquí hace falta lo contrario: conservarlo intacto y
@@ -317,7 +319,7 @@ def _process_note(
     # dentro de un fence es texto que Obsidian enseña, no un enlace que
     # resuelve, y esta tool escribe: proponerlo como roto acababa reescribiendo
     # la nota que documenta la sintaxis.
-    for match in list(re.finditer(r"\[\[([^\]|]+)", _RE_CODIGO.sub("", text))):
+    for match in list(_RE_GRAPH_FIX_1.finditer(_RE_CODIGO.sub('', text))):
         # Antes de proponer nada: si el enlace resuelve con el criterio del
         # consumidor, no está roto y esta tool no lo toca. Es la única
         # comprobación que puede impedir que una reparación rompa lo que

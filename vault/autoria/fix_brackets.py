@@ -65,6 +65,9 @@ from vault_regex import (
     detect_bracket_anomalies,
 )
 
+_RE_FIX_BRACKETS_1 = re.compile('(?:(?<!\\s)\\s+)?\\[\\[\\s*\\]\\]\\s*')
+_RE_FIX_BRACKETS_2 = re.compile(' +')
+
 
 # ---- Detection patterns (using vault_regex for consistency) ----
 RE_EMPTY = RE_EMPTY_LINK
@@ -293,8 +296,8 @@ def _apply_fixes(content: str, kinds: Optional[List[str]] = None) -> str:
         # Remove `[[]]` and `[[ ]]` along with one adjacent space if present.
         # Run twice to handle cases where multiple empties are adjacent.
         for _ in range(3):
-            new2 = re.sub(r"(?:(?<!\s)\s+)?\[\[\s*\]\]\s*", " ", new)
-            new2 = re.sub(r" +", " ", new2)  # collapse double spaces
+            new2 = _RE_FIX_BRACKETS_1.sub(' ', new)
+            new2 = _RE_FIX_BRACKETS_2.sub(' ', new2)  # collapse double spaces
             if new2 == new:
                 break
             new = new2

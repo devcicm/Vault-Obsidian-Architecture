@@ -264,7 +264,7 @@ def _extract_wiki_links(
 
     links = []
 
-    for m in re.finditer(r"\[\[((?:[^\[\]]|\[(?!\[))+)\]\]", content_clean):
+    for m in _RE_VAULT_AUDIT_1.finditer(content_clean):
         link = m.group(1).strip()
 
         if "|" in link:
@@ -1266,8 +1266,8 @@ def _detect_malformed_wikilinks(notes: List[Path]) -> List[Dict[str, Any]]:
             continue
 
         # Strip code blocks and inline code so we don't count regex examples
-        clean = re.sub(r"```[\s\S]*?```", "", content)
-        clean = re.sub(r"`[^`\n]+`", "", clean)
+        clean = _RE_VAULT_AUDIT_2.sub('', content)
+        clean = _RE_VAULT_AUDIT_3.sub('', clean)
 
         opens = len(RE_OPEN.findall(clean))
         closes = len(RE_CLOSE.findall(clean))
@@ -2211,6 +2211,11 @@ from vault_audit_catalog import (  # noqa: F401,E402
     PENALIZACIONES,
 )
 
+_RE_VAULT_AUDIT_1 = re.compile('\\[\\[((?:[^\\[\\]]|\\[(?!\\[))+)\\]\\]')
+_RE_VAULT_AUDIT_2 = re.compile('```[\\s\\S]*?```')
+_RE_VAULT_AUDIT_3 = re.compile('`[^`\\n]+`')
+_RE_VAULT_AUDIT_4 = re.compile('^#\\s+.+', re.MULTILINE)
+
 
 def _tope_por_familia() -> Dict[str, int]:
     """Cuánto puede restar cada familia en total. Derivado, nunca escrito."""
@@ -3079,7 +3084,7 @@ def _audit_external_path(path: Path) -> Dict[str, Any]:
         # sin `title:` hacía caer la auditoría entera con NameError.
 
         if not has_title:
-            if re.search(r"^#\s+.+", cuerpo, re.MULTILINE):
+            if _RE_VAULT_AUDIT_4.search(cuerpo):
                 has_title = True
 
         if not has_title:

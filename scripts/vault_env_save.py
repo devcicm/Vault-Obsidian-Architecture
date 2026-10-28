@@ -47,6 +47,9 @@ from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
+_RE_VAULT_ENV_SAVE_1 = re.compile('^## (\\w+)$')
+_RE_VAULT_ENV_SAVE_2 = re.compile(r"^\| `([^`]+)` \| ([^|]+) \| ([^|]+) \| ([^|]+) \| ([^|]+) \| ([^|]+) \|")
+
 
 def _raiz() -> Path:
     """La raiz del vault, resuelta al usarse."""
@@ -73,7 +76,7 @@ def parse_envs_file(content: str) -> Dict[str, Any]:
     current_env = None
 
     for line in content.split("\n"):
-        env_match = re.match(r"^## (\w+)$", line.strip())
+        env_match = _RE_VAULT_ENV_SAVE_1.match(line.strip())
 
         if env_match:
             current_env = env_match.group(1)
@@ -82,10 +85,7 @@ def parse_envs_file(content: str) -> Dict[str, Any]:
 
             continue
 
-        row_match = re.match(
-            r"^\| `([^`]+)` \| ([^|]+) \| ([^|]+) \| ([^|]+) \| ([^|]+) \| ([^|]+) \|",
-            line.strip(),
-        )
+        row_match = _RE_VAULT_ENV_SAVE_2.match(line.strip())
 
         if row_match and current_env:
             envs[current_env].append(

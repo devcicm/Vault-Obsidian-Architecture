@@ -34,6 +34,8 @@ from .registry import GUARDED_ARTIFACTS, SCRIPTS_DIR
 from vault_vocabulario import rango  # noqa: E402
 import vault_grafo_import  # noqa: E402
 
+_RE_ANALYZER_1 = re.compile('\\b(vault_[a-z0-9_]+)\\.py\\b')
+
 # `mayor_primero=False` y `base=0`: aquí el número es la posición en la lista
 # —`critical` es 0— porque el filtro compara `> limit` para descartar lo menos
 # grave. Es el mismo orden declarado, leído del extremo contrario.
@@ -384,7 +386,7 @@ def _check_ghost_references(path: Path, source: str, name: str) -> List[Issue]:
     issues: List[Issue] = []
     lines = source.splitlines()
     seen: Set[str] = set()
-    for match in re.finditer(r"\b(vault_[a-z0-9_]+)\.py\b", source):
+    for match in _RE_ANALYZER_1.finditer(source):
         name = match.group(1)
         if name in seen:
             continue

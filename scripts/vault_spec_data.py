@@ -28,6 +28,10 @@ from typing import Any, Dict, List, Optional, Set
 from vault_errors import emit_error
 from vault_io import resolve_tool_spec
 
+_RE_VAULT_SPEC_DATA_1 = re.compile('"error_code"\\s*:\\s*"([^"]+)"')
+_RE_VAULT_SPEC_DATA_2 = re.compile("'error_code'\\s*:\\s*'([^']+)'")
+_RE_VAULT_SPEC_DATA_3 = re.compile('error_code\\s*=\\s*["\\\']([^"\\\']+)["\\\']')
+
 # El mismo SCRIPTS_DIR que usaban los dos módulos origen: la carpeta de
 # scripts del checkout (los bloques de abajo lo consumen).
 SCRIPTS_DIR = Path(__file__).resolve().parent
@@ -642,12 +646,12 @@ def _extract_args(source: str):
 def _extract_error_codes(source: str) -> List[str]:
     """Grep source for declared error_code strings."""
     codes: Set[str] = set()
-    for m in re.finditer(r'"error_code"\s*:\s*"([^"]+)"', source):
+    for m in _RE_VAULT_SPEC_DATA_1.finditer(source):
         codes.add(m.group(1))
-    for m in re.finditer(r"'error_code'\s*:\s*'([^']+)'", source):
+    for m in _RE_VAULT_SPEC_DATA_2.finditer(source):
         codes.add(m.group(1))
     # Also catch error_code as variable assignment: error_code = "..."
-    for m in re.finditer(r'error_code\s*=\s*["\']([^"\']+)["\']', source):
+    for m in _RE_VAULT_SPEC_DATA_3.finditer(source):
         codes.add(m.group(1))
     return sorted(codes)
 

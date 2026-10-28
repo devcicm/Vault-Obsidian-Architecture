@@ -27,6 +27,8 @@ from vault_encoding import sanitize_content
 from vault_io import (
     atomic_write_text,
     atomic_write_json,
+    cargar_indice,
+    guardar_indice,
     write_report,
     resolve_input_path,
     indice_compartido,
@@ -106,11 +108,8 @@ def file_slug(file_path: str) -> str:
 
 
 def load_index() -> Dict[str, Any]:
-    try:
-        with open(_index_file(), "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {"modules": [], "relations": []}
+    """El índice del grupo de código. El cuerpo es del dueño (`vault_io`)."""
+    return cargar_indice(_index_file(), {"modules": [], "relations": []})
 
 
 # superseded_by: vault_io.indice_compartido
@@ -121,8 +120,8 @@ def load_index() -> Dict[str, Any]:
 # guardado, y no debe volver a llamarlo. Si necesitas el indice, entra por
 # `indice_compartido`, que cubre desde la lectura hasta la escritura.
 def save_index(data: Dict[str, Any]) -> None:
-    _code_dir().mkdir(parents=True, exist_ok=True)
-    atomic_write_json(_index_file(), data)
+    """El cuerpo es del dueño (`vault_io`); el contrato, intacto."""
+    guardar_indice(_index_file(), data)
 
 
 def _build_class_diagram(classes: List[Dict[str, Any]]) -> str:

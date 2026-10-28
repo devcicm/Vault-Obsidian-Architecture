@@ -90,6 +90,11 @@ from vault.meta_toolkit.repositorio import RepositorioMetaToolkit  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 from vault.meta_toolkit import flags_cli  # extractor único de add_argument (v41.9)  # noqa: E402
 
+_RE_VAULT_SPEC_VALIDATE_1 = re.compile('\\{([^}]{0,800})\\}', re.DOTALL)
+_RE_VAULT_SPEC_VALIDATE_2 = re.compile('["\\\'](\\w+)["\\\']\\s*:')
+_RE_VAULT_SPEC_VALIDATE_3 = re.compile('"error_code"\\s*:\\s*"([^"]+)"')
+_RE_VAULT_SPEC_VALIDATE_4 = re.compile("'error_code'\\s*:\\s*'([^']+)'")
+
 
 def _raiz() -> Path:
     """La raiz del vault, resuelta al usarse."""
@@ -206,10 +211,10 @@ def _extract_return_keys(source: str) -> Set[str]:
                                     keys.add(k.value)
 
     # Paso 3: regex fallback — dicts con "ok" como clave (response objects)
-    for m in re.finditer(r'\{([^}]{0,800})\}', source, re.DOTALL):
+    for m in _RE_VAULT_SPEC_VALIDATE_1.finditer(source):
         body = m.group(1)
         if '"ok"' in body or "'ok'" in body:
-            for km in re.finditer(r'["\'](\w+)["\']\s*:', body):
+            for km in _RE_VAULT_SPEC_VALIDATE_2.finditer(body):
                 keys.add(km.group(1))
 
     return keys
@@ -217,9 +222,9 @@ def _extract_return_keys(source: str) -> Set[str]:
 
 def _extract_error_codes(source: str) -> Set[str]:
     codes: Set[str] = set()
-    for m in re.finditer(r'"error_code"\s*:\s*"([^"]+)"', source):
+    for m in _RE_VAULT_SPEC_VALIDATE_3.finditer(source):
         codes.add(m.group(1))
-    for m in re.finditer(r"'error_code'\s*:\s*'([^']+)'", source):
+    for m in _RE_VAULT_SPEC_VALIDATE_4.finditer(source):
         codes.add(m.group(1))
     return codes
 

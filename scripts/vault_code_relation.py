@@ -40,6 +40,8 @@ from vault_encoding import sanitize_content
 from vault_io import (
     atomic_write_text,
     atomic_write_json,
+    cargar_indice,
+    guardar_indice,
     write_report,
     indice_compartido,
 )
@@ -95,12 +97,8 @@ CARDINALITIES = ["1:1", "1:N", "N:1", "N:M"]
 # guardado, y no debe volver a llamarlo. Si necesitas el indice, entra por
 # `indice_compartido`, que cubre desde la lectura hasta la escritura.
 def load_index() -> Dict[str, Any]:
-    try:
-        with open(_index_file(), "r", encoding="utf-8") as f:
-            return json.load(f)
-
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {"modules": [], "relations": []}
+    """El índice del grupo de código. El cuerpo es del dueño (`vault_io`)."""
+    return cargar_indice(_index_file(), {"modules": [], "relations": []})
 
 
 # superseded_by: vault_io.indice_compartido
@@ -111,12 +109,8 @@ def load_index() -> Dict[str, Any]:
 # guardado, y no debe volver a llamarlo. Si necesitas el indice, entra por
 # `indice_compartido`, que cubre desde la lectura hasta la escritura.
 def save_index(data: Dict[str, Any]) -> None:
-    _code_dir().mkdir(parents=True, exist_ok=True)
-
-    # atomic_write_* y no `open(..., "w")`: el escaneo de secretos, el
-    # saneado de encoding y el temp+replace viven ahí. Escribir en crudo los
-    # esquivaba los tres (AP-36) y dejaba la nota a medias si el proceso moría.
-    atomic_write_json(_index_file(), data)
+    """El cuerpo es del dueño (`vault_io`); el contrato, intacto."""
+    guardar_indice(_index_file(), data)
 
 
 def get_module_nodes(index: Dict[str, Any], project: str) -> List[Dict]:

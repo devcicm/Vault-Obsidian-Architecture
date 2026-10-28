@@ -295,6 +295,8 @@ from vault.kernel.frontmatter_parsing import (  # noqa: E402,F401
     cargar_bloque_tolerante, campos_de_texto,
 )
 
+_RE_VAULT_LIB_1 = re.compile('^[#\\-\\*\\s|>]+')
+
 
 def serialize_frontmatter(frontmatter: Dict[str, Any]) -> str:
     """Serialize a dict to YAML frontmatter block (including --- delimiters).
@@ -644,7 +646,7 @@ def count_words(real_lines: List[str]) -> int:
     """Count meaningful words from lines, stripping markdown markers."""
     words: List[str] = []
     for line in real_lines:
-        cleaned = re.sub(r"^[#\-\*\s|>]+", "", line)
+        cleaned = _RE_VAULT_LIB_1.sub('', line)
         for tok in cleaned.split():
             tok = tok.strip("`*~_[]()#").strip(".,;:!?")
             if tok and len(tok) > 1:

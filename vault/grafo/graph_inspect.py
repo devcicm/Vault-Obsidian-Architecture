@@ -69,6 +69,8 @@ from vault_regex import (
 )
 from vault_errors import emit_error, wrap_main
 
+_RE_GRAPH_INSPECT_1 = re.compile('`[^`\\n]+`')
+
 
 _MIGRATION_DIR = "10_Migrated"
 
@@ -409,7 +411,7 @@ def _detect_wikilink_syntax_errors(
         path_anchored = detect_path_anchored(body)
         if path_anchored:
             # Mismo recorte que el detector: fuera los fences y el código en línea.
-            limpio = re.sub(r"`[^`\n]+`", "", strip_code_blocks(body))
+            limpio = _RE_GRAPH_INSPECT_1.sub('', strip_code_blocks(body))
             path_anchored = [
                 f"[[{destino}]]"
                 for destino, _ in RE_WIKILINK_CON_ALIAS.findall(limpio)

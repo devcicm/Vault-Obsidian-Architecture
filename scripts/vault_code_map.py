@@ -32,7 +32,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 
-from vault_io import atomic_write_text, write_report
+from vault_io import atomic_write_text, cargar_indice, write_report
 from vault_encoding import sanitize_content
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -65,12 +65,8 @@ def _index_file() -> Path:
 
 
 def load_index() -> Dict[str, Any]:
-    try:
-        with open(_index_file(), "r", encoding="utf-8") as f:
-            return json.load(f)
-
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {"modules": [], "relations": []}
+    """El índice del grupo de código. El cuerpo es del dueño (`vault_io`)."""
+    return cargar_indice(_index_file(), {"modules": [], "relations": []})
 
 
 def generate_code_map(project: str, index: Dict[str, Any]) -> str:

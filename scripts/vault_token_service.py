@@ -44,6 +44,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.consulta.repositorio import RepositorioConsulta  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 
+_RE_VAULT_TOKEN_SERVICE_1 = re.compile('^[A-Za-z0-9_]+$')
+
 
 def _raiz() -> Path:
     """La raiz del vault, resuelta al usarse."""
@@ -98,7 +100,7 @@ def estimate_tokens(text: str) -> int:
     pieces = re.findall(r"[A-Za-z0-9_]+|[^\sA-Za-z0-9_]", text)
     total = 0
     for piece in pieces:
-        if re.match(r"^[A-Za-z0-9_]+$", piece):
+        if _RE_VAULT_TOKEN_SERVICE_1.match(piece):
             total += max(1, (len(piece) + 3) // 4)
         else:
             total += 1

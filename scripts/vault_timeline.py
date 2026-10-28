@@ -81,6 +81,12 @@ from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 from vault.kernel.frontmatter_parsing import campos_de_texto  # noqa: E402
 
+_RE_VAULT_TIMELINE_1 = re.compile('^\\*\\*\\d{4}-\\d{2}-\\d{2}')
+_RE_VAULT_TIMELINE_2 = re.compile('^\\*\\*(\\d{4}-\\d{2}-\\d{2})')
+_RE_VAULT_TIMELINE_3 = re.compile(
+    r"^### (v?\d+\.\d+[^ ]*) — (\d{4}-\d{2}-\d{2})(.*?)(?=^### |\Z)",
+    re.DOTALL | re.MULTILINE)
+
 
 def _raiz() -> Path:
     """La raiz del vault, resuelta al usarse."""
@@ -149,8 +155,8 @@ def search_sessions(
                 if not line or line.startswith("#") or line.startswith("---"):
                     continue
 
-                if re.match(r"^\*\*\d{4}-\d{2}-\d{2}", line):
-                    ts_match = re.search(r"^\*\*(\d{4}-\d{2}-\d{2})", line)
+                if _RE_VAULT_TIMELINE_1.match(line):
+                    ts_match = _RE_VAULT_TIMELINE_2.search(line)
 
                     if ts_match:
                         events.append(
@@ -205,11 +211,7 @@ def search_changelog(
             if not matches_query(content, query):
                 continue
 
-            for match in re.finditer(
-                r"^### (v?\d+\.\d+[^ ]*) — (\d{4}-\d{2}-\d{2})(.*?)(?=^### |\Z)",
-                content,
-                re.DOTALL | re.MULTILINE,
-            ):
+            for match in _RE_VAULT_TIMELINE_3.finditer(content):
                 version = match.group(1).strip()
 
                 date_str = match.group(2)

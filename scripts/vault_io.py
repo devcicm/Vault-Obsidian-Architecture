@@ -864,6 +864,35 @@ class IndiceIlegible(Exception):
         super().__init__(self.mensaje)
 
 
+def cargar_indice(ruta: Path, vacio: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Lee un índice JSON compartido. Si no existe o está roto, devuelve `vacio`.
+
+    El cuerpo estaba copiado en cuatro módulos del grupo de código y en otros
+    que ya lo pedían a `vault_io` (CN-05): una copia es un cuerpo que puede
+    divergir del original sin que nada lo diga.
+
+    Un JSON **ilegible** se cede como vacío, igual que hace siempre este
+    repo —es lo que espera quien llama—; quien escribe encima decide si lo
+    repara o lo deja.
+    """
+    try:
+        with open(ruta, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return dict(vacio) if vacio is not None else {}
+
+
+def guardar_indice(ruta: Path, datos: Dict[str, Any]) -> None:
+    """Escribe un índice JSON compartido, de forma atómica.
+
+    La escritura pasa por `atomic_write_json`: el escaneo de secretos, el
+    saneado de encoding y el temporal+replace viven ahí. Escribir en crudo
+    los esquivaba (AP-36) y dejaba el índice a medias si el proceso moría.
+    """
+    ruta.parent.mkdir(parents=True, exist_ok=True)
+    atomic_write_json(ruta, datos)
+
+
 @contextmanager
 def indice_compartido(path: Path, vacio: Dict[str, Any]) -> Iterator[Dict[str, Any]]:
     """Lee un índice compartido, deja mutarlo y lo devuelve al disco, bajo lock.

@@ -68,6 +68,8 @@ from vault_errors import emit_error  # noqa: E402
 from vault_mcp_catalog import GROUPS, TOOLS_CATALOG  # noqa: E402
 from vault.meta_toolkit import flags_cli  # extractor único de add_argument (v41.9)  # noqa: E402
 
+_RE_VAULT_DOC_SYNC_1 = re.compile('--[A-Za-z][\\w-]*')
+
 README = Path(__file__).resolve().parent / "README.md"
 
 RE_SECTION = re.compile(r"^## Grupo (\d+) — (.+?)\s*$", re.M)
@@ -271,7 +273,7 @@ def _flags_de_receta(resto: str) -> List[str]:
         if tok in ("&&", "||", "|", ";", "+", "→", "->"):
             break
         limpio = tok.rstrip(_CIERRE)
-        if re.fullmatch(r"--[A-Za-z][\w-]*", limpio):
+        if _RE_VAULT_DOC_SYNC_1.fullmatch(limpio):
             flags.append(limpio)
             espera_valor = True
         elif espera_valor:

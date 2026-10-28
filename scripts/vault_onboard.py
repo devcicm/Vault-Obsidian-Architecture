@@ -191,6 +191,21 @@ from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 # `vault_vocabulario.py` para el registro y su contexto dueno.
 from vault_vocabulario import cubos as _cubos
 
+_RE_VAULT_ONBOARD_1 = re.compile('name\\s*=\\s*["\\\']([^"\\\']+)')
+_RE_VAULT_ONBOARD_2 = re.compile('description\\s*=\\s*["\\\']([^"\\\']+)')
+_RE_VAULT_ONBOARD_3 = re.compile('version\\s*=\\s*["\\\']([^"\\\']+)')
+_RE_VAULT_ONBOARD_4 = re.compile('<TargetFramework>([^<]+)')
+_RE_VAULT_ONBOARD_5 = re.compile('^#\\s+(.+)$')
+_RE_VAULT_ONBOARD_6 = re.compile('^## (.+)$')
+_RE_VAULT_ONBOARD_7 = re.compile('^\\s{2}(\\w[\\w-]+):\\s*$')
+_RE_VAULT_ONBOARD_8 = re.compile('"?(\\d+:\\d+)"?')
+_RE_VAULT_ONBOARD_9 = re.compile('^FROM\\s+(\\S+)')
+_RE_VAULT_ONBOARD_10 = re.compile('^EXPOSE\\s+(\\d+)')
+_RE_VAULT_ONBOARD_11 = re.compile('^## (.+)')
+_RE_VAULT_ONBOARD_12 = re.compile('^\\s{2}([\\w-]+):\\s*$')
+_RE_VAULT_ONBOARD_13 = re.compile(r"^\s+(push|pull_request|workflow_dispatch|schedule|release):", re.MULTILINE)
+_RE_VAULT_ONBOARD_14 = re.compile(r"^[-*]\s+(.+)$", re.MULTILINE)
+
 
 def _raiz() -> Path:
     """La raiz del vault, resuelta al usarse."""
@@ -756,9 +771,9 @@ def _read_pyproject(project_path: Path) -> Dict[str, Any]:
             continue
         try:
             text = fp.read_text(encoding="utf-8")
-            name = re.search(r'name\s*=\s*["\']([^"\']+)', text)
-            desc = re.search(r'description\s*=\s*["\']([^"\']+)', text)
-            ver = re.search(r'version\s*=\s*["\']([^"\']+)', text)
+            name = _RE_VAULT_ONBOARD_1.search(text)
+            desc = _RE_VAULT_ONBOARD_2.search(text)
+            ver = _RE_VAULT_ONBOARD_3.search(text)
             return {
                 "name": name.group(1) if name else "",
                 "description": desc.group(1) if desc else "",
@@ -780,7 +795,7 @@ def _read_csproj(project_path: Path) -> Dict[str, Any]:
     for csproj in list(project_path.rglob("*.csproj"))[:3]:
         try:
             text = csproj.read_text(encoding="utf-8", errors="replace")
-            framework = re.search(r"<TargetFramework>([^<]+)", text)
+            framework = _RE_VAULT_ONBOARD_4.search(text)
             return {
                 "name": csproj.stem,
                 "description": "",
@@ -829,10 +844,10 @@ def _read_readme(project_path: Path) -> Tuple[str, List[str]]:
                 continue  # symlink fuera del proyecto: no es su README
             text = fp.read_text(encoding="utf-8-sig", errors="replace")
             _README_H1.clear()
-            h1 = re.search(r"^#\s+(.+)$", text, re.MULTILINE)
+            h1 = _RE_VAULT_ONBOARD_5.search(text, re.MULTILINE)
             if h1:
                 _README_H1.append(h1.group(1).strip())
-            headers = re.findall(r"^## (.+)$", text, re.MULTILINE)
+            headers = _RE_VAULT_ONBOARD_6.findall(text, re.MULTILINE)
             lines = [
                 l for l in text.splitlines() if l.strip() and not l.startswith("#")
             ]
@@ -957,9 +972,9 @@ def _detect_infra(project_path: Path) -> Dict[str, Any]:
         try:
             text = fp.read_text(encoding="utf-8", errors="replace")
             infra["services"].extend(
-                re.findall(r"^\s{2}(\w[\w-]+):\s*$", text, re.MULTILINE)
+                _RE_VAULT_ONBOARD_7.findall(text, re.MULTILINE)
             )
-            infra["ports"].extend(re.findall(r'"?(\d+:\d+)"?', text)[:10])
+            infra["ports"].extend(_RE_VAULT_ONBOARD_8.findall(text)[:10])
         except Exception as exc:
             _registrar_degradacion("leer_docker_compose", exc)
             pass
@@ -968,11 +983,11 @@ def _detect_infra(project_path: Path) -> Dict[str, Any]:
             infra["files"].append(df)
             try:
                 text = (project_path / df).read_text(encoding="utf-8", errors="replace")
-                m = re.search(r"^FROM\s+(\S+)", text, re.MULTILINE)
+                m = _RE_VAULT_ONBOARD_9.search(text, re.MULTILINE)
                 if m:
                     infra["base_image"] = m.group(1)
                 infra["ports"].extend(
-                    re.findall(r"^EXPOSE\s+(\d+)", text, re.MULTILINE)
+                    _RE_VAULT_ONBOARD_10.findall(text, re.MULTILINE)
                 )
             except Exception as exc:
                 _registrar_degradacion("leer_dockerfile", exc)
@@ -1069,7 +1084,7 @@ def _merge_stub(vault_path: Path, new_content: str, dry_run: bool) -> str:
 
     to_add = []
     for section in new_sections:
-        header = re.match(r"^## (.+)", section)
+        header = _RE_VAULT_ONBOARD_11.match(section)
         if header and header.group(1) not in existing_sections:
             to_add.append(section.strip())
 
@@ -2444,12 +2459,8 @@ def _onboard_13_flows(
     for wf_file in sorted(workflows_dir.glob("*.yml"))[:5]:
         try:
             text = wf_file.read_text(encoding="utf-8", errors="replace")
-            triggers = re.findall(
-                r"^\s+(push|pull_request|workflow_dispatch|schedule|release):",
-                text,
-                re.MULTILINE,
-            )
-            jobs = re.findall(r"^\s{2}([\w-]+):\s*$", text, re.MULTILINE)
+            triggers = _RE_VAULT_ONBOARD_13.findall(text)
+            jobs = _RE_VAULT_ONBOARD_12.findall(text, re.MULTILINE)
             jobs_md = "\n".join(f"- `{j}`" for j in jobs[:8]) or "— No detectados"
             triggers_md = ", ".join(set(triggers)) or "— No detectados"
             wf_name = wf_file.stem
@@ -2513,9 +2524,7 @@ def _onboard_14_requirements(
                 )
                 if not section_match:
                     continue
-                bullets = re.findall(
-                    r"^[-*]\s+(.+)$", section_match.group(1), re.MULTILINE
-                )
+                bullets = _RE_VAULT_ONBOARD_14.findall(section_match.group(1))
                 for i, bullet in enumerate(bullets[:10], 1):
                         req_id = f"REQ-{i:03d}"
                         body = f"""# {req_id} — {bullet[:80]}

@@ -136,6 +136,8 @@ from vault.kernel import construir  # noqa: E402
 # era la segunda declaración que envejece en silencio.
 from vault.kernel.indices_structural import RESERVED_INDEX_NAMES as STRUCTURAL_NAMES  # noqa: E402
 
+_RE_VAULT_QUALITY_CHECK_1 = re.compile('\\[\\[((?:[^\\[\\]]|\\[(?!\\[))+)\\]\\]')
+
 
 def _raiz() -> Path:
     """La raiz del vault, resuelta al usarse."""
@@ -234,7 +236,7 @@ def _extract_wiki_links(content: str) -> List[str]:
     clean = re.sub(r"```[\s\S]*?```", "", content)
     clean = re.sub(r"`[^`]+`", "", clean)
     links = []
-    for m in re.finditer(r"\[\[((?:[^\[\]]|\[(?!\[))+)\]\]", clean):
+    for m in _RE_VAULT_QUALITY_CHECK_1.finditer(clean):
         link = m.group(1).strip()
         if "|" in link:
             link = link.split("|")[0].strip()

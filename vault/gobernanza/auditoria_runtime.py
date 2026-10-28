@@ -24,6 +24,9 @@ from ..kernel.contenido import (
 )
 from .repositorio import RepositorioGobernanza
 
+_RE_AUDITORIA_RUNTIME_1 = re.compile('\\[\\[([^\\]|#]+)')
+_RE_AUDITORIA_RUNTIME_2 = re.compile('^\\|\\s*\\[\\[[^\\]|]+\\|[^\\]]+\\]\\]', re.MULTILINE)
+
 _ES_PRIMER = re.compile(r"^\d{2}-\d{2}_.*-primer$")
 #: superseded_by: `vault.kernel.contenido.TIPOS_ADR` (v41.3). Nombre conservado.
 _ADR_TYPES = TIPOS_ADR
@@ -426,7 +429,7 @@ def auditar_runtime(
             except OSError:
                 continue
             _rel = str(_n.relative_to(root)).replace("\\", "/")
-            for _m in re.finditer(r"\[\[([^\]|#]+)", _txt):
+            for _m in _RE_AUDITORIA_RUNTIME_1.finditer(_txt):
                 _dest = _m.group(1).strip()
                 _clave = normalize_stem(_dest)
                 if _clave in _por_nombre or _clave not in _por_titulo:
@@ -512,7 +515,7 @@ def auditar_runtime(
                 idx_text = idx.read_text(encoding="utf-8")
             except (OSError, UnicodeDecodeError):
                 continue
-            if re.search(r"^\|\s*\[\[[^\]|]+\|[^\]]+\]\]", idx_text, re.MULTILINE):
+            if _RE_AUDITORIA_RUNTIME_2.search(idx_text):
                 rel_i = str(idx.relative_to(root)).replace("\\", "/")
                 _flag(
                     "AP-36",

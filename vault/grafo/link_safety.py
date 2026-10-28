@@ -6,6 +6,8 @@ from typing import Any, Dict, List
 
 from vault_regex import RE_WIKILINK  # dueño único del patrón (AP-50)
 
+_RE_LINK_SAFETY_1 = re.compile('\\[{3,}|\\]{3,}')
+
 
 def _line_col(text: str, pos: int) -> Dict[str, int]:
     line = text.count("\n", 0, pos) + 1
@@ -41,7 +43,7 @@ def validate_wikilinks(content: str) -> List[Dict[str, Any]]:
     """
     issues: List[Dict[str, Any]] = []
 
-    for match in re.finditer(r"\[{3,}|\]{3,}", content):
+    for match in _RE_LINK_SAFETY_1.finditer(content):
         token = match.group(0)
         issues.append(
             _issue(

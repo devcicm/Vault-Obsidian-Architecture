@@ -14,6 +14,8 @@ from typing import Any, Dict, List, Tuple
 from vault.kernel.normalizacion import es_union_ortografica
 from vault.kernel.regex import strip_code_blocks
 
+_RE_SAFETY_1 = re.compile('^(```{1,3})(.*)$')
+
 _INJECTION_PATTERNS: List[Tuple[str, str, str]] = [
     ("POISON-01", r"(?i)\b(ignora|ignore|olvida|forget|disregard)\b[^.\n]{0,40}"
                   r"\b(instrucciones|instructions|reglas|rules|anterior|previous|above|system)\b",
@@ -69,7 +71,7 @@ def _prose_only_lines(text: str):
     fence_kind = ""
     for line in text.splitlines(keepends=True):
         stripped = line.lstrip()
-        m = re.match(r"^(```{1,3})(.*)$", stripped)
+        m = _RE_SAFETY_1.match(stripped)
         if m and not in_fence:
             in_fence = True
             fence_kind = m.group(1)

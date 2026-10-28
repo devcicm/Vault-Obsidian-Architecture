@@ -20,6 +20,7 @@ import argparse
 import ast
 import importlib.util
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -39,6 +40,10 @@ from vault.kernel import construir  # noqa: E402
 from vault_vocabulario import opciones as _opciones
 from vault_entorno import leer as leer_entorno
 import vault_grafo_import  # noqa: E402
+
+_RE_VAULT_COMPACT_CONTRACTS_1 = re.compile('add_argument\\(\\s*["\']([^"\']+)["\']')
+_RE_VAULT_COMPACT_CONTRACTS_2 = re.compile('help=["\']([^"\']{0,120})')
+_RE_VAULT_COMPACT_CONTRACTS_3 = re.compile('type=(\\w+)')
 
 
 def _repo(root=None) -> RepositorioConsulta:
@@ -381,9 +386,7 @@ def _extract_argparse_args(source: str) -> tuple:
 
             # Extract flag name
             name_match = None
-            import re
-
-            names = re.findall(r"""add_argument\(\s*["']([^"']+)["']""", call)
+            names = _RE_VAULT_COMPACT_CONTRACTS_1.findall(call)
             if not names:
                 i += 1
                 continue
@@ -398,11 +401,11 @@ def _extract_argparse_args(source: str) -> tuple:
             is_store_true = "store_true" in call or "store_false" in call
 
             # Help text
-            help_match = re.search(r"""help=["']([^"']{0,120})""", call)
+            help_match = _RE_VAULT_COMPACT_CONTRACTS_2.search(call)
             help_text = help_match.group(1) if help_match else ""
 
             # Type
-            type_match = re.search(r"type=(\w+)", call)
+            type_match = _RE_VAULT_COMPACT_CONTRACTS_3.search(call)
             arg_type = (
                 type_match.group(1)
                 if type_match

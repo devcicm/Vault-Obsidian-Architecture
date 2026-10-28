@@ -19,6 +19,7 @@ Usage:
 
 import argparse
 import json
+import re
 import subprocess
 
 import vault_grafo_import
@@ -45,6 +46,8 @@ from vault_mcp_context import (
     load_context,
     clear_context,
 )
+
+_RE_MCP_1 = re.compile('^\\s*-\\s*$', re.MULTILINE)
 
 
 SCRIPTS_DIR = vault_grafo_import.DIRECTORIO  # deuda #12: el dueño vive en vault/, `scripts/` lo dice el puente
@@ -230,9 +233,7 @@ class VaultMCP:
                             f"{param_name} debe tener al menos {min_words} palabras"
                         )
                 elif validator == "no_empty_bullets":
-                    import re
-
-                    if re.search(r"^\s*-\s*$", value, re.MULTILINE):
+                    if _RE_MCP_1.search(value):
                         errors.append(f"{param_name} contiene bullets vacíos")
                 elif validator.startswith("enum:"):
                     options = validator.split(":")[1].split(",")

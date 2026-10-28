@@ -97,6 +97,8 @@ from vault.kernel import construir  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 from vault.kernel.errores import completar_envelope  # noqa: E402
 
+_RE_VAULT_INGEST_1 = re.compile('^(#{1,3})\\s+(.+?)\\s*#*$')
+
 
 def _raiz() -> Path:
     """La raiz del vault, resuelta al usarse."""
@@ -219,7 +221,7 @@ def _segment(text: str) -> List[Dict[str, str]]:
             chunks.append({"title": title or _derive_title(body), "body": body})
 
     for line in lines:
-        heading = re.match(r"^(#{1,3})\s+(.+?)\s*#*$", line)
+        heading = _RE_VAULT_INGEST_1.match(line)
         if heading:
             flush()
             title = heading.group(2).strip()
