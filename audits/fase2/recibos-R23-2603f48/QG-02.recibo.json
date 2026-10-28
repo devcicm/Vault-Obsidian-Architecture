@@ -1,0 +1,86 @@
+{
+  "gate": "QG-02",
+  "target_sha": "2603f48b8412da893744c537e802aace20f2b25f",
+  "verificador": "colector_qg",
+  "command": "python audits/fase2/colector_qg.py --sha 2603f48b8412da893744c537e802aace20f2b25f --ejecutar",
+  "exit_code": 0,
+  "status": "PASS",
+  "started_at": "2026-10-28T05:14:46Z",
+  "finished_at": "2026-10-28T05:25:46Z",
+  "run_id": "local-QG-02-2603f48",
+  "artifact": "<recibos>/QG-02.subchecks.json",
+  "artifact_sha256": "0606194ea492d96e54ce6f5550ce0b2f7b5f76c677506291976ee804d74e23f6",
+  "checks": {
+    "puertas_26": "ejecutado",
+    "auditoria_completa": "ejecutado",
+    "sin_violaciones": "ejecutado",
+    "certificacion_compuesta": "ejecutado"
+  },
+  "subchecks": {
+    "puertas_26": {
+      "subcheck": "puertas_26",
+      "verificador": "vault_gate",
+      "estado": "ejecutado",
+      "detalle": null,
+      "exit_code": 0,
+      "artifact": "<recibos>/QG-02.puertas_26.salida.txt",
+      "artifact_sha256": "f33a65192386236a29beb73bf751969ae16eb53dde967c74783a18968fb5a5b8",
+      "started_at": "2026-10-28T05:14:46Z",
+      "finished_at": "2026-10-28T05:25:33Z"
+    },
+    "auditoria_completa": {
+      "subcheck": "auditoria_completa",
+      "verificador": "vault_norms_audit",
+      "estado": "ejecutado",
+      "detalle": null,
+      "exit_code": 0,
+      "artifact": "<recibos>/QG-02.auditoria_completa.salida.txt",
+      "artifact_sha256": "ad0f585f1d4cba5d5c75f26b37ab249917dce92236c3c8fc62fdc136ef87cddb",
+      "started_at": "2026-10-28T05:25:33Z",
+      "finished_at": "2026-10-28T05:25:35Z"
+    },
+    "sin_violaciones": {
+      "subcheck": "sin_violaciones",
+      "verificador": "sin_violaciones",
+      "estado": "ejecutado",
+      "detalle": null,
+      "exit_code": null,
+      "artifact": "<recibos>/QG-02.auditoria_completa.salida.txt",
+      "artifact_sha256": "ad0f585f1d4cba5d5c75f26b37ab249917dce92236c3c8fc62fdc136ef87cddb",
+      "started_at": "2026-10-28T05:25:35Z",
+      "finished_at": "2026-10-28T05:25:35Z",
+      "datos": {
+        "total_violations": 0
+      }
+    },
+    "certificacion_compuesta": {
+      "subcheck": "certificacion_compuesta",
+      "verificador": "certificacion_compuesta",
+      "estado": "ejecutado",
+      "detalle": null,
+      "exit_code": null,
+      "artifact": "<recibos>/QG-02.certificacion_compuesta.json",
+      "artifact_sha256": "567f8fbde613001b182d40a7695674d9f393ca7453c49c40c4f58267a4252971",
+      "started_at": "2026-10-28T05:25:35Z",
+      "finished_at": "2026-10-28T05:25:46Z",
+      "datos": {
+        "veredicto": {
+          "estado": "PASS",
+          "motivos": [],
+          "residuos_declarados": [],
+          "nota": "los residuos listados quedan declarados con su decision formal y su custodia; el PASS no es silencioso y el manifiesto de release debe llevarlos como riesgo aceptado"
+        },
+        "runtime": {
+          "total_violations": 0,
+          "completo": true,
+          "violations": []
+        },
+        "sandbox": {
+          "total_violations": 0,
+          "completo": true,
+          "violations": []
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "puertas_26": {
+    "subcheck": "puertas_26",
+    "verificador": "vault_gate",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": 0,
+    "artifact": "<recibos>/QG-02.puertas_26.salida.txt",
+    "artifact_sha256": "f33a65192386236a29beb73bf751969ae16eb53dde967c74783a18968fb5a5b8",
+    "started_at": "2026-10-28T05:14:46Z",
+    "finished_at": "2026-10-28T05:25:33Z"
+  },
+  "auditoria_completa": {
+    "subcheck": "auditoria_completa",
+    "verificador": "vault_norms_audit",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": 0,
+    "artifact": "<recibos>/QG-02.auditoria_completa.salida.txt",
+    "artifact_sha256": "ad0f585f1d4cba5d5c75f26b37ab249917dce92236c3c8fc62fdc136ef87cddb",
+    "started_at": "2026-10-28T05:25:33Z",
+    "finished_at": "2026-10-28T05:25:35Z"
+  },
+  "sin_violaciones": {
+    "subcheck": "sin_violaciones",
+    "verificador": "sin_violaciones",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": null,
+    "artifact": "<recibos>/QG-02.auditoria_completa.salida.txt",
+    "artifact_sha256": "ad0f585f1d4cba5d5c75f26b37ab249917dce92236c3c8fc62fdc136ef87cddb",
+    "started_at": "2026-10-28T05:25:35Z",
+    "finished_at": "2026-10-28T05:25:35Z",
+    "datos": {
+      "total_violations": 0
+    }
+  },
+  "certificacion_compuesta": {
+    "subcheck": "certificacion_compuesta",
+    "verificador": "certificacion_compuesta",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": null,
+    "artifact": "<recibos>/QG-02.certificacion_compuesta.json",
+    "artifact_sha256": "567f8fbde613001b182d40a7695674d9f393ca7453c49c40c4f58267a4252971",
+    "started_at": "2026-10-28T05:25:35Z",
+    "finished_at": "2026-10-28T05:25:46Z",
+    "datos": {
+      "veredicto": {
+        "estado": "PASS",
+        "motivos": [],
+        "residuos_declarados": [],
+        "nota": "los residuos listados quedan declarados con su decision formal y su custodia; el PASS no es silencioso y el manifiesto de release debe llevarlos como riesgo aceptado"
+      },
+      "runtime": {
+        "total_violations": 0,
+        "completo": true,
+        "violations": []
+      },
+      "sandbox": {
+        "total_violations": 0,
+        "completo": true,
+        "violations": []
+      }
+    }
+  }
+}

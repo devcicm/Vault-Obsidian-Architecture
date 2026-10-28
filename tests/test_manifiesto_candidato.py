@@ -147,9 +147,21 @@ def test_negativo_la_prosa_no_se_cuela_en_los_campos_de_identidad():
         _validar_hex(contaminado, SHA1_RE, "product_sha_contaminado")
 
 
-def test_governance_declara_el_estado_fail_closed():
+def test_governance_solo_autoriza_con_todo_en_pass():
+    """Fail-closed (R23): `release_authorized: true` exige QG-00..07 en PASS,
+    la CI del MISMO SHA concluida en success con todos sus jobs, y el acta del
+    propietario existente. Cualquier otra combinacion debe declarar false."""
     m = _cargar()
     g = m["governance"]
-    assert g["release_authorized"] is False
-    assert g["publication_status"] == "CANDIDATE"
-    assert g["qg_statuses"]["QG-07"] == "BLOCKED"
+    if g["release_authorized"] is not True:
+        assert g["publication_status"] == "CANDIDATE"
+        return
+    assert g["publication_status"] == "AUTHORIZED"
+    assert set(g["qg_statuses"]) == {f"QG-0{i}" for i in range(8)}
+    assert all(v == "PASS" for v in g["qg_statuses"].values()), g["qg_statuses"]
+    ci = m["verification"]["ci"]
+    assert ci["run_sha"] == m["release_candidate"]["product_sha"]
+    assert ci["conclusion"] == "success"
+    assert ci["successful_jobs"] == ci["required_jobs"] > 0
+    assert (REPO / g["owner_decision_ref"]).is_file()
+    assert (REPO / m["verification"]["recibos"]).is_dir()

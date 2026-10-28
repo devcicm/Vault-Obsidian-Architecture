@@ -1,0 +1,9 @@
+{
+  "sha": "2603f48b8412da893744c537e802aace20f2b25f",
+  "exit": 0,
+  "junit_sha256": "fae5cc8598bcfcf0aa9ac536ca42c4fec151f1e80bb386b246c6c3d443e5fea5",
+  "comando": "python3 -m pytest tests/ -q -n auto -p no:cacheprovider --tb=short --junitxml=junit.xml",
+  "inicio": "2026-10-28T05:00:51Z",
+  "fin": "2026-10-28T05:13:38Z",
+  "maquina": "sesion Claude Code (Linux, Python 3.13)"
+}

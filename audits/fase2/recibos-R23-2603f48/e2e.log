@@ -1,0 +1,32 @@
+OK    build wheel+sdist 1 whl / 1 sdist
+OK    instalacion limpia pip exit=0
+OK    version 41.23
+OK    help 
+OK    init INIT_CREATED
+OK    doctor RUNTIME_OK
+OK    status RUNTIME_OK
+OK    write CLI 07_Knowledge/nota-rc.md
+OK    hash de referencia del fichero persistido 21a7bcf37b143a60
+OK    read CLI 
+OK    search CLI 
+OK    MCP initialize {"name": "vault-mcp-server", "version": "v41.23"}
+OK    MCP tools/list 97 tools
+OK    MCP lee la nota 
+OK    MCP busca la nota 
+OK    persistencia tras reiniciar MCP 
+OK    clean --dry-run {"step": "clean", "estado": "READY", "dry_run": true, "plan": ["00_System", "01_Projects", "02_Observability", "03_Decisions", "04_Sessions", "05_Patt
+OK    dry-run no borro la nota sigue en su sitio
+OK    clean --confirm VERIFIED
+OK    cuarentena creada por esta ejecucion .mi-vault.cuarentena-20261028T051400Z
+OK    vault reinicializado 
+OK    la nota ya no esta en el vault nuevo 
+OK    cuarentena conserva la nota por hash 21a7bcf37b143a60
+OK    locks preservado 
+OK    restore: inventario identico al de la cuarentena 79 ficheros
+OK    restore: la nota tiene el hash original 
+OK    reinstalacion conserva los datos 
+
+27/27 pasos correctos
+wheel sha256: f4765876fe0b4131717b636164c0f74355449bbdf818c77287fe2677a1d62732
+sdist sha256: 0c0e6b3e25d98e3c214bdd60de3a439a983924ff2fdb4a5240fb3753c039d557
+sandbox: <sandbox-e2e>

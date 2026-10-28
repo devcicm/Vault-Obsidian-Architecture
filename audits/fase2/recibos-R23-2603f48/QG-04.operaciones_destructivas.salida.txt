@@ -1,0 +1,20 @@
+subcheck=operaciones_destructivas
+verificador=operaciones_destructivas
+argv=<python> -m pytest tests/test_vault_init_clean.py -q
+exit_code=0
+--- stdout ---
+============================= test session starts ==============================
+platform linux -- Python 3.13.17, pytest-9.2.0, pluggy-1.7.0
+rootdir: <repo>
+configfile: pyproject.toml
+plugins: xdist-3.8.0, timeout-2.4.0, anyio-4.15.1, platformdirs-4.13.6, cov-7.1.0
+timeout: 300.0s
+timeout method: signal
+timeout func_only: False
+collected 23 items
+
+tests/test_vault_init_clean.py .......................                   [100%]
+
+============================== 23 passed in 1.71s ==============================
+
+--- stderr ---

@@ -1,0 +1,146 @@
+{
+  "todos_ok": true,
+  "pasos": [
+    {
+      "paso": "build wheel+sdist",
+      "ok": true,
+      "detalle": "1 whl / 1 sdist"
+    },
+    {
+      "paso": "instalacion limpia",
+      "ok": true,
+      "detalle": "pip exit=0"
+    },
+    {
+      "paso": "version",
+      "ok": true,
+      "detalle": "41.23"
+    },
+    {
+      "paso": "help",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "paso": "init",
+      "ok": true,
+      "detalle": "INIT_CREATED"
+    },
+    {
+      "paso": "doctor",
+      "ok": true,
+      "detalle": "RUNTIME_OK"
+    },
+    {
+      "paso": "status",
+      "ok": true,
+      "detalle": "RUNTIME_OK"
+    },
+    {
+      "paso": "write CLI",
+      "ok": true,
+      "detalle": "07_Knowledge/nota-rc.md"
+    },
+    {
+      "paso": "hash de referencia del fichero persistido",
+      "ok": true,
+      "detalle": "21a7bcf37b143a60"
+    },
+    {
+      "paso": "read CLI",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "paso": "search CLI",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "paso": "MCP initialize",
+      "ok": true,
+      "detalle": "{\"name\": \"vault-mcp-server\", \"version\": \"v41.23\"}"
+    },
+    {
+      "paso": "MCP tools/list",
+      "ok": true,
+      "detalle": "97 tools"
+    },
+    {
+      "paso": "MCP lee la nota",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "paso": "MCP busca la nota",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "paso": "persistencia tras reiniciar MCP",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "paso": "clean --dry-run",
+      "ok": true,
+      "detalle": "{\"step\": \"clean\", \"estado\": \"READY\", \"dry_run\": true, \"plan\": [\"00_System\", \"01_Projects\", \"02_Observability\", \"03_Decisions\", \"04_Sessions\", \"05_Patt"
+    },
+    {
+      "paso": "dry-run no borro",
+      "ok": true,
+      "detalle": "la nota sigue en su sitio"
+    },
+    {
+      "paso": "clean --confirm",
+      "ok": true,
+      "detalle": "VERIFIED"
+    },
+    {
+      "paso": "cuarentena creada por esta ejecucion",
+      "ok": true,
+      "detalle": ".mi-vault.cuarentena-20261028T051400Z"
+    },
+    {
+      "paso": "vault reinicializado",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "paso": "la nota ya no esta en el vault nuevo",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "paso": "cuarentena conserva la nota por hash",
+      "ok": true,
+      "detalle": "21a7bcf37b143a60"
+    },
+    {
+      "paso": "locks preservado",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "paso": "restore: inventario identico al de la cuarentena",
+      "ok": true,
+      "detalle": "79 ficheros"
+    },
+    {
+      "paso": "restore: la nota tiene el hash original",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "paso": "reinstalacion conserva los datos",
+      "ok": true,
+      "detalle": ""
+    }
+  ],
+  "total_pasos": 27,
+  "fallidos": [],
+  "sandbox": "<sandbox-e2e>",
+  "wheel_sha256": "f4765876fe0b4131717b636164c0f74355449bbdf818c77287fe2677a1d62732",
+  "sdist_sha256": "0c0e6b3e25d98e3c214bdd60de3a439a983924ff2fdb4a5240fb3753c039d557",
+  "instalacion_limpia": true
+}

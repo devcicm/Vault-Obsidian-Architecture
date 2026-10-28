@@ -1,3 +1,93 @@
+# Respuesta del ejecutor — R23 (release v41.23: decisiones, CI y certificación)
+
+- **Emisor:** Claude (sesión de Claude Code en la nube, abierta por el propietario)
+- **Fecha:** 2026-10-28
+- **Rama:** `work/release-cli-mcp-20261025` (el repositorio tiene solo dos ramas: `main` y esta)
+- **SHA inicial:** `2f5bd1b` · **Candidato certificado:** `2603f48b8412da893744c537e802aace20f2b25f`
+- **Autoridad:** decisiones DEC-01..06 del propietario, en `ACTA-DECISIONES-PROPIETARIO-2026-10-28.md`
+
+```text
+GOAL: RELEASE CLI + MCP PARA TERCEROS
+ESTADO: CANDIDATO CERTIFICADO Y AUTORIZADO. Falta solo el acto de publicar:
+        el propietario sube el tag v41.23 y release.yml publica.
+
+CANDIDATO: 2603f48 (arbol ad7c1bab)
+QG-00..QG-07: PASS (colector --ejecutar, recibos en audits/fase2/recibos-R23-2603f48/)
+SUITE: 6446 passed / 19 skipped / 0 failed (6465)
+E2E: 27/27 desde la wheel (Linux)
+PARIDAD: 5/5 CONFORME, AP-40 exit 0
+CI: 40635517456, completed/success, 27/27, 16 min (Windows + Linux x 3.9-3.12)
+DEC-01..06: asentadas (acta del 2026-10-28)
+QA INDEPENDIENTE: OMITIDO_POR_PROPIETARIO (DEC-06), dictamen posterior bienvenido
+RELEASE_AUTHORIZED: true (CANDIDATO-RELEASE.yaml)
+PUBLICADO: NO, falta el tag del propietario
+```
+
+## Qué se hizo, en orden
+
+1. **Ramas:** 25 → 2. Las puntas de las 23 sobrantes quedaron como ancestros
+   de la rama de trabajo (merge `ours` `b1a1614`, árbol intacto) antes de
+   borrarlas. El texto de cada dictamen está en `audits/qa-archivo/`.
+2. **Alcance Windows + Linux:** macOS sale del classifier y de la CI a la vez.
+3. **Decisiones del propietario** DEC-01..06 asentadas. Al ratificar DEC-02
+   salió a la luz que el reconciliador **salía con exit 1**, no 0 como decía
+   R22 §9.bis. Tras la ratificación sale con 0.
+4. **Política C (DEC-03)** conectada al colector como subcheck de QG-02. Al
+   conectarla reventó: estaba escrita para `checks` como mapa y el envelope
+   real usa una lista desde TD-0003. Se corrigió con tests.
+5. **CI de ~41 min (más horas de cola de macOS) a 16 min:**
+   - `vault_arch.check()` pasa de 13,8 s a 3,7 s con la misma salida. Antes
+     recorría 9 M de nodos AST por llamada.
+   - La suite va en 2 shards por columna (`tests/reparto.py`, por módulo y
+     equilibrado).
+   - Las puertas van en un job propio, en paralelo con la suite.
+   - `cancel-in-progress` cancela la corrida anterior al subir un push nuevo.
+6. **Verificadores que solo funcionaban en Windows**
+   (`recorrido_terceros_r07.py`, `paridad_cli_mcp.py`): ahora encuentran el
+   MCP empaquetado en venvs POSIX. Es la primera vez que E2E y paridad pasan
+   en Linux.
+7. **Publicación:** `.github/workflows/release.yml` publica al subir el tag
+   `v*`, y antes comprueba que el tag contiene el `product_sha` autorizado.
+
+## Rojos de la ronda, sin ocultar
+
+- CI `e050e81`: renombrar `check` a `_check` desfasó las caras derivadas de
+  AP-49/54/66 (puerta `framework`). Se resolvió con un decorador, sin
+  renombrar (`33a9b2a`).
+- Suite local: `test_reparto.py` lanzaba un subproceso sin
+  `encoding="utf-8"` (AP de portabilidad). Corregido en `ffeccfb`.
+- Colector sobre `1a36913`: QG-02 falló por el defecto de la política C
+  (punto 4) y QG-03 por falta del recibo de procedencia del JUnit. Ambos se
+  corrigieron, y el SHA final se certificó entero desde cero.
+
+## Para retomar (local o nube)
+
+```powershell
+git fetch origin --prune
+git checkout work/release-cli-mcp-20261025
+git pull --ff-only
+```
+
+- **Estado vigente:** `audits/fase2/CANDIDATO-RELEASE.yaml` y §9.ter de
+  `audits/fase2/INFORME-READINESS-TERCEROS.md`.
+- **Decisiones:** `audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-10-28.md`.
+- **Protocolo y ramas:** §0 de `audits/handoff/PROTOCOLO-QA.md`.
+- **Pendiente del propietario:**
+  1. Ejecutar `audits/handoff/DEC-04-archivar-y-purgar.md` en su máquina.
+  2. Publicar: `git tag -a v41.23 <HEAD de la rama de trabajo> -m "v41.23"` y
+     `git push origin v41.23`. `release.yml` hace el resto y se niega si el
+     manifiesto no autoriza.
+- **Pendiente técnico (fuera de v41.23):** I2-a, que haría ejecutables desde
+  la wheel los controles AP-40/42/43 (hoy devuelven `no_ejecutado`, de forma
+  fail-closed); y un dictamen QA independiente sobre `2603f48`.
+- **Cómo re-certificar un SHA:** suite con `--junitxml` más su
+  `.procedencia.json` (sha, exit, sha256), `recorrido_terceros_r07.py --salida`
+  y, al final, `colector_qg.py --sha <SHA> --ejecutar --suite-xml ... --e2e-json ...
+  --pip-audit-python <venv>/bin/python --paridad-venv <venv> --paridad-runtime <copia>`.
+  El guion exacto usado está en `audits/fase2/recibos-R23-2603f48/README.md`.
+
+---
+
 # Respuesta del ejecutor a QA — R22 (DEC-02 ruta B: puerto de controles en el núcleo)
 
 - **Emisor:** agente local (ejecutor técnico)

@@ -416,6 +416,51 @@ siguientes a la anterior.
 
 ---
 
+## 9.ter Actualización R23: release v41.23
+
+**Candidato:** `2603f48b8412da893744c537e802aace20f2b25f` (árbol `ad7c1bab481815fbe7db8f18a291dffabcc9866b`). Sustituye a `3e92962`/`81ab2ff`
+(R22). La wheel cambia solo en METADATA, porque el classifier de macOS sale;
+`vault_arch`, `vault_produccion` y los verificadores de `audits/` no van
+empaquetados.
+
+**Qué cambió desde R22 (medido):**
+
+| Cambio | Antes | Después | Verificador |
+|---|---|---|---|
+| Decisiones DEC-01..06 | vacías | asentadas (acta del 2026-10-28) | `ACTA-DECISIONES-PROPIETARIO-2026-10-28.md` |
+| Reconciliador Archify | **exit 1**, 10 divergencias. §9.bis decía «exit 0»: era falso | exit 0, 10 aceptadas por ratificación | `reconciliar_archify.py --check` |
+| QG-02 | sujeto sin decidir | política C (runtime limpio + sandbox, fail-closed) | subcheck `certificacion_compuesta` del colector |
+| Alcance de SO | 3 SO, 25 jobs | Windows + Linux, 27 jobs (suite en 2 shards + puertas en paralelo) | `.github/workflows/vault-ci.yml` |
+| Reloj de la CI | ~41 min por corrida (más horas de cola de macOS) | **20 min** (job más lento: 15) | corrida `40630788979` |
+| `vault_arch.check()` | 13,8 s | 3,7 s, misma salida (57 claves) | perfil + comparación de salida |
+| E2E y paridad en Linux | no corrían (rutas solo de Windows) | E2E 27/27, paridad 5/5 CONFORME | `recorrido_terceros_r07.py`, `paridad_cli_mcp.py` |
+
+### Matriz REL (candidato R23)
+
+| ID | Requisito | Verificador | Resultado observado | Estado | Bloqueo / acción |
+|---|---|---|---|---|---|
+| REL-00 | identidad y alcance | `test_manifiesto_candidato.py`; QG-00 | manifiesto con `2603f48`; QG-00 PASS | **PASS** | — |
+| REL-01 | arquitectura reconciliada | QG-01 (`vault_arch`, reconciliador) | off_port 0; reconciliador exit 0 (DIV-01..10 ratificadas) | **PASS** | — |
+| REL-02 | gobernanza conforme | QG-02 (26 puertas, auditoría, política C) | 26/26 puertas; auditoría completa con 0 violaciones; política C: runtime 0, sandbox 0, PASS | **PASS** | — |
+| REL-03 | suite y E2E | QG-03 (JUnit + E2E) | suite 6446 passed / 19 skipped / 0 failed (6465); E2E 27/27 desde la wheel (Linux) | **PASS** | — |
+| REL-04 | seguridad e integridad | QG-04 (saneamiento, pip-audit, contención, `--clean`) | pip-audit sin vulnerabilidades conocidas | **PASS** | — |
+| REL-05 | paridad CLI/MCP | QG-05 (paridad + AP-40) | 5/5 CONFORME, AP-40 exit 0, 97 tools | **PASS** | — |
+| REL-06 | distribución limpia | QG-06 (build, contenido, instalación limpia) | wheel `e2e3eb4b…3a0a`, sdist `0c0e6b3e…d557` | **PASS** | — |
+| REL-07 | CI del SHA | `colector_qg.estado_ci` | corrida `40635517456: completed/success, 27/27, 16 min` | **PASS** | — |
+| REL-08 | dictamen QA | QA independiente | el propietario decidió no esperarlo antes de publicar (DEC-06) | **OMITIDO_POR_PROPIETARIO** | dictamen posterior sobre el mismo SHA |
+| REL-09 | autorización | propietario | DEC-06: aprobar con 5 condiciones | **AUTORIZADO_CON_CONDICIONES** | se aplica si REL-00..07 están en PASS |
+| REL-10 | publicación | `.github/workflows/release.yml` | se dispara con el tag `v41.23` que sube el propietario | **LISTO** | tag del propietario |
+| REL-11..13 | activación, seguimiento, relanzamiento | release manager | tras publicar | **PENDIENTE** | — |
+
+**Regla que no cambia:** `TEST_PASS ≠ CI_PASS ≠ QG_PASS ≠ QA_APPROVED ≠
+OWNER_AUTHORIZED ≠ PUBLISHED`. Lo nuevo es que `QA_APPROVED` no es requisito
+de v41.23 por decisión expresa del propietario, y así consta en el acta. Esta
+sección no lo presenta como aprobado.
+
+Recibos versionados, uno por subcheck: `audits/fase2/recibos-R23-2603f48/`. Veredicto de la política: **QG-07 PASS, `liberable: true`**.
+
+---
+
 ## 10. Matriz formal de release (REL-00..13) — estado R16
 
 Contrato del GOAL R14 §6 ampliado por R16 §6. Cada etapa declara: propósito
