@@ -381,16 +381,24 @@ def test_el_colector_no_pasa_jobs_fuera_de_su_interfaz():
     assert "jobs_ci" not in parametros
     assert "consultar_jobs" in parametros
 
-def test_la_matriz_obligatoria_es_la_del_workflow():
-    """Alcance Windows + Linux (2026-10-28): el colector no exige jobs que el
-    workflow ya no lanza, ni deja de exigir los que lanza."""
+def test_los_jobs_obligatorios_son_los_del_workflow():
+    """Alcance Windows + Linux, suite en shards y puertas en job propio
+    (2026-10-28): el colector exige exactamente los jobs que el workflow lanza."""
+    import itertools
+
     import yaml
 
     ci = yaml.safe_load((c.RAIZ / ".github" / "workflows" / "vault-ci.yml")
                         .read_text(encoding="utf-8"))
-    for job in ("validate", "product-gates"):
-        m = ci["jobs"][job]["strategy"]["matrix"]
-        esperada = {f"({so}, {py})" for so in m["os"] for py in m["python-version"]}
-        assert esperada == set(c.MATRIZ_CI), job
+    esperados = set()
+    for clave, job in ci["jobs"].items():
+        m = (job.get("strategy") or {}).get("matrix") or {}
+        if not m:
+            esperados.add(job.get("name") or clave)
+            continue
+        for combo in itertools.product(*m.values()):
+            esperados.add(f"{job.get('name') or clave} ({', '.join(map(str, combo))})")
+    assert esperados == set(c.JOBS_OBLIGATORIOS)
     assert not [j for j in c.JOBS_OBLIGATORIOS if "macos" in j]
-    assert len(c.JOBS_OBLIGATORIOS) == 2 * len(c.MATRIZ_CI) + 1
+    assert "Validate Vault Spec (windows-latest, 3.9, 2)" in c.JOBS_OBLIGATORIOS
+    assert "Puertas del estándar (ubuntu-latest)" in c.JOBS_OBLIGATORIOS

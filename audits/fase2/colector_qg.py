@@ -103,29 +103,37 @@ SUBCONTRATOS: Dict[str, Dict[str, Dict[str, Any]]] = {
     },
 }
 
-def _matriz_del_workflow() -> Tuple[str, ...]:
-    """La matriz obligatoria se LEE del workflow, no se copia.
+def _jobs_del_workflow() -> Tuple[str, ...]:
+    """Los jobs obligatorios se LEEN del workflow, no se copian.
 
-    Hasta 2026-10-28 era una tupla escrita a mano con macOS; al sacar macOS
-    del alcance (workflow y classifier), la copia habria exigido para siempre
-    ocho jobs que ya no existen. `tests/test_colector_qg.py` fija que coincide.
+    Hasta 2026-10-28 eran una tupla escrita a mano con macOS. Al sacar macOS
+    del alcance, partir la suite en shards y llevar las puertas a su propio
+    job, una copia habria exigido jobs que ya no existen y olvidado los nuevos.
+    GitHub nombra cada combinacion de la matriz como «nombre (v1, v2, ...)»,
+    con los valores en el orden de las claves de la matriz.
+    `tests/test_colector_qg.py` fija que coincide con el workflow.
     """
+    import itertools
+
     import yaml
 
     ci = RAIZ / ".github" / "workflows" / "vault-ci.yml"
     datos = yaml.safe_load(ci.read_text(encoding="utf-8")) or {}
-    matriz = (((datos.get("jobs") or {}).get("validate") or {})
-              .get("strategy") or {}).get("matrix") or {}
-    return tuple(f"({so}, {py})" for so in matriz.get("os", [])
-                 for py in matriz.get("python-version", []))
+    nombres: List[str] = []
+    for clave, job in (datos.get("jobs") or {}).items():
+        nombre = job.get("name") or clave
+        matriz = (job.get("strategy") or {}).get("matrix") or {}
+        ejes = [v for v in matriz.values() if isinstance(v, list)]
+        if not ejes:
+            nombres.append(nombre)
+            continue
+        for combo in itertools.product(*ejes):
+            nombres.append(f"{nombre} ({', '.join(str(v) for v in combo)})")
+    return tuple(nombres)
 
 
-#: Matriz CI obligatoria: la del job `validate` de .github/workflows/vault-ci.yml
-#: (SO x Python) en "Validate Vault Spec" y "Product gates (wheel)", mas el lint.
-MATRIZ_CI = _matriz_del_workflow()
 WORKFLOW_ESPERADO = "Vault CI"
-JOBS_OBLIGATORIOS = tuple(f"Validate Vault Spec {m}" for m in MATRIZ_CI) + \
-    tuple(f"Product gates (wheel) {m}" for m in MATRIZ_CI) + ("Lint Python",)
+JOBS_OBLIGATORIOS = _jobs_del_workflow()
 
 ESTADO_OK = "ejecutado"
 ESTADOS = ("ejecutado", "degradado", "fallido", "no_ejecutado")

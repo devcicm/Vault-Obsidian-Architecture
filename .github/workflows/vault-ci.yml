@@ -32,6 +32,10 @@ jobs:
         # medio repo. `tests/test_piso_python.py` falla si esta lista y
         # `requires-python` vuelven a divergir.
         python-version: ['3.9', '3.10', '3.11', '3.12']
+        # La suite se parte en dos trozos por columna (`tests/reparto.py`,
+        # por módulo y equilibrado por duración). Antes la columna de Windows
+        # tardaba ~40 min y marcaba el reloj de toda la corrida.
+        shard: [1, 2]
 
     steps:
       - name: Checkout
@@ -78,14 +82,50 @@ jobs:
       # fallo de CI llega sin el detalle de qué test falló. Con el artefacto,
       # el recibo de cada columna es comprobable por quien lo audite.
       - name: Run unit tests
+        env:
+          VAULT_SHARD: ${{ matrix.shard }}/2
         run: python -m pytest tests/ -q -n auto --tb=short --junitxml=junit.xml
 
       - name: Upload test report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: junit-${{ matrix.os }}-py${{ matrix.python-version }}
+          name: junit-${{ matrix.os }}-py${{ matrix.python-version }}-shard${{ matrix.shard }}
           path: junit.xml
+
+  gates:
+    # Las puertas, el smoke y los pasos del estándar miden el REPOSITORIO, no
+    # el intérprete: se ejecutan una vez por sistema, en un job propio que
+    # corre en paralelo con la suite. Antes iban detrás de la suite en cada
+    # columna: ~10 min en serie sobre la ruta crítica. Máquina aparte, así
+    # que tampoco comparten `vault-sandbox/` con la suite (AGENTS.md).
+    name: Puertas del estándar
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Una sola versión y fuera de la matriz: la matriz de Python la
+        # ejerce la suite (`tests/test_ci_python_matrix.py` exige que toda
+        # matriz de Python arranque en el piso).
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Bootstrap del sandbox
+        run: python tests/sandbox_fixture.py --bootstrap
 
       # Las puertas, preguntándole al registro en vez de listándolas a mano.
       #
@@ -99,12 +139,7 @@ jobs:
       # Python↔YAML, y `vault_criterios` lo mide desde v40.19.
       #
       # Una puerta nueva entra aquí sola, el día que entra en el registro.
-      #
-      # Las puertas y el smoke miden el repositorio, no el intérprete: la suite
-      # ya recorre 3.9–3.12 en cada sistema. Se ejecutan una vez por sistema,
-      # en la versión más alta, y bajan ~10 min en seis de las ocho columnas.
       - name: Puertas del estándar (registro vault_gate, todas)
-        if: matrix.python-version == '3.12'
         run: python scripts/vault_gate.py --strict
 
       # AP-40: ningún param publicado por MCP puede ser rechazado por la CLI.
@@ -115,7 +150,6 @@ jobs:
       # AP-42: el ejemplo documentado de cada tool se ejecuta de verdad contra
       # una copia desechable del sandbox. La baseline está en 0: guard duro.
       - name: Smoke de ejecución (AP-42, toda tool se ejecuta)
-        if: matrix.python-version == '3.12'
         run: python scripts/vault_smoke.py --check --strict
 
       # AP-36: falla si algún side-effect se escribió fuera del vault (hasta 2

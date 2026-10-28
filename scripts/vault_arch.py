@@ -83,6 +83,59 @@ def _ast_de_impl(clave: tuple, ruta: Path) -> ast.Module:
     return ast.parse(ruta.read_text(encoding="utf-8", errors="replace"))
 
 
+#: Memo de UNA medición: solo vive mientras corre `check()`. Fuera de ella
+#: cada analyzer mide de nuevo, porque los tests mutan registros y ficheros
+#: entre llamadas y tienen que ver el cambio.
+_MEMO_DE_MEDICION: "dict[str, object] | None" = None
+
+
+def _una_vez_por_medicion(funcion):
+    """Dentro de un `check()`, un analyzer sin argumentos se calcula una vez.
+
+    `check()` pedía `cruces()` tres veces (directamente y a través de los dos
+    presupuestos) y `_propiedades_de_sistema()` otras tres: el mismo árbol,
+    medido tres veces en la misma llamada. Se devuelve una copia profunda para
+    que ningún llamador pueda alterar lo que verá el siguiente.
+    """
+    import copy
+    import functools
+
+    @functools.wraps(funcion)
+    def envoltura():
+        memo = _MEMO_DE_MEDICION
+        if memo is None:
+            return funcion()
+        if funcion.__name__ not in memo:
+            memo[funcion.__name__] = funcion()
+        return copy.deepcopy(memo[funcion.__name__])
+    return envoltura
+
+
+#: Recorridos ya hechos, por identidad del árbol. Guarda también el árbol para
+#: que su `id` no pueda reutilizarse mientras la entrada viva.
+_NODOS: dict[int, tuple[ast.AST, tuple[ast.AST, ...]]] = {}
+
+
+def _nodos(arbol: ast.AST) -> tuple[ast.AST, ...]:
+    """`_nodos(arbol)` materializado una sola vez por árbol (2026-10-28).
+
+    `_ast_de` ya evitaba re-parsear, pero cada analyzer volvía a recorrer el
+    árbol entero de los ~300 módulos: un `check()` hacía nueve millones de
+    pasos de `ast.walk` y tardaba 14–18 s, y la suite lo invoca decenas de
+    veces. Los árboles salen de la caché de `_ast_de` y nadie los muta, así
+    que su recorrido tampoco cambia; un árbol nuevo (un fichero editado por un
+    test) tiene otra identidad y se recorre de nuevo.
+    """
+    hit = _NODOS.get(id(arbol))
+    if hit is not None and hit[0] is arbol:
+        return hit[1]
+    if len(_NODOS) > 4096:
+        _NODOS.clear()
+    nodos = tuple(ast.walk(arbol))
+    _NODOS[id(arbol)] = (arbol, nodos)
+    return nodos
+
+
 def arboles_medidos() -> list[Path]:
     """Los módulos Python dentro del alcance declarado, sin duplicados."""
     vistos: dict[Path, None] = {}
@@ -804,6 +857,7 @@ def _destino_de_import(nodo: ast.AST, origen_rel: Path) -> set[str]:
     return set()
 
 
+@_una_vez_por_medicion
 def cruces() -> list[dict]:
     """Toda importación que cruza una frontera no declarada.
 
@@ -840,7 +894,7 @@ def cruces() -> list[dict]:
             arbol_s = _ast_de(SCRIPTS_DIR / f"{nombre}.py")
         except SyntaxError:
             continue
-        for nodo in ast.walk(arbol_s):
+        for nodo in _nodos(arbol_s):
             for destino in _destino_de_import(nodo, Path(nombre)):
                 if destino in CONTEXTS and destino not in (origen, KERNEL):
                     # Mismo criterio que arriba: un gancho del kernel hacia el
@@ -898,7 +952,7 @@ def cruces() -> list[dict]:
             arbol = _ast_de(ruta)
         except SyntaxError:
             continue
-        for nodo in ast.walk(arbol):
+        for nodo in _nodos(arbol):
             for destino in _destino_de_import(nodo, rel):
                 if destino in CONTEXTS and destino not in (origen, KERNEL):
                     if (clave, f"vault/{destino}") in GANCHOS_DEL_KERNEL:
@@ -939,7 +993,7 @@ def usos_del_nombre_congelado() -> list[dict]:
             arbol = _ast_de(ruta)
         except SyntaxError:
             continue
-        for nodo in ast.walk(arbol):
+        for nodo in _nodos(arbol):
             if not isinstance(nodo, ast.ImportFrom) or nodo.module != "vault_io":
                 continue
             for alias in nodo.names:
@@ -1028,7 +1082,7 @@ def tiene_hogar(arbol: ast.AST, contexto: str) -> bool:
     lógica en `scripts/` sin que nadie lo notara.
     """
     prefijo = f"vault.{contexto}"
-    for nodo in ast.walk(arbol):
+    for nodo in _nodos(arbol):
         if isinstance(nodo, ast.ImportFrom) and nodo.module and (
                 nodo.module == prefijo or nodo.module.startswith(prefijo + ".")):
             return True
@@ -1242,10 +1296,10 @@ def _nombres_desechables(arbol: ast.AST) -> set[str]:
     alcanza, el guard marca de más y obliga a mirar, que es el error correcto.
     """
     desechables: set[str] = set()
-    funciones = {n.name: n for n in ast.walk(arbol)
+    funciones = {n.name: n for n in _nodos(arbol)
                  if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}
 
-    for nodo in ast.walk(arbol):
+    for nodo in _nodos(arbol):
         origen = None
         if isinstance(nodo, ast.Assign) and len(nodo.targets) == 1:
             origen, destino = nodo.value, nodo.targets[0]
@@ -1257,7 +1311,7 @@ def _nombres_desechables(arbol: ast.AST) -> set[str]:
         if "mkdtemp" in texto or "TemporaryDirectory" in texto:
             desechables.add(destino.id)
 
-    for nodo in ast.walk(arbol):
+    for nodo in _nodos(arbol):
         if not (isinstance(nodo, ast.Call) and isinstance(nodo.func, ast.Name)):
             continue
         fn = funciones.get(nodo.func.id)
@@ -1341,6 +1395,7 @@ _FUNCIONES_DE_SISTEMA = frozenset({
 })
 
 
+@_una_vez_por_medicion
 def _propiedades_de_sistema() -> tuple[dict[str, str], dict[str, str]]:
     """Lo que declaran los repositorios: propiedad → subruta y subruta → dueño.
 
@@ -1359,7 +1414,7 @@ def _propiedades_de_sistema() -> tuple[dict[str, str], dict[str, str]]:
             and isinstance(n.targets[0], ast.Name)
             and isinstance(n.value, ast.Constant) and isinstance(n.value.value, str)
         }
-        for fn in ast.walk(arbol):
+        for fn in _nodos(arbol):
             if not isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 continue
             for r in ast.walk(fn):
@@ -1483,7 +1538,7 @@ def _funciones_importadas(arbol: ast.AST, externas: dict[str, dict[str, str]]) -
     ruta literal de `00_System/`: un nivel, sin seguir la cadena.
     """
     vistas: dict[str, str] = {}
-    for nodo in ast.walk(arbol):
+    for nodo in _nodos(arbol):
         if isinstance(nodo, ast.ImportFrom) and nodo.module and not nodo.level:
             funcs = externas.get(nodo.module, {})
             for a in nodo.names:
@@ -1525,7 +1580,7 @@ def _forma_de_resolucion(arbol: ast.AST) -> list[tuple[bool, str, list[ast.AST]]
     if hecho is not None and hecho[0] is arbol:
         return hecho[1]
     forma: list[tuple[bool, str, list[ast.AST]]] = []
-    for nodo in ast.walk(arbol):
+    for nodo in _nodos(arbol):
         if (isinstance(nodo, ast.Assign) and len(nodo.targets) == 1
                 and isinstance(nodo.targets[0], ast.Name)):
             forma.append((False, nodo.targets[0].id, [nodo.value]))
@@ -1590,7 +1645,7 @@ def escrituras_de_sistema_en(arbol: ast.AST, props: dict | None = None,
     nombres = _resolver_modulo(arbol, props, funciones)
     desechables = _nombres_desechables(arbol)
     hallazgos = []
-    for nodo in ast.walk(arbol):
+    for nodo in _nodos(arbol):
         llamada = llamada_de_escritura(nodo)
         if not llamada:
             continue
@@ -2062,7 +2117,7 @@ def escrituras_sin_lock(rutas: list[Path] | None = None) -> list[dict]:
             arbol = _ast_de(ruta)
         except SyntaxError:
             continue
-        for nodo in ast.walk(arbol):
+        for nodo in _nodos(arbol):
             if not isinstance(nodo, ast.Try):
                 continue
             # ¿El bloque protegido toma un file_lock?
@@ -2120,7 +2175,7 @@ def escrituras_prohibidas() -> list[dict]:
             continue
         arbol = _ast_de(ruta)
         desechables = _nombres_desechables(arbol)
-        for nodo in ast.walk(arbol):
+        for nodo in _nodos(arbol):
             nombre = llamada_de_escritura(nodo)
             if not nombre:
                 continue
@@ -2333,7 +2388,7 @@ def cruces_fuera_de_puerto() -> list[dict]:
             )
 
         # `from vault_x import y` — el símbolo está en el nodo.
-        for nodo in ast.walk(arbol):
+        for nodo in _nodos(arbol):
             if isinstance(nodo, ast.ImportFrom):
                 if nodo.module and nodo.module.startswith("vault_"):
                     for alias in nodo.names:
@@ -2343,13 +2398,13 @@ def cruces_fuera_de_puerto() -> list[dict]:
         # nombre local al módulo y se buscan los accesos `vx.attr`. Sin esto la
         # forma más común de import queda sin medir.
         ligados: dict[str, str] = {}
-        for nodo in ast.walk(arbol):
+        for nodo in _nodos(arbol):
             if isinstance(nodo, ast.Import):
                 for alias in nodo.names:
                     if alias.name.startswith("vault_"):
                         ligados[alias.asname or alias.name] = alias.name
         if ligados:
-            for nodo in ast.walk(arbol):
+            for nodo in _nodos(arbol):
                 if (
                     isinstance(nodo, ast.Attribute)
                     and isinstance(nodo.value, ast.Name)
@@ -2392,7 +2447,7 @@ def lecturas_de_entorno_sin_registro() -> list[dict]:
             arbol = _ast_de(ruta)
         except SyntaxError:
             continue
-        for nodo in ast.walk(arbol):
+        for nodo in _nodos(arbol):
             nombre = _nombre_de_variable_leida(nodo)
             if nombre is not None and nombre not in VARIABLES:
                 hallazgos.append({"module": ruta.stem, "variable": nombre})
@@ -2573,12 +2628,12 @@ def copias_de_vocabulario() -> list[dict]:
         # que es lo que el guard persigue. Marcarlo igual convertiría el único
         # camino correcto en un incumplimiento.
         declarados = {
-            id(a) for n in ast.walk(arbol)
+            id(a) for n in _nodos(arbol)
             if isinstance(n, ast.Call)
             and _nombre_llamado(n.func).lstrip("_") == "mapa"
             for a in n.args
         }
-        for nodo in ast.walk(arbol):
+        for nodo in _nodos(arbol):
             if id(nodo) in declarados:
                 continue
             literales = _literales_de_cadena(nodo)
@@ -2641,7 +2696,7 @@ def _es_ast_walk(nodo: ast.AST) -> ast.AST | None:
 
 def _bucles(arbol: ast.AST):
     """(iterable, cuerpo) de cada `for` y de cada generador de una comprensión."""
-    for nodo in ast.walk(arbol):
+    for nodo in _nodos(arbol):
         if isinstance(nodo, (ast.For, ast.AsyncFor)):
             yield nodo, nodo.iter, nodo.body
         elif isinstance(nodo, (ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp)):
@@ -2667,7 +2722,7 @@ def costes_que_crecen_en(arbol: ast.AST) -> list[dict]:
     los tests que cuentan trabajo de cada arreglo, no este detector.
     """
     hallazgos: list[dict] = []
-    funciones = [n for n in ast.walk(arbol)
+    funciones = [n for n in _nodos(arbol)
                  if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
     for funcion in funciones or [arbol]:
         de_proceso = {
@@ -2720,6 +2775,17 @@ def costes_que_crecen(rutas: list[Path] | None = None) -> list[dict]:
 
 
 def check(strict: bool = False) -> dict:
+    """Mide el registro entero; ver `_check` para qué mide."""
+    global _MEMO_DE_MEDICION
+    previo = _MEMO_DE_MEDICION
+    _MEMO_DE_MEDICION = {} if previo is None else previo
+    try:
+        return _check(strict)
+    finally:
+        _MEMO_DE_MEDICION = previo
+
+
+def _check(strict: bool = False) -> dict:
     base = set(_leer_baseline().get("crossings", []))
     actuales = cruces()
     claves = {_clave(c) for c in actuales}

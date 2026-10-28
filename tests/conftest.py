@@ -68,6 +68,28 @@ def pytest_sessionstart(session):
         session.config._sandbox_fixture_owned = False
 
 
+def pytest_collection_modifyitems(config, items):
+    """`VAULT_SHARD=i/n`: corre solo el trozo `i` de `n` (ver `reparto.py`).
+
+    Sin la variable no cambia nada. Con xdist, cada worker colecta y reparte
+    igual porque el reparto es determinista.
+    """
+    import reparto
+
+    shard = reparto.leer_shard(os.environ.get("VAULT_SHARD"))
+    if shard is None:
+        return
+    indice, total = shard
+    asignacion = reparto.repartir((reparto.modulo_de(i.nodeid) for i in items), total)
+    quedan, fuera = [], []
+    for item in items:
+        (quedan if asignacion[reparto.modulo_de(item.nodeid)] == indice - 1
+         else fuera).append(item)
+    if fuera:
+        config.hook.pytest_deselected(items=fuera)
+        items[:] = quedan
+
+
 def pytest_sessionfinish(session, exitstatus):
     if not _es_worker(session) and getattr(session.config, "_sandbox_fixture_owned", False):
         clean_sandbox()
