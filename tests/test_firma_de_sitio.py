@@ -20,6 +20,7 @@ Y la mitad que faltaba: `--freeze` se niega a congelar deuda sin precedente.
 
 import ast
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -213,35 +214,64 @@ def test_congelar_dos_veces_no_borra_la_lista_v1(tmp_path):
         assert datos["sites_v1_superseded"]["sites"] == sorted(original)
 
 
+def _copia_del_arbol(destino: Path) -> Path:
+    """Copia el codigo que miden los audits a `destino` y devuelve su `scripts/`.
+
+    Estos tests inyectan codigo en un modulo para ver como reaccionan los
+    audits. Hacerlo sobre `scripts/` real, aunque se restaure en un `finally`,
+    deja el fichero alterado durante segundos: con `-n auto` otro worker que
+    escanee el repo en ese rato ve un sitio que no existe y la suite falla sin
+    que nadie haya roto nada (visto en la CI, Windows/3.12, 2026-10-29:
+    `deuda AP-51 nueva: _sitio_de_prueba_ap51`). Los audits calculan su raiz
+    desde `__file__`, asi que una copia con la misma estructura se mide a si
+    misma y el repo real no se toca nunca.
+    """
+    ignorar = shutil.ignore_patterns("__pycache__", "node_modules", "*.pyc")
+    for sub in ("scripts", "vault", "cli", "mcp"):
+        if (REPO_ROOT / sub).is_dir():
+            shutil.copytree(REPO_ROOT / sub, destino / sub, ignore=ignorar)
+    return destino / "scripts"
+
+
 def test_los_audits_no_reportan_deuda_nueva_al_desplazar_codigo(tmp_path):
     """El caso completo, sobre el árbol real y no sobre un fragmento.
 
-    Se copia el módulo, se le inyectan diez líneas y se comprueba que ningún
-    audit reporta un solo sitio nuevo ni resuelto. Con el índice por línea esto
-    devolvía cuatro de cada.
+    Se copia el árbol, se le inyectan diez líneas a un módulo de la copia y se
+    comprueba que ningún audit reporta un solo sitio nuevo ni resuelto. Con el
+    índice por línea esto devolvía cuatro de cada.
     """
-    victima = SCRIPTS / "vault_code_sync.py"
-    original = victima.read_bytes()
-    try:
-        victima.write_bytes(b"# ruido\n" * 10 + original)
-        for modulo in (blame, contrato):
-            resultado = modulo.scan()
-            assert resultado["new_offenders"] == [], modulo.__name__
-            assert resultado["resolved_since_baseline"] == [], modulo.__name__
-    finally:
-        victima.write_bytes(original)
+    scripts = _copia_del_arbol(tmp_path)
+    victima = scripts / "vault_code_sync.py"
+    victima.write_bytes(b"# ruido\n" * 10 + victima.read_bytes())
+    codigo = (
+        "import json, sys\n"
+        "sys.path.insert(0, sys.argv[1])\n"
+        "import vault_blame_audit as b, vault_error_contract as c\n"
+        "print(json.dumps({m.__name__: {k: m.scan()[k] for k in "
+        "('new_offenders', 'resolved_since_baseline')} for m in (b, c)}))\n"
+    )
+    proc = subprocess.run(
+        [sys.executable, "-c", codigo, str(scripts)],
+        capture_output=True, text=True, encoding="utf-8", cwd=str(tmp_path),
+    )
+    assert proc.returncode == 0, proc.stderr[-800:]
+    medido = json.loads(proc.stdout.strip().splitlines()[-1])
+    for nombre, resultado in medido.items():
+        assert resultado["new_offenders"] == [], nombre
+        assert resultado["resolved_since_baseline"] == [], nombre
 
 
-def test_freeze_se_niega_a_congelar_deuda_sin_precedente():
+def test_freeze_se_niega_a_congelar_deuda_sin_precedente(tmp_path):
     """La operación más peligrosa del repo, con freno.
 
-    Se inyecta un handler que infringe AP-51 y se pide `--freeze` sin admitir
-    nuevos: la tool tiene que negarse con `DEBT_WOULD_GROW` y **no** tocar la
-    baseline. Se comprueba el hash del fichero antes y después.
+    Se inyecta un handler que infringe AP-51 en una **copia** del árbol y se
+    pide `--freeze` sin admitir nuevos: la tool tiene que negarse con
+    `DEBT_WOULD_GROW` y **no** tocar la baseline. Se comprueba el hash del
+    fichero antes y después.
     """
-    victima = SCRIPTS / "vault_code_sync.py"
-    baseline = SCRIPTS / "blame-baseline.json"
-    original = victima.read_bytes()
+    scripts = _copia_del_arbol(tmp_path)
+    victima = scripts / "vault_code_sync.py"
+    baseline = scripts / "blame-baseline.json"
     antes = baseline.read_bytes()
     inyectado = (
         "\n\ndef _sitio_de_prueba_ap51(p):\n"
@@ -250,16 +280,13 @@ def test_freeze_se_niega_a_congelar_deuda_sin_precedente():
         "    except Exception:\n"
         "        return []\n"
     ).encode("utf-8")
-    try:
-        victima.write_bytes(original + inyectado)
-        proc = subprocess.run(
-            [sys.executable, str(SCRIPTS / "vault_blame_audit.py"), "--freeze"],
-            capture_output=True, text=True, encoding="utf-8", cwd=str(REPO_ROOT),
-        )
-        envelope = json.loads(proc.stdout.strip().splitlines()[0])
-        assert envelope["ok"] is False
-        assert envelope["error_code"] == "DEBT_WOULD_GROW"
-        assert envelope["recovery"], "un error sin recuperación no le sirve a nadie"
-        assert baseline.read_bytes() == antes, "la baseline se tocó pese a negarse"
-    finally:
-        victima.write_bytes(original)
+    victima.write_bytes(victima.read_bytes() + inyectado)
+    proc = subprocess.run(
+        [sys.executable, str(scripts / "vault_blame_audit.py"), "--freeze"],
+        capture_output=True, text=True, encoding="utf-8", cwd=str(tmp_path),
+    )
+    envelope = json.loads(proc.stdout.strip().splitlines()[0])
+    assert envelope["ok"] is False
+    assert envelope["error_code"] == "DEBT_WOULD_GROW"
+    assert envelope["recovery"], "un error sin recuperación no le sirve a nadie"
+    assert baseline.read_bytes() == antes, "la baseline se tocó pese a negarse"
