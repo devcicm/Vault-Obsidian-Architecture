@@ -189,6 +189,10 @@ def naturaleza_por_tool() -> Dict[str, str]:
 # `check()` falla si el volcado y la derivación divergen.
 
 _RAIZ = Path(__file__).resolve().parent.parent
+#: El mapa derivado. Es constante de módulo y no una ruta calculada en cada uso para que un test
+#: que necesite estropearlo lo haga sobre una copia: dos workers que comparten el árbol veían la
+#: edición a mano del otro como `doc_drift` (el flake de `test_naturalezas`, py3.9/Windows).
+GOBIERNO_DOC = _RAIZ / rutas.DOCS / "GOBIERNO.md"
 FUERA_DE_LA_WHEEL = _RAIZ / "empaquetado" / "fuera-de-la-wheel.json"
 PAQUETE_DE_LA_WHEEL = "vault_toolkit._impl"
 _EXCEPCIONES_DE_IMPORT = {"ImportError", "ModuleNotFoundError"}
@@ -453,7 +457,7 @@ def check(strict: bool = False) -> Dict[str, Any]:
     #     doc. El contenido se genera en memoria y se compara contra el
     #     disco: una verificación no escribe ni un fichero transitorio
     #     (v41.24 — generar != escribir != verificar).
-    destino_doc = _RAIZ / "docs" / "GOBIERNO.md"
+    destino_doc = GOBIERNO_DOC
     doc_drift = None
     if not destino_doc.is_file():
         doc_drift = f"{cita_repo(rutas.DOCS, 'GOBIERNO.md')} no existe: regenera con --doc"
@@ -762,7 +766,7 @@ def escribir_doc(ruta: "Path | None" = None) -> Dict[str, Any]:
     texto = documento()
     from vault_io import atomic_write_text
 
-    destino = ruta or (_RAIZ / "docs" / "GOBIERNO.md")
+    destino = ruta or GOBIERNO_DOC
     atomic_write_text(destino, texto, encoding="utf-8", sanitize=False)
     try:
         escrito = str(destino.relative_to(_RAIZ)).replace("\\", "/")

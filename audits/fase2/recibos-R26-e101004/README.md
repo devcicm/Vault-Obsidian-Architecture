@@ -20,7 +20,7 @@ CI sobre e101004: run 40843103452, `success`, 27 jobs (ver limites). `release_au
 
 - Suite en Windows con `-n 4`; con `-n auto` el worker `gw1` se cae en `tests/test_noop_audit.py` (causa sin determinar, sin bisecar mas).
 - La CI de e101004 tuvo un fallo en el primer intento: `Validate Vault Spec (windows-latest, 3.9, 2)` en `tests/test_naturalezas.py`. El diff de ese commit
-  solo tocaba `.archify/`; el job se relanzo y paso (run 40843103452, conclusion success). Es un flaky no diagnosticado, no una excepcion aceptada.
+  solo tocaba `.archify/`; el job se relanzo y paso (run 40843103452, conclusion success). Causa hallada despues: dos tests de `tests/test_gobierno_derivado.py` escribian en el `docs/GOBIERNO.md` real y otro worker de xdist lo leia a medias; los tests ahora trabajan sobre una copia. No era una excepcion aceptada.
 - El colector consulto la CI con `gh` decodificado en cp1252 y devolvio `MATRIZ_INCOMPLETA` por los nombres de job con acento
   (`estÃ¡ndar`). Es un defecto del colector en Windows, corregido despues (UTF-8 explicito en `_gh_json`); con la correccion `estado_ci` da `success`.
   `colector.json` conserva el valor erroneo tal como salio.

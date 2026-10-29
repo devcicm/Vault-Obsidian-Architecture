@@ -14,17 +14,17 @@ from vault_gate import PUERTAS  # noqa: E402
 from vault_norms_catalog import NORM_CATALOG  # noqa: E402
 
 
-def test_gobierno_es_derivado_y_estable():
+def test_gobierno_es_derivado_y_estable(tmp_path):
     """Regenerar dos veces produce lo mismo: el doc no tiene estado propio.
 
     Y el fichero del disco tiene que coincidir con la regeneración — si no,
     alguien lo editó a mano y `check()` debería estar en rojo.
     """
-    with_temp = RAIZ / "docs" / "GOBIERNO.md"
-    r1 = vs.escribir_doc(ruta=RAIZ / "docs" / "GOBIERNO.md")
+    with_temp = tmp_path / "GOBIERNO.md"
+    r1 = vs.escribir_doc(ruta=with_temp)
     assert r1["ok"], r1
     antes = with_temp.read_text(encoding="utf-8")
-    vs.escribir_doc(ruta=RAIZ / "docs" / "GOBIERNO.md")
+    vs.escribir_doc(ruta=with_temp)
     assert with_temp.read_text(encoding="utf-8") == antes
 
 
@@ -51,11 +51,14 @@ def test_gobierno_distingue_ley_de_mantenimiento():
     assert f"{len(PUERTAS)} puertas" in doc
 
 
-def test_check_ve_la_deriva_si_el_doc_se_edita_a_mano():
+def test_check_ve_la_deriva_si_el_doc_se_edita_a_mano(tmp_path, monkeypatch):
     """AP-47: el doc derivado que se aparta de los registros tiene que poner
     la puerta en rojo — un mapa desfasado miente mejor que ningún mapa."""
-    doc = RAIZ / "docs" / "GOBIERNO.md"
-    original = doc.read_text(encoding="utf-8")
+    # Sobre una copia: editar el real hacía que otro worker viera `doc_drift` en su `check()`.
+    doc = tmp_path / "GOBIERNO.md"
+    original = (RAIZ / "docs" / "GOBIERNO.md").read_text(encoding="utf-8")
+    doc.write_text(original, encoding="utf-8")
+    monkeypatch.setattr(vs, "GOBIERNO_DOC", doc)
     try:
         doc.write_text(original + "\n<!-- editado a mano -->\n", encoding="utf-8")
         env = vs.check()

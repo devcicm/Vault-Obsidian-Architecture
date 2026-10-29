@@ -77,7 +77,7 @@ verification:
     note: >-
       run sobre e101004 en main. Un job (windows-latest, py3.9, shard 2,
       tests/test_naturalezas.py) fallo en el primer intento y paso al relanzarlo;
-      flaky sin diagnosticar, declarado en el README de los recibos.
+      causa hallada despues: dos tests de tests/test_gobierno_derivado.py escribian en el docs/GOBIERNO.md real y otro worker de xdist lo leia a medias; corregido apuntando esos tests a una copia (GOBIERNO_DOC en vault_servicio).
 
 governance:
   qg_statuses:
