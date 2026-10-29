@@ -1,0 +1,122 @@
+{
+  "ok": true,
+  "detalle": null,
+  "estado": {
+    "sha_objetivo": "533e424632214d4a8b3a6f9ce2c5589f3e6da4af",
+    "gates": {
+      "QG-00": "PASS",
+      "QG-01": "PASS",
+      "QG-02": "PASS",
+      "QG-03": "PASS",
+      "QG-04": "PASS",
+      "QG-05": "PASS",
+      "QG-06": "PASS",
+      "QG-07": "PASS"
+    },
+    "evidencias": {
+      "QG-00": {
+        "sha": "533e424632214d4a8b3a6f9ce2c5589f3e6da4af",
+        "estado": "ejecutado",
+        "detalle": null
+      },
+      "QG-01": {
+        "sha": "533e424632214d4a8b3a6f9ce2c5589f3e6da4af",
+        "estado": "ejecutado",
+        "detalle": null
+      },
+      "QG-02": {
+        "sha": "533e424632214d4a8b3a6f9ce2c5589f3e6da4af",
+        "estado": "ejecutado",
+        "detalle": null
+      },
+      "QG-03": {
+        "sha": "533e424632214d4a8b3a6f9ce2c5589f3e6da4af",
+        "estado": "ejecutado",
+        "detalle": null
+      },
+      "QG-04": {
+        "sha": "533e424632214d4a8b3a6f9ce2c5589f3e6da4af",
+        "estado": "ejecutado",
+        "detalle": null
+      },
+      "QG-05": {
+        "sha": "533e424632214d4a8b3a6f9ce2c5589f3e6da4af",
+        "estado": "ejecutado",
+        "detalle": null
+      },
+      "QG-06": {
+        "sha": "533e424632214d4a8b3a6f9ce2c5589f3e6da4af",
+        "estado": "ejecutado",
+        "detalle": null
+      }
+    },
+    "control_ejecucion": {
+      "completo": true,
+      "degradados": [],
+      "no_verificados": [],
+      "violaciones": 0,
+      "checks": [
+        {
+          "control": "AP-40",
+          "estado": "ejecutado",
+          "detalle": null,
+          "hallazgos": 0
+        },
+        {
+          "control": "AP-42",
+          "estado": "ejecutado",
+          "detalle": null,
+          "hallazgos": 0
+        },
+        {
+          "control": "AP-43",
+          "estado": "ejecutado",
+          "detalle": null,
+          "hallazgos": 0
+        }
+      ]
+    },
+    "ci": {
+      "conclusion": "sin_run",
+      "detalle": "no hay run para ese SHA"
+    },
+    "arbol": {
+      "ok": true,
+      "detalle": null
+    }
+  },
+  "suite": {
+    "estado": "ejecutado",
+    "detalle": null,
+    "tests": 6501,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 16,
+    "sha256": "8cb3bce334a14e5229cc977e7b874afb3953d77b2ebcebc31a0ad4efc9743e25"
+  },
+  "ci": {
+    "conclusion": "sin_run",
+    "detalle": "no hay run para ese SHA"
+  },
+  "politica": {
+    "sha_objetivo": "533e424632214d4a8b3a6f9ce2c5589f3e6da4af",
+    "gates": {
+      "QG-00": "PASS",
+      "QG-01": "PASS",
+      "QG-02": "PASS",
+      "QG-03": "PASS",
+      "QG-04": "PASS",
+      "QG-05": "PASS",
+      "QG-06": "PASS",
+      "QG-07": "BLOCKED"
+    },
+    "motivos": {
+      "QG-07": [
+        "CI_PENDING: status=sin dato conclusion=sin_run no hay run para ese SHA"
+      ]
+    },
+    "qg07": "BLOCKED",
+    "liberable": false,
+    "resumen": "QG-07 BLOCKED: CI_PENDING: status=sin dato conclusion=sin_run no hay run para ese SHA"
+  }
+}

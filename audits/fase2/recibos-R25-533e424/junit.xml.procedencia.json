@@ -1,0 +1,9 @@
+{
+  "sha": "533e424632214d4a8b3a6f9ce2c5589f3e6da4af",
+  "exit": 0,
+  "junit_sha256": "8cb3bce334a14e5229cc977e7b874afb3953d77b2ebcebc31a0ad4efc9743e25",
+  "comando": "python -m pytest tests/ -q -n 4 -p no:cacheprovider --tb=short --junitxml=junit.xml",
+  "inicio": "2026-10-29T04:02:56Z",
+  "fin": "2026-10-29T04:42:01Z",
+  "maquina": "sesion Claude Code (Windows 10, Python 3.14, 16 CPUs)"
+}

@@ -1,0 +1,41 @@
+{
+  "gate": "QG-03",
+  "target_sha": "533e424632214d4a8b3a6f9ce2c5589f3e6da4af",
+  "verificador": "colector_qg",
+  "command": "python audits/fase2/colector_qg.py --sha 533e424632214d4a8b3a6f9ce2c5589f3e6da4af --ejecutar",
+  "exit_code": 0,
+  "status": "PASS",
+  "started_at": "2026-10-29T05:33:05Z",
+  "finished_at": "2026-10-29T05:33:05Z",
+  "run_id": "local-QG-03-533e424",
+  "artifact": "<recibos>\\QG-03.subchecks.json",
+  "artifact_sha256": "cfbc2bfb1ae853eea55d07ba133a03e9a7a110f0ba549c19735fdb16db25db77",
+  "checks": {
+    "suite_junit": "ejecutado",
+    "recorrido_e2e": "ejecutado"
+  },
+  "subchecks": {
+    "suite_junit": {
+      "subcheck": "suite_junit",
+      "verificador": "pytest_junit",
+      "estado": "ejecutado",
+      "detalle": null,
+      "exit_code": null,
+      "artifact": "<recibos>/..\\junit.xml",
+      "artifact_sha256": "8cb3bce334a14e5229cc977e7b874afb3953d77b2ebcebc31a0ad4efc9743e25",
+      "started_at": "2026-10-29T05:33:05Z",
+      "finished_at": "2026-10-29T05:33:05Z"
+    },
+    "recorrido_e2e": {
+      "subcheck": "recorrido_e2e",
+      "verificador": "recorrido_e2e",
+      "estado": "ejecutado",
+      "detalle": null,
+      "exit_code": null,
+      "artifact": "<recibos>/..\\e2e.json",
+      "artifact_sha256": "093d6df53faf364df35554942b4555c5ac2ea1f0ddd301c67c72f566d240ee6f",
+      "started_at": "2026-10-29T05:33:05Z",
+      "finished_at": "2026-10-29T05:33:05Z"
+    }
+  }
+}

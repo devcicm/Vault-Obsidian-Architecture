@@ -1,0 +1,22 @@
+{
+  "ok": true,
+  "detalle": null,
+  "datos": {
+    "veredicto": {
+      "estado": "PASS",
+      "motivos": [],
+      "residuos_declarados": [],
+      "nota": "los residuos listados quedan declarados con su decision formal y su custodia; el PASS no es silencioso y el manifiesto de release debe llevarlos como riesgo aceptado"
+    },
+    "runtime": {
+      "total_violations": 0,
+      "completo": true,
+      "violations": []
+    },
+    "sandbox": {
+      "total_violations": 0,
+      "completo": true,
+      "violations": []
+    }
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "construccion": {
+    "subcheck": "construccion",
+    "verificador": "construccion",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": 0,
+    "artifact": "<recibos>\\QG-06.construccion.salida.txt",
+    "artifact_sha256": "9f17d40c028ee7d1b340699afe7b1df2c85145d025fc395b80737dc5985f1954",
+    "started_at": "2026-10-29T05:33:47Z",
+    "finished_at": "2026-10-29T05:34:06Z"
+  },
+  "wheel_contenido": {
+    "subcheck": "wheel_contenido",
+    "verificador": "wheel_contenido",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": null,
+    "artifact": "<recibos>\\QG-06.wheel_contenido.json",
+    "artifact_sha256": "448cc3ea7ea1bb72d923067f00a49044ed7da850a4f745ea59386ad23400debc",
+    "started_at": "2026-10-29T05:34:06Z",
+    "finished_at": "2026-10-29T05:34:06Z",
+    "datos": {
+      "artefactos": [
+        {
+          "wheel": "vault_obsidian_architecture-41.25-py3-none-any.whl",
+          "sha256": "2e572f9813e6916d7783237577dc89fce46b7b0082bd9e82ad7e9c37debc4c7e",
+          "ficheros": 711,
+          "material_ajeno": []
+        }
+      ]
+    }
+  },
+  "instalacion_limpia": {
+    "subcheck": "instalacion_limpia",
+    "verificador": "recorrido_e2e",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": null,
+    "artifact": "<recibos>/..\\e2e.json",
+    "artifact_sha256": "093d6df53faf364df35554942b4555c5ac2ea1f0ddd301c67c72f566d240ee6f",
+    "started_at": "2026-10-29T05:34:06Z",
+    "finished_at": "2026-10-29T05:34:06Z"
+  }
+}

@@ -1,0 +1,15 @@
+subcheck=paridad_cli_mcp
+verificador=paridad_cli_mcp
+argv=<python> <repo>\audits\fase2\paridad_cli_mcp.py --venv <sandbox-e2e>/venv --runtime <tmp>/tmp.5sKECrWbAr/runtime-paridad
+exit_code=0
+--- stdout ---
+medido READ_MISSING: cli={'ok': False, 'path': '07_Knowledge/nota-paridad.md'} mcp={'ok': False, 'path': '07_Knowledge/nota-paridad.md'} efectos cli=[] mcp=[]
+medido SEARCH_HITS: cli={'ok': True, 'total': 0} mcp={'ok': True, 'total': 0} efectos cli=[] mcp=[]
+medido LIST_FOLDER: cli={'ok': True} mcp={'ok': True} efectos cli=[] mcp=[]
+medido WRITE_CREATE: cli={'ok': True, 'created': True, 'path': '07_Knowledge/nota-de-paridad.md'} mcp={'ok': True, 'created': True, 'path': '07_Knowledge/nota-de-paridad.md'} efectos cli=['00_System/.change-log.json', '00_System/change-log.md', '07_Knowledge/nota-de-paridad.md', '07_Knowledge/index.md', '19_Audits/vocabulary/tag-ledger.json', '99_Index/graph.json', '99_Index/search-index.json'] mcp=['00_System/.change-log.json', '00_System/change-log.md', '07_Knowledge/nota-de-paridad.md', '07_Knowledge/index.md', '19_Audits/vocabulary/tag-ledger.json', '99_Index/graph.json', '99_Index/search-index.json']
+medido WRITE_UPDATE: cli={'ok': True, 'updated': 6, 'path': '07_Knowledge/nota-de-paridad.md'} mcp={'ok': True, 'updated': 6, 'path': '07_Knowledge/nota-de-paridad.md'} efectos cli=['.history/07_Knowledge__nota-de-paridad-<TS>.md', '00_System/.change-log.json', '00_System/change-log.md', '07_Knowledge/nota-de-paridad.md', '99_Index/search-index.json'] mcp=['.history/07_Knowledge__nota-de-paridad-<TS>.md', '00_System/.change-log.json', '00_System/change-log.md', '07_Knowledge/nota-de-paridad.md', '99_Index/search-index.json']
+
+paridad: 5/5 | AP-40 exit 0 | tools MCP 97 | veredicto: CONFORME
+log: audits/fase2/logs/L3-paridad-cli-mcp.txt | matriz: audits/fase2/matriz-paridad-cli-mcp.md
+
+--- stderr ---

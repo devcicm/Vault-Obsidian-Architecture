@@ -61,7 +61,10 @@ def test_los_campos_de_identidad_son_hex_puro():
     _validar_hex(ver["suite"]["junit_digest"], SHA256_RE, "junit_digest")
     _validar_hex(ver["gates"]["manifest_digest"], SHA256_RE, "gates.manifest_digest")
     _validar_hex(ver["e2e"]["manifest_digest"], SHA256_RE, "e2e.manifest_digest")
-    _validar_hex(ver["ci"]["run_sha"], SHA1_RE, "ci.run_sha")
+    # sin run de CI (NOT_RUN) no hay SHA que validar; con run, es hex puro.
+    # La autorizacion exige ademas run_sha == product_sha (test de governance).
+    if ver["ci"].get("status") != "NOT_RUN":
+        _validar_hex(ver["ci"]["run_sha"], SHA1_RE, "ci.run_sha")
 
 
 def test_el_product_sha_existe_en_git_y_coincide_con_el_arbol():

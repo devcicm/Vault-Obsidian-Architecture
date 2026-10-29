@@ -1,0 +1,21 @@
+subcheck=operaciones_destructivas
+verificador=operaciones_destructivas
+argv=<python> -m pytest tests/test_vault_init_clean.py -q
+exit_code=0
+--- stdout ---
+============================= test session starts =============================
+platform win32 -- Python 3.14.3, pytest-9.0.2, pluggy-1.6.0
+rootdir: <repo>
+configfile: pyproject.toml
+plugins: anyio-4.12.1, asyncio-1.3.0, cov-7.0.0, timeout-2.4.0, xdist-3.8.0, typeguard-4.5.1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+timeout: 300.0s
+timeout method: thread
+timeout func_only: False
+collected 23 items
+
+tests\test_vault_init_clean.py .........s.............                   [100%]
+
+======================== 22 passed, 1 skipped in 1.52s ========================
+
+--- stderr ---
