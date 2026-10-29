@@ -31,6 +31,16 @@ from vault_norms import NORM_CATALOG  # noqa: E402
 #: la vez agotan disco o memoria— y esta escrita como hipotesis, no como
 #: causa. Mientras no se cierre, el verde canonico de esta suite se mide
 #: en serie o con `-n 4`; el `-n auto` puede caer en este unico punto.
+#:
+#: Medido el 2026-10-28 (16 CPUs, 32 GB): la suite completa con `-n auto`
+#: cae 2 de 2 veces, siempre `gw1`, siempre este test, con 6465 pasados y
+#: sin volcado de fallo nativo (`PYTHONFAULTHANDLER=1`): algo externo
+#: termina el proceso. Descartado: el modulo solo con `-n auto` (21 tests,
+#: pasa), los 37 modulos `slow` con `-n auto` (453, pasan), este modulo
+#: junto a los cuatro que matan procesos con `taskkill`/`terminate`
+#: (70, pasan), el disco (el sandbox pesa 2,2 MB, 43 GB libres) y la
+#: memoria en reposo (16 GB libres). Hace falta la mezcla de la suite
+#: entera; el siguiente paso es bisecar por mitades, no suponer causa.
 pytestmark = pytest.mark.slow
 
 
