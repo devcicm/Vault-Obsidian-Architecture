@@ -5,11 +5,11 @@
 # `candidato_v41_23`. Motivo: R25 no tenia CI y despues se regeneraron los mapas
 # `.archify/` y se saneo la documentacion; un PASS de un SHA no se traslada.
 #
-# ESTADO: CANDIDATE, NO autorizado. QG-00..07 PASS (recibos-R26-e101004/); la CI de
+# ESTADO: AUTORIZADO por el propietario (acta 2026-10-29). QG-00..07 PASS (recibos-R26-e101004/); la CI de
 # este SHA (run 40843103452) termino en success tras relanzar un job flaky
 # (windows-latest, py3.9, shard 2, tests/test_naturalezas.py), declarado en el README
-# de los recibos. `release_authorized` solo lo firma el propietario con un acta
-# nueva (la DEC-06 era de v41.23).
+# de los recibos. `release_authorized` lo firmo el propietario con el acta
+# audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-10-29.md (la DEC-06 era de v41.23).
 #
 # CONVENCION ANTI-CIRCULARIDAD: el SHA del commit que fija este manifiesto se
 # lee de git en tiempo de validacion; la relacion con product_sha es de
@@ -97,12 +97,14 @@ governance:
   qa_verdict_ref: PENDIENTE
   qa_verdict_ref_note: >-
     sin dictamen QA independiente sobre este SHA.
-  owner_decision_ref: PENDIENTE
+  owner_decision_ref: audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-10-29.md
   owner_decision_ref_note: >-
-    la DEC-06 (audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-10-28.md) fue
-    para v41.23 y no se extiende a v41.25. Falta un acta nueva del propietario.
-  release_authorized: false
-  publication_status: CANDIDATE
+    acta nueva del propietario (2026-10-29) para v41.25; la DEC-06 de v41.23 no
+    se extendio. Autoriza condicionada a las condiciones de QA, medidas alli. El
+    tag v41.25 va sobre e3cc185, descendiente del candidato, con su propia CI en
+    success (run 40896422816).
+  release_authorized: true
+  publication_status: AUTHORIZED
 
 candidato_v41_25_r25:
   # Manifiesto completo de la ronda R25 (533e424), conservado tal cual. Lo supersede R26

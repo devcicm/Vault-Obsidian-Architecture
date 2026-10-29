@@ -342,3 +342,5 @@ fail-closed (QG-00/QG-01/QG-02 BLOCKED; `liberable: false`).
   planificación.
 
 **Decisión:** **aprobar con condiciones** (las cinco del acta) · Fecha: 2026-10-28 · Acta: [ACTA-DECISIONES-PROPIETARIO-2026-10-28.md](ACTA-DECISIONES-PROPIETARIO-2026-10-28.md)#DEC-06
+
+**Decisión (v41.25):** **autorizar condicionada a las condiciones de QA** · Fecha: 2026-10-29 · Acta: [ACTA-DECISIONES-PROPIETARIO-2026-10-29.md](ACTA-DECISIONES-PROPIETARIO-2026-10-29.md)#dec-06-v4125
