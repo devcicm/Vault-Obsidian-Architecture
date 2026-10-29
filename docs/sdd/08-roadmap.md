@@ -32,8 +32,8 @@ Total de hallazgos documentados en auditoría 2026-06-28: 85+
 | H6 | MEDIUM | Missing common commands (vault_delete, vault_rename, etc.) |
 | J1 | HIGH | No plugin/extension system |
 | J3 | HIGH | NORM_CATALOG not externally extendable |
-| K3 | HIGH | Two slugify implementations (25+ duplicates) |
-| K4 | HIGH | utcnow duplicated in 15+ scripts |
+| K3 | HIGH | ~~Two slugify implementations (25+ duplicates)~~ -- SALDADA en v41.25 (CN-05: 15 sombras borradas, un dueño) |
+| K4 | HIGH | ~~utcnow duplicated in 15+ scripts~~ -- SALDADA en v41.25 (CN-05: 9 sombras borradas, un dueño) |
 
 ---
 

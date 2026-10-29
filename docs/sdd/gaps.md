@@ -42,8 +42,8 @@ Los 7 fixes críticos fueron aplicados en esta sesión:
 | H2 | `--dry-run` solo en 12 de 94 scripts | Medio |
 | J1 | No plugin/extension system | Alto |
 | J3 | NORM_CATALOG no es extensible externamente | Alto |
-| K3 | 25+ implementaciones duplicadas de `slugify()` | Medio |
-| K4 | `utcnow()` duplicado en 15+ scripts | Bajo |
+| K3 | ~~25+ implementaciones duplicadas de `slugify()`~~ — **saldada en v41.25** (CN-05: 15 sombras borradas, un dueño) | Medio |
+| K4 | ~~`utcnow()` duplicado en 15+ scripts~~ — **saldada en v41.25** (CN-05: 9 sombras borradas, un dueño) | Bajo |
 
 #### Medios — backlog
 
