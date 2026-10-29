@@ -49,6 +49,7 @@ from typing import Any, Dict, List
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+from vault.kernel import rutas
 from vault_errors import emit_error, wrap_main
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -398,12 +399,49 @@ def _correr(puerta: Dict[str, Any], timeout: float = LIMITE_POR_PUERTA) -> Dict[
     return salida
 
 
+#: Cómo materializa la CI el sandbox antes de las puertas (vault-ci.yml, paso
+#: «Bootstrap del sandbox»). Es el mismo comando, no una segunda receta.
+BOOTSTRAP_SANDBOX = [sys.executable, str(rutas.ruta_repo(rutas.TESTS) / "sandbox_fixture.py"),
+                     "--bootstrap"]
+
+
+def preparar_entorno() -> Dict[str, Any]:
+    """Materializa el sandbox si faltan sus artefactos derivados (gitignored).
+
+    En un clon recién hecho `vault-sandbox/00_System/*` no existe, y `doc_staleness`
+    y `noop` salían rojos sin que hubiera defecto (v41.25, H-1). Las puertas siguen
+    midiendo sin escribir: esto corre antes, solo si la comprobación falla, y su
+    resultado viaja en el envelope para que no sea un efecto escondido.
+    """
+    medida = subprocess.run(
+        [sys.executable, str(SCRIPTS_DIR / "vault_doc_staleness.py"), "--check", "--strict"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if medida.returncode == 0:
+        return {"necesaria": False, "ok": True}
+    proceso = subprocess.run(
+        BOOTSTRAP_SANDBOX, capture_output=True, text=True, encoding="utf-8",
+        errors="replace", cwd=str(REPO_ROOT),
+    )
+    resultado: Dict[str, Any] = {
+        "necesaria": True,
+        "ok": proceso.returncode == 0,
+        "comando": "python tests/sandbox_fixture.py --bootstrap",
+        "returncode": proceso.returncode,
+    }
+    if proceso.returncode:
+        resultado["stderr"] = (proceso.stderr or proceso.stdout)[-500:]
+    return resultado
+
+
 def correr_todas(strict: bool = False) -> Dict[str, Any]:
+    preparacion = preparar_entorno()
     resultados = [_correr(p) for p in PUERTAS]
     fallidas = [r["gate"] for r in resultados if not r["ok"]]
     return {
         "ok": not fallidas,
         "tool": "vault_gate",
+        "preparacion": preparacion,
         "gates_total": len(PUERTAS),
         "passing": len(resultados) - len(fallidas),
         "failing": len(fallidas),

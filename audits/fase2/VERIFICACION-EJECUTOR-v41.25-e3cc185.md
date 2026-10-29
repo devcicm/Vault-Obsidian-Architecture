@@ -53,3 +53,13 @@ causa pero no el camino documentado.
 NO FALSE PASS · NO ES DICTAMEN QA INDEPENDIENTE.
 
 Estado: VERIFICACIÓN DEL EJECUTOR CON UN HALLAZGO ABIERTO (H-1).
+
+## Seguimiento de H-1 (2026-10-29)
+
+`vault_gate.preparar_entorno()` ejecuta `tests/sandbox_fixture.py --bootstrap` (el
+mismo paso que la CI) cuando `doc_staleness` no ve los derivados, y publica el
+resultado en `preparacion` del envelope. Comprobado en un worktree limpio:
+bootstrap ejecutado, y `noop` y `doc_staleness` en verde. Cuatro tests lo cubren
+y `AGENTS.md` lo menciona. Esto vive en un commit posterior; el tag `v41.25` no
+cambia y sigue sin esta mejora. Estado de H-1: `CORREGIDO EN main (post-tag)`,
+puertas 27/27 tras el arreglo. Suite completa (`-n 4`): 6495 pasados y 1 fallo propio (un literal `"tests"` en `vault_gate.py`, migrado a `rutas.TESTS`); tras ese cambio solo se re-corrieron los tests dirigidos y las puertas, no la suite entera.

@@ -281,3 +281,52 @@ def test_editar_a_mano_las_razones_las_pone_en_rojo(tmp_path, monkeypatch):
 def test_el_registro_publicado_esta_al_dia():
     r = vault_gate.check_doc()
     assert r["reasons_drift"] is None, "python scripts/vault_gate.py --fix-doc"
+
+
+# ── Preparación del entorno (v41.25 H-1) ──────────────────────────────────
+
+
+class _Proc:
+    def __init__(self, rc, out=""):
+        self.returncode, self.stdout, self.stderr = rc, out, out
+
+
+def test_preparar_entorno_no_hace_nada_si_los_derivados_existen(monkeypatch):
+    llamadas = []
+
+    def falso(argv, **kw):
+        llamadas.append(argv)
+        return _Proc(0)
+
+    monkeypatch.setattr(vault_gate.subprocess, "run", falso)
+    r = vault_gate.preparar_entorno()
+    assert r == {"necesaria": False, "ok": True}
+    assert len(llamadas) == 1  # solo la medida, ningún bootstrap
+
+
+def test_preparar_entorno_materializa_el_sandbox_cuando_faltan(monkeypatch):
+    llamadas = []
+
+    def falso(argv, **kw):
+        llamadas.append(argv)
+        return _Proc(1 if len(llamadas) == 1 else 0)
+
+    monkeypatch.setattr(vault_gate.subprocess, "run", falso)
+    r = vault_gate.preparar_entorno()
+    assert r["necesaria"] and r["ok"]
+    assert llamadas[1] == vault_gate.BOOTSTRAP_SANDBOX
+    assert "--bootstrap" in llamadas[1]
+
+
+def test_preparar_entorno_informa_si_el_bootstrap_falla(monkeypatch):
+    estados = iter([_Proc(1), _Proc(2, "boom")])
+    monkeypatch.setattr(vault_gate.subprocess, "run", lambda *a, **k: next(estados))
+    r = vault_gate.preparar_entorno()
+    assert r["necesaria"] and not r["ok"] and r["returncode"] == 2
+    assert "boom" in r["stderr"]
+
+
+def test_el_envelope_de_las_puertas_publica_la_preparacion(monkeypatch):
+    monkeypatch.setattr(vault_gate, "preparar_entorno", lambda: {"necesaria": False, "ok": True})
+    monkeypatch.setattr(vault_gate, "PUERTAS", [])
+    assert vault_gate.correr_todas()["preparacion"] == {"necesaria": False, "ok": True}
