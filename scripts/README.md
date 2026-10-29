@@ -2294,12 +2294,22 @@ v39.0 por once, y esa entrada arrastra además un commit de fijado que corrigió
 propio preámbulo del changelog autoriza: la no-derogación prohíbe reescribir la
 historia, no prohíbe que diga la verdad.
 
-Comprueba cuatro cosas: que el hash exista y sea un commit, que la fecha coincida con
+Comprueba cinco cosas: que el hash exista y sea un commit, que la fecha coincida con
 la de **autoría** del commit (`%as`, no `%cs` — un rebase reescribe la segunda y
 estrenaría divergencias falsas), que ninguna versión ya cerrada siga publicando
-`git: pending`, y que el orden sea decreciente. El guard del `pending` existía suelto
-en la suite y solo cubría lo primero; además avisaba tarde, porque la excepción se
-deriva de `CURRENT_VERSION` y no salta hasta la versión siguiente.
+`git: pending`, que el orden sea decreciente, y que el registro de aprobaciones
+ligue cada versión que nombra al commit que el changelog selló. El guard del
+`pending` existía suelto en la suite y solo cubría lo primero; además avisaba tarde,
+porque la excepción se deriva de `CURRENT_VERSION` y no salta hasta la versión
+siguiente.
+
+`--list` publica autoría y aprobación **por separado** (v41.24): `commit_author` es
+la procedencia que git ya tenía (`%an`), y la aprobación viene del registro canónico
+de aprobaciones — `approval_status` (`acreditada` / `declarada` / `denegada` /
+`desconocida`), `approval_evidence` y `approved_by`. Un commit sin aprobación acreditada
+no aparece aprobado, aunque lo firmara el titular: autoría y aprobación son conceptos
+distintos, y la ausencia de evidencia se declara (`desconocida`), no se rellena con la
+figura del autor. Nadie acredita versiones históricas retrospectivamente.
 
 `--fijar-hash` resuelve el huevo y la gallina que originó todo esto: la entrada debe
 citar el hash del commit que la contiene, y ese hash no existe hasta que el commit
@@ -2313,7 +2323,7 @@ guard.
 
 ```bash
 python vault_changelog_check.py --check --strict     # la puerta `changelog`
-python vault_changelog_check.py --list               # entradas + fecha real del commit
+python vault_changelog_check.py --list               # entradas + autoría y aprobación por separado
 python vault_changelog_check.py --fijar-hash --dry-run
 python vault_changelog_check.py --freeze             # solo para lo que no se pueda corregir
 ```

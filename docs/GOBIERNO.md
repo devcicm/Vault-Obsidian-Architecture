@@ -1,6 +1,6 @@
 # Gobierno del estándar
 
-_Derivado de los registros canónicos. Se regenera con `python scripts/vault_servicio.py --doc` y no se edita a mano: lo escrito aquí se pierde (AP-47)._
+_Derivado de los registros canónicos. Se regenera con `python scripts/vault_servicio.py --doc` y no se edita a mano: lo escrito aquí se pierde (AP-47). El cuándo lo dice el commit que lo regeneró, no este texto._
 
 ## El servicio y sus tres capacidades
 
@@ -101,7 +101,7 @@ El catálogo marca `exposed_via_mcp` y el servidor MCP lo respeta: las 29 tools 
 
 ## Quién responde
 
-- **Por el estándar**: el mantenedor que declara el banner del manifiesto — **CARLOS IVAN CM**. No hay segunda instancia: cada release pasa por una invocación explícita de `vault_release --nueva-version`, y el autor del commit lo deja registrado en git — la misma fuente que selló el hash del changelog.
+- **Por el estándar**: el mantenedor que declara el banner del manifiesto — **CARLOS IVAN CM**. No hay segunda instancia: cada release pasa por una invocación explícita de `vault_release --nueva-version`, y quien la invoca queda como autoría en git. La aprobación de cada versión es otro dato — autoría y aprobación son conceptos distintos: la acredita el registro canónico de aprobaciones cuando existe evidencia para ella, y nunca se infiere de quién hizo el commit.
 - **Por cada decisión de arquitectura**: el `Responsable:` declarado en cada ADR de `docs/adr/` — CARLOS IVAN CM. AP-64 aplicado al propio repo (v41.21): un ADR sin responsable no es una decisión, es una intención.
 - **Por cada duda de norma**: el catálogo (`vault_norms --show <código>`) y el `porque.md` del paquete, que declara qué quedó fuera y por qué.
 - **Por cada promesa al consumidor**: el ejercedor que declara `vault_produccion`; por cada propiedad afirmada, la puerta o el instrumento de `AFIRMADAS`.

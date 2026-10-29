@@ -450,16 +450,14 @@ def check(strict: bool = False) -> Dict[str, Any]:
     # 12. El mapa derivado de la gobernanza (v41.21) refleja los registros:
     #     si alguien edita `docs/GOBIERNO.md` a mano o los registros cambian
     #     sin regenerar, el mapa dice lo que ya no es — AP-47 con formato de
-    #     doc. Se regenera en memoria y se compara contra el disco.
+    #     doc. El contenido se genera en memoria y se compara contra el
+    #     disco: una verificación no escribe ni un fichero transitorio
+    #     (v41.24 — generar != escribir != verificar).
     destino_doc = _RAIZ / "docs" / "GOBIERNO.md"
-    generado = escribir_doc(ruta=destino_doc.with_suffix(".regenerado.md"))
-    regenerado = destino_doc.with_suffix(".regenerado.md").read_text(
-        encoding="utf-8")
-    destino_doc.with_suffix(".regenerado.md").unlink(missing_ok=True)
     doc_drift = None
     if not destino_doc.is_file():
         doc_drift = f"{cita_repo(rutas.DOCS, 'GOBIERNO.md')} no existe: regenera con --doc"
-    elif destino_doc.read_text(encoding="utf-8") != regenerado:
+    elif destino_doc.read_text(encoding="utf-8") != documento():
         doc_drift = (
             f"{cita_repo(rutas.DOCS, 'GOBIERNO.md')} difiere de lo que los registros producirían: "
             "regenera con --doc. Lo escrito a mano se pierde — el registro es "
@@ -533,8 +531,17 @@ def listar() -> Dict[str, Any]:
     }
 
 
-def escribir_doc(ruta: "Path | None" = None) -> Dict[str, Any]:
-    """Deriva `docs/GOBIERNO.md` desde los registros. No se edita a mano.
+def documento() -> str:
+    """El texto completo de `docs/GOBIERNO.md`, sin escribir nada.
+
+    GENERAR != ESCRIBIR != VERIFICAR (v41.24): esta función es la única
+    fuente del contenido — `escribir_doc()` persiste lo que ella produce y
+    `check()` compara contra lo que ella produce, sin tocar el disco. Sin
+    fecha de generación: el doc es función de los registros canónicos y de
+    nada más, así que el mismo registro produce los mismos bytes cualquier
+    día — el cuándo lo dice el commit que regeneró el fichero. Es el criterio
+    que `vault_metricas.documento()` ya declaró para `docs/METRICAS.md`
+    («Sin estados: dependen del día»).
 
     La pregunta que contesta —qué es una norma, qué es ley del estándar y qué
     es regla del propio repo, y quién vigila qué— estaba repartida entre el
@@ -599,7 +606,8 @@ def escribir_doc(ruta: "Path | None" = None) -> Dict[str, Any]:
         "",
         "_Derivado de los registros canónicos. "
         "Se regenera con `python scripts/vault_servicio.py --doc` y no se "
-        "edita a mano: lo escrito aquí se pierde (AP-47)._",
+        "edita a mano: lo escrito aquí se pierde (AP-47). El cuándo lo dice "
+        "el commit que lo regeneró, no este texto._",
         "",
         "## El servicio y sus tres capacidades",
         "",
@@ -716,8 +724,11 @@ def escribir_doc(ruta: "Path | None" = None) -> Dict[str, Any]:
         "- **Por el estándar**: el mantenedor que declara el banner del "
         f"manifiesto — **{propietario}**. No hay segunda instancia: cada "
         "release pasa por una invocación explícita de `vault_release "
-        "--nueva-version`, y el autor del commit lo deja registrado en git "
-        "— la misma fuente que selló el hash del changelog.",
+        "--nueva-version`, y quien la invoca queda como autoría en git. La "
+        "aprobación de cada versión es otro dato — autoría y aprobación son "
+        "conceptos distintos: la acredita el registro canónico de "
+        "aprobaciones cuando existe evidencia para ella, y nunca se infiere "
+        "de quién hizo el commit.",
         "- **Por cada decisión de arquitectura**: el `Responsable:` "
         f"declarado en cada ADR de `docs/adr/` — {' · '.join(sorted(set(responsables_adr)))}. "
         "AP-64 aplicado al propio repo (v41.21): un ADR sin responsable no "
@@ -736,14 +747,29 @@ def escribir_doc(ruta: "Path | None" = None) -> Dict[str, Any]:
         "[docs/PUERTAS.md](PUERTAS.md), derivado de `vault_gate.PUERTAS`.",
         "",
     ]
+    return "\n".join(lineas)
+
+
+def escribir_doc(ruta: "Path | None" = None) -> Dict[str, Any]:
+    """Persiste `documento()`. Desde v41.24 es SOLO la mitad escritora.
+
+    Hasta v41.23 aquí vivía también la generación, y `check()` la llamaba
+    apuntada a un `.regenerado.md` dentro del repo para leerlo y borrarlo:
+    la verificación con efectos secundarios. Ahora solo escribe — por
+    escrito atómico, y con una ruta fuera del repo responde igual, porque
+    el relativo del envelope es cortesía, no una exigencia del caller.
+    """
+    texto = documento()
+    from vault_io import atomic_write_text
 
     destino = ruta or (_RAIZ / "docs" / "GOBIERNO.md")
-    destino.parent.mkdir(parents=True, exist_ok=True)
-    texto = "\n".join(lineas)
-    destino.write_text(texto, encoding="utf-8")
+    atomic_write_text(destino, texto, encoding="utf-8", sanitize=False)
+    try:
+        escrito = str(destino.relative_to(_RAIZ)).replace("\\", "/")
+    except ValueError:
+        escrito = str(destino).replace("\\", "/")
     return {"ok": True, "tool": "vault_servicio", "action": "doc",
-            "written": str(destino.relative_to(_RAIZ)).replace("\\", "/"),
-            "bytes": len(texto.encode("utf-8"))}
+            "written": escrito, "bytes": len(texto.encode("utf-8"))}
 
 
 def main() -> int:

@@ -436,3 +436,184 @@ def test_una_version_sin_entrada_en_el_changelog_sigue_siendo_error(tmp_path, mo
     env = cc.fijar_hash(dry_run=True)
     assert env["ok"] is False, env
     assert env.get("error_code") == "NOTHING_TO_FIX", env
+
+
+# ── Autoría != aprobación (H3 de la auditoría) ───────────────────────────────
+#
+# La fase v41.22 publicaba `aprobado_por` derivado del **autor** del commit
+# (`git show -s --format=%an`). Eso presentaba identidad de autoría como si
+# fuera evidencia de aprobación: un agente que genera un commit con la
+# identidad del titular —aquí comparten acto local— aparecía como «aprobado»
+# sin que nadie acreditara nada. Los cuatro conceptos se separan: AUTORÍA
+# (git, `%an`) es procedencia; RESPONSABILIDAD (banner del manifiesto, ADR);
+# APROBACIÓN (el registro canónico de aprobaciones, con binding
+# versión↔commit↔alcance y evidencia); PUBLICACIÓN (el ritual de release).
+# El registro vive en la raíz de docs del repo; la tool no lo escribe: solo
+# lo lee, lo valida y clasifica. Sin registro, la aprobación es desconocida;
+# con registro sin evidencia verificable, declarada; con negación explícita,
+# denegada; con evidencia que se verifica, acreditada. Nada se infiere de
+# quién hizo el commit.
+
+
+def test_la_autoria_no_aparece_como_aprobacion():
+    """Test A (y B a la vez): commit sin aprobación → autor identificado,
+    aprobación no acreditada. El manifiesto real lo deja bien a la vista:
+    el autor de todas las entradas es el titular del estándar, y aun así la
+    aprobación de ninguna de ellas puede presumirse de ahí.
+    """
+    filas = C.listar()["entries"]
+    con_hash = [f for f in filas if f["hash"] not in C.NO_HASH]
+    assert len(con_hash) > 25, "el barrido no está mirando (AP-44)"
+    for f in con_hash:
+        assert f.get("commit_author"), (
+            "la autoría debe seguir disponible: es procedencia legítima"
+        )
+        assert f["approval_status"] in ("desconocida", "denegada", "declarada"), (
+            f"{f['version']} afirma aprobación sin registro que lo sostenga"
+        )
+        assert f["approved_by"] is None or f["approval_status"] == "acreditada"
+        assert f["aprobado_por"] == f["approved_by"], (
+            f"la clave compatible diverge de la nueva en {f['version']}"
+        )
+
+
+def test_una_aprobacion_con_evidencia_verificada_es_acreditada(monkeypatch):
+    """Test C: registro con evidencia válida → aprobación verificable.
+
+    La firma se simula porque el git de este repo no lleva ninguna firmada;
+    el clasificador es lo que la tool posee.
+    """
+    registro = [{
+        "version": "v9.1", "commit": "abc0000", "aprobante": "Mantenedor",
+        "alcance": "release v9.1",
+        "evidencia": [{"tipo": "firma_git", "firmante": "Mantenedor"}],
+    }]
+    monkeypatch.setattr(C, "_leer_aprobaciones", lambda: registro)
+    monkeypatch.setattr(C, "_firma_de_hash", lambda h: (True, "Mantenedor"))
+    assert C._estado_de_aprobacion("v9.1", "abc0000", registro) == "acreditada"
+    assert C._problemas_de_aprobaciones(
+        [{"version": "v9.1", "hash": "abc0000"}], registro) == []
+
+
+def test_una_aprobacion_ligada_a_otro_commit_se_rechaza(monkeypatch):
+    """Test D: la aprobación de otro commit no es reutilizable. El binding
+    versión↔commit es parte del contrato: un registro cuyo commit no
+    coincide con el de la entrada es un problema de la puerta, no un dato.
+    """
+    _fabricar(monkeypatch, """## Changelog
+
+### v9.0 — 2026-01-01 `git: abc0000`
+""")
+    registro = [{
+        "version": "v9.0", "commit": "fff1111", "aprobante": "Mantenedor",
+        "alcance": "release v9.0", "evidencia": [],
+    }]
+    monkeypatch.setattr(C, "_leer_aprobaciones", lambda: registro)
+    problemas = C._problemas_de_aprobaciones(C.entradas(), registro)
+    assert any(p["problema"] == "aprobacion_desviada" for p in problemas), problemas
+
+    r = C.comprobar(version_en_curso="v9.0")
+    assert not r["ok"]
+    assert any(p["problema"] == "aprobacion_desviada" for p in r["problems"]), (
+        r["problems"]
+    )
+
+
+def test_evidencia_no_verificada_no_acredita_y_no_confunde_con_negacion(monkeypatch):
+    """Test E: evidencia ausente, inválida o no verificable → «no acreditada»,
+    y la ausencia no se presenta como denegación (ni al revés).
+
+    Con la firma que no se verifica (hoy no hay ninguna firmada), un
+    registro con evidencia declarada queda `declarada`; sin registro,
+    `desconocida`; con `no_aprobada` explícita, `denegada`. Y una firma que
+    no es del aprobante no acredita al aprobante.
+    """
+    registro = [{
+        "version": "v9.1", "commit": "abc0000", "aprobante": "Mantenedor",
+        "alcance": "release v9.1",
+        "evidencia": [{"tipo": "firma_git", "firmante": "Mantenedor"}],
+    }]
+    monkeypatch.setattr(C, "_leer_aprobaciones", lambda: registro)
+
+    monkeypatch.setattr(C, "_firma_de_hash", lambda h: (False, None))
+    assert C._estado_de_aprobacion("v9.1", "abc0000", registro) == "declarada"
+
+    # la firma es de otro: acredita a otro, no al aprobante
+    monkeypatch.setattr(C, "_firma_de_hash", lambda h: (True, "Alguien Más"))
+    assert C._estado_de_aprobacion("v9.1", "abc0000", registro) == "declarada"
+
+    sin_evidencia = [dict(registro[0], evidencia=[])]
+    assert C._estado_de_aprobacion("v9.1", "abc0000", sin_evidencia) == "declarada"
+    assert C._estado_de_aprobacion("v9.1", "abc0000", []) == "desconocida"
+    assert C._estado_de_aprobacion("v9.9", "abc0000", registro) == "desconocida"
+
+    denegada = [dict(registro[0], evidencia=[], no_aprobada=True)]
+    assert C._estado_de_aprobacion("v9.1", "abc0000", denegada) == "denegada"
+
+
+def test_el_contrato_de_listar_mantiene_aprobado_por(monkeypatch):
+    """Test F: los consumidores de la clave `aprobado_por` siguen recibiendo
+    la clave — ahora con la semántica del aprobante acreditado (o None), no
+    con la del autor del commit.
+    """
+    primera = next(
+        (e for e in C.entradas() if e["hash"] not in C.NO_HASH), None)
+    if primera is None or not C.hay_git():
+        pytest.skip("sin entradas con hash o sin repositorio git")
+    registro = [{
+        "version": primera["version"], "commit": primera["hash"],
+        "aprobante": "Mantenedor", "alcance": f"release {primera['version']}",
+        "evidencia": [{"tipo": "firma_git", "firmante": "Mantenedor"}],
+    }]
+    monkeypatch.setattr(C, "_leer_aprobaciones", lambda: registro)
+    monkeypatch.setattr(C, "_firma_de_hash", lambda h: (True, "Mantenedor"))
+
+    filas = {f["version"]: f for f in C.listar()["entries"]}
+    acreditada = filas[primera["version"]]
+    assert acreditada["approval_status"] == "acreditada"
+    assert acreditada["approved_by"] == "Mantenedor"
+    assert acreditada["aprobado_por"] == "Mantenedor"
+    assert acreditada["commit_author"], "la autoría no se pierde por acreditada"
+
+    # el resto del manifiesto no hereda la aprobación de la única acreditada
+    otras = [f for v, f in filas.items() if v != primera["version"]]
+    assert sum(1 for f in otras if f["approved_by"] is None) > 25, (
+        "una acreditación se filtró a versiones que no la tienen (no es "
+        "reutilizable ni propagable)"
+    )
+
+
+def test_el_registro_canonico_de_aprobaciones_es_valido():
+    """El fichero del repo, tal como viaja hoy: JSON legible, esquema y
+    registros completos. Un registro incompleto no es una opinión vacía, es
+    evidencia corrupta.
+    """
+    aprobaciones = C._leer_aprobaciones()
+    assert isinstance(aprobaciones, list)
+    for a in aprobaciones:
+        for campo in ("version", "commit", "aprobante", "alcance"):
+            assert a.get(campo), f"registro incompleto en el registro: {a}"
+
+
+def test_el_registro_corrupto_para_toda_la_gobernanza(monkeypatch):
+    """AP-51 aplicado al registro nuevo: un JSON roto no se lee como vacío.
+
+    «No hay aprobaciones» y «no sé qué hay aprobado» son cosas distintas, y
+    la segunda está parada en la puerta ilegible (`registro_ilegible`), no
+    en el verde que pasaría por silencio.
+    """
+    def _corrupto():
+        raise ValueError("el registro de aprobaciones no se puede leer: roto")
+
+    monkeypatch.setattr(C, "_leer_aprobaciones", _corrupto)
+
+    r = C.comprobar(version_en_curso=None)
+    assert not r["ok"]
+    ilegibles = [p for p in r["problems"]
+                 if p["problema"] == "registro_ilegible"]
+    assert ilegibles, r["problems"]
+
+    listado = C.listar()
+    assert listado["ok"] is False
+    assert any(p["problema"] == "registro_ilegible"
+               for p in listado.get("problems", [])), listado.get("problems")
