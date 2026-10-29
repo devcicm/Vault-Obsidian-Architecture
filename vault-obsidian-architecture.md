@@ -8344,6 +8344,8 @@ v41.25 cierra la consolidación del código del toolkit. Nació de medir el repo
 
 Verificación de release: wheel 41.25 construida y probada con los gates de producto (clean_install y memory_e2e PASS; MCP por stdio con 97 tools), smoke 127/127, barrido del toolkit con 127 tools y 0 defectos, puertas 27/27 y suite 6465 en verde con `-n 4`.
 
+**Contraste contra material ajeno (regla 7): no medido en este release.** El recibo vigente (`docs/contrastes/ultimo-contraste.json`, vault «Agente», 2026-10-23) es de v41.20: el plazo de 60 días lo da por vigente, pero es anterior a todo lo que cambia aquí —la unificación de `parse_frontmatter`, los índices del grupo de código en `vault_io`, la migración de 159 rutas y las 53 regex movidas—, justo la clase de código que ya ha fallado de forma distinta contra material de otra persona. `vault-sandbox/` lo genera este repo y no sustituye al contraste. Queda declarado para que sea revisable y se salda con `vault_foreign_check --root <vault ajeno> --registrar-contraste`.
+
 ### v41.23 — 2026-10-23 `git: 6ddf04e`
 
 v41.23 la saco la reinstalacion limpia probada a ciegas contra la wheel, como manda la guia de instalacion: proyecto consumidor, vault init, primera escritura, MCP por stdio. El ciclo salio con un defecto real y tres falsos positivos del propio piloto que la e2e fue afinando.
