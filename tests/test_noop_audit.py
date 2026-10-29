@@ -41,6 +41,15 @@ from vault_norms import NORM_CATALOG  # noqa: E402
 #: (70, pasan), el disco (el sandbox pesa 2,2 MB, 43 GB libres) y la
 #: memoria en reposo (16 GB libres). Hace falta la mezcla de la suite
 #: entera; el siguiente paso es bisecar por mitades, no suponer causa.
+#:
+#: Bisecado el 2026-10-29, en serie: los 511 modulos restantes partidos en
+#: dos mitades (255 y 256), cada una con este modulo y `-n auto`. Las dos
+#: pasan limpias (2757 y 3749 pasados, 0 workers caidos). El crash no vive
+#: en ninguna mitad: no lo causa un modulo concreto, solo aparece con la
+#: suite entera. Queda como causa probable la carga acumulada de 16 workers
+#: durante ~40 min (hipotesis, sin medir); por eso el verde canonico sigue
+#: siendo en serie o con `-n 4`, y las mitades con `-n auto` valen como
+#: carril intermedio.
 pytestmark = pytest.mark.slow
 
 
