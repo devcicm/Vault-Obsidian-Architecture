@@ -1,76 +1,77 @@
 {
- "schemaVersion": 1,
- "ok": true,
- "command": "finalize",
- "status": "pass",
- "type": "workflow",
- "quality": "showcase",
- "specification": {
-  "path": ".\\.archify\\candidata-onboarding.json",
-  "sha256": "bdcd0be7cc175c7a20d0ba33c0277b243ce38e5771af65f732d2ebd87f77233c",
-  "bytes": 8964
- },
- "artifact": {
-  "path": ".\\.archify\\mapa-onboarding.html",
-  "sha256": "5c37178b5b5bc7b6a7a4fc2d05898acc4edb2e2ee64bce9c83672c132bac5c24",
-  "bytes": 831249
- },
- "gates": {
-  "validate": "pass",
-  "deliver": "pass",
-  "check": "pass",
-  "browser-check": "pass"
- },
- "diagnostics": [],
- "diagnosticSummary": {
-  "total": 0,
-  "shown": 0,
-  "truncated": false
- },
- "evidence": {
-  "receipt": ".\\.archify\\mapa-onboarding.finalize.json",
-  "summaryReceipt": ".\\.archify\\mapa-onboarding.finalize-summary.json",
-  "browserCheckReceipt": ".\\.archify\\mapa-onboarding.browser-check.json"
- },
- "update": {
-  "status": "update_available",
-  "installedVersion": "3.1.0",
-  "availableVersion": "3.2.0",
-  "releaseNotes": "http.",
-  "severity": "normal",
-  "checkedAt": "2026-10-23T02:03:35.481Z",
-  "source": "cache",
-  "noticeRequired": true,
-  "noticeText": "Archify update: 3.1.0 → 3.2.0. A previous check at 2026-10-23T02:03:35.481Z found a newer release. Release notes: http.",
-  "eventKey": "archify@sha256:70e210265c59f24dcbdf2a502ff671104b5454e7ee7d3554aecd86bad32384f5"
- },
- "visualReview": "not-requested",
- "durationMs": 4069,
- "visualReviewRecommendation": {
-  "action": "inspect-route-readability",
-  "signals": {
-   "routesOverSuggestedStretch": 1
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "workflow",
+  "quality": "showcase",
+  "specification": {
+    "path": ".\\.archify\\candidata-onboarding.json",
+    "sha256": "76e94c96f73126aa76fe3f2fa9243f41370371a94e36ab255ce350cc11f6ea77",
+    "bytes": 10177
   },
-  "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
-  "affectedRoutes": {
-   "crossings": [],
-   "detours": [
-    {
-     "relationship": {
-      "id": "e01",
-      "from": "f0",
-      "to": "f2",
-      "label": "sin vault",
-      "collectionIndex": 0,
-      "artifactIndex": 1
-     },
-     "bends": 2,
-     "stretch": 1.366
-    }
-   ],
-   "truncated": false
+  "artifact": {
+    "path": ".\\.archify\\mapa-onboarding.html",
+    "sha256": "b24fe7ae2900b82f1e1ea625a9e8b8cb76af760a9e188f1bd52bd3f43db81b3c",
+    "bytes": 833320
   },
-  "repair": "Advisory only: this mode places or routes these relationships itself. Report them; do not remove relationships or meaning to reduce crossings."
- },
- "nota_recibos": "Las rutas de la máquina que aparecen en los recibos de archify se sanean a forma relativa antes de versionarse: un recibo publicado no declara el nombre ni el disco de quien lo generó (test_publicacion_limpia). El sha256 del HTML y de las capturas no cambia: esos ficheros no se tocan."
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": ".\\.archify\\mapa-onboarding.finalize.json",
+    "summaryReceipt": ".\\.archify\\mapa-onboarding.finalize-summary.json",
+    "browserCheckReceipt": ".\\.archify\\mapa-onboarding.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-29T08:41:02.574Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 4927,
+  "browserCheck": {
+    "requested": true,
+    "ran": true
+  },
+  "visualReviewRecommendation": {
+    "action": "inspect-route-readability",
+    "signals": {
+      "routesOverSuggestedStretch": 1
+    },
+    "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
+    "affectedRoutes": {
+      "crossings": [],
+      "detours": [
+        {
+          "relationship": {
+            "id": "e01",
+            "from": "f0",
+            "to": "f2",
+            "label": "sin vault",
+            "collectionIndex": 0,
+            "artifactIndex": 1
+          },
+          "bends": 2,
+          "stretch": 1.366
+        }
+      ],
+      "truncated": false
+    },
+    "repair": "Advisory only: this mode places or routes these relationships itself. Report them; do not remove relationships or meaning to reduce crossings."
+  }
 }

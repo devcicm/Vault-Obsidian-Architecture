@@ -1,389 +1,389 @@
 {
- "schema_version": 1,
- "diagram_type": "workflow",
- "meta": {
-  "title": "Modo agéntico de onboarding",
-  "subtitle": "Poblar un vault desde cero · criterio: un vault onboardeado no necesita sanación (AP-44 sobre el resultado)",
-  "output": ".archify/mapa-onboarding.html",
-  "animation": "trace",
-  "visual_preset": "signal-flow",
-  "quality_profile": "showcase",
-  "locale": "es",
-  "repository": {
-   "url": "http.",
-   "provider": "github",
-   "revision": "6e460b8336625148eababd06c10700c13c2a35fd"
-  }
- },
- "lanes": [
-  {
-   "id": "poblar",
-   "label": "El orden del modo"
-  },
-  {
-   "id": "criterios",
-   "label": "Decide la persona · si ya hay vault",
-   "variant": "exception"
-  }
- ],
- "phases": [
-  {
-   "id": "leer",
-   "label": "Leer y preparar",
-   "fromCol": 0,
-   "toCol": 1
-  },
-  {
-   "id": "poblar",
-   "label": "Poblar",
-   "fromCol": 2,
-   "toCol": 3,
-   "variant": "emphasis"
-  },
-  {
-   "id": "cerrar",
-   "label": "Verificar y cerrar (AP-44)",
-   "fromCol": 4,
-   "toCol": 5,
-   "variant": "dashed"
-  }
- ],
- "mainPath": [
-  "f0",
-  "f2",
-  "f3",
-  "f4",
-  "f5",
-  "f6"
- ],
- "nodes": [
-  {
-   "id": "f0",
-   "lane": "poblar",
-   "col": 0,
-   "type": "external",
-   "width": 50,
-   "label": "gate",
-   "sublabel": "¿hay vault?",
-   "sources": [
-    {
-     "path": "docs/MODO-AGENTICO-ONBOARDING.md",
-     "line": 61,
-     "label": "fase 0: confirmar que el proyecto no tiene vault"
+  "schema_version": 1,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Modo agéntico de onboarding",
+    "subtitle": "Poblar un vault desde cero · criterio: un vault onboardeado no necesita sanación (AP-44 sobre el resultado)",
+    "output": ".archify/mapa-onboarding.html",
+    "animation": "trace",
+    "visual_preset": "signal-flow",
+    "quality_profile": "showcase",
+    "locale": "es",
+    "repository": {
+      "url": "https://github.com/devcicm/Vault-Obsidian-Architecture",
+      "provider": "github",
+      "revision": "e749720ad9957dc5553340c61fb907e9c3a40a03"
     }
-   ]
   },
-  {
-   "id": "sanar",
-   "lane": "criterios",
-   "col": 0,
-   "type": "external",
-   "width": 48,
-   "label": "sanar",
-   "sublabel": "vault ajeno",
-   "sources": [
+  "lanes": [
     {
-     "path": "docs/MODO-AGENTICO-SANACION.md",
-     "line": 3,
-     "end_line": 4,
-     "label": "contraparte: sanar un vault preexistente"
-    }
-   ]
-  },
-  {
-   "id": "f2",
-   "lane": "poblar",
-   "col": 1,
-   "type": "database",
-   "width": 50,
-   "label": "init",
-   "sublabel": "vacío",
-   "sources": [
-    {
-     "path": "docs/MODO-AGENTICO-ONBOARDING.md",
-     "line": 62,
-     "end_line": 63,
-     "label": "fases 1-2: solo lectura + vault vacío"
-    }
-   ]
-  },
-  {
-   "id": "f3",
-   "lane": "poblar",
-   "col": 2,
-   "type": "backend",
-   "width": 48,
-   "label": "migrar",
-   "sublabel": "humano",
-   "sources": [
-    {
-     "path": "docs/MODO-AGENTICO-ONBOARDING.md",
-     "line": 66,
-     "label": "fase 3"
+      "id": "poblar",
+      "label": "El orden del modo"
     },
     {
-     "path": "docs/MODO-AGENTICO-ONBOARDING.md",
-     "line": 70,
-     "end_line": 74,
-     "label": "migrar antes que onboard, a propósito"
+      "id": "criterios",
+      "label": "Decide la persona · si ya hay vault",
+      "variant": "exception"
     }
-   ]
-  },
-  {
-   "id": "f4",
-   "lane": "poblar",
-   "col": 3,
-   "type": "backend",
-   "width": 42,
-   "label": "git",
-   "sublabel": "stub",
-   "sources": [
+  ],
+  "phases": [
     {
-     "path": "docs/MODO-AGENTICO-ONBOARDING.md",
-     "line": 67,
-     "label": "fase 4: vault_onboard"
+      "id": "leer",
+      "label": "Leer y preparar",
+      "fromCol": 0,
+      "toCol": 1
     },
     {
-     "path": "scripts/vault_onboard.py",
-     "line": 46,
-     "label": "toda nota por el write path canónico"
-    }
-   ]
-  },
-  {
-   "id": "f5",
-   "lane": "poblar",
-   "col": 4,
-   "type": "security",
-   "width": 42,
-   "label": "AP-44",
-   "sublabel": "el vault",
-   "sources": [
-    {
-     "path": "tests/test_vault_onboard.py",
-     "line": 141,
-     "end_line": 150,
-     "label": "el audit corre sobre el vault"
-    }
-   ]
-  },
-  {
-   "id": "f6",
-   "lane": "poblar",
-   "col": 5,
-   "type": "external",
-   "width": 48,
-   "label": "cerrar",
-   "sublabel": "fase 6-7",
-   "sources": [
-    {
-     "path": "docs/MODO-AGENTICO-ONBOARDING.md",
-     "line": 67,
-     "label": "fase 6: escribir lo omitido a mano"
+      "id": "poblar",
+      "label": "Poblar",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
     },
     {
-     "path": "docs/MODO-AGENTICO-ONBOARDING.md",
-     "line": 68,
-     "label": "fase 7: indices, grafo y vocabulario"
+      "id": "cerrar",
+      "label": "Verificar y cerrar (AP-44)",
+      "fromCol": 4,
+      "toCol": 5,
+      "variant": "dashed"
     }
-   ]
-  },
-  {
-   "id": "d1",
-   "lane": "criterios",
-   "col": 1,
-   "type": "backend",
-   "width": 48,
-   "label": "ADR",
-   "sublabel": "sessions",
-   "sources": [
+  ],
+  "mainPath": [
+    "f0",
+    "f2",
+    "f3",
+    "f4",
+    "f5",
+    "f6"
+  ],
+  "nodes": [
     {
-     "path": "docs/MODO-AGENTICO-ONBOARDING.md",
-     "line": 88,
-     "end_line": 99,
-     "label": "un commit no es un ADR"
-    }
-   ]
-  },
-  {
-   "id": "d2",
-   "lane": "criterios",
-   "col": 2,
-   "type": "backend",
-   "width": 48,
-   "label": "TODO",
-   "sublabel": "inventario",
-   "sources": [
+      "id": "f0",
+      "lane": "poblar",
+      "col": 0,
+      "type": "external",
+      "width": 50,
+      "label": "gate",
+      "sublabel": "¿hay vault?",
+      "sources": [
+        {
+          "path": "docs/MODO-AGENTICO-ONBOARDING.md",
+          "line": 61,
+          "label": "fase 0: confirmar que el proyecto no tiene vault"
+        }
+      ]
+    },
     {
-     "path": "docs/MODO-AGENTICO-ONBOARDING.md",
-     "line": 101,
-     "end_line": 108,
-     "label": "una nota por TODO produce decenas de ecos"
-    }
-   ]
-  },
-  {
-   "id": "d3",
-   "lane": "criterios",
-   "col": 3,
-   "type": "backend",
-   "width": 48,
-   "label": "stubs",
-   "sublabel": "referir",
-   "sources": [
+      "id": "sanar",
+      "lane": "criterios",
+      "col": 0,
+      "type": "external",
+      "width": 48,
+      "label": "sanar",
+      "sublabel": "vault ajeno",
+      "sources": [
+        {
+          "path": "docs/MODO-AGENTICO-SANACION.md",
+          "line": 3,
+          "end_line": 4,
+          "label": "contraparte: sanar un vault preexistente"
+        }
+      ]
+    },
     {
-     "path": "docs/MODO-AGENTICO-ONBOARDING.md",
-     "line": 110,
-     "end_line": 121,
-     "label": "un módulo no merece nota por existir"
-    }
-   ]
-  },
-  {
-   "id": "d4",
-   "lane": "criterios",
-   "col": 4,
-   "type": "backend",
-   "width": 48,
-   "label": "tope",
-   "sublabel": "por tags",
-   "sources": [
+      "id": "f2",
+      "lane": "poblar",
+      "col": 1,
+      "type": "database",
+      "width": 50,
+      "label": "init",
+      "sublabel": "vacío",
+      "sources": [
+        {
+          "path": "docs/MODO-AGENTICO-ONBOARDING.md",
+          "line": 62,
+          "end_line": 63,
+          "label": "fases 1-2: solo lectura + vault vacío"
+        }
+      ]
+    },
     {
-     "path": "docs/MODO-AGENTICO-ONBOARDING.md",
-     "line": 123,
-     "end_line": 132,
-     "label": "tope = parámetro, no hecho"
-    }
-   ]
-  },
-  {
-   "id": "d5",
-   "lane": "criterios",
-   "col": 5,
-   "type": "security",
-   "width": 48,
-   "label": "AP-45",
-   "sublabel": "eventos",
-   "sources": [
+      "id": "f3",
+      "lane": "poblar",
+      "col": 2,
+      "type": "backend",
+      "width": 48,
+      "label": "migrar",
+      "sublabel": "humano",
+      "sources": [
+        {
+          "path": "docs/MODO-AGENTICO-ONBOARDING.md",
+          "line": 66,
+          "label": "fase 3"
+        },
+        {
+          "path": "docs/MODO-AGENTICO-ONBOARDING.md",
+          "line": 70,
+          "end_line": 74,
+          "label": "migrar antes que onboard, a propósito"
+        }
+      ]
+    },
     {
-     "path": "docs/MODO-AGENTICO-ONBOARDING.md",
-     "line": 134,
-     "end_line": 146,
-     "label": "eventos vacías: gana AP-45"
+      "id": "f4",
+      "lane": "poblar",
+      "col": 3,
+      "type": "backend",
+      "width": 42,
+      "label": "git",
+      "sublabel": "stub",
+      "sources": [
+        {
+          "path": "docs/MODO-AGENTICO-ONBOARDING.md",
+          "line": 67,
+          "label": "fase 4: vault_onboard"
+        },
+        {
+          "path": "scripts/vault_onboard.py",
+          "line": 46,
+          "label": "toda nota por el write path canónico"
+        }
+      ]
+    },
+    {
+      "id": "f5",
+      "lane": "poblar",
+      "col": 4,
+      "type": "security",
+      "width": 42,
+      "label": "AP-44",
+      "sublabel": "el vault",
+      "sources": [
+        {
+          "path": "tests/test_vault_onboard.py",
+          "line": 141,
+          "end_line": 150,
+          "label": "el audit corre sobre el vault"
+        }
+      ]
+    },
+    {
+      "id": "f6",
+      "lane": "poblar",
+      "col": 5,
+      "type": "external",
+      "width": 48,
+      "label": "cerrar",
+      "sublabel": "fase 6-7",
+      "sources": [
+        {
+          "path": "docs/MODO-AGENTICO-ONBOARDING.md",
+          "line": 67,
+          "label": "fase 6: escribir lo omitido a mano"
+        },
+        {
+          "path": "docs/MODO-AGENTICO-ONBOARDING.md",
+          "line": 68,
+          "label": "fase 7: indices, grafo y vocabulario"
+        }
+      ]
+    },
+    {
+      "id": "d1",
+      "lane": "criterios",
+      "col": 1,
+      "type": "backend",
+      "width": 48,
+      "label": "ADR",
+      "sublabel": "sessions",
+      "sources": [
+        {
+          "path": "docs/MODO-AGENTICO-ONBOARDING.md",
+          "line": 88,
+          "end_line": 99,
+          "label": "un commit no es un ADR"
+        }
+      ]
+    },
+    {
+      "id": "d2",
+      "lane": "criterios",
+      "col": 2,
+      "type": "backend",
+      "width": 48,
+      "label": "TODO",
+      "sublabel": "inventario",
+      "sources": [
+        {
+          "path": "docs/MODO-AGENTICO-ONBOARDING.md",
+          "line": 101,
+          "end_line": 108,
+          "label": "una nota por TODO produce decenas de ecos"
+        }
+      ]
+    },
+    {
+      "id": "d3",
+      "lane": "criterios",
+      "col": 3,
+      "type": "backend",
+      "width": 48,
+      "label": "stubs",
+      "sublabel": "referir",
+      "sources": [
+        {
+          "path": "docs/MODO-AGENTICO-ONBOARDING.md",
+          "line": 110,
+          "end_line": 121,
+          "label": "un módulo no merece nota por existir"
+        }
+      ]
+    },
+    {
+      "id": "d4",
+      "lane": "criterios",
+      "col": 4,
+      "type": "backend",
+      "width": 48,
+      "label": "tope",
+      "sublabel": "por tags",
+      "sources": [
+        {
+          "path": "docs/MODO-AGENTICO-ONBOARDING.md",
+          "line": 123,
+          "end_line": 132,
+          "label": "tope = parámetro, no hecho"
+        }
+      ]
+    },
+    {
+      "id": "d5",
+      "lane": "criterios",
+      "col": 5,
+      "type": "security",
+      "width": 48,
+      "label": "AP-45",
+      "sublabel": "eventos",
+      "sources": [
+        {
+          "path": "docs/MODO-AGENTICO-ONBOARDING.md",
+          "line": 134,
+          "end_line": 146,
+          "label": "eventos vacías: gana AP-45"
+        }
+      ]
     }
-   ]
-  }
- ],
- "edges": [
-  {
-   "id": "e01",
-   "from": "f0",
-   "to": "f2",
-   "label": "sin vault",
-   "role": "main",
-   "route": "drop"
-  },
-  {
-   "id": "e02",
-   "from": "f0",
-   "to": "sanar",
-   "label": "con vault",
-   "role": "error",
-   "fromSide": "bottom",
-   "toSide": "top"
-  },
-  {
-   "id": "e03",
-   "from": "f2",
-   "to": "f3",
-   "label": "version objetivo",
-   "role": "main",
-   "labelAt": [
-    261,
-    159
-   ]
-  },
-  {
-   "id": "e04",
-   "from": "f3",
-   "to": "f4",
-   "label": "alrededor del humano",
-   "role": "main",
-   "labelAt": [
-    367,
-    174
-   ]
-  },
-  {
-   "id": "e05",
-   "from": "f4",
-   "to": "f5",
-   "label": "esqueleto verificable",
-   "role": "main",
-   "labelAt": [
-    465,
-    156
-   ]
-  },
-  {
-   "id": "e06",
-   "from": "f5",
-   "to": "f6",
-   "label": "deuda real vs medida",
-   "role": "branch",
-   "labelAt": [
-    561,
-    174
-   ]
-  }
- ],
- "cards": [
-  {
-   "dot": "emerald",
-   "title": "Las tres reglas del modo",
-   "items": [
-    "Nada se inventa (AP-45): sin evidencia localizable no se escribe — se declara omitido (skipped_no_evidence)",
-    "El proyecto de origen solo se lee; las notas deducidas nacen stub/draft, nunca implemented",
-    "El orden importa: migrar docs antes que onboard deja el contenido humano como base (MODO-AGENTICO-ONBOARDING.md:70)"
-   ]
-  },
-  {
-   "dot": "cyan",
-   "title": "Criterio de aceptación (uno solo)",
-   "items": [
-    "Un vault recién onboardeado no necesita sanación",
-    "Probado sobre el resultado con git real: normas + audit + mermaid sobre el vault, no sobre el ok de la tool (test_vault_onboard.py:141)"
-   ]
-  },
-  {
-   "dot": "amber",
-   "title": "Lo que la 1ª corrida real destapó (AP-42)",
-   "items": [
-    "La tool estaba documentada y nunca se había ejecutado; contra un repo de fuera: nueve defectos (MODO-AGENTICO-ONBOARDING.md:157)",
-    "El peor: 54 notas nacían todas en missingType — el estándar reprobando lo que acababa de escribir",
-    "wip → 5 ADRs retroactivos sin nombre de decisión (:89) · notas de relleno que subían el score (:26)",
-    "total_commits: 500 con warnings: [] → paramétrico presentado como hecho (:123) · AP-03 castigaba el vacío declarado, resuelto a favor de AP-45 (:141)"
-   ]
-  },
-  {
-   "dot": "rose",
-   "title": "Deuda abierta (saldada en v41.18, corrida local sobre 15 servicios)",
-   "items": [
-    "SALDADA — escrituras_en_lote (AP-47) en el onboard: la 1.ª corrida baja de ~13 s a ~8 s; _update_indexes sigue corriendo después por diseño (cubre secciones a-regenerar que el lote no tocó)",
-    "ABIERTA — la 2ª corrida re-paga ~7 s por diseño: el skip-path re-parsea git completo y reindiza; un --skip-reindex lo evitaría",
-    "SALDADA — test_segunda_corrida_no_reescribe_nada afirma la idempotencia del merge contra los bytes del vault",
-    "ANOTADA — canonicalShadow 0.875: falsos positivos legítimos declarados; no se baja el umbral a gusto (AP-44)"
-   ]
-  },
-  {
-   "dot": "violet",
-   "title": "Resultado de referencia (BuilderX, 626 commits, solo lectura)",
-   "items": [
-    "healthScore ~54 → 96 · 0 violaciones de norma · 0 deuda de metadatos",
-    "3 fases con nombre (por tags) · 626 commits reales, no el tope del comando",
-    "Fases 2-5 = esqueleto verificable; la fase 6 decide si el vault sirve"
-   ]
-  }
- ],
- "nota_recibos": "Rutas absolutas reducidas a su forma última antes de versionar: un recibo publicado no declara el disco ni el nombre de quien lo generó (test_publicacion_limpia). Los sha256 del HTML y de las capturas no cambian."
+  ],
+  "edges": [
+    {
+      "id": "e01",
+      "from": "f0",
+      "to": "f2",
+      "label": "sin vault",
+      "role": "main",
+      "route": "drop"
+    },
+    {
+      "id": "e02",
+      "from": "f0",
+      "to": "sanar",
+      "label": "con vault",
+      "role": "error",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e03",
+      "from": "f2",
+      "to": "f3",
+      "label": "version objetivo",
+      "role": "main",
+      "labelAt": [
+        261,
+        159
+      ]
+    },
+    {
+      "id": "e04",
+      "from": "f3",
+      "to": "f4",
+      "label": "alrededor del humano",
+      "role": "main",
+      "labelAt": [
+        367,
+        174
+      ]
+    },
+    {
+      "id": "e05",
+      "from": "f4",
+      "to": "f5",
+      "label": "esqueleto verificable",
+      "role": "main",
+      "labelAt": [
+        465,
+        156
+      ]
+    },
+    {
+      "id": "e06",
+      "from": "f5",
+      "to": "f6",
+      "label": "deuda real vs medida",
+      "role": "branch",
+      "labelAt": [
+        561,
+        174
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Las tres reglas del modo",
+      "items": [
+        "Nada se inventa (AP-45): sin evidencia localizable no se escribe — se declara omitido (skipped_no_evidence)",
+        "El proyecto de origen solo se lee; las notas deducidas nacen stub/draft, nunca implemented",
+        "El orden importa: migrar docs antes que onboard deja el contenido humano como base (MODO-AGENTICO-ONBOARDING.md:70)"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Criterio de aceptación (uno solo)",
+      "items": [
+        "Un vault recién onboardeado no necesita sanación",
+        "Probado sobre el resultado con git real: normas + audit + mermaid sobre el vault, no sobre el ok de la tool (test_vault_onboard.py:141)"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Lo que la 1ª corrida real destapó (AP-42)",
+      "items": [
+        "La tool estaba documentada y nunca se había ejecutado; contra un repo de fuera: nueve defectos (MODO-AGENTICO-ONBOARDING.md:157)",
+        "El peor: 54 notas nacían todas en missingType — el estándar reprobando lo que acababa de escribir",
+        "wip → 5 ADRs retroactivos sin nombre de decisión (:89) · notas de relleno que subían el score (:26)",
+        "total_commits: 500 con warnings: [] → paramétrico presentado como hecho (:123) · AP-03 castigaba el vacío declarado, resuelto a favor de AP-45 (:141)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Deuda abierta (saldada en v41.18, corrida local sobre 15 servicios)",
+      "items": [
+        "SALDADA — escrituras_en_lote (AP-47) en el onboard: la 1.ª corrida baja de ~13 s a ~8 s; _update_indexes sigue corriendo después por diseño (cubre secciones a-regenerar que el lote no tocó)",
+        "ABIERTA — la 2ª corrida re-paga ~7 s por diseño: el skip-path re-parsea git completo y reindiza; un --skip-reindex lo evitaría",
+        "SALDADA — test_segunda_corrida_no_reescribe_nada afirma la idempotencia del merge contra los bytes del vault",
+        "ANOTADA — canonicalShadow 0.875: falsos positivos legítimos declarados; no se baja el umbral a gusto (AP-44)"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Resultado de referencia (BuilderX, 626 commits, solo lectura)",
+      "items": [
+        "healthScore ~54 → 96 · 0 violaciones de norma · 0 deuda de metadatos",
+        "3 fases con nombre (por tags) · 626 commits reales, no el tope del comando",
+        "Fases 2-5 = esqueleto verificable; la fase 6 decide si el vault sirve"
+      ]
+    }
+  ],
+  "nota_recibos": "Rutas absolutas reducidas a su forma última antes de versionar: un recibo publicado no declara el disco ni el nombre de quien lo generó (test_publicacion_limpia). Los sha256 del HTML y de las capturas no cambian."
 }

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="generator" content="archify 3.1.0">
+  <meta name="generator" content="archify 3.2.0">
   <meta name="archify-reader-contract" content="declared-wide-v1">
   <title>Contextos del estándar: dominio, pertenencia y frontera · Diagrama</title>
   <script>
@@ -2736,19 +2736,31 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     }
     html[data-reader-rail="bottom"] .node-outline-head { padding: 1rem 2.5rem 0.375rem 0.25rem; }
     html[data-reader-rail="bottom"] .node-outline-list {
-      columns: 15rem;
-      column-gap: 1.75rem;
+      display: grid;
+      gap: 0.5rem;
       padding: 0;
       overflow: visible;
       -webkit-mask-image: none;
       mask-image: none;
     }
-    /* Named groups stay whole; a single unnamed group may split across columns,
-       where a continuous spine would read as a broken line. */
     html[data-reader-rail="bottom"] .node-outline-group + .node-outline-group { margin-top: 0; }
-    html[data-reader-rail="bottom"] .node-outline-group:has(> .node-outline-heading) { break-inside: avoid; padding-bottom: 0.25rem; }
-    html[data-reader-rail="bottom"] .node-outline-group:not(:has(> .node-outline-heading)) > ul::before { display: none; }
-    html[data-reader-rail="bottom"] .node-outline-group li { break-inside: avoid; }
+    html[data-reader-rail="bottom"] .node-outline-group:has(> .node-outline-heading) { padding-bottom: 0.25rem; }
+    html[data-reader-rail="bottom"] .node-outline-group > ul {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem 0.5rem;
+    }
+    html[data-reader-rail="bottom"] .node-outline-group > ul::before { display: none; }
+    html[data-reader-rail="bottom"] .node-outline-group li {
+      flex: 0 1 auto;
+      min-width: min(100%, 12rem);
+      max-width: min(100%, 32rem);
+    }
+    html[data-reader-rail="bottom"] .node-outline-heading {
+      justify-content: flex-start;
+      gap: 0.5rem;
+    }
+    html[data-reader-rail="bottom"] .node-outline-heading > span { overflow-wrap: anywhere; }
     .rail-controls { display: none; }
     html:is([data-reader-rail="true"], [data-reader-rail="overlay"], [data-reader-rail="bottom"]) .rail-controls {
       display: flex;
@@ -2964,6 +2976,37 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     .node-outline-item:hover small,
     .node-outline-item[data-previewing] small,
     .node-outline-item[aria-current="true"] small { color: var(--text-muted); }
+
+    /* The desktop bottom rail is an index: compact rows keep related nodes
+       together while allowing full names and descriptions to wrap naturally. */
+    html[data-reader-rail="bottom"] .node-outline-item {
+      grid-template-columns: 0.625rem minmax(0, 1fr) 0.75rem;
+      align-items: first baseline;
+      column-gap: 0.375rem;
+      min-height: 0;
+      padding-block: 0.375rem;
+    }
+    html[data-reader-rail="bottom"] .node-outline-item strong,
+    html[data-reader-rail="bottom"] .node-outline-item small {
+      overflow: visible;
+      text-overflow: clip;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    html[data-reader-rail="bottom"] .node-outline-item strong {
+      grid-column: 2;
+      grid-row: 1;
+    }
+    html[data-reader-rail="bottom"] .node-outline-item small {
+      grid-column: 2;
+      grid-row: 2;
+      text-align: left;
+    }
+    html[data-reader-rail="bottom"] .node-outline-item::after {
+      grid-column: 3;
+      grid-row: 1;
+      align-self: center;
+    }
 
     .card-header {
       display: flex;
@@ -5152,17 +5195,17 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <div class="pulse-dot"></div>
         <h1>Contextos del estándar: dominio, pertenencia y frontera</h1>
       </div>
-      <p class="subtitle">10 contextos de `vault_arch.CONTEXTS` · 23 fronteras del `PRESUPUESTO_DE_CRUCES` · correlación grupo→capacidad</p>
+      <p class="subtitle">10 contextos de `vault_arch.CONTEXTS` · 22 fronteras del `PRESUPUESTO_DE_CRUCES` · correlación grupo→capacidad</p>
     </div>
 
-    <script id="archify-source-evidence-data" type="application/json">{"schemaVersion":1,"verified":true,"repository":{"url":"https://github.com/devcicm/Vault-Obsidian-Architecture","revision":"f5f69210fa4a89639c60aaeda0cb7fb7139f5583","shortRevision":"f5f6921","label":"devcicm/Vault-Obsidian-Architecture","href":"https://github.com/devcicm/Vault-Obsidian-Architecture/tree/f5f69210fa4a89639c60aaeda0cb7fb7139f5583"},"referenceCount":12,"nodes":{"agent":[{"path":"AGENTS.md","line":24,"endLine":52,"label":"El servicio y sus capacidades","href":"https://github.com/devcicm/Vault-Obsidian-Architecture/blob/f5f69210fa4a89639c60aaeda0cb7fb7139f5583/AGENTS.md#L24-L52"}],"mcp":[{"path":"mcp/nodejs/vault-mcp-server.mjs","line":1,"endLine":40,"label":"servidor MCP","href":"https://github.com/devcicm/Vault-Obsidian-Architecture/blob/f5f69210fa4a89639c60aaeda0cb7fb7139f5583/mcp/nodejs/vault-mcp-server.mjs#L1-L40"}],"k":[{"path":"scripts/vault_arch.py","line":156,"endLine":246,"label":"CONTEXTS[Kernel]","href":"https://github.com/devcicm/Vault-Obsidian-Architecture/blob/f5f69210fa4a89639c60aaeda0cb7fb7139f5583/scripts/vault_arch.py#L156-L246"}],"a":[{"path":"scripts/vault_arch.py","line":247,"endLine":283,"label":"CONTEXTS[Autoría]","href":"https://github.com/devcicm/Vault-Obsidian-Architecture/blob/f5f69210fa4a89639c60aaeda0cb7fb7139f5583/scripts/vault_arch.py#L247-L283"}],"g":[{"path":"scripts/vault_arch.py","line":284,"endLine":303,"label":"CONTEXTS[Grafo]","href":"https://github.com/devcicm/Vault-Obsidian-Architecture/blob/f5f69210fa4a89639c60aaeda0cb7fb7139f5583/scripts/vault_arch.py#L284-L303"}],"gov":[{"path":"scripts/vault_arch.py","line":304,"endLine":399,"label":"CONTEXTS[Gobernanza]","href":"https://github.com/devcicm/Vault-Obsidian-Architecture/blob/f5f69210fa4a89639c60aaeda0cb7fb7139f5583/scripts/vault_arch.py#L304-L399"}],"idx":[{"path":"scripts/vault_arch.py","line":400,"endLine":427,"label":"CONTEXTS[Índices]","href":"https://github.com/devcicm/Vault-Obsidian-Architecture/blob/f5f69210fa4a89639c60aaeda0cb7fb7139f5583/scripts/vault_arch.py#L400-L427"}],"q":[{"path":"scripts/vault_arch.py","line":428,"endLine":450,"label":"CONTEXTS[Consulta]","href":"https://github.com/devcicm/Vault-Obsidian-Architecture/blob/f5f69210fa4a89639c60aaeda0cb7fb7139f5583/scripts/vault_arch.py#L428-L450"}],"cv":[{"path":"scripts/vault_arch.py","line":451,"endLine":470,"label":"CONTEXTS[Ciclo de vida]","href":"https://github.com/devcicm/Vault-Obsidian-Architecture/blob/f5f69210fa4a89639c60aaeda0cb7fb7139f5583/scripts/vault_arch.py#L451-L470"}],"dur":[{"path":"scripts/vault_arch.py","line":471,"endLine":485,"label":"CONTEXTS[Durabilidad]","href":"https://github.com/devcicm/Vault-Obsidian-Architecture/blob/f5f69210fa4a89639c60aaeda0cb7fb7139f5583/scripts/vault_arch.py#L471-L485"}],"mt":[{"path":"scripts/vault_arch.py","line":486,"endLine":619,"label":"CONTEXTS[Meta-toolkit]","href":"https://github.com/devcicm/Vault-Obsidian-Architecture/blob/f5f69210fa4a89639c60aaeda0cb7fb7139f5583/scripts/vault_arch.py#L486-L619"}],"cli":[{"path":"scripts/vault_arch.py","line":620,"endLine":660,"label":"CONTEXTS[CLI]","href":"https://github.com/devcicm/Vault-Obsidian-Architecture/blob/f5f69210fa4a89639c60aaeda0cb7fb7139f5583/scripts/vault_arch.py#L620-L660"}]}}</script>
+    <script id="archify-source-evidence-data" type="application/json">{"schemaVersion":1,"verified":true,"repository":{"url":"https://github.com/devcicm/Vault-Obsidian-Architecture","revision":"e749720ad9957dc5553340c61fb907e9c3a40a03","shortRevision":"e749720","label":"devcicm/Vault-Obsidian-Architecture","href":"https://github.com/devcicm/Vault-Obsidian-Architecture/tree/e749720ad9957dc5553340c61fb907e9c3a40a03"},"referenceCount":12,"nodes":{"agent":[{"path":"AGENTS.md","line":24,"endLine":52,"label":"El servicio y sus capacidades","href":"https://github.com/devcicm/Vault-Obsidian-Architecture/blob/e749720ad9957dc5553340c61fb907e9c3a40a03/AGENTS.md#L24-L52"}],"mcp":[{"path":"mcp/nodejs/vault-mcp-server.mjs","line":1,"endLine":40,"label":"servidor MCP","href":"https://github.com/devcicm/Vault-Obsidian-Architecture/blob/e749720ad9957dc5553340c61fb907e9c3a40a03/mcp/nodejs/vault-mcp-server.mjs#L1-L40"}],"k":[{"path":"scripts/vault_arch.py","line":211,"endLine":300,"label":"CONTEXTS[Kernel]","href":"https://github.com/devcicm/Vault-Obsidian-Architecture/blob/e749720ad9957dc5553340c61fb907e9c3a40a03/scripts/vault_arch.py#L211-L300"}],"a":[{"path":"scripts/vault_arch.py","line":301,"endLine":337,"label":"CONTEXTS[Autoría]","href":"https://github.com/devcicm/Vault-Obsidian-Architecture/blob/e749720ad9957dc5553340c61fb907e9c3a40a03/scripts/vault_arch.py#L301-L337"}],"g":[{"path":"scripts/vault_arch.py","line":338,"endLine":357,"label":"CONTEXTS[Grafo]","href":"https://github.com/devcicm/Vault-Obsidian-Architecture/blob/e749720ad9957dc5553340c61fb907e9c3a40a03/scripts/vault_arch.py#L338-L357"}],"gov":[{"path":"scripts/vault_arch.py","line":358,"endLine":453,"label":"CONTEXTS[Gobernanza]","href":"https://github.com/devcicm/Vault-Obsidian-Architecture/blob/e749720ad9957dc5553340c61fb907e9c3a40a03/scripts/vault_arch.py#L358-L453"}],"idx":[{"path":"scripts/vault_arch.py","line":454,"endLine":495,"label":"CONTEXTS[Índices]","href":"https://github.com/devcicm/Vault-Obsidian-Architecture/blob/e749720ad9957dc5553340c61fb907e9c3a40a03/scripts/vault_arch.py#L454-L495"}],"q":[{"path":"scripts/vault_arch.py","line":496,"endLine":518,"label":"CONTEXTS[Consulta]","href":"https://github.com/devcicm/Vault-Obsidian-Architecture/blob/e749720ad9957dc5553340c61fb907e9c3a40a03/scripts/vault_arch.py#L496-L518"}],"cv":[{"path":"scripts/vault_arch.py","line":519,"endLine":538,"label":"CONTEXTS[Ciclo de vida]","href":"https://github.com/devcicm/Vault-Obsidian-Architecture/blob/e749720ad9957dc5553340c61fb907e9c3a40a03/scripts/vault_arch.py#L519-L538"}],"dur":[{"path":"scripts/vault_arch.py","line":539,"endLine":553,"label":"CONTEXTS[Durabilidad]","href":"https://github.com/devcicm/Vault-Obsidian-Architecture/blob/e749720ad9957dc5553340c61fb907e9c3a40a03/scripts/vault_arch.py#L539-L553"}],"mt":[{"path":"scripts/vault_arch.py","line":554,"endLine":681,"label":"CONTEXTS[Meta-toolkit]","href":"https://github.com/devcicm/Vault-Obsidian-Architecture/blob/e749720ad9957dc5553340c61fb907e9c3a40a03/scripts/vault_arch.py#L554-L681"}],"cli":[{"path":"scripts/vault_arch.py","line":700,"endLine":710,"label":"CONTEXTS[CLI]","href":"https://github.com/devcicm/Vault-Obsidian-Architecture/blob/e749720ad9957dc5553340c61fb907e9c3a40a03/scripts/vault_arch.py#L700-L710"}]}}</script>
     <script id="archify-i18n-data" type="application/json">{"locale":"es","messages":{"viewer.kind.frontend":"Frontend","viewer.kind.backend":"Backend","viewer.kind.database":"Base de datos","viewer.kind.cloud":"Nube","viewer.kind.security":"Seguridad","viewer.kind.messagebus":"Bus de mensajes","viewer.kind.external":"Externo","viewer.kind.neutral":"Neutral","viewer.kind.node":"Nodo","viewer.kind.start":"Inicio","viewer.kind.active":"Activo","viewer.kind.waiting":"En espera","viewer.kind.decision":"Decisión","viewer.kind.success":"Éxito","viewer.kind.failure":"Fallo","viewer.toolbar.actions":"Acciones del diagrama","viewer.theme.toggle.title":"Cambiar tema (T)","viewer.theme.toggle":"Cambiar tema de color","viewer.theme.dark":"Oscuro","viewer.theme.light":"Claro","viewer.preset.choose.title":"Elegir estilo visual (S alterna)","viewer.preset.choose":"Elegir estilo visual","viewer.preset.style":"Estilo","viewer.preset.menu":"Estilo visual","viewer.preset.identity":"Identidad visual","viewer.preset.cycles":"alterna","viewer.preset.classic":"Clásico","viewer.preset.classic.short":"Clásico","viewer.preset.classic.hint":"Predeterminado técnico estable","viewer.preset.flow":"Flujo de señal","viewer.preset.flow.short":"Flujo","viewer.preset.flow.hint":"Presentación con énfasis en el movimiento","viewer.preset.blueprint":"Plano","viewer.preset.blueprint.hint":"Revisión de ingeniería","viewer.preset.editorial":"Editorial","viewer.preset.editorial.hint":"Notas de publicación y lanzamiento","viewer.preset.badge.signalFlow":"FLUJO DE SEÑAL","viewer.preset.badge.blueprint":"PLANO / REV 01","viewer.preset.badge.editorial":"EDITORIAL / NOTA DE CAMPO","viewer.preset.badge.editorialPlate":"ARCHIFY / LÁMINA 04","viewer.preset.current":"Estilo visual: {style}. Elegir estilo visual","viewer.motion.live":"Activa","viewer.motion.still":"Fija","viewer.motion.pause":"Pausar animación","viewer.motion.resume":"Reanudar animación","viewer.motion.reduced":"Animación pausada por la preferencia de movimiento reducido","viewer.motion.hidden":"Animación pausada mientras esta página está oculta","viewer.motion.yielding":"Pausar animación; cediendo a {owner}","viewer.motion.yielding.title":"Vista previa en vivo activada · cediendo a {owner}","viewer.owner.route":"Sonda de ruta","viewer.owner.lens":"Lente semántico","viewer.owner.relationship":"Vista previa de relación","viewer.owner.intent":"Traza de intención","viewer.owner.focus":"enfoque semántico","viewer.owner.legend":"vista previa de la leyenda","viewer.owner.reader":"interacción del lector","viewer.present.enter":"Entrar al modo presentación","viewer.present.enter.title":"Modo presentación (F)","viewer.present.exit":"Salir del modo presentación","viewer.present.exit.title":"Salir del modo presentación (F o Escape)","viewer.present.present":"Presentar","viewer.present.exit.label":"Salir","viewer.export.button":"Exportar","viewer.export.button.title":"Exportar diagrama (E)","viewer.export.diagram":"Exportar diagrama","viewer.export.menu":"Exportar","viewer.export.subtitle":"Salidas portables y limpias","viewer.export.share":"Compartir","viewer.export.shareCard":"Tarjeta para compartir","viewer.export.routeShareCard":"Tarjeta de ruta para compartir","viewer.export.reachShareCard":"Tarjeta de alcance para compartir","viewer.export.copyDiagram":"Copiar diagrama","viewer.export.clipboardPng":"PNG al portapapeles","viewer.export.raster":"Imágenes rasterizadas","viewer.export.image":"Imagen","viewer.export.lossless":"Imagen sin pérdida","viewer.export.compact":"Imagen compacta","viewer.export.modern":"Imagen moderna","viewer.export.vectorMotion":"Vector y movimiento","viewer.export.vectorMotion.heading":"Vector y movimiento","viewer.export.editable":"Vector editable","viewer.export.svg.auto":"SVG · Auto","viewer.export.svg.auto.hint":"Coincide con el tema del host","viewer.export.svg.light":"SVG · Claro","viewer.export.svg.light.hint":"Siempre claro","viewer.export.svg.dark":"SVG · Oscuro","viewer.export.svg.dark.hint":"Siempre oscuro","viewer.export.motion6s":"Movimiento de 6 s","viewer.export.unsupported":"No compatible con este navegador","viewer.export.clipboardUnsupported":"Este navegador no admite escribir imágenes en el portapapeles","viewer.export.clipboardUnsupported.short":"Escritura de imágenes en el portapapeles no admitida en este navegador.","viewer.export.motionUnavailable":"Captura de movimiento no disponible en este navegador","viewer.export.webmUnavailable":"WebM no disponible en este navegador","viewer.export.failed":"Falló la exportación: {message}","viewer.export.unknownVariant":"Variante de tarjeta para compartir desconocida: {variant}","viewer.export.routeRequired":"Traza una ruta antes de exportar una tarjeta de ruta para compartir","viewer.export.reachRequired":"Traza el alcance definido antes de exportar una tarjeta de alcance para compartir","viewer.export.unknown":"desconocido","viewer.export.routeFailed":"Falló la exportación de la tarjeta de ruta para compartir: {message}","viewer.export.reachFailed":"Falló la exportación de la tarjeta de alcance para compartir: {message}","viewer.export.copyFailed":"Error al copiar: {message}","viewer.export.copiedPng":"PNG copiado al portapapeles","viewer.export.downloadedRoute":"Tarjeta de ruta para compartir descargada","viewer.export.downloadedReach":"Tarjeta de alcance para compartir descargada","viewer.export.downloadedWebm":"WebM descargado","viewer.export.recording":"Grabando 6 segundos de movimiento…","viewer.export.card.routeSummary.one":"Ruta: {source} → {target} · {count} paso","viewer.export.card.routeSummary.other":"Ruta: {source} → {target} · {count} pasos","viewer.export.card.reachSummary":"Alcance definido {direction} desde {origin} · {nodes} · {links} · máx {hops}","viewer.export.card.node.one":"{count} nodo","viewer.export.card.node.other":"{count} nodos","viewer.export.card.link.one":"{count} enlace","viewer.export.card.link.other":"{count} enlaces","viewer.export.card.hop.one":"{count} salto","viewer.export.card.hop.other":"{count} saltos","viewer.export.card.routeBadge":"ARCHIFY · RUTA · {hops}","viewer.export.card.reachBadge":"ARCHIFY · ALCANCE {direction}","viewer.export.direction.upstream":"Ascendente","viewer.export.direction.downstream":"Descendente","viewer.export.error.canvasUnavailable":"Lienzo no disponible para {label}","viewer.export.error.contextUnavailable":"Contexto de lienzo 2D no disponible para {label}","viewer.export.error.toBlobUnavailable":"canvas.toBlob no disponible para {label}","viewer.export.error.toBlobNull":"canvas.toBlob no devolvió datos para {label}","viewer.export.error.variantsCombined":"Las variantes de tarjeta para compartir no se pueden combinar","viewer.export.error.viewerState":"La exportación de la tarjeta para compartir no pudo quitar el estado temporal del visor","viewer.export.error.routeState":"La exportación de la tarjeta de ruta no pudo preservar la ruta resuelta de forma segura","viewer.export.error.reachState":"La exportación de la tarjeta de alcance no pudo preservar el alcance definido de forma segura","viewer.export.error.webmRequirements":"La exportación de movimiento WebM requiere una animación de traza y compatibilidad del navegador con MediaRecorder","viewer.export.error.mediaRecorder":"MediaRecorder falló","viewer.export.error.emptyWebm":"MediaRecorder produjo un WebM vacío","viewer.export.error.webmBackground":"No se pudo cargar el fondo SVG para la exportación WebM","viewer.guide.title":"Explorar este sistema","viewer.focus.selectedNodes":"{count} nodos seleccionados","viewer.guide.eyebrow":"Guía del diagrama","viewer.guide.close":"Cerrar la guía del diagrama","viewer.guide.inspecting":"Inspeccionando la semántica compilada","viewer.guide.actions":"Acciones de exploración del diagrama","viewer.guide.find":"Buscar cualquier nodo","viewer.guide.find.hint":"Busca por etiquetas, responsabilidades, tipos e IDs estables.","viewer.guide.route":"Trazar una ruta","viewer.guide.route.aria":"Trazar una ruta dirigida","viewer.guide.route.hint":"Pregunta cómo se conectan dos nodos semánticos en el sentido definido.","viewer.guide.map":"Ver todo el sistema","viewer.guide.map.hint":"Abre el Radar semántico con un viewport en vivo y nodos estables.","viewer.guide.lens":"Comparar tipos semánticos","viewer.guide.lens.hint":"Cuenta roles, revela su tráfico y compara enlaces directos definidos.","viewer.guide.present":"Entrar al modo presentación","viewer.guide.present.hint":"Dale al diagrama en vivo todo el viewport sin cambiar la exportación.","viewer.guide.shortcuts":"Atajos de teclado adicionales","viewer.guide.shortcut.export":"Exportar","viewer.guide.shortcut.theme":"Tema","viewer.guide.shortcut.style":"Estilo","viewer.guide.shortcut.reset":"Restablecer","viewer.guide.shortcut.zoomIn":"Acercar","viewer.guide.shortcut.zoomOut":"Alejar","viewer.guide.shortcut.close":"Cerrar","viewer.guide.credit":"¿Te resulta útil Archify? Una estrella en GitHub ayuda","viewer.guide.star":"Star","viewer.guide.facts":"{nodes} · {relationships}","viewer.guide.fact.node.one":"{count} nodo semántico","viewer.guide.fact.node.other":"{count} nodos semánticos","viewer.guide.fact.relationship.one":"{count} relación","viewer.guide.fact.relationship.other":"{count} relaciones","viewer.guide.open":"Abrir la guía del diagrama","viewer.finder.title":"Buscar un nodo","viewer.finder.close":"Cerrar el buscador de nodos","viewer.finder.placeholder":"Buscar etiquetas o IDs","viewer.finder.search":"Buscar nodos del diagrama","viewer.finder.results":"Nodos del diagrama","viewer.finder.empty":"No hay nodos coincidentes","viewer.finder.result.focus":"Enfocar {label}","viewer.finder.result.routeStart":"Elegir {label} como inicio de la ruta","viewer.finder.result.routeTarget":"Elegir {label} como destino de la ruta, {links}","viewer.finder.status.empty":"No hay nodos coincidentes","viewer.finder.status.count.one":"{count} nodo coincidente","viewer.finder.status.count.other":"{count} nodos coincidentes","viewer.finder.noun.nodes":"nodos","viewer.finder.link.one":"{count} enlace","viewer.finder.link.other":"{count} enlaces","viewer.finder.result.focus.one":"Enfocar {label}, {count} conexión relacionada","viewer.finder.result.focus.other":"Enfocar {label}, {count} conexiones relacionadas","viewer.finder.status.filtered":"{visible} de {available} {noun}","viewer.finder.status.all":"{available} {noun}","viewer.passport.eyebrow":"Pasaporte semántico","viewer.passport.metadata":"Metadatos del nodo","viewer.passport.evidence":"Evidencia de fuente verificada","viewer.passport.verified":"Fuente verificada","viewer.passport.verificationScope":"Verificado contra el Git local en la revisión fijada. No se ha comprobado el acceso remoto.","viewer.passport.reach":"Alcance definido","viewer.passport.reach.trace":"Trazar la alcanzabilidad definida","viewer.passport.upstream":"Ascendente","viewer.passport.downstream":"Descendente","viewer.passport.upstream.trace":"Trazar la alcanzabilidad definida ascendente","viewer.passport.downstream.trace":"Trazar la alcanzabilidad definida descendente","viewer.passport.close":"Cerrar el pasaporte semántico","viewer.passport.move":"Mover el pasaporte semántico. Arrastra, usa las flechas o pulsa Inicio para restablecer.","viewer.passport.copy":"Copiar enlace","viewer.passport.copy.focus":"Copiar enlace al nodo enfocado","viewer.passport.relations":"Relaciones","viewer.passport.relations.show":"Mostrar relaciones conectadas","viewer.passport.relations.hide":"Ocultar relaciones conectadas","viewer.passport.relations.list":"Relaciones conectadas","viewer.passport.copyRelation":"Copiar relación","viewer.passport.copyNode":"Copiar nodo","viewer.passport.copyPinned":"Copiar enlace a la relación fijada","viewer.passport.copySource":"Copiar enlace al nodo de origen","viewer.passport.copy.focused.success":"Enlace del nodo enfocado copiado","viewer.passport.copy.pinned.success":"Enlace de la relación fijada copiado","viewer.passport.copy.focused.failed":"No se pudo copiar el enlace del nodo enfocado","viewer.passport.copy.pinned.failed":"No se pudo copiar el enlace de la relación fijada","viewer.passport.relationship.none":"No hay relaciones conectadas","viewer.passport.relationship.count.one":"{count} relación","viewer.passport.relationship.count.other":"{count} relaciones","viewer.passport.relationship.show.one":"Mostrar {count} relación conectada","viewer.passport.relationship.show.other":"Mostrar {count} relaciones conectadas","viewer.passport.relationship.summary":"{out} salientes · {in} entrantes{loops}","viewer.passport.relationship.loops":" · {count} bucle","viewer.passport.relationship.explorer":"Explorador de relaciones directas","viewer.passport.relationship.help":"Usa las flechas para explorar las relaciones. Pulsa Enter o Espacio para fijar detalles; Escape las borra.","viewer.passport.relationship.loopsBack":"vuelve sobre sí mismo","viewer.passport.relationship.connectsTo":"conecta a","viewer.passport.relationship.connectsFrom":"conecta desde","viewer.passport.relationship.pinned":"Relación fijada · {from} → {to} · {label}","viewer.passport.relationship.inspect":"Inspeccionar relación {index} de {total}: {from} a {to}, {label}. Pulsa Enter para ver detalles.","viewer.passport.relationship.group.out":"Salientes","viewer.passport.relationship.group.in":"Entrantes","viewer.passport.relationship.group.loop":"Bucles propios","viewer.passport.relationship.row":"{group}: {relationship}, {neighbor}","viewer.passport.relationship.direction.out":"SAL →","viewer.passport.relationship.direction.in":"← ENT","viewer.passport.relationship.direction.loop":"BUCLE","viewer.passport.sourceCount.one":"{count} referencia de fuente verificada","viewer.passport.sourceCount.other":"{count} referencias de fuente verificadas","viewer.passport.repository.open":"Abrir la revisión verificada del repositorio {revision}","viewer.passport.source.open":"Abrir la fuente verificada {path} en la revisión {revision}","viewer.passport.source.openLink":"Abrir ↗","viewer.passport.reach.upstream.one":"Trazar {count} nodo definido ascendente","viewer.passport.reach.upstream.other":"Trazar {count} nodos definidos ascendentes","viewer.passport.reach.downstream.one":"Trazar {count} nodo definido descendente","viewer.passport.reach.downstream.other":"Trazar {count} nodos definidos descendentes","viewer.passport.reach.noUpstream":"No hay nodos definidos ascendentes","viewer.passport.reach.noDownstream":"No hay nodos definidos descendentes","viewer.passport.reach.status":"{direction} · {nodes} nodos · {links} enlaces · máx {hops} saltos","viewer.route.eyebrow":"Ruta","viewer.route.start":"Haz clic donde empieza la ruta","viewer.route.start.find":"Buscar inicio","viewer.route.start.find.aria":"Buscar un inicio de ruta","viewer.route.copy":"Copiar enlace","viewer.route.copy.aria":"Copiar enlace a la ruta trazada","viewer.route.clear":"Borrar","viewer.route.clear.aria":"Borrar la sonda de ruta","viewer.route.traced":"Ruta","viewer.route.pickTwo":"Haz clic en dos nodos del diagrama","viewer.route.pickOne":"Haz clic en un nodo del diagrama","viewer.route.controls":"Controles del recorrido de la ruta","viewer.route.previous":"Posición anterior de la ruta","viewer.route.play":"Reproducir el recorrido de la ruta","viewer.route.pause":"Pausar el recorrido de la ruta","viewer.route.replay":"Repetir el recorrido de la ruta","viewer.route.next":"Posición siguiente de la ruta","viewer.route.journey":"Recorrido","viewer.route.pause.label":"Pausar","viewer.route.replay.label":"Repetir","viewer.route.overview":"Vista general","viewer.route.overview.aria":"Mostrar la vista general completa de la ruta","viewer.route.instructions":"Haz clic en un inicio y luego en un final. La ruta sigue las flechas.","viewer.route.destination":"¿Dónde termina la ruta desde {label}?","viewer.route.destination.find":"Buscar destino","viewer.route.destination.find.aria":"Buscar un destino de ruta alcanzable","viewer.route.differentDestination":"Elige un destino diferente","viewer.route.distinct":"Elige dos nodos distintos.","viewer.route.unreachable":"No se llega a {label} desde aquí","viewer.route.unreachable.detail":"No se llega a {target} desde {source} siguiendo las flechas. Elige un nodo resaltado.","viewer.route.start.instructions":"Luego elige el final. Solo se iluminan los nodos alcanzables.","viewer.route.copy.success":"Enlace de la ruta trazada copiado","viewer.route.copy.failed":"No se pudo copiar el enlace de la ruta trazada","viewer.route.position":"Posición de la ruta {index} de {total}: {label}","viewer.route.step":"Paso {index} de {total} · {phase} · {label}","viewer.route.motionRequired":"El recorrido automático requiere la animación Activa","viewer.route.trigger.clear":"Borrar la ruta trazada","viewer.route.overview.status":"{nodes} · {hops} · ruta más corta","viewer.route.overview.node.one":"{count} nodo","viewer.route.overview.node.other":"{count} nodos","viewer.route.overview.hop.one":"{count} paso","viewer.route.overview.hop.other":"{count} pasos","viewer.route.phase.playing":"Reproduciendo","viewer.route.phase.complete":"Completo","viewer.route.phase.inspecting":"Inspeccionando","viewer.route.destination.count.one":"{count} nodo alcanzable está resaltado. Haz clic en él.","viewer.route.destination.count.other":"{count} nodos alcanzables están resaltados. Haz clic en uno.","viewer.route.noOutgoing":"Ninguna flecha sale de este nodo. Bórralo y elige otro inicio.","viewer.route.result.title":"{source} a {target}","viewer.route.finder.source.title":"Elegir el inicio de la ruta","viewer.route.finder.source.placeholder":"Buscar orígenes de ruta","viewer.route.finder.source.empty":"No hay orígenes de ruta coincidentes","viewer.route.finder.source.results":"Nodos que pueden iniciar una ruta","viewer.route.finder.source.noun":"orígenes de ruta","viewer.route.finder.source.badge":"inicio","viewer.route.finder.target.title":"Destino desde {label}","viewer.route.finder.target.placeholder":"Buscar destinos alcanzables","viewer.route.finder.target.empty":"No hay destinos alcanzables coincidentes","viewer.route.finder.target.results":"Destinos de ruta alcanzables","viewer.route.finder.target.noun":"destinos alcanzables","viewer.route.hop.one":"{count} salto","viewer.route.hop.other":"{count} saltos","viewer.lens.eyebrow":"Lente semántico","viewer.lens.title":"Comparar roles del sistema","viewer.lens.close":"Cerrar el lente semántico","viewer.lens.instruction":"Elige hasta dos tipos semánticos. Uno revela su tráfico real; dos comparan solo las relaciones directas definidas.","viewer.lens.kinds":"Tipos semánticos","viewer.lens.choose":"Elige un tipo para inspeccionar sus nodos y las relaciones que lo tocan.","viewer.lens.copy":"Copiar enlace al lente semántico","viewer.lens.clear":"Borrar el lente semántico","viewer.lens.open":"Abrir el lente semántico","viewer.lens.openActive":"Abrir el lente semántico activo","viewer.lens.legend":"Leyenda semántica","viewer.lens.legend.inspect.one":"Inspeccionar {label}, {count} nodo","viewer.lens.legend.inspect.other":"Inspeccionar {label}, {count} nodos","viewer.lens.kind.count.one":"{label}, {count} nodo","viewer.lens.kind.count.other":"{label}, {count} nodos","viewer.lens.compare.one":"{first} → {second}: {forward} · {second} → {first}: {reverse} · {count} relación directa","viewer.lens.compare.other":"{first} → {second}: {forward} · {second} → {first}: {reverse} · {count} relaciones directas","viewer.lens.single":"{nodes} · {relationships} · los pares conectados permanecen visibles","viewer.lens.node.one":"{count} nodo {label}","viewer.lens.node.other":"{count} nodos {label}","viewer.lens.relationship.one":"{count} relación en contacto","viewer.lens.relationship.other":"{count} relaciones en contacto","viewer.radar.title":"Radar semántico","viewer.radar.building":"Construyendo la vista general","viewer.radar.openFull":"Abrir el radar semántico completo","viewer.radar.open":"Abrir el radar","viewer.radar.close":"Cerrar el radar semántico","viewer.radar.surface":"Vista general del diagrama. Haz clic en un nodo para enfocarlo, o usa las flechas para desplazarte.","viewer.radar.click":"Clic en el nodo","viewer.radar.drag":"Arrastra para desplazar","viewer.radar.space":"El radar semántico necesita más espacio de MAPA.","viewer.radar.nodes":"Nodos del radar del diagrama semántico","viewer.radar.focus":"Enfocar {label} desde el Radar semántico","viewer.radar.status":"{count} nodos · {viewport}","viewer.radar.fullMap":"{count} nodos · mapa completo","viewer.radar.compacted":"Radar compactado para no tapar el Pasaporte semántico ni los controles de MAPA.","viewer.radar.cancelWaiting":"Cancelar la espera del radar semántico por más espacio de MAPA","viewer.radar.needsSpace":"El radar semántico necesita más espacio de MAPA visible","viewer.radar.viewport.full":"mapa completo","viewer.radar.viewport.width":"{percent}% de ancho","viewer.radar.viewport.scale":"{percent}% del viewport","viewer.nav.controls":"Controles de vista del diagrama","viewer.nav.route":"Trazar una ruta dirigida","viewer.nav.route.title":"Trazar ruta (R)","viewer.nav.route.short":"RUTA","viewer.nav.radar":"Abrir el radar semántico","viewer.nav.radar.title":"Radar semántico (M)","viewer.nav.radar.short":"MAPA","viewer.nav.lens":"Abrir el lente semántico","viewer.nav.lens.title":"Lente semántico (L)","viewer.nav.lens.short":"LENTE","viewer.nav.find":"Buscar un nodo","viewer.nav.find.title":"Buscar un nodo (/)","viewer.outline.title":"Índice de nodos","viewer.rail.show":"Notas e índice","viewer.rail.controls":"Panel lateral","viewer.rail.collapse":"Contraer panel lateral","viewer.rail.bottom":"Mover el panel debajo","viewer.rail.right":"Mover el panel al lado","viewer.nav.guide":"Abrir la guía del diagrama","viewer.nav.guide.title":"Guía del diagrama (?)","viewer.nav.zoomOut":"Alejar","viewer.nav.zoomOut.title":"Alejar (-)","viewer.nav.reset":"Restablecer la vista del diagrama","viewer.nav.reset.title":"Restablecer vista (0)","viewer.nav.read":"LEER","viewer.nav.zoomIn":"Acercar","viewer.nav.zoomIn.title":"Acercar (+)","viewer.nav.camera":"{hint}. Restablecer la vista del diagrama","viewer.nav.camera.title":"{semantic}{hint} · restablecer vista (0)","viewer.nav.camera.semantic":"Cámara semántica activa · ","viewer.nav.level.map":"MAPA","viewer.nav.level.read":"LEER","viewer.nav.level.full":"COMPLETO","viewer.nav.level.auto":"AUTO","viewer.nav.detail.map":"Acerca para revelar las etiquetas de relación y el contexto de los nodos","viewer.nav.detail.read":"Acerca de nuevo para revelar etiquetas y anotaciones","viewer.nav.detail.full":"Detalle completo del diagrama","viewer.intent.summary":"{label}. {out} salientes, {in} entrantes{loops}. {total} conexiones. Pulsa Enter para ver detalles.","viewer.intent.loops":", {count} bucle propio","viewer.common.copied":"Copiado","viewer.common.copyFailed":"Error al copiar","viewer.common.copyLink":"Copiar enlace","viewer.common.clear":"Borrar","viewer.common.close":"Cerrar"}}</script>
     <!-- Main Diagram -->
     <div class="diagram-container" data-detail-level="read"
          data-preset-badge-editorial-plate="ARCHIFY / LÁMINA 04">
       <svg viewBox="0 0 1344 728" role="img" lang="es" aria-labelledby="archify-diagram-title archify-diagram-description" data-animation="trace" data-preset="classic" data-quality-profile="showcase" data-node-ui="" data-reader-fit="intrinsic-height" data-reader-min-text="7.5" data-reader-primary-text="14">
         <title id="archify-diagram-title">Contextos del estándar: dominio, pertenencia y frontera</title>
-        <desc id="archify-diagram-description">10 contextos de `vault_arch.CONTEXTS` · 23 fronteras del `PRESUPUESTO_DE_CRUCES` · correlación grupo→capacidad</desc>
+        <desc id="archify-diagram-description">10 contextos de `vault_arch.CONTEXTS` · 22 fronteras del `PRESUPUESTO_DE_CRUCES` · correlación grupo→capacidad</desc>
         <!-- Definitions -->
         <defs>
           <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
@@ -5330,8 +5373,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <text data-detail="context" x="115" y="84" class="t-muted" font-size="9" text-anchor="middle">LLM o humano — consumidor</text>
         </g>
 
-        <g id="node-mcp" data-node-id="mcp" data-node-label="MCP" tabindex="0" role="button" aria-label="Enfocar MCP, servidor Node · 125 tools, Componente de arquitectura" aria-pressed="false" data-node-kind="messagebus" data-node-sublabel="servidor Node · 125 tools" data-node-context="Componente de arquitectura">
-          <title>MCP · servidor Node · 125 tools · Componente de arquitectura</title>
+        <g id="node-mcp" data-node-id="mcp" data-node-label="MCP" tabindex="0" role="button" aria-label="Enfocar MCP, servidor Node · 127 tools, Componente de arquitectura" aria-pressed="false" data-node-kind="messagebus" data-node-sublabel="servidor Node · 127 tools" data-node-context="Componente de arquitectura">
+          <title>MCP · servidor Node · 127 tools · Componente de arquitectura</title>
           <rect x="360" y="44" width="180" height="54" rx="8" class="c-mask"/>
           <rect x="360" y="44" width="180" height="54" rx="8" class="c-messagebus" data-animate="node" style="--step:1" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="messagebus" class="semantic-sigil s-messagebus" transform="translate(366 50) scale(0.6875)">
@@ -5341,7 +5384,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             <circle cx="7" cy="11.5" r="1" class="sigil-fill"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="450" y="69" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">MCP</text>
-        <text data-detail="context" x="450" y="85" class="t-muted" font-size="9" text-anchor="middle">servidor Node · 125 tools</text>
+        <text data-detail="context" x="450" y="85" class="t-muted" font-size="9" text-anchor="middle">servidor Node · 127 tools</text>
         </g>
 
         <g id="node-k" data-node-id="k" data-node-label="I · Kernel" tabindex="0" role="button" aria-label="Enfocar I · Kernel, 23 módulos · 4 puertos · prohibe depender de dominios, vault/ — contexto de dominio del vault" aria-pressed="false" data-node-kind="security" data-node-sublabel="23 módulos · 4 puertos · prohibe depender de dominios" data-node-context="vault/ — contexto de dominio del vault">
@@ -5392,15 +5435,15 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <text data-detail="context" x="1035" y="280" class="t-muted" font-size="9" text-anchor="middle">13 módulos · 21 puertos</text>
         </g>
 
-        <g id="node-idx" data-node-id="idx" data-node-label="V · Índices" tabindex="0" role="button" aria-label="Enfocar V · Índices, 7 módulos · 9 puertos, vault/ — contexto de dominio del vault" aria-pressed="false" data-node-kind="backend" data-node-sublabel="7 módulos · 9 puertos" data-node-context="vault/ — contexto de dominio del vault">
-          <title>V · Índices · 7 módulos · 9 puertos · vault/ — contexto de dominio del vault</title>
+        <g id="node-idx" data-node-id="idx" data-node-label="V · Índices" tabindex="0" role="button" aria-label="Enfocar V · Índices, 7 módulos · 12 puertos, vault/ — contexto de dominio del vault" aria-pressed="false" data-node-kind="backend" data-node-sublabel="7 módulos · 12 puertos" data-node-context="vault/ — contexto de dominio del vault">
+          <title>V · Índices · 7 módulos · 12 puertos · vault/ — contexto de dominio del vault</title>
           <rect x="660" y="400" width="150" height="58" rx="8" class="c-mask"/>
           <rect x="660" y="400" width="150" height="58" rx="8" class="c-backend" data-animate="node" style="--step:4" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(666 406) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="735" y="427" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">V · Índices</text>
-        <text data-detail="context" x="735" y="443" class="t-muted" font-size="9" text-anchor="middle">7 módulos · 9 puertos</text>
+        <text data-detail="context" x="735" y="443" class="t-muted" font-size="9" text-anchor="middle">7 módulos · 12 puertos</text>
         </g>
 
         <g id="node-q" data-node-id="q" data-node-label="VI · Consulta" tabindex="0" role="button" aria-label="Enfocar VI · Consulta, 11 módulos · 7 puertos · sin BD, vault/ — contexto de dominio del vault" aria-pressed="false" data-node-kind="backend" data-node-sublabel="11 módulos · 7 puertos · sin BD" data-node-context="vault/ — contexto de dominio del vault">
@@ -5437,15 +5480,15 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <text data-detail="context" x="130" y="603" class="t-muted" font-size="9" text-anchor="middle">4 módulos · backup y cuarentena</text>
         </g>
 
-        <g id="node-mt" data-node-id="mt" data-node-label="IX · Meta-toolkit" tabindex="0" role="button" aria-label="Enfocar IX · Meta-toolkit, 37 mód · 6 puertos, mide el repo, no escribe en él" aria-pressed="false" data-node-kind="cloud" data-node-sublabel="37 mód · 6 puertos" data-node-context="mide el repo, no escribe en él">
-          <title>IX · Meta-toolkit · 37 mód · 6 puertos · mide el repo, no escribe en él</title>
+        <g id="node-mt" data-node-id="mt" data-node-label="IX · Meta-toolkit" tabindex="0" role="button" aria-label="Enfocar IX · Meta-toolkit, 39 mód · 6 puertos, mide el repo, no escribe en él" aria-pressed="false" data-node-kind="cloud" data-node-sublabel="39 mód · 6 puertos" data-node-context="mide el repo, no escribe en él">
+          <title>IX · Meta-toolkit · 39 mód · 6 puertos · mide el repo, no escribe en él</title>
           <rect x="1150" y="400" width="124" height="62" rx="8" class="c-mask"/>
           <rect x="1150" y="400" width="124" height="62" rx="8" class="c-cloud" data-animate="node" style="--step:11" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="cloud" class="semantic-sigil s-cloud" transform="translate(1156 406) scale(0.6875)">
             <path d="M4.3 12.5h7.3a2.4 2.4 0 0 0 .2-4.8 4 4 0 0 0-7.5-1.3A3.1 3.1 0 0 0 4.3 12.5Z"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="1212" y="429" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">IX · Meta-toolkit</text>
-        <text data-detail="context" x="1212" y="445" class="t-muted" font-size="9" text-anchor="middle">37 mód · 6 puertos</text>
+        <text data-detail="context" x="1212" y="445" class="t-muted" font-size="9" text-anchor="middle">39 mód · 6 puertos</text>
         </g>
 
         <g id="node-cli" data-node-id="cli" data-node-label="X · CLI" tabindex="0" role="button" aria-label="Enfocar X · CLI, consolidada, mide el repo, no escribe en él" aria-pressed="false" data-node-kind="messagebus" data-node-sublabel="consolidada" data-node-context="mide el repo, no escribe en él">
@@ -5804,11 +5847,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       <div class="card">
         <div class="card-header">
           <div class="card-dot violet"></div>
-          <h3>Pertenencia (174 módulos en los diez contextos)</h3>
+          <h3>Pertenencia (176 módulos en los diez contextos)</h3>
         </div>
         <ul>
           <li>I Kernel 23 · II Autoría 46 · III Grafo 15 · IV Gobernanza 13 · V Índices 7</li>
-          <li>VI Consulta 11 · VII Ciclo 10 · VIII Durabilidad 4 · IX Meta-toolkit 37 · X CLI 8</li>
+          <li>VI Consulta 11 · VII Ciclo 10 · VIII Durabilidad 4 · IX Meta-toolkit 39 · X CLI 8</li>
           <li>claves romanas: orden de CONTEXTS en scripts/vault_arch.py</li>
         </ul>
       </div>
@@ -6017,6 +6060,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         else open(false);
       });
       btn.addEventListener('keydown', function (e) {
+        if (e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return;
         if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
           e.preventDefault();
           if (!isOpen()) open(e.key === 'ArrowUp');
@@ -6033,6 +6077,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       menu.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') { e.preventDefault(); close(true); return; }
         if (e.key === 'Tab') { close(false); return; }
+        if (e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return;
         var available = options();
         var active = available.indexOf(document.activeElement);
         switch (e.key) {
@@ -7456,6 +7501,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       });
       // APG menu-button pattern: ArrowDown/ArrowUp on the trigger opens the menu.
       btn.addEventListener('keydown', function (e) {
+        if (e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return;
         if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
           e.preventDefault();
           if (!isOpen()) open(e.key === 'ArrowUp');
@@ -7471,6 +7517,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       menu.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') { e.preventDefault(); close(true); return; }
         if (e.key === 'Tab')    { close(false); return; }
+        if (e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return;
 
         var available = items().filter(function (i) { return !i.hidden && !i.disabled; });
         var current = available.indexOf(document.activeElement);
@@ -10098,6 +10145,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         syncRelationshipPreview();
       });
       relationshipList.addEventListener('keydown', function (event) {
+        if (event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
         if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp' && event.key !== 'Home' && event.key !== 'End') return;
         var buttons = Array.prototype.slice.call(relationshipList.querySelectorAll('[data-relationship-target]'));
         if (!buttons.length) return;
@@ -12886,6 +12934,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       closeBtn.addEventListener('click', function () { close(); });
       input.addEventListener('input', function () { render(input.value); });
       input.addEventListener('keydown', function (event) {
+        if (event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
         var buttons = resultButtons();
         if (event.key === 'ArrowDown' && buttons.length) {
           event.preventDefault();
@@ -12896,6 +12945,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         }
       });
       results.addEventListener('keydown', function (event) {
+        if (event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
         var buttons = resultButtons();
         var index = buttons.indexOf(document.activeElement);
         if (index < 0 || !buttons.length) return;
@@ -12930,6 +12980,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         count: items.length
       };
     })();
+
 
     /* ============================================================
        Node Outline — a rail index of the semantic nodes, grouped by their
@@ -14035,6 +14086,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         if (journeyPlaying && event.target.closest('[data-route-journey-index]')) pauseJourney({ preserveElapsed: true });
       });
       path.addEventListener('keydown', function (event) {
+        if (event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
         var button = event.target.closest('[data-route-journey-index]');
         if (!button) return;
         var index = Number(button.getAttribute('data-route-journey-index'));
@@ -14710,6 +14762,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         select(button.getAttribute('data-kind'));
       });
       kindsRoot.addEventListener('keydown', function (event) {
+        if (event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
         var buttons = Array.prototype.slice.call(kindsRoot.querySelectorAll('button:not(:disabled)'));
         var index = buttons.indexOf(document.activeElement);
         var next = null;
@@ -14947,6 +15000,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
        ============================================================ */
     document.addEventListener('keydown', function (e) {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.shiftKey && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Home' || e.key === 'End')) return;
       if (e.defaultPrevented) return;
       var t = e.target;
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;

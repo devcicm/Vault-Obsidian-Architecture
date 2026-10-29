@@ -1,18 +1,17 @@
 {
- "schemaVersion": 1,
- "receiptId": "5b7330b0-866d-4dc6-97cf-69588a6df25a",
- "status": "current",
- "command": "deliver",
- "type": "architecture",
- "input": ".\\.archify\\candidata-contextos.json",
- "output": ".\\.archify\\mapa-contextos.html",
- "specification": {
-  "sha256": "c7da26d81d54ec4c86f428d545f3dd42c08f1a174cb6fc483f0c8b25bff05180",
-  "bytes": 10436
- },
- "artifact": {
-  "sha256": "f2ad51ae4ba52829853c976778f85169e4b19c2ab8ae02196d8b15dd1be34a98",
-  "bytes": 859043
- },
- "nota_recibos": "Las rutas de la máquina que aparecen en los recibos de archify se sanean a forma relativa antes de versionarse: un recibo publicado no declara el nombre ni el disco de quien lo generó (test_publicacion_limpia). El sha256 del HTML y de las capturas no cambia: esos ficheros no se tocan."
+  "schemaVersion": 1,
+  "receiptId": "748e90d0-4f9b-49c4-a3c0-1f4dfff7444b",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": ".\\.archify\\candidata-contextos.json",
+  "output": ".\\.archify\\mapa-contextos.html",
+  "specification": {
+    "sha256": "3581ae6737a0acda5eb8da9604ee71d32cd815fa04fda43d4caa4de94dbb364a",
+    "bytes": 12210
+  },
+  "artifact": {
+    "sha256": "df889fb13ccd6ea9a18d980ec402001fa056259db746ed6906e6cdcff0e0d7d8",
+    "bytes": 861118
+  }
 }
