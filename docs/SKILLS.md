@@ -29,8 +29,13 @@ LLM) puede invocar. Cada skill tiene:
 | `vault-onboard` | v2.0 | `agent/skills/vault-onboard/SKILL.md` | `agent/skills/vault-onboard/SKILL-v1.0.md` | `scripts/vault_onboard.py` | Puebla un vault desde un proyecto de código que no tiene ninguno |
 | `vault-toolkit-audit` | v1.0 | `agent/skills/vault-toolkit-audit/SKILL.md` | — | `scripts/vault_toolkit_audit.py` | Mide el toolkit tool por tool contra lo que declara y deja la medición registrada |
 
-Las cuatro están en la wheel: instalado el paquete, se invocan como
-`vault run vault_<nombre> …` con los mismos argumentos que el script.
+Lo que la wheel lleva son los **puntos de entrada** de las tres primeras
+(`vault_sanacion`, `vault_onboard`, `vault_sdd_init`): instalado el paquete se
+invocan como `vault run vault_<nombre> …` con los mismos argumentos que el
+script. **No lleva las definiciones `SKILL.md`**: un agente las encuentra por la
+ruta `agent/skills/` del repositorio, o copiando esa carpeta junto al agente.
+`vault-toolkit-audit` es mantenimiento del estándar y no está en la wheel: solo
+corre desde un checkout (`python scripts/vault_toolkit_audit.py …`).
 
 Las tres primeras cubren los tres recorridos que el estándar reconoce —poblar
 un vault, sanar uno que ya existe, documentar el estándar sobre el que se
