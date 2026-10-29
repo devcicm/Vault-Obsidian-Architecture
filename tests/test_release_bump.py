@@ -111,6 +111,26 @@ def test_sube_los_siete_sitios(repo_bump, tmp_path):  # noqa: F811
         assert spec["version"] == nueva, "la spec no la subió su dueño"
 
 
+def test_declarar_contraste_pendiente_lo_escribe_en_el_changelog(repo_bump):
+    """El flag promete dejar el hueco escrito (regla 7): que lo escriba."""
+    vieja = _vieja()
+    numero = int(vieja.lstrip("v").split(".")[1]) + 1
+    nueva = f"v{vieja.lstrip('v').split('.')[0]}.{numero}"
+    r = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "vault_release.py"),
+         "--nueva-version", nueva, "--nota", "release de prueba",
+         "--fecha", "2030-01-31", "--raiz", str(repo_bump),
+         "--declarar-contraste-pendiente"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        timeout=180, cwd=str(repo_bump))
+    assert json.loads(r.stdout)["ok"], r.stdout
+    manifiesto = (repo_bump / "vault-obsidian-architecture.md").read_text(
+        encoding="utf-8")
+    entrada = manifiesto[manifiesto.index(f"### {nueva} — 2030-01-31"):]
+    entrada = entrada[:entrada.index("\n### v")]
+    assert "regla 7" in entrada and "pendiente" in entrada, entrada
+
+
 def test_la_segunda_corrida_es_no_op(repo_bump):
     vieja = _vieja()
     numero = int(vieja.lstrip("v").split(".")[1]) + 1

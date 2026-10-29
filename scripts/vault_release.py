@@ -102,8 +102,19 @@ def _protegidos(raiz: Path) -> list:
     ]
 
 
+def _declaracion_de_contraste(contraste: Dict[str, Any]) -> str:
+    """El párrafo que deja el hueco de la regla 7 escrito en el changelog."""
+    return (
+        "**Contraste contra material ajeno (regla 7): pendiente.** Este bump "
+        "sale sin contraste vigente contra un vault ajeno "
+        f"({contraste['motivo']}). `vault-sandbox/` lo genera este repo y "
+        "comparte sus supuestos, así que no sustituye al contraste; queda "
+        "declarado aquí para que sea revisable, y se salda con "
+        "`vault_foreign_check --root <vault ajeno> --registrar-contraste`.")
+
+
 def _editar_manifiesto(ruta: Path, nueva: str, vieja: str, fecha: str,
-                       nota: str) -> None:
+                       nota: str, declaracion: str = "") -> None:
     src = ruta.read_text(encoding="utf-8")
 
     # Banner
@@ -140,6 +151,8 @@ def _editar_manifiesto(ruta: Path, nueva: str, vieja: str, fecha: str,
     cuerpo = src[i_ch:]
     m = re.search(r"\n### v", cuerpo)
     entrada = f"### {nueva} — {fecha} `git: pending`\n\n{nota}\n\n"
+    if declaracion:
+        entrada += f"{declaracion}\n\n"
     if m:
         cuerpo = cuerpo[:m.start()] + "\n" + entrada + cuerpo[m.start():]
         src = src[:i_ch] + cuerpo
@@ -300,7 +313,9 @@ def main() -> int:
 
     # 3. el manifiesto: banner, fila y changelog
     _editar_manifiesto(raiz / "vault-obsidian-architecture.md",
-                       nueva, vieja, fecha, args.nota)
+                       nueva, vieja, fecha, args.nota,
+                       "" if contraste["vigente"]
+                       else _declaracion_de_contraste(contraste))
 
     # 4. el contrato de versión de los consumidores, por su dueño
     sandbox = raiz / "vault-sandbox"
