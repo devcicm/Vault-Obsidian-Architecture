@@ -1,41 +1,505 @@
 {
- "ok": true,
- "tool": "vault_foreign_check",
- "kind": "recibo_de_contraste",
- "fecha": "2026-10-23",
- "version_estandar": "v41.20",
- "vault_medido": "Agente",
- "nota": "Contraste contra un vault ajeno en solo lectura. Guarda el nombre del vault, nunca su ruta: un recibo versionado no publica el disco de quien lo midió.",
- "resultado": {
   "ok": true,
   "tool": "vault_foreign_check",
-  "root": "Agente",
-  "read_only": true,
-  "notes_found": 20,
-  "snapshot_notes_excluded": [],
-  "snapshot_notes_excluded_count": 0,
-  "foreign_notes_excluded": 261,
-  "foreign_notes_excluded_sample": [
-   "Plataforma\\npm\\node_modules\\@babel\\generator\\README.md",
-   "Plataforma\\npm\\node_modules\\@babel\\helper-string-parser\\README.md",
-   "Plataforma\\npm\\node_modules\\@babel\\helper-validator-identifier\\README.md",
-   "Plataforma\\npm\\node_modules\\@babel\\parser\\CHANGELOG.md",
-   "Plataforma\\npm\\node_modules\\@babel\\parser\\README.md"
-  ],
-  "notes_measured": 20,
-  "unreadable": [],
-  "unreadable_count": 0,
-  "with_frontmatter": 0,
-  "without_frontmatter": 20,
-  "frontmatter_unparseable": [],
-  "standard_docs_excluded": [],
-  "standard_docs_excluded_count": 0,
-  "wikilinks_in_code_excluded": 0,
-  "wikilinks_total": 0,
-  "wikilinks_unresolved": 0,
-  "wikilinks_unresolved_sample": [],
-  "wikilinks_unresolved_all": [],
-  "observations": [],
-  "hint": "Esta tool no juzga el vault: juzga si las medidas del estándar sobreviven a material que no generó. Una anomalía alta es antes sospechosa del criterio que del dato (AP-44)."
- }
+  "kind": "recibo_de_contraste",
+  "fecha": "2026-10-29",
+  "version_estandar": "v41.25",
+  "vault_medido": "vault-ans",
+  "nota": "Contraste contra un vault ajeno en solo lectura. Guarda el nombre del vault, nunca su ruta: un recibo versionado no publica el disco de quien lo midió.",
+  "resultado": {
+    "ok": true,
+    "tool": "vault_foreign_check",
+    "root": "vault-ans",
+    "read_only": true,
+    "notes_found": 633,
+    "snapshot_notes_excluded": [
+      ".history\\01_Projects__ans__architecture-2026-05-09T01-53-23.md",
+      ".history\\01_Projects__ans__architecture-2026-05-09T06-52-01.md",
+      ".history\\01_Projects__ans__overview-2026-05-09T06-51-05.md",
+      ".history\\01_Projects__index-2026-05-09T01-51-49.md",
+      ".history\\01_Projects__index-2026-05-09T02-47-44.md",
+      ".history\\02_Observability__index-2026-05-09T01-50-32.md",
+      ".history\\03_Decisions__index-2026-05-09T01-50-39.md",
+      ".history\\04_Sessions__index-2026-05-09T01-51-38.md",
+      ".history\\05_Patterns__code__ans-repository-2026-05-09T02-42-48.md",
+      ".history\\05_Patterns__code__playbook-versioning-2026-05-09T02-45-28.md",
+      ".history\\05_Patterns__index-2026-05-09T01-52-00.md",
+      ".history\\06_Diagrams__index-2026-05-09T01-52-06.md",
+      ".history\\08_Runbooks__deploy__ans-mcp-deploy-2026-05-09T02-45-07.md",
+      ".history\\08_Runbooks__pipeline__ans-ci-cd-2026-05-09T05-14-39.md",
+      ".history\\09_Infrastructure__index-2026-05-09T02-48-04.md",
+      ".history\\09_Infrastructure__pipelines__ans-ci-2026-05-09T05-15-08.md",
+      ".history\\09_Infrastructure__servers__proxmox-01-2026-05-09T11-20-58.md",
+      ".history\\09_Infrastructure__servers__proxmox-01-2026-05-09T11-25-11.md",
+      ".history\\09_Infrastructure__servers__proxmox-new-2026-05-09T11-20-49.md",
+      ".history\\09_Infrastructure__servers__proxmox-new-2026-05-09T11-25-02.md",
+      ".history\\09_Infrastructure__servers__proxmox-new-2026-05-09T11-28-56.md",
+      ".history\\11_Code__ans__code-map-2026-05-09T01-51-21.md",
+      ".history\\11_Code__ans__core-models-py-2026-05-09T01-56-53.md",
+      ".history\\11_Code__ans__core-toon-py-2026-05-09T01-57-04.md",
+      ".history\\11_Code__ans__core-toon-py-2026-05-09T05-17-52.md",
+      ".history\\11_Code__ans__mcp-config-py-2026-05-09T05-17-53.md",
+      ".history\\11_Code__ans__mcp-execution-adapters-py-2026-05-09T05-17-53.md",
+      ".history\\11_Code__ans__mcp-execution-factory-py-2026-05-09T05-18-29.md",
+      ".history\\11_Code__ans__mcp-execution-interfaces-py-2026-05-09T05-19-50.md",
+      ".history\\11_Code__ans__mcp-execution-models-py-2026-05-09T05-18-31.md",
+      ".history\\11_Code__ans__mcp-execution-orchestrator-py-2026-05-09T05-16-29.md",
+      ".history\\11_Code__ans__mcp-execution-registry-py-2026-05-09T05-18-30.md",
+      ".history\\11_Code__ans__server-py-2026-05-09T05-15-59.md",
+      ".history\\11_Code__ans__services-ansible-executor-py-2026-05-09T05-16-59.md",
+      ".history\\11_Code__ans__tools-execution-py-2026-05-09T05-19-06.md",
+      ".history\\11_Code__ans__tools-init-py-2026-05-09T05-19-07.md",
+      ".history\\11_Code__index-2026-05-09T02-47-59.md",
+      ".history\\11_Code__index-2026-05-09T09-28-00.md"
+    ],
+    "snapshot_notes_excluded_count": 38,
+    "foreign_notes_excluded": 0,
+    "foreign_notes_excluded_sample": [],
+    "notes_measured": 633,
+    "unreadable": [],
+    "unreadable_count": 0,
+    "with_frontmatter": 493,
+    "without_frontmatter": 139,
+    "frontmatter_unparseable": [
+      "03_Decisions\\2026-08-12-adr-004-five-steps-cleanup.md"
+    ],
+    "standard_docs_excluded": [
+      "vault-obsidian-architecture.md",
+      "vault-obsidian-architecture.v27.backup.md",
+      "00_System\\vault-obsidian-architecture.md",
+      "scripts\\index.md",
+      "scripts\\README.md",
+      "docs\\sdd\\00-principles.md",
+      "docs\\sdd\\01-state-machines.md",
+      "docs\\sdd\\02-implementation.md",
+      "docs\\sdd\\03-usage.md",
+      "docs\\sdd\\04-antipatterns.md",
+      "docs\\sdd\\05-reference-matrix.md",
+      "docs\\sdd\\06-documentation-methodology.md",
+      "docs\\sdd\\07-process-antipatterns.md",
+      "docs\\sdd\\08-roadmap.md",
+      "docs\\sdd\\09-metrics.md",
+      "docs\\sdd\\10-appendices.md",
+      "docs\\sdd\\gaps.md",
+      "docs\\sdd\\index.md",
+      "docs\\sdd\\README.md",
+      "10_Migrated\\direct\\vault-obsidian-architecture.md"
+    ],
+    "standard_docs_excluded_count": 20,
+    "wikilinks_in_code_excluded": 87,
+    "wikilinks_total": 2121,
+    "wikilinks_unresolved": 81,
+    "wikilinks_unresolved_sample": [
+      {
+        "from": "03_Decisions\\2026-05-08-patrones-antipatrones-vault.md",
+        "target": "carpeta/subcarpeta/nota"
+      },
+      {
+        "from": "03_Decisions\\2026-05-08-patrones-antipatrones-vault.md",
+        "target": "nota"
+      },
+      {
+        "from": "03_Decisions\\2026-08-12-adr-003-mediator-pattern.md",
+        "target": "input-types-ans"
+      },
+      {
+        "from": "03_Decisions\\2026-08-12-adr-004-five-steps-cleanup.md",
+        "target": "tool-inventory-ans"
+      },
+      {
+        "from": "03_Decisions\\2026-08-12-adr-004-five-steps-cleanup.md",
+        "target": "input-types-ans"
+      },
+      {
+        "from": "03_Decisions\\2026-08-12-adr-005-audit-inventory-baselines.md",
+        "target": "tool-inventory-ans"
+      },
+      {
+        "from": "03_Decisions\\adr-template.md",
+        "target": "link-a-decision-relacionada"
+      },
+      {
+        "from": "04_Sessions\\2026-05-08.md",
+        "target": "titulo"
+      },
+      {
+        "from": "04_Sessions\\2026-05-08.md",
+        "target": "stem"
+      },
+      {
+        "from": "04_Sessions\\2026-05-08.md",
+        "target": "Titulo"
+      },
+      {
+        "from": "04_Sessions\\2026-05-08.md",
+        "target": "stem"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/05_Patterns/architecture-patterns"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/07_Knowledge/contracts/concurrency"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/07_Knowledge/contracts/options"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/07_Knowledge/frameworks/ans-ansible-toon-mcp"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/08_Runbooks/deploy/runbook-deploy"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/08_Runbooks"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/09_Infrastructure"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/02_Observability"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "core-observability"
+      }
+    ],
+    "wikilinks_unresolved_all": [
+      {
+        "from": "03_Decisions\\2026-05-08-patrones-antipatrones-vault.md",
+        "target": "carpeta/subcarpeta/nota"
+      },
+      {
+        "from": "03_Decisions\\2026-05-08-patrones-antipatrones-vault.md",
+        "target": "nota"
+      },
+      {
+        "from": "03_Decisions\\2026-08-12-adr-003-mediator-pattern.md",
+        "target": "input-types-ans"
+      },
+      {
+        "from": "03_Decisions\\2026-08-12-adr-004-five-steps-cleanup.md",
+        "target": "tool-inventory-ans"
+      },
+      {
+        "from": "03_Decisions\\2026-08-12-adr-004-five-steps-cleanup.md",
+        "target": "input-types-ans"
+      },
+      {
+        "from": "03_Decisions\\2026-08-12-adr-005-audit-inventory-baselines.md",
+        "target": "tool-inventory-ans"
+      },
+      {
+        "from": "03_Decisions\\adr-template.md",
+        "target": "link-a-decision-relacionada"
+      },
+      {
+        "from": "04_Sessions\\2026-05-08.md",
+        "target": "titulo"
+      },
+      {
+        "from": "04_Sessions\\2026-05-08.md",
+        "target": "stem"
+      },
+      {
+        "from": "04_Sessions\\2026-05-08.md",
+        "target": "Titulo"
+      },
+      {
+        "from": "04_Sessions\\2026-05-08.md",
+        "target": "stem"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/05_Patterns/architecture-patterns"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/07_Knowledge/contracts/concurrency"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/07_Knowledge/contracts/options"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/07_Knowledge/frameworks/ans-ansible-toon-mcp"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/08_Runbooks/deploy/runbook-deploy"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/08_Runbooks"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/09_Infrastructure"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/02_Observability"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "core-observability"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/15_Tests"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "tests/"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/05_Patterns/code-patterns"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/05_Patterns/integration-patterns"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/11_Code"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/07_Knowledge/apis/mcp-tools-index"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/07_Knowledge/apis/cli-ans"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/07_Knowledge/apis/api-rest"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/07_Knowledge/apis"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/07_Knowledge/concepts"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/07_Knowledge/configs"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/03_Decisions"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/12_Bibliography"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/14_Requirements"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/16_AI_Governance"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/00_System/index"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/07_Knowledge/index"
+      },
+      {
+        "from": "99_Index\\documentacion-por-relevancia.md",
+        "target": "vault-ans/08_Runbooks/index"
+      },
+      {
+        "from": "99_Index\\home.md",
+        "target": "architecture-map"
+      },
+      {
+        "from": "99_Index\\home.md",
+        "target": "mcp-ans-layer-responsibility-matrix"
+      },
+      {
+        "from": "99_Index\\home.md",
+        "target": "mcp-startup-deep-dive"
+      },
+      {
+        "from": "99_Index\\home.md",
+        "target": "mcp-playbooks-and-paths-guide"
+      },
+      {
+        "from": "99_Index\\home.md",
+        "target": "architecture-map"
+      },
+      {
+        "from": "99_Index\\home.md",
+        "target": "mcp-ans-data-and-persistence-map"
+      },
+      {
+        "from": "99_Index\\home.md",
+        "target": "mcp-ans-startup-and-runtime"
+      },
+      {
+        "from": "99_Index\\home.md",
+        "target": "mcp-ans-cartography"
+      },
+      {
+        "from": "99_Index\\home.md",
+        "target": "project-structure"
+      },
+      {
+        "from": "99_Index\\home.md",
+        "target": "api-shared-py"
+      },
+      {
+        "from": "99_Index\\home.md",
+        "target": "api-projects-py"
+      },
+      {
+        "from": "99_Index\\home.md",
+        "target": "api-deploys-py"
+      },
+      {
+        "from": "99_Index\\home.md",
+        "target": "tools-infra-py"
+      },
+      {
+        "from": "99_Index\\home.md",
+        "target": "core-errors-py"
+      },
+      {
+        "from": "99_Index\\home.md",
+        "target": "core-policies-py"
+      },
+      {
+        "from": "99_Index\\home.md",
+        "target": "architecture-map"
+      },
+      {
+        "from": "99_Index\\home.md",
+        "target": "lxc-220-nginx-proxy"
+      },
+      {
+        "from": "99_Index\\home.md",
+        "target": "grooming-scheduler"
+      },
+      {
+        "from": "99_Index\\home.md",
+        "target": "ans-deploy-modes"
+      },
+      {
+        "from": "13_Flows\\dataflow\\ans-pipeline-cancellation-error-flow.md",
+        "target": "core-metrics-py"
+      },
+      {
+        "from": "13_Flows\\lifecycle\\ans-multi-mode-cicd-lifecycle.md",
+        "target": "08_Runbooks-pipeline-ans-ci-cd"
+      },
+      {
+        "from": "13_Flows\\lifecycle\\ans-multi-mode-cicd-lifecycle.md",
+        "target": "ci-README"
+      },
+      {
+        "from": "07_Knowledge\\apis\\mcp-ans-tools-operational-catalog.md",
+        "target": "mcp-ans-cartography"
+      },
+      {
+        "from": "07_Knowledge\\apis\\mcp-ans-tools-operational-catalog.md",
+        "target": "mcp-ans-tool-execution-model"
+      },
+      {
+        "from": "07_Knowledge\\apis\\mcp-ans-tools-operational-catalog.md",
+        "target": "mcp-tools-smoke-2026-05-14"
+      },
+      {
+        "from": "07_Knowledge\\apis\\mcp-tools-index.md",
+        "target": "mcp-tools-smoke-2026-05-14"
+      },
+      {
+        "from": "07_Knowledge\\apis\\mcp-tools-index.md",
+        "target": "ans-mcp-tools-cardinality-dataflow"
+      },
+      {
+        "from": "07_Knowledge\\apis\\mcp-vault-memory.md",
+        "target": "ans-tres-vaults"
+      },
+      {
+        "from": "07_Knowledge\\apis\\mcp-vault-memory.md",
+        "target": "ans-tres-vaults"
+      },
+      {
+        "from": "07_Knowledge\\apis\\mcp-vault-memory.md",
+        "target": "ans-event-system"
+      },
+      {
+        "from": "07_Knowledge\\contracts\\concurrency.md",
+        "target": "core-contracts"
+      },
+      {
+        "from": "07_Knowledge\\contracts\\options.md",
+        "target": "core-contracts"
+      },
+      {
+        "from": "02_Observability\\errors\\2026-05-09-initial-vault-problems.md",
+        "target": "carpeta/nota"
+      },
+      {
+        "from": "02_Observability\\errors\\2026-05-09-wiki-link-audit.md",
+        "target": "wiki-link"
+      },
+      {
+        "from": "02_Observability\\errors\\2026-05-09-wiki-link-audit.md",
+        "target": "carpeta/nota"
+      },
+      {
+        "from": "02_Observability\\errors\\2026-05-09-wiki-link-audit.md",
+        "target": "Titulo"
+      },
+      {
+        "from": "02_Observability\\errors\\2026-05-09-wiki-link-audit.md",
+        "target": "stem"
+      },
+      {
+        "from": "02_Observability\\errors\\2026-05-17-documentation-status-audit.md",
+        "target": "architecture-map"
+      },
+      {
+        "from": "01_Projects\\ans\\changelog.md",
+        "target": "carpeta/nota"
+      },
+      {
+        "from": "01_Projects\\ans\\changelog.md",
+        "target": "nota"
+      },
+      {
+        "from": "01_Projects\\ans\\changelog.md",
+        "target": "titulo"
+      },
+      {
+        "from": "01_Projects\\ans\\changelog.md",
+        "target": "stem"
+      },
+      {
+        "from": "01_Projects\\ans\\changelog.md",
+        "target": "stem"
+      }
+    ],
+    "observations": [
+      "1 notas con frontmatter que no parsea por YAML. Antes de llamarlas inválidas, comprobar que Obsidian tampoco las lee: si las lee, el criterio roto es el nuestro (AP-44)."
+    ],
+    "hint": "Esta tool no juzga el vault: juzga si las medidas del estándar sobreviven a material que no generó. Una anomalía alta es antes sospechosa del criterio que del dato (AP-44)."
+  }
 }
