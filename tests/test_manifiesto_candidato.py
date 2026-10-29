@@ -165,3 +165,13 @@ def test_governance_solo_autoriza_con_todo_en_pass():
     assert ci["successful_jobs"] == ci["required_jobs"] > 0
     assert (REPO / g["owner_decision_ref"]).is_file()
     assert (REPO / m["verification"]["recibos"]).is_dir()
+
+
+def test_release_yml_exige_la_ci_del_mismo_sha():
+    """Fail-closed en la publicacion: `release.yml` no basta con
+    `release_authorized`; la CI certificada tiene que ser la del `product_sha`
+    y haber concluido en success. Un manifiesto con la CI de otro SHA (o sin
+    CI, `NOT_RUN`) no publica aunque alguien lo marque como autorizado."""
+    texto = (REPO / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+    assert 'ci.get("run_sha") != sha' in texto
+    assert 'ci.get("conclusion") != "success"' in texto

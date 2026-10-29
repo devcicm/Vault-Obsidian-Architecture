@@ -47,6 +47,11 @@ jobs:
           if m.get("governance", {}).get("release_authorized") is not True:
               errores.append("release_authorized no es true en el manifiesto")
           sha = rc["product_sha"]
+          ci = m.get("verification", {}).get("ci", {})
+          if ci.get("run_sha") != sha:
+              errores.append(f"la CI certificada es de {ci.get('run_sha')}, no del product_sha {sha}")
+          if ci.get("conclusion") != "success":
+              errores.append(f"la CI del candidato no concluyo en success ({ci.get('conclusion')})")
           if subprocess.run(["git", "merge-base", "--is-ancestor", sha, "HEAD"]).returncode:
               errores.append(f"product_sha {sha} no es ancestro del tag")
           if errores:
