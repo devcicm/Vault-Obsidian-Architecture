@@ -465,6 +465,5 @@
         "durabilidad no figura: ningún cruce medido la toca — si aparece, es un cruce nuevo y la puerta lo frena"
       ]
     }
-  ],
-  "nota_recibos": "Rutas absolutas reducidas a su forma última antes de versionar: un recibo publicado no declara el disco ni el nombre de quien lo generó (test_publicacion_limpia). Los sha256 del HTML y de las capturas no cambian."
+  ]
 }

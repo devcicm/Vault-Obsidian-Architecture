@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "receiptId": "0c0e002f-22c4-486a-83b8-3dc0e936c86d",
+  "receiptId": "2a4716dc-666d-4b20-89af-4b3315722723",
   "status": "current",
   "command": "deliver",
   "type": "workflow",
   "input": ".\\.archify\\candidata-onboarding.json",
   "output": ".\\.archify\\mapa-onboarding.html",
   "specification": {
-    "sha256": "76e94c96f73126aa76fe3f2fa9243f41370371a94e36ab255ce350cc11f6ea77",
-    "bytes": 10177
+    "sha256": "ad4d1b2e4e2755b9a0822a7abf1e1a468daaf8c8b95e9f06d3411e94f8ff41f8",
+    "bytes": 9791
   },
   "artifact": {
     "sha256": "b24fe7ae2900b82f1e1ea625a9e8b8cb76af760a9e188f1bd52bd3f43db81b3c",

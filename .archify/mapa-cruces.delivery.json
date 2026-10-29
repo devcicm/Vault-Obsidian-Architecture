@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "receiptId": "65c02544-5c39-49b5-82bf-fa96b5865a2c",
+  "receiptId": "a3880c66-a8c3-42d9-90fb-f9bb05018d44",
   "status": "current",
   "command": "deliver",
   "type": "architecture",
   "input": ".\\.archify\\candidata-cruces.json",
   "output": ".\\.archify\\mapa-cruces.html",
   "specification": {
-    "sha256": "aa3352353261d749d41d0271a5fece41a522f27cfa0fc49b2bc3e91a64a2c3d7",
-    "bytes": 10761
+    "sha256": "a9c0819f19b0eba94926161ea8c2ac556a32c6d25ef47a424a5de3fb31194d2b",
+    "bytes": 10294
   },
   "artifact": {
     "sha256": "66490456a69db201be54a037a85615f8b4d5c2fa840b296bc588259e5785bbb7",

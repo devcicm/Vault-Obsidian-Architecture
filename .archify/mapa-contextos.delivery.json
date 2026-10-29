@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "receiptId": "748e90d0-4f9b-49c4-a3c0-1f4dfff7444b",
+  "receiptId": "54a27fd3-adca-47d8-b4a3-62ac3512f4ea",
   "status": "current",
   "command": "deliver",
   "type": "architecture",
   "input": ".\\.archify\\candidata-contextos.json",
   "output": ".\\.archify\\mapa-contextos.html",
   "specification": {
-    "sha256": "3581ae6737a0acda5eb8da9604ee71d32cd815fa04fda43d4caa4de94dbb364a",
-    "bytes": 12210
+    "sha256": "ebb4f9e01af26ad4615d4b709f36cb5d3b4d1643c5dc9c70feaf94aacceca898",
+    "bytes": 11652
   },
   "artifact": {
     "sha256": "df889fb13ccd6ea9a18d980ec402001fa056259db746ed6906e6cdcff0e0d7d8",

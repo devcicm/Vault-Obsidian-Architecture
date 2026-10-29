@@ -384,6 +384,5 @@
         "Fases 2-5 = esqueleto verificable; la fase 6 decide si el vault sirve"
       ]
     }
-  ],
-  "nota_recibos": "Rutas absolutas reducidas a su forma última antes de versionar: un recibo publicado no declara el disco ni el nombre de quien lo generó (test_publicacion_limpia). Los sha256 del HTML y de las capturas no cambian."
+  ]
 }
