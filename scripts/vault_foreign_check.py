@@ -53,7 +53,7 @@ import argparse
 import json
 import re
 import sys
-from datetime import datetime, timezone
+from datetime import date
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -468,7 +468,11 @@ material que el estandar genera no contrasta nada.
             "ok": True,
             "tool": "vault_foreign_check",
             "kind": "recibo_de_contraste",
-            "fecha": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            # Fecha local, la misma vara con que la leen `vault_release` y
+            # `vault_produccion` (date.today): con UTC, un recibo sellado de
+            # noche en América salía fechado mañana y la puerta lo rechazaba
+            # por «futuro» (medido el 2026-10-28).
+            "fecha": date.today().isoformat(),
             "version_estandar": CURRENT_VERSION,
             "vault_medido": destino.name,
             "nota": (
@@ -476,7 +480,8 @@ material que el estandar genera no contrasta nada.
                 "nombre del vault, nunca su ruta: un recibo versionado no "
                 "publica el disco de quien lo midió."
             ),
-            "resultado": resultado,
+            # El nombre, no la ruta: `resultado["root"]` es el disco de quien midió.
+            "resultado": {**resultado, "root": destino.name},
         }
         destino_recibo.write_text(
             json.dumps(recibo, ensure_ascii=False, indent=2) + "\n",

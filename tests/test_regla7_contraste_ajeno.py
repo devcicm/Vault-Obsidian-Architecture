@@ -448,3 +448,25 @@ def test_el_alias_de_visualizacion_y_el_ancla_no_son_parte_del_destino(tmp_path)
     (tmp_path / "i.md").write_text(
         "[[nota|Otro nombre]] y [[nota#Secci\u00f3n]]\n", encoding="utf-8")
     assert vfc.contrastar(tmp_path)["wikilinks_unresolved"] == 0
+
+
+def test_el_recibo_lleva_fecha_local_y_el_nombre_no_la_ruta(tmp_path, monkeypatch):
+    """El recibo lo lee `vault_produccion` con `date.today()`: sellado en UTC,
+    una medida de noche en América quedaba fechada mañana y la puerta la
+    rechazaba por futura. Y `root` publicaba el disco de quien midió."""
+    from datetime import date
+
+    ajeno = tmp_path / "vault-ajeno"
+    ajeno.mkdir()
+    (ajeno / "nota.md").write_text("---\ntitle: Nota\n---\n\nTexto.\n", encoding="utf-8")
+    falso = tmp_path / "repo" / "scripts" / "vault_foreign_check.py"
+    falso.parent.mkdir(parents=True)
+    monkeypatch.setattr(vfc, "__file__", str(falso))
+    monkeypatch.setattr(sys, "argv", ["vault_foreign_check", "--root", str(ajeno),
+                                      "--registrar-contraste"])
+    vfc.main()
+    recibo = json.loads((tmp_path / "repo" / "docs" / "contrastes"
+                         / "ultimo-contraste.json").read_text(encoding="utf-8"))
+    assert recibo["fecha"] == date.today().isoformat()
+    assert recibo["resultado"]["root"] == "vault-ajeno"
+    assert str(tmp_path) not in json.dumps(recibo)

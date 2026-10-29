@@ -2,7 +2,7 @@
   "ok": true,
   "tool": "vault_foreign_check",
   "kind": "recibo_de_contraste",
-  "fecha": "2026-10-29",
+  "fecha": "2026-10-28",
   "version_estandar": "v41.25",
   "vault_medido": "vault-ans",
   "nota": "Contraste contra un vault ajeno en solo lectura. Guarda el nombre del vault, nunca su ruta: un recibo versionado no publica el disco de quien lo midió.",
