@@ -1,0 +1,63 @@
+{
+  "gate": "QG-06",
+  "target_sha": "e10100476b3a8bdc2298d7e9acfc9d8f4c494a7a",
+  "verificador": "colector_qg",
+  "command": "python audits/fase2/colector_qg.py --sha e10100476b3a8bdc2298d7e9acfc9d8f4c494a7a --ejecutar",
+  "exit_code": 0,
+  "status": "PASS",
+  "started_at": "2026-10-29T10:38:57Z",
+  "finished_at": "2026-10-29T10:39:10Z",
+  "run_id": "local-QG-06-e101004",
+  "artifact": "<recibos-base>\\recibos2\\QG-06.subchecks.json",
+  "artifact_sha256": "a55fdb0fd1aa613bbd1675addacbd6fd608d2f44cd67f056308b1dc1dba681f6",
+  "checks": {
+    "construccion": "ejecutado",
+    "wheel_contenido": "ejecutado",
+    "instalacion_limpia": "ejecutado"
+  },
+  "subchecks": {
+    "construccion": {
+      "subcheck": "construccion",
+      "verificador": "construccion",
+      "estado": "ejecutado",
+      "detalle": null,
+      "exit_code": 0,
+      "artifact": "<recibos-base>\\recibos2\\QG-06.construccion.salida.txt",
+      "artifact_sha256": "a691318204fe46cc7d246a14121b7a22cf6da1da9228c9fbe393dbfa281ccc17",
+      "started_at": "2026-10-29T10:38:57Z",
+      "finished_at": "2026-10-29T10:39:10Z"
+    },
+    "wheel_contenido": {
+      "subcheck": "wheel_contenido",
+      "verificador": "wheel_contenido",
+      "estado": "ejecutado",
+      "detalle": null,
+      "exit_code": null,
+      "artifact": "<recibos-base>\\recibos2\\QG-06.wheel_contenido.json",
+      "artifact_sha256": "f512b1eeea80e1c3a92525feac4f79a113e1208021b04e37db2e304e2b792f70",
+      "started_at": "2026-10-29T10:39:10Z",
+      "finished_at": "2026-10-29T10:39:10Z",
+      "datos": {
+        "artefactos": [
+          {
+            "wheel": "vault_obsidian_architecture-41.25-py3-none-any.whl",
+            "sha256": "aa565ccfdc6f0d4402d60e3a3e687af87211676bb61779346859d2c42172405c",
+            "ficheros": 711,
+            "material_ajeno": []
+          }
+        ]
+      }
+    },
+    "instalacion_limpia": {
+      "subcheck": "instalacion_limpia",
+      "verificador": "recorrido_e2e",
+      "estado": "ejecutado",
+      "detalle": null,
+      "exit_code": null,
+      "artifact": "<recibos-base>\\e2e.json",
+      "artifact_sha256": "268b7fb8cc04f8f2b977378e437373fffc985708af2a1d360ca1d7158cb6b8d9",
+      "started_at": "2026-10-29T10:39:10Z",
+      "finished_at": "2026-10-29T10:39:10Z"
+    }
+  }
+}

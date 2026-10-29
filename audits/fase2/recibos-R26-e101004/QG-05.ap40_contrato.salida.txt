@@ -1,0 +1,17 @@
+subcheck=ap40_contrato
+verificador=ap40_contrato
+argv=<python> <repo>\scripts\vault_mcp_catalog.py --check-params
+exit_code=0
+--- stdout ---
+{
+  "ok": true,
+  "tool": "vault_mcp_catalog",
+  "action": "check-params",
+  "json_path": "<repo>\\mcp\\nodejs\\tools-catalog.json",
+  "tools_checked": 123,
+  "problems": [],
+  "problemas": [],
+  "hallazgos": 0
+}
+
+--- stderr ---

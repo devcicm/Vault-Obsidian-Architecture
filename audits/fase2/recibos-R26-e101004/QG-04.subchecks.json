@@ -1,0 +1,46 @@
+{
+  "saneamiento": {
+    "subcheck": "saneamiento",
+    "verificador": "saneamiento",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": 0,
+    "artifact": "<recibos-base>\\recibos2\\QG-04.saneamiento.salida.txt",
+    "artifact_sha256": "2a088c40366977da2fdd35b50781d1bd79f7ee16a634800d092176293a0b9ac2",
+    "started_at": "2026-10-29T10:37:54Z",
+    "finished_at": "2026-10-29T10:37:55Z"
+  },
+  "pip_audit": {
+    "subcheck": "pip_audit",
+    "verificador": "pip_audit",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": 0,
+    "artifact": "<recibos-base>\\recibos2\\QG-04.pip_audit.salida.txt",
+    "artifact_sha256": "080dab9672ec31adf1315976d15d2269e61a2e52ca26dd2a68564775d552cc82",
+    "started_at": "2026-10-29T10:37:55Z",
+    "finished_at": "2026-10-29T10:37:57Z"
+  },
+  "contencion": {
+    "subcheck": "contencion",
+    "verificador": "contencion",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": 0,
+    "artifact": "<recibos-base>\\recibos2\\QG-04.contencion.salida.txt",
+    "artifact_sha256": "4b950891a4a75b179d08acabe6dfc2bbf5ff652a1b1ce2fbeed41707daf47c4e",
+    "started_at": "2026-10-29T10:37:57Z",
+    "finished_at": "2026-10-29T10:37:57Z"
+  },
+  "operaciones_destructivas": {
+    "subcheck": "operaciones_destructivas",
+    "verificador": "operaciones_destructivas",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": 0,
+    "artifact": "<recibos-base>\\recibos2\\QG-04.operaciones_destructivas.salida.txt",
+    "artifact_sha256": "fc81608fa0ffe8d955d54d4084550fdd585c14b95eff7a7e5b9692f38c03a114",
+    "started_at": "2026-10-29T10:37:57Z",
+    "finished_at": "2026-10-29T10:38:15Z"
+  }
+}

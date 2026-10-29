@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "detalle": null,
+  "datos": {
+    "artefactos": [
+      {
+        "wheel": "vault_obsidian_architecture-41.25-py3-none-any.whl",
+        "sha256": "aa565ccfdc6f0d4402d60e3a3e687af87211676bb61779346859d2c42172405c",
+        "ficheros": 711,
+        "material_ajeno": []
+      }
+    ]
+  }
+}

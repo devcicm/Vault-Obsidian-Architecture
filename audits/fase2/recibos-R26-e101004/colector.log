@@ -1,0 +1,212 @@
+{
+  "checkout": {
+    "ok": true,
+    "detalle": null
+  }
+}
+{
+  "ok": true,
+  "ejecucion": {
+    "QG-00": {
+      "ok": true,
+      "status": "PASS",
+      "recibo": "<recibos-base>\\recibos2\\QG-00.recibo.json",
+      "checks": {
+        "identidad_git": "ejecutado",
+        "arbol_limpio": "ejecutado",
+        "saneamiento": "ejecutado",
+        "reconciliador_archify": "ejecutado"
+      },
+      "fallidos": []
+    },
+    "QG-01": {
+      "ok": true,
+      "status": "PASS",
+      "recibo": "<recibos-base>\\recibos2\\QG-01.recibo.json",
+      "checks": {
+        "vault_arch": "ejecutado",
+        "reconciliador_archify": "ejecutado"
+      },
+      "fallidos": []
+    },
+    "QG-02": {
+      "ok": true,
+      "status": "PASS",
+      "recibo": "<recibos-base>\\recibos2\\QG-02.recibo.json",
+      "checks": {
+        "puertas_26": "ejecutado",
+        "auditoria_completa": "ejecutado",
+        "sin_violaciones": "ejecutado",
+        "certificacion_compuesta": "ejecutado"
+      },
+      "fallidos": []
+    },
+    "QG-03": {
+      "ok": true,
+      "status": "PASS",
+      "recibo": "<recibos-base>\\recibos2\\QG-03.recibo.json",
+      "checks": {
+        "suite_junit": "ejecutado",
+        "recorrido_e2e": "ejecutado"
+      },
+      "fallidos": []
+    },
+    "QG-04": {
+      "ok": true,
+      "status": "PASS",
+      "recibo": "<recibos-base>\\recibos2\\QG-04.recibo.json",
+      "checks": {
+        "saneamiento": "ejecutado",
+        "pip_audit": "ejecutado",
+        "contencion": "ejecutado",
+        "operaciones_destructivas": "ejecutado"
+      },
+      "fallidos": []
+    },
+    "QG-05": {
+      "ok": true,
+      "status": "PASS",
+      "recibo": "<recibos-base>\\recibos2\\QG-05.recibo.json",
+      "checks": {
+        "paridad_cli_mcp": "ejecutado",
+        "ap40_contrato": "ejecutado"
+      },
+      "fallidos": []
+    },
+    "QG-06": {
+      "ok": true,
+      "status": "PASS",
+      "recibo": "<recibos-base>\\recibos2\\QG-06.recibo.json",
+      "checks": {
+        "construccion": "ejecutado",
+        "wheel_contenido": "ejecutado",
+        "instalacion_limpia": "ejecutado"
+      },
+      "fallidos": []
+    }
+  }
+}
+{
+  "ok": true,
+  "detalle": null,
+  "estado": {
+    "sha_objetivo": "e10100476b3a8bdc2298d7e9acfc9d8f4c494a7a",
+    "gates": {
+      "QG-00": "PASS",
+      "QG-01": "PASS",
+      "QG-02": "PASS",
+      "QG-03": "PASS",
+      "QG-04": "PASS",
+      "QG-05": "PASS",
+      "QG-06": "PASS",
+      "QG-07": "PASS"
+    },
+    "evidencias": {
+      "QG-00": {
+        "sha": "e10100476b3a8bdc2298d7e9acfc9d8f4c494a7a",
+        "estado": "ejecutado",
+        "detalle": null
+      },
+      "QG-01": {
+        "sha": "e10100476b3a8bdc2298d7e9acfc9d8f4c494a7a",
+        "estado": "ejecutado",
+        "detalle": null
+      },
+      "QG-02": {
+        "sha": "e10100476b3a8bdc2298d7e9acfc9d8f4c494a7a",
+        "estado": "ejecutado",
+        "detalle": null
+      },
+      "QG-03": {
+        "sha": "e10100476b3a8bdc2298d7e9acfc9d8f4c494a7a",
+        "estado": "ejecutado",
+        "detalle": null
+      },
+      "QG-04": {
+        "sha": "e10100476b3a8bdc2298d7e9acfc9d8f4c494a7a",
+        "estado": "ejecutado",
+        "detalle": null
+      },
+      "QG-05": {
+        "sha": "e10100476b3a8bdc2298d7e9acfc9d8f4c494a7a",
+        "estado": "ejecutado",
+        "detalle": null
+      },
+      "QG-06": {
+        "sha": "e10100476b3a8bdc2298d7e9acfc9d8f4c494a7a",
+        "estado": "ejecutado",
+        "detalle": null
+      }
+    },
+    "control_ejecucion": {
+      "completo": true,
+      "degradados": [],
+      "no_verificados": [],
+      "violaciones": 0,
+      "checks": [
+        {
+          "control": "AP-40",
+          "estado": "ejecutado",
+          "detalle": null,
+          "hallazgos": 0
+        },
+        {
+          "control": "AP-42",
+          "estado": "ejecutado",
+          "detalle": null,
+          "hallazgos": 0
+        },
+        {
+          "control": "AP-43",
+          "estado": "ejecutado",
+          "detalle": null,
+          "hallazgos": 0
+        }
+      ]
+    },
+    "ci": {
+      "conclusion": "no_verificable",
+      "run_id": 40843103452,
+      "detalle": "MATRIZ_INCOMPLETA faltan=['Puertas del estándar (ubuntu-latest)', 'Puertas del estándar (windows-latest)'] sin_conclusion=[] fallidos=[] sobrantes=['Puertas del estÃ¡ndar (ubuntu-latest)', 'Puertas del estÃ¡ndar (windows-latest)']"
+    },
+    "arbol": {
+      "ok": true,
+      "detalle": null
+    }
+  },
+  "suite": {
+    "estado": "ejecutado",
+    "detalle": null,
+    "tests": 6501,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 16,
+    "sha256": "e1e000d4fa04be7821aecf4c81ab2d8c71bd3df0ed65b6b5d778e9a694f60c55"
+  },
+  "ci": {
+    "conclusion": "no_verificable",
+    "run_id": 40843103452,
+    "detalle": "MATRIZ_INCOMPLETA faltan=['Puertas del estándar (ubuntu-latest)', 'Puertas del estándar (windows-latest)'] sin_conclusion=[] fallidos=[] sobrantes=['Puertas del estÃ¡ndar (ubuntu-latest)', 'Puertas del estÃ¡ndar (windows-latest)']"
+  },
+  "politica": {
+    "sha_objetivo": "e10100476b3a8bdc2298d7e9acfc9d8f4c494a7a",
+    "gates": {
+      "QG-00": "PASS",
+      "QG-01": "PASS",
+      "QG-02": "PASS",
+      "QG-03": "PASS",
+      "QG-04": "PASS",
+      "QG-05": "PASS",
+      "QG-06": "PASS",
+      "QG-07": "BLOCKED"
+    },
+    "motivos": {
+      "QG-07": [
+        "CI_PENDING: status=sin dato conclusion=no_verificable MATRIZ_INCOMPLETA faltan=['Puertas del estándar (ubuntu-latest)', 'Puertas del estándar (windows-latest)'] sin_conclusion=[] fallidos=[] sobrantes=['Puertas del estÃ¡ndar (ubuntu-latest)', 'Puertas del estÃ¡ndar (windows-latest)']"
+      ]
+    },
+    "qg07": "BLOCKED",
+    "liberable": false,
+    "resumen": "QG-07 BLOCKED: CI_PENDING: status=sin dato conclusion=no_verificable MATRIZ_INCOMPLETA faltan=['Puertas del estándar (ubuntu-latest)', 'Puertas del estándar (windows-latest)'] sin_conclusion=[] fallidos=[] sobrantes=['Puertas del estÃ¡ndar (ubuntu-latest)', 'Puertas del estÃ¡ndar (windows-latest)']"
+  }
+}

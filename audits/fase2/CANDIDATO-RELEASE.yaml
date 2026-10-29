@@ -1,12 +1,15 @@
-# Manifiesto del candidato de release — ronda R25 (v41.25)
+# Manifiesto del candidato de release — ronda R26 (v41.25)
 #
-# Candidato: 533e424 (arbol 9748748e). Supersede al candidato v41.23 (2603f48),
-# que NO se borra: su manifiesto completo queda en `candidato_v41_23`. Motivo:
-# v41.25 cambia el contenido de la wheel y un PASS de un SHA no se traslada.
+# Candidato: e101004 (arbol 665ef844). Supersede al R25 (533e424), que NO se borra:
+# su manifiesto completo queda en `candidato_v41_25_r25`; el de v41.23 sigue en
+# `candidato_v41_23`. Motivo: R25 no tenia CI y despues se regeneraron los mapas
+# `.archify/` y se saneo la documentacion; un PASS de un SHA no se traslada.
 #
-# ESTADO: CANDIDATE, NO autorizado. QG-00..06 PASS (recibos-R25-533e424/),
-# QG-07 NOT_RUN (no hay run de CI para este SHA). `release_authorized` solo lo
-# firma el propietario con un acta nueva (la DEC-06 era de v41.23).
+# ESTADO: CANDIDATE, NO autorizado. QG-00..07 PASS (recibos-R26-e101004/); la CI de
+# este SHA (run 40843103452) termino en success tras relanzar un job flaky
+# (windows-latest, py3.9, shard 2, tests/test_naturalezas.py), declarado en el README
+# de los recibos. `release_authorized` solo lo firma el propietario con un acta
+# nueva (la DEC-06 era de v41.23).
 #
 # CONVENCION ANTI-CIRCULARIDAD: el SHA del commit que fija este manifiesto se
 # lee de git en tiempo de validacion; la relacion con product_sha es de
@@ -15,12 +18,12 @@
 # Validacion: tests/test_manifiesto_candidato.py.
 
 release_candidate:
-  product_sha: 533e424632214d4a8b3a6f9ce2c5589f3e6da4af
-  product_tree_sha: 9748748e0a234789cd8babb13b81a5d191186c3a
+  product_sha: e10100476b3a8bdc2298d7e9acfc9d8f4c494a7a
+  product_tree_sha: 665ef844002122e7730fe32ecacdc2e4f000ada5
   version: 41.25
-  rama: tmp/dedup-ap57-20261028
-  ronda: R25
-  alcance: "Windows (medido), Linux por CI pendiente, Python 3.9-3.12 declarado; la suite y el E2E de esta ronda corrieron en Windows con Python 3.14 (macOS fuera de alcance)"
+  rama: main
+  ronda: R26
+  alcance: "Windows (medido) y Linux por CI, Python 3.9-3.12 por CI; la suite y el E2E de esta ronda corrieron en Windows con Python 3.14 (macOS fuera de alcance)"
   documentation:
     product_ancestor_of_head: true
     doc_parent_sha: e0fc775551217ee0a778ca3dece0da3f0a63ba38
@@ -35,45 +38,46 @@ release_candidate:
 artifacts:
   wheel:
     artifact_filename: vault_obsidian_architecture-41.25-py3-none-any.whl
-    digest: 2e572f9813e6916d7783237577dc89fce46b7b0082bd9e82ad7e9c37debc4c7e
+    digest: aa565ccfdc6f0d4402d60e3a3e687af87211676bb61779346859d2c42172405c
     evidence_note: >-
       construida por el subcheck `construccion` del colector (QG-06), 711
       miembros, material_ajeno vacio. El ZIP no es reproducible byte a byte: la
-      construccion del E2E dio 93be152f290ce6ef0caec1d8cdd1237b296af4c7cc55a7d94e907cb6a8f58fc6
+      construccion del E2E dio d5840b56ecbb598c08e579a3c5ff7bc0df8c04ace23927ff5ba38a64e5b09cb7
       con el mismo contenido. La que se publica la construye release.yml y
       lleva su propio SHA256SUMS.txt.
   sdist:
     artifact_filename: vault_obsidian_architecture-41.25.tar.gz
-    digest: 17bece8939b0b6644da7ea04d6d89ff215fe772ab832ae9c9795fb7c440615af
+    digest: f989670fbb20257aab26d193c393b17ca0e00495e6a5dd27b876f6087c4af74b
 
 verification:
-  recibos: audits/fase2/recibos-R25-533e424/
+  recibos: audits/fase2/recibos-R26-e101004/
   suite:
-    junit_digest: 8cb3bce334a14e5229cc977e7b874afb3953d77b2ebcebc31a0ad4efc9743e25
+    junit_digest: e1e000d4fa04be7821aecf4c81ab2d8c71bd3df0ed65b6b5d778e9a694f60c55
     junit_evidence_note: >-
       JUnit del candidato: 6485 passed / 16 skipped / 0 failed / 0 errors sobre
-      6501 casos (Windows 10, Python 3.14, -n 4). Con -n auto el worker gw1 se
-      cae en test_noop_audit.py::test_el_banco_sigue_viendo_trabajo_real (3 de
-      3), causa sin determinar. Recibo de procedencia con SHA, exit 0 y sha256
-      en recibos-R25-533e424/junit.xml.procedencia.json.
+      6501 casos (Windows 10, Python 3.14, -n 4, arbol limpio en e101004). Con
+      -n auto el worker gw1 se cae en test_noop_audit.py (causa sin determinar).
+      Recibo de procedencia con SHA, exit 0 y sha256 en
+      recibos-R26-e101004/junit.xml.procedencia.json.
   gates:
-    manifest_digest: de363107885955109cf5b0e0d3dc10f3774eaf0b7959a962c5eca4223f30e615
+    manifest_digest: f2f1e72e573b7c44eb7a97301a6c55180640f112d4c88d284f39d4ca8f5c3242
     gates_evidence_note: "salida de `vault_gate --strict` dentro de QG-02: todas verdes."
   e2e:
-    manifest_digest: 093d6df53faf364df35554942b4555c5ac2ea1f0ddd301c67c72f566d240ee6f
+    manifest_digest: 268b7fb8cc04f8f2b977378e437373fffc985708af2a1d360ca1d7158cb6b8d9
     e2e_evidence_note: >-
       27/27 pasos desde la wheel instalada en venv limpio, en Windows: CLI, MCP,
       persistencia, clean/restore con hash y locks, reinstalacion.
   ci:
-    run_id: null
-    run_sha: null
-    status: NOT_RUN
-    conclusion: NOT_RUN
-    required_jobs: 0
-    successful_jobs: 0
+    run_id: 40843103452
+    run_sha: e10100476b3a8bdc2298d7e9acfc9d8f4c494a7a
+    status: COMPLETED
+    conclusion: success
+    required_jobs: 27
+    successful_jobs: 27
     note: >-
-      no hay run de CI para 533e424: la rama no se ha publicado. QG-07 queda
-      NOT_RUN hasta que exista un run en success sobre este SHA.
+      run sobre e101004 en main. Un job (windows-latest, py3.9, shard 2,
+      tests/test_naturalezas.py) fallo en el primer intento y paso al relanzarlo;
+      flaky sin diagnosticar, declarado en el README de los recibos.
 
 governance:
   qg_statuses:
@@ -84,14 +88,12 @@ governance:
     QG-04: PASS
     QG-05: PASS
     QG-06: PASS
-    QG-07: NOT_RUN
+    QG-07: PASS
   qg_status_note: >-
-    colector_qg --ejecutar sobre 533e424 con el arbol limpio: cada subcheck con
-    su verificador, exit code y artefacto (recibos-R25-533e424/). La politica
-    devuelve liberable: false porque QG-07 espera la CI. QG-02 se obtuvo con
-    el directorio ajeno `vault-backups` apartado (renombrado y devuelto); la
-    primera corrida, sin apartar, dio AP-36 y esta descrita en el README de los
-    recibos junto a la de QG-04 (pip del venv de auditoria).
+    colector_qg --ejecutar sobre e101004 con el arbol limpio (segunda corrida:
+    la primera dejo QG-03 y QG-05 en NOT_RUN por falta de procedencia de la suite
+    y de runtime de paridad). QG-07 PASS por la CI en success. QG-02 con el
+    directorio ajeno `vault-backups` apartado y devuelto.
   qa_verdict_ref: PENDIENTE
   qa_verdict_ref_note: >-
     sin dictamen QA independiente sobre este SHA.
@@ -101,6 +103,97 @@ governance:
     para v41.23 y no se extiende a v41.25. Falta un acta nueva del propietario.
   release_authorized: false
   publication_status: CANDIDATE
+
+candidato_v41_25_r25:
+  # Manifiesto completo de la ronda R25 (533e424), conservado tal cual. Lo supersede R26
+  # (e101004) porque R25 no tenia CI y R26 cierra QG-07. Sus recibos siguen en recibos-R25-533e424/.
+  release_candidate:
+    product_sha: 533e424632214d4a8b3a6f9ce2c5589f3e6da4af
+    product_tree_sha: 9748748e0a234789cd8babb13b81a5d191186c3a
+    version: 41.25
+    rama: tmp/dedup-ap57-20261028
+    ronda: R25
+    alcance: "Windows (medido), Linux por CI pendiente, Python 3.9-3.12 declarado; la suite y el E2E de esta ronda corrieron en Windows con Python 3.14 (macOS fuera de alcance)"
+    documentation:
+      product_ancestor_of_head: true
+      doc_parent_sha: e0fc775551217ee0a778ca3dece0da3f0a63ba38
+      doc_parent_sha_note: >-
+        commit que publico por primera vez este manifiesto (R15). Es la
+        publicacion inicial, no una relacion de paternidad con el HEAD.
+      note: >-
+        el SHA del commit que fija este manifiesto se lee de git en tiempo de
+        validacion (HEAD de la rama); su relacion con product_sha es de
+        ASCENDENCIA, y ese es el unico contrato que se comprueba.
+
+  artifacts:
+    wheel:
+      artifact_filename: vault_obsidian_architecture-41.25-py3-none-any.whl
+      digest: 2e572f9813e6916d7783237577dc89fce46b7b0082bd9e82ad7e9c37debc4c7e
+      evidence_note: >-
+        construida por el subcheck `construccion` del colector (QG-06), 711
+        miembros, material_ajeno vacio. El ZIP no es reproducible byte a byte: la
+        construccion del E2E dio 93be152f290ce6ef0caec1d8cdd1237b296af4c7cc55a7d94e907cb6a8f58fc6
+        con el mismo contenido. La que se publica la construye release.yml y
+        lleva su propio SHA256SUMS.txt.
+    sdist:
+      artifact_filename: vault_obsidian_architecture-41.25.tar.gz
+      digest: 17bece8939b0b6644da7ea04d6d89ff215fe772ab832ae9c9795fb7c440615af
+
+  verification:
+    recibos: audits/fase2/recibos-R25-533e424/
+    suite:
+      junit_digest: 8cb3bce334a14e5229cc977e7b874afb3953d77b2ebcebc31a0ad4efc9743e25
+      junit_evidence_note: >-
+        JUnit del candidato: 6485 passed / 16 skipped / 0 failed / 0 errors sobre
+        6501 casos (Windows 10, Python 3.14, -n 4). Con -n auto el worker gw1 se
+        cae en test_noop_audit.py::test_el_banco_sigue_viendo_trabajo_real (3 de
+        3), causa sin determinar. Recibo de procedencia con SHA, exit 0 y sha256
+        en recibos-R25-533e424/junit.xml.procedencia.json.
+    gates:
+      manifest_digest: de363107885955109cf5b0e0d3dc10f3774eaf0b7959a962c5eca4223f30e615
+      gates_evidence_note: "salida de `vault_gate --strict` dentro de QG-02: todas verdes."
+    e2e:
+      manifest_digest: 093d6df53faf364df35554942b4555c5ac2ea1f0ddd301c67c72f566d240ee6f
+      e2e_evidence_note: >-
+        27/27 pasos desde la wheel instalada en venv limpio, en Windows: CLI, MCP,
+        persistencia, clean/restore con hash y locks, reinstalacion.
+    ci:
+      run_id: null
+      run_sha: null
+      status: NOT_RUN
+      conclusion: NOT_RUN
+      required_jobs: 0
+      successful_jobs: 0
+      note: >-
+        no hay run de CI para 533e424: la rama no se ha publicado. QG-07 queda
+        NOT_RUN hasta que exista un run en success sobre este SHA.
+
+  governance:
+    qg_statuses:
+      QG-00: PASS
+      QG-01: PASS
+      QG-02: PASS
+      QG-03: PASS
+      QG-04: PASS
+      QG-05: PASS
+      QG-06: PASS
+      QG-07: NOT_RUN
+    qg_status_note: >-
+      colector_qg --ejecutar sobre 533e424 con el arbol limpio: cada subcheck con
+      su verificador, exit code y artefacto (recibos-R25-533e424/). La politica
+      devuelve liberable: false porque QG-07 espera la CI. QG-02 se obtuvo con
+      el directorio ajeno `vault-backups` apartado (renombrado y devuelto); la
+      primera corrida, sin apartar, dio AP-36 y esta descrita en el README de los
+      recibos junto a la de QG-04 (pip del venv de auditoria).
+    qa_verdict_ref: PENDIENTE
+    qa_verdict_ref_note: >-
+      sin dictamen QA independiente sobre este SHA.
+    owner_decision_ref: PENDIENTE
+    owner_decision_ref_note: >-
+      la DEC-06 (audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-10-28.md) fue
+      para v41.23 y no se extiende a v41.25. Falta un acta nueva del propietario.
+    release_authorized: false
+    publication_status: CANDIDATE
 
 candidato_v41_23:
   # Manifiesto completo de la ronda R23 (v41.23), conservado tal cual estaba

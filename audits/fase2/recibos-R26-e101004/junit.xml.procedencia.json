@@ -1,0 +1,7 @@
+{
+  "sha": "e10100476b3a8bdc2298d7e9acfc9d8f4c494a7a",
+  "exit": 0,
+  "junit_sha256": "e1e000d4fa04be7821aecf4c81ab2d8c71bd3df0ed65b6b5d778e9a694f60c55",
+  "comando": "python -m pytest tests/ -q -n 4 --tb=short --junitxml=suite.xml",
+  "nota": "corrida sobre el arbol limpio en ese SHA; 6485 passed, 16 skipped"
+}

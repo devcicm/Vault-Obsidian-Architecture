@@ -1,0 +1,11 @@
+subcheck=pip_audit
+verificador=pip_audit
+argv=<tmp> -m pip_audit --progress-spinner off
+exit_code=0
+--- stdout ---
+Name                        Skip Reason
+--------------------------- ------------------------------------------------------------------------------------------
+vault-obsidian-architecture Dependency not found on PyPI and could not be audited: vault-obsidian-architecture (41.25)
+
+--- stderr ---
+No known vulnerabilities found

@@ -609,7 +609,8 @@ def estado_desde_recibo(gate: str, sha: str,
 
 def _gh_json(args: List[str], raiz: Path) -> Any:
     p = subprocess.run(["gh", *args], cwd=str(raiz), capture_output=True,
-                       text=True, timeout=180)
+                       text=True, encoding="utf-8", errors="replace",
+                       timeout=180)
     if p.returncode != 0:
         raise OSError((p.stderr or "gh no disponible").strip()[:200])
     return json.loads(p.stdout or "{}")
