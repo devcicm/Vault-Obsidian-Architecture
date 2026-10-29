@@ -27,6 +27,10 @@ def readme_temporal(tmp_path, monkeypatch):
     copia = tmp_path / "README.md"
     copia.write_text(vds.README.read_text(encoding="utf-8"), encoding="utf-8")
     monkeypatch.setattr(vds, "README", copia)
+    # `fix()` también regenera el documento de disponibilidad: que no toque el del repo.
+    disp = tmp_path / "DISPONIBILIDAD-DE-TOOLS.md"
+    disp.write_text(vds.DISPONIBILIDAD.read_text(encoding="utf-8"), encoding="utf-8")
+    monkeypatch.setattr(vds, "DISPONIBILIDAD", disp)
     return copia
 
 
@@ -139,3 +143,48 @@ def test_la_tool_esta_registrada_en_el_catalogo():
     assert "vault_doc_sync" in vault_mcp_catalog.TOOLS_CATALOG
     assert vault_mcp_catalog.TOOLS_CATALOG["vault_doc_sync"]["group"] == "Normas"
     assert "vault_doc_sync" in vault_mcp_catalog.GROUPS["Normas"]
+
+
+# ── 3. Disponibilidad de las tools ─────────────────────────────────────────
+
+
+def test_disponibilidad_detecta_un_documento_a_mano(readme_temporal):
+    vds.DISPONIBILIDAD.write_text(
+        vds.DISPONIBILIDAD.read_text(encoding="utf-8") + "\nLínea escrita a mano.\n", encoding="utf-8")
+    kinds = {p["kind"] for p in vds.scan()["problems"]}
+    assert "disponibilidad_desincronizada" in kinds
+
+
+def test_disponibilidad_detecta_el_documento_ausente(readme_temporal):
+    vds.DISPONIBILIDAD.unlink()
+    kinds = {p["kind"] for p in vds.scan()["problems"]}
+    assert "disponibilidad_ausente" in kinds
+    assert vds.fix()["ok"] and vds.DISPONIBILIDAD.exists()
+
+
+def test_disponibilidad_detecta_una_tool_de_cuidado_huerfana(readme_temporal, monkeypatch):
+    monkeypatch.setitem(vds.TOOLS_DE_CUIDADO, "vault_que_no_existe", "x")
+    detalles = [p["detail"] for p in vds.scan()["problems"] if p["kind"] == "disponibilidad_cuidado_huerfano"]
+    assert detalles == ["vault_que_no_existe"]
+
+
+def test_disponibilidad_cubre_cada_tool_una_sola_vez():
+    texto = vds.disponibilidad_texto()
+    from vault.meta_toolkit.catalogo_producto import catalogo_producto
+    for nombre in catalogo_producto():
+        assert texto.count("| `{}` |".format(nombre)) >= 1, nombre
+    for nombre in vds._spec_no_activas():
+        assert "| `{}` |".format(nombre) in texto, nombre
+
+
+def test_disponibilidad_del_repo_esta_al_dia():
+    assert vds.disponibilidad_problemas() == []
+
+
+def test_readme_raiz_lista_cada_tool_activa(tmp_path, monkeypatch):
+    assert vds.tabla_del_readme_raiz() == []
+    copia = tmp_path / "README.md"
+    copia.write_text(vds.README_RAIZ.read_text(encoding="utf-8").replace("| 1 — Core | `vault_write`, ", "| 1 — Core | ", 1), encoding="utf-8")
+    monkeypatch.setattr(vds, "README_RAIZ", copia)
+    assert [p["detail"] for p in vds.tabla_del_readme_raiz()] == ["vault_write"]
+

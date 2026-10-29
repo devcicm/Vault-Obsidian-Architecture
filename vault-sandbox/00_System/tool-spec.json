@@ -3653,7 +3653,7 @@
       "deprecation_reason": "vault_diagram_save generates Mermaid diagrams with ERD support",
       "archived_in": "v22",
       "superseded_by": "vault_diagram_save",
-      "reason": "Superseded por vault_diagram_export."
+      "reason": "Superseded por vault_diagram_save; para exportar el diagrama usa vault_diagram_export."
     },
     "vault_reorganize": {
       "group": "Migración (legacy)",
@@ -3672,7 +3672,7 @@
       "deprecation_reason": "Dynamic dest detection is handled by vault_migrate_docs",
       "archived_in": "v25",
       "superseded_by": "vault_migrate_docs",
-      "reason": "Superseded por vault_move y vault_folder_registry."
+      "reason": "Superseded por vault_migrate_docs; para mover una nota usa vault_move y para el registro de carpetas vault_folder_registry."
     },
     "vault_requirement_save": {
       "group": "Requerimientos",

@@ -125,6 +125,7 @@ Fallos de **seguridad** en privado, nunca en un issue: [SECURITY.md](SECURITY.md
 | Consultar la instalación y el uso documentados | [Quick Start](#quick-start), con su limitación de copia indicada |
 | Quitar una instalación previa, instalar la wheel y registrar el MCP | [Instalación limpia](./docs/INSTALACION-LIMPIA.md) |
 | Ver auditorías, comparativas entre versiones y documentos archivados | [Índice de `docs/`](./docs/README.md) |
+| Saber qué tools están disponibles, cuáles funcionan y cuáles no usar | [Disponibilidad de las tools](./docs/DISPONIBILIDAD-DE-TOOLS.md) |
 | Elegir y ejecutar herramientas | [Referencia de scripts](./scripts/README.md) y [CLI consolidada](./cli/README.md) |
 | Consultar la norma y la arquitectura vigente | [Manifiesto](./vault-obsidian-architecture.md), [arquitectura](./docs/ARQUITECTURA.md) y [blueprint](./docs/BLUEPRINT.md) |
 
@@ -289,8 +290,12 @@ python scripts/vault_audit.py
 
 ## CLI consolidada — `vault`
 
-Las 127 tools bajo un único punto de entrada, con búsqueda, planificación de
-concurrencia y guardas de seguridad:
+Las **98 operaciones de vault** (`class: runtime`) bajo un único punto de entrada,
+con búsqueda, planificación de concurrencia y guardas de seguridad. Las otras 29 tools
+activas son de mantenimiento del estándar: viven en el checkout y la wheel no las
+instala (`vault run` las rechaza con `not_runtime_operation`). Cuál es cuál, cuáles
+tienen ejemplo verificado y cuáles no deben usarse:
+[`docs/DISPONIBILIDAD-DE-TOOLS.md`](./docs/DISPONIBILIDAD-DE-TOOLS.md).
 
 ```bash
 vault --version                         # versión
@@ -442,8 +447,9 @@ python scripts/vault_norms.py --check-framework    # guard anti-drift registro �
 - **Instaladores y desinstaladores** en `vault/install.py`, `vault/uninstall.py`,
   `install.sh`, `uninstall.sh`, `install-mcp.sh`, `uninstall-mcp.sh`. Cobertura:
   CLI (+ entry points), MCP server, desinstalación completa.
-- **23 gates verdes en 22 puertas.** `vault_gate --strict` pasa completo; la puerta de
-  `vault_blueprint` se regenera automáticamente. 3198 tests en la suite.
+- **Las puertas pasan completas.** `vault_gate --strict` en verde; la puerta de
+  `vault_blueprint` se regenera automáticamente. (Entonces eran 22 puertas y 3198
+  tests; las cifras vigentes están en el encabezado y en [`docs/BLUEPRINT.md`](./docs/BLUEPRINT.md).)
 
 ## Novedades v40.33 — Adapter de modelo LLM
 
@@ -543,40 +549,46 @@ python scripts/vault_norms.py --check-framework    # guard anti-drift registro �
 | 1 — Core | `vault_write`, `vault_read`, `vault_search`, `vault_list`, `vault_append`, `vault_diff`, `vault_merge`, `vault_move` |
 | 2 — Observabilidad | `vault_log_error` |
 | 3 — Patrones | `vault_pattern_save`, `vault_pattern_list` |
-| 4 — Diagramas | `vault_diagram_save`, `vault_diagram_export`, `vault_mermaid_check`, `vault_relation_add` |
+| 4 — Diagramas | `vault_diagram_save`, `vault_relation_add`, `vault_mermaid_check`, `vault_diagram_export` |
 | 5 — Conocimiento | `vault_knowledge_save`, `vault_knowledge_get` |
-| 6 — Salud del Vault | `vault_audit`, `vault_validate`, `vault_graph`, `vault_graph_merge`, `vault_graph_inspect`, `vault_fuente_unica` |
+| 6 — Salud del Vault | `vault_fuente_unica`, `vault_audit`, `vault_gobernanza`, `vault_validate`, `vault_graph`, `vault_graph_merge`, `vault_graph_inspect` |
 | 7 — Runbooks | `vault_runbook_save`, `vault_runbook_log` |
 | 8 — Infraestructura | `vault_infra_save`, `vault_infra_map`, `vault_env_save`, `vault_env_matrix` |
 | 9 — Migración | `vault_migrate_docs`, `vault_migrate_rollback` |
-| 10 — Línea de tiempo | `vault_timeline` |
-| 11 — Vista del proyecto | `vault_project_status`, `vault_project_overview` |
+| 10 — Línea de Tiempo | `vault_timeline` |
+| 11 — Vista del Proyecto | `vault_project_status`, `vault_project_overview`, `vault_project` |
 | 12 — Código | `vault_code_module`, `vault_code_relation`, `vault_code_map`, `vault_code_query`, `vault_code_sync` |
-| 13 — Backups | `vault_backup`, `vault_backup_list`, `vault_backup_base64`, `vault_restore`, `vault_restore_base64` |
+| 13 — Backups | `vault_backup`, `vault_backup_list`, `vault_restore`, `vault_backup_base64`, `vault_restore_base64` |
 | 14 — Seguridad | `vault_security_scan` |
 | 15 — Índices | `vault_section_index`, `vault_master_index`, `vault_reindex` |
 | 16 — Bibliografía | `vault_bibliography_save` |
 | 17 — Drift Detection | `vault_drift_detect` |
 | 18 — Flujos | `vault_flow_save` |
 | 19 — Requerimientos | `vault_requirement_save` |
-| 20 — Tests | `vault_test_save` |
+| 20 — Tests | `vault_test_save`, `vault_qa_save`, `vault_quality_dashboard` |
 | 21 — IA Governance | `vault_ai_decision` |
-| 22 — Versionado | `vault_standard_upgrade` |
-| 23 — Change Log | `vault_change_log` |
+| 22 — Versionado | `vault_standard_upgrade`, `vault_undo`, `vault_history_compact` |
+| 23 — Change Log | `vault_change_log`, `vault_delete` |
 | 24 — Data Quality | `vault_quality_check`, `vault_fundamentals` |
 | 25 — Propagación | `vault_impact`, `vault_propagate` |
 | 26 — Tokens | `vault_tokens`, `vault_token_counter`, `vault_token_service` |
 | 27 — Session Delta y Tags | `vault_delta`, `vault_tags` |
-| 28 — Producción y SRE | `vault_incident_save`, `vault_slo_save` |
+| 28 — Producción/SRE | `vault_incident_save`, `vault_slo_save` |
 | 29 — Release | `vault_release_save` |
-| 30 — Riesgos y Calidad | `vault_risk_save`, `vault_privacy_save`, `vault_ncr_save` |
+| 30 — Riesgos/Calidad | `vault_risk_save`, `vault_privacy_save`, `vault_ncr_save` |
 | 31 — Bootstrap | `vault_init`, `vault_onboard` |
 | 32 — Gestión de Carpetas | `vault_folder_registry`, `vault_section` |
-| 33 — Corrección automática | `vault_fix_brackets`, `vault_frontmatter_heal`, `vault_graph_fix` |
-| 34 — Memoria de Contexto | `vault_preferences`, `vault_query_parse`, `vault_subgraph`, `vault_context_pack`, `vault_ingest`, `vault_model_profile` |
-| 35 — Normas | `vault_norms`, `vault_arch`, `vault_gate`, `vault_smoke`, `vault_servicio`, `vault_blueprint`, `vault_doc_counts`, `vault_doc_sync`, `vault_blame_audit`, `vault_changelog_check`, `vault_error_contract`, `vault_noop_audit`, `vault_voice`, `vault_norms_coherence`, `vault_criterios`, `vault_ciclos`, `vault_kernel`, `vault_excepcion_declarada`, `vault_recursos`, `vault_produccion`, `vault_foreign_check`, `vault_code_tag` |
+| 33 — Corrección Automática | `vault_fix_brackets`, `vault_graph_fix`, `vault_frontmatter_heal`, `vault_frontmatter_completar`, `vault_supersede` |
+| 34 — Memoria de Contexto | `vault_preferences`, `vault_model_profile`, `vault_query_parse`, `vault_subgraph`, `vault_context_pack`, `vault_ingest`, `vault_arquitectura_en` |
+| 35 — Normas | `vault_norms`, `vault_arch`, `vault_blame_audit`, `vault_changelog_check`, `vault_error_contract`, `vault_foreign_check`, `vault_gate`, `vault_code_tag`, `vault_doc_counts`, `vault_doc_sync`, `vault_doc_staleness`, `vault_noop_audit`, `vault_smoke`, `vault_toolkit_audit`, `vault_voice`, `vault_servicio`, `vault_blueprint`, `vault_norms_coherence`, `vault_criterios`, `vault_ciclos`, `vault_clones`, `vault_kernel`, `vault_excepcion_declarada`, `vault_recursos`, `vault_procesos_git`, `vault_produccion`, `vault_esquema`, `vault_metricas`, `vault_fix_all` |
 | 36 — Defectos y Cuarentena | `vault_bug_save`, `vault_quarantine` |
 | 37 — Skills | `vault_sdd_init`, `vault_sanacion` |
+
+Estas 127 son las **activas**. No todas son para el mismo usuario: 98 operan un vault
+(96 por CLI y 2 solo por MCP), 29 mantienen este repo, 19 más son internas y 5 están
+archivadas. La tabla de qué está disponible, qué tiene evidencia de funcionar y qué no
+debe usarse (y por qué) es [`docs/DISPONIBILIDAD-DE-TOOLS.md`](./docs/DISPONIBILIDAD-DE-TOOLS.md),
+derivada de los registros.
 
 Ver **[scripts/README.md](./scripts/README.md)** para contratos completos con parámetros, ejemplos y protocolo de sesión.
 
@@ -673,7 +685,7 @@ Contiene:
 - Propagación graph-aware (BFS sobre wiki-links, 3 estrategias)
 - **Spec-driven design:** tool-spec.json + vault_spec_validate — contratos formales antes de implementar
 - **Trazabilidad bidireccional:** @vault: tag en código fuente + vault_code_sync para auditar gaps código↔vault
-- **Grupo 31 — Bootstrap:** `vault_init` para inicializar un vault fresco en 1 comando (22 folders + scaffolds + audit)
+- **Grupo 31 — Bootstrap:** `vault_init` para inicializar un vault fresco en 1 comando (23 carpetas + scaffolds + audit)
 - **Grupo 34 — Memoria de Contexto:** eje consulta → contexto. `vault_query_parse`
   (lenguaje natural → consulta estructurada), `vault_subgraph` (K semillas, N saltos),
   `vault_context_pack` (rerank + Top-K bajo presupuesto de tokens), `vault_preferences`
@@ -693,13 +705,13 @@ Contiene:
 ## Scripts — estructura del repositorio
 
 ```
-scripts/                    ← 168 archivos Python (127 tools del catálogo + 8 archivadas en _archived/ + internas/meta)
+scripts/                    ← 168 archivos Python (127 tools activas + internas y de apoyo); las archivadas viven aparte en scripts/_archived/
 ├── vault_io.py             — I/O base: _detect_vault_root, assert_within_vault, atomic_write_text/json, file_lock
 ├── vault_errors.py         — wrap_main (timeout 60s), emit_ok, trace log
 ├── vault_write.py          — tool principal de escritura (guards AP-20, AP-21, norm_refs auto-embed)
 ├── vault_audit.py          — health score (CIA-weighted), DQ health, propagation pending, norm_code, nextActions
 ├── vault_standard_upgrade.py — migraciones v19→v40, --init, --check, --validate
-├── vault_init.py           — bootstrap de 1 comando (22 folders + scaffolds + master_index + reindex + audit)
+├── vault_init.py           — bootstrap de 1 comando (23 carpetas + scaffolds + master_index + reindex + audit)
 ├── vault_code_module.py    — documentación IEEE 1016 para módulos de código (--tag-source inyecta @vault:)
 ├── vault_code_sync.py      — auditoría bidireccional código↔vault (complete/missing_tag/orphan, --fix)
 ├── vault_flow_save.py      — flujos con Mermaid embebido

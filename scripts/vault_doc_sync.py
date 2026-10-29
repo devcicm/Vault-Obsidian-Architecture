@@ -67,10 +67,16 @@ from vault.kernel.rutas import cita_repo  # noqa: E402
 from vault_errors import emit_error  # noqa: E402
 from vault_mcp_catalog import GROUPS, TOOLS_CATALOG  # noqa: E402
 from vault.meta_toolkit import flags_cli  # extractor único de add_argument (v41.9)  # noqa: E402
+from vault.meta_toolkit.catalogo_producto import catalogo_producto  # noqa: E402
 
 _RE_VAULT_DOC_SYNC_1 = re.compile('--[A-Za-z][\\w-]*')
 
 README = Path(__file__).resolve().parent / "README.md"
+DISPONIBILIDAD = Path(__file__).resolve().parent.parent / rutas.DOCS / "DISPONIBILIDAD-DE-TOOLS.md"
+TOOL_SPEC = Path(__file__).resolve().parent.parent / "vault-sandbox" / "00_System" / "tool-spec.json"
+AUDITORIA = Path(__file__).resolve().parent / "toolkit-audit-last.json"
+README_RAIZ = Path(__file__).resolve().parent.parent / "README.md"
+CATALOGO_MCP = Path(__file__).resolve().parent.parent / "mcp" / "nodejs" / "tools-catalog.json"
 
 RE_SECTION = re.compile(r"^## Grupo (\d+) — (.+?)\s*$", re.M)
 RE_TOOL_HEADING = re.compile(r"^### `?(vault_[a-z0-9_]+)", re.M)
@@ -329,10 +335,215 @@ def recetas_en_codigo(raices=None, repo_root: Path = None) -> List[Dict]:
     return problems
 
 
+# ── Disponibilidad de las tools (docs/DISPONIBILIDAD-DE-TOOLS.md) ────────────
+
+#: Tools activas que cambian o borran estado y que un agente no debe lanzar sin
+#: haber leído antes su salida en seco. El motivo se escribe aquí, a mano, porque
+#: ningún campo del catálogo dice «destructiva»: `side_effects` es prosa libre.
+#: Una clave que deje de ser una tool activa rompe `scan` (disponibilidad_cuidado_huerfano).
+TOOLS_DE_CUIDADO: Dict[str, str] = {
+    "vault_delete": "Borra la nota (o la manda a `20_Quarantine/` con `--trash-only`); deja change-log y copia en `.history/`, y `--dry-run` muestra el efecto antes.",
+    "vault_restore": "Sobrescribe archivos del vault con los de una copia; exige `confirm`.",
+    "vault_restore_base64": "Restaura a un directorio nuevo sin tocar el original; exige `--confirm true`. Cuidado con el espacio que ocupa, no con el original.",
+    "vault_undo": "Por defecto restaura sin sobrescribir; con `--force` sobrescribe la nota actual.",
+    "vault_migrate_rollback": "Revierte una migración ya hecha; exige `confirm`.",
+    "vault_history_compact": "Con `--apply` borra versiones de `.history/` (conserva las N más recientes); lo borrado no se recupera.",
+    "vault_quarantine": "Mueve la nota a `20_Quarantine/` y anota el movimiento en el libro append-only; `--restore` la devuelve.",
+    "vault_mermaid_check": "Con `--fix` (sin `--dry-run`) reescribe los `.md` cuyo bloque Mermaid corrige.",
+    "vault_fix_all": "Regenera artefactos derivados del checkout del estándar (catálogos, planos, documentación); no es de un vault.",
+}
+
+
+def _spec_no_activas() -> Dict[str, Dict]:
+    """Las tools del `tool-spec.json` que no están activas, con su estado y motivo."""
+    try:
+        tools = json.loads(TOOL_SPEC.read_text(encoding="utf-8")).get("tools", {})
+    except (OSError, ValueError):
+        return {}
+    return {n: t for n, t in sorted(tools.items()) if t.get("status") != "active"}
+
+
+def _catalogo_mcp() -> Dict[str, Dict]:
+    """Las tools tal como las publica `tools-catalog.json` (`exposed_via_mcp`, `side_effects`)."""
+    try:
+        return json.loads(CATALOGO_MCP.read_text(encoding="utf-8")).get("tools", {})
+    except (OSError, ValueError):
+        return {}
+
+
+def _veredictos_de_auditoria() -> Dict[str, Dict]:
+    """Veredicto y motivos por tool de la última corrida de `vault_toolkit_audit`."""
+    try:
+        resultados = json.loads(AUDITORIA.read_text(encoding="utf-8")).get("results", [])
+    except (OSError, ValueError):
+        return {}
+    return {r["tool"]: r for r in resultados if "tool" in r}
+
+
+def _reemplazo(t: Dict) -> str:
+    destino = t.get("superseded_by") or t.get("replaced_by") or "—"
+    return "`{}`".format(destino) if re.fullmatch(r"vault_\w+", destino) else destino
+
+
+def _celda(texto) -> str:
+    return " ".join(str(texto).split()).replace("|", "\\|")
+
+
+def disponibilidad_texto() -> str:
+    """El documento completo, derivado de los registros. No inventa nada."""
+    producto = catalogo_producto()
+    no_activas = _spec_no_activas()
+    auditoria = _veredictos_de_auditoria()
+    publicadas = _catalogo_mcp()
+
+    runtime_cli = [n for n, t in producto.items() if t.clase == "runtime" and t.via == rutas.CLI]  # el canal CLI se llama como la carpeta
+    runtime_mcp = [n for n, t in producto.items() if t.clase == "runtime" and t.via == "mcp"]
+    mantenimiento = [n for n, t in producto.items() if t.clase != "runtime"]
+    expuestas = [n for n in producto if publicadas.get(n, {}).get("exposed_via_mcp")]
+    internas = {n: t for n, t in no_activas.items() if t.get("status") == "internal"}
+    archivadas = {n: t for n, t in no_activas.items() if t.get("status") == "archived"}
+    no_ok = {n: r for n, r in auditoria.items() if r.get("veredicto") != "OK"}
+
+    def fila(n: str) -> str:
+        t = publicadas.get(n, {})
+        efectos = [e for e in (t.get("side_effects") or []) if e]
+        return "| `{}` | {} | {} | {} | {} |".format(
+            n, _celda(producto[n].grupo), "sí" if t.get("exposed_via_mcp") else "no",
+            "sí" if efectos else "no", auditoria.get(n, {}).get("veredicto", "sin dato"))
+
+    cab = "| Tool | Grupo | MCP | Escribe | Ejemplo verificado |\n|---|---|---|---|---|"
+    out: List[str] = []
+    w = out.append
+    w("# Disponibilidad de las tools\n")
+    w("> **Documento derivado.** Sale de `vault_mcp_catalog.TOOLS_CATALOG`, del catálogo de producto "
+      "(`vault.meta_toolkit.catalogo_producto`), de `vault-sandbox/00_System/tool-spec.json` y de "
+      "`scripts/toolkit-audit-last.json`. Se regenera con `python scripts/vault_doc_sync.py --fix` y "
+      "`--check` falla si diverge: lo escrito a mano aquí se pierde. El motivo de cada tool «de cuidado» "
+      "vive en `vault_doc_sync.TOOLS_DE_CUIDADO`.\n")
+    w("Responde tres preguntas sobre cada tool: **dónde se puede usar**, **si hay evidencia de que "
+      "funciona** y **cuándo no debe usarse y por qué**.\n")
+    w("## En una tabla\n")
+    w("| Categoría | Cuántas | Dónde corre | Quién la usa |\n|---|---|---|---|")
+    w("| Operaciones del vault por CLI | {} | `vault run <tool>` desde la wheel instalada; por MCP las que estén expuestas | agentes y personas con un vault |".format(len(runtime_cli)))
+    w("| Operaciones del vault solo por MCP | {} | servidor MCP (JavaScript nativo); `vault run` no las ejecuta | agentes por MCP |".format(len(runtime_mcp)))
+    w("| Mantenimiento del estándar | {} | solo en un checkout de este repo (`python scripts/<tool>.py`); la wheel no las instala | quien mantiene el estándar |".format(len(mantenimiento)))
+    w("| Internas | {} | no son tools de un vault: librerías, registros o CLIs de diagnóstico del toolkit | nadie desde fuera |".format(len(internas)))
+    w("| Archivadas | {} | no se ejecutan; cada una nombra su reemplazo | nadie |".format(len(archivadas)))
+    w("")
+    w("Las {} activas son {} + {} + {}. Expuestas por el servidor MCP: **{}**; las otras {} se ejecutan por CLI o en el checkout.\n".format(
+        len(producto), len(runtime_cli), len(runtime_mcp), len(mantenimiento), len(expuestas), len(producto) - len(expuestas)))
+    w("`vault tools list` dice lo mismo desde la wheel: `class: runtime` con `installed: true` es lo que corre; "
+      "`class: maintenance` con `installed: false` es del checkout, y `vault run` la rechaza con `not_runtime_operation`.\n")
+
+    w("## 1. Disponibles y funcionales\n")
+    w("«Ejemplo verificado» es el veredicto de `vault_toolkit_audit` (AP-42): el ejemplo documentado de la tool "
+      "se ejecuta de verdad sobre una copia del sandbox y su envelope cubre el contrato. `OK` es evidencia de "
+      "que funciona **en ese ejemplo**, no de que cubra todos los argumentos. «Escribe» indica que la tool "
+      "declara efectos sobre disco.\n")
+    w("### 1.1 Operaciones del vault por CLI (y por MCP si se indica)\n")
+    w(cab)
+    for n in sorted(runtime_cli):
+        w(fila(n))
+    w("")
+    w("### 1.2 Operaciones solo por MCP\n")
+    w("Las sirve el servidor MCP con JavaScript nativo; `vault run` responde que no están instaladas en la CLI.\n")
+    w(cab)
+    for n in sorted(runtime_mcp):
+        w(fila(n))
+    w("")
+    w("### 1.3 Mantenimiento del estándar (solo en el checkout)\n")
+    w("Comprueban o regeneran este repositorio. **No** operan el vault de nadie y no están en la wheel; "
+      "lanzarlas contra un vault real no es su uso.\n")
+    w(cab)
+    for n in sorted(mantenimiento):
+        w(fila(n))
+    w("")
+
+    w("## 2. Sin evidencia de ejemplo\n")
+    if no_ok:
+        w("Activas, pero `vault_toolkit_audit` no puede ejercitarlas con un ejemplo de CLI. No significa que fallen: "
+          "significa que esa puerta no las prueba, y el motivo es:\n")
+        w("| Tool | Veredicto | Motivo |\n|---|---|---|")
+        for n, r in sorted(no_ok.items()):
+            w("| `{}` | {} | {} |".format(n, r.get("veredicto"), _celda("; ".join(r.get("motivos") or []))))
+    else:
+        w("Ninguna: todas las activas tienen un ejemplo que se ejecuta y cubre su contrato.")
+    w("")
+
+    w("## 3. Úsalas con cuidado\n")
+    w("Activas y funcionales, pero cambian o borran estado. Léelas antes de lanzarlas y, si tienen `--dry-run`, "
+      "empieza por ahí.\n")
+    w("| Tool | Dónde corre | Por qué cuidado |\n|---|---|---|")
+    for n, motivo in sorted(TOOLS_DE_CUIDADO.items()):
+        via = producto[n].via if n in producto else "?"
+        donde = "wheel (`vault run`)" if via == rutas.CLI else ("MCP" if via == "mcp" else "checkout")
+        w("| `{}` | {} | {} |".format(n, donde, _celda(motivo)))
+    w("")
+
+    w("## 4. No las uses\n")
+    w("### 4.1 Archivadas\n")
+    w("Siguen en el registro por la política de no-derogación (se anota el reemplazo, no se borra). "
+      "No se ejecutan; usa el reemplazo.\n")
+    w("| Tool | Usa en su lugar | Motivo |\n|---|---|---|")
+    for n, t in archivadas.items():
+        w("| `{}` | {} | {} |".format(n, _celda(_reemplazo(t)),
+                                         _celda(t.get("reason") or t.get("deprecation_reason") or "—")))
+    w("")
+    w("### 4.2 Internas\n")
+    w("Existen en `scripts/` pero no son tools de un vault: librerías, registros o utilidades del propio toolkit. "
+      "Ni la CLI ni el servidor MCP las publican.\n")
+    w("| Tool | Motivo |\n|---|---|")
+    for n, t in internas.items():
+        w("| `{}` | {} |".format(n, _celda(t.get("reason") or "—")))
+    w("")
+    return "\n".join(out)
+
+
+def disponibilidad_problemas() -> List[Dict]:
+    problemas: List[Dict] = []
+    for n in sorted(TOOLS_DE_CUIDADO):
+        if n not in catalogo_producto():
+            problemas.append({"kind": "disponibilidad_cuidado_huerfano", "detail": n})
+    if not DISPONIBILIDAD.exists():
+        problemas.append({"kind": "disponibilidad_ausente", "detail": cita_repo(rutas.DOCS, "DISPONIBILIDAD-DE-TOOLS.md")})
+        return problemas
+    actual = DISPONIBILIDAD.read_text(encoding="utf-8").replace("\r\n", "\n")
+    if actual != disponibilidad_texto():
+        problemas.append({"kind": "disponibilidad_desincronizada",
+                          "detail": cita_repo(rutas.DOCS, "DISPONIBILIDAD-DE-TOOLS.md") + " no coincide con los registros; regenerar con --fix"})
+    return problemas
+
+
+def disponibilidad_fix() -> int:
+    """Reescribe el documento si difiere. Devuelve 1 si lo cambió, 0 si ya estaba al día."""
+    nuevo = disponibilidad_texto()
+    previo = DISPONIBILIDAD.read_text(encoding="utf-8").replace("\r\n", "\n") if DISPONIBILIDAD.exists() else None
+    if previo == nuevo:
+        return 0
+    DISPONIBILIDAD.parent.mkdir(parents=True, exist_ok=True)
+    DISPONIBILIDAD.write_bytes(nuevo.encode("utf-8"))
+    return 1
+
+
+def tabla_del_readme_raiz() -> List[Dict]:
+    """El README de la raíz lista cada tool activa en su tabla de grupos, y solo esas."""
+    texto = README_RAIZ.read_text(encoding="utf-8")
+    m = re.search(r"^## Las \d+ tools activas.*?(?=^## )", texto, re.M | re.S)
+    if not m:
+        return [{"kind": "readme_raiz_sin_tabla_de_tools", "detail": "falta la sección «Las N tools activas»"}]
+    filas = [linea for linea in m.group(0).splitlines() if linea.startswith("| ")]
+    listadas = set(re.findall(r"`(vault_\w+)`", " ".join(filas)))
+    problemas = [{"kind": "readme_raiz_tool_ausente", "detail": n} for n in sorted(set(TOOLS_CATALOG) - listadas)]
+    problemas += [{"kind": "readme_raiz_tool_sobrante", "detail": n} for n in sorted(listadas - set(TOOLS_CATALOG))]
+    return problemas
+
+
 def scan() -> Dict:
     text = README.read_text(encoding="utf-8")
     problems: List[Dict] = []
     problems.extend(comandos_publicados())
+    problems.extend(disponibilidad_problemas())
+    problems.extend(tabla_del_readme_raiz())
     problems.extend({k: v for k, v in p.items() if k != "sitio"} for p in recetas_en_codigo())
 
     sections = {label: int(num) for num, label in RE_SECTION.findall(text)}
@@ -405,8 +616,9 @@ def fix() -> Dict:
         for g in sorted(GROUPS, key=lambda g: sections.get(g, 10**6))
         if g in sections
     ]
+    disp = disponibilidad_fix()
     if filas == nuevas:
-        return {"ok": True, "tool": "vault_doc_sync", "action": "fix", "fixes_applied": 0}
+        return {"ok": True, "tool": "vault_doc_sync", "action": "fix", "fixes_applied": disp}
 
     bloque_viejo = "\n".join(filas)
     if bloque_viejo not in text:
@@ -421,7 +633,7 @@ def fix() -> Dict:
         "ok": True,
         "tool": "vault_doc_sync",
         "action": "fix",
-        "fixes_applied": len(set(nuevas) ^ set(filas)) or 1,
+        "fixes_applied": (len(set(nuevas) ^ set(filas)) or 1) + disp,
         "rows_written": len(nuevas),
     }
 
@@ -431,7 +643,7 @@ def main() -> int:
         description="vault_doc_sync — guard anti-drift registro ↔ scripts/README.md"
     , allow_abbrev=False)
     ap.add_argument("--check", action="store_true", help="reporta divergencias (default)")
-    ap.add_argument("--fix", action="store_true", help="regenera la tabla de índice desde GROUPS")
+    ap.add_argument("--fix", action="store_true", help="regenera la tabla de índice desde GROUPS y " + cita_repo(rutas.DOCS, "DISPONIBILIDAD-DE-TOOLS.md"))
     ap.add_argument("--strict", action="store_true", help="exit 1 si hay divergencias")
     args = ap.parse_args()
 
