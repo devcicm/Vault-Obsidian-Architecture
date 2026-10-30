@@ -324,6 +324,23 @@ def vault_requirement_save(
     }
 
 
+def listar_requisitos(project: Optional[str] = None) -> Dict[str, Any]:
+    """D-05 -- los requisitos del indice, sin escribir nada.
+
+    Lee el indice compartido en solo lectura; `project` filtra por slug.
+    """
+    try:
+        datos = json.loads(_index_file().read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        datos = {"requirements": []}
+    filas = [
+        {k: r.get(k) for k in ("req_id", "project", "title", "req_type", "priority", "status", "relPath")}
+        for r in datos.get("requirements", [])
+        if project is None or r.get("project") == project
+    ]
+    return {"ok": True, "tool": "vault_requirement_save", "count": len(filas), "requirements": filas}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Vault Requirement Save Tool -- ISO/IEC/IEEE 29148 requirement documentation",
@@ -360,20 +377,22 @@ Notes:
         allow_abbrev=False,
     )
 
-    parser.add_argument("--project", type=proyecto_registrado("vault_requirement_save"), required=True, help="Project slug")
+    parser.add_argument("--list", action="store_true", help="Lista los requisitos del indice (solo lectura); --project filtra")
 
-    parser.add_argument("--title", required=True, help="Short requirement title")
+    parser.add_argument("--project", type=proyecto_registrado("vault_requirement_save"), help="Project slug")
+
+    parser.add_argument("--title", help="Short requirement title")
 
     parser.add_argument(
-        "--description", required=True, help="Full requirement description"
+        "--description", help="Full requirement description"
     )
 
     parser.add_argument(
-        "--type", choices=REQ_TYPES, dest="req_type", required=True, help=f"Requirement type: {REQ_TYPES}"
+        "--type", choices=REQ_TYPES, dest="req_type", help=f"Requirement type: {REQ_TYPES}"
     )
 
     parser.add_argument(
-        "--priority", choices=PRIORITIES, required=True, help=f"MoSCoW priority: {PRIORITIES}"
+        "--priority", choices=PRIORITIES, help=f"MoSCoW priority: {PRIORITIES}"
     )
 
     parser.add_argument(
@@ -397,6 +416,13 @@ Notes:
     parser.add_argument("--tags", nargs="*", help="Additional tags")
 
     args = parser.parse_args()
+
+    if args.list:
+        print(json.dumps(listar_requisitos(args.project), indent=2, ensure_ascii=False))
+        return 0
+
+    if not (args.project and args.title and args.description and args.req_type and args.priority):
+        parser.error("--project, --title, --description, --type y --priority son obligatorios salvo con --list")
 
     def parse_json_arg(val: Optional[str], name: str) -> Optional[Any]:
         if not val:

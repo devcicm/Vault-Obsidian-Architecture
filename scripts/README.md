@@ -1202,6 +1202,8 @@ python vault_requirement_save.py --project mi-api --title "REQ-NF-001 Latencia" 
 | `assumption` | Supuestos de los que depende el requerimiento |
 
 `--priority` es MoSCoW: `must-have`, `should-have`, `nice-to-have`, `wont-have`.
+
+`--list` (D-05) enumera los requisitos del índice sin escribir nada; `--project <slug>` filtra por proyecto y con `--list` no se exigen los demás argumentos.
 Hasta v41.3 este ejemplo usaba `--content`, `--priority high`/`medium` y `--type non_functional`, que la tool no acepta (`allow_abbrev=False`): fallaba con `INVALID_ARGS`, y `vault_doc_sync` no lo veía porque el comando estaba partido con `\`.
 
 ---

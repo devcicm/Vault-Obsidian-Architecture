@@ -5690,6 +5690,10 @@
       "inputSchema": {
         "type": "object",
         "properties": {
+          "list": {
+            "type": "boolean",
+            "description": "Lista los requisitos del indice (solo lectura); --project filtra"
+          },
           "project": {
             "type": "string",
             "description": "Proyecto"
@@ -5754,13 +5758,6 @@
             }
           }
         },
-        "required": [
-          "project",
-          "title",
-          "description",
-          "type",
-          "priority"
-        ],
         "additionalProperties": false
       },
       "guards": [],
