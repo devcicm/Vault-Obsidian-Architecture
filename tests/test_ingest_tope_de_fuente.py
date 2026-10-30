@@ -22,9 +22,12 @@ memoria antes de llegar al guard.
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+from vault_base import vault_base
 
 import pytest
 
@@ -39,8 +42,8 @@ def _corre(tmp_path, *argv, entrada=None):
     # el vault fantasma (AP-36) que este test usaba sin saberlo.
     tmp_path.mkdir(parents=True, exist_ok=True)
     entorno = dict(os.environ, VAULT_ROOT=str(tmp_path), PYTHONIOENCODING="utf-8")
-    subprocess.run([sys.executable, str(REPO_ROOT / "scripts" / "vault_init.py")],
-                   env=entorno, capture_output=True, cwd=str(REPO_ROOT))
+    if not (tmp_path / "00_System").exists():
+        shutil.copytree(vault_base(), tmp_path, dirs_exist_ok=True)
     return subprocess.run(
         [sys.executable, str(REPO_ROOT / "scripts" / "vault_ingest.py"), *argv],
         env=entorno, input=entrada, capture_output=True, text=True,

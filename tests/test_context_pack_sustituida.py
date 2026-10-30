@@ -15,6 +15,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from vault_base import copiar_vault
+
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -60,9 +62,7 @@ def _primera(raiz: Path) -> str:
                                         "10_Migrated/LIBRO_BLANCO.md"])
 def test_la_nota_con_superseded_by_no_gana_a_su_canonica(tmp_path, sustituida):
     """Las dos posiciones: la anotación decide, no el orden de llegada."""
-    raiz = tmp_path / "vault"
-    raiz.mkdir()
-    assert _ejecutar(raiz, "vault_init.py")["ok"] is True
+    raiz = copiar_vault(tmp_path / "vault")
     rutas = ["05_Patterns/libro-blanco.md", "10_Migrated/LIBRO_BLANCO.md"]
     canonica = next(r for r in rutas if r != sustituida)
     _nota(raiz, canonica)

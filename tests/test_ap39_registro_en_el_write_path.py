@@ -20,6 +20,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from vault_base import copiar_vault
+
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -72,8 +74,7 @@ def raiz(tmp_path):
 
 @pytest.fixture
 def vault(tmp_path):
-    _ejecutar(tmp_path, "vault_init.py")
-    return tmp_path
+    return copiar_vault(tmp_path / "vault")
 
 
 def test_un_save_que_no_pasa_por_vault_write_tambien_deja_rastro(vault):
