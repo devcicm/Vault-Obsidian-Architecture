@@ -178,3 +178,78 @@ def test_release_yml_exige_la_ci_del_mismo_sha():
     texto = (REPO / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
     assert 'ci.get("run_sha") != sha' in texto
     assert 'ci.get("conclusion") != "success"' in texto
+
+
+# --- B-01 / B-02 (vault dev codex, Fase 1): la puerta de publicacion se EJERCE ---
+
+def _guion_de_la_puerta():
+    """El Python del paso «El tag es el candidato autorizado» de release.yml."""
+    import textwrap
+    texto = (REPO / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+    ini = texto.index("python - <<'EOF'\n") + len("python - <<'EOF'\n")
+    return textwrap.dedent(texto[ini:texto.index("\n          EOF", ini)])
+
+
+def _correr_puerta(tmp_path, mutar=None):
+    """Repo git minimo con un manifiesto coherente; `mutar(m, tree)` lo estropea."""
+    import copy
+    import sys
+    import yaml
+
+    def git(*a):
+        return subprocess.run(["git", *a], cwd=str(tmp_path), capture_output=True,
+                              text=True, check=True).stdout.strip()
+
+    git("init", "-q")
+    git("config", "user.email", "t@t")
+    git("config", "user.name", "t")
+    (tmp_path / "pyproject.toml").write_text('[project]\nname="x"\nversion="1.0"\n')
+    (tmp_path / "audits" / "fase2").mkdir(parents=True)
+    git("add", "-A")
+    git("commit", "-qm", "producto")
+    sha, tree = git("rev-parse", "HEAD"), git("rev-parse", "HEAD^{tree}")
+    m = {
+        "release_candidate": {"product_sha": sha, "product_tree_sha": tree, "version": 1.0},
+        "verification": {"ci": {"run_sha": sha, "conclusion": "success"}},
+        "governance": {
+            "release_authorized": True,
+            "qg_statuses": {f"QG-0{i}": "PASS" for i in range(8)},
+        },
+    }
+    m = copy.deepcopy(m)
+    if mutar:
+        mutar(m)
+    (tmp_path / "audits" / "fase2" / "CANDIDATO-RELEASE.yaml").write_text(yaml.safe_dump(m))
+    env = {**__import__("os").environ, "GITHUB_REF_NAME": "v1.0"}
+    return subprocess.run([sys.executable, "-c", _guion_de_la_puerta()], cwd=str(tmp_path),
+                          env=env, capture_output=True, text=True)
+
+
+@pytest.mark.skipif(__import__("sys").version_info < (3, 11), reason="tomllib")
+def test_puerta_de_publicacion_acepta_el_candidato_coherente(tmp_path):
+    assert _correr_puerta(tmp_path).returncode == 0
+
+
+@pytest.mark.skipif(__import__("sys").version_info < (3, 11), reason="tomllib")
+def test_puerta_de_publicacion_rechaza_qg_que_no_este_en_pass(tmp_path):
+    """B-01: `release_authorized: true` con un QG en FAIL/NOT_RUN no publica."""
+    def mutar(m):
+        m["governance"]["qg_statuses"]["QG-03"] = "NOT_RUN"
+    r = _correr_puerta(tmp_path, mutar)
+    assert r.returncode != 0 and "QG-03" in r.stdout
+
+
+@pytest.mark.skipif(__import__("sys").version_info < (3, 11), reason="tomllib")
+def test_puerta_de_publicacion_rechaza_qg_ausentes(tmp_path):
+    def mutar(m):
+        del m["governance"]["qg_statuses"]["QG-07"]
+    assert _correr_puerta(tmp_path, mutar).returncode != 0
+
+
+@pytest.mark.skipif(__import__("sys").version_info < (3, 11), reason="tomllib")
+def test_puerta_de_publicacion_ata_el_contenido_no_solo_la_ascendencia(tmp_path):
+    """B-02: un `product_tree_sha` que no es el arbol de `product_sha` no publica."""
+    def mutar(m):
+        m["release_candidate"]["product_tree_sha"] = "0" * 40
+    r = _correr_puerta(tmp_path, mutar)
+    assert r.returncode != 0 and "product_tree_sha" in r.stdout

@@ -138,3 +138,21 @@ def test_las_entradas_archivadas_conservan_su_sustituta():
     for nombre, spec in archivadas.items():
         if nombre != "vault_tools":
             assert spec.get("superseded_by"), f"{nombre} sin superseded_by"
+
+
+def test_check_contracts_sin_spec_devuelve_envelope_no_traceback(tmp_path):
+    """A-02 (vault dev codex): un `tool-spec.json` ausente o ilegible debe salir
+    como envelope `ok: false`, no como traceback. Una puerta que se cae no dice
+    nada de lo que debía medir."""
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import vault_mcp_catalog
+
+    ausente = vault_mcp_catalog.check_contracts(str(tmp_path / "no-existe.json"))
+    assert ausente["ok"] is False and ausente.get("error_code") == "FILE_NOT_FOUND"
+
+    roto = tmp_path / "roto.json"
+    roto.write_text("{no es json", encoding="utf-8")
+    ilegible = vault_mcp_catalog.check_contracts(str(roto))
+    assert ilegible["ok"] is False and ilegible.get("error_code") == "JSON_PARSE_ERROR"

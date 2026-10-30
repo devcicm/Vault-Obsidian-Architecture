@@ -5509,7 +5509,21 @@ def check_contracts(spec_path: Optional[str] = None) -> Dict[str, Any]:
     import vault_io
 
     ruta = Path(spec_path) if spec_path else Path(vault_io.resolve_tool_spec())
-    data = json.loads(ruta.read_text(encoding="utf-8"))
+    # Una puerta que se cae con traceback no dice nada de lo que debía medir:
+    # el spec ausente o ilegible sale como envelope del catálogo (A-02).
+    from vault_errors import emit_error
+    if not ruta.is_file():
+        return emit_error("vault_mcp_catalog", "FILE_NOT_FOUND",
+                          f"tool-spec.json no existe: {ruta.name}",
+                          {"spec_path": str(ruta)})
+    try:
+        data = json.loads(ruta.read_text(encoding="utf-8"))
+    except UnicodeDecodeError as e:
+        return emit_error("vault_mcp_catalog", "ENCODING_ERROR",
+                          f"tool-spec.json no es UTF-8: {ruta.name}", {"spec_path": str(ruta)}, e)
+    except (OSError, ValueError) as e:
+        return emit_error("vault_mcp_catalog", "JSON_PARSE_ERROR",
+                          f"tool-spec.json ilegible: {ruta.name}", {"spec_path": str(ruta)}, e)
     entradas = data.get("tools", {})
 
     # La derivación vive en `mapa_de_grupos()`, que es también la que consume
