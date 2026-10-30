@@ -88,6 +88,7 @@ def main(argv: list[str] | None = None) -> int:
 
     install_mcp = args.mcp or args.all
     install_skills = args.all
+    fallo = 0
 
     if args.dry_run:
         print("[dry-run] Acciones que se ejecutarían:")
@@ -111,13 +112,20 @@ def main(argv: list[str] | None = None) -> int:
         print()
         rc = _install_mcp()
         if rc != 0:
-            print(f"[WARN] MCP install failed (exit {rc})")
+            print(f"[ERROR] MCP install failed (exit {rc})")
+            fallo = fallo or rc
 
     if install_skills:
         print()
         rc = _install_skills()
+        if rc != 0:
+            print(f"[ERROR] Skills install failed (exit {rc})")
+            fallo = fallo or rc
 
     print()
+    if fallo:
+        print(f"=== Instalación INCOMPLETA (exit {fallo}) ===")
+        return fallo
     print("=== Instalación completa ===")
     print()
     print("CLAVE: exporta VAULT_ROOT al directorio de tu vault:")

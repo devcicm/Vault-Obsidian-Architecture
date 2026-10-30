@@ -65,7 +65,10 @@ def main(argv: list[str] | None = None) -> int:
 
     rc = _pip_uninstall()
     if rc != 0:
-        print(f"[WARN] pip uninstall returned {rc} (puede ser que no estaba instalado)")
+        print(f"[ERROR] pip uninstall returned {rc}")
+        print()
+        print(f"=== Desinstalación INCOMPLETA (exit {rc}) ===")
+        return rc
 
     print()
     print("=== Desinstalación completa ===")
