@@ -212,15 +212,15 @@ Tests:
 
 ## Vault como Skill — Usar Este Repo como Vault
 
-Este repositorio **es** un vault funcional. Puedes usarlo directamente o
-copiar su estructura a tu proyecto.
+Este repositorio es el **estándar**, no un vault; su único vault de pruebas es
+`vault-sandbox/`. Puedes usarlo para probar o copiar su estructura a tu proyecto.
 
 ### Usarlo sin instalar
 
 ```bash
 git clone https://github.com/devcicm/Vault-Obsidian-Architecture.git
 cd Vault-Obsidian-Architecture
-export VAULT_ROOT=$(pwd)          # o auto-detecta vault-*/
+export VAULT_ROOT=$(pwd)/vault-sandbox   # la raíz del repo NO es un vault: usa el sandbox
 vault tools list
 vault run vault_audit
 ```
