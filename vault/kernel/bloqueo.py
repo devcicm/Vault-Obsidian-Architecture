@@ -19,6 +19,7 @@ from __future__ import annotations
 import errno
 import json
 import os
+from functools import lru_cache
 import socket
 import sys
 import threading
@@ -47,14 +48,37 @@ def rutas_de_lock(objetivo: Path) -> Tuple[Path, Path]:
     ruta —relativa, con `..`, con el nombre 8.3 de TEMP en Windows— y escribía
     con otra no encontraba su toma: `comprobar_toma` volvía sin comprobar nada.
     `realpath` y no `Path.resolve`: en 3.9 sobre Windows `resolve()` de una ruta
-    relativa que no existe puede devolverla relativa (bpo-38671). Límite: el
-    último componente de una nota que aún no existe conserva la caja con que
-    llega, así que en un disco que no distingue mayúsculas `Nota.md` y
-    `nota.md` siguen siendo dos locks hasta que la nota existe.
+    relativa que no existe puede devolverla relativa (bpo-38671). El último
+    componente de una nota que aún no existe conserva la caja con que llega
+    (A-15 del estudio vault-dev-codex), así que en un disco que no distingue
+    mayúsculas `Nota.md` y `nota.md` serían dos locks: ahí el nombre del lock
+    se pliega con `casefold`. En uno que sí distingue no se toca, porque
+    fundiría dos notas distintas.
     """
     objetivo = Path(os.path.realpath(objetivo))
     raiz = objetivo.parent / ".locks"
-    return raiz, raiz / f"{objetivo.name}.lock"
+    nombre = objetivo.name
+    if not distingue_mayusculas(objetivo.parent):
+        nombre = nombre.casefold()
+    return raiz, raiz / f"{nombre}.lock"
+
+
+@lru_cache(maxsize=256)
+def distingue_mayusculas(carpeta: Path) -> bool:
+    """¿El disco de `carpeta` trata `A` y `a` como nombres distintos?
+
+    Se mide sin escribir: la carpeta existe, así que se pregunta si la misma
+    ruta con la caja del último componente invertida es la misma carpeta. Si el
+    nombre no tiene letras que invertir no hay forma de saberlo y se responde
+    que sí distingue, que es el comportamiento anterior.
+    """
+    invertido = carpeta.name.swapcase()
+    if not carpeta.name or invertido == carpeta.name:
+        return True
+    try:
+        return not os.path.samefile(carpeta, carpeta.with_name(invertido))
+    except OSError:
+        return True
 
 
 def crear_carpeta_de_locks(raiz: Path) -> None:
