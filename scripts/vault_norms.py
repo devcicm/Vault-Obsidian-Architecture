@@ -173,6 +173,23 @@ def vault_norms_show(code: str) -> Dict[str, Any]:
     return {"ok": True, "norm": dict(norm)}
 
 
+_TS_AP13 = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$")
+
+
+def _timestamp_ap13_valido(valor: Any) -> bool:
+    """AP-13: UTC ISO-8601 con `Z`. Que exista no basta (A-05): `"ayer"` pasaba."""
+    from datetime import datetime
+    if isinstance(valor, datetime):
+        return True  # YAML ya lo leyó como fecha-hora: el formato escrito es válido
+    if not isinstance(valor, str) or not _TS_AP13.match(valor):
+        return False
+    try:
+        datetime.strptime(valor[:19], "%Y-%m-%dT%H:%M:%S")
+    except ValueError:
+        return False
+    return True
+
+
 def vault_norms_scan(path: str) -> Dict[str, Any]:
     """Detect which norms are applicable to a vault note based on content analysis."""
     note_path = _raiz() / path
@@ -205,6 +222,8 @@ def vault_norms_scan(path: str) -> Dict[str, Any]:
         _add("AP-16", "campo agent ausente en frontmatter")
     if not fm.get("createdAt") or not fm.get("updatedAt"):
         _add("AP-13", "timestamps createdAt/updatedAt ausentes o incompletos")
+    elif not (_timestamp_ap13_valido(fm["createdAt"]) and _timestamp_ap13_valido(fm["updatedAt"])):
+        _add("AP-13", "timestamps createdAt/updatedAt con formato inválido (UTC YYYY-MM-DDTHH:mm:ss.sssZ)")
     if not fm.get("id") or not fm.get("title"):
         _add("AP-12", "campos id/title ausentes en frontmatter")
 
