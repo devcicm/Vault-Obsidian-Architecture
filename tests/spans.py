@@ -20,9 +20,10 @@ from reparto import modulo_de
 
 def agregar(reportes: Iterable[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Reportes por fase (`nodeid`, `worker`, `start`, `stop`, `duration`) -> un span por módulo."""
-    por_modulo: Dict[str, Dict[str, Any]] = {}
+    por_modulo: Dict[Any, Dict[str, Any]] = {}
     for r in reportes:
-        s = por_modulo.setdefault(modulo_de(r["nodeid"]), {
+        # xdist reparte los tests de un módulo entre workers: un span por módulo y worker.
+        s = por_modulo.setdefault((modulo_de(r["nodeid"]), r["worker"]), {
             "modulo": modulo_de(r["nodeid"]), "worker": r["worker"],
             "inicio": r["start"], "fin": r["stop"], "trabajo_s": 0.0, "tests": set()})
         s["inicio"] = min(s["inicio"], r["start"])

@@ -20,6 +20,14 @@ def test_agrega_un_span_por_modulo():
     assert por_modulo["test_b"]["worker"] == "gw1"
 
 
+def test_un_modulo_repartido_entre_workers_no_se_atribuye_a_uno_solo():
+    reportes = [_r("tests/test_a.py::t1", "gw0", 0, 6), _r("tests/test_a.py::t2", "gw1", 0, 6)]
+    ind = spans.indicadores(spans.agregar(reportes))
+    assert ind["workers"] == 2 and ind["trabajo_s"] == 12
+    assert ind["eficiencia"] <= 1                      # nunca más de lo que cabe en el reloj
+    assert ind["desbalance"] == 1.0
+
+
 def test_indicadores_miden_reloj_coste_y_desbalance():
     ind = spans.indicadores(spans.agregar(REPORTES))
     assert ind["reloj_s"] == 10 and ind["trabajo_s"] == 14 and ind["workers"] == 2
