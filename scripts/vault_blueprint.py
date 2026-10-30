@@ -85,6 +85,25 @@ ESTADOS_DE_DEUDA = ("pendiente", "saldada")
 #: deja de servir para nada.
 DEUDA_DECLARADA: List[Dict[str, Any]] = [
     {
+        "id": "mcp_sin_perfiles_por_token",
+        "estado": "pendiente",
+        "sostenida_por": [
+            cita_repo(rutas.TESTS, "test_mcp_perfiles_por_token.py::test_limite_declarado_mcp_sin_perfiles_por_token"),
+        ],
+        "desde": "v41.25",
+        "capa": "5",
+        "que": (
+            "A-13 del estudio vault-dev-codex: el servidor MCP tiene un unico Bearer; "
+            "quien lo posee llama a toda tool, incluidas `vault_delete` y "
+            "`vault_standard_upgrade`. No hay perfiles por token ni por tool."
+        ),
+        "por_que_no_ahora": (
+            "Pide decidir el modelo de perfiles (agente / operador) y como se declaran "
+            "los tokens; cambia el contrato de arranque de los consumidores. Mientras "
+            "tanto conviene rotar el token expuesto en el historial."
+        ),
+    },
+    {
         "id": "raiz_explicita_apunta_al_repo",
         "estado": "pendiente",
         "sostenida_por": [
