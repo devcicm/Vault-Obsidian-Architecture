@@ -208,25 +208,41 @@ def _ejemplos_del_readme(tool: str) -> list:
     return salida
 
 
-@pytest.mark.parametrize("tool", EJEMPLOS_EJECUTADOS)
-def test_ap42_los_ejemplos_del_readme_corren_en_un_vault(tool, tmp_path):
-    import json
+def _correr_script(raiz, *args):
     import os
 
-    entorno = dict(os.environ, VAULT_ROOT=str(tmp_path), PYTHONIOENCODING="utf-8")
+    entorno = dict(os.environ, VAULT_ROOT=str(raiz), PYTHONIOENCODING="utf-8")
+    return subprocess.run(
+        [sys.executable, str(REPO_ROOT / "scripts" / args[0]), *args[1:]],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        cwd=str(raiz), env=entorno, timeout=300,
+    )
 
-    def correr(*args):
-        return subprocess.run(
-            [sys.executable, str(REPO_ROOT / "scripts" / args[0]), *args[1:]],
-            capture_output=True, text=True, encoding="utf-8", errors="replace",
-            cwd=str(tmp_path), env=entorno, timeout=300,
-        )
 
-    assert correr("vault_init.py", "--no-audit").returncode == 0
-    assert correr("vault_project.py", "--add", "mi-api").returncode == 0
+@pytest.fixture(scope="module")
+def vault_con_proyecto(tmp_path_factory):
+    """Un vault con su proyecto dado de alta, hecho una vez por worker.
+
+    Cada ejemplo arrancaba dos intérpretes (`vault_init`, `vault_project --add`)
+    para llegar al mismo vault; ahora se copia. Un ejemplo que escribe lo hace en
+    su copia, así que el vault base no se ensucia.
+    """
+    base = tmp_path_factory.mktemp("vault_base")
+    assert _correr_script(base, "vault_init.py", "--no-audit").returncode == 0
+    assert _correr_script(base, "vault_project.py", "--add", "mi-api").returncode == 0
+    return base
+
+
+@pytest.mark.parametrize("tool", EJEMPLOS_EJECUTADOS)
+def test_ap42_los_ejemplos_del_readme_corren_en_un_vault(tool, tmp_path, vault_con_proyecto):
+    import json
+    import shutil
+
+    raiz = tmp_path / "vault"
+    shutil.copytree(vault_con_proyecto, raiz)
     ejemplos = _ejemplos_del_readme(tool)
     assert ejemplos, f"scripts/README.md ya no publica ejemplos de {tool}"
     for args in ejemplos:
-        proc = correr(f"{tool}.py", *args)
+        proc = _correr_script(raiz, f"{tool}.py", *args)
         assert proc.returncode == 0, (args, proc.stdout[-400:], proc.stderr[-400:])
         assert json.loads(proc.stdout)["ok"] is True
