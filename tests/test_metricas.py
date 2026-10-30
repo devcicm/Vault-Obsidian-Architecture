@@ -183,3 +183,9 @@ def test_la_duracion_de_las_puertas_se_lee_de_vault_gate():
     # antes de hacer su trabajo y abaratar la cifra.
     with pytest.raises(ValueError):
         vm.leer_salida_puertas({**salida, "ok": False, "failing": 1})
+
+
+def test_la_suite_se_compromete_a_20_minutos_con_cuatro_workers():
+    m = next(x for x in vm.METRICAS if x["id"] == "suite_duracion_s")
+    assert m["objetivo"]["valor"] == 1200
+    assert "-n 4" in m["que"]

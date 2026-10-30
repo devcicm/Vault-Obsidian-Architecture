@@ -616,6 +616,27 @@
       "commit": "35ba058",
       "fecha": "2026-10-23",
       "fuente": "medición real: onboarding doble pasada sobre proyecto demo con git (2.ª pasada = 5 skipped, 0 escrituras)"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 0,
+      "commit": "7c9d41f",
+      "fecha": "2026-10-30",
+      "fuente": "ronda -n 4 del 2026-10-30 (6516 passed, spans eficiencia 0.969)"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 6516,
+      "commit": "7c9d41f",
+      "fecha": "2026-10-30",
+      "fuente": "ronda -n 4 del 2026-10-30 (6516 passed, spans eficiencia 0.969)"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 1797.68,
+      "commit": "7c9d41f",
+      "fecha": "2026-10-30",
+      "fuente": "ronda -n 4 del 2026-10-30 (6516 passed, spans eficiencia 0.969)"
     }
   ]
 }

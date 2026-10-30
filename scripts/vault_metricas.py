@@ -157,9 +157,11 @@ METRICAS: List[Dict[str, Any]] = [
      "objetivo": _plazo(0)},
     {"id": "suite_duracion_s", "tipo": "desarrollo", "origen": "observada", "sentido": "menor",
      "unidad": "s",
-     "que": "Duración de una ronda completa de la suite, según pytest.",
+     "que": ("Duración de una ronda completa de la suite, según pytest. Desde 2026-10-30 se "
+             "mide con `-n 4`: el reparto ya es casi perfecto (desbalance 1,03), así que "
+             "el objetivo se alcanza reduciendo trabajo, no repartiéndolo."),
      "fuente": "resumen final de `python -m pytest tests/` (--registrar-suite)",
-     "objetivo": _plazo(4339)},
+     "objetivo": _plazo(1200)},
     {"id": "suite_tests", "tipo": "desarrollo", "origen": "observada", "sentido": "mayor",
      "unidad": "tests",
      "que": "Tests ejecutados en una ronda completa de la suite.",
