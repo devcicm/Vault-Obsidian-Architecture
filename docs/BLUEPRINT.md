@@ -358,12 +358,13 @@ Deuda **declarada**: conocida, medida y con motivo escrito de por qué no se ata
 todavía. Lo que no está aquí no es que no exista — es que nadie lo ha medido, que
 es una situación distinta y peor.
 
-**3 pendientes** de 29 declaradas. Una deuda saldada no
+**4 pendientes** de 30 declaradas. Una deuda saldada no
 desaparece de la tabla: se queda con `estado: saldada` y la versión que la cerró,
 porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 
 | Deuda | Estado | Desde | Capa | Qué | Por qué no ahora |
 |---|---|---|---|---|---|
+| `ronda_sin_contenedor_round_id` | pendiente | v41.25 | 5 | D-07 del estudio vault-dev-codex: una ronda de trabajo no tiene contenedor. Ni el contrato de nota ni ninguna tool declaran `round_id`, y nada escribe un `session-log` por ronda en 04_Sessions. | Es la ultima del orden de la secuencia 4: una ronda es una vista sobre notas que ya tienen identidad, y declarar `round_id` sin una tool que lo escriba y una puerta que lo lea seria un campo inventado. Pide decidir antes quien abre la ronda. |
 | `mcp_sin_perfiles_por_token` | pendiente | v41.25 | 5 | A-13 del estudio vault-dev-codex: el servidor MCP tiene un unico Bearer; quien lo posee llama a toda tool, incluidas `vault_delete` y `vault_standard_upgrade`. No hay perfiles por token ni por tool. | Pide decidir el modelo de perfiles (agente / operador) y como se declaran los tokens; cambia el contrato de arranque de los consumidores. Mientras tanto conviene rotar el token expuesto en el historial. |
 | `raiz_explicita_apunta_al_repo` | pendiente | v41.25 | 5 | A-11 del estudio vault-dev-codex: `escritura_admitida` admite toda raiz explicita, tambien el propio repo del estandar, que la regla 1 prohibe. Ninguna puerta lo impide. | Rechazarlo rompe la suite, que fija VAULT_ROOT explicito en cientos de tests, y los consumidores que sincronizan el repo. Pide decidir antes como distinguir el repo del estandar de un vault de usuario. |
 | `colector_qg_fuera_de_toda_puerta` | pendiente | v41.25 | 5 | B-04 del estudio vault-dev-codex: `audits/fase2/colector_qg.py` emite los recibos de QG-00..06 y ni `vault_gate.PUERTAS` ni ningun workflow lo ejecutan. Los recibos que lleva el manifiesto son de una corrida manual. | Cablearlo no es un paso: el colector exige HEAD == product_sha (sobre un descendiente documental devuelve QG-00 BLOCKED por CHECKOUT_EN_OTRO_SHA, medido el 2026-10-30) y `--ejecutar` corre la suite y la construccion enteras. Hace falta un job propio con un worktree en el product_sha, que no se puede verificar fuera de la CI. |

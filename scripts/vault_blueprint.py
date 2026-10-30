@@ -85,6 +85,26 @@ ESTADOS_DE_DEUDA = ("pendiente", "saldada")
 #: deja de servir para nada.
 DEUDA_DECLARADA: List[Dict[str, Any]] = [
     {
+        "id": "ronda_sin_contenedor_round_id",
+        "estado": "pendiente",
+        "sostenida_por": [
+            cita_repo(rutas.TESTS, "test_d07_ronda_sin_contenedor.py::test_limite_declarado_round_id_no_existe_en_el_contrato"),
+        ],
+        "desde": "v41.25",
+        "capa": "5",
+        "que": (
+            "D-07 del estudio vault-dev-codex: una ronda de trabajo no tiene "
+            "contenedor. Ni el contrato de nota ni ninguna tool declaran "
+            "`round_id`, y nada escribe un `session-log` por ronda en 04_Sessions."
+        ),
+        "por_que_no_ahora": (
+            "Es la ultima del orden de la secuencia 4: una ronda es una vista sobre "
+            "notas que ya tienen identidad, y declarar `round_id` sin una tool que "
+            "lo escriba y una puerta que lo lea seria un campo inventado. Pide "
+            "decidir antes quien abre la ronda."
+        ),
+    },
+    {
         "id": "mcp_sin_perfiles_por_token",
         "estado": "pendiente",
         "sostenida_por": [
