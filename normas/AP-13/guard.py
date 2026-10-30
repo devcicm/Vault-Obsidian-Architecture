@@ -10,5 +10,6 @@ de derivarlo; se regenera con `vault_norms_engine.escribir_caras_derivadas`.
 GUARD = [
     'scripts/vault_write.py::generate_frontmatter',
     'scripts/vault_write.py::vault_write',
+    'scripts/vault_audit.py::_detect_missing_metadata',
     'scripts/vault_audit.py::vault_audit',
 ]

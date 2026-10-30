@@ -53,6 +53,7 @@ def _score_del_bloque_viejo(u):
     score -= min(10, u["missing_status"] * 1)
     score -= min(15, u["missing_cia"] * 2)
     score -= min(10, u["missing_updated"] * 2)
+    score -= min(15, u["missing_created"] * 3)
     score -= min(20, u["missing_frontmatter"] * 3)
     score -= min(15, u["cia_penalty"])
     score -= u["ap31"]

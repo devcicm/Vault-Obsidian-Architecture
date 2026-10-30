@@ -1844,6 +1844,7 @@ def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]
     missing_status = []
     missing_cia = []
     missing_updated = []
+    missing_created = []
     missing_frontmatter = []
     missing_contract = []
     for p in notes:
@@ -1912,6 +1913,10 @@ def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]
         if not fm.get("updatedAt"):
             missing_updated.append({"path": rel, "title": fm.get("title", p.stem)})
 
+        # D-01 / AP-13: la fecha de creación es la otra mitad del par.
+        if not fm.get("createdAt"):
+            missing_created.append({"path": rel, "title": fm.get("title", p.stem)})
+
     return {
         "missing_tags": missing_tags,
         "missing_agent": missing_agent,
@@ -1919,6 +1924,7 @@ def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]
         "missing_status": missing_status,
         "missing_cia": missing_cia,
         "missing_updated": missing_updated,
+        "missing_created": missing_created,
         "missing_frontmatter": missing_frontmatter,
         "missing_contract": missing_contract,
     }
@@ -2486,6 +2492,7 @@ def vault_audit(
     missing_status = meta_issues["missing_status"]
     missing_cia = meta_issues["missing_cia"]
     missing_updated = meta_issues["missing_updated"]
+    missing_created = meta_issues["missing_created"]
     missing_frontmatter = meta_issues["missing_frontmatter"]
     missing_contract = meta_issues["missing_contract"]
 
@@ -2531,6 +2538,7 @@ def vault_audit(
         "missing_status": len(missing_status),
         "missing_cia": len(missing_cia),
         "missing_updated": len(missing_updated),
+        "missing_created": len(missing_created),
         "missing_frontmatter": len(missing_frontmatter),
         # Ya vienen resueltas por su detector: la unidad es el punto, no la
         # ocurrencia. El tope del registro las sigue acotando igual.
@@ -2701,6 +2709,7 @@ def vault_audit(
             "missingStatus": missing_status,
             "missingCIA": missing_cia,
             "missingUpdated": missing_updated,
+            "missingCreated": missing_created,
             "missingFrontmatter": missing_frontmatter,
             "missingContract": missing_contract,
             "graphKnowledge": {
