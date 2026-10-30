@@ -21,7 +21,7 @@
     },
     {
       "firma": "vault_audit.py::_read_propagation_pending::08d90f38",
-      "visto_en": "vault_audit.py:2204"
+      "visto_en": "vault_audit.py:2210"
     },
     {
       "firma": "vault_encoding.py::log_encoding_fixes::a36080b0",
@@ -113,11 +113,11 @@
     },
     {
       "firma": "vault_standard_upgrade.py::_run_compliance_check::a36080b0",
-      "visto_en": "vault_standard_upgrade.py:720"
+      "visto_en": "vault_standard_upgrade.py:722"
     },
     {
       "firma": "vault_standard_upgrade.py::vault_standard_upgrade::a36080b0",
-      "visto_en": "vault_standard_upgrade.py:945"
+      "visto_en": "vault_standard_upgrade.py:947"
     },
     {
       "firma": "vault_voice.py::_catalog::08d90f38",
