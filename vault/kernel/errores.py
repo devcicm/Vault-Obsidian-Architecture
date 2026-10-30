@@ -775,7 +775,7 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
     "TOOL_TIMEOUT": {
         "category": "infrastructure",
         "severity": "error",
-        "message": "La tool excedió el timeout configurado y fue terminada.",
+        "message": "La tool excedió el timeout configurado: se dejó de esperar, pero pudo seguir en segundo plano.",
         "recovery": {
             "action": "retry",
             "hint": "Reducir el alcance de la operación (usar --folder, --limit, --project) o aumentar VAULT_TOOL_TIMEOUT env var.",

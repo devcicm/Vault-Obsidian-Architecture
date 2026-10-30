@@ -572,7 +572,7 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
         err = emit_error(
             tool=tool_name,
             code="TOOL_TIMEOUT",
-            message=f"La tool '{tool_name}' excedio el limite de {limit}s y fue terminada.",
+            message=f"La tool '{tool_name}' excedio el limite de {limit}s. Se dejo de esperar, pero seguia ejecutandose en segundo plano y pudo escribir despues: comprueba el estado antes de reintentar.",
         )
         _write_output(json.dumps(err, ensure_ascii=False), _real_stdout)
         return 1
