@@ -11,13 +11,16 @@ from pathlib import Path
 import pytest
 
 SCRIPTS = Path(__file__).resolve().parent.parent / "scripts"
+sys.path.insert(0, str(SCRIPTS))
+import vault_grafo_import as gi  # noqa: E402
+
 CORTADORES = ["vault_bibliography_save", "vault_bug_save", "vault_incident_save",
               "vault_ncr_save", "vault_privacy_save", "vault_risk_save"]
 
 
 @pytest.mark.parametrize("script", CORTADORES)
 def test_el_corte_a_60_no_deja_guion_colgante(script):
-    fuente = (SCRIPTS / f"{script}.py").read_text(encoding="utf-8")
+    fuente = gi.codigo_de(SCRIPTS / f"{script}.py").read_text(encoding="utf-8")
     cortes = re.findall(r"slugify_strict\([^)]*\)\[:60\](\.strip\(\"-\"\))?", fuente)
     assert cortes, script
     assert all(cortes), f"{script}: el slice [:60] debe cerrar con .strip(\"-\")"
