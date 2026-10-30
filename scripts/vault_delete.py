@@ -22,7 +22,8 @@ from typing import Any, Dict
 from vault_errors import emit_error, fuera_de_sesion, wrap_main
 from vault_entorno import agente_por_defecto
 from vault_io import (
-    assert_within_vault, atomic_write_json, atomic_write_text, refrescar_indice_de_seccion,
+    actualizar_indices_de_dominio, assert_within_vault, atomic_write_json, atomic_write_text,
+    refrescar_indice_de_seccion,
 )
 from vault_registry import es_artefacto_derivado
 from vault_move import notas_que_enlazan
@@ -103,7 +104,8 @@ def _quitar_del_indice(rel_path: str) -> Dict[str, Any]:
 def _indice_tras_borrar(rel_path: str) -> Dict[str, Any]:
     """El borrado ya ocurrio: un indice ilegible se degrada a aviso, no a ok:false."""
     try:
-        return _quitar_del_indice(rel_path)
+        busqueda = _quitar_del_indice(rel_path)
+        return {**busqueda, "domain_indexes": actualizar_indices_de_dominio(rel_path)}
     except Exception as exc:  # noqa: BLE001 - la nota ya no esta en disco
         return {"updated": False, "error": f"{type(exc).__name__}: {exc}",
                 "hint": "ejecutar vault_reindex"}

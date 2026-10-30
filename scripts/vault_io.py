@@ -604,6 +604,52 @@ def refrescar_indice_de_seccion(path: Path) -> Dict[str, Any]:
     return {"ok": True, "section": section, "updated": True}
 
 
+def _entradas_por_ruta(datos: Any, ruta: str) -> List[Dict[str, Any]]:
+    """Las entradas de un índice de dominio que apuntan a `ruta` por `relPath`."""
+    if not isinstance(datos, dict):
+        return []
+    return [e for lista in datos.values() if isinstance(lista, list)
+            for e in lista if isinstance(e, dict) and e.get("relPath") == ruta]
+
+
+def actualizar_indices_de_dominio(origen: str, destino: Optional[str] = None) -> Dict[str, Any]:
+    """Reescribe o retira la nota en los `<seccion>/.<dominio>-index.json` (D-04).
+
+    Los índices de dominio (`.bugs-index.json`, `.code-index.json`,
+    `.requirements-index.json`...) guardan cada nota por `relPath`. Mover o
+    borrar una nota no pasa por su `*_save`, así que la entrada quedaba con la
+    ruta vieja: el guard AP-17 de `vault_code_module` y la identidad por ruta de
+    `vault_bug_save` leían una ruta que ya no existe. Con `destino` la entrada se
+    reescribe; sin él se quita. Un índice ilegible se nombra en `ilegibles` y
+    no se toca: el movimiento o el borrado ya ocurrieron.
+    """
+    raiz = get_vault_root()
+    tocados: List[str] = []
+    ilegibles: List[str] = []
+    for indice in sorted(raiz.glob("*/.*-index.json")):
+        rel = indice.relative_to(raiz).as_posix()
+        try:
+            with file_lock(indice, timeout=10.0):
+                datos = json.loads(indice.read_text(encoding="utf-8"))
+                if not _entradas_por_ruta(datos, origen):
+                    continue
+                for clave, lista in list(datos.items()):
+                    if not isinstance(lista, list):
+                        continue
+                    if destino is None:
+                        datos[clave] = [e for e in lista if not (
+                            isinstance(e, dict) and e.get("relPath") == origen)]
+                    else:
+                        for e in lista:
+                            if isinstance(e, dict) and e.get("relPath") == origen:
+                                e["relPath"] = destino
+                atomic_write_json(indice, datos)
+                tocados.append(rel)
+        except (OSError, ValueError, TimeoutError):
+            ilegibles.append(rel)
+    return {"updated": bool(tocados), "indexes": tocados, "unreadable": ilegibles}
+
+
 class _Lote:
     """Lo apuntado dentro de `escrituras_en_lote`: secciones y notas del grafo."""
 

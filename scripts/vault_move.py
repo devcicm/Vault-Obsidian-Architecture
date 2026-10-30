@@ -28,7 +28,8 @@ from vault_regex import RE_WIKILINK  # dueño único del patrón (AP-50)
 from vault_errors import emit_error, fuera_de_sesion, mensaje_de, wrap_main
 from vault_io import (
     assert_within_vault, atomic_write_text, file_lock, is_snapshot_path,
-    refrescar_grafo, refrescar_indice_de_seccion, tomar_lock, write_report,
+    actualizar_indices_de_dominio, refrescar_grafo, refrescar_indice_de_seccion,
+    tomar_lock, write_report,
 )
 from vault_lib import indice_de_nombres, resolver_wikilink, utcnow
 from vault_registry import motivo_de_destino_invalido, section_types, type_misfiled_in
@@ -585,6 +586,9 @@ def _mover_nota(
 
     search_result = _safe("search-index", lambda: update_search_index(from_path, to_path, dry_run))
     graph_result = _safe("graph", lambda: update_graph(from_path, to_path, dry_run))
+    if not dry_run:
+        dominio = _safe("domain-indexes", lambda: actualizar_indices_de_dominio(from_path, to_path))
+        degraded.extend(f"domain-indexes: {r} ilegible" for r in dominio.get("unreadable", []))
     # AP-47: `shutil.move` no pasa por el write path, así que ningún índice de
     # sección se enteraba: la nota seguía listada en el de origen (medido como
     # consumidor, 2026-10-10). Se rehacen origen y destino, una vez cada uno.
