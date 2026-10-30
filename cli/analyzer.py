@@ -13,7 +13,9 @@ verifican esa premisa. Si el escáner encuentra un escritor sin lock, la
 premisa del paralelismo deja de ser válida — por eso `cli scan --races`
 forma parte del ciclo, no es un extra.
 
-Supresión puntual: comentario `# cli-scan: ignore <CODIGO>` en la línea.
+Supresión puntual: comentario `# cli-scan: ignore <CODIGO> -- <motivo>` en la línea.
+Sin motivo la supresión no se aplica (A-08): un comentario mudo no puede silenciar
+una carrera crítica.
 """
 
 from __future__ import annotations
@@ -113,7 +115,8 @@ class Issue:
 
 def _suppressed(lines: List[str], lineno: int, code: str) -> bool:
     if 0 < lineno <= len(lines):
-        return f"cli-scan: ignore {code}" in lines[lineno - 1]
+        patron = rf"cli-scan:\s*ignore\s+{re.escape(code)}\s*(?:--|—|:)\s*\S"
+        return re.search(patron, lines[lineno - 1]) is not None
     return False
 
 

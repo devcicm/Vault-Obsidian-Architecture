@@ -235,7 +235,7 @@ def test_analyzer_detecta_shell_true(tmp_path):
 def test_supresion_explicita_silencia_el_hallazgo(tmp_path):
     f = tmp_path / "ok.py"
     f.write_text("import subprocess\ndef go(c):\n"
-                 "    subprocess.run(c, shell=True)  # cli-scan: ignore PY-04\n",
+                 "    subprocess.run(c, shell=True)  # cli-scan: ignore PY-04 -- argv fijo\n",
                  encoding="utf-8")
     assert "PY-04" not in {i.code for i in analyzer.scan_file(f)}
 
@@ -364,3 +364,12 @@ def test_la_version_de_la_cli_sale_del_registro():
     p = _python_m_cli("--version")
     assert p.returncode == 0, p.stderr[-800:]
     assert p.stdout.strip() == f"cli {CURRENT_VERSION.lstrip('v')}"
+
+
+def test_supresion_sin_motivo_no_silencia(tmp_path):
+    """A-08: un comentario mudo no puede apagar un hallazgo (RC-01 incluido)."""
+    f = tmp_path / "mudo.py"
+    f.write_text("import subprocess\ndef go(c):\n"
+                 "    subprocess.run(c, shell=True)  # cli-scan: ignore PY-04\n",
+                 encoding="utf-8")
+    assert "PY-04" in {i.code for i in analyzer.scan_file(f)}

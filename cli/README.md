@@ -155,7 +155,7 @@ antipatrones:
 | `AP-01` | referencia a un script que no existe |
 | `PY-01..04` | excepción silenciada, entry point sin `wrap_main`, argumento por defecto mutable, `shell=True` |
 
-Supresión puntual con `# cli-scan: ignore <CODIGO>` en la línea.
+Supresión puntual con `# cli-scan: ignore <CODIGO> -- <motivo>` en la línea (sin motivo no se aplica).
 
 ```bash
 python -m cli scan --summary --pretty          # recuento global

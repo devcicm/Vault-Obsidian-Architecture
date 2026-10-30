@@ -328,8 +328,8 @@ python -m cli scan --min-severity high
 artefacto compartido → scripts que lo escriben sin lock. Es el dato que consume el
 planificador.
 
-**Supresión:** `# cli-scan: ignore <CODIGO>` al final de la línea afectada. Se usa
-para el caso legítimo, no para silenciar un hallazgo real.
+**Supresión:** `# cli-scan: ignore <CODIGO> -- <motivo>` al final de la línea afectada; sin
+motivo no se aplica. Se usa para el caso legítimo, no para silenciar un hallazgo real.
 
 Sale con `1` si hay hallazgos por encima del umbral — apto como gate de CI.
 
