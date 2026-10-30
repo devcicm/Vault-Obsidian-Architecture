@@ -90,6 +90,38 @@ def pytest_collection_modifyitems(config, items):
         items[:] = quedan
 
 
+def pytest_runtest_logreport(report):
+    """Métrica cruda: cada fase de cada test, con su worker. Solo corre en el controller."""
+    nodo = getattr(report, "node", None)
+    _REPORTES.append({
+        "nodeid": report.nodeid, "start": report.start, "stop": report.stop,
+        "duration": report.duration,
+        "worker": nodo.gateway.id if nodo is not None else "main"})
+
+
+_REPORTES: list = []
+
+
+def pytest_terminal_summary(terminalreporter, exitstatus, config):
+    """Escribe los spans de la corrida (`tests/.spans/ultima.json`) y imprime los indicadores."""
+    if hasattr(config, "workerinput") or not _REPORTES:
+        return
+    import json
+    import spans
+
+    por_modulo = spans.agregar(_REPORTES)
+    ind = spans.indicadores(por_modulo)
+    destino = Path(__file__).resolve().parent / ".spans" / "ultima.json"
+    destino.parent.mkdir(exist_ok=True)
+    destino.write_text(json.dumps({"indicadores": ind, "spans": por_modulo}, indent=1),
+                       encoding="utf-8")
+    terminalreporter.write_line(
+        f"spans: reloj {ind['reloj_s']}s, trabajo {ind['trabajo_s']}s en {ind['workers']} "
+        f"workers, eficiencia {ind['eficiencia']}, desbalance {ind['desbalance']}, "
+        f"critico {ind['camino_critico']['modulo']} {ind['camino_critico']['s']}s, "
+        f"reloj minimo {ind['reloj_minimo_s']}s")
+
+
 def pytest_sessionfinish(session, exitstatus):
     if not _es_worker(session) and getattr(session.config, "_sandbox_fixture_owned", False):
         clean_sandbox()

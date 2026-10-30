@@ -93,3 +93,6 @@ scripts/%V%/
 # del desarrollador, no del repositorio. Sin esta línea, un checkout en
 # Windows deja `.vs/` como untracked que aparece en todo `git status`.
 .vs/
+
+# Spans de la ultima corrida de la suite (metrica local, no se versiona)
+tests/.spans/
