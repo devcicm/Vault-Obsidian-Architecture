@@ -1501,6 +1501,10 @@ function executePythonTool(scriptPath, args, vaultRoot, session, schema, modoJso
         if (process.env.VAULT_DEBUG !== "1") delete envelope.traceback;
         if (code !== 0) {
           envelope.exit_code = code;
+          // `ok: true` con exit != 0 es el diseño de las puertas --strict, pero
+          // un cliente que solo mira `ok` leía «pasó». `passed` lo dice sin
+          // tocar el campo estable.
+          if (envelope.ok === true) envelope.passed = false;
           if (stderr.trim()) envelope.stderr = stderr.trim();
         }
         resolve(envelope);
