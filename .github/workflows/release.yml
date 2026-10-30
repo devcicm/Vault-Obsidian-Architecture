@@ -62,6 +62,20 @@ jobs:
           for i in range(8):
               if qg.get(f"QG-0{i}") != "PASS":
                   errores.append(f"QG-0{i} no esta en PASS ({qg.get(f'QG-0{i}')})")
+          # B-05: las referencias de gobierno son ficheros reales de audits/, no strings.
+          # El centinela de `qa_verdict_ref` (PENDIENTE / OMITIDO_POR_PROPIETARIO, DEC-06)
+          # se admite; si hace falta un dictamen real lo decide B-06, no esta puerta.
+          from pathlib import Path
+          def ref_real(valor):
+              if not isinstance(valor, str) or not valor.startswith("audits/") or ".." in valor.split("/"):
+                  return False
+              return Path(valor).is_file()
+          gov = m.get("governance", {})
+          if not ref_real(gov.get("owner_decision_ref")):
+              errores.append(f"owner_decision_ref no es un fichero de audits/ ({gov.get('owner_decision_ref')!r})")
+          qa = gov.get("qa_verdict_ref")
+          if qa not in ("PENDIENTE", "OMITIDO_POR_PROPIETARIO") and not ref_real(qa):
+              errores.append(f"qa_verdict_ref no es un fichero de audits/ ni un centinela declarado ({qa!r})")
           if errores:
               print("NO SE PUBLICA:\n  " + "\n  ".join(errores)); sys.exit(1)
           print(f"OK: {tag} contiene el candidato {sha[:7]}")

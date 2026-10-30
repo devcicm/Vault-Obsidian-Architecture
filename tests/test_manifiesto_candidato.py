@@ -205,6 +205,8 @@ def _correr_puerta(tmp_path, mutar=None):
     git("config", "user.name", "t")
     (tmp_path / "pyproject.toml").write_text('[project]\nname="x"\nversion="1.0"\n')
     (tmp_path / "audits" / "fase2").mkdir(parents=True)
+    (tmp_path / "audits" / "handoff").mkdir(parents=True)
+    (tmp_path / "audits" / "handoff" / "ACTA.md").write_text("acta")
     git("add", "-A")
     git("commit", "-qm", "producto")
     sha, tree = git("rev-parse", "HEAD"), git("rev-parse", "HEAD^{tree}")
@@ -214,6 +216,8 @@ def _correr_puerta(tmp_path, mutar=None):
         "governance": {
             "release_authorized": True,
             "qg_statuses": {f"QG-0{i}": "PASS" for i in range(8)},
+            "owner_decision_ref": "audits/handoff/ACTA.md",
+            "qa_verdict_ref": "OMITIDO_POR_PROPIETARIO",
         },
     }
     m = copy.deepcopy(m)
@@ -253,3 +257,30 @@ def test_puerta_de_publicacion_ata_el_contenido_no_solo_la_ascendencia(tmp_path)
         m["release_candidate"]["product_tree_sha"] = "0" * 40
     r = _correr_puerta(tmp_path, mutar)
     assert r.returncode != 0 and "product_tree_sha" in r.stdout
+
+
+@pytest.mark.skipif(__import__("sys").version_info < (3, 11), reason="tomllib")
+@pytest.mark.parametrize("ref", ["cualquier cosa", "audits/handoff/NO-EXISTE.md",
+                                 "../fuera.md", "PENDIENTE", ""])
+def test_puerta_de_publicacion_rechaza_acta_que_no_existe(tmp_path, ref):
+    """B-05: `owner_decision_ref` es una ruta a un fichero real de audits/, no un string."""
+    def mutar(m):
+        m["governance"]["owner_decision_ref"] = ref
+    r = _correr_puerta(tmp_path, mutar)
+    assert r.returncode != 0 and "owner_decision_ref" in r.stdout
+
+
+@pytest.mark.skipif(__import__("sys").version_info < (3, 11), reason="tomllib")
+def test_puerta_de_publicacion_rechaza_dictamen_qa_inventado(tmp_path):
+    """B-05: `qa_verdict_ref` es un fichero real o un centinela declarado."""
+    def mutar(m):
+        m["governance"]["qa_verdict_ref"] = "dictamen favorable"
+    r = _correr_puerta(tmp_path, mutar)
+    assert r.returncode != 0 and "qa_verdict_ref" in r.stdout
+
+
+@pytest.mark.skipif(__import__("sys").version_info < (3, 11), reason="tomllib")
+def test_puerta_de_publicacion_acepta_dictamen_qa_que_es_un_fichero(tmp_path):
+    def mutar(m):
+        m["governance"]["qa_verdict_ref"] = "audits/handoff/ACTA.md"
+    assert _correr_puerta(tmp_path, mutar).returncode == 0
