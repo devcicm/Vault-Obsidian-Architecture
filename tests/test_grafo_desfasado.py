@@ -10,6 +10,7 @@ un `graph.json` regenerado después.
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -51,14 +52,22 @@ def _escribir_a_mano(raiz: Path, slug: str, extra: str = "") -> None:
     )
 
 
-@pytest.fixture
-def raiz(tmp_path):
-    raiz = tmp_path / "vault"
+@pytest.fixture(scope="module")
+def vault_base(tmp_path_factory):
+    """`vault_init`, la nota y el grafo una vez por módulo; cada test arranca de una copia."""
+    raiz = tmp_path_factory.mktemp("base") / "vault"
     raiz.mkdir()
     assert _ejecutar(raiz, "vault_init.py")["ok"] is True
     _escribir(raiz, "Alfa")
     assert _ejecutar(raiz, "vault_graph.py")["ok"] is True
     return raiz
+
+
+@pytest.fixture
+def raiz(tmp_path, vault_base):
+    destino = tmp_path / "vault"
+    shutil.copytree(vault_base, destino)
+    return destino
 
 
 def test_grafo_al_dia_no_se_declara_desfasado(raiz):

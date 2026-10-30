@@ -11,6 +11,7 @@ estable del contrato y se conserva.
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -38,16 +39,24 @@ def _tool(raiz: Path, script: str, *argv: str):
     return p.returncode, json.loads(salida[salida.index("{"):])
 
 
-def _vault_con_indice(tmp_path: Path) -> Path:
-    raiz = tmp_path / "vault"
+@pytest.fixture(scope="module")
+def vault_base(tmp_path_factory):
+    """`vault_init` y el índice una vez por módulo; cada test arranca de una copia."""
+    raiz = tmp_path_factory.mktemp("base") / "vault"
     raiz.mkdir()
     assert _tool(raiz, "vault_init")[1]["ok"] is True
     assert _tool(raiz, "vault_reindex", "--graph")[1]["ok"] is True
     return raiz
 
 
-def test_ap52_indice_desfasado_lleva_codigo_y_recuperacion_que_lo_arregla(tmp_path):
-    raiz = _vault_con_indice(tmp_path)
+def _vault_con_indice(tmp_path: Path, base: Path) -> Path:
+    raiz = tmp_path / "vault"
+    shutil.copytree(base, raiz)
+    return raiz
+
+
+def test_ap52_indice_desfasado_lleva_codigo_y_recuperacion_que_lo_arregla(tmp_path, vault_base):
+    raiz = _vault_con_indice(tmp_path, vault_base)
     (raiz / "21_QA" / "index.md").unlink()
 
     rc, r = _tool(raiz, "vault_reindex", "--check")
@@ -65,16 +74,16 @@ def test_ap52_indice_desfasado_lleva_codigo_y_recuperacion_que_lo_arregla(tmp_pa
     assert rc == 0 and r["ok"] is True, r
 
 
-def test_ap52_indice_al_dia_no_inventa_codigo(tmp_path):
-    raiz = _vault_con_indice(tmp_path)
+def test_ap52_indice_al_dia_no_inventa_codigo(tmp_path, vault_base):
+    raiz = _vault_con_indice(tmp_path, vault_base)
     rc, r = _tool(raiz, "vault_reindex", "--check")
     assert rc == 0 and r["ok"] is True, r
     assert "error_code" not in r and "recovery" not in r
 
 
-def test_ap52_indice_corrupto_lo_rehace_la_misma_recuperacion(tmp_path):
+def test_ap52_indice_corrupto_lo_rehace_la_misma_recuperacion(tmp_path, vault_base):
     """El índice es derivado: corrupto no es DATA_FILE_CORRUPT («a mano»)."""
-    raiz = _vault_con_indice(tmp_path)
+    raiz = _vault_con_indice(tmp_path, vault_base)
     (raiz / "99_Index" / "search-index.json").write_text("{roto", encoding="utf-8")
     rc, r = _tool(raiz, "vault_reindex", "--check")
     assert r["status"] == "index_corrupt" and r["error_code"] == "INDEX_STALE", r
@@ -82,8 +91,8 @@ def test_ap52_indice_corrupto_lo_rehace_la_misma_recuperacion(tmp_path):
     assert _tool(raiz, "vault_reindex", "--check")[1]["ok"] is True
 
 
-def test_ap52_indice_ausente_lleva_index_not_found(tmp_path):
-    raiz = _vault_con_indice(tmp_path)
+def test_ap52_indice_ausente_lleva_index_not_found(tmp_path, vault_base):
+    raiz = _vault_con_indice(tmp_path, vault_base)
     (raiz / "99_Index" / "search-index.json").unlink()
     rc, r = _tool(raiz, "vault_reindex", "--check")
     assert r["status"] == "index_missing" and r["error_code"] == "INDEX_NOT_FOUND", r
