@@ -85,6 +85,28 @@ ESTADOS_DE_DEUDA = ("pendiente", "saldada")
 #: deja de servir para nada.
 DEUDA_DECLARADA: List[Dict[str, Any]] = [
     {
+        "id": "colector_qg_fuera_de_toda_puerta",
+        "estado": "pendiente",
+        "sostenida_por": [
+            cita_repo(rutas.TESTS, "test_colector_qg_sin_puerta.py::test_limite_declarado_colector_qg_fuera_de_toda_puerta"),
+        ],
+        "desde": "v41.25",
+        "capa": "5",
+        "que": (
+            "B-04 del estudio vault-dev-codex: `audits/fase2/colector_qg.py` emite "
+            "los recibos de QG-00..06 y ni `vault_gate.PUERTAS` ni ningun workflow "
+            "lo ejecutan. Los recibos que lleva el manifiesto son de una corrida "
+            "manual."
+        ),
+        "por_que_no_ahora": (
+            "Cablearlo no es un paso: el colector exige HEAD == product_sha (sobre "
+            "un descendiente documental devuelve QG-00 BLOCKED por "
+            "CHECKOUT_EN_OTRO_SHA, medido el 2026-10-30) y `--ejecutar` corre la "
+            "suite y la construccion enteras. Hace falta un job propio con un "
+            "worktree en el product_sha, que no se puede verificar fuera de la CI."
+        ),
+    },
+    {
         "id": "barrido_del_toolkit_con_deuda_congelada",
         "estado": "saldada",
         "saldada_en": "v41.14",
