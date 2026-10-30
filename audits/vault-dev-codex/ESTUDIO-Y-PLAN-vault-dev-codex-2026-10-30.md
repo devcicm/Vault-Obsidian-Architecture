@@ -127,3 +127,26 @@ se debe corregir sin reproductor que falle primero.
 - No sé si `side_effects: []` equivale a «no escribe nada» en las 21 tools de lectura.
 - Las 30 tools no expuestas las agrupé por lectura del catálogo local de v41.25; el servidor remoto podría tener otro catálogo.
 - Del contenido de ~90 notas (índices y stubs generados) solo vi títulos y estado.
+
+
+## 6. Estado de aplicación (2026-10-30, local, sin push)
+
+Resultado de aplicar la tabla consolidada de remediaciones a este repo. Nada se borró; lo que no se puede cerrar aquí queda declarado con su test.
+
+| Ítem | Estado | Commit / dónde |
+|---|---|---|
+| A-04, A-05, A-08, A-09, A-12, A-16 | hechos | `87bf418`, `bb7489f`, `290b55e`, `e2f6533`, `f419422`, `de2ab57` |
+| A-03 | hecho: presupuesto propio (`PRESUPUESTO_S`) y fracción máxima declarada, con test | `65fc19e` |
+| A-15 | hecho: el lock pliega la caja solo si el disco no la distingue | `9ccf7f2` |
+| A-11, A-13 | límite declarado en `vault_blueprint.DEUDA_DECLARADA` con test | `ec97352`, `d09c462` |
+| B-04 | límite declarado con test | `d1ac5da` |
+| C-03 | hecho: el inventario de `15_Tests` clasifica por palabra entera y solo ficheros de test | `f8af588` |
+| D-01 a D-06 | hechos | `e176303`, `8bc42bf`, `1bc5e37`, `70a3fc2`, `7b2e6e7`, `7ed183c` |
+| D-07 | límite declarado: `round_id` no existe en el contrato ni en ninguna tool; declararlo sin quien lo escriba sería inventarlo | `02d072b` |
+| A-18, A-19, A-20, A-22 | no localizados en este checkout: no se tocó el manifiesto a ciegas | pendiente de re-medir sobre el HEAD vigente |
+| `requirement_state` (D-02) | no existe en este repo; no se inventó | — |
+| C-09 | no es defecto: `es_nota_indexable` rechaza la nota suelta en la raíz por diseño (AP-15); la salida es mover la nota a `00_System/` en el vault | — |
+| C-12 | ya resuelto en el código (`vault_audit` no cuenta `99_Index/tag-index.md` como nota); el 1 huérfano venía de una copia instalada anterior | — |
+| C-01, C-02, C-04 a C-08, C-10, C-11 | contenido del vault ajeno, solo lectura aquí | — |
+| C-08 | decisión del dueño: regenerar los 5 derivados destruye la reproducción | abierta |
+| B-01 a B-03, B-05, B-06 | decisión de release / dueño | abiertas |
