@@ -17,7 +17,7 @@
 | 1. Rama aislada | Completo | `audit/archify-governance-20261024` | Comparar con el trabajo del otro agente antes de integrar |
 | 2. Estabilidad de generación de Gobierno | Cambio aplicado | `scripts/vault_servicio.py` commit `477e412470a6f34e7cd235a49321d3d4e1572326`; `docs/GOBIERNO.md` commit `d7b1b4e38b04b00e361361fc27e6a766b28767c0` | Ejecutar regeneración y check, verificar diff limpio y suite |
 | 3. Inspección del paquete Archify | Inspección preliminar | ZIP entregado en conversación: tres diagramas de contextos, cruces y onboarding; HTML, JSON, capturas y reportes | Trazar los datos extraídos a módulos e imports del checkout actual |
-| 4. Dependencia Kernel → Autoría | Hallazgo documentado | `audits/2026-10-24-kernel-autoria.md`, commit `4091f49d4270b558221fdfa59850aadf62175df1` | Evaluar interfaz, consumidores, regresión y decisión de refactor |
+| 4. Dependencia Kernel → Autoría | Hallazgo documentado | `audits/archivo/2026-10-24-kernel-autoria.md`, commit `4091f49d4270b558221fdfa59850aadf62175df1` | Evaluar interfaz, consumidores, regresión y decisión de refactor |
 | 5. Puertos y contratos | Pendiente | Ocho accesos fuera de puerto **declarados en el paquete Archify**, no ocho defectos ya comprobados en código actual | Verificar uno a uno, corregir y probar |
 | 6. Validación integral | Pendiente | Ninguna ejecución de suite confirmada | Gates, pruebas de regresión y revisión de artefactos derivados |
 

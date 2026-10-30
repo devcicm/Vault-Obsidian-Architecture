@@ -1,6 +1,6 @@
 # Plan maestro QA ↔ agente ejecutor — 2026-10-24
 
-**Rama:** `audit/archify-governance-20261024`. **Propósito:** cola ordenada de trabajo para revisión estática por QA y ejecución local por otro agente. **No es una certificación de pruebas.** Fuente: `audits/2026-10-24-bitacora-auditoria-y-handoff.md` y revisión del código en esta rama. El ZIP Archify corresponde a un snapshot anterior; revalidar todo contra el SHA ejecutado.
+**Rama:** `audit/archify-governance-20261024`. **Propósito:** cola ordenada de trabajo para revisión estática por QA y ejecución local por otro agente. **No es una certificación de pruebas.** Fuente: `audits/archivo/2026-10-24-bitacora-auditoria-y-handoff.md` y revisión del código en esta rama. El ZIP Archify corresponde a un snapshot anterior; revalidar todo contra el SHA ejecutado.
 
 ## Contrato de colaboración
 - **QA:** aporta hallazgo, ubicación, evidencia, mecanismo causal, contrato/invariantes, propuesta, casos de prueba, criterios de aceptación. No marca PASÓ sin log.
