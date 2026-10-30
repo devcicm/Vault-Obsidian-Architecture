@@ -637,6 +637,27 @@
       "commit": "7c9d41f",
       "fecha": "2026-10-30",
       "fuente": "ronda -n 4 del 2026-10-30 (6516 passed, spans eficiencia 0.969)"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 0,
+      "commit": "90fb5b4",
+      "fecha": "2026-10-30",
+      "fuente": "pytest sobre suite_n4_b.log"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 6519,
+      "commit": "90fb5b4",
+      "fecha": "2026-10-30",
+      "fuente": "pytest sobre suite_n4_b.log"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 1485.58,
+      "commit": "90fb5b4",
+      "fecha": "2026-10-30",
+      "fuente": "pytest sobre suite_n4_b.log"
     }
   ]
 }

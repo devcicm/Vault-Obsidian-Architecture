@@ -129,3 +129,6 @@
 | 2026-10-30 | `7c9d41f` | `suite_fallos` | 0 | ronda -n 4 del 2026-10-30 (6516 passed, spans eficiencia 0.969) |
 | 2026-10-30 | `7c9d41f` | `suite_tests` | 6516 | ronda -n 4 del 2026-10-30 (6516 passed, spans eficiencia 0.969) |
 | 2026-10-30 | `7c9d41f` | `suite_duracion_s` | 1797.68 | ronda -n 4 del 2026-10-30 (6516 passed, spans eficiencia 0.969) |
+| 2026-10-30 | `90fb5b4` | `suite_fallos` | 0 | pytest sobre suite_n4_b.log |
+| 2026-10-30 | `90fb5b4` | `suite_tests` | 6519 | pytest sobre suite_n4_b.log |
+| 2026-10-30 | `90fb5b4` | `suite_duracion_s` | 1485.58 | pytest sobre suite_n4_b.log |
