@@ -565,6 +565,16 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
     t.start()
     try:
         t.join(timeout=limit)
+    except KeyboardInterrupt:
+        # A-09: Ctrl-C llega al hilo principal, que solo espera. Sin esto salía
+        # un traceback sin envelope y la tool seguía escribiendo en su hilo.
+        err = emit_error(
+            tool=tool_name,
+            code="INTERRUPTED",
+            message=f"La tool '{tool_name}' fue interrumpida por el usuario; pudo escribir antes de parar: comprueba el estado antes de reintentar.",
+        )
+        _write_output(json.dumps(err, ensure_ascii=False), _real_stdout)
+        return 130
     finally:
         argparse.ArgumentParser.error = _error_original
 
