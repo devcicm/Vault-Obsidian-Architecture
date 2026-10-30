@@ -16,5 +16,6 @@ ROOT = Path(__file__).resolve().parent.parent
 def test_limite_declarado_round_id_no_existe_en_el_contrato():
     assert "round_id" not in CAMPOS, "ya se declara: salda la deuda D-07"
     escritores = [p.name for p in (ROOT / "scripts").glob("vault_*.py")
-                  if "round_id" in p.read_text(encoding="utf-8", errors="replace")]
+                  if p.name != "vault_blueprint.py"  # ahi se declara la deuda
+                  and "round_id" in p.read_text(encoding="utf-8", errors="replace")]
     assert escritores == [], f"{escritores} ya escriben round_id: salda la deuda D-07"
