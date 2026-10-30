@@ -165,6 +165,17 @@ def count_scripts() -> int:
     return len(list((REPO_ROOT / "scripts").glob("*.py")))
 
 
+#: A-03 del estudio vault-dev-codex: el conteo de la suite es un
+#: `pytest --collect-only` completo y medió 54,6 s el 2026-10-29, dentro del
+#: techo genérico de 60 s de `VAULT_TOOL_TIMEOUT` (5 s de holgura). `vault_gate`
+#: da 600 s a su subproceso pero esta tool se mataba a sí misma con 60. El
+#: presupuesto propio se declara aquí y un test exige que lo medido ocupe, como
+#: mucho, `FRACCION_MAXIMA_DEL_PRESUPUESTO` de él.
+PRESUPUESTO_S = 300
+COLECCION_MEDIDA_S = 55
+FRACCION_MAXIMA_DEL_PRESUPUESTO = 0.25
+
+
 def count_tests() -> int:
     """Conteo real de la suite. Lento: solo se evalúa si algún doc lo afirma."""
     proc = vault_subproceso.ejecutar(
@@ -577,4 +588,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(wrap_main(main, "vault_doc_counts"))
+    sys.exit(wrap_main(main, "vault_doc_counts", timeout=PRESUPUESTO_S))
