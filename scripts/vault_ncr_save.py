@@ -84,7 +84,7 @@ def _slug(text: str) -> str:
     # Delega en el slug canónico (`vault_lib.slugify`). La copia que había
     # aquí divergía del resto: unas borraban los acentos, otras los dejaban
     # en el nombre de fichero. Una sola fuente, un solo nombre de nota.
-    return slugify_strict(text)[:60]
+    return slugify_strict(text)[:60].strip("-")
 
 
 def _ncr_id(date_str: str) -> str:

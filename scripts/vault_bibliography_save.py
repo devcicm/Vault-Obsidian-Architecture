@@ -107,7 +107,7 @@ def vault_bibliography_save(
 
     folder_path.mkdir(parents=True, exist_ok=True)
 
-    safe_slug = slugify_strict(title)[:60]
+    safe_slug = slugify_strict(title)[:60].strip("-")
 
     filename = f"{safe_slug}.md"
 
