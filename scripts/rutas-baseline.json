@@ -8,7 +8,6 @@
   "scripts/vault_init.py:mcp",
   "scripts/vault_metricas.py:normas",
   "scripts/vault_metricas.py:tests",
-  "scripts/vault_onboard.py:tests",
   "scripts/vault_spec_memory.py:scripts",
   "scripts/vault_test_save.py:tests",
   "vault/grafo/graph_fix.py:vault-sandbox",
@@ -20,7 +19,7 @@
   "vault/meta_toolkit/resolucion_producto.py:mcp"
  ],
  "objetivo": {
-  "tamano": 16,
+  "tamano": 15,
   "fecha_limite": "2027-06-30",
   "cadencia_dias": 90,
   "dueno": "meta_toolkit — vault.kernel.rutas",
@@ -33,7 +32,6 @@
   "scripts/vault_init.py:mcp": "Nombre de un **dominio** de vault (`mcp`, `toon`, `ansible`…), no el directorio del servidor MCP: son carpetas que el vault crea por petición de quien lo inicializa.",
   "scripts/vault_metricas.py:normas": "Unidad de una métrica (`\"unidad\": \"normas\"`), no una ruta: nombra en qué se mide, no dónde.",
   "scripts/vault_metricas.py:tests": "Unidad de una métrica (`\"unidad\": \"tests\"`), no una ruta: nombra en qué se mide, no dónde.",
-  "scripts/vault_onboard.py:tests": "Carpetas de un **proyecto** que se saltan al onboardar (`test`, `tests`, `spec`, `e2e`…), no las del repo: es el vocabulario de proyectos ajenos, y el dueño del layout de este repo no tiene nada que ver con él.",
   "scripts/vault_spec_memory.py:scripts": "La palabra «scripts» en un mensaje para humanos (`Total: N scripts`), no una ruta: el texto cuenta ficheros.",
   "scripts/vault_test_save.py:tests": "Clave de los datos que guarda la tool (`index[\"tests\"]`), no una ruta: es el contenido del índice de tests del vault.",
   "vault/grafo/graph_fix.py:vault-sandbox": "Carpeta que el grafo no recorre **dentro de un vault**: el nombre coincide con el sandbox de este repo, pero lo que se salta aquí es una carpeta de un vault cualquiera.",
