@@ -19,6 +19,8 @@ from pathlib import Path
 
 import yaml
 
+from vault_base import copiar_vault
+
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
 for _ruta in (SCRIPTS, ROOT):
@@ -41,9 +43,7 @@ def test_ap08_version_pinned_es_campo_opcional_del_contrato_v41():
 
 
 def test_ap08_vault_write_emite_version_pinned(tmp_path):
-    raiz = tmp_path / "vault"
-    raiz.mkdir()
-    assert _tool(raiz, "vault_init")[1]["ok"] is True
+    raiz = copiar_vault(tmp_path / "vault")
     rc, r = _tool(raiz, "vault_write", "--folder", "07_Knowledge", "--title", "Uso de React",
                   "--content", "Linea uno de la nota.\nLinea dos con mas palabras.\nLinea tres final.",
                   "--tags", "react", "--version-pinned", "react@18.2.0",
@@ -56,9 +56,7 @@ def test_ap08_vault_write_emite_version_pinned(tmp_path):
 
 
 def test_ap08_version_pinned_mal_formado_no_se_escribe(tmp_path):
-    raiz = tmp_path / "vault"
-    raiz.mkdir()
-    assert _tool(raiz, "vault_init")[1]["ok"] is True
+    raiz = copiar_vault(tmp_path / "vault")
     rc, r = _tool(raiz, "vault_write", "--folder", "07_Knowledge", "--title", "Sin version",
                   "--content", "Linea uno de la nota.\nLinea dos con mas palabras.\nLinea tres final.",
                   "--tags", "react", "--version-pinned", "react")

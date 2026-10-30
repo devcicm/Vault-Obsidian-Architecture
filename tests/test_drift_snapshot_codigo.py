@@ -15,6 +15,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from vault_base import copiar_vault
+
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
 sys.path.insert(0, str(ROOT))
@@ -35,13 +37,10 @@ def _tool(raiz: Path, script: str, *argv: str):
 
 
 def _proyecto_enlazado(tmp_path: Path) -> Path:
-    raiz = tmp_path / "vault"
-    raiz.mkdir()
+    raiz = copiar_vault(tmp_path / "vault", "demo")
     repo = tmp_path / "repo"
     repo.mkdir()
     (repo / "a.py").write_text("x = 1\n", encoding="utf-8")
-    assert _tool(raiz, "vault_init")[1]["ok"] is True
-    assert _tool(raiz, "vault_project", "--add", "demo")[1]["ok"] is True
     assert _tool(raiz, "vault_project", "--link", "demo", "--path", str(repo))[1]["ok"] is True
     return raiz
 

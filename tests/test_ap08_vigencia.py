@@ -15,6 +15,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from vault_base import copiar_vault
+
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
 
@@ -51,15 +53,12 @@ def _nota(raiz: Path, nombre: str, fm: str):
 
 
 def _proyecto(tmp_path: Path):
-    raiz = tmp_path / "vault"
-    raiz.mkdir()
+    raiz = copiar_vault(tmp_path / "vault", "demo")
     repo = tmp_path / "repo"
     repo.mkdir()
     _git(repo, "init", "-q")
     _commit(repo, "viejo.py", "2025-06-01T00:00:00+00:00")
     _commit(repo, "nuevo.py", "2026-03-01T00:00:00+00:00")
-    assert _tool(raiz, "vault_init")[1]["ok"] is True
-    assert _tool(raiz, "vault_project", "--add", "demo")[1]["ok"] is True
     assert _tool(raiz, "vault_project", "--link", "demo", "--path", str(repo))[1]["ok"] is True
     return raiz, repo
 
@@ -105,12 +104,9 @@ def test_ap08_vigencia_actualizar_la_nota_la_devuelve_a_vigente(tmp_path):
 
 
 def test_ap08_vigencia_sin_git_no_finge_vigencia(tmp_path):
-    raiz = tmp_path / "vault"
-    raiz.mkdir()
+    raiz = copiar_vault(tmp_path / "vault", "demo")
     repo = tmp_path / "repo"
     repo.mkdir()
-    assert _tool(raiz, "vault_init")[1]["ok"] is True
-    assert _tool(raiz, "vault_project", "--add", "demo")[1]["ok"] is True
     rc, r = _tool(raiz, "vault_drift_detect", "--project", "demo", "--path", str(repo),
                   "--mode", "vigencia")
     assert rc == 1 and r["ok"] is False and r["error_code"] == "GIT_UNAVAILABLE", r
