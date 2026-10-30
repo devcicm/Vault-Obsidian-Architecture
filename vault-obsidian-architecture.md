@@ -3596,7 +3596,330 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 ---
 
-### Grupo 28 — Normas y Etiquetas de Código (v30)
+### Grupo 28 — Producción y SRE (v31)
+
+> **Propósito:** documentar eventos operacionales en producción — incidentes con ciclo de vida y SLOs con error budget. Alineado a ISO 20000-1:2018, ISO 22301:2019 e ISO/IEC 25010:2023.
+
+---
+
+#### `vault_incident_save(project, title, severity, description?, ...)`
+
+Registra un incidente con ciclo de vida completo. Escribe en `02_Observability/incidents/{project}-{YYYY-MM-DD}-{slug}.md`.
+
+| Parámetro | Tipo | Descripción |
+|---|---|---|
+| `--project` | str (requerido) | Slug del proyecto |
+| `--title` | str (requerido) | Título del incidente |
+| `--severity` | P1\|P2\|P3\|P4 | Severidad (P1=crítico, P4=bajo) |
+| `--status` | str | detected/investigating/identified/mitigating/resolved/closed/post-mortem |
+| `--detected_at` | ISO datetime | Cuándo se detectó |
+| `--resolved_at` | ISO datetime | Para cálculo automático de MTTR |
+| `--root_cause` | str | Causa raíz identificada |
+| `--action_items` | JSON list | Lista de acciones correctivas |
+| `--affected_services` | JSON list | Servicios impactados |
+
+**Retorna:**
+```json
+{ "ok": true, "path": "02_Observability/incidents/...", "incident_id": "INC-...", "severity": "P1", "mttr_minutes": 45 }
+```
+
+**Normas ISO:** 20000-1:2018 §8.6 (Incident management) · 22301:2019 §8.4 (Business continuity) · 27001:2022 A.16.
+
+---
+
+#### `vault_slo_save(project, service, slo_type, target, window?, ...)`
+
+Define o actualiza un SLO con cálculo automático de error budget. Escribe en `02_Observability/slos/{project}-{service}-{slo_type}.md`.
+
+| Parámetro | Tipo | Descripción |
+|---|---|---|
+| `--project` | str (requerido) | Slug del proyecto |
+| `--service` | str (requerido) | Nombre del servicio |
+| `--slo_type` | str (requerido) | availability/latency/error_rate/throughput/durability/freshness/saturation |
+| `--target` | float (requerido) | Target SLO (ej: 99.9 para 99.9%) |
+| `--window` | str | Ventana de medición (default: 30d) |
+| `--description` | str | Descripción del SLO |
+
+**Error budget automático calculado:**
+- `allowed_failure_pct` = 100 − target
+- `allowed_downtime_minutes` para ventana 30d
+- Tabla de burn rates: 14.4× (1h alerta), 6× (6h), 1× (30d)
+
+**Retorna:**
+```json
+{ "ok": true, "path": "02_Observability/slos/...", "slo_type": "availability", "target": 99.9, "error_budget_minutes": 43.2 }
+```
+
+**Normas ISO:** 20000-1:2018 §8.3 (Service level management) · ISO/IEC 25010:2023 (Quality in use).
+
+---
+
+### Grupo 29 — Release y Entornos (v31)
+
+> **Propósito:** documentar releases con changelog automático y matrices de variables de entorno por ambiente. Alineado a ISO 12207:2017 y ISO 20000-1:2018.
+
+---
+
+#### `vault_release_save(project, version, release_type, ...)`
+
+Registra un release y actualiza `01_Projects/{project}/changelog.md` automáticamente con `file_lock` (atómico). Escribe en `08_Runbooks/deploy/{project}-release-{version}.md`.
+
+| Parámetro | Tipo | Descripción |
+|---|---|---|
+| `--project` | str (requerido) | Slug del proyecto |
+| `--version` | str (requerido) | Versión semver (ej: `1.4.2`) |
+| `--release_type` | str | major/minor/patch/hotfix/rollback |
+| `--summary` | str | Resumen del release |
+| `--breaking_changes` | JSON list | Lista de breaking changes |
+| `--features` | JSON list | Nuevas funcionalidades |
+| `--fixes` | JSON list | Bugs corregidos |
+| `--rollback_plan` | str | Plan de rollback |
+| `--deployed_by` | str | Quién desplegó |
+
+**Retorna:**
+```json
+{ "ok": true, "path": "08_Runbooks/deploy/...", "version": "1.4.2", "changelog_updated": true }
+```
+
+**Normas ISO:** 12207:2017 §6.3.7 (Release management) · 20000-1:2018 §8.5.2 (Release and deployment).
+
+---
+
+#### `vault_env_matrix(project, env, variables?, ...)`
+
+Documenta variables de entorno por ambiente sin almacenar valores secretos — solo nombres y clasificación. Escribe en `09_Infrastructure/envs/{project}-{env}.md`.
+
+| Parámetro | Tipo | Descripción |
+|---|---|---|
+| `--project` | str (requerido) | Slug del proyecto |
+| `--env` | str (requerido) | dev/staging/prod/dr/perf |
+| `--variables` | JSON list | Lista de `{name, classification?, description?}` |
+| `--services` | JSON list | Servicios dependientes |
+
+**Clasificación automática de variables** por nombre:
+`SECRET_*` → secret · `*_URL/*_DSN` → connection · `FEATURE_*` → feature_flag · `LOG_*` → logging · otros → config.
+
+**Retorna:**
+```json
+{ "ok": true, "path": "09_Infrastructure/envs/...", "env": "prod", "variables_count": 12 }
+```
+
+**Normas ISO:** 12207:2017 §6.3.4 · 20000-1 §8.5 · 27001 A.12 (Operations security).
+
+---
+
+### Grupo 30 — Riesgos y Calidad (v32)
+
+> **Propósito:** documentar riesgos técnicos/operacionales, registros de privacidad GDPR y no conformidades ISO 9001. Tier 1 de gobernanza — herramientas de decisión, no solo documentación.
+
+---
+
+#### `vault_risk_save(project, title, risk_type, likelihood, impact, treatment, ...)`
+
+Registra un riesgo con score, nivel de criticidad y controles. Escribe en `02_Observability/risks/{project}-{slug}.md`.
+
+| Parámetro | Tipo | Descripción |
+|---|---|---|
+| `--project` | str (requerido) | Slug del proyecto |
+| `--title` | str (requerido) | Título del riesgo |
+| `--risk_type` | str | security/operational/financial/legal/reputational/technical |
+| `--likelihood` | int 1–5 | Probabilidad de ocurrencia |
+| `--impact` | int 1–5 | Impacto si ocurre |
+| `--treatment` | str | accept/mitigate/transfer/avoid |
+| `--controls` | JSON list | Controles aplicados o planeados |
+| `--owner` | str | Responsable del riesgo |
+
+**Score automático:** `likelihood × impact` → Low (1–5) / Medium (6–12) / High (13–19) / Critical (20–25).  
+**CIA automático** por tipo y nivel de impacto.
+
+**Retorna:**
+```json
+{ "ok": true, "path": "02_Observability/risks/...", "risk_score": 15, "risk_level": "High", "treatment": "mitigate" }
+```
+
+**Normas ISO:** 31000:2018 (Risk management) · 27005:2022 (Information security risk).
+
+---
+
+#### `vault_privacy_save(project, title, purpose, legal_basis, pii_categories, retention_period, ...)`
+
+Documenta un registro de actividad de tratamiento GDPR (Art. 30 RGPD) con detección automática de DPIA. Escribe en `09_Infrastructure/privacy/{project}-{slug}.md`.
+
+| Parámetro | Tipo | Descripción |
+|---|---|---|
+| `--project` | str (requerido) | Slug del proyecto |
+| `--title` | str (requerido) | Nombre del tratamiento |
+| `--purpose` | str (requerido) | Finalidad del tratamiento |
+| `--legal_basis` | str (requerido) | consent/contract/legal_obligation/vital_interests/public_task/legitimate_interests |
+| `--pii_categories` | JSON list | Categorías de datos personales tratados |
+| `--retention_period` | str (requerido) | Período de retención |
+| `--data_subjects` | JSON list | Tipos de interesados |
+| `--processors` | JSON list | Encargados del tratamiento |
+
+**DPIA auto-requerida** si: datos biométricos/salud/menores, o ≥5 categorías PII.  
+**Tabla de derechos** Art. 15–21 con SLA incluida automáticamente.
+
+**Retorna:**
+```json
+{ "ok": true, "path": "09_Infrastructure/privacy/...", "dpia_required": true, "legal_basis": "contract", "pii_count": 3 }
+```
+
+**Normas ISO:** 27701:2019 (Privacy information management) · GDPR Art. 30 + Art. 35.
+
+---
+
+#### `vault_ncr_save(project, title, ncr_type, severity, detected_by, ...)`
+
+Registra una no conformidad con ID auto-generado `NCR-YYYY-NNN`, plantilla 5-Whys y tabla de verificación de eficacia. Escribe en `02_Observability/quality/{project}-{YYYY-MM}-{slug}.md`.
+
+| Parámetro | Tipo | Descripción |
+|---|---|---|
+| `--project` | str (requerido) | Slug del proyecto |
+| `--title` | str (requerido) | Descripción de la no conformidad |
+| `--ncr_type` | str | product/process/service/documentation/audit |
+| `--severity` | str | critical/major/minor/observation |
+| `--detected_by` | str | audit/customer/internal/automated/security_scan/code_review |
+| `--root_cause` | str | Causa raíz identificada |
+| `--corrective_actions` | JSON list | Acciones correctivas a implementar |
+| `--immediate_action` | str | Contención inmediata aplicada |
+| `--owner` | str | Responsable de cierre |
+| `--target_date` | str | Fecha límite ISO (YYYY-MM-DD) |
+
+**Retorna:**
+```json
+{ "ok": true, "path": "02_Observability/quality/...", "ncr_id": "NCR-2026-347", "severity": "major", "status": "open" }
+```
+
+**Normas ISO:** 9001:2015 §10.2 (Nonconformity and corrective action) · 9001:2015 §9.2 (Internal audit) · ISO/IEC 25010:2023.
+
+---
+
+### Grupo 31 — Bootstrap
+
+> **Propósito:** levantar un vault y poblarlo desde cero. `vault_init` crea las carpetas estándar, aplica las migraciones hasta la versión objetivo, indexa y reporta el health score (`--clean` borra el contenido del vault antes de inicializar, así que no se ejecuta sin mirar el destino). `vault_onboard` puebla un vault recién inicializado desde un proyecto de código que nunca tuvo uno: lee el repo y su historia git, **escribe solo en el vault** y no escribe una nota sin evidencia detrás (AP-45). Referencia de CLI: `scripts/README.md`, «Grupo 31».
+
+---
+
+### Grupo 32 — Gestión de Carpetas
+
+> **Propósito:** que una carpeta fuera de las estándar no quede invisible para los índices, el audit y el grafo. Tools: `vault_folder_registry` (mantiene `00_System/custom-folders.json`: `--scan`, `--list`, `--add`, `--remove`, `--cleanup`) y `vault_section` (declara secciones propias, `activa` o `retirada`, sin borrarlas). Las secciones canónicas salen de `vault_registry`, nunca de una lista propia. Referencia de CLI: `scripts/README.md`, «Grupo 32».
+
+---
+
+### Grupo 33 — Corrección Automática
+
+> **Propósito:** companions de `vault_audit` que arreglan lo que el audit detecta, con backup atómico dentro del vault. Tools: `vault_fix_brackets` (AP-22 y AP-24, corchetes de wiki-links), `vault_frontmatter_heal` y `vault_frontmatter_completar` (frontmatter), `vault_graph_fix` (enlaces rotos del grafo) y `vault_supersede` (reemplazo anotado en vez de borrado). Por defecto son dry-run; `--apply` escribe. Referencia de CLI: `scripts/README.md`, «Grupo 33».
+
+---
+
+### Grupo 34 — Memoria de Contexto (v39)
+
+> **Propósito:** cerrar el eje **consulta → contexto**. Los grupos 1–33 cubren el eje contrario (escritura → gobernanza): el vault sabe qué se decidió, qué se aprendió y qué pasó. Lo que faltaba es responder *"dame lo que hay que saber para contestar esto, en N tokens"* con un criterio explícito y auditable, en vez de dejarlo al juicio del agente en cada sesión.
+
+**Sin base de datos, sin embeddings y sin servicio externo** (Principio de diseño 1): reglas léxicas sobre los vocabularios que ya son fuente única en el estándar (`vault_registry.SECTIONS`, `vault_norms.STATUS_VOCAB`) más el grafo de wiki-links que ya produce `vault_graph`. La recuperación semántica por embeddings sigue siendo un nivel superior opcional (ver `## Niveles de implementación`), no un requisito.
+
+Encadenamiento canónico:
+
+```
+vault_query_parse → vault_search → vault_subgraph → rerank → vault_context_pack
+```
+
+---
+
+#### `vault_preferences(set|list|context|revoke, category, title, statement, strength, ...)`
+
+Preferencias del usuario como **contexto estable**: cómo quiere que se trabaje, qué no debe tocarse. Sección propia `17_Preferences/{workflow,style,tooling,constraints,domain}`, separada de `07_Knowledge` porque su ciclo de vida es distinto — una preferencia se **revoca**, no se corrige — y porque se carga entera al inicio de sesión en vez de buscarse por relevancia.
+
+| Parámetro | Tipo | Descripción |
+|---|---|---|
+| `--category` | str | `workflow` / `style` / `tooling` / `constraints` / `domain` (derivadas de `vault_registry.SUBFOLDERS`) |
+| `--title` | str | Título; determina el slug, y por tanto la idempotencia |
+| `--statement` | str | Enunciado: qué debe hacer el agente |
+| `--strength` | str | `must` / `should` / `may` — fuerza normativa estilo RFC 2119 |
+| `--scope` | str | `global` o slug de proyecto |
+| `--reason` | str | Motivo de la revocación (obligatorio con `--revoke`) |
+
+`--strength` es lo que permite al agente distinguir una restricción dura de una inclinación, y es el criterio de orden cuando el presupuesto obliga a truncar.
+
+**Revocar no borra** (`### Política de no-derogación` aplicada al contenido del vault): marca `status: revoked` con motivo, fecha y agente. Borrarla destruiría la explicación de por qué el agente se comportaba de otra forma en sesiones anteriores.
+
+**Guards:** AP-16 (atribución obligatoria) · categoría validada contra el registro · revocación con motivo obligatorio.
+
+**Retorna:** `{ ok, action: created|updated|revoked, path, category, strength, previous_statement }`
+
+---
+
+#### `vault_query_parse(query, explain?)`
+
+Lenguaje natural → consulta estructurada: `terms`, `phrases`, `tags`, `seeds`, `sections`, `status`, `intent`, `hops` y `temporal`. **Determinista por diseño**: misma frase, misma consulta, siempre — que es lo que hace auditable todo lo que viene después.
+
+Cuando no está seguro **no adivina**: baja `confidence` y deja el término en `terms` para que la búsqueda léxica decida. Un filtro de sección equivocado esconde la nota que el usuario buscaba, y no se nota.
+
+Emite además un `plan`: los pasos concretos (tool + args, o filtro declarado) que resolverían la consulta. No los ejecuta — separar parseo de ejecución permite inspeccionar qué se va a consultar antes de consultarlo. Ningún paso puede nombrar una tool ausente del catálogo (AP-01 / AP-04).
+
+**Retorna:** `{ ok, query, structured, confidence, evidence, plan }`
+
+---
+
+#### `vault_subgraph(seeds, hops?, direction?, max_nodes?, predicate?, section?)`
+
+Subgrafo de **K semillas y N saltos** sobre `99_Index/graph-enriched.json` (o `graph.json`). Se diferencia de `vault_impact` en tres cosas: dirección configurable (`in` / `out` / `both`), peso por predicado, y decaimiento por distancia.
+
+| Concepto | Valor | Por qué |
+|---|---|---|
+| Peso de arista | `wiki_link`/`related` 1.0 · `depends_on`/`implements` 0.9 · `mentions` 0.6 · `shared_tag` 0.4 | Una arista declarada a mano es evidencia fuerte; una heurística es evidencia débil |
+| Decaimiento | 0.6 por salto | A 3 saltos una nota vale ~0.2 de una semilla: presente, pero desplazable por cualquier vecino directo |
+| Corte | `hops` (BFS), no coste de camino | Un subgrafo de contexto debe ser predecible en tamaño, no en coste |
+
+Salida determinista (semillas primero, luego relevancia, desempate por ruta) y `--format mermaid` para pegar el vecindario en una nota.
+
+**Retorna:** `{ ok, seeds, nodes: [{path, hops, relevance, via}], edges, stats }`
+
+---
+
+#### `vault_context_pack(query, budget?, top_k?, excerpt_tokens?)`
+
+Pregunta → contexto empaquetado bajo **presupuesto de tokens**. Rerank sobre los candidatos de búsqueda léxica y expansión por grafo:
+
+`score = 0.45·léxico + 0.30·grafo + 0.15·frescura + 0.10·CIA`, con penalización multiplicativa para `deprecated` (0.4), `superseded` (0.3), `revoked` (0.2) y `archived` (0.5). Frescura por decaimiento exponencial de vida media 90 días — no es un corte: una nota de hace un año sigue puntuando lo suficiente para entrar si nada más responde la pregunta.
+
+Dos garantías, ambas con test:
+
+1. **El presupuesto se respeta recortando notas enteras, no partiéndolas.** Media nota en el contexto es peor que ninguna: el agente la cita como si estuviera completa. Lo que no cabe se reporta en `excluded` con su motivo — el recorte es auditable.
+2. **Las preferencias `must` entran siempre primero.** Si el presupuesto obliga a elegir entre saber más del tema y saber qué le prohibió el usuario al agente, gana lo segundo.
+
+**Retorna:** `{ ok, context, tokens: {budget, used, remaining}, included, excluded, confidence }`
+
+---
+
+#### `vault_ingest(section, file|text|stdin|url, commit?, ...)`
+
+Ingesta gobernada de conversaciones, ficheros y URLs: segmenta por encabezados, extrae entidades de forma determinista (wikilinks, tags, rutas, siglas, nombres propios) y propone las notas derivadas.
+
+Es exactamente la vía por la que un vault se envenena, y el contrato lo refleja:
+
+| Guard | Comportamiento |
+|---|---|
+| Pre-vuelo anti-poison (`cli.safety`) | **No es opcional ni desactivable.** Primera etapa del pipeline; si hay hallazgo bloqueante no se escribe nada |
+| Dry-run | Por defecto. Escribir exige `--commit` explícito |
+| No sobrescritura | Nunca pisa una nota existente: material sin revisar no puede sustituir a lo que ya está en el vault |
+| Secciones vetadas | `00_System`, `99_Index`, `17_Preferences` — generadas o propiedad de otra tool (un-solo-dueño-por-carpeta) |
+| Red | Apagada salvo `--allow-network`; el estándar es "sin servicio externo" |
+| AP-16 | Atribución obligatoria: lo ingerido debe rastrearse hasta quién lo trajo |
+
+Lo ingerido entra con `status: draft` y `cia_integrity: low`, de modo que el rerank de `vault_context_pack` lo ordena por detrás del conocimiento verificado hasta que alguien lo revise. La procedencia (`source`, `ingest_origin`) se conserva siempre — PAT-5.
+
+**Retorna:** `{ ok, committed, preflight, entities, proposed, written, skipped, stats }`
+
+---
+
+### Grupo 35 — Normas
+
+> **Propósito:** gobernar **el estándar**, no la memoria documental de nadie (ver la entrada v40.9 de la tabla de versiones). Son 29 tools: el registro de normas (`vault_norms`), las puertas (`vault_gate`, `vault_arch`, `vault_blueprint`, `vault_doc_sync`, `vault_doc_counts`, `vault_doc_staleness`, `vault_changelog_check`, `vault_produccion`, `vault_servicio`, `vault_metricas`, `vault_esquema`, `vault_kernel`, `vault_recursos`, `vault_procesos_git`, `vault_ciclos`, `vault_clones`, `vault_criterios`, `vault_norms_coherence`, `vault_excepcion_declarada`), los audits con baseline que solo encoge (`vault_noop_audit`, `vault_blame_audit`, `vault_error_contract`, `vault_toolkit_audit`), la contrastación con vaults ajenos (`vault_foreign_check`) y el resto del meta-toolkit (`vault_fix_all`, `vault_smoke`, `vault_code_tag`, `vault_voice`). **No tocan las notas de nadie**: comprueban que este repositorio cumple lo que publica. Referencia de CLI: `scripts/README.md`, «Grupo 35».
+
+---
+
+**Normas y Etiquetas de Código (v30).** Hasta el 2026-10-30 este bloque iba numerado «Grupo 28» en el manifiesto; el registro le da el id 35 (A-20).
 
 > **Propósito:** gestionar el catálogo canónico de normas (AP-XX, PAT-X, SP-XX, CN-XX) y aplicar etiquetas de norma como comentarios `@norm` en archivos de código fuente. Cierra el ciclo de trazabilidad: vault note ↔ norma ↔ código.
 
@@ -3749,323 +4072,6 @@ vault_code_tag --unlink-vault --file src/services/QueueService.ts
 - `--scan` para auditar el estado de trazabilidad de un archivo individualmente
 - `vault_code_sync` para auditar trazabilidad de **todo el proyecto** de una vez
 - `--unlink-vault` cuando se elimina o renombra la nota vault referenciada
-
----
-
-### Grupo 29 — Producción y SRE (v31)
-
-> **Propósito:** documentar eventos operacionales en producción — incidentes con ciclo de vida y SLOs con error budget. Alineado a ISO 20000-1:2018, ISO 22301:2019 e ISO/IEC 25010:2023.
-
----
-
-#### `vault_incident_save(project, title, severity, description?, ...)`
-
-Registra un incidente con ciclo de vida completo. Escribe en `02_Observability/incidents/{project}-{YYYY-MM-DD}-{slug}.md`.
-
-| Parámetro | Tipo | Descripción |
-|---|---|---|
-| `--project` | str (requerido) | Slug del proyecto |
-| `--title` | str (requerido) | Título del incidente |
-| `--severity` | P1\|P2\|P3\|P4 | Severidad (P1=crítico, P4=bajo) |
-| `--status` | str | detected/investigating/identified/mitigating/resolved/closed/post-mortem |
-| `--detected_at` | ISO datetime | Cuándo se detectó |
-| `--resolved_at` | ISO datetime | Para cálculo automático de MTTR |
-| `--root_cause` | str | Causa raíz identificada |
-| `--action_items` | JSON list | Lista de acciones correctivas |
-| `--affected_services` | JSON list | Servicios impactados |
-
-**Retorna:**
-```json
-{ "ok": true, "path": "02_Observability/incidents/...", "incident_id": "INC-...", "severity": "P1", "mttr_minutes": 45 }
-```
-
-**Normas ISO:** 20000-1:2018 §8.6 (Incident management) · 22301:2019 §8.4 (Business continuity) · 27001:2022 A.16.
-
----
-
-#### `vault_slo_save(project, service, slo_type, target, window?, ...)`
-
-Define o actualiza un SLO con cálculo automático de error budget. Escribe en `02_Observability/slos/{project}-{service}-{slo_type}.md`.
-
-| Parámetro | Tipo | Descripción |
-|---|---|---|
-| `--project` | str (requerido) | Slug del proyecto |
-| `--service` | str (requerido) | Nombre del servicio |
-| `--slo_type` | str (requerido) | availability/latency/error_rate/throughput/durability/freshness/saturation |
-| `--target` | float (requerido) | Target SLO (ej: 99.9 para 99.9%) |
-| `--window` | str | Ventana de medición (default: 30d) |
-| `--description` | str | Descripción del SLO |
-
-**Error budget automático calculado:**
-- `allowed_failure_pct` = 100 − target
-- `allowed_downtime_minutes` para ventana 30d
-- Tabla de burn rates: 14.4× (1h alerta), 6× (6h), 1× (30d)
-
-**Retorna:**
-```json
-{ "ok": true, "path": "02_Observability/slos/...", "slo_type": "availability", "target": 99.9, "error_budget_minutes": 43.2 }
-```
-
-**Normas ISO:** 20000-1:2018 §8.3 (Service level management) · ISO/IEC 25010:2023 (Quality in use).
-
----
-
-### Grupo 30 — Release y Entornos (v31)
-
-> **Propósito:** documentar releases con changelog automático y matrices de variables de entorno por ambiente. Alineado a ISO 12207:2017 y ISO 20000-1:2018.
-
----
-
-#### `vault_release_save(project, version, release_type, ...)`
-
-Registra un release y actualiza `01_Projects/{project}/changelog.md` automáticamente con `file_lock` (atómico). Escribe en `08_Runbooks/deploy/{project}-release-{version}.md`.
-
-| Parámetro | Tipo | Descripción |
-|---|---|---|
-| `--project` | str (requerido) | Slug del proyecto |
-| `--version` | str (requerido) | Versión semver (ej: `1.4.2`) |
-| `--release_type` | str | major/minor/patch/hotfix/rollback |
-| `--summary` | str | Resumen del release |
-| `--breaking_changes` | JSON list | Lista de breaking changes |
-| `--features` | JSON list | Nuevas funcionalidades |
-| `--fixes` | JSON list | Bugs corregidos |
-| `--rollback_plan` | str | Plan de rollback |
-| `--deployed_by` | str | Quién desplegó |
-
-**Retorna:**
-```json
-{ "ok": true, "path": "08_Runbooks/deploy/...", "version": "1.4.2", "changelog_updated": true }
-```
-
-**Normas ISO:** 12207:2017 §6.3.7 (Release management) · 20000-1:2018 §8.5.2 (Release and deployment).
-
----
-
-#### `vault_env_matrix(project, env, variables?, ...)`
-
-Documenta variables de entorno por ambiente sin almacenar valores secretos — solo nombres y clasificación. Escribe en `09_Infrastructure/envs/{project}-{env}.md`.
-
-| Parámetro | Tipo | Descripción |
-|---|---|---|
-| `--project` | str (requerido) | Slug del proyecto |
-| `--env` | str (requerido) | dev/staging/prod/dr/perf |
-| `--variables` | JSON list | Lista de `{name, classification?, description?}` |
-| `--services` | JSON list | Servicios dependientes |
-
-**Clasificación automática de variables** por nombre:
-`SECRET_*` → secret · `*_URL/*_DSN` → connection · `FEATURE_*` → feature_flag · `LOG_*` → logging · otros → config.
-
-**Retorna:**
-```json
-{ "ok": true, "path": "09_Infrastructure/envs/...", "env": "prod", "variables_count": 12 }
-```
-
-**Normas ISO:** 12207:2017 §6.3.4 · 20000-1 §8.5 · 27001 A.12 (Operations security).
-
----
-
-### Grupo 31 — Riesgos y Calidad (v32)
-
-> **Propósito:** documentar riesgos técnicos/operacionales, registros de privacidad GDPR y no conformidades ISO 9001. Tier 1 de gobernanza — herramientas de decisión, no solo documentación.
-
----
-
-#### `vault_risk_save(project, title, risk_type, likelihood, impact, treatment, ...)`
-
-Registra un riesgo con score, nivel de criticidad y controles. Escribe en `02_Observability/risks/{project}-{slug}.md`.
-
-| Parámetro | Tipo | Descripción |
-|---|---|---|
-| `--project` | str (requerido) | Slug del proyecto |
-| `--title` | str (requerido) | Título del riesgo |
-| `--risk_type` | str | security/operational/financial/legal/reputational/technical |
-| `--likelihood` | int 1–5 | Probabilidad de ocurrencia |
-| `--impact` | int 1–5 | Impacto si ocurre |
-| `--treatment` | str | accept/mitigate/transfer/avoid |
-| `--controls` | JSON list | Controles aplicados o planeados |
-| `--owner` | str | Responsable del riesgo |
-
-**Score automático:** `likelihood × impact` → Low (1–5) / Medium (6–12) / High (13–19) / Critical (20–25).  
-**CIA automático** por tipo y nivel de impacto.
-
-**Retorna:**
-```json
-{ "ok": true, "path": "02_Observability/risks/...", "risk_score": 15, "risk_level": "High", "treatment": "mitigate" }
-```
-
-**Normas ISO:** 31000:2018 (Risk management) · 27005:2022 (Information security risk).
-
----
-
-#### `vault_privacy_save(project, title, purpose, legal_basis, pii_categories, retention_period, ...)`
-
-Documenta un registro de actividad de tratamiento GDPR (Art. 30 RGPD) con detección automática de DPIA. Escribe en `09_Infrastructure/privacy/{project}-{slug}.md`.
-
-| Parámetro | Tipo | Descripción |
-|---|---|---|
-| `--project` | str (requerido) | Slug del proyecto |
-| `--title` | str (requerido) | Nombre del tratamiento |
-| `--purpose` | str (requerido) | Finalidad del tratamiento |
-| `--legal_basis` | str (requerido) | consent/contract/legal_obligation/vital_interests/public_task/legitimate_interests |
-| `--pii_categories` | JSON list | Categorías de datos personales tratados |
-| `--retention_period` | str (requerido) | Período de retención |
-| `--data_subjects` | JSON list | Tipos de interesados |
-| `--processors` | JSON list | Encargados del tratamiento |
-
-**DPIA auto-requerida** si: datos biométricos/salud/menores, o ≥5 categorías PII.  
-**Tabla de derechos** Art. 15–21 con SLA incluida automáticamente.
-
-**Retorna:**
-```json
-{ "ok": true, "path": "09_Infrastructure/privacy/...", "dpia_required": true, "legal_basis": "contract", "pii_count": 3 }
-```
-
-**Normas ISO:** 27701:2019 (Privacy information management) · GDPR Art. 30 + Art. 35.
-
----
-
-#### `vault_ncr_save(project, title, ncr_type, severity, detected_by, ...)`
-
-Registra una no conformidad con ID auto-generado `NCR-YYYY-NNN`, plantilla 5-Whys y tabla de verificación de eficacia. Escribe en `02_Observability/quality/{project}-{YYYY-MM}-{slug}.md`.
-
-| Parámetro | Tipo | Descripción |
-|---|---|---|
-| `--project` | str (requerido) | Slug del proyecto |
-| `--title` | str (requerido) | Descripción de la no conformidad |
-| `--ncr_type` | str | product/process/service/documentation/audit |
-| `--severity` | str | critical/major/minor/observation |
-| `--detected_by` | str | audit/customer/internal/automated/security_scan/code_review |
-| `--root_cause` | str | Causa raíz identificada |
-| `--corrective_actions` | JSON list | Acciones correctivas a implementar |
-| `--immediate_action` | str | Contención inmediata aplicada |
-| `--owner` | str | Responsable de cierre |
-| `--target_date` | str | Fecha límite ISO (YYYY-MM-DD) |
-
-**Retorna:**
-```json
-{ "ok": true, "path": "02_Observability/quality/...", "ncr_id": "NCR-2026-347", "severity": "major", "status": "open" }
-```
-
-**Normas ISO:** 9001:2015 §10.2 (Nonconformity and corrective action) · 9001:2015 §9.2 (Internal audit) · ISO/IEC 25010:2023.
-
----
-
-### Grupo 32 — Gestión de Carpetas
-
-> **Propósito:** que una carpeta fuera de las estándar no quede invisible para los índices, el audit y el grafo. Tools: `vault_folder_registry` (mantiene `00_System/custom-folders.json`: `--scan`, `--list`, `--add`, `--remove`, `--cleanup`) y `vault_section` (declara secciones propias, `activa` o `retirada`, sin borrarlas). Las secciones canónicas salen de `vault_registry`, nunca de una lista propia. Referencia de CLI: `scripts/README.md`, «Grupo 32».
-
----
-
-### Grupo 33 — Corrección Automática
-
-> **Propósito:** companions de `vault_audit` que arreglan lo que el audit detecta, con backup atómico dentro del vault. Tools: `vault_fix_brackets` (AP-22 y AP-24, corchetes de wiki-links), `vault_frontmatter_heal` y `vault_frontmatter_completar` (frontmatter), `vault_graph_fix` (enlaces rotos del grafo) y `vault_supersede` (reemplazo anotado en vez de borrado). Por defecto son dry-run; `--apply` escribe. Referencia de CLI: `scripts/README.md`, «Grupo 33».
-
----
-
-### Grupo 34 — Memoria de Contexto (v39)
-
-> **Propósito:** cerrar el eje **consulta → contexto**. Los grupos 1–33 cubren el eje contrario (escritura → gobernanza): el vault sabe qué se decidió, qué se aprendió y qué pasó. Lo que faltaba es responder *"dame lo que hay que saber para contestar esto, en N tokens"* con un criterio explícito y auditable, en vez de dejarlo al juicio del agente en cada sesión.
-
-**Sin base de datos, sin embeddings y sin servicio externo** (Principio de diseño 1): reglas léxicas sobre los vocabularios que ya son fuente única en el estándar (`vault_registry.SECTIONS`, `vault_norms.STATUS_VOCAB`) más el grafo de wiki-links que ya produce `vault_graph`. La recuperación semántica por embeddings sigue siendo un nivel superior opcional (ver `## Niveles de implementación`), no un requisito.
-
-Encadenamiento canónico:
-
-```
-vault_query_parse → vault_search → vault_subgraph → rerank → vault_context_pack
-```
-
----
-
-#### `vault_preferences(set|list|context|revoke, category, title, statement, strength, ...)`
-
-Preferencias del usuario como **contexto estable**: cómo quiere que se trabaje, qué no debe tocarse. Sección propia `17_Preferences/{workflow,style,tooling,constraints,domain}`, separada de `07_Knowledge` porque su ciclo de vida es distinto — una preferencia se **revoca**, no se corrige — y porque se carga entera al inicio de sesión en vez de buscarse por relevancia.
-
-| Parámetro | Tipo | Descripción |
-|---|---|---|
-| `--category` | str | `workflow` / `style` / `tooling` / `constraints` / `domain` (derivadas de `vault_registry.SUBFOLDERS`) |
-| `--title` | str | Título; determina el slug, y por tanto la idempotencia |
-| `--statement` | str | Enunciado: qué debe hacer el agente |
-| `--strength` | str | `must` / `should` / `may` — fuerza normativa estilo RFC 2119 |
-| `--scope` | str | `global` o slug de proyecto |
-| `--reason` | str | Motivo de la revocación (obligatorio con `--revoke`) |
-
-`--strength` es lo que permite al agente distinguir una restricción dura de una inclinación, y es el criterio de orden cuando el presupuesto obliga a truncar.
-
-**Revocar no borra** (`### Política de no-derogación` aplicada al contenido del vault): marca `status: revoked` con motivo, fecha y agente. Borrarla destruiría la explicación de por qué el agente se comportaba de otra forma en sesiones anteriores.
-
-**Guards:** AP-16 (atribución obligatoria) · categoría validada contra el registro · revocación con motivo obligatorio.
-
-**Retorna:** `{ ok, action: created|updated|revoked, path, category, strength, previous_statement }`
-
----
-
-#### `vault_query_parse(query, explain?)`
-
-Lenguaje natural → consulta estructurada: `terms`, `phrases`, `tags`, `seeds`, `sections`, `status`, `intent`, `hops` y `temporal`. **Determinista por diseño**: misma frase, misma consulta, siempre — que es lo que hace auditable todo lo que viene después.
-
-Cuando no está seguro **no adivina**: baja `confidence` y deja el término en `terms` para que la búsqueda léxica decida. Un filtro de sección equivocado esconde la nota que el usuario buscaba, y no se nota.
-
-Emite además un `plan`: los pasos concretos (tool + args, o filtro declarado) que resolverían la consulta. No los ejecuta — separar parseo de ejecución permite inspeccionar qué se va a consultar antes de consultarlo. Ningún paso puede nombrar una tool ausente del catálogo (AP-01 / AP-04).
-
-**Retorna:** `{ ok, query, structured, confidence, evidence, plan }`
-
----
-
-#### `vault_subgraph(seeds, hops?, direction?, max_nodes?, predicate?, section?)`
-
-Subgrafo de **K semillas y N saltos** sobre `99_Index/graph-enriched.json` (o `graph.json`). Se diferencia de `vault_impact` en tres cosas: dirección configurable (`in` / `out` / `both`), peso por predicado, y decaimiento por distancia.
-
-| Concepto | Valor | Por qué |
-|---|---|---|
-| Peso de arista | `wiki_link`/`related` 1.0 · `depends_on`/`implements` 0.9 · `mentions` 0.6 · `shared_tag` 0.4 | Una arista declarada a mano es evidencia fuerte; una heurística es evidencia débil |
-| Decaimiento | 0.6 por salto | A 3 saltos una nota vale ~0.2 de una semilla: presente, pero desplazable por cualquier vecino directo |
-| Corte | `hops` (BFS), no coste de camino | Un subgrafo de contexto debe ser predecible en tamaño, no en coste |
-
-Salida determinista (semillas primero, luego relevancia, desempate por ruta) y `--format mermaid` para pegar el vecindario en una nota.
-
-**Retorna:** `{ ok, seeds, nodes: [{path, hops, relevance, via}], edges, stats }`
-
----
-
-#### `vault_context_pack(query, budget?, top_k?, excerpt_tokens?)`
-
-Pregunta → contexto empaquetado bajo **presupuesto de tokens**. Rerank sobre los candidatos de búsqueda léxica y expansión por grafo:
-
-`score = 0.45·léxico + 0.30·grafo + 0.15·frescura + 0.10·CIA`, con penalización multiplicativa para `deprecated` (0.4), `superseded` (0.3), `revoked` (0.2) y `archived` (0.5). Frescura por decaimiento exponencial de vida media 90 días — no es un corte: una nota de hace un año sigue puntuando lo suficiente para entrar si nada más responde la pregunta.
-
-Dos garantías, ambas con test:
-
-1. **El presupuesto se respeta recortando notas enteras, no partiéndolas.** Media nota en el contexto es peor que ninguna: el agente la cita como si estuviera completa. Lo que no cabe se reporta en `excluded` con su motivo — el recorte es auditable.
-2. **Las preferencias `must` entran siempre primero.** Si el presupuesto obliga a elegir entre saber más del tema y saber qué le prohibió el usuario al agente, gana lo segundo.
-
-**Retorna:** `{ ok, context, tokens: {budget, used, remaining}, included, excluded, confidence }`
-
----
-
-#### `vault_ingest(section, file|text|stdin|url, commit?, ...)`
-
-Ingesta gobernada de conversaciones, ficheros y URLs: segmenta por encabezados, extrae entidades de forma determinista (wikilinks, tags, rutas, siglas, nombres propios) y propone las notas derivadas.
-
-Es exactamente la vía por la que un vault se envenena, y el contrato lo refleja:
-
-| Guard | Comportamiento |
-|---|---|
-| Pre-vuelo anti-poison (`cli.safety`) | **No es opcional ni desactivable.** Primera etapa del pipeline; si hay hallazgo bloqueante no se escribe nada |
-| Dry-run | Por defecto. Escribir exige `--commit` explícito |
-| No sobrescritura | Nunca pisa una nota existente: material sin revisar no puede sustituir a lo que ya está en el vault |
-| Secciones vetadas | `00_System`, `99_Index`, `17_Preferences` — generadas o propiedad de otra tool (un-solo-dueño-por-carpeta) |
-| Red | Apagada salvo `--allow-network`; el estándar es "sin servicio externo" |
-| AP-16 | Atribución obligatoria: lo ingerido debe rastrearse hasta quién lo trajo |
-
-Lo ingerido entra con `status: draft` y `cia_integrity: low`, de modo que el rerank de `vault_context_pack` lo ordena por detrás del conocimiento verificado hasta que alguien lo revise. La procedencia (`source`, `ingest_origin`) se conserva siempre — PAT-5.
-
-**Retorna:** `{ ok, committed, preflight, entities, proposed, written, skipped, stats }`
-
----
-
-### Grupo 35 — Normas
-
-> **Propósito:** gobernar **el estándar**, no la memoria documental de nadie (ver la entrada v40.9 de la tabla de versiones). Son 29 tools: el registro de normas (`vault_norms`), las puertas (`vault_gate`, `vault_arch`, `vault_blueprint`, `vault_doc_sync`, `vault_doc_counts`, `vault_doc_staleness`, `vault_changelog_check`, `vault_produccion`, `vault_servicio`, `vault_metricas`, `vault_esquema`, `vault_kernel`, `vault_recursos`, `vault_procesos_git`, `vault_ciclos`, `vault_clones`, `vault_criterios`, `vault_norms_coherence`, `vault_excepcion_declarada`), los audits con baseline que solo encoge (`vault_noop_audit`, `vault_blame_audit`, `vault_error_contract`, `vault_toolkit_audit`), la contrastación con vaults ajenos (`vault_foreign_check`) y el resto del meta-toolkit (`vault_fix_all`, `vault_smoke`, `vault_code_tag`, `vault_voice`). **No tocan las notas de nadie**: comprueban que este repositorio cumple lo que publica. Referencia de CLI: `scripts/README.md`, «Grupo 35».
 
 ---
 
