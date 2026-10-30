@@ -145,6 +145,12 @@ CAMPOS: Dict[str, Dict[str, Any]] = {
     # emitía; lo escribe `vault_write --version-pinned` y lo cruza con el
     # manifiesto del repo `vault_drift_detect --mode vigencia`. La relación la
     # declara la nota: el detector no adivina qué librería menciona el cuerpo.
+    # La nota que reemplaza a esta (no-derogación, regla 2): lo que se sustituye se anota,
+    # no se borra. Lo lee el catálogo de adaptadores para excluir lo reemplazado y
+    # `vigente_desde` lo cita como fin de vigencia; hasta v41.25 se escribía y
+    # se leía sin que el contrato lo declarase (D-02).
+    "superseded_by": {"tipo": "string", "nivel": "opcional", "clases": ("contenido",),
+                      "requerido_desde": None, "valores_desde": "v41", "no_vacio": True},
     "version_pinned": {"tipo": "object", "nivel": "opcional", "clases": ("contenido",),
                        "requerido_desde": None, "valores_desde": "v41", "norma": "AP-08",
                        "mapa_no_vacio": True},
@@ -199,6 +205,10 @@ HISTORIA: Dict[str, List[Dict[str, Any]]] = {
              "cambio": ("opcionales: quién responde del contenido y cuándo se comprobó por "
                         "última vez; si están, responsable no vacío y revisado_en con fecha ISO"),
              "fuente": "MIGRATIONS:responsable y revisado_en (opcionales)"},
+            {"campos": ["superseded_by"],
+             "cambio": ("opcional: la nota que reemplaza a esta; si está, no vacío "
+                        "(no-derogación: lo reemplazado se anota, no se borra)"),
+             "fuente": "MIGRATIONS:superseded_by (opcional)"},
             {"campos": ["version_pinned"],
              "cambio": ("opcional: mapa paquete → versión que la nota da por buena; si está, "
                         "un mapa no vacío sin claves ni valores vacíos (AP-08)"),

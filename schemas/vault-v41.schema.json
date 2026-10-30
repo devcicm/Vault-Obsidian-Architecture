@@ -120,6 +120,13 @@
     },
     {
       "campos": [
+        "superseded_by"
+      ],
+      "cambio": "opcional: la nota que reemplaza a esta; si está, no vacío (no-derogación: lo reemplazado se anota, no se borra)",
+      "fuente": "MIGRATIONS:superseded_by (opcional)"
+    },
+    {
+      "campos": [
         "version_pinned"
       ],
       "cambio": "opcional: mapa paquete → versión que la nota da por buena; si está, un mapa no vacío sin claves ni valores vacíos (AP-08)",
@@ -255,6 +262,12 @@
       "x-vault-nivel": "opcional",
       "x-vault-norma": "AP-08",
       "pattern": "^\\d{4}-\\d{2}-\\d{2}"
+    },
+    "superseded_by": {
+      "x-vault-tipo-esperado": "string",
+      "x-vault-nivel": "opcional",
+      "type": "string",
+      "pattern": "\\S"
     },
     "version_pinned": {
       "x-vault-tipo-esperado": "object",
@@ -407,6 +420,12 @@
           "x-vault-norma": "AP-08",
           "pattern": "^\\d{4}-\\d{2}-\\d{2}"
         },
+        "superseded_by": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "opcional",
+          "type": "string",
+          "pattern": "\\S"
+        },
         "version_pinned": {
           "x-vault-tipo-esperado": "object",
           "x-vault-nivel": "opcional",
@@ -551,6 +570,12 @@
           "x-vault-norma": "AP-08",
           "pattern": "^\\d{4}-\\d{2}-\\d{2}"
         },
+        "superseded_by": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "opcional",
+          "type": "string",
+          "pattern": "\\S"
+        },
         "version_pinned": {
           "x-vault-tipo-esperado": "object",
           "x-vault-nivel": "opcional",
@@ -694,6 +719,12 @@
           "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-08",
           "pattern": "^\\d{4}-\\d{2}-\\d{2}"
+        },
+        "superseded_by": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "opcional",
+          "type": "string",
+          "pattern": "\\S"
         },
         "version_pinned": {
           "x-vault-tipo-esperado": "object",
