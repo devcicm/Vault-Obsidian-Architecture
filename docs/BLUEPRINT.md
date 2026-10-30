@@ -77,7 +77,7 @@ rojo, y una puerta en rojo se desactiva.
 
 | Norma | Enforcement | Puertas | Tests |
 |---|---|---|---|
-| **AP-01** — Documentación alucinada | audit | — | `test_ap01_codigo_inexistente.py`, `test_ap01_prosa.py`, `test_ap40_42_43_estados.py`, `test_ap46_editores.py`, `test_norms_coherence.py`, `test_skills_catalogo.py`, `test_skills_contract.py` |
+| **AP-01** — Documentación alucinada | audit | — | `test_ap01_codigo_inexistente.py`, `test_ap01_prosa.py`, `test_ap40_42_43_estados.py`, `test_ap46_editores.py`, `test_cifras_de_normas_y_cli_groups.py`, `test_norms_coherence.py`, `test_skills_catalogo.py`, `test_skills_contract.py` |
 | **AP-02** — Proliferación de versiones del mismo documento | audit | — | `test_ap02_versiones_misma_carpeta.py`, `test_norms_coherence.py`, `test_skills_contract.py` |
 | **AP-03** — Stubs sin política de expansión | audit | — | `test_normas_de_audit_ejercitadas.py`, `test_pat2_stub_con_plazo.py` |
 | **AP-04** — Features aspiracionales documentadas como implementadas | audit | — | — |

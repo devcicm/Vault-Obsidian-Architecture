@@ -48,7 +48,7 @@ python -m cli groups --pretty
 ```jsonc
 {
   "ok": true, "tool": "cli.groups",
-  "total": 76, "read": 15, "write": 61, "groups": 35,
+  "total": 127, "read": 15, "write": 112, "groups": 37,
   "missing_scripts": [],
   "catalog": { "Backups": [ {"name": "vault_backup", "mode": "write", "purpose": "..."} ] }
 }
