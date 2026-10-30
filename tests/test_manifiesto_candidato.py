@@ -198,7 +198,7 @@ def _correr_puerta(tmp_path, mutar=None):
 
     def git(*a):
         return subprocess.run(["git", *a], cwd=str(tmp_path), capture_output=True,
-                              text=True, check=True).stdout.strip()
+                              text=True, encoding="utf-8", check=True).stdout.strip()
 
     git("init", "-q")
     git("config", "user.email", "t@t")
@@ -222,7 +222,7 @@ def _correr_puerta(tmp_path, mutar=None):
     (tmp_path / "audits" / "fase2" / "CANDIDATO-RELEASE.yaml").write_text(yaml.safe_dump(m))
     env = {**__import__("os").environ, "GITHUB_REF_NAME": "v1.0"}
     return subprocess.run([sys.executable, "-c", _guion_de_la_puerta()], cwd=str(tmp_path),
-                          env=env, capture_output=True, text=True)
+                          env=env, capture_output=True, text=True, encoding="utf-8")
 
 
 @pytest.mark.skipif(__import__("sys").version_info < (3, 11), reason="tomllib")
