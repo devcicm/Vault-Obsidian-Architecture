@@ -21,7 +21,7 @@ from __future__ import annotations
 from typing import Any, Callable, Dict, Iterable, List
 
 CONTROLES_OBLIGATORIOS = ("AP-40", "AP-42", "AP-43")
-ESTADOS = ("ejecutado", "degradado", "fallido", "no_ejecutado")
+from vault.kernel.controles import ESTADOS  # dueño único del vocabulario (A-16)
 
 __all__ = [
     "CONTROLES_OBLIGATORIOS",
