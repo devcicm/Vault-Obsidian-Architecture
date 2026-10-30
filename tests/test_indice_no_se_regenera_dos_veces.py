@@ -14,6 +14,7 @@ sin trabajo, sino trabajo inventado dentro de un `ok`.
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -60,11 +61,19 @@ def _ejecutar(raiz: Path, script: str, *argv: str):
     )
 
 
-@pytest.fixture
-def vault(tmp_path):
-    _ejecutar(tmp_path, "vault_init")
+@pytest.fixture(scope="module")
+def vault_base(tmp_path_factory):
+    """`vault_init` y el proyecto una vez por módulo; cada test arranca de una copia."""
+    raiz = tmp_path_factory.mktemp("base")
+    _ejecutar(raiz, "vault_init")
     # AP-63: `--project demo` ya no funda el proyecto.
-    _ejecutar(tmp_path, "vault_project", "--add", "demo")
+    _ejecutar(raiz, "vault_project", "--add", "demo")
+    return raiz
+
+
+@pytest.fixture
+def vault(tmp_path, vault_base):
+    shutil.copytree(vault_base, tmp_path, dirs_exist_ok=True)
     return tmp_path
 
 

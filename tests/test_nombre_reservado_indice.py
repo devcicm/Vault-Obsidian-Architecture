@@ -13,6 +13,7 @@ preguntarle antes de escribir.
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -76,12 +77,20 @@ def _ficheros(carpeta: Path) -> dict:
     return {p.name: p.read_bytes() for p in carpeta.iterdir() if p.is_file()}
 
 
-@pytest.fixture
-def vault(tmp_path):
-    raiz = tmp_path / "vault"
+@pytest.fixture(scope="module")
+def vault_base(tmp_path_factory):
+    """`vault_init` una vez por módulo: cada test arranca de una copia, no de otro init."""
+    raiz = tmp_path_factory.mktemp("base") / "vault"
     raiz.mkdir()
     r = _ejecutar(raiz, "vault_init")
     assert r.returncode == 0, r.stdout + r.stderr
+    return raiz
+
+
+@pytest.fixture
+def vault(tmp_path, vault_base):
+    raiz = tmp_path / "vault"
+    shutil.copytree(vault_base, raiz)
     return raiz
 
 
