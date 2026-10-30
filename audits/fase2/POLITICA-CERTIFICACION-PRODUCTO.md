@@ -1,8 +1,9 @@
 # Política de certificación del producto — runtime limpio y sandbox canónico
 
-**Estado: PROPUESTA. No aplicada.** El ejecutor propone; el propietario
-ratifica. La política que aquí se propone no está en vigor y no se aplica sin
-su decisión (informe de readiness §6, decisión 2).
+**Estado: RATIFICADA el 2026-10-30 por el propietario (A, B y C en §6).** La
+propuesta original se conserva tal cual debajo (no-derogación). Ratificar no
+cambia por sí solo ningún QG: QG-02 pasa a PASS cuando se ejecute la política
+y quede su recibo, no antes.
 
 ## 1. Lo que se creía y lo que se ha medido
 
@@ -92,3 +93,13 @@ a su pregunta. Lo que no se hace es usar uno para tapar al otro.
 
 Sin ratificación de A, QG-02 sigue **BLOCKED** y el ejecutor no aplica nada de
 esto.
+
+## 6. Decisiones del propietario (2026-10-30)
+
+Registradas por el ejecutor tal como las dictó el propietario, Carlos Ivan CM.
+
+| # | Decisión | Resultado |
+|---|---|---|
+| A | ¿Se ratifica esta política? | **Ratificada.** |
+| B | ¿Qué se hace con `vault-backups` (AP-36)? | **Declarado como histórico** con fecha 2026-10-30 y dueño Carlos Ivan CM. No se purga ni se mueve; el ejecutor no toca datos fuera del repo. |
+| C | ¿El sandbox canónico es parte del producto certificado? | **Sí, con la política de §3.** |

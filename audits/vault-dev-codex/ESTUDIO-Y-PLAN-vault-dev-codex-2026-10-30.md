@@ -149,4 +149,6 @@ Resultado de aplicar la tabla consolidada de remediaciones a este repo. Nada se 
 | C-12 | ya resuelto en el código (`vault_audit` no cuenta `99_Index/tag-index.md` como nota); el 1 huérfano venía de una copia instalada anterior | — |
 | C-01, C-02, C-04 a C-08, C-10, C-11 | contenido del vault ajeno, solo lectura aquí | — |
 | C-08 | decisión del dueño: regenerar los 5 derivados destruye la reproducción | abierta |
-| B-01 a B-03, B-05, B-06 | decisión de release / dueño | abiertas |
+| B-01, B-02, B-05 | hechos: la puerta de `release.yml` lee los 8 QG, ata el árbol (`product_tree_sha`) y exige referencias que sean ficheros de `audits/` o centinela declarado; con test que ejerce la puerta | `f01c3f5`, `1ec050b` |
+| B-03 | hecho: `vault-ci.yml` se dispara también con tags `v*` | `de0d13c` |
+| B-06 | decisión del propietario (A/B/C de la política de certificación) | abierta |
