@@ -39,12 +39,12 @@ def test_importar_solo_del_kernel_no_es_hogar_para_otro_contexto():
     assert vault_arch.tiene_hogar(arbol, "kernel") is True
 
 
-def test_la_cifra_es_la_baseline_y_no_crece():
+def test_la_cifra_es_la_baseline_y_no_crece(arch_check_real):
     sin_hogar = vault_arch.modulos_sin_hogar()
     base = json.loads((ROOT / "scripts" / "arch-baseline.json")
                       .read_text(encoding="utf-8"))["bridge_modules"]
     assert set(sin_hogar) <= set(base)
-    r = vault_arch.check()
+    r = arch_check_real()
     assert r["bridge_modules_total"] == len(sin_hogar)
     assert r["new_bridge_modules"] == []
 
@@ -761,12 +761,12 @@ def test_lote_d_el_catalogo_de_normas_migra_y_el_puente_solo_guarda_el_ancla():
     assert vault_norms_catalog.RAIZ_NORMAS == (ROOT / "normas").resolve()
 
 
-def test_el_contrato_del_puente_solo_admite_el_ancla():
+def test_el_contrato_del_puente_solo_admite_el_ancla(arch_check_real):
     """Contrato del puente (ADR-0002, 2026-10-16): en la wheel, todo módulo de
     `scripts/` es alias de su dueño, tiene hogar en `vault/<contexto>/` o es un
     ancla declarada con su motivo. Hoy las anclas son `vault_grafo_import`
     (el fichero de la wheel) y `vault_release` (no viaja)."""
-    r = vault_arch.check()
+    r = arch_check_real()
     assert r["bridge_anchor"] == sorted(vault_arch.ANCLA_DEL_PUENTE)
     assert r["bridge_contract_violations"] == []
     assert r["stale_bridge_anchor"] == []

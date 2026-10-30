@@ -96,10 +96,10 @@ def test_cada_puerto_apunta_a_un_simbolo_que_existe(ctx, puerto, destino):
     assert simbolo in simbolos or "*" in simbolos, destino
 
 
-def test_el_check_no_reporta_puertos_rotos():
+def test_el_check_no_reporta_puertos_rotos(arch_check_real):
     """La deuda se saldó al declarar la puerta; no hay baseline que la tape."""
     assert arch.puertos_rotos() == []
-    assert arch.check(strict=True)["broken_ports"] == []
+    assert arch_check_real(strict=True)["broken_ports"] == []
 
 
 def test_un_puerto_sobre_un_alias_se_lee_en_el_dueno():
@@ -253,14 +253,14 @@ def test_un_acceso_por_import_liso_se_reporta(tmp_path, monkeypatch):
     assert [h["symbol"] for h in hallazgos] == ["vault_norms.NO_ES_UN_PUERTO"]
 
 
-def test_el_total_de_cruces_se_cuenta_como_su_baseline():
+def test_el_total_de_cruces_se_cuenta_como_su_baseline(arch_check_real):
     """Dos cifras contiguas que no se podían restar, en la medida hermana.
 
     `off_port` se arregló en v40.8 y `crossings` se quedó publicando sitios
     junto a una baseline de claves: 60 contra 58 sin una sola deuda nueva. Quien
     leyera la diferencia como una regresión buscaría un cruce que no existe.
     """
-    resultado = arch.check()
+    resultado = arch_check_real()
     assert resultado["crossings_total"] == len(
         {arch._clave(c) for c in arch.cruces()}
     )
@@ -300,7 +300,7 @@ def test_el_blueprint_publica_el_destino_no_solo_el_nombre():
 
 # ── Y por dónde se cruza, no solo hacia dónde ────────────────────────────────
 
-def test_la_deuda_de_cruces_fuera_de_puerto_esta_saldada():
+def test_la_deuda_de_cruces_fuera_de_puerto_esta_saldada(arch_check_real):
     """`cruces()` decía a qué contexto; esto dice por qué símbolo.
 
     Nació con 49 congelados —exigir cero el primer día habría hecho nacer la
@@ -317,13 +317,13 @@ def test_la_deuda_de_cruces_fuera_de_puerto_esta_saldada():
     congeladas, que es lo que se hace con la deuda que se descubre, no con la
     que se estrena.
     """
-    resultado = arch.check(strict=True)
+    resultado = arch_check_real(strict=True)
     assert resultado["off_port_total"] == resultado["off_port_baseline"]
     assert resultado["new_off_port_crossings"] == []
     assert resultado["settled_off_port_crossings"] == []
 
 
-def test_el_total_de_off_port_se_cuenta_como_la_baseline():
+def test_el_total_de_off_port_se_cuenta_como_la_baseline(arch_check_real):
     """Dos cifras contiguas que no se podían restar.
 
     El envelope publicaba `off_port_total` por sitios y `off_port_baseline` por
@@ -332,7 +332,7 @@ def test_el_total_de_off_port_se_cuenta_como_la_baseline():
     fichero y las dos colapsan en una clave. Quien leyera la diferencia como
     una regresión se habría puesto a buscar un cruce que no existía.
     """
-    resultado = arch.check()
+    resultado = arch_check_real()
     fuera = arch.cruces_fuera_de_puerto()
     claves = {arch._clave_fuera_de_puerto(x) for x in fuera}
     assert resultado["off_port_total"] == len(claves)

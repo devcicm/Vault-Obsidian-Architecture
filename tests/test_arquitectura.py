@@ -79,7 +79,7 @@ def test_cada_contexto_declara_lenguaje_y_puertos():
         assert datos["puertos"], nombre
 
 
-def test_el_meta_toolkit_declara_su_prohibicion():
+def test_el_meta_toolkit_declara_su_prohibicion(arch_check_real):
     """Es el único contexto cuya frontera es una prohibición, no una interfaz.
 
     Este test buscaba la subcadena `"vault"` en el texto de `prohibe`, que es
@@ -96,22 +96,22 @@ def test_el_meta_toolkit_declara_su_prohibicion():
     assert arch.escrituras_prohibidas() == [], (
         "la prohibición del meta-toolkit se está cruzando"
     )
-    assert "forbidden_writes" in arch.check(), (
+    assert "forbidden_writes" in arch_check_real(), (
         "la prohibición volvió a ser prosa: el guard ya no la mide"
     )
 
 
-def test_la_baseline_de_fronteras_solo_encoge():
-    r = arch.check()
+def test_la_baseline_de_fronteras_solo_encoge(arch_check_real):
+    r = arch_check_real()
     assert not r["new_crossings"], (
         f"fronteras nuevas: {r['new_crossings']}. Se arreglan publicando un "
         f"puerto en el contexto destino, no ampliando arch-baseline.json."
     )
 
 
-def test_la_baseline_esta_al_dia_si_encogio():
+def test_la_baseline_esta_al_dia_si_encogio(arch_check_real):
     """Si se saldó deuda, la baseline lo refleja o el guard deja de apretar."""
-    r = arch.check()
+    r = arch_check_real()
     assert not r["settled_crossings"], (
         f"estas fronteras ya no se cruzan: {r['settled_crossings']} — corre "
         f"`python scripts/vault_arch.py --freeze` para que no puedan volver"
@@ -367,7 +367,7 @@ def test_el_respaldo_de_la_raiz_no_lo_arrastra_el_reanclaje():
 # ── AP-05 en el paquete de dominio ────────────────────────────────────────────
 
 
-def test_ninguna_ruta_nueva_se_declara_en_dos_contextos():
+def test_ninguna_ruta_nueva_se_declara_en_dos_contextos(arch_check_real):
     """La misma forma salió dos veces seguidas migrando, y siempre igual.
 
     Un contexto lee un fichero que otro escribe y, en vez de pedírselo, lo
@@ -377,15 +377,15 @@ def test_ninguna_ruta_nueva_se_declara_en_dos_contextos():
     que un fichero se mueva solo se entera el que lo escribe, y el que lo lee
     devuelve `{}` sin fallar — no hay excepción que lo delate.
     """
-    r = arch.check()
+    r = arch_check_real()
     assert not r["new_duplicate_paths"], (
         f"rutas declaradas en dos contextos: {r['new_duplicate_paths']}. "
         f"Pídesela a su dueño y declara el cruce."
     )
 
 
-def test_la_baseline_de_rutas_duplicadas_solo_encoge():
-    r = arch.check(strict=True)
+def test_la_baseline_de_rutas_duplicadas_solo_encoge(arch_check_real):
+    r = arch_check_real(strict=True)
     assert r["duplicate_paths_total"] <= r["duplicate_paths_baseline"]
 
 
@@ -449,12 +449,12 @@ def test_el_kernel_declara_sus_ganchos_con_motivo():
         assert len(motivo) > 40, f"{par} sin motivo escrito"
 
 
-def test_ningun_cruce_kernel_dominio_sin_declarar():
+def test_ningun_cruce_kernel_dominio_sin_declarar(arch_check_real):
     assert arch.dependencias_del_kernel() == [], (
         "el kernel importó un módulo de dominio sin declararlo en "
         "GANCHOS_DEL_KERNEL con su motivo"
     )
-    assert arch.check()["undeclared_kernel_deps"] == []
+    assert arch_check_real()["undeclared_kernel_deps"] == []
 
 
 def test_un_gancho_no_declarado_rompe_la_puerta(monkeypatch):
@@ -472,7 +472,7 @@ def test_un_gancho_no_declarado_rompe_la_puerta(monkeypatch):
 # ── La deuda del refactor, saldada (v40.0) ────────────────────────────────────
 
 
-def test_ningun_fichero_se_declara_en_dos_contextos():
+def test_ningun_fichero_se_declara_en_dos_contextos(arch_check_real):
     """La baseline de AP-05 llegó a 0: deja de ser deuda y pasa a ser puerta.
 
     Eran cinco heredados de las fases de migración. Cada uno se saldó igual:
@@ -486,7 +486,7 @@ def test_ningun_fichero_se_declara_en_dos_contextos():
     quien lo escribe— se convierte en una dependencia declarada.
     """
     assert arch.rutas_duplicadas() == []
-    r = arch.check(strict=True)
+    r = arch_check_real(strict=True)
     assert r["duplicate_paths_baseline"] == 0, (
         "la baseline de rutas duplicadas volvió a crecer: se salda declarando "
         "un dueño, no ampliando arch-baseline.json"
@@ -635,13 +635,13 @@ def test_el_contrato_de_cada_entrada_del_presupuesto():
             assert p.get("hipotesis"), f"{par}: sospecha sin escribir"
 
 
-def test_el_presupuesto_no_explica_fronteras_que_ya_no_existen():
+def test_el_presupuesto_no_explica_fronteras_que_ya_no_existen(arch_check_real):
     """Una entrada huérfana es informativa, no un fallo — pero se ve.
 
     Se retira a conciencia con la versión que cerró el par: borrarla en silencio
     no se distingue de una que nadie volvió a mirar (capa 7 del plano).
     """
-    assert arch.check()["stale_crossing_budget"] == []
+    assert arch_check_real()["stale_crossing_budget"] == []
 
 
 def test_el_catalogo_de_normas_es_una_hoja_del_nucleo():

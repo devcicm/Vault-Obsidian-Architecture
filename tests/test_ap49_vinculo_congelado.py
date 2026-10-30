@@ -106,8 +106,8 @@ def test_un_fichero_con_sintaxis_rota_no_tumba_el_guard(tmp_path, monkeypatch):
 
 # ── La baseline ──────────────────────────────────────────────────────────────
 
-def test_la_deuda_de_vinculos_solo_encoge():
-    r = arch.check()
+def test_la_deuda_de_vinculos_solo_encoge(arch_check_real):
+    r = arch_check_real()
     assert not r["new_frozen_bindings"], (
         f"vínculos congelados nuevos: {r['new_frozen_bindings']}. Se arreglan "
         f"resolviendo tarde con `get_vault_root()` dentro de la función, no "
@@ -115,8 +115,8 @@ def test_la_deuda_de_vinculos_solo_encoge():
     )
 
 
-def test_la_baseline_de_vinculos_esta_al_dia():
-    r = arch.check()
+def test_la_baseline_de_vinculos_esta_al_dia(arch_check_real):
+    r = arch_check_real()
     assert not r["settled_frozen_bindings"], (
         f"ya no están congelados: {r['settled_frozen_bindings']} — corre "
         f"`--freeze` para que no puedan volver"

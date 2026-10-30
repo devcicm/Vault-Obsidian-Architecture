@@ -75,7 +75,7 @@ def test_ap66_lo_que_crece_con_el_trabajo_no_se_marca():
     """) == []
 
 
-def test_ap66_el_repo_no_tiene_costes_que_crecen():
+def test_ap66_el_repo_no_tiene_costes_que_crecen(arch_check_real):
     assert vault_arch.costes_que_crecen() == []
-    r = vault_arch.check()
+    r = arch_check_real()
     assert r["growing_costs"] == []

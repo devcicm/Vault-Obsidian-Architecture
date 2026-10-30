@@ -173,18 +173,18 @@ def test_la_tabla_derivada_sirve_al_mjs():
         assert nombre in filas, nombre
 
 
-def test_el_arch_publica_el_recuento():
-    resultado = arch.check()
+def test_el_arch_publica_el_recuento(arch_check_real):
+    resultado = arch_check_real()
     assert resultado["env_vars_declared"] == len(VARIABLES)
     assert resultado["undeclared_env_reads"] == []
 
 
 # ── El artefacto derivado que consume el servidor MCP ────────────────────────
 
-def test_la_tabla_del_mjs_esta_al_dia():
+def test_la_tabla_del_mjs_esta_al_dia(arch_check_real):
     """AP-47 aplicado a la configuración: el JSON refleja el registro."""
     assert arch.tabla_de_entorno_desfasada() is False
-    assert arch.check()["mjs_env_table_stale"] is False
+    assert arch_check_real()["mjs_env_table_stale"] is False
 
 
 def test_la_puerta_del_desfase_muerde(tmp_path, monkeypatch):

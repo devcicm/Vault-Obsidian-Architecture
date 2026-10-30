@@ -219,8 +219,8 @@ def test_el_cruce_del_registro_al_dominio_esta_declarado():
     assert arch.dependencias_del_kernel() == []
 
 
-def test_el_arch_publica_el_recuento():
-    r = arch.check()
+def test_el_arch_publica_el_recuento(arch_check_real):
+    r = arch_check_real()
     assert r["vocabularies_declared"] == len(voc.VOCABULARIOS)
     assert r["vocabulary_copies"] == []
     assert r["vocabularies_without_owner"] == []

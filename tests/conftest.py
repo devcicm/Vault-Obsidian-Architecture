@@ -127,6 +127,19 @@ def pytest_sessionfinish(session, exitstatus):
         clean_sandbox()
 
 
+@pytest.fixture(scope="session")
+def arch_check_real():
+    """`vault_arch.check` del repo tal cual está, calculado una vez por worker.
+
+    Para los tests que solo leen el resultado. Uno que parchea el registro llama
+    a `vault_arch.check()` directamente: aquí el parche no entraría en la caché.
+    """
+    import vault_arch
+    from memo import memoizar
+
+    return memoizar(vault_arch.check)
+
+
 @pytest.fixture
 def repo_root() -> Path:
     """Path to the repository root."""
