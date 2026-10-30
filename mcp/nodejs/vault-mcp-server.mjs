@@ -22,7 +22,7 @@ import { createInterface } from "node:readline";
 import { createServer } from "node:http";
 import { spawn, execSync } from "node:child_process";
 import { readFile, readdir, stat, writeFile, mkdir, rename, rmdir } from "node:fs/promises";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { resolve, basename, dirname, join, sep, isAbsolute, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -493,11 +493,32 @@ let JS_NATIVE_TOOLS = new Set([
   "vault_backup_base64", "vault_restore_base64",
 ]);
 
+// Ruta real del ancestro más cercano que existe: un destino aún por crear no
+// tiene realpath, pero el directorio que lo contendrá sí, y es ahí donde un
+// enlace simbólico o una junction redirige la escritura.
+function realDelAncestro(p) {
+  let actual = p;
+  for (;;) {
+    try { return realpathSync(actual); } catch (_) {
+      const padre = dirname(actual);
+      if (padre === actual) return actual;
+      actual = padre;
+    }
+  }
+}
+
 function assertWithinVault(p, vaultRoot) {
   const resolved = resolve(p);
   const normalizedRoot = resolve(vaultRoot);
   if (!resolved.startsWith(normalizedRoot + sep) && resolved !== normalizedRoot) {
     throw new Error(`Path traversal blocked: "${p}" is outside vault root`);
+  }
+  // La comprobación léxica no ve un enlace/junction dentro del vault que
+  // apunta fuera: se contrasta también la ruta real.
+  const realRoot = realDelAncestro(normalizedRoot);
+  const real = realDelAncestro(resolved);
+  if (real !== realRoot && !real.startsWith(realRoot + sep)) {
+    throw new Error(`Path traversal blocked: "${p}" resolves outside vault root`);
   }
   return resolved;
 }
@@ -842,6 +863,14 @@ async function jsNativeRestoreBase64(args, vaultRoot) {
   // propio backup del que se restaura.
   const restoreDir = join(vaultRoot, "vault-backups",
     `restore-${manifest.created_at.replace(/[:.]/g, "-")}`);
+  // `entry.path` se contiene contra `restoreDir`, así que si el propio
+  // `restoreDir` (o `vault-backups/`) es un enlace que sale del vault, esa
+  // contención es contra el destino del enlace. Se contiene primero contra el vault.
+  try {
+    assertWithinVault(restoreDir, vaultRoot);
+  } catch (_) {
+    return construirError(tool, "INVALID_PATH", "El directorio de restauración sale del vault.");
+  }
   await mkdir(restoreDir, { recursive: true });
 
   let restored = 0;

@@ -267,3 +267,35 @@ def test_un_directorio_ilegible_se_declara_en_el_backup(vault):
         env = _llamar(vault, "vault_backup_base64", {"label": "dir-ilegible"})
     rutas = [d["path"] for d in env["degraded"]]
     assert "07_Knowledge/cerrado" in rutas, env["degraded"]
+
+
+def _enlace_a(destino, objetivo):
+    """Symlink, o junction en Windows sin privilegio de symlink; None si ninguno."""
+    try:
+        os.symlink(objetivo, destino, target_is_directory=True)
+        return True
+    except (OSError, NotImplementedError):
+        pass
+    if os.name == "nt":
+        p = subprocess.run(["cmd", "/c", "mklink", "/J", str(destino), str(objetivo)],
+                           capture_output=True)
+        return p.returncode == 0
+    return False
+
+
+def test_el_restore_no_sale_del_vault_por_un_enlace(vault, tmp_path):
+    """`assertWithinVault` era léxico: un enlace/junction dentro del vault que
+    apunta fuera pasaba la comprobación y el restore escribía en el destino."""
+    backup = _llamar(vault, "vault_backup_base64", {"label": "enlace"})
+    ruta = Path(backup["path"])
+    envoltorio = json.loads(ruta.read_text(encoding="utf-8"))
+    contenido = json.loads(zlib.decompress(b64decode(envoltorio["b64_data"])).decode("utf-8"))
+    fuera = tmp_path / "fuera"
+    fuera.mkdir()
+    nombre = "restore-" + contenido["manifest"]["created_at"].replace(":", "-").replace(".", "-")
+    if not _enlace_a(vault / "vault-backups" / nombre, fuera):
+        pytest.skip("este entorno no permite crear symlink ni junction")
+
+    env = _llamar(vault, "vault_restore_base64", {"path": str(ruta), "confirm": "true"})
+    assert not any(fuera.iterdir()), f"el restore escribió fuera del vault: {list(fuera.iterdir())[:3]}"
+    assert env.get("ok") is False or env.get("rejected"), env
