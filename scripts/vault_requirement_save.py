@@ -370,10 +370,11 @@ def listar_requisitos(project: Optional[str] = None) -> Dict[str, Any]:
         datos = json.loads(_index_file().read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError):
         datos = {"requirements": []}
+    es_del = _proyectos.pertenencia_en(_raiz(), project) if project is not None else None
     filas = [
         {k: r.get(k) for k in ("req_id", "project", "title", "req_type", "priority", "status", "relPath")}
         for r in datos.get("requirements", [])
-        if project is None or r.get("project") == project
+        if es_del is None or es_del(r.get("project"))
     ]
     return {"ok": True, "tool": "vault_requirement_save", "count": len(filas), "requirements": filas}
 
