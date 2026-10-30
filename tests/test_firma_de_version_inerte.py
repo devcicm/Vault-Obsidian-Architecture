@@ -45,6 +45,28 @@ MENOR_ATRAS = VIGENTE.split(".", 1)[0]
 MAYOR_ATRAS = vsu.VERSION_ORDER[-2]
 
 
+_BASE: dict = {}
+
+
+def _vault_base() -> Path:
+    """`vault_init` una vez por proceso; cada raíz sellada arranca de una copia."""
+    if "raiz" not in _BASE:
+        import tempfile
+        # El directorio vive lo que el proceso: lo borra el SO con el temporal.
+        raiz = Path(tempfile.mkdtemp(prefix="firma_base_")) / "vault-sandbox"
+        # La raíz tiene que EXISTIR antes de init: con VAULT_STRICT_ROOT=1 el
+        # detector se niega a adivinar sobre un path que no está en disco.
+        raiz.mkdir(parents=True)
+        subprocess.run(
+            [sys.executable, str(REPO_ROOT / "scripts" / "vault_init.py"), "--no-audit"],
+            env={**os.environ, "VAULT_ROOT": str(raiz), "VAULT_STRICT_ROOT": "1"},
+            cwd=str(REPO_ROOT), capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=300, check=True,
+        )
+        _BASE["raiz"] = raiz
+    return _BASE["raiz"]
+
+
 def _raiz_sellada(tmp_path: Path, version: str, nombre: str) -> Path:
     """Un vault recién creado, re-sellado a `version` cuando no es la vigente.
 
@@ -54,15 +76,7 @@ def _raiz_sellada(tmp_path: Path, version: str, nombre: str) -> Path:
     de carpetas.
     """
     raiz = tmp_path / nombre / "vault-sandbox"
-    # La raíz tiene que EXISTIR antes de init: con VAULT_STRICT_ROOT=1 el
-    # detector se niega a adivinar sobre un path que no está en disco.
-    raiz.mkdir(parents=True)
-    subprocess.run(
-        [sys.executable, str(REPO_ROOT / "scripts" / "vault_init.py"), "--no-audit"],
-        env={**os.environ, "VAULT_ROOT": str(raiz), "VAULT_STRICT_ROOT": "1"},
-        cwd=str(REPO_ROOT), capture_output=True, text=True,
-        encoding="utf-8", errors="replace", timeout=300, check=True,
-    )
+    shutil.copytree(_vault_base(), raiz)
     estado = raiz / "00_System" / "standard-version.json"
     if version != VIGENTE:
         datos = json.loads(estado.read_text(encoding="utf-8"))
