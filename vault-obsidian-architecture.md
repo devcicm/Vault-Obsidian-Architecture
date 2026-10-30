@@ -3944,6 +3944,18 @@ Registra una no conformidad con ID auto-generado `NCR-YYYY-NNN`, plantilla 5-Why
 
 ---
 
+### Grupo 32 — Gestión de Carpetas
+
+> **Propósito:** que una carpeta fuera de las estándar no quede invisible para los índices, el audit y el grafo. Tools: `vault_folder_registry` (mantiene `00_System/custom-folders.json`: `--scan`, `--list`, `--add`, `--remove`, `--cleanup`) y `vault_section` (declara secciones propias, `activa` o `retirada`, sin borrarlas). Las secciones canónicas salen de `vault_registry`, nunca de una lista propia. Referencia de CLI: `scripts/README.md`, «Grupo 32».
+
+---
+
+### Grupo 33 — Corrección Automática
+
+> **Propósito:** companions de `vault_audit` que arreglan lo que el audit detecta, con backup atómico dentro del vault. Tools: `vault_fix_brackets` (AP-22 y AP-24, corchetes de wiki-links), `vault_frontmatter_heal` y `vault_frontmatter_completar` (frontmatter), `vault_graph_fix` (enlaces rotos del grafo) y `vault_supersede` (reemplazo anotado en vez de borrado). Por defecto son dry-run; `--apply` escribe. Referencia de CLI: `scripts/README.md`, «Grupo 33».
+
+---
+
 ### Grupo 34 — Memoria de Contexto (v39)
 
 > **Propósito:** cerrar el eje **consulta → contexto**. Los grupos 1–33 cubren el eje contrario (escritura → gobernanza): el vault sabe qué se decidió, qué se aprendió y qué pasó. Lo que faltaba es responder *"dame lo que hay que saber para contestar esto, en N tokens"* con un criterio explícito y auditable, en vez de dejarlo al juicio del agente en cada sesión.
@@ -4042,6 +4054,18 @@ Es exactamente la vía por la que un vault se envenena, y el contrato lo refleja
 Lo ingerido entra con `status: draft` y `cia_integrity: low`, de modo que el rerank de `vault_context_pack` lo ordena por detrás del conocimiento verificado hasta que alguien lo revise. La procedencia (`source`, `ingest_origin`) se conserva siempre — PAT-5.
 
 **Retorna:** `{ ok, committed, preflight, entities, proposed, written, skipped, stats }`
+
+---
+
+### Grupo 35 — Normas
+
+> **Propósito:** gobernar **el estándar**, no la memoria documental de nadie (ver la entrada v40.9 de la tabla de versiones). Son 29 tools: el registro de normas (`vault_norms`), las puertas (`vault_gate`, `vault_arch`, `vault_blueprint`, `vault_doc_sync`, `vault_doc_counts`, `vault_doc_staleness`, `vault_changelog_check`, `vault_produccion`, `vault_servicio`, `vault_metricas`, `vault_esquema`, `vault_kernel`, `vault_recursos`, `vault_procesos_git`, `vault_ciclos`, `vault_clones`, `vault_criterios`, `vault_norms_coherence`, `vault_excepcion_declarada`), los audits con baseline que solo encoge (`vault_noop_audit`, `vault_blame_audit`, `vault_error_contract`, `vault_toolkit_audit`), la contrastación con vaults ajenos (`vault_foreign_check`) y el resto del meta-toolkit (`vault_fix_all`, `vault_smoke`, `vault_code_tag`, `vault_voice`). **No tocan las notas de nadie**: comprueban que este repositorio cumple lo que publica. Referencia de CLI: `scripts/README.md`, «Grupo 35».
+
+---
+
+### Grupo 36 — Defectos y Cuarentena
+
+> **Propósito:** dar sitio a lo que los agentes ya escribían sin sección propia (medido en 17 vaults reales). `vault_bug_save` lleva el ciclo del defecto entero y enlazado en `18_Bugs/`; `vault_quarantine` aparta en `20_Quarantine/` lo que no debe seguir circulando, sin borrarlo. Referencia de CLI: `scripts/README.md`, «Grupo 36».
 
 ---
 
