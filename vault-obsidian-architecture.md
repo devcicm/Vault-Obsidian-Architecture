@@ -1432,6 +1432,8 @@ Valida frontmatter YAML, campos requeridos, estructura de carpetas e integridad 
 
 **Cuándo usar:** antes de una migración (pre-flight), al detectar AP-12 o AP-13, al integrar notas de fuentes externas que pueden tener frontmatter no estándar.
 
+
+**`vault_gobernanza.py`** (puerta de entrada del MCP): valida contenido contra las normas de gobernanza antes de que un agente lo escriba — secret scan (AP-08), content gate, brackets y Mermaid. No escribe en el vault.
 ---
 
 ### Grupo 7 — Runbooks Operacionales
@@ -3463,6 +3465,10 @@ Documenta un proyecto **existente** al vault en un solo paso. Cubre 13 secciones
 - Con `--skip 03 05` para excluir secciones que ya están documentadas o no aplican
 - Después del onboard: enriquecer los stubs con `vault_code_module --tag-source` y `vault_project_overview`
 
+
+**`vault_undo.py`**: recupera notas desde `.history/`. Lista las versiones disponibles y restaura sin sobreescribir la nota actual (crea una copia `-restored-`); con `--force` sobreescribe y escribe change-log (SP-01).
+
+**`vault_history_compact.py`**: rota `.history/`, conservando las N versiones más recientes por nota (default N=10). Dry-run por defecto; solo `--apply` borra.
 ---
 
 ### Grupo 23 — Change Log de Notas

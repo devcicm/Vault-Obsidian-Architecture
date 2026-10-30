@@ -43,3 +43,10 @@ def test_las_secciones_nuevas_nombran_las_tools_de_su_grupo():
         cuerpo = _seccion(n)
         sin = [t for t in grupos[n] if t not in cuerpo]
         assert not sin, f"grupo {n} no nombra: {sin}"
+
+
+def test_toda_tool_del_registro_esta_nombrada_en_el_manifiesto():
+    """Eran tres sin una palabra en el manifiesto (vault_gobernanza, vault_undo,
+    vault_history_compact): el README las tenía, la fuente normativa no."""
+    sin = [t for ts in _grupos().values() for t in ts if t not in MANIFIESTO]
+    assert not sin, f"tools sin mención en el manifiesto: {sin}"
