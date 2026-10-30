@@ -5702,6 +5702,10 @@
             "type": "string",
             "description": "Título del requerimiento"
           },
+          "req-id": {
+            "type": "string",
+            "description": "REQ-NNN existente: actualiza ese requisito aunque cambie el titulo"
+          },
           "description": {
             "type": "string",
             "description": "Descripción"

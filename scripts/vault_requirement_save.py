@@ -129,6 +129,7 @@ def vault_requirement_save(
     status: str = "draft",
     related_code: Optional[List[str]] = None,
     tags: Optional[List[str]] = None,
+    req_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     es_del = _proyectos.pertenencia_en(_raiz(), project)
     if req_type not in REQ_TYPES:
@@ -162,11 +163,21 @@ def vault_requirement_save(
         # contrato declaraba `unchanged`: el C3 lo midió al ejecutarse por fin
         # el ejemplo (el barrido anterior simulaba su rechazo). Es la misma
         # identidad que `vault_knowledge_save` ya aplica.
-        existente = next(
-            (r for r in project_reqs
-             if slugify_strict(str(r.get("title") or "")) == title_slug),
-            None,
-        )
+        # D-06: con `req_id` la identidad es el id, no el titulo. Renombrar
+        # un requerimiento ya no abre otro, y un id que no existe no se crea
+        # por la puerta de atras.
+        if req_id:
+            existente = next(
+                (r for r in project_reqs if str(r.get("req_id")) == req_id), None)
+            if existente is None:
+                return emit_error("vault_requirement_save", "INVALID_VALUE",
+                                  f"req_id '{req_id}' no existe en el proyecto '{project}'")
+        else:
+            existente = next(
+                (r for r in project_reqs
+                 if slugify_strict(str(r.get("title") or "")) == title_slug),
+                None,
+            )
 
         if existente is not None:
             req_id = str(existente.get("req_id") or "")
@@ -176,7 +187,14 @@ def vault_requirement_save(
                 _req_dir() / safe_project / f"req-{req_id[-3:]}-{title_slug}.md")
             filename = note_path.name
         else:
-            req_number = len(project_reqs) + 1
+            # D-06: contador monotono. `len(...) + 1` reusaba el id de una
+            # entrada podada; el mayor entre el contador guardado y el
+            # mayor numero vivo nunca retrocede.
+            contadores = index.setdefault("counters", {})
+            vivos = [int(str(r.get("req_id", ""))[4:]) for r in project_reqs
+                     if str(r.get("req_id", ""))[4:].isdigit()]
+            req_number = max(int(contadores.get(safe_project, 0)), *vivos, 0) + 1
+            contadores[safe_project] = req_number
 
             req_id = f"REQ-{req_number:03d}"
 
@@ -383,6 +401,8 @@ Notes:
 
     parser.add_argument("--title", help="Short requirement title")
 
+    parser.add_argument("--req-id", dest="req_id", help="REQ-NNN existente: actualiza ese requisito aunque cambie el titulo")
+
     parser.add_argument(
         "--description", help="Full requirement description"
     )
@@ -458,6 +478,7 @@ Notes:
         status=args.status,
         related_code=related_code_list,
         tags=args.tags,
+        req_id=args.req_id,
     )
 
     print(json.dumps(result, indent=2, ensure_ascii=False))

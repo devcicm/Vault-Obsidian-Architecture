@@ -1206,6 +1206,8 @@ python vault_requirement_save.py --project mi-api --title "REQ-NF-001 Latencia" 
 `--list` (D-05) enumera los requisitos del índice sin escribir nada; `--project <slug>` filtra por proyecto y con `--list` no se exigen los demás argumentos.
 Hasta v41.3 este ejemplo usaba `--content`, `--priority high`/`medium` y `--type non_functional`, que la tool no acepta (`allow_abbrev=False`): fallaba con `INVALID_ARGS`, y `vault_doc_sync` no lo veía porque el comando estaba partido con `\`.
 
+`--req-id REQ-NNN` (D-06) actualiza ese requisito aunque cambie el título: la identidad es el id, no el slug del título, y un id inexistente falla en vez de crear. El correlativo es monótono (`counters` en `.requirements-index.json`): podar una entrada no hace que su id se reutilice.
+
 ---
 
 ## Grupo 20 — Tests
