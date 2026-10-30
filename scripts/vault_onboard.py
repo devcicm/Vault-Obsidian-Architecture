@@ -164,12 +164,33 @@ TEST_PATTERNS = [
     (re.compile(r"\.test\.", re.I), "unit"),
     (re.compile(r"\.spec\.", re.I), "unit"),
     (re.compile(r"__tests__", re.I), "unit"),
-    (re.compile(r"integration", re.I), "integration"),
-    (re.compile(r"e2e|end.to.end", re.I), "e2e"),
-    (re.compile(r"performance|load|stress", re.I), "performance"),
-    (re.compile(r"security|penetr|pentest", re.I), "security"),
-    (re.compile(r"acceptance|acceptance", re.I), "acceptance"),
+    # C-03 del estudio vault-dev-codex: la palabra va entera. Sin los límites,
+    # `load` casaba con `loading.py` y `security` con cualquier módulo de
+    # producción que lo llevase en el nombre.
+    (re.compile(r"(?<![a-z0-9])integration(?![a-z0-9])", re.I), "integration"),
+    (re.compile(r"(?<![a-z0-9])(e2e|end.to.end)(?![a-z0-9])", re.I), "e2e"),
+    (re.compile(r"(?<![a-z0-9])(performance|load|stress)(?![a-z0-9])", re.I), "performance"),
+    (re.compile(r"(?<![a-z0-9])(security|penetration|pentest)(?![a-z0-9])", re.I), "security"),
+    (re.compile(r"(?<![a-z0-9])acceptance(?![a-z0-9])", re.I), "acceptance"),
 ]
+
+_RE_FICHERO_DE_TEST = re.compile(r"\.(test|spec)\.|^test_|_test\.", re.I)
+
+
+def clasificar_test(rel: str) -> Optional[str]:
+    """Tipo de test de `rel` (ruta relativa), o None si no es un fichero de test.
+
+    Solo un fichero que vive en un directorio de tests o que se llama como un
+    test se clasifica: el nombre de un módulo de producción no es evidencia.
+    """
+    partes = rel.replace("\\", "/").split("/")
+    en_dir_de_test = any(p.lower() in SKIP_DIRS_TEST for p in partes[:-1])
+    if not (en_dir_de_test or _RE_FICHERO_DE_TEST.search(partes[-1])):
+        return None
+    for pattern, ttype in TEST_PATTERNS:
+        if pattern.search(rel):
+            return ttype
+    return "unit"
 
 
 # ── Utilities ─────────────────────────────────────────────────────────────────
@@ -2588,14 +2609,9 @@ def _onboard_15_tests(
         if any(p in SKIP_DIRS for p in f.parts):
             continue
         rel = str(f.relative_to(project_path)).replace("\\", "/")
-        matched = False
-        for pattern, ttype in TEST_PATTERNS:
-            if pattern.search(rel):
-                by_type[ttype].append(rel)
-                matched = True
-                break
-        if not matched and any(p in SKIP_DIRS_TEST for p in f.parts):
-            by_type["unit"].append(rel)
+        ttype = clasificar_test(rel)
+        if ttype is not None:
+            by_type[ttype].append(rel)
 
     if not by_type:
         return []
