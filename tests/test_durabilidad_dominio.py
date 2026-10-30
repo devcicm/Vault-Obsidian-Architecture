@@ -277,3 +277,28 @@ def test_snapshot_tras_un_cambio_si_copia(tmp_path):
     assert "unchanged" not in segundo or segundo.get("unchanged") is not True
     assert segundo["name"] != primero["name"]
     assert segundo["files_copied"] > 0
+
+
+def test_verificar_nombra_los_ficheros_que_no_pudo_leer(tmp_path, monkeypatch):
+    """A-07 (vault dev codex): `merkle_de` descartaba en silencio el fichero
+    ilegible y `verificar` solo decía «merkle_root no coincide». Un backup que
+    no se puede leer entero no es íntegro, y el envelope tiene que decir cuál."""
+    from vault.durabilidad.snapshot import ServicioSnapshot
+
+    _vault_con_nota(tmp_path, "v1")
+    servicio = ServicioSnapshot(construir(tmp_path))
+    nombre = servicio.crear("a")["name"]
+    assert servicio.verificar(nombre)["intact"] is True
+
+    real = Path.read_bytes
+
+    def ilegible(self):
+        if self.name == "a.md" and nombre in str(self):
+            raise PermissionError("denegado")
+        return real(self)
+
+    monkeypatch.setattr(Path, "read_bytes", ilegible)
+    r = servicio.verificar(nombre)
+    assert r["intact"] is False
+    assert r["unreadable"] == ["07_Knowledge/a.md"]
+    assert "ilegible" in r["status"]

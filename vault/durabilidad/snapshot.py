@@ -64,8 +64,13 @@ def raiz_merkle(hojas: Sequence[str]) -> str:
     return capa[0]
 
 
-def merkle_de(carpeta: Path, algo: int = MERKLE_ALGO) -> tuple[str, int]:
-    """`(raiz, numero_de_ficheros)` bajo `carpeta`, con la regla `algo`."""
+def merkle_de(carpeta: Path, algo: int = MERKLE_ALGO,
+              ilegibles: list[str] | None = None) -> tuple[str, int]:
+    """`(raiz, numero_de_ficheros)` bajo `carpeta`, con la regla `algo`.
+
+    Un fichero que no se puede leer no entra en la huella; si el llamador pasa
+    `ilegibles`, ahí queda su ruta relativa en vez de desaparecer sin rastro.
+    """
     hojas: list[str] = []
     for fichero in sorted(carpeta.rglob("*")):
         if not fichero.is_file() or fichero.name == FICHERO_MANIFIESTO:
@@ -76,6 +81,8 @@ def merkle_de(carpeta: Path, algo: int = MERKLE_ALGO) -> tuple[str, int]:
         try:
             hojas.append(_hoja(rel, fichero.read_bytes()))
         except (PermissionError, OSError):
+            if ilegibles is not None:
+                ilegibles.append(rel)
             continue
     return raiz_merkle(hojas), len(hojas)
 
@@ -107,6 +114,8 @@ def merkle_vivo(raiz: Path, algo: int = MERKLE_ALGO) -> tuple[str, int]:
         try:
             hojas.append(_hoja(rel, fichero.read_bytes()))
         except (PermissionError, OSError):
+            if ilegibles is not None:
+                ilegibles.append(rel)
             continue
     return raiz_merkle(hojas), len(hojas)
 
@@ -294,8 +303,9 @@ class ServicioSnapshot:
                 "manifest no contiene merkle_root (backup pre-v29)")
 
         algo = datos.get("merkle_algo", 1)
-        actual, cuenta = merkle_de(ruta, algo)
-        intacto = actual == sellada
+        ilegibles: list[str] = []
+        actual, cuenta = merkle_de(ruta, algo, ilegibles)
+        intacto = actual == sellada and not ilegibles
         return {
             "ok": True,
             "backup": nombre,
@@ -305,8 +315,11 @@ class ServicioSnapshot:
             "current_merkle_root": actual,
             "stored_file_count": datos.get("merkle_file_count"),
             "current_file_count": cuenta,
+            "unreadable": ilegibles,
             "status": "OK — backup integro" if intacto
-                      else "CORRUPTO — merkle_root no coincide",
+                      else ("CORRUPTO — ficheros ilegibles: " + ", ".join(ilegibles)
+                            if ilegibles
+                            else "CORRUPTO — merkle_root no coincide"),
         }
 
 
