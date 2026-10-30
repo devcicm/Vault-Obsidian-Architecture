@@ -58,7 +58,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-VALID_ACTIONS = ["created", "updated", "deleted", "moved"]
+VALID_ACTIONS = ["created", "updated", "deleted", "moved", "transition"]
 
 VALID_PROPAGATE_STRATEGIES = ["conservative", "transitive", "critical-path"]
 

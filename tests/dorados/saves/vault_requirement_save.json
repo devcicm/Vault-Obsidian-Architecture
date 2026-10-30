@@ -1,13 +1,14 @@
 {
   "envelope": {
     "action": "created",
-    "created": 3,
+    "created": 5,
     "ok": true,
     "path": "14_Requirements/demo/req-001-busqueda-por-categoria.md",
     "req_id": "REQ-001",
     "timestamp": "<FECHA>",
     "tool": "vault_requirement_save",
-    "touched": 7,
+    "touched": 10,
+    "transition_logged": true,
     "unchanged": "<BEST-EFFORT>",
     "updated": "<BEST-EFFORT>",
     "written": "<BEST-EFFORT>"

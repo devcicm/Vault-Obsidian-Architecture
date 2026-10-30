@@ -671,12 +671,13 @@
         "properties": {
           "action": {
             "type": "string",
-            "description": "Action to record: ['created', 'updated', 'deleted', 'moved']",
+            "description": "Action to record: ['created', 'updated', 'deleted', 'moved', 'transition']",
             "enum": [
               "created",
               "updated",
               "deleted",
-              "moved"
+              "moved",
+              "transition"
             ]
           },
           "path": {

@@ -34,6 +34,7 @@ import re
 
 import sys
 
+from vault_change_log import vault_change_log_add
 from vault_errors import emit_error, wrap_main, proyecto_registrado
 from vault_norms_catalog import status_frontmatter_lines
 from vault_lib import yaml_scalar, slugify_strict, utcnow
@@ -151,6 +152,8 @@ def vault_requirement_save(
     # escritura: este indice es tambien el contador del correlativo, y
     # reservar el numero fuera del tramo exclusivo hace que dos guardados
     # concurrentes obtengan el mismo id y el mismo nombre de fichero.
+    transicion_registrada = False
+
     with indice_compartido(_index_file(), {"requirements": []}) as index:
 
         # Count existing requirements for this project to get sequential ID
@@ -304,6 +307,20 @@ def vault_requirement_save(
 
             atomic_write_text(note_path, final_content)
 
+            # D-03: un cambio de estado es un evento del objetivo, no solo un
+            # fichero que cambio. Queda en el indice (events[]) y en el
+            # change-log como `transition`; reconstruir el indice no pierde
+            # el rastro porque el change-log lo conserva.
+            previo_estado = str(existente.get("status") or "") if existente is not None else ""
+            eventos = list(existente.get("events") or []) if existente is not None else []
+            if previo_estado != status:
+                eventos.append({"at": now, "from": previo_estado or None, "to": status})
+                rel_nota = str(note_path.relative_to(_raiz())).replace("\\", "/")
+                registro = vault_change_log_add(
+                    action="transition", path=rel_nota,
+                    reason=f"{req_id}: {previo_estado or '(nuevo)'} -> {status}",
+                    agent="system")
+                transicion_registrada = bool(registro.get("ok"))
             entry = {
                 "docId": note_id,
                 "req_id": req_id,
@@ -315,6 +332,7 @@ def vault_requirement_save(
                 "relPath": str(note_path.relative_to(_raiz())).replace("\\", "/"),
                 "related_code": related_code or [],
                 "updatedAt": now,
+                "events": eventos,
             }
 
             if existente is not None:
@@ -339,6 +357,7 @@ def vault_requirement_save(
         "path": str(note_path.relative_to(_raiz())).replace("\\", "/"),
         "req_id": req_id,
         "action": accion,
+        "transition_logged": transicion_registrada,
     }
 
 
