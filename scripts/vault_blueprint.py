@@ -85,6 +85,25 @@ ESTADOS_DE_DEUDA = ("pendiente", "saldada")
 #: deja de servir para nada.
 DEUDA_DECLARADA: List[Dict[str, Any]] = [
     {
+        "id": "raiz_explicita_apunta_al_repo",
+        "estado": "pendiente",
+        "sostenida_por": [
+            cita_repo(rutas.TESTS, "test_a11_raiz_explicita_en_el_repo.py::test_limite_declarado_raiz_explicita_en_el_repo_no_se_rechaza"),
+        ],
+        "desde": "v41.25",
+        "capa": "5",
+        "que": (
+            "A-11 del estudio vault-dev-codex: `escritura_admitida` admite toda "
+            "raiz explicita, tambien el propio repo del estandar, que la regla 1 "
+            "prohibe. Ninguna puerta lo impide."
+        ),
+        "por_que_no_ahora": (
+            "Rechazarlo rompe la suite, que fija VAULT_ROOT explicito en cientos de "
+            "tests, y los consumidores que sincronizan el repo. Pide decidir antes "
+            "como distinguir el repo del estandar de un vault de usuario."
+        ),
+    },
+    {
         "id": "colector_qg_fuera_de_toda_puerta",
         "estado": "pendiente",
         "sostenida_por": [
