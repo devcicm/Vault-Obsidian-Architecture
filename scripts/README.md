@@ -2412,10 +2412,13 @@ Es **infraestructura de mantenimiento, no una puerta**: no mide nada, solo orque
 ```bash
 python vault_fix_all.py            # regenera todo
 python vault_fix_all.py --dry-run  # muestra el plan sin ejecutar
-python vault_fix_all.py --step N   # ejecuta solo el paso N (1-7)
+python vault_fix_all.py --step N   # ejecuta solo el paso N de PASOS
+python vault_fix_all.py --staged   # solo los pasos con insumos en el staging (pre-commit)
 ```
 
-El orden de los siete pasos: `vault_mcp_catalog --sync` → `vault_arch --sync-env` → `vault_spec_catalog_check --freeze-fields` → `vault_arch --blueprint` → `vault_blueprint --blueprint` → `vault_doc_counts --fix` → `vault_doc_sync --fix`. Un paso que falla no detiene los siguientes: el reporte lista cuáles fallaron para que se vean todos de una vez.
+El orden es el de `PASOS` y se lee ahí, no aquí: copiarlo es lo que dejó esta línea en «siete pasos» cuando ya eran más (AP-47). `tools_catalog` va primero porque todo lo que cuenta tools lee su JSON, `field_compat` congela la baseline que `blueprint` publica y `caras_de_norma` va al final. Un paso que falla no detiene los siguientes: el reporte lista cuáles fallaron para que se vean todos de una vez.
+
+**`--staged` (v41.26).** Cada paso declara sus `insumos` (prefijos de ruta; `None` es siempre) y sus `salidas`. Con `--staged` se omite el paso que no tiene ningún insumo en el staging, y lo que un paso escribe cuenta como cambiado para los siguientes. Lo omitido sale en `omitted`. Es lo que corre el pre-commit: medido el 2026-10-31, los pasos completos costaban ~32 s por commit y la mitad de los commits no tocan código. Omitir no certifica nada: las puertas `rapida` del carril `dev` comprueban cada derivado. Sin git, corre todo y lo dice con `staged: false`.
 
 ---
 

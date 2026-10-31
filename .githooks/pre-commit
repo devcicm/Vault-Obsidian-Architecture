@@ -34,9 +34,12 @@ git diff --name-only | while IFS= read -r f; do
     printf '%s\t%s\n' "$(git hash-object -- "$f" 2>/dev/null || echo ausente)" "$f"
 done > "$snapshot"
 
+# `--staged`: solo los pasos con insumos en lo que se commitea (medido el
+# 2026-10-31: los diez pasos costaban ~32 s en cada commit, y la mitad de los
+# commits no tocan código). Hasta aquí había además una corrida `--dry-run`
+# delante que no escribía ni comprobaba nada: solo duplicaba el arranque.
 echo "[pre-commit] Regenerando artefactos derivados con vault_fix_all..."
-python scripts/vault_fix_all.py --dry-run >/dev/null 2>&1
-python scripts/vault_fix_all.py >/dev/null 2>&1
+python scripts/vault_fix_all.py --staged >/dev/null 2>&1
 
 added=""
 skipped=""

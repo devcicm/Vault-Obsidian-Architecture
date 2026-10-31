@@ -2510,10 +2510,11 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "script": "vault_fix_all.py",
         "group": "Normas",
         "purpose": (
-            "Regenera todos los artefactos derivados del registro en el orden "
-            "correcto: tools-catalog, env-table, baseline de campos, "
-            "ARQUITECTURA, BLUEPRINT, cifras de la documentación e índice de "
-            "scripts/README.md. Infraestructura de mantenimiento, no una puerta: "
+            "Regenera los artefactos derivados del registro en el orden de "
+            "PASOS (tools-catalog, env-table, baseline de campos, esquemas, "
+            "métricas, ARQUITECTURA, BLUEPRINT, cifras de la documentación, "
+            "índice de scripts/README.md y caras de norma); con --staged, solo "
+            "los pasos con insumos en el staging. Infraestructura de mantenimiento, no una puerta: "
             "orquesta las herramientas de sync para cerrar el drift recurrente."
         ),
         "params": {
@@ -2526,12 +2527,19 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "step": {
                 "type": "integer",
                 "required": False,
-                "description": "Ejecuta solo un paso (1-7) en vez de todos",
+                "description": "Ejecuta solo el paso N de PASOS en vez de todos",
+                "validators": [],
+            },
+            "staged": {
+                "type": "boolean",
+                "required": False,
+                "description": "Omite los pasos sin insumos en el staging de git (lo usa el pre-commit); sin git corre todos",
                 "validators": [],
             },
         },
         "guards": [
             "El orden de los pasos importa: cada uno lee lo que el anterior regenera",
+            "Con --staged, lo que un paso escribe cuenta como cambiado para los siguientes; lo omitido se publica en omitted",
             "Un paso que falla no detiene los siguientes; se reportan todos",
             "No mide nada: solo regenera; las puertas verifican el resultado",
         ],
