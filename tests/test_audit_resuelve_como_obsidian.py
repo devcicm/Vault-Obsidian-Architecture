@@ -24,13 +24,11 @@ propio `vault_audit` leyendo frontmatter con un mini-parser que no entendía las
 listas YAML que el estándar escribe.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_audit as va  # noqa: E402
 

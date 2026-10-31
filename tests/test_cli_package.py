@@ -20,8 +20,6 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
-if str(REPO_ROOT / "scripts") not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 from cli import analyzer, registry, safety, scheduler  # noqa: E402
 from cli.scheduler import Operation  # noqa: E402

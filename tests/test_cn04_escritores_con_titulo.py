@@ -24,7 +24,6 @@ from sandbox_fixture import copiar_vault
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-sys.path.insert(0, str(ROOT / "scripts"))
 
 from vault.kernel.contenido import abre_con_h1  # noqa: E402
 from vault.kernel.frontmatter_parsing import separar_frontmatter  # noqa: E402

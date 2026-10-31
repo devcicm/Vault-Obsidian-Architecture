@@ -14,14 +14,12 @@ enforcer, no en cualquier parte del repo.
 """
 
 import re
-import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
-sys.path.insert(0, str(SCRIPTS))
 
 from vault_norms_catalog import NORM_CATALOG  # noqa: E402
 

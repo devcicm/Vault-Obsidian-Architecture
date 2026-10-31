@@ -7,14 +7,12 @@ estándar— no se podía renombrar. Con `\\1` en el nombre, la plantilla
 insertaba el grupo capturado en vez del texto.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 import yaml
 
 RAIZ = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 import vault_io  # noqa: E402
 import vault_tags  # noqa: E402

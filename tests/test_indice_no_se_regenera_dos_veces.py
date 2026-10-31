@@ -23,7 +23,6 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = REPO_ROOT / "scripts"
-sys.path.insert(0, str(SCRIPTS))
 
 #: Los siete que llamaban de más, con argv mínimo para producir una nota.
 CULPABLES = {

@@ -1,10 +1,8 @@
 """Tests para vault_norms --audit y el guard CN-02 de vault_section_index."""
 
 import ast
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from vault_norms import NORM_CATALOG, STATUS_VOCAB, vault_norms_audit
 from vault.gobernanza.auditoria_runtime import auditar_runtime

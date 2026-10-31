@@ -11,15 +11,12 @@ siguiente `--freeze`, y en Windows el fichero salía entero en CRLF. Medido el
 
 import ast
 import json
-import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
-if str(SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS))
 
 import vault_arch  # noqa: E402
 import vault_blueprint  # noqa: E402

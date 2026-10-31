@@ -7,13 +7,11 @@ qué pasos se eligen, no lo que cada uno escribe (eso lo cubre `test_fix_all`).
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_fix_all as vfa  # noqa: E402
 

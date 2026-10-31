@@ -13,11 +13,9 @@ vault_section_index`, y la fila sale del mismo dueño que la reconstrucción.
 """
 
 import json
-import sys
 from pathlib import Path
 
 RAIZ = Path(__file__).parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 TEXTO = "\n".join([
     "# Zarzaparrilla operativa",

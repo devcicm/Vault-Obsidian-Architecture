@@ -9,11 +9,9 @@ sin pelearse con la tool que la regenera. `vault_audit` ya decidía la clase con
 el dueño, `vault_contrato_nota.clase_de_nota`; la calidad pasa a hacer lo mismo.
 """
 
-import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import vault_io  # noqa: E402
 import vault_quality_check as q  # noqa: E402

@@ -1,13 +1,10 @@
 """Checkpoints: una sesion interrumpida no repite todo ni declara PASS de mas."""
 import json
 import subprocess
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE = ROOT / "audits" / "architecture"
-if str(ROOT / "scripts") not in sys.path:
-    sys.path.insert(0, str(ROOT / "scripts"))
 
 
 def _modulo():

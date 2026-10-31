@@ -15,11 +15,9 @@ El criterio es el del write path, no uno nuevo: CN-01 es `slugify_strict` del
 nombre y CN-04 es `abre_con_h1`, el mismo que usa `con_titulo` (AP-57).
 """
 
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_audit as va  # noqa: E402
 from vault.kernel.contenido import abre_con_h1, con_titulo  # noqa: E402

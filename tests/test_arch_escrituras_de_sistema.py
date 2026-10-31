@@ -13,11 +13,9 @@ motivo, en `vault_arch.SUBRUTAS_DE_SISTEMA_SIN_REPOSITORIO`.
 from __future__ import annotations
 
 import ast
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_arch  # noqa: E402
 

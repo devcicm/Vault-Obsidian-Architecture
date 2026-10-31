@@ -8,11 +8,9 @@ fichero en ANSI/Latin-1 (AP-61). En Windows esas notas son frecuentes: es el
 vault de un tercero, no un caso de laboratorio.
 """
 
-import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 from vault_lib import read_frontmatter  # noqa: E402
 

@@ -7,11 +7,9 @@ notas exportadas sin saltos de línea —un HTML aplanado, un volcado de chat—
 El último escalón recorta por palabras.
 """
 
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_context_pack as vcp  # noqa: E402
 

@@ -10,12 +10,10 @@ reconocer sin ejecutar no vuelvan a entrar.
 """
 
 import ast
-import sys
 import textwrap
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 import vault_arch  # noqa: E402
 

@@ -26,7 +26,6 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = REPO_ROOT / "scripts"
-sys.path.insert(0, str(SCRIPTS))
 
 
 def _entradas(raiz: Path):

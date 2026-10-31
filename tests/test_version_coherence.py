@@ -11,11 +11,9 @@ queda atrás el vault migra a una versión que la documentación no describe.
 """
 import json
 import re
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_standard_upgrade as vsu  # noqa: E402
 

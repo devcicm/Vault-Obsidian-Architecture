@@ -10,14 +10,12 @@ dependa de la memoria de nadie.
 """
 
 import json
-import sys
 from datetime import date
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_gate as gate  # noqa: E402
 import vault_metricas as vm  # noqa: E402

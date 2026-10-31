@@ -21,7 +21,6 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = REPO_ROOT / "scripts"
-sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(REPO_ROOT))
 
 from vault.kernel import controles as puerto  # noqa: E402

@@ -12,13 +12,11 @@ La entrada `criterios_salta_modulos_sin_glob_md` de
 `vault_blueprint.DEUDA_DECLARADA` queda `saldada` y se sostiene en este test.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
 REPO = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO / "scripts"))
 
 import vault_criterios as C  # noqa: E402
 

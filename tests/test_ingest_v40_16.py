@@ -6,11 +6,9 @@ nota entera; un `[[ejemplo]]` dentro de un fence se convertía en enlace real; y
 una escritura caída a mitad del lote dejaba notas sin índice y `ok: true`.
 """
 
-import sys
 from pathlib import Path
 
 RAIZ = Path(__file__).parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 import yaml  # noqa: E402
 

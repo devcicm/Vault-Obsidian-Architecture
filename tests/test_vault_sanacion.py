@@ -7,14 +7,12 @@ ningún sitio. Lo que estos tests fijan es lo que hace que un plan valga: que
 `unknown` no se confunda con `clean`, y que la tool no escriba jamás.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = REPO_ROOT / "scripts"
-sys.path.insert(0, str(SCRIPTS))
 
 import vault_sanacion as san  # noqa: E402
 

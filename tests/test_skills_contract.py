@@ -10,14 +10,12 @@ dejaba fuera las normas más recientes.
 """
 
 import re
-import sys
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SKILLS_DIR = REPO_ROOT / "agent" / "skills"
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import vault_sdd_init as sdd  # noqa: E402
 

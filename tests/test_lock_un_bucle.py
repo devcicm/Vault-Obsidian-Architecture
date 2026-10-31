@@ -12,7 +12,6 @@ El bucle vive ahora en `vault.kernel.bloqueo.adquirir`, y los dos delegan.
 import ast
 import json
 import os
-import sys
 import time
 from pathlib import Path
 
@@ -20,8 +19,6 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
-if str(SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS))
 
 import vault_fs  # noqa: E402
 from vault.autoria.conocimiento import _FileLock  # noqa: E402

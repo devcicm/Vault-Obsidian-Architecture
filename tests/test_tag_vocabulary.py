@@ -7,14 +7,11 @@ del tag-registry, así que la sugerencia no se disparó nunca y la única señal
 que algo iba mal fue un censo hecho meses después.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
 SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
-if str(SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS))
 
 import vault_tags  # noqa: E402
 import vault_norms  # noqa: E402

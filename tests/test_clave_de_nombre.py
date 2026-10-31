@@ -14,7 +14,6 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).parent.parent
-sys.path.insert(0, str(REPO / "scripts"))
 sys.path.insert(0, str(REPO))
 
 from vault.kernel.normalizacion import clave_de_nombre  # noqa: E402

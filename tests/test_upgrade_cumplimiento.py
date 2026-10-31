@@ -10,12 +10,9 @@ contaba como si la nota llevara `id`. Un fichero ilegible restaba uno a los
 cumplidores en vez de no sumar.
 """
 
-import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-if str(REPO_ROOT / "scripts") not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import vault_contrato_nota as contrato  # noqa: E402
 import vault_standard_upgrade as vsu  # noqa: E402

@@ -17,11 +17,9 @@ escritor y su detector, y que el detector no se vaya dejando al escritor solo.
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "scripts"))
 
 from vault_norms_catalog import NORM_CATALOG  # noqa: E402
 

@@ -16,7 +16,6 @@ from pathlib import Path
 import pytest
 
 RAIZ = Path(__file__).parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 import vault_fuente_unica as fu
 from vault_regex import es_ipv4, tipo_de_valor

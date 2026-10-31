@@ -13,7 +13,6 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 SCRIPTS = REPO / "scripts"
-sys.path.insert(0, str(SCRIPTS))
 
 import vault_norms_coherence as coherencia  # noqa: E402
 

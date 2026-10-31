@@ -5,10 +5,8 @@ Run from repo root:
     python -m pytest tests/test_vault_secret_scan.py -v
 """
 
-import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 
 import pytest
 

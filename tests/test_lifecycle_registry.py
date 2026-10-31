@@ -13,13 +13,11 @@ pruebas son el guard que falla cuando el registro y la fuente viva divergen.
 """
 
 import json
-import sys
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import vault_io  # noqa: E402
 import vault_norms as vn  # noqa: E402

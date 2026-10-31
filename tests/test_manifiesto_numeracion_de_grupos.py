@@ -11,11 +11,9 @@ aquí: un bloque es del grupo N si las tools del grupo N son las que más cita.
 """
 
 import re
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_servicio  # noqa: E402
 

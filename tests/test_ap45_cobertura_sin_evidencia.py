@@ -15,13 +15,11 @@ esa frontera, que es donde un guard de este tipo se rompe: no en lo que detecta,
 sino en lo que arrastra por delante.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import vault_norms  # noqa: E402
 from vault_norms import NORM_CATALOG, vault_norms_audit  # noqa: E402

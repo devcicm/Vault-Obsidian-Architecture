@@ -13,14 +13,12 @@ Y el escáner fallaba abierto en silencio (`except Exception: pass`): un guard
 roto dejaba de proteger sin que ningún envelope lo dijera (AP-37).
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = REPO_ROOT / "scripts"
-sys.path.insert(0, str(SCRIPTS))
 
 import vault_io  # noqa: E402
 from vault_secret_scan import redact_secrets, scan_content  # noqa: E402

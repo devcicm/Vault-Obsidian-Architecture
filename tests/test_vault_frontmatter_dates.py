@@ -10,12 +10,10 @@ objects. Before v38 that crashed audit/reindex ('datetime not subscriptable' /
 These tests lock in that parse_frontmatter always returns JSON-safe strings.
 """
 
-import sys
 import os
 import json
 from datetime import date, datetime
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 
 from vault_lib import parse_frontmatter, parse_frontmatter_with_body, serialize_frontmatter, _coerce_dates
 

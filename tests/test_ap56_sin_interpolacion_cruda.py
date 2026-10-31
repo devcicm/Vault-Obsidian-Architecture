@@ -20,7 +20,6 @@ from pathlib import Path
 import yaml
 
 RAIZ = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 from vault.kernel.frontmatter_parsing import valor_de_frontmatter  # noqa: E402
 

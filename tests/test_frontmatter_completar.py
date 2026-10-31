@@ -18,8 +18,6 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = REPO_ROOT / "scripts"
-if str(SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS))
 
 import vault_contrato_nota as contrato  # noqa: E402
 import vault_frontmatter_completar as completar_mod  # noqa: E402

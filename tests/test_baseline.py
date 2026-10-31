@@ -10,14 +10,12 @@ git en vez de estar escrita.
 """
 
 import json
-import sys
 from datetime import date
 from pathlib import Path
 
 import pytest
 
 RAIZ = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 import vault_baseline as B  # noqa: E402
 import vault_grafo_import as gi  # noqa: E402

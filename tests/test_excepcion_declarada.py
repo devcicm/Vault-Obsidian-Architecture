@@ -10,14 +10,12 @@ excepción está nombrada, sin que nadie haya probado que la tool aguanta.
 """
 
 import ast
-import sys
 import textwrap
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import vault_excepcion_declarada as E  # noqa: E402
 import vault_lib  # noqa: E402

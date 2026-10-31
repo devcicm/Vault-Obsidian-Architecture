@@ -16,13 +16,11 @@ rechaza el bloque.
 """
 
 import os
-import sys
 from pathlib import Path
 
 import yaml
 
 RAIZ = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 import vault_audit  # noqa: E402
 import vault_criterios  # noqa: E402

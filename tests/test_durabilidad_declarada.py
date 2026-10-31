@@ -14,12 +14,10 @@ documentado, y que activarla no cambie lo que se escribe.
 
 import json
 import os
-import sys
 from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 import vault_io  # noqa: E402
 

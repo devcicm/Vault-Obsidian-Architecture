@@ -7,11 +7,9 @@ puede tocar una nota recibía un sí sin que nadie la hubiera mirado.
 """
 
 import json
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 
 def _vault(tmp_path):

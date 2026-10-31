@@ -21,13 +21,11 @@ nota borrada "resolvía" porque quedaba una copia en `vault-backups/`. Un falso
 negativo permanente en el detector de enlaces rotos.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_norms as vn  # noqa: E402
 

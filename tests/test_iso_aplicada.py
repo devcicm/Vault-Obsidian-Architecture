@@ -8,13 +8,10 @@ cobertura parcial calla lo que falta.
 """
 
 import re
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
-if str(SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS))
 
 from vault_fundamentals_catalog import ISO_COBERTURAS, ISO_COVERAGE  # noqa: E402
 from vault_norms_engine import framework_drift_check, iso_coverage_check  # noqa: E402

@@ -7,13 +7,11 @@ guard, y un guard que no muerde no es un guard.
 """
 
 import json
-import sys
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import vault_ciclos as C  # noqa: E402
 

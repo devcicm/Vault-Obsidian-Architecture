@@ -7,13 +7,11 @@ que lee el audit, la daba por sanada. `missingContract` es la lectura del dueño
 (`vault_contrato_nota`), con el mismo parser que `vault_validate` (AP-44).
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import vault_audit  # noqa: E402
 import vault_io  # noqa: E402

@@ -13,10 +13,8 @@ medir y no al importar, y que la guía sea derivada de verdad.
 from __future__ import annotations
 
 import pathlib
-import sys
 
 RAIZ = pathlib.Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 import vault_produccion as vp  # noqa: E402
 

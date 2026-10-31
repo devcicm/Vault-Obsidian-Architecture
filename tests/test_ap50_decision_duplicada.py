@@ -10,11 +10,9 @@ repiten su resultado. Y una comprueba lo que la norma afirma sobre el repo,
 que es lo que la separa de una opinión bien redactada.
 """
 
-import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import vault_arch as arch  # noqa: E402
 import vault_vocabulario as voc  # noqa: E402

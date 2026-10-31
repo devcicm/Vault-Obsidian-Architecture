@@ -8,11 +8,9 @@ Un vault ajeno escribe `updatedAt: 2026-01-01` —sin hora ni zona— y
 va en el dueño de la lectura, `_parse_iso`: toda fecha que devuelve tiene zona.
 """
 
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_drift_detect as dd  # noqa: E402
 

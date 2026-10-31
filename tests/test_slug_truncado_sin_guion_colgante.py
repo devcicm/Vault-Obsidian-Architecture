@@ -11,7 +11,6 @@ from pathlib import Path
 import pytest
 
 SCRIPTS = Path(__file__).resolve().parent.parent / "scripts"
-sys.path.insert(0, str(SCRIPTS))
 import vault_grafo_import as gi  # noqa: E402
 
 CORTADORES = ["vault_bibliography_save", "vault_bug_save", "vault_incident_save",

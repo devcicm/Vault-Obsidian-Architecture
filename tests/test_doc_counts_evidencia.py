@@ -7,11 +7,9 @@ solo decía que no había cifra. La causa hubo que reproducirla a mano.
 """
 
 import subprocess
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_doc_counts as DC  # noqa: E402
 

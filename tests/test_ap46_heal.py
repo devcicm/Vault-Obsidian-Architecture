@@ -18,14 +18,12 @@ verifique. Es AP-44 dentro del propio heal: el criterio es el resultado que ve e
 consumidor —`yaml.safe_load` sobre el bloque— y no la corazonada del detector.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import vault_norms  # noqa: E402
 
@@ -144,7 +142,6 @@ def test_una_raiz_inexistente_falla_por_el_catalogo(tmp_path):
     r = vault_norms.heal_ap46(root=tmp_path / "no-existe")
     assert r["ok"] is False
     assert r["error_code"] == "VAULT_NOT_FOUND"
-
 
 
 # ── Cómo escribe (deuda `heal_ap46_escribe_sin_atomic_write`, 2026-10-17) ──

@@ -19,11 +19,9 @@ casaba con `08_Runbooks/pipeline/ans-ci-cd.md` concatenando carpeta y nombre:
 un roto real que el atajo escondía, y ningún roto falso nuevo.
 """
 
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_audit as va  # noqa: E402
 import vault_io  # noqa: E402

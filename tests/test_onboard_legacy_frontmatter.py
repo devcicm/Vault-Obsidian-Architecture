@@ -16,15 +16,12 @@ Este test fija su comportamiento y los errores que ya no deben propagarse.
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
-if str(SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS))
 
 import vault_onboard  # noqa: E402
 import vault_standard_upgrade  # noqa: E402

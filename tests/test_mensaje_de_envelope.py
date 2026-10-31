@@ -7,11 +7,9 @@ None y el único aviso culpaba a la consulta («revisa la consulta o amplía
 --budget») en vez de decir «Run vault_reindex first».
 """
 
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 
 def test_mensaje_de_lee_message_y_cae_a_la_clave_vieja():

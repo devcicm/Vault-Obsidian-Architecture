@@ -7,11 +7,9 @@ que leía la nota no tenía forma de saber que sus metadatos estaban ahí y roto
 (AP-51: un vacío indistinguible de un resultado legítimo).
 """
 
-import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 
 def _leer(tmp_path, texto):

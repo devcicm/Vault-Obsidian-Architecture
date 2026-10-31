@@ -10,14 +10,12 @@ Tres familias:
 """
 import shutil
 import subprocess
-import sys
 import time
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_fix_all as vfa  # noqa: E402
 

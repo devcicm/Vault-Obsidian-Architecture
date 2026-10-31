@@ -23,7 +23,6 @@ import sys
 
 import pytest
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "scripts"))
 
 import vault_entorno  # noqa: E402
 import vault_io  # noqa: E402

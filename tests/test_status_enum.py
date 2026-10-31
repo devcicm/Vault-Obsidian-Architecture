@@ -1,10 +1,8 @@
 """D4 — `Status` se deriva de `STATUS_VOCAB` (CN-03) y no lo copia."""
 
-import sys
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 from vault_norms_catalog import STATUS_VOCAB, Status, normalize_status  # noqa: E402
 

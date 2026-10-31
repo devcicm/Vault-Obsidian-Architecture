@@ -27,7 +27,6 @@ import pytest
 
 RAIZ = Path(__file__).resolve().parent.parent
 SCRIPTS = RAIZ / "scripts"
-sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(RAIZ))
 
 from vault.kernel.errores import ERROR_CATALOG  # noqa: E402

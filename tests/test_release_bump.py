@@ -25,7 +25,6 @@ import pytest
 os.environ.setdefault("PYTHONIOENCODING", "utf-8")  # stderr de los hijos: acentos
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 REPRODUCE = ["vault-obsidian-architecture.md", "README.md", "pyproject.toml",
              "cli/README.md", Path("vault/kernel/version.py"),

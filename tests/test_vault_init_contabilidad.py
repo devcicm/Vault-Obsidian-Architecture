@@ -4,12 +4,9 @@ Los primers se escribían con `Path.write_text`: sin temp+replace, sin escaneo
 de secretos y fuera del ledger, así que no contaban como trabajo.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 
 @pytest.fixture

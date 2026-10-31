@@ -16,7 +16,6 @@ timeout, exactos. Se pasaba del límite de 60 s de la tool y moría dejando
 """
 
 import ast
-import sys
 import threading
 import time
 from pathlib import Path
@@ -24,7 +23,6 @@ from pathlib import Path
 import pytest
 
 RAIZ = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 import vault_arch  # noqa: E402
 import vault_io  # noqa: E402

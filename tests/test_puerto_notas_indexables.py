@@ -19,7 +19,6 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "scripts"))
 import vault_io  # noqa: E402
 import vault_reindex  # noqa: E402
 

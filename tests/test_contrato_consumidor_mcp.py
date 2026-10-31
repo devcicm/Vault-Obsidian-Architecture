@@ -13,7 +13,6 @@ import sys
 from pathlib import Path
 
 RAIZ = Path(__file__).parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 CATALOGO = RAIZ / "mcp" / "nodejs" / "tools-catalog.json"
 CONSULTA = ("vault_query_parse", "vault_context_pack")

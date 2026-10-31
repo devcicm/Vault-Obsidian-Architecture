@@ -9,13 +9,11 @@ ficheros del catálogo no sea vacío.
 
 from __future__ import annotations
 
-import sys
 import textwrap
 from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 import vault_test_scope as scope  # noqa: E402
 from vault.meta_toolkit import carriles  # noqa: E402

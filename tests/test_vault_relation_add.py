@@ -2,12 +2,9 @@
 """Tests for vault_relation_add — entity relationship registration."""
 
 import json
-import sys
 from pathlib import Path
 
 import pytest
-
-sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 
 def _apuntar_al_vault(raiz):

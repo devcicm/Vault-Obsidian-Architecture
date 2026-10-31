@@ -8,7 +8,6 @@ decisión y conocimiento salían sin `type`, `status`, `tags` o `updatedAt` —
 penalizados por la auditoría del mismo estándar que los escribió.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
@@ -16,8 +15,6 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
-if str(SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS))
 
 import vault_io  # noqa: E402
 from vault.autoria.frontmatter import firmante  # noqa: E402

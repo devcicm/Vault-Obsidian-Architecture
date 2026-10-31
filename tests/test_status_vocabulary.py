@@ -13,13 +13,11 @@ impide que la próxima tool nazca fuera del registro.
 
 import ast
 import re
-import sys
 from pathlib import Path
 
 import pytest
 
 RAIZ = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 from vault_norms import (  # noqa: E402
     DOMAIN_STATUS_VOCABS,

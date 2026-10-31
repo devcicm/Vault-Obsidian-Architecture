@@ -26,7 +26,6 @@ import pytest
 from sandbox_fixture import copiar_vault
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_smoke  # noqa: E402
 from vault_mcp_catalog import TOOLS_CATALOG  # noqa: E402

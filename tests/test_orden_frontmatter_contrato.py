@@ -10,13 +10,11 @@ campos del contrato en `meta` no cambia un byte; los campos de
 el contrato, y lo ajeno al contrato sigue al final.
 """
 
-import sys
 from pathlib import Path
 
 import yaml
 
 RAIZ = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 import vault_contrato_nota  # noqa: E402
 import vault_write  # noqa: E402

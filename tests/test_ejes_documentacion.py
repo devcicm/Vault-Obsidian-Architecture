@@ -8,11 +8,9 @@ traza —`relacionado_con:`— que ninguna tool escribe. Los ejes viven en
 el SDD 06 lo publica todo derivado.
 """
 
-import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import vault_registry as reg  # noqa: E402
 import vault_sdd_init  # noqa: E402

@@ -21,12 +21,10 @@ el criterio («Sin estados: dependen del día»).
 """
 
 import hashlib
-import sys
 import threading
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 import vault_servicio as srv  # noqa: E402
 

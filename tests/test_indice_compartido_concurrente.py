@@ -19,14 +19,12 @@ sitio equivocado.
 
 import ast
 import json
-import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 from vault_io import indice_compartido  # noqa: E402
 

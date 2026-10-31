@@ -7,12 +7,10 @@ este repo ya se llevó dos sustos por ahí — el cero de ciclos de v40.17 y el
 `grafo()` no devuelve y se cumplía solo.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 import vault_arch  # noqa: E402
 import vault_recursos as R  # noqa: E402

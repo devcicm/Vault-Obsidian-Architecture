@@ -16,14 +16,12 @@ agente busca una nota que existe, no la encuentra, y la vuelve a escribir.
 """
 
 import json
-import sys
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = REPO_ROOT / "scripts"
-sys.path.insert(0, str(SCRIPTS))
 
 import vault_norms  # noqa: E402
 import vault_reindex  # noqa: E402

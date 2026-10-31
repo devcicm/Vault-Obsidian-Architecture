@@ -12,7 +12,6 @@ HTTP, desde fuera.
 
 import json
 import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -20,7 +19,6 @@ import pytest
 from test_mcp_http_seguridad import SERVER, Servidor
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_mcp_catalog  # noqa: E402
 

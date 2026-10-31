@@ -10,13 +10,11 @@ La lista vive ahora en `vault_registry.NON_SECTION_ROOT_FOLDERS` y los dos
 consumidores la derivan.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 from vault_registry import NON_SECTION_ROOT_FOLDERS, SECTIONS  # noqa: E402
 

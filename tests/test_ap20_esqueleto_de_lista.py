@@ -5,15 +5,12 @@ cuya lista es casi toda viñetas vacías: la forma de la nota promete un
 contenido que no tiene. Se mide lo que queda en disco, no solo el envelope.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
-if str(SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS))
 
 import vault_io  # noqa: E402
 import vault_write  # noqa: E402

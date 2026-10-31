@@ -9,14 +9,11 @@ La matriz se lee con `yaml.safe_load`, no con un regex sobre el texto (AP-44).
 """
 
 import re
-import sys
 from pathlib import Path
 
 import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
-if str(ROOT / "scripts") not in sys.path:
-    sys.path.insert(0, str(ROOT / "scripts"))
 
 
 def _piso() -> tuple:

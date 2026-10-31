@@ -7,11 +7,9 @@ mantenía en `ciclos-baseline.json` con su pareja `vault_io -> vault_lib`.
 Invertido, las dos aristas dejan de esquivar nada y salen de la baseline.
 """
 
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_ciclos as C  # noqa: E402
 

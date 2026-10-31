@@ -31,7 +31,6 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = REPO_ROOT / "scripts"
-sys.path.insert(0, str(SCRIPTS))
 
 import vault_spec_catalog_check as vscc  # noqa: E402
 from vault_io import resolve_tool_spec  # noqa: E402

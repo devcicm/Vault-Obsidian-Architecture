@@ -16,13 +16,11 @@ Los tres son la misma forma: la comprobación decidía por su cuenta algo que ya
 estaba declarado en un registro.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import vault_validate  # noqa: E402
 from vault_fundamentals import CIA_TRIAD, cia_valores  # noqa: E402

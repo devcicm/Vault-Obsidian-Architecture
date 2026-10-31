@@ -15,14 +15,12 @@ No basta con un proxy perezoso sobre `VAULT_ROOT`: no alcanzaría a las
 constantes ya derivadas de él. Por eso `set_vault_root()` reancla.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = REPO_ROOT / "scripts"
-sys.path.insert(0, str(SCRIPTS))
 
 import vault_io  # noqa: E402
 

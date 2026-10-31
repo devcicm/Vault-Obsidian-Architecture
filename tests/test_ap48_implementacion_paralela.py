@@ -22,7 +22,6 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = REPO_ROOT / "scripts"
 SERVIDOR = REPO_ROOT / "mcp" / "nodejs" / "vault-mcp-server.mjs"
-sys.path.insert(0, str(SCRIPTS))
 
 import vault_mcp_catalog as vmc  # noqa: E402
 from vault_mcp_catalog import check_contracts  # noqa: E402

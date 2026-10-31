@@ -7,12 +7,10 @@ fronteras. Una cifra que no mide lo que nombra es la que AP-47 existe para
 impedir, aunque la haya escrito un generador.
 """
 
-import sys
 from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_arch as arch  # noqa: E402
 

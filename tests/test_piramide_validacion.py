@@ -4,15 +4,12 @@ Negativas: no existe el JUnit -> error; un fichero con poca mediana pero un
 caso larguísimo mantiene su nivel y se ve en la lista de casos únicos caros.
 """
 import json
-import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE = ROOT / "audits" / "architecture"
-if str(ROOT / "scripts") not in sys.path:
-    sys.path.insert(0, str(ROOT / "scripts"))
 
 
 def _modulo():

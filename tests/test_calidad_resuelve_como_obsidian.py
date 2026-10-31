@@ -14,11 +14,9 @@ El criterio tiene dueño (AP-57): `vault_lib.indice_de_destinos` y
 cuenta los rotos. Este módulo los importa en vez de copiarlos.
 """
 
-import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import vault_io  # noqa: E402
 import vault_quality_check as q  # noqa: E402

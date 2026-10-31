@@ -21,7 +21,6 @@ from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402

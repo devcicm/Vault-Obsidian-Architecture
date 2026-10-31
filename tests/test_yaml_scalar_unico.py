@@ -8,11 +8,9 @@ se decide con el mismo parser que lee el frontmatter, y en el núcleo ni
 `vault_lib` (kernel) cruza hacia Autoría ni Autoría reescribe nada.
 """
 
-import sys
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 import vault_criterios  # noqa: E402
 import vault_lib  # noqa: E402

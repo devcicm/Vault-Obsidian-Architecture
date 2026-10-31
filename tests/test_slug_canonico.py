@@ -17,13 +17,11 @@ corolario de AP-44: toda medida nueva se contrasta contra material ajeno).
 """
 
 import ast
-import sys
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 from vault_io import normalize_stem  # noqa: E402
 from vault_lib import fold_accents, slugify, slugify_strict  # noqa: E402

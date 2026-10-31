@@ -3,10 +3,8 @@
 Run: python -m pytest tests/test_vault_graph_inspect.py -v
 """
 
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from vault_graph_inspect import (
     _shingles,

@@ -7,11 +7,9 @@ mismo envelope, al trazarse, lo desmentía: la siguiente llamada ya encontraba
 el directorio. La traza es observabilidad best-effort; sin vault no se deposita.
 """
 
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 
 def test_ap36_emit_error_sin_vault_no_lo_crea(tmp_path):

@@ -9,12 +9,10 @@ El resultado tiene que ser el de la fuerza bruta, par a par y en el mismo orden.
 """
 
 import random
-import sys
 from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 import vault_graph_inspect as gi  # noqa: E402
 

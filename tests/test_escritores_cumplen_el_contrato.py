@@ -15,7 +15,6 @@ el mismo criterio que aplica `vault_validate`, no una lista propia (AP-57).
 import os
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -24,8 +23,6 @@ from sandbox_fixture import copiar_vault
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = REPO_ROOT / "scripts"
-if str(SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS))
 
 import vault_smoke  # noqa: E402
 from vault_contrato_nota import clase_de_nota, faltantes  # noqa: E402

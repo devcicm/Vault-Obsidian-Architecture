@@ -15,7 +15,6 @@ from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from vault.consulta.repositorio import RepositorioConsulta  # noqa: E402

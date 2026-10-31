@@ -23,7 +23,6 @@ from pathlib import Path
 import pytest
 
 RAIZ = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 import vault_arch as A  # noqa: E402
 import vault_ciclos as C  # noqa: E402

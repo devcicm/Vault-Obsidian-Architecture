@@ -7,11 +7,9 @@ entrada y respondía solo con `folder`. `tool-spec.json` declara `total`, y la
 tool no lo emitía.
 """
 
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_folder_registry  # noqa: E402
 from vault_noop_audit import WORK_INDICATORS  # noqa: E402

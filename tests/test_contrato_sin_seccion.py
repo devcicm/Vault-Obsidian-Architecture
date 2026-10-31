@@ -12,13 +12,11 @@ mismo que a una nota de sistema. Antes de v41 el validador no los distinguía
 y los juzgaba como contenido; el contrato de esas versiones no se reescribe.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_contrato_nota as contrato  # noqa: E402
 from vault_registry import es_de_seccion  # noqa: E402

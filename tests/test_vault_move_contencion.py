@@ -6,12 +6,10 @@ carpetas enteras; `--impact` leía un fichero de fuera. Todo con `ok: true`, y
 por MCP, sobre cualquier ruta del disco del usuario.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 NOTA = "---\ntitle: n\n---\ncuerpo\n"
 

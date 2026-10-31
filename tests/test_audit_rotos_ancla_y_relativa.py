@@ -8,13 +8,11 @@ que quita el ancla y resuelve la ruta relativa contra la carpeta de la nota.
 Se **suma** a lo que ya resolvía, así que el arreglo solo quita rotos falsos.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_audit as va  # noqa: E402
 

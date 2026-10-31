@@ -8,12 +8,10 @@ para saber contra qué contrato está.
 """
 
 import json
-import sys
 from collections import Counter
 from pathlib import Path
 
 RAIZ = Path(__file__).parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 SPEC = RAIZ / "vault-sandbox" / "00_System" / "tool-spec.json"
 ESTADOS = {"active", "internal", "archived", "orphan"}

@@ -10,11 +10,9 @@ vuelve a `vault_lib` o si el módulo nuevo deja de tener forma de núcleo.
 """
 
 import ast
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_arch  # noqa: E402
 import vault_escaneo_grafo  # noqa: E402

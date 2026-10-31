@@ -12,13 +12,11 @@ Un vault de .NET, Java o TypeScript dispara esto en proporción a su número de
 servicios, así que la norma se volvía ruido justo en los vaults más grandes.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 from vault_audit import (  # noqa: E402
     _MARCADORES_DE_CONVENCION,

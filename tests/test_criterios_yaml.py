@@ -7,11 +7,9 @@ YAML de evidencia se reportaban como `frontera_no_declarada`.
 Estas pruebas fijan las dos mitades del criterio: lo que debe seguir
 detectándose (un CI mal ubicado) y lo que no debe reportarse (datos).
 """
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_criterios  # noqa: E402
 

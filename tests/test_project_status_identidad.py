@@ -9,12 +9,10 @@ nuevo; si el ilegible era `changelog.md`, la excepción escapaba después de
 reescribir `status.md`. Ahora no escribe nada: FILE_READ_ERROR (AP-51).
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 from vault_lib import parse_frontmatter  # noqa: E402
 

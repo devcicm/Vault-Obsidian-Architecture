@@ -8,13 +8,11 @@ validación, que vive en `vault_registry` sin importar `vault_io`.
 """
 
 import json
-import sys
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import vault_registry as reg  # noqa: E402
 

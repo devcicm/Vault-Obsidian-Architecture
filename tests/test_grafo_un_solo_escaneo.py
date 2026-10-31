@@ -15,12 +15,10 @@ solo proyecta su esquema: `type: "wiki-link"` en `graph.json`,
 """
 
 import json
-import sys
 from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 import vault_io  # noqa: E402
 from vault_escaneo_grafo import escanear_wikilinks  # noqa: E402

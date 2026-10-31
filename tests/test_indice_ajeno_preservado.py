@@ -9,15 +9,12 @@ atómico crea el fichero con el nombre nuevo. El índice generado lleva la marca
 conserva, y se informa como `indice_ajeno_preservado`.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
-if str(SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS))
 
 import vault_io  # noqa: E402
 import vault_section_index  # noqa: E402

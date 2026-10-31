@@ -12,11 +12,9 @@ nota heredada que solo difiere en mayúsculas se actualiza en su sitio, con su
 nombre y su identidad.
 """
 
-import sys
 from pathlib import Path
 
 RAIZ = Path(__file__).parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 CUERPO = (
     "Una nota con contenido suficiente para pasar la puerta de calidad.\n"

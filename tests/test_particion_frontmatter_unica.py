@@ -6,11 +6,9 @@ entre comillas. Aquí se comprueba que los sitios migrados leen la nota igual
 que el dueño, y que una copia nueva hace fallar `vault_criterios`.
 """
 
-import sys
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 import vault_criterios  # noqa: E402
 import vault_frontmatter_heal  # noqa: E402

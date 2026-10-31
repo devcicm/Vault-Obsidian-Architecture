@@ -21,8 +21,6 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
-if str(SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS))
 
 import vault_audit  # noqa: E402
 from vault_registry import SECTIONS  # noqa: E402

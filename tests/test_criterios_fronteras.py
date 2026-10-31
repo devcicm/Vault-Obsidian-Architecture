@@ -15,13 +15,11 @@ Los tests que deciden si esto sirve de algo son los tres de la sección
 """
 
 import json
-import sys
 from pathlib import Path
 
 import pytest
 
 RAIZ = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 import vault_criterios as C  # noqa: E402
 

@@ -5,10 +5,8 @@ Tests for vault_regex module.
 Run with: python -m pytest tests/test_vault_regex.py -v
 """
 
-import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 
 import pytest
 from vault_regex import (

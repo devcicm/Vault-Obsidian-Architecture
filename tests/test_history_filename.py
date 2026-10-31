@@ -10,13 +10,10 @@ fecha de cada versión y no puede fiarse del mtime —una copia del vault lo
 reescribe entero—.
 """
 
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 SCRIPTS = Path(__file__).resolve().parent.parent / "scripts"
-if str(SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS))
 
 from vault_history_compact import _parse_history_filename  # noqa: E402
 

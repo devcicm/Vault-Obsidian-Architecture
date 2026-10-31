@@ -21,12 +21,10 @@ recursivas. Este módulo fija las tres condiciones que hacen que eso termine:
 """
 
 import collections
-import sys
 from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 import vault_lib  # noqa: E402
 import vault_subgraph as VS  # noqa: E402

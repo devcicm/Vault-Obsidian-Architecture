@@ -13,7 +13,6 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_io  # noqa: E402
 
@@ -141,7 +140,6 @@ def test_el_path_relativo_al_vault_sigue_mandando(scan, monkeypatch):
     (repo / "src" / "c.js").write_text("const z = 3;\n", encoding="utf-8")
     monkeypatch.chdir(repo)
     assert tool.vault_security_scan("src/", save_findings=False)["filesScanned"] == 2
-
 
 
 def test_las_cifras_de_reglas_no_estan_escritas_a_mano():

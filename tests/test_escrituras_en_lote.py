@@ -15,7 +15,6 @@ import sys
 from pathlib import Path
 
 RAIZ = Path(__file__).parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 NOTAS = ("07_Knowledge/alfa.md", "07_Knowledge/beta.md", "07_Knowledge/sub/gamma.md",
          "01_Projects/delta.md")

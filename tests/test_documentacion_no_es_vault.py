@@ -23,13 +23,11 @@ El sandbox lo exhibía también: al corregirlo, su `healthIndex` subió de 60 a
 64 sin que cambiase una sola nota.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import vault_audit as va  # noqa: E402
 

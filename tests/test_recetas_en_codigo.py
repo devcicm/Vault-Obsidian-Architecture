@@ -7,11 +7,9 @@ voz.py tras un bloqueo (`vault_norms --explain`) y las tablas que vault_sdd_init
 reparte a cada vault (`vault_audit --broken-links`, `vault_fix_brackets --fix`).
 """
 
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_doc_sync as vds  # noqa: E402
 

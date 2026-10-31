@@ -12,11 +12,9 @@ proyecto con un snapshot y cruza los cambios con la documentación del vault;
 
 import json
 import shlex
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_registry  # noqa: E402
 from vault_mcp_catalog import TOOLS_CATALOG  # noqa: E402

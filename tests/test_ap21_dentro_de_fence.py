@@ -11,7 +11,6 @@ import sys
 from pathlib import Path
 
 RAIZ = Path(__file__).parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 sys.path.insert(0, str(RAIZ))
 
 NOTA = "\n".join([

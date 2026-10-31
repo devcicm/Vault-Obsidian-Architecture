@@ -19,7 +19,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
-sys.path.insert(0, str(SCRIPTS))
 
 BUENA = (
     "---\ntitle: Respuestas en español\ntype: preference\ncategory: idioma\n"

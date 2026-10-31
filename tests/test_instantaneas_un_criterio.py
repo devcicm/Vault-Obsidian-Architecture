@@ -6,13 +6,11 @@ Auditoría del 2026-10-15: `vault_audit` y `vault_quality_check` decidían con
 El dueño es `vault_io.is_snapshot_path`.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_audit  # noqa: E402
 import vault_io  # noqa: E402

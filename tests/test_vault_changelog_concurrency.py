@@ -10,13 +10,11 @@ second write would clobber the first (lost entry). This test drives many
 concurrent adds and asserts every entry survives.
 """
 
-import sys
 import os
 import json
 import threading
 from pathlib import Path
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 
 import vault_change_log as cl
 

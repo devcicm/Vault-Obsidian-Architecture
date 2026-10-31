@@ -26,11 +26,9 @@ equivocado es peor que no tener guard. Dirige el trabajo a reescribir enlaces
 que funcionan, y cada reescritura puede romper uno que estaba bien.
 """
 
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_norms as vn  # noqa: E402
 

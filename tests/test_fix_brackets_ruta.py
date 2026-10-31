@@ -6,12 +6,10 @@ vault sin corchetes rotos. El agente que lo pedía daba la nota por sana.
 La contención sí se cumplía: nunca leyó fuera.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 ROTA = "---\ntitle: n\n---\nver [[]] aquí\n"
 

@@ -8,11 +8,9 @@ enlace (AP-44)— y el catálogo pasa a `cobertura_parcial`, como AP-05: verde n
 prueba que no haya versiones, prueba que ninguna lo dice en el nombre.
 """
 
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_audit as va  # noqa: E402
 from vault_norms_catalog import NORM_CATALOG  # noqa: E402

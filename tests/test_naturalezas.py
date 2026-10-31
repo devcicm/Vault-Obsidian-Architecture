@@ -12,11 +12,9 @@ solapes— y que no se pueda desviar del otro eje en su único punto de contacto
 verificable.
 """
 
-import sys
 from pathlib import Path
 
 SCRIPTS = Path(__file__).resolve().parent.parent / "scripts"
-sys.path.insert(0, str(SCRIPTS))
 
 import vault_servicio as servicio  # noqa: E402
 from vault_mcp_catalog import mapa_de_grupos  # noqa: E402

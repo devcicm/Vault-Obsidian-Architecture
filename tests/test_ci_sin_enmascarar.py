@@ -31,7 +31,6 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
-sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(ROOT))
 
 import vault_blueprint as bp  # noqa: E402

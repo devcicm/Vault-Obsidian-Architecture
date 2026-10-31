@@ -8,15 +8,12 @@ volvía a inventariar el vault entero para elegir el destino de los wikilinks.
 El inventario no cambia entre los renders de una misma regeneración.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
-if str(SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS))
 
 import vault_io  # noqa: E402
 import vault_section_index as vsi  # noqa: E402
@@ -56,7 +53,6 @@ def test_ap47_una_regeneracion_inventaria_el_vault_una_sola_vez(vault, monkeypat
     # Sección + dos subcarpetas: tres renders, un inventario.
     assert len(r["subdirIndexes"]) == 2
     assert len(llamadas) == 1
-
 
 
 def test_ap47_el_inventario_compartido_elige_el_mismo_destino(vault):

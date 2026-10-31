@@ -12,11 +12,9 @@ sitio, con su nombre y su `id`.
 """
 
 import json
-import sys
 from pathlib import Path
 
 RAIZ = Path(__file__).parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 CUERPO = (
     "Una nota con contenido suficiente para pasar la puerta de calidad.\n"

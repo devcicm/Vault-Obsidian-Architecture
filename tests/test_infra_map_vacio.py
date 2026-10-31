@@ -6,12 +6,9 @@ ejecución anterior con componentes que ya no están en el índice.
 """
 
 import json
-import sys
 from pathlib import Path
 
 import pytest
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 
 @pytest.fixture

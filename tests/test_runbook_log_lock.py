@@ -16,7 +16,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
 sys.path.insert(0, str(ROOT))
-sys.path.insert(0, str(SCRIPTS))
 
 from vault.kernel.errores import problemas_de_forma  # noqa: E402
 from vault_lib import parse_frontmatter  # noqa: E402

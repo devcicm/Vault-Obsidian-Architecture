@@ -12,11 +12,9 @@ Medido el 2026-10-07 sobre copias de /ans y /vcloud (regla 7):
   humano ya lo llamaba «referencias»; el campo prometía notas.
 """
 
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_tags as vt  # noqa: E402
 

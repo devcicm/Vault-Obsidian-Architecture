@@ -8,11 +8,9 @@ detector de AP-52 solo veía el envelope **sin** `error_code`.
 """
 
 import json
-import sys
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 import vault_error_contract  # noqa: E402
 from vault.kernel.errores import ERROR_CATALOG, ErrorCode, construir_error  # noqa: E402

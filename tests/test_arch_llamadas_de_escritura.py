@@ -9,10 +9,8 @@ escribir dónde, la medida de «escribe» tiene que ser cierta.
 """
 
 import ast
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 import vault_arch  # noqa: E402
 
 

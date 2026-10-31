@@ -12,11 +12,9 @@ Hasta v41.0 la acción de `vault_audit` para cada huérfana:
   (AP-44: el consejo se mide con el criterio del detector, no con el propio).
 """
 
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_audit as va  # noqa: E402
 from vault_audit_catalog import PENALIZACIONES  # noqa: E402

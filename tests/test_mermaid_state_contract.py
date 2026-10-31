@@ -9,12 +9,10 @@ propiedad (mismatched_braces y errores de tipo siguen siendo errores
 reales y se cubren con `test_mermaid_reglas_parsers.py`).
 """
 
-import sys
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_mermaid_check as mermaid  # noqa: E402
 import vault_mermaid_reglas as reglas  # noqa: E402

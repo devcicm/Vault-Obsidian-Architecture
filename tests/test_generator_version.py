@@ -15,14 +15,11 @@ enteros, así que una versión puesta al crearlos envejecería con el fichero.
 """
 
 import json
-import sys
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-if str(REPO_ROOT / "scripts") not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import vault_io  # noqa: E402
 from vault_version import CURRENT_VERSION  # noqa: E402

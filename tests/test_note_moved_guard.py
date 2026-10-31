@@ -6,11 +6,9 @@ duplicadas en silencio — lo contrario de lo que el bloque existe para hacer.
 """
 
 import json
-import sys
 from pathlib import Path
 
 RAIZ = Path(__file__).parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 CUERPO = "\n".join([
     "Una nota con contenido suficiente para pasar la puerta de calidad.",

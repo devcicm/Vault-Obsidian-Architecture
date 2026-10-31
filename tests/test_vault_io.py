@@ -8,12 +8,10 @@ These tests cover the B1 fix (atomic_write_text temp leak) and basic
 file_lock behavior. They MUST pass before any release.
 """
 
-import sys
 import os
 import threading
 from pathlib import Path
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 
 import pytest
 

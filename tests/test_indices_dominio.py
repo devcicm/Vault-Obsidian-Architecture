@@ -28,7 +28,6 @@ from vault.indices.seccion import (  # noqa: E402
     texto_semantico,
 )
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from vault.indices.carpetas import ServicioCarpetas  # noqa: E402

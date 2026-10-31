@@ -22,7 +22,6 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT))
 
 import vault_arch  # noqa: E402
@@ -338,7 +337,6 @@ def test_lote_f_ninguna_cara_de_norma_cita_el_alias(modulo, dueno):
         assert viejo not in cara.read_text(encoding="utf-8"), cara
 
 
-
 LOTE_H = [
     ("vault_errors_trace", "vault/kernel/errors_trace.py", False),
     ("vault_fix_brackets", "vault/autoria/fix_brackets.py", True),
@@ -417,7 +415,6 @@ def test_la_clave_de_baseline_de_un_dueno_es_la_de_su_alias():
     assert vault_arch.clave_de_modulo(repo) == "vault/grafo/repositorio.py"
     duenos = {p.relative_to(ROOT.resolve()).as_posix() for p in gi._puente().values()}
     assert not [c for c in vault_arch.cruces() if c["from"] in duenos]
-
 
 
 def test_subgraph_migra_a_consulta_y_su_cruce_conserva_la_clave():

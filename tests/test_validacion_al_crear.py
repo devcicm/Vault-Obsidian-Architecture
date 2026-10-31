@@ -14,12 +14,10 @@ Un test por defecto. El de basename es el que no puede volver a caerse: es el
 enlace roto.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 import vault_io
 import vault_write

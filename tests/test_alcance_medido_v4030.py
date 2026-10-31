@@ -18,11 +18,9 @@ cifra global: comprueban la propiedad, que es lo que sobrevive a la siguiente
 tanda.
 """
 
-import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import vault_arch as A  # noqa: E402
 import vault_ciclos as C  # noqa: E402

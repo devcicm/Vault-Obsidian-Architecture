@@ -7,13 +7,11 @@ nota ya escrita: un envelope que afirma lo contrario de lo que pasó.
 """
 
 import json
-import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 from vault_fs import tomar_lock  # noqa: E402
 from vault.kernel import bloqueo  # noqa: E402

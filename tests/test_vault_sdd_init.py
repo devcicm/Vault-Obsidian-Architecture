@@ -15,7 +15,6 @@ import subprocess
 import vault_subproceso
 from pathlib import Path
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 
 import pytest
 

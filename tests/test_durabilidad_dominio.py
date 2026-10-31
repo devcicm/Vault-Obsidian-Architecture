@@ -19,7 +19,6 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 from vault.durabilidad.modelo import (  # noqa: E402
     LIMITE_DEFECTO, Backup, LimiteInvalido, RegistroBackups, validar_limite,

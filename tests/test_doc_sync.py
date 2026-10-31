@@ -7,13 +7,11 @@ Dos familias, como en `test_doc_counts.py`:
   2. **El repo está alineado**: hoy, aquí, `--check` sale limpio.
 """
 import re
-import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_doc_sync as vds  # noqa: E402
 import vault_mcp_catalog  # noqa: E402

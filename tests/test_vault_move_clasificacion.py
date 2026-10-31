@@ -9,13 +9,11 @@ corresponde se cambia explícitamente con `--type` o el movimiento no ocurre.
 """
 
 import json
-import sys
 from pathlib import Path
 
 import pytest
 import yaml
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 import vault_registry as reg  # noqa: E402
 

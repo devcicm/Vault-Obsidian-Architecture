@@ -18,7 +18,6 @@ from pathlib import Path
 import pytest
 
 RAIZ = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 from vault.kernel.errores import ERROR_CATALOG, problemas_de_forma  # noqa: E402
 

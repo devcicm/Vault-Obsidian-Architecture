@@ -11,14 +11,12 @@ lo que se comprueba aquí es justamente que no mienta:
     `written` — es el caso que la norma nació para hacer visible,
   - el contador es por hilo, porque la CLI consolidada ejecuta operaciones a la vez.
 """
-import sys
 import threading
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_io  # noqa: E402
 

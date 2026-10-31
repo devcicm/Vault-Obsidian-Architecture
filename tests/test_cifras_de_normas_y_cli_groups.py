@@ -14,7 +14,6 @@ from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 from vault_norms_catalog import NORM_CATALOG  # noqa: E402
 

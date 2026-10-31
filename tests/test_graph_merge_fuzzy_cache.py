@@ -9,10 +9,8 @@ ruta resuelta contra el primero, que es AP-49 —un vínculo fijado por quien
 llegó antes— en forma de estado y no de constante.
 """
 
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 import vault_graph_merge as gm  # noqa: E402
 

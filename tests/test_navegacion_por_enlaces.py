@@ -26,8 +26,6 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
-if str(SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS))
 
 from vault.indices.seccion import RE_ALIAS_EN_TABLA, RenderizadorDeIndice, migaja  # noqa: E402
 from vault_lib import indice_de_nombres, resolver_wikilink  # noqa: E402

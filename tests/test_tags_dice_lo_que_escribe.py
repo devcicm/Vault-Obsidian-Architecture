@@ -7,13 +7,11 @@ emite: el audit mide lo **declarado**, no lo **emitido**. Lo primero se arregla
 aquí; lo segundo queda como deuda `ap37_mide_lo_declarado`.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
 RAIZ = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 import vault_io  # noqa: E402
 import vault_tags  # noqa: E402

@@ -14,13 +14,11 @@ exactamente lo que da el dueño, y que el dueño ve lo que el regex no veía.
 """
 
 import re
-import sys
 from pathlib import Path
 
 import pytest
 
 RAIZ = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 from vault_lib import parse_frontmatter  # noqa: E402
 

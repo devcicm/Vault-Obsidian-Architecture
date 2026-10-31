@@ -20,14 +20,12 @@ Los cinco que existían cuando se escribió este archivo, y lo que costaban:
 """
 
 import ast
-import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS_DIR = ROOT / "scripts"
-sys.path.insert(0, str(SCRIPTS_DIR))
 
 # Constantes de módulo que son registros de verdad y deben tener consumidor.
 # Se nombran una a una en vez de barrer todas las mayúsculas: un guard que se

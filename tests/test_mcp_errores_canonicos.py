@@ -23,7 +23,6 @@ import pytest
 from test_mcp_runner import SesionMCP, _init_vault
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 sys.path.insert(0, str(REPO_ROOT))
 
 from vault.kernel.errores import ERROR_CATALOG, problemas_de_forma  # noqa: E402

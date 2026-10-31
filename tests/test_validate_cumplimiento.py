@@ -15,7 +15,6 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_validate as vv  # noqa: E402
 from vault_contrato_nota import VERSIONES_CON_CONTRATO  # noqa: E402

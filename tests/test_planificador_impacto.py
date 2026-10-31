@@ -4,13 +4,10 @@ Negativas obligatorias: si el impacto no se puede determinar con seguridad, el
 plan AMPLIA o exige la suite completa. Un test no seleccionado es NOT_RUN.
 """
 import json
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE = ROOT / "audits" / "architecture"
-if str(ROOT / "scripts") not in sys.path:
-    sys.path.insert(0, str(ROOT / "scripts"))
 
 
 def _modulo():

@@ -12,7 +12,6 @@ queda al lado como `SKILL-v<x>.md`, y `docs/SKILLS.md` las nombra a las dos.
 
 import ast
 import re
-import sys
 from pathlib import Path
 
 import pytest
@@ -21,8 +20,6 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SKILLS_DIR = REPO_ROOT / "agent" / "skills"
 SCRIPTS = REPO_ROOT / "scripts"
 DOC = (REPO_ROOT / "docs" / "SKILLS.md").read_text(encoding="utf-8")
-if str(SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS))
 
 SKILLS = sorted(SKILLS_DIR.glob("*/SKILL.md"))
 IDS = [p.parent.name for p in SKILLS]

@@ -17,8 +17,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
-if str(SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS))
 
 from vault_fundamentals_catalog import CIA_TRIAD, cia_por_defecto  # noqa: E402
 from vault_lib import parse_frontmatter  # noqa: E402

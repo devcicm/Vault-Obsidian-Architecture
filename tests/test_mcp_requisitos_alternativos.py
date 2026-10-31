@@ -19,8 +19,6 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
-if str(SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS))
 
 from vault_mcp_catalog import REQUISITOS_EN_CODIGO, TOOLS_CATALOG  # noqa: E402
 

@@ -29,13 +29,11 @@ El coste conjunto: un vault con diagramas correctos no podía subir de
 `healthScore: 0`, y sanar no movía el número.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_mermaid_check as mc  # noqa: E402
 

@@ -12,14 +12,12 @@ el que todas pasan. Es AP-44 aplicado al generador — se comprueba con
 `yaml.safe_load`, que es lo que usa quien lee la nota.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = REPO_ROOT / "scripts"
-sys.path.insert(0, str(SCRIPTS))
 
 import vault_io  # noqa: E402
 import vault_norms  # noqa: E402

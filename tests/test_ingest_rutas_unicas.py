@@ -7,10 +7,8 @@ escritura salía como «ya existe» y su contenido no llegaba al vault, aunque e
 el texto de origen era material distinto.
 """
 
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 CUERPO = "Contenido propio de este bloque, distinto de los demás. " * 3
 

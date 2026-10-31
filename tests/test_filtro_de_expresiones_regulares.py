@@ -34,7 +34,6 @@ el que se queda atrás.
 
 import ast
 import re
-import sys
 import time
 import warnings
 from pathlib import Path
@@ -42,7 +41,6 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 #: Métodos de `re` cuyo primer argumento posicional es el patrón.
 _METODOS_RE = {

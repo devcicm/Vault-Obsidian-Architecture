@@ -17,7 +17,6 @@ from pathlib import Path
 import pytest
 
 RAIZ = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 from vault.kernel.errores import (  # noqa: E402
     ERROR_CATALOG, completar_envelope, problemas_de_forma,
@@ -94,7 +93,6 @@ def test_una_recuperacion_especifica_pasa_a_hint():
     assert env["recovery"]["hint"] == "sube el tope con --max-chars"
     assert env["recovery"]["action"] == ERROR_CATALOG["SOURCE_TOO_LARGE"]["recovery"]["action"]
     assert env["message"] == "grande"
-
 
 
 def test_completar_un_envelope_ya_canonico_conserva_su_pista():

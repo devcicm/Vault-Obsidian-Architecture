@@ -21,13 +21,11 @@ al ejecutarse. Comprueban las cuatro cosas que se perderían en silencio.
 
 import ast
 import inspect
-import sys
 from pathlib import Path
 
 import pytest
 
 RAIZ = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 import vault_grafo_import as G  # noqa: E402
 import vault_kernel as K  # noqa: E402
@@ -256,7 +254,6 @@ def test_el_escalon_es_la_mayor_caida_relativa_y_no_la_caida_a_cero():
     assert umbral == 80 and ratio == 8.0
     assert K.escalon([5]) == (None, None)
     assert K.escalon([]) == (None, None)
-
 
 
 def test_ap59_el_escalon_no_colapsa_en_la_caida_de_dos_a_uno():

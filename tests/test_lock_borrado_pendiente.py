@@ -16,15 +16,12 @@ falla como lo hace Windows en ese hueco, sin crear nada.
 
 import os
 import pathlib
-import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
-if str(SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS))
 
 import vault_fs  # noqa: E402
 from vault.autoria.conocimiento import _FileLock  # noqa: E402

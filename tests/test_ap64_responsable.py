@@ -11,15 +11,12 @@ leen el scan y la auditoría. El régimen del estado lo deriva
 `vault_registry.regimen_de_estado`: el núcleo no lo copia.
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
-if str(SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS))
 
 import vault_io  # noqa: E402
 

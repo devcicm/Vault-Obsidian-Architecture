@@ -8,14 +8,12 @@ material sin revisar sustituyendo al revisado y `ok: true`.
 """
 
 import json
-import sys
 from pathlib import Path
 
 import pytest
 from vault.kernel import bloqueo  # noqa: E402
 
 RAIZ = Path(__file__).parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 PARRAFO = ("Un parrafo con contenido de sobra para superar el minimo de caracteres "
            "exigido por la segmentacion de esta tool. ")

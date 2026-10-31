@@ -15,7 +15,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
-sys.path.insert(0, str(SCRIPTS))
 from vault_version import CURRENT_VERSION  # noqa: E402
 
 VERSION_JSON = json.dumps({"version": CURRENT_VERSION})

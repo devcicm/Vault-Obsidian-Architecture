@@ -13,7 +13,6 @@ lo publica como `json_flag` y el servidor lo cumple.
 
 import json
 import shutil
-import sys
 from pathlib import Path
 
 import pytest
@@ -21,7 +20,6 @@ import pytest
 from test_mcp_runner import SesionMCP, _init_vault
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 from vault_mcp_catalog import TOOLS_CATALOG, acepta_modo_json  # noqa: E402
 

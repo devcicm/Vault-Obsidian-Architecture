@@ -6,10 +6,8 @@ la fuente y el manifiesto es el derivado — si divergen, falla el build.
 """
 
 import re
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from vault_fundamentals import (  # noqa: E402
     BIGDATA_VS,

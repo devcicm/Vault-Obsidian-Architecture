@@ -6,13 +6,10 @@ culpaba al dato del fallo de la tool. Ahora sale aparte, en `notes_unreadable`,
 y no entra en la media.
 """
 
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
-if str(SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS))
 
 import vault_io  # noqa: E402
 import vault_quality_check as q  # noqa: E402

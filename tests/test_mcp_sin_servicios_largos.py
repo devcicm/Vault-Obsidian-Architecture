@@ -11,13 +11,11 @@ Lo encontró el barrido de tools instaladas el 2026-10-14.
 """
 
 import json
-import sys
 from pathlib import Path
 
 from test_mcp_instalado import _entorno, _instalacion, _sesion, _vault, requiere_node
 
 RAIZ = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(RAIZ / "scripts"))
 
 import vault_mcp_catalog as cat  # noqa: E402
 
