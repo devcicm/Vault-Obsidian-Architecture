@@ -41,6 +41,21 @@ volátil por su ruta JSON y se lista en `golden/envelopes.json`
 (`volatiles`). El comparador solo ignora el *valor* de esas rutas, nunca su
 presencia ni su tipo. Nada se da por volátil sin haberlo visto variar.
 
+Hay dos variaciones que dos capturas seguidas **no pueden** ver, porque
+dependen del tiempo transcurrido entre la captura y la comparación. Se declaran
+en `VOLATILES_DECLARADOS`, con el motivo y lo que se sigue comparando. Las vio
+variar la primera comparación completa del cierre del bloque A, seis horas
+después del golden, sin que el tablón tocara nada de su camino:
+
+| Corrida | Qué varía | Por qué | Lo que se sigue comparando |
+|---|---|---|---|
+| `vault_backup#0/#1` | `sizeKB` de la sección y del total | el origen copia el estado de ejecución del sandbox, que no está versionado (`.tool-trace.json` crece con cada test o puerta) | los ficheros copiados, `cambiadas` y el resto del manifiesto |
+| `vault_context_pack#0` | la cuarta cifra de cada `score` | la puntuación suma la recencia contra el reloj (vida media de 90 días) | qué notas entran, en qué orden y el texto del paquete fuera de `score N` |
+
+Las tools que miden el propio repo (`vault_clones`, `vault_metricas`, …)
+**no** se declaran: cuando un tablón cambia lo que miden, su rojo es el delta
+del tablón y se anota con sus cifras en `CHANGELOG-REFACTOR.md`.
+
 Cada repetición construye **su propio vault de origen**. Dar de alta `mi-api`
 estampa la hora en la nota y en el índice, y un hash sobre ese contenido
 (`merkle_root` de `vault_backup`, `source_sha` de `vault_graph_fix`) varía con
@@ -528,6 +543,52 @@ def _sin_volatiles(corrida: Dict[str, Any], rutas: List[str]) -> Dict[str, Any]:
     return c
 
 
+_SCORE = re.compile(r"score \d+\.\d+")
+# Lo que la captura no puede ver variar (ver el docstring). `[*]` cubre cada
+# elemento de la lista; los textos se normalizan solo en el patrón declarado.
+VOLATILES_DECLARADOS: Dict[str, Dict[str, Any]] = {
+    **{f"vault_backup#{i}": {"rutas": [".datos.manifest.sections[*].sizeKB",
+                                       ".datos.manifest.totals.sizeKB"]}
+       for i in (0, 1)},
+    "vault_context_pack#0": {"rutas": [".datos.included[*].score"],
+                             "textos": {".datos.context": (_SCORE, "score <S>")}},
+}
+
+
+def _expandir(datos: Any, ruta: str) -> List[str]:
+    """Las rutas concretas de `ruta`, con cada `[*]` resuelto contra `datos`."""
+    if "[*]" not in ruta:
+        return [ruta]
+    cabeza, cola = ruta.split("[*]", 1)
+    nodo: Any = datos
+    for clave, indice in re.findall(r"\.([^.\[]+)|\[(\d+)\]", cabeza):
+        try:
+            nodo = nodo[clave] if clave else nodo[int(indice)]
+        except (KeyError, IndexError, TypeError):
+            return []
+    if not isinstance(nodo, list):
+        return []
+    return [r for i in range(len(nodo)) for r in _expandir(datos, f"{cabeza}[{i}]{cola}")]
+
+
+def _sin_declarados(corrida: Dict[str, Any], clave: str) -> Dict[str, Any]:
+    decl = VOLATILES_DECLARADOS.get(clave)
+    if not decl:
+        return corrida
+    c = json.loads(json.dumps(corrida))
+    for ruta, (patron, por) in decl.get("textos", {}).items():
+        nodo: Any = c
+        claves = re.findall(r"\.([^.\[]+)", ruta)
+        for k in claves[:-1]:
+            nodo = nodo.get(k, {}) if isinstance(nodo, dict) else {}
+        if isinstance(nodo, dict) and isinstance(nodo.get(claves[-1]), str):
+            nodo[claves[-1]] = patron.sub(por, nodo[claves[-1]])
+    for ruta in decl.get("rutas", []):
+        for concreta in _expandir(c, ruta):
+            c = _quitar(c, concreta)
+    return c
+
+
 # ── orquestación ───────────────────────────────────────────────────────────
 
 
@@ -636,9 +697,11 @@ def comparar(componentes: List[str], tools: Optional[Set[str]]) -> Dict[str, Any
                         roturas[nombre] = {"antes": esperado, "ahora": actual}
                     continue
                 for i, (e, a) in enumerate(zip(esperado, actual or [])):
-                    rutas = golden["volatiles"].get(_clave_corrida(nombre, i), [])
-                    distintas = sorted(set(_rutas_distintas(_sin_volatiles(e, rutas),
-                                                            _sin_volatiles(a, rutas))))
+                    clave = _clave_corrida(nombre, i)
+                    rutas = golden["volatiles"].get(clave, [])
+                    distintas = sorted(set(_rutas_distintas(
+                        _sin_declarados(_sin_volatiles(e, rutas), clave),
+                        _sin_declarados(_sin_volatiles(a, rutas), clave))))
                     if distintas:
                         roturas[_clave_corrida(nombre, i)] = distintas[:12]
                 if len(esperado) != len(actual or []):
