@@ -107,7 +107,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     {
         "id": "mcp_sin_perfiles_por_token",
         "estado": "saldada",
-        "saldada_en": "v41.25",
+        "saldada_en": "v41.26",
         "sostenida_por": [
             cita_repo(rutas.TESTS, "test_mcp_perfiles_por_token.py::test_lector_solo_ve_las_tools_sin_side_effects"),
             cita_repo(rutas.TESTS, "test_mcp_perfiles_por_token.py::test_lector_no_ejecuta_lo_que_no_ve"),
@@ -134,7 +134,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     {
         "id": "raiz_explicita_apunta_al_repo",
         "estado": "saldada",
-        "saldada_en": "v41.25",
+        "saldada_en": "v41.26",
         "sostenida_por": [
             cita_repo(rutas.TESTS, "test_a11_raiz_explicita_en_el_repo.py::test_raiz_explicita_en_el_repo_se_rechaza_antes_de_ejecutar"),
             cita_repo(rutas.TESTS, "test_a11_raiz_explicita_en_el_repo.py::test_un_vault_que_guarda_el_manifiesto_sigue_siendo_vault"),
@@ -183,7 +183,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     {
         "id": "criterios_salta_modulos_sin_glob_md",
         "estado": "saldada",
-        "saldada_en": "v41.25",
+        "saldada_en": "v41.26",
         "sostenida_por": [
             cita_repo(rutas.TESTS, "test_criterios_salta_modulos_sin_glob_md.py::test_la_copia_se_ve_recorriendo_notas_por_sufijo"),
             cita_repo(rutas.TESTS, "test_criterios_salta_modulos_sin_glob_md.py::test_el_literal_md_suelto_no_mete_al_modulo_en_la_medida"),
