@@ -58,6 +58,7 @@ siguen en `AUDITORIA.md`.
 
 Resultado del bloque: A-1 descartado (NOT_APPLICABLE), A-2 hecho (`428c895`) y A-3, A-4 y A-5 bloqueados.
 Ninguno de los tres se forzó.
+El carril `merge` lo cerró sobre `52252b3`, con la paridad completa, las 28 puertas y la suite en verde. El detalle está en la fila «cierre A» de `CHANGELOG-REFACTOR.md`.
 
 - **A-3 y A-4 necesitan una raíz de composición que hoy no existe.**
   - `vault_io` dispara el índice de sección y la bitácora de tags en cada escritura de nota.
