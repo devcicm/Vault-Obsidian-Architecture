@@ -53,7 +53,13 @@ _VAULT_ROOT_ORIGIN: str = "unknown"
 #: `<cwd>/%V%`, un vault fantasma que nadie abre. Una raíz explícita que no
 #: existe no es una orden de crearla —`vault_init` tampoco lo hace—, es un
 #: error de configuración, y su sitio es el mismo que el del fallback.
-LOW_CONFIDENCE_ORIGINS = frozenset({"repo_root_fallback", "env_inexistente"})
+#:
+#: `env_repo_del_estandar` (v41.25, A-11): `VAULT_ROOT` apunta al propio repo
+#: del estándar. Es un directorio y es explícito, así que hasta v41.25 salía
+#: `env`, confiado, y `vault_audit` sembraba `00_System/` en la raíz del repo
+#: que la regla 1 de AGENTS.md reserva. Explícito no es lo mismo que vault.
+LOW_CONFIDENCE_ORIGINS = frozenset({"repo_root_fallback", "env_inexistente",
+                                    "env_repo_del_estandar"})
 #: Los origenes que esta deteccion puede producir. Declarados aqui, en el
 #: dueno, porque un test que reescriba la lista a mano se queda viejo en
 #: silencio: el 2026-10-23 la suite fallo en paralelo porque el test
@@ -62,6 +68,7 @@ LOW_CONFIDENCE_ORIGINS = frozenset({"repo_root_fallback", "env_inexistente"})
 ORIGENES_CONOCIDOS = frozenset({
     "env",
     "env_inexistente",
+    "env_repo_del_estandar",
     "sibling_vault_dir",
     "sibling_vault_dir_fresh",
     "scripts_inside_vault",
@@ -79,6 +86,32 @@ def es_paquete_python(directorio) -> bool:
     `raiz_es_el_programa()` para reconocer la raíz adivinada que es el toolkit.
     """
     return (Path(directorio) / "__init__.py").exists()
+
+
+#: Marcadores de contenido de vault: los escribe una persona o `vault_init`, no
+#: la capa de observabilidad. `00_System/` y `99_Index/` no cuentan, porque los
+#: siembra cualquier tool al correr y uno suelto bastaría para que un sitio
+#: equivocado pareciera vault para siempre.
+MARCADORES_DE_CONTENIDO = frozenset({"01_Projects", "02_Observability", "03_Decisions", ".obsidian"})
+
+
+def es_repo_del_estandar(directorio) -> bool:
+    """`directorio` es un checkout de este repo, no un vault (A-11, regla 1).
+
+    Firma doble: el manifiesto **y** el núcleo del toolkit (`vault/kernel/`),
+    sin contenido de vault. El manifiesto solo no basta, porque un consumidor
+    lo conserva como documento de referencia (no-derogación), y eso es lo que
+    hizo que la rama `spec_repo_sandbox` mandara vaults reales al sandbox.
+    Dueño del criterio: lo consultan la detección, la confianza y el rechazo
+    previo de `vault_errors.wrap_main`.
+    """
+    d = Path(directorio)
+    try:
+        return ((d / "vault-obsidian-architecture.md").is_file()
+                and (d / "vault" / "kernel").is_dir()
+                and not any((d / m).exists() for m in MARCADORES_DE_CONTENIDO))
+    except OSError:
+        return False
 
 
 def client_cwd() -> Path:
@@ -180,7 +213,10 @@ def _detect_vault_root() -> Path:
     global _VAULT_ROOT_ORIGIN
     if env := _env("VAULT_ROOT"):
         raiz = Path(env).resolve()
-        _VAULT_ROOT_ORIGIN = "env" if raiz.is_dir() else "env_inexistente"
+        _VAULT_ROOT_ORIGIN = (
+            ("env_repo_del_estandar" if es_repo_del_estandar(raiz) else "env")
+            if raiz.is_dir() else "env_inexistente"
+        )
         return raiz
     # v41.15 — el vault donde esta el cliente, y el puntero del repositorio.
     # Las reglas de antes estan ancladas en el directorio del programa, que con
@@ -202,7 +238,9 @@ def _detect_vault_root() -> Path:
             marcadores = sum(1 for m in _VAULT_MARKERS if (candidato / m).exists())
         except OSError:
             continue
-        if marcadores >= 2:
+        # El repo del estándar acumula `00_System/` y `99_Index/` sueltos de
+        # corridas viejas: dos marcadores no lo convierten en vault (A-11).
+        if marcadores >= 2 and not es_repo_del_estandar(candidato):
             _VAULT_ROOT_ORIGIN = "client_cwd"
             return candidato
 
@@ -267,8 +305,7 @@ def _detect_vault_root() -> Path:
     # presence alone must NOT qualify project_root as a vault — that creates a
     # self-reinforcing loop where one stray write makes the repo root the vault
     # forever. Require at least one CONTENT marker authored by a human/init.
-    _CONTENT_MARKERS = {"01_Projects", "02_Observability", "03_Decisions", ".obsidian"}
-    has_content = any((project_root / m).exists() for m in _CONTENT_MARKERS)
+    has_content = any((project_root / m).exists() for m in MARCADORES_DE_CONTENIDO)
     if marker_count >= 2 and has_content:
         _VAULT_ROOT_ORIGIN = "scripts_inside_vault"
         return project_root
@@ -314,7 +351,7 @@ _ORIGEN_DETECTADO: str = _VAULT_ROOT_ORIGIN
 def vault_root_origin() -> str:
     """Qué regla de _detect_vault_root() eligió VAULT_ROOT.
 
-    Valores: env | env_inexistente | sibling_vault_dir |
+    Valores: env | env_inexistente | env_repo_del_estandar | sibling_vault_dir |
     sibling_vault_dir_fresh | scripts_inside_vault | spec_repo_sandbox |
     repo_root_fallback | explicit_override.
 
@@ -343,6 +380,15 @@ def raiz_es_el_programa() -> bool:
             and es_paquete_python(VAULT_ROOT))
 
 
+def raiz_es_el_estandar() -> bool:
+    """La raíz activa —detectada o fijada con `--root`— es el repo del estándar.
+
+    A diferencia de `raiz_es_el_programa()`, un override no la exime: la regla
+    1 de AGENTS.md prohíbe ejecutar contra la raíz del repo por cualquier vía.
+    """
+    return es_repo_del_estandar(get_vault_root())
+
+
 def _raiz_env_ya_existe() -> bool:
     """`env_inexistente` se reevalúa: el origen se fija al importar.
 
@@ -354,6 +400,11 @@ def _raiz_env_ya_existe() -> bool:
 
 def vault_root_is_confident() -> bool:
     """False cuando VAULT_ROOT es una suposición, no un vault identificado."""
+    if raiz_es_el_estandar():
+        return False
+    if _VAULT_ROOT_ORIGIN == "env_repo_del_estandar":
+        # La variable apuntaba al repo, pero un override ya dijo otro vault.
+        return _ACTIVE_VAULT_ROOT is not None
     if _VAULT_ROOT_ORIGIN == "env_inexistente":
         # Un override explícito ya dice cuál es el vault; la variable rota
         # que se vio al importar deja de importar.

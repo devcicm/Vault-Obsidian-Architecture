@@ -40,8 +40,8 @@ if str(_REPO_ROOT) not in sys.path:
 # La configuración se lee del registro único, no con un default por punto
 # de uso. Ver `vault_entorno.py`.
 from vault_entorno import leer as _env
-from vault_raiz import (RaizNoIdentificada, client_cwd, get_vault_root, raiz_es_el_programa,
-                        vault_root_origin)
+from vault_raiz import (RaizNoIdentificada, client_cwd, get_vault_root, raiz_es_el_estandar,
+                        raiz_es_el_programa, vault_root_origin)
 from typing import Any, Callable, Dict, List, Optional
 
 from vault_errors_catalog import (
@@ -449,6 +449,33 @@ def _rechazo_por_raiz_del_programa(tool_name: str) -> Optional[Dict[str, Any]]:
     )
 
 
+def _rechazo_por_raiz_del_estandar(tool_name: str) -> Optional[Dict[str, Any]]:
+    """A-11: la raíz activa es el repo del estándar; no se ejecuta nada.
+
+    Medido el 2026-10-30: con `VAULT_ROOT=<repo>` el origen salía `env`,
+    confiado, y `vault_audit` corría y dejaba la traza en `00_System/` de la
+    raíz, que la regla 1 de AGENTS.md reserva. Se rechaza aquí, antes de la
+    traza, por la misma razón que `_rechazo_por_raiz_inexistente`. El criterio
+    es de `vault_raiz.es_repo_del_estandar`. `--root` se deja pasar porque la
+    tool lo fija antes de leer, y si apunta al repo `escritura_admitida`
+    rechaza la escritura. `VAULT_PERMISSIVE_ROOT=1` conserva lo anterior.
+    """
+    if not raiz_es_el_estandar() or _env("VAULT_PERMISSIVE_ROOT"):
+        return None
+    if any(a.split("=", 1)[0] in _ARGUMENTOS_SIN_RAIZ for a in sys.argv[1:]):
+        return None
+    return construir_error(
+        tool_name, "VAULT_NOT_FOUND",
+        "La raíz activa es el repositorio del estándar, no un vault: la regla 1 "
+        "de AGENTS.md reserva la ejecución a vault-sandbox/ o a un vault real. "
+        "No se ejecuta nada.",
+        pista=(
+            "Quitar VAULT_ROOT (en el repo del estándar la autodetección resuelve "
+            "vault-sandbox/) o apuntarla a vault-sandbox/ o a un vault real."
+        ),
+    )
+
+
 class _ArgumentosRechazados(SystemExit):
     """argparse rechazó la línea de órdenes antes de que la tool hiciera nada.
 
@@ -482,7 +509,9 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
     """
     limit = timeout if timeout is not None else TOOL_TIMEOUT_SECONDS
 
-    rechazo = _rechazo_por_raiz_inexistente(tool_name) or _rechazo_por_raiz_del_programa(tool_name)
+    rechazo = (_rechazo_por_raiz_inexistente(tool_name)
+               or _rechazo_por_raiz_del_programa(tool_name)
+               or _rechazo_por_raiz_del_estandar(tool_name))
     if rechazo is not None:
         _write_output(json.dumps(rechazo, ensure_ascii=False), sys.stdout)
         return 1

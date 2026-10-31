@@ -327,6 +327,12 @@ def _rechazar_raiz_insegura(path: Path) -> None:
             "ahí crearía un vault fantasma. Revisa la variable (¿está sin "
             "expandir?) o crea el directorio y ejecuta vault_init."
         )
+    if _raiz.raiz_es_el_estandar():
+        raise RaizNoIdentificada(
+            f"La raíz activa '{raiz}' es el repositorio del estándar, no un vault "
+            "(regla 1 de AGENTS.md, A-11). Apunta --root o VAULT_ROOT a "
+            "vault-sandbox/ o a un vault real."
+        )
     # La salida era «o crea un directorio 'vault-<nombre>/'»: con la wheel
     # instalada eso es junto al toolkit, dentro de site-packages (medido como
     # consumidor, 2026-10-10). La receta que vale en los dos casos es VAULT_ROOT.

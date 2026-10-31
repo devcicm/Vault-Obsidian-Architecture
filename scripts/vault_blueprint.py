@@ -125,21 +125,29 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     },
     {
         "id": "raiz_explicita_apunta_al_repo",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "v41.25",
         "sostenida_por": [
-            cita_repo(rutas.TESTS, "test_a11_raiz_explicita_en_el_repo.py::test_limite_declarado_raiz_explicita_en_el_repo_no_se_rechaza"),
+            cita_repo(rutas.TESTS, "test_a11_raiz_explicita_en_el_repo.py::test_raiz_explicita_en_el_repo_se_rechaza_antes_de_ejecutar"),
+            cita_repo(rutas.TESTS, "test_a11_raiz_explicita_en_el_repo.py::test_un_vault_que_guarda_el_manifiesto_sigue_siendo_vault"),
+            cita_repo(rutas.TESTS, "test_a11_raiz_explicita_en_el_repo.py::test_root_explicito_al_repo_no_es_confiado"),
         ],
         "desde": "v41.25",
         "capa": "5",
         "que": (
-            "A-11 del estudio vault-dev-codex: `escritura_admitida` admite toda "
+            "A-11 del estudio vault-dev-codex: `escritura_admitida` admitia toda "
             "raiz explicita, tambien el propio repo del estandar, que la regla 1 "
-            "prohibe. Ninguna puerta lo impide."
+            "prohibe. Con `VAULT_ROOT=<repo>` `vault_audit` corria y dejaba la "
+            "traza en el `00_System/` de la raiz. `vault_raiz.es_repo_del_estandar` "
+            "(manifiesto + `vault/kernel/`, sin contenido de vault) es el dueno: el "
+            "origen pasa a `env_repo_del_estandar`, `wrap_main` no ejecuta nada y "
+            "un `--root` al repo deja de ser confiado."
         ),
         "por_que_no_ahora": (
-            "Rechazarlo rompe la suite, que fija VAULT_ROOT explicito en cientos de "
-            "tests, y los consumidores que sincronizan el repo. Pide decidir antes "
-            "como distinguir el repo del estandar de un vault de usuario."
+            "No es una deuda viva: esta saldada. El miedo que la aplazaba —que la "
+            "suite fija VAULT_ROOT explicito en cientos de tests— se midio y no era "
+            "cierto: solo el propio test de A-11 apuntaba al repo. La firma doble "
+            "evita confundir con el repo un vault consumidor que guarda el manifiesto."
         ),
     },
     {

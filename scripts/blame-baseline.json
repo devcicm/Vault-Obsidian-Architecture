@@ -37,7 +37,7 @@
     },
     {
       "firma": "vault_errors.py::wrap_main._target::a36080b0",
-      "visto_en": "vault_errors.py:548"
+      "visto_en": "vault_errors.py:577"
     },
     {
       "firma": "vault_errors_trace.py::_count_tokens::a36080b0",
@@ -61,7 +61,7 @@
     },
     {
       "firma": "vault_io.py::_auto_tag_ledger::a36080b0",
-      "visto_en": "vault_io.py:881"
+      "visto_en": "vault_io.py:887"
     },
     {
       "firma": "vault_io.py::_registrar_escaner_degradado::a36080b0",
@@ -69,11 +69,11 @@
     },
     {
       "firma": "vault_io.py::atomic_write_text::a36080b0",
-      "visto_en": "vault_io.py:505"
+      "visto_en": "vault_io.py:511"
     },
     {
       "firma": "vault_io.py::update_section_index::a36080b0",
-      "visto_en": "vault_io.py:1092"
+      "visto_en": "vault_io.py:1098"
     },
     {
       "firma": "vault_quality_check.py::_compute_ap18::6f345a10",
