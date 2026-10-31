@@ -20,7 +20,6 @@ from pathlib import Path
 import pytest
 
 from sandbox_fixture import copiar_vault
-pytestmark = pytest.mark.slow  # carril rápido (-m "not slow"): el perfil de la suite del 2026-10-20 midió aquí llamadas > 25 s
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent

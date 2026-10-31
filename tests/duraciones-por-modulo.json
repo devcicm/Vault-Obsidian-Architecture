@@ -1,5 +1,5 @@
 {
-  "_fuente": "suite local 2026-10-28, pytest -n auto, Linux 4 nucleos; solo equilibra el reparto, no decide que se ejecuta. Completado el 2026-10-28 con la medida de los dos modulos que faltaban (test_reparto, test_latencia_primitivas).",
+  "_fuente": "suite local 2026-10-28, pytest -n auto, Linux 4 nucleos; equilibra el reparto y, desde v41.26, decide `slow` (vault/meta_toolkit/perfil_suite.py). Completado el 2026-10-28 con la medida de los dos modulos que faltaban (test_reparto, test_latencia_primitivas).",
   "segundos_por_modulo": {
     "test_afirmaciones_y_presupuesto": 1.0,
     "test_agente_por_defecto": 2.3,

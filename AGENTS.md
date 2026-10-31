@@ -12,7 +12,7 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~12.000 líneas). Fuente normativa. |
 | `scripts/*.py` | ~168 scripts, 127 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (6686 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (6701 tests). Toda norma con guard debe tener test. |
 | `normas/` | Normas como paquete (`normas/<código>/`: `norma.py`, `porque.md`, `guard.py`, `heal.py`, `test_*.py`). Las carga `vault_norms_catalog` en su sitio del catálogo; la forma la vigila `--check-framework`. Desde m186 toda norma vive aquí (cuántas, `NORMAS_EN_PAQUETE`). `guard.py`/`heal.py` son derivados —apuntan a la función dueña; los sanadores salen de `vault_norms_catalog.SANADORES`— y se regeneran con `vault_norms_engine.escribir_caras_derivadas`, no a mano. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
@@ -149,8 +149,11 @@ python scripts/vault_gate.py --strict --nivel rapida
 # paralelo (AP-44: un rojo de la corrida no es real hasta que la serie lo dice).
 python -m pytest tests/ -q -n 4 --tb=short -p no:cacheprovider
 
-# Para iterar dentro de un módulo: los módulos que el perfil midió con
-# llamadas > 25 s quedan fuera. NO sustituye a ningún carril.
+# Para iterar: fuera los módulos que el perfil mide como lentos (los marca el
+# conftest; `python -m vault.meta_toolkit.perfil_suite` los lista y
+# `--refrescar` los vuelve a medir tras una corrida de merge). El carril `dev`
+# ya los saca de su lista salvo el test que el cambio edita, y los nombra.
+# NO sustituye a ningún carril.
 python -m pytest tests/ -q -n 4 -m "not slow" --tb=short
 
 # La casa de los vaults: donde viven, con su propio git

@@ -22,6 +22,11 @@ def agregar(reportes: Iterable[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Reportes por fase (`nodeid`, `worker`, `start`, `stop`, `duration`) -> un span por módulo."""
     por_modulo: Dict[Any, Dict[str, Any]] = {}
     for r in reportes:
+        # El reporte que xdist fabrica cuando un worker muere no se cronometró:
+        # llega con `start` y `stop` a 0. Sumarlo hacía `min(inicio)` = 0 y el
+        # reloj salía en segundos desde 1970 (medido 2026-10-31, gw0 caído).
+        if r["stop"] <= 0 or r["stop"] < r["start"]:
+            continue
         # xdist reparte los tests de un módulo entre workers: un span por módulo y worker.
         s = por_modulo.setdefault((modulo_de(r["nodeid"]), r["worker"]), {
             "modulo": modulo_de(r["nodeid"]), "worker": r["worker"],

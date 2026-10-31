@@ -39,3 +39,12 @@ def test_indicadores_miden_reloj_coste_y_desbalance():
 
 def test_sin_spans_no_hay_indicadores():
     assert spans.indicadores([]) == {}
+
+
+def test_el_reporte_de_un_worker_caido_no_envenena_el_reloj():
+    reportes = [_r("tests/test_a.py::t1", "gw0", 1000, 1004),
+                _r("tests/test_a.py::t2", "gw0", 0, 0),          # crash: sin cronometrar
+                _r("tests/test_b.py::t1", "gw1", 1000, 1006)]
+    ind = spans.indicadores(spans.agregar(reportes))
+    assert ind["reloj_s"] == 6 and ind["trabajo_s"] == 10
+

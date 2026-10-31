@@ -35,7 +35,6 @@ import vault_compact_contracts as vcc  # noqa: E402
 import vault_io  # noqa: E402
 import vault_manifest  # noqa: E402
 import vault_standard_upgrade as vsu  # noqa: E402
-pytestmark = pytest.mark.slow  # carril rápido (-m "not slow"): el perfil de la suite del 2026-10-20 midió aquí llamadas > 25 s
 
 
 VIGENTE = vsu.CURRENT_VERSION

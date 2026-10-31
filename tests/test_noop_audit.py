@@ -50,7 +50,6 @@ from vault_norms import NORM_CATALOG  # noqa: E402
 #: durante ~40 min (hipotesis, sin medir); por eso el verde canonico sigue
 #: siendo en serie o con `-n 4`, y las mitades con `-n auto` valen como
 #: carril intermedio.
-pytestmark = pytest.mark.slow
 
 
 # ─── La norma existe en el registro canónico ─────────────────────────────────

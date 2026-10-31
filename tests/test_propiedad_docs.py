@@ -24,6 +24,7 @@ DERIVADOS = {
     "docs/ARQUITECTURA.md", "docs/BLUEPRINT.md", "docs/PUERTAS.md",
     "docs/METRICAS.md", "docs/GOBIERNO.md", "docs/GUIA-DE-PRODUCCION.md",
     "docs/SKILLS.md", "docs/DISPONIBILIDAD-DE-TOOLS.md", "docs/ENTORNO.md",
+    "docs/CARRILES.md",
 }
 REGISTROS = ("auditorias", "archivo", "adr", "sdd", "contrastes",
              "product/baseline-report.md")

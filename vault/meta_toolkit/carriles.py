@@ -30,6 +30,8 @@ checklist de puertas sale de `vault_gate.PUERTAS`.
 
 from typing import Any, Dict, Tuple
 
+from vault.kernel import rutas
+
 #: Workers de pytest en los carriles que corren tests. `-n auto` mata a un
 #: worker (gw1) en la máquina de desarrollo; `-n 4`, la serie y las mitades
 #: pasan. Un solo número para el subconjunto y para la suite entera.
@@ -48,11 +50,12 @@ CARRILES: Dict[str, Dict[str, Any]] = {
         "donde": "local",
         "presupuesto_s": 120,
         "pasos": [
-            {"que": "tests que alcanzan a lo que se va a commitear (cae a la suite "
-                    "entera si no hay subconjunto honesto, y lo dice)",
-             "argv": ("scripts/vault_test_scope.py", "--changed", "--correr")},
+            {"que": "tests que alcanzan a lo que se va a commitear, sin los módulos "
+                    "lentos del perfil salvo el test editado (cae a la suite entera "
+                    "si no hay subconjunto honesto, y lo dice)",
+             "argv": (rutas.cita_repo(rutas.SCRIPTS, "vault_test_scope.py"), "--changed", "--correr")},
             {"que": "puertas de nivel rapida",
-             "argv": ("scripts/vault_gate.py", "--strict", "--nivel", "rapida")},
+             "argv": (rutas.cita_repo(rutas.SCRIPTS, "vault_gate.py"), "--strict", "--nivel", "rapida")},
         ],
     },
     "merge": {
@@ -63,7 +66,7 @@ CARRILES: Dict[str, Dict[str, Any]] = {
         "presupuesto": "el de vault_metricas: puertas_duracion_s + suite_duracion_s",
         "pasos": [
             {"que": "todas las puertas",
-             "argv": ("scripts/vault_gate.py", "--strict", "--nivel", "todas")},
+             "argv": (rutas.cita_repo(rutas.SCRIPTS, "vault_gate.py"), "--strict", "--nivel", "todas")},
             {"que": "la suite completa", "argv": SUITE_COMPLETA},
         ],
     },
@@ -79,9 +82,9 @@ CARRILES: Dict[str, Dict[str, Any]] = {
                     "audits/fase2/CANDIDATO-RELEASE.yaml",
              "argv": None},
             {"que": "puertas de producto sobre la wheel instalada",
-             "argv": ("tests/run_product_gates.py",)},
+             "argv": (rutas.cita_repo(rutas.TESTS, "run_product_gates.py"),)},
             {"que": "SBOM e inventario de licencias",
-             "argv": ("empaquetado/sbom.py", "--inventario")},
+             "argv": (rutas.cita_repo(rutas.EMPAQUETADO, "sbom.py"), "--inventario")},
             {"que": "recibos del colector QG sobre el product_sha",
              "argv": ("audits/fase2/colector_qg.py", "--sha", "<product_sha>",
                       "--ejecutar", "--recibos", "qg-recibos", "--json",

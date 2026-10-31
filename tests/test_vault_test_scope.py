@@ -10,6 +10,7 @@ ficheros del catálogo no sea vacío.
 from __future__ import annotations
 
 import sys
+import textwrap
 from pathlib import Path
 
 import pytest
@@ -212,6 +213,29 @@ def test_un_texto_que_nadie_lee_no_fuerza_merge(tmp_path):
     assert d["carril"] == "dev" and d["sin_lector"] == ["notas/suelta.md"]
 
 
+def test_dev_saca_los_lentos_y_los_nombra(tmp_path):
+    mapa = scope.construir_mapa(_repo_con_lectores(tmp_path))
+    d = scope.decidir(["scripts/vault_a.py"], mapa, lentos={"test_importa_a": 40.0})
+    assert "tests/test_importa_a.py" not in d["tests"]
+    assert d["lentos_fuera"] == {"tests/test_importa_a.py": 40.0}
+    assert "tests/test_importa_a.py" not in scope.comando(d)
+
+
+def test_el_test_que_el_cambio_edita_no_sale_aunque_sea_lento(tmp_path):
+    """Sacar lo que se está tocando sería seleccionar de menos en silencio."""
+    mapa = scope.construir_mapa(_repo_con_lectores(tmp_path))
+    d = scope.decidir(["scripts/vault_a.py", "tests/test_importa_a.py"], mapa,
+                      lentos={"test_importa_a": 40.0})
+    assert "tests/test_importa_a.py" in d["tests"] and d["lentos_fuera"] == {}
+
+
+def test_en_merge_no_sale_ningun_lento(tmp_path):
+    mapa = scope.construir_mapa(_repo_con_lectores(tmp_path))
+    d = scope.decidir(["scripts/vault_a.py", "tests/conftest.py"], mapa,
+                      lentos={"test_importa_a": 40.0})
+    assert d["carril"] == "merge" and d["lentos_fuera"] == {}
+
+
 def test_el_comando_usa_los_workers_que_no_matan_a_gw1(tmp_path):
     mapa = scope.construir_mapa(_repo_con_lectores(tmp_path))
     cmd = scope.comando(scope.decidir(["scripts/vault_a.py"], mapa))
@@ -243,3 +267,52 @@ def test_git_se_lanza_por_su_dueno():
     texto = (REPO / "vault" / "meta_toolkit" / "test_scope.py").read_text(encoding="utf-8")
     assert "ejecutar_git(" in texto
     assert '["git"' not in texto
+
+
+# ── Barridos: los tests que recorren el repo y el mapa no alcanza (v41.26) ─────
+
+_BARRIDO = textwrap.dedent("""
+    from pathlib import Path
+    RAIZ = Path(__file__).resolve().parent.parent
+
+    def test_barre_el_repo():
+        assert list(RAIZ.rglob("*.py"))
+
+    def test_lo_suyo_no_es_el_repo(tmp_path):
+        assert not list(tmp_path.glob("*.md"))
+    """)
+
+
+def _repo_con_barrido(tmp_path: Path) -> Path:
+    root = _repo_con_lectores(tmp_path)
+    (root / "tests" / "test_barre.py").write_text(_BARRIDO, encoding="utf-8")
+    return root
+
+
+def test_un_barrido_del_repo_se_deriva_por_su_receptor(tmp_path):
+    """`tmp_path.glob("*.md")` no es el repo: solo cuenta el receptor que nombra la raíz."""
+    mapa = scope.construir_mapa(_repo_con_barrido(tmp_path))
+    assert mapa["barridos"] == {"tests/test_barre.py": [".py"]}
+
+
+def test_dev_mete_el_barrido_del_sufijo_que_cambia(tmp_path):
+    """Lo que vieron solo en merge test_rutas_repo y test_piso_python (2026-10-31)."""
+    mapa = scope.construir_mapa(_repo_con_barrido(tmp_path))
+    d = scope.decidir(["scripts/vault_a.py"], mapa)
+    assert d["carril"] == "dev" and "tests/test_barre.py" in d["tests"]
+    assert d["barridos"] == ["tests/test_barre.py"]
+    assert scope.decidir(["GUIA.md"], mapa)["barridos"] == []
+
+
+def test_un_barrido_lento_sale_como_cualquier_lento(tmp_path):
+    mapa = scope.construir_mapa(_repo_con_barrido(tmp_path))
+    d = scope.decidir(["scripts/vault_a.py"], mapa, lentos={"test_barre": 30.0})
+    assert d["barridos"] == [] and d["lentos_fuera"]["tests/test_barre.py"] == 30.0
+
+
+def test_los_barridos_reales_incluyen_los_que_fallaron_solo_en_merge():
+    barridos = scope.construir_mapa(REPO)["barridos"]
+    for fichero in ("tests/test_rutas_repo.py", "tests/test_piso_python.py"):
+        assert ".py" in barridos[fichero]
+    assert ".md" in barridos["tests/test_propiedad_docs.py"]
+

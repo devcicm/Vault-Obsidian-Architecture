@@ -23,9 +23,6 @@ sys.path.insert(0, str(ROOT))
 from vault.kernel.errores import ERROR_CATALOG  # noqa: E402
 import pytest
 
-pytestmark = pytest.mark.slow  # carril rápido (-m "not slow"): el perfil de la suite del 2026-10-20 midió aquí llamadas > 25 s
-
-
 
 def _tool(raiz: Path, script: str, *argv: str):
     env = dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",

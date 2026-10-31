@@ -72,7 +72,9 @@ def test_hook_resuelve_checkout_convencional_y_worktree(tmp_path):
             )
             calls = [line.split("|", 1) for line in
                      probe.read_text(encoding="utf-8").splitlines()]
-            assert len(calls) == 2
+            # Una sola corrida: desde v41.26 el hook ya no lanza el `--dry-run`
+            # previo, que no decidía nada que la corrida real no decidiera.
+            assert len(calls) == 1
             assert all(Path(root).resolve() == checkout.resolve() for root, _ in calls)
             assert all(prefix == "" for _, prefix in calls)
             assert not subprocess.run(

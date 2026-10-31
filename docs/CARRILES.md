@@ -12,7 +12,7 @@
 
 ## `dev`
 
-1. tests que alcanzan a lo que se va a commitear (cae a la suite entera si no hay subconjunto honesto, y lo dice): `python scripts/vault_test_scope.py --changed --correr`
+1. tests que alcanzan a lo que se va a commitear, sin los módulos lentos del perfil salvo el test editado (cae a la suite entera si no hay subconjunto honesto, y lo dice): `python scripts/vault_test_scope.py --changed --correr`
 2. puertas de nivel rapida: `python scripts/vault_gate.py --strict --nivel rapida`
 
 Puertas del nivel `rapida` (25): `framework`, `catalogo`, `contratos`, `conteos`, `doc_sync`, `blame`, `contrato_error`, `campos`, `changelog`, `arquitectura`, `servicio`, `blueprint`, `norms_coherence`, `criterios`, `fuente_unica`, `ciclos`, `clones`, `kernel`, `excepcion_declarada`, `recursos`, `procesos_git`, `produccion`, `esquemas`, `metricas`, `doc_staleness`.

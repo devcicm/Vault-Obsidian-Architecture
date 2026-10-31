@@ -42,6 +42,27 @@ solo tests, devuelve un **carril** (`vault.meta_toolkit.carriles`), y manda a
 - código que el mapa no alcanza (un `.py` o `.mjs` nuevo o borrado que nadie
   nombra): no hay criterio para decir qué tests lo ejercitan.
 
+## Los módulos lentos (v41.26)
+
+El carril `dev` saca de su lista los módulos que el perfil mide como `slow`
+(`vault.meta_toolkit.perfil_suite`) y los publica en `lentos_fuera`, con sus
+segundos. Un fichero de test que el propio cambio edita no sale nunca: es lo
+que se está tocando. `--con-lentos` los vuelve a meter. Lo que `dev` deja
+fuera lo corre `merge`; el carril no rebaja al siguiente.
+
+## Los barridos del repo (v41.26)
+
+Un test que recorre un directorio del repo (`RAIZ.rglob("*.py")`) no importa
+ni nombra el fichero que juzga, así que el mapa no lo alcanza nunca: los dos
+primeros commits del carril `dev` pasaron en verde con regresiones que solo
+vieron `test_rutas_repo`, `test_piso_python` y `test_propiedad_docs` en
+`merge`. Desde v41.26 `barridos()` los deriva por AST —un `.glob`/`.rglob` con
+patrón de sufijo sobre un receptor que nombra la raíz del repo (`RAICES_DEL_REPO`)—
+y `decidir` mete en `dev` cada barrido cuyo sufijo cambia, publicado en
+`barridos`. Los lentos siguen saliendo como cualquier otro. Lo que no ve: un
+receptor en minúsculas (`root / zona`, `raiz`), que es el mismo nombre que usa
+un `tmp_path`; esos los sigue juzgando `merge`.
+
 Un fichero de texto que nadie nombra **no** fuerza `merge`: sale en
 `sin_lector`. Lo que lo recorre por directorio lo vigilan las puertas
 rápidas (`vault_doc_counts`, `vault_doc_sync`), que el carril `dev` corre.
@@ -75,12 +96,14 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 from vault.kernel.procesos_git import ejecutar_git
+from vault.meta_toolkit import perfil_suite
 from vault.meta_toolkit.carriles import SUITE_COMPLETA
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -92,6 +115,8 @@ CONFIGURACION_DE_LA_SUITE = ("pyproject.toml", "pytest.ini", "setup.cfg", "tox.i
 SUFIJOS_DE_CODIGO = (".py", ".mjs", ".js", ".cjs")
 #: Bordes que se recortan de un token de literal antes de buscarlo como ruta.
 _BORDES = "`'\"()[]{}<>,;"
+#: Nombres con los que un test llama a la raíz del repo (o a un directorio suyo).
+RAICES_DEL_REPO = re.compile(r"\b(?:ROOT|RAIZ|REPO_ROOT|REPO|RAIZ_REPO|DOCS|SCRIPTS)\b")
 
 
 def _resolve_module(nombre: str, desde: Path, repo_root: Path) -> Optional[Path]:
@@ -223,7 +248,37 @@ def construir_mapa(repo_root: Path = REPO_ROOT) -> Dict[str, Any]:
                 token = token.strip(_BORDES)
                 if "." in token:
                     nombrados.setdefault(token, set()).add(clave)
-    return {"ficheros": ficheros, "edges": edges, "nombrados": nombrados}
+    return {"ficheros": ficheros, "edges": edges, "nombrados": nombrados,
+            "barridos": barridos(ficheros)}
+
+
+def _sufijos_barridos(path: Path) -> Set[str]:
+    """Sufijos que el test recorre sobre un directorio del repo (vacío si ninguno)."""
+    try:
+        arbol = ast.parse(path.read_text(encoding="utf-8"))
+    except (OSError, SyntaxError, UnicodeDecodeError, ValueError):
+        return set()
+    sufijos: Set[str] = set()
+    for n in ast.walk(arbol):
+        if (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+                and n.func.attr in ("glob", "rglob") and n.args
+                and isinstance(n.args[0], ast.Constant) and isinstance(n.args[0].value, str)
+                and RAICES_DEL_REPO.search(ast.unparse(n.func.value))):
+            sufijo = Path(n.args[0].value).suffix
+            if sufijo:
+                sufijos.add(sufijo)
+    return sufijos
+
+
+def barridos(ficheros: Dict[str, Path]) -> Dict[str, List[str]]:
+    """Fichero de test -> sufijos que barre en el repo: tests que el mapa no alcanza."""
+    fuera: Dict[str, List[str]] = {}
+    for clave, path in ficheros.items():
+        if _es_test(clave):
+            sufijos = _sufijos_barridos(Path(path))
+            if sufijos:
+                fuera[clave] = sorted(sufijos)
+    return fuera
 
 
 def lectores(ruta: str, mapa: Dict[str, Any]) -> Set[str]:
@@ -352,11 +407,15 @@ def _motivo_de_merge(f: str, mapa: Dict[str, Any], kernel: Set[str]) -> Optional
 
 
 def decidir(cambiados: Iterable[str], mapa: Dict[str, Any],
-            profundidad: Optional[int] = 2) -> Dict[str, Any]:
+            profundidad: Optional[int] = 2,
+            lentos: Optional[Dict[str, float]] = None) -> Dict[str, Any]:
     """El carril que pide el cambio y, si es `dev`, sus tests.
 
     `merge` no es un fallo del selector: es el selector diciendo que para este
     cambio no hay subconjunto honesto, en vez de devolver uno.
+
+    `lentos` (módulo -> segundos) saca esos módulos de la lista, salvo los que
+    el cambio edita, y los publica en `lentos_fuera`. Sin él no sale ninguno.
     """
     cambiados = sorted(set(cambiados))
     kernel = _modulos_del_kernel()
@@ -365,9 +424,20 @@ def decidir(cambiados: Iterable[str], mapa: Dict[str, Any],
     sin_lector = [f for f in cambiados
                   if f not in mapa["edges"] and not f.endswith(SUFIJOS_DE_CODIGO)
                   and not lectores(f, mapa)]
+    alcanzados = alcance(cambiados, mapa, profundidad)
+    barren = sorted(t for t, sufijos in mapa.get("barridos", {}).items()
+                    if t not in alcanzados
+                    and any(f.endswith(tuple(sufijos)) for f in cambiados))
+    tests = sorted(set(alcanzados) | set(barren))
+    editados = set(cambiados)
+    fuera = {t: lentos[Path(t).stem] for t in tests
+             if lentos and not motivos and Path(t).stem in lentos
+             and t not in editados}
     return {
         "carril": "merge" if motivos else "dev",
-        "tests": alcance(cambiados, mapa, profundidad),
+        "tests": [t for t in tests if t not in fuera],
+        "lentos_fuera": dict(sorted(fuera.items(), key=lambda kv: (-kv[1], kv[0]))),
+        "barridos": [t for t in barren if t not in fuera],
         "motivos_merge": motivos,
         "sin_lector": sin_lector,
     }
@@ -407,6 +477,8 @@ def main() -> int:
     parser.add_argument("--depth", type=int, default=2,
                         help="saltos inversos que se recorren (default 2: tests que "
                              "tocan el fichero + tests de sus dependientes directos)")
+    parser.add_argument("--con-lentos", action="store_true",
+                        help="no saca del carril dev los módulos que el perfil mide como slow")
     parser.add_argument("--json", action="store_true", help="salida JSON")
     parser.add_argument("--correr", action="store_true",
                         help="ejecuta el pytest del carril decidido (en `merge`, la suite "
@@ -434,7 +506,8 @@ def main() -> int:
         objetivos.extend(cambios(base))
 
     mapa = construir_mapa()
-    decision = decidir(objetivos, mapa, args.depth)
+    decision = decidir(objetivos, mapa, args.depth,
+                       None if args.con_lentos else perfil_suite.lentos())
     command = comando(decision)
     tests = decision["tests"]
     datos = {
@@ -444,6 +517,8 @@ def main() -> int:
         "sin_lector": decision["sin_lector"],
         "tests": tests,
         "n": len(tests),
+        "lentos_fuera": decision["lentos_fuera"],
+        "barridos": decision["barridos"],
         "command": " ".join(command),
         "objetivos": sorted(set(objetivos)),
         "hint": ("carril merge = este cambio no tiene subconjunto honesto (ver "
@@ -459,6 +534,11 @@ def main() -> int:
             print(f"  merge por {m['motivo']}: {m['fichero']}")
         if decision["carril"] == "dev" and not tests:
             print("(sin tests directos)")
+        fuera = decision["lentos_fuera"]
+        if decision["carril"] == "dev" and fuera:
+            print(f"  fuera por lentos ({len(fuera)} módulos, "
+                  f"{sum(fuera.values()):.0f} s medidos; los corre merge, "
+                  f"--con-lentos los mete): {', '.join(Path(t).stem for t in fuera)}")
     if not args.correr or (decision["carril"] == "dev" and not tests):
         return 0
     sys.stdout.flush()

@@ -9,18 +9,20 @@ Reglas:
   construyen una vez por trozo y no una vez por test repartido.
 - Cada módulo cae en exactamente un trozo (`tests/test_reparto.py` lo fija):
   la unión de los `n` trozos es la suite completa.
-- El equilibrio usa `tests/duraciones-por-modulo.json` (segundos medidos). Un
-  módulo que no está ahí pesa la mediana. Un dato viejo solo empeora el
-  equilibrio; nunca saca un test de la corrida.
+- El equilibrio usa `tests/duraciones-por-modulo.json` (segundos medidos), que
+  lee su dueño, `vault.meta_toolkit.perfil_suite` (v41.26: el mismo perfil
+  decide `slow`). Un módulo que no está ahí pesa la mediana. Un dato viejo solo
+  empeora el equilibrio; nunca saca un test de la corrida.
 """
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from statistics import median
 from typing import Dict, Iterable, Optional, Tuple
 
-DURACIONES = Path(__file__).resolve().parent / "duraciones-por-modulo.json"
+from vault.meta_toolkit import perfil_suite
+
+DURACIONES = perfil_suite.DURACIONES
 
 
 def leer_shard(valor: Optional[str]) -> Optional[Tuple[int, int]]:
@@ -35,11 +37,7 @@ def leer_shard(valor: Optional[str]) -> Optional[Tuple[int, int]]:
 
 
 def _pesos() -> Dict[str, float]:
-    try:
-        datos = json.loads(DURACIONES.read_text(encoding="utf-8"))
-        return {k: float(v) for k, v in datos["segundos_por_modulo"].items()}
-    except (OSError, ValueError, KeyError, TypeError):
-        return {}
+    return perfil_suite.pesos(DURACIONES)
 
 
 def repartir(modulos: Iterable[str], total: int) -> Dict[str, int]:

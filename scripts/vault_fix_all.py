@@ -71,9 +71,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from vault_errors import emit_error
 from vault_subproceso import ejecutar
 
-from vault.kernel import procesos_git
+from vault.kernel import procesos_git, rutas
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+
+
+def _carpeta(nombre: str) -> str:
+    """El prefijo `scripts/` de un directorio del layout, pedido a su dueño."""
+    return rutas.cita_repo(nombre, "")
+
 
 #: Cada paso es (nombre, [argv]). La lista de argv se une al intérprete actual
 #: y al script que lo ejecuta: `[sys.executable, str(SCRIPTS_DIR / script), *args]`.
@@ -83,48 +89,50 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 PASOS: List[Dict[str, Any]] = [
     {
         "nombre": "tools_catalog",
-        "insumos": ("scripts/", "vault/", "cli/", "mcp/", "vault_toolkit/"),
-        "salidas": ("mcp/nodejs/tools-catalog.json", "vault/meta_toolkit/tools-catalog.json"),
+        "insumos": (_carpeta(rutas.SCRIPTS), "vault/", _carpeta(rutas.CLI),
+                    _carpeta(rutas.MCP), "vault_toolkit/"),
+        "salidas": (rutas.cita_repo(rutas.MCP, "nodejs/tools-catalog.json"),
+                    "vault/meta_toolkit/tools-catalog.json"),
         "script": "vault_mcp_catalog.py",
         "args": ["--sync"],
         "por_que": "regenera tools-catalog.json desde el catálogo Python",
     },
     {
         "nombre": "env_table",
-        "insumos": ("scripts/", "vault/", "mcp/"),
-        "salidas": ("mcp/nodejs/env-table.json",),
+        "insumos": (_carpeta(rutas.SCRIPTS), "vault/", _carpeta(rutas.MCP)),
+        "salidas": (rutas.cita_repo(rutas.MCP, "nodejs/env-table.json"),),
         "script": "vault_arch.py",
         "args": ["--sync-env"],
         "por_que": "regenera env-table.json desde vault_entorno",
     },
     {
         "nombre": "field_compat",
-        "insumos": ("scripts/", "vault/", "vault-sandbox/00_System/"),
-        "salidas": ("scripts/field-compat-baseline.json",),
+        "insumos": (_carpeta(rutas.SCRIPTS), "vault/", rutas.cita_repo(rutas.SANDBOX, "00_System/")),
+        "salidas": (rutas.cita_repo(rutas.SCRIPTS, "field-compat-baseline.json"),),
         "script": "vault_spec_catalog_check.py",
         "args": ["--freeze-fields"],
         "por_que": "congela los campos estables del tool-spec en la baseline",
     },
     {
         "nombre": "esquemas",
-        "insumos": ("scripts/", "vault/", "schemas/"),
-        "salidas": ("schemas/",),
+        "insumos": (_carpeta(rutas.SCRIPTS), "vault/", _carpeta(rutas.SCHEMAS)),
+        "salidas": (_carpeta(rutas.SCHEMAS),),
         "script": "vault_esquema.py",
         "args": ["--sync"],
         "por_que": "regenera schemas/ desde vault_contrato_nota",
     },
     {
         "nombre": "metricas",
-        "insumos": ("scripts/", "vault/", "docs/METRICAS.md"),
-        "salidas": ("docs/METRICAS.md",),
+        "insumos": (_carpeta(rutas.SCRIPTS), "vault/", rutas.cita_repo(rutas.DOCS, "METRICAS.md")),
+        "salidas": (rutas.cita_repo(rutas.DOCS, "METRICAS.md"),),
         "script": "vault_metricas.py",
         "args": ["--doc"],
         "por_que": "regenera docs/METRICAS.md desde el registro y el histórico",
     },
     {
         "nombre": "arquitectura",
-        "insumos": ("scripts/", "vault/", "cli/", "mcp/", "vault_toolkit/", "docs/ARQUITECTURA.md"),
-        "salidas": ("docs/ARQUITECTURA.md",),
+        "insumos": (_carpeta(rutas.SCRIPTS), "vault/", _carpeta(rutas.CLI), _carpeta(rutas.MCP), "vault_toolkit/", rutas.cita_repo(rutas.DOCS, "ARQUITECTURA.md")),
+        "salidas": (rutas.cita_repo(rutas.DOCS, "ARQUITECTURA.md"),),
         "script": "vault_arch.py",
         "args": ["--blueprint"],
         "por_que": "regenera docs/ARQUITECTURA.md desde CONTEXTS",
@@ -132,7 +140,7 @@ PASOS: List[Dict[str, Any]] = [
     {
         "nombre": "blueprint",
         "insumos": None,
-        "salidas": ("docs/BLUEPRINT.md",),
+        "salidas": (rutas.cita_repo(rutas.DOCS, "BLUEPRINT.md"),),
         "script": "vault_blueprint.py",
         "args": ["--blueprint"],
         "por_que": "regenera docs/BLUEPRINT.md desde los registros",
@@ -147,8 +155,8 @@ PASOS: List[Dict[str, Any]] = [
     },
     {
         "nombre": "doc_sync",
-        "insumos": ("scripts/",),
-        "salidas": ("scripts/README.md",),
+        "insumos": (_carpeta(rutas.SCRIPTS),),
+        "salidas": (rutas.cita_repo(rutas.SCRIPTS, "README.md"),),
         "script": "vault_doc_sync.py",
         "args": ["--fix"],
         "por_que": "regenera la tabla de índice de scripts/README.md",
@@ -162,8 +170,8 @@ PASOS: List[Dict[str, Any]] = [
         # con `--contrato` en vault_procesos_git: cinco tests en rojo por un
         # artefacto que el fixer decía cerrar).
         "nombre": "caras_de_norma",
-        "insumos": ("scripts/", "vault/", "cli/", "normas/"),
-        "salidas": ("normas/",),
+        "insumos": (_carpeta(rutas.SCRIPTS), "vault/", _carpeta(rutas.CLI), _carpeta(rutas.NORMAS)),
+        "salidas": (_carpeta(rutas.NORMAS),),
         "modulo": "vault_norms_engine",
         "funcion": "escribir_caras_derivadas",
         "por_que": "regenera normas/*/guard.py y heal.py desde las funciones que "

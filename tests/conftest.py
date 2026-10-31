@@ -68,13 +68,24 @@ def pytest_sessionstart(session):
         session.config._sandbox_fixture_owned = False
 
 
+@pytest.hookimpl(tryfirst=True)
 def pytest_collection_modifyitems(config, items):
-    """`VAULT_SHARD=i/n`: corre solo el trozo `i` de `n` (ver `reparto.py`).
+    """Marca `slow` desde el perfil y aplica `VAULT_SHARD=i/n` (ver `reparto.py`).
 
-    Sin la variable no cambia nada. Con xdist, cada worker colecta y reparte
-    igual porque el reparto es determinista.
+    `slow` no se escribe a mano en ningún módulo: lo decide
+    `vault.meta_toolkit.perfil_suite` con los segundos medidos. Corre antes que
+    el `-m` de pytest (`tryfirst`), que si no deseleccionaría sin ver la marca.
+
+    Sin `VAULT_SHARD` el reparto no cambia nada. Con xdist, cada worker colecta,
+    marca y reparte igual porque todo es determinista.
     """
     import reparto
+    from vault.meta_toolkit import perfil_suite
+
+    lentos = perfil_suite.lentos()
+    for item in items:
+        if reparto.modulo_de(item.nodeid) in lentos:
+            item.add_marker(pytest.mark.slow)
 
     shard = reparto.leer_shard(os.environ.get("VAULT_SHARD"))
     if shard is None:
