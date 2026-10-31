@@ -48,7 +48,7 @@ siguen en `AUDITORIA.md`.
 
 | Paso | Hallazgo | Clase | Qué cambia | Paridad que lo cubre |
 |---|---|---|---|---|
-| A-1 | H-01 | COMPATIBLE_EVOLUTION | `vault/meta_toolkit/tools-catalog.json` queda como fuente única. `mcp/nodejs/tools-catalog.json` sigue existiendo como derivado: `--sync` lo escribe y `--check` exige igualdad. Se declara en `DERIVADOS`, para que nadie lo edite pensando que es la fuente. | `estatico` (los dos hashes no cambian) |
+| A-1 | H-01 | ~~COMPATIBLE_EVOLUTION~~ **descartado**: al deconstruirlo resultó NOT_APPLICABLE (ver H-01). No se toca código. | `vault/meta_toolkit/tools-catalog.json` queda como fuente única. `mcp/nodejs/tools-catalog.json` sigue existiendo como derivado: `--sync` lo escribe y `--check` exige igualdad. Se declara en `DERIVADOS`, para que nadie lo edite pensando que es la fuente. | `estatico` (los dos hashes no cambian) |
 | A-2 | H-08 | PURE_REFACTOR | `install`/`uninstall::_run` pasan a un único lanzador en `vault/kernel` o en el dueño de procesos. `clones-baseline` queda saldada. | `superficie` + `envelopes` |
 | A-3 | H-02 | PURE_REFACTOR | `vault_io` deja de importar `vault_section_index` y `vault_tags`: recibe el registro por el puerto `RegistroSecciones` de `vault/kernel/puertos.py`, que se inyecta al importarse el productor. `ciclos-baseline` pasa de 3 a 0. | `envelopes` (todas las tools que escriben notas) |
 | A-4 | H-03 | PURE_REFACTOR | `vault_errors._inject_voice` llama a un puerto `Voz` con `None` por defecto. `vault.autoria.voz` se registra al importarse. El cruce kernel→autoria desaparece de `PRESUPUESTO_DE_CRUCES` y pasa a `saldada`. | `envelopes` (los errores conservan su campo de voz) |

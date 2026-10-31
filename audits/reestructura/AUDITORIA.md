@@ -21,7 +21,7 @@ importan los consumidores sí lo son, y por eso se conservan con alias `sys.modu
 | Dominio | Revisado | Confirmados | Candidatos | Limpio |
 |---|---|---|---|---|
 | Núcleo (N) | kernel, fronteras entre contextos, estado global | 5 | 2 | — |
-| DRY (D) | catálogos, clones, fachadas | 4 | 1 | — |
+| DRY (D) | catálogos, clones, fachadas | 3 (H-01 reclasificado NOT_APPLICABLE en A-1) | 1 | — |
 | FE | 5 HTML y 2 JS sin lógica de producto | 0 | 0 | sí |
 | BE | `mcp/nodejs/vault-mcp-server.mjs` | 0 | 1 | — |
 | ALG | suite y puertas (atendido en la fase 1) | 0 | 0 | sí, tras la fase 1 |
@@ -32,7 +32,7 @@ importan los consumidores sí lo son, y por eso se conservan con alias `sys.modu
 
 | ID | Criterio | Ubicación | Evidencia | Clase | Sev. | Riesgo | P |
 |---|---|---|---|---|---|---|---|
-| H-01 | D-01 | `mcp/nodejs/tools-catalog.json` y `vault/meta_toolkit/tools-catalog.json` | El sha256 es idéntico byte a byte. Son dos copias versionadas del mismo conocimiento y `--sync` escribe las dos. | COMPATIBLE_EVOLUTION | media | bajo | P2 |
+| H-01 | D-01 | `mcp/nodejs/tools-catalog.json` y `vault/meta_toolkit/tools-catalog.json` | El sha256 es idéntico byte a byte. Son dos copias versionadas del mismo conocimiento y `--sync` escribe las dos. **Revisado al ejecutar A-1:** no son dos conocimientos. Las dos son proyecciones de `TOOLS_CATALOG`, cada una con un lector en un paquete distinto de la wheel (`vault.meta_toolkit.catalogo_producto` por `importlib.resources`; `vault-mcp-server.mjs` por `join(__dirname, …)`, que también se sirve desde el checkout con `vault mcp-path`). `check_sync` ya exige que sean iguales. Quitar una cambia el contenido de la wheel, y eso es contrato. | ~~COMPATIBLE_EVOLUTION~~ → NOT_APPLICABLE (duplicación accidental de texto y no de conocimiento, regla 8) | media | bajo | — |
 | H-02 | N-06 / ciclo | `scripts/vault_io.py` ↔ `vault_section_index.py`, `vault_tags.py` | `ciclos-baseline` tiene 3 sitios. Hay imports diferidos en `vault_io.py:601, 746, 758, 877, 1086`, y los dos módulos importan `vault_io` arriba. | PURE_REFACTOR | alta | medio | P1 |
 | H-03 | N-06 | `scripts/vault_errors.py:51` → `vault.autoria.voz` | Es el único cruce del núcleo hacia un contexto de dominio. `_inject_voice` (línea 294) llama a la voz para cada error. | PURE_REFACTOR (se inyecta un puerto y el comportamiento por defecto no cambia) | alta | medio | P1 |
 | H-04 | N-07 | `vault/kernel/` (13.579 LOC) | El núcleo guarda catálogos de dominio: `norms_catalog` 898, `fundamentals_catalog` 703, `registry` 1.307, `contrato_nota` 493, `mermaid_reglas` 442, `vocabulario` 306, `audit_catalog` 206 y `proyectos` 509. Ninguno es infraestructura. `kernel-baseline` tiene 4 sitios (`kernel_impuro::vault_io` y 3 inestables). | PURE_REFACTOR (mover y dejar alias) | alta | medio | P2 |
