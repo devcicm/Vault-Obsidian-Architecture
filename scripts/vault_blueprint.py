@@ -165,6 +165,27 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         ),
     },
     {
+        "id": "criterios_salta_modulos_sin_glob_md",
+        "estado": "pendiente",
+        "sostenida_por": [
+            cita_repo(rutas.TESTS, "test_criterios_salta_modulos_sin_glob_md.py::test_limite_declarado_criterios_salta_modulos_sin_glob_md"),
+        ],
+        "desde": "v41.25",
+        "capa": "5",
+        "que": (
+            "A-13 de la nota consolidada del enjambre (no el A-13 del estudio, que "
+            "es el MCP sin perfiles): `vault_criterios.medir` solo mide los modulos "
+            "que nombran `\"*.md\"`. Un modulo que recorre notas por sufijo "
+            "(`p.suffix == \".md\"`) reescribe un criterio con dueno sin que la "
+            "puerta AP-57 lo vea; el alcance lo publican modules_measured/skipped."
+        ),
+        "por_que_no_ahora": (
+            "Ampliar el alcance cambia la precondicion de la puerta y puede estrenar "
+            "deuda en modulos que hoy no se miden; es una decision aparte que se "
+            "consulta antes de tocar el detector."
+        ),
+    },
+    {
         "id": "barrido_del_toolkit_con_deuda_congelada",
         "estado": "saldada",
         "saldada_en": "v41.14",
