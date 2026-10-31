@@ -185,6 +185,18 @@ def test_la_duracion_de_las_puertas_se_lee_de_vault_gate():
         vm.leer_salida_puertas({**salida, "ok": False, "failing": 1})
 
 
+def test_cada_nivel_de_puertas_va_a_su_metrica():
+    """Una ronda `rapida` registrada como completa bajaría la cifra sin que
+    nada se hubiera acelerado."""
+    salida = {"ok": True, "tool": "vault_gate", "failing": 0, "seconds": 80.0}
+    assert vm.leer_salida_puertas({**salida, "nivel": "rapida"}) == [
+        {"metrica": "puertas_rapidas_duracion_s", "valor": 80.0}]
+    assert vm.leer_salida_puertas({**salida, "nivel": "todas"}) == [
+        {"metrica": "puertas_duracion_s", "valor": 80.0}]
+    with pytest.raises(ValueError):
+        vm.leer_salida_puertas({**salida, "nivel": "release"})
+
+
 def test_la_suite_se_compromete_a_20_minutos_con_cuatro_workers():
     m = next(x for x in vm.METRICAS if x["id"] == "suite_duracion_s")
     assert m["objetivo"]["valor"] == 1200

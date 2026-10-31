@@ -11,6 +11,7 @@ Puertas: 27. Verde en todas no es verde en la suite.
 
 - **Comando:** `python scripts/vault_norms.py --check-framework`
 - **Mide:** El manifiesto documenta todo id del marco de datos y toda norma catalogada tiene sección propia.
+- **Nivel:** `rapida`
 
 **Vault Norms — la puerta de entrada al catálogo de normas del estándar.**
 
@@ -20,6 +21,7 @@ Gestiona AP-XX (anti-patrones) y PAT-X (patrones recomendados): lista, filtra, m
 
 - **Comando:** `python scripts/vault_mcp_catalog.py --check`
 - **Mide:** El catálogo Python y tools-catalog.json no divergen.
+- **Nivel:** `rapida`
 - **Se arregla con:** python scripts/vault_mcp_catalog.py --sync
 
 **Vault MCP Catalog — Catálogo canónico de tools del vault.**
@@ -38,6 +40,7 @@ Contiene la definición de todas las tools (cuántas, `len(TOOLS_CATALOG)`) con 
 
 - **Comando:** `python scripts/vault_mcp_catalog.py --check-contracts`
 - **Mide:** Toda tool del catálogo tiene entrada en tool-spec.json, toda entrada que ya no está declara su status en vez de borrarse, y ninguna tool tiene a la vez backend nativo en Node y script Python (AP-48).
+- **Nivel:** `rapida`
 - **Normas:** [AP-48](../normas/AP-48/porque.md)
 
 **Vault MCP Catalog — Catálogo canónico de tools del vault.**
@@ -56,6 +59,7 @@ Contiene la definición de todas las tools (cuántas, `len(TOOLS_CATALOG)`) con 
 
 - **Comando:** `python scripts/vault_doc_counts.py --check --strict`
 - **Mide:** Ninguna cifra de la documentación está escrita a mano (AP-47).
+- **Nivel:** `rapida`
 - **Se arregla con:** python scripts/vault_doc_counts.py --fix
 - **Normas:** [AP-47](../normas/AP-47/porque.md)
 
@@ -67,6 +71,7 @@ Ninguna cifra que describa el estándar debe escribirse a mano. Cada número en 
 
 - **Comando:** `python scripts/vault_doc_sync.py --check --strict`
 - **Mide:** Toda tool tiene sección en scripts/README.md y el índice una fila por grupo.
+- **Nivel:** `rapida`
 - **Se arregla con:** python scripts/vault_doc_sync.py --fix  (solo el índice; las secciones se escriben a mano)
 
 **vault_doc_sync — guard anti-drift de NOMBRES entre el registro y scripts/README.md.**
@@ -77,6 +82,7 @@ Ninguna cifra que describa el estándar debe escribirse a mano. Cada número en 
 
 - **Comando:** `python scripts/vault_toolkit_audit.py --check`
 - **Mide:** AP-42 — el ejemplo documentado de cada tool ejercita la función que declara: corre de verdad (con el proyecto y los ficheros que el propio ejemplo da por existentes), su envelope cubre el contrato y, si promete idempotencia, la segunda corrida no reescribe nada. La puerta mide DEUDA NUEVA: la congelada en scripts/toolkit-audit-baseline.json está declarada y revisada (solo encoge; crecer exige --freeze --admitir-nuevos).
+- **Nivel:** `release`
 - **Se arregla con:** reparar la tool o su ejemplo; el freeze del auditor solo encoge y crecer exige --freeze --admitir-nuevos
 - **Normas:** [AP-42](../normas/AP-42/porque.md)
 
@@ -88,6 +94,7 @@ Ninguna cifra que describa el estándar debe escribirse a mano. Cada número en 
 
 - **Comando:** `python scripts/vault_noop_audit.py --check --ejecutado --strict`
 - **Mide:** AP-37 — ninguna tool con side effects devuelve ok: true sin indicador de trabajo, en lo declarado y en lo que el ejemplo emite al ejecutarse.
+- **Nivel:** `release`
 - **Se arregla con:** saldar la deuda y luego --freeze
 - **Normas:** [AP-37](../normas/AP-37/porque.md)
 
@@ -99,6 +106,7 @@ El síntoma que originó esta norma: `vault_standard_upgrade --to latest` devolv
 
 - **Comando:** `python scripts/vault_blame_audit.py --check --strict`
 - **Mide:** AP-51 — ningún handler amplio devuelve un vacío indistinguible de un resultado legítimo.
+- **Nivel:** `rapida`
 - **Se arregla con:** saldar la deuda y luego --freeze
 - **Normas:** [AP-51](../normas/AP-51/porque.md)
 
@@ -110,6 +118,7 @@ El síntoma que originó esta norma salió al ejecutar contra un vault ajeno al 
 
 - **Comando:** `python scripts/vault_error_contract.py --check --strict`
 - **Mide:** AP-52 — ningun envelope de error nuevo se emite fuera del contrato de ERROR_CATALOG.
+- **Nivel:** `rapida`
 - **Se arregla con:** emitir por emit_error y luego --freeze
 - **Normas:** [AP-52](../normas/AP-52/porque.md)
 
@@ -121,6 +130,7 @@ Salió de la caracterización maliciosa: invocar cada tool de forma malformada y
 
 - **Comando:** `python scripts/vault_spec_catalog_check.py --check-fields --strict`
 - **Mide:** Contrato de campos con los repos consumidores: ningún campo estable desaparece sin quedar anotado en superseded_fields.
+- **Nivel:** `rapida`
 - **Se arregla con:** anotar el campo en superseded_fields (superseded_by + why) o volver a emitirlo; --freeze-fields solo tras revisar
 
 **vault_spec_catalog_check — Validate sync between tool-spec.json and TOOLS_CATALOG.**
@@ -135,6 +145,7 @@ Detects:
 
 - **Comando:** `python scripts/vault_changelog_check.py --check --strict`
 - **Mide:** El changelog no contradice a git: hash existente, fecha igual a la del commit, ningún `pending` de una versión ya cerrada.
+- **Nivel:** `rapida`
 - **Se arregla con:** python scripts/vault_changelog_check.py --fijar-hash  (cierra la versión en curso); corregir la fecha contra su commit
 
 **vault_changelog_check — el changelog del manifiesto, contrastado contra git.**
@@ -145,6 +156,7 @@ El changelog vive dentro de `vault-obsidian-architecture.md` y cada entrada publ
 
 - **Comando:** `python scripts/vault_arch.py --check --strict`
 - **Mide:** Contextos acotados: fronteras, puertos, vocabularios con dueño, entorno declarado, AP-49 en cero.
+- **Nivel:** `rapida`
 - **Normas:** [AP-49](../normas/AP-49/porque.md)
 
 **Plano técnico del estándar: contextos acotados y sus fronteras.**
@@ -155,6 +167,7 @@ Los 37 grupos del catálogo son una taxonomía de documentación —sirven para 
 
 - **Comando:** `python scripts/vault_servicio.py --check --strict`
 - **Mide:** Trazabilidad tool → grupo → capacidad → servicio: todo grupo pertenece a una capacidad y toda capacidad tiene tool viva.
+- **Nivel:** `rapida`
 - **Se arregla con:** clasificar el grupo en la capacidad a la que sirve; si no sirve a ninguna, la pregunta es por qué existe el grupo
 
 **vault_servicio — el pilar: qué servicio de negocio presta este estándar, y qué lo realiza.**
@@ -165,6 +178,7 @@ Este repo tenía diez registros canónicos —`CONTEXTS`, `NORM_CATALOG`, `FUNDA
 
 - **Comando:** `python scripts/vault_blueprint.py --check --strict`
 - **Mide:** El plano de docs/BLUEPRINT.md no diverge de los registros, y ninguna norma estrena falta de puerta y test a la vez.
+- **Nivel:** `rapida`
 - **Se arregla con:** python scripts/vault_blueprint.py --blueprint  (regenera el plano); una norma nueva sin cobertura se cubre con un test, no se congela
 
 **vault_blueprint — el plano de construcción: qué se construye, sobre qué, y con qué guard.**
@@ -175,6 +189,7 @@ Este repo tenía once registros canónicos —`SERVICIO`, `CAPACIDADES`, `CONTEX
 
 - **Comando:** `python scripts/vault_norms_coherence.py --check --strict`
 - **Mide:** El catálogo de normas no se contradice ni con el código que lo aplica ni con las penalizaciones que lo pesan (AP-55).
+- **Nivel:** `rapida`
 - **Se arregla con:** que el código nombre la norma en el sitio que la aplica, o que el catálogo retire la cobertura que no tiene; ampliar la baseline no es una de las dos
 - **Normas:** [AP-55](../normas/AP-55/porque.md)
 
@@ -186,6 +201,7 @@ Este repo tenía once registros canónicos —`SERVICIO`, `CAPACIDADES`, `CONTEX
 
 - **Comando:** `python scripts/vault_criterios.py --check --strict`
 - **Mide:** Ningún módulo que clasifica notas reescribe un criterio que ya tiene dueño canónico (AP-57).
+- **Nivel:** `rapida`
 - **Se arregla con:** importar al dueño en vez de decidir por cuenta propia; la baseline solo encoge
 - **Normas:** [AP-57](../normas/AP-57/porque.md)
 
@@ -197,6 +213,7 @@ v40.12 arregló cuatro defectos de `vault_foreign_check` en una sola tanda, y lo
 
 - **Comando:** `python scripts/vault_fuente_unica.py --check --strict`
 - **Mide:** El mismo dato tipado no tiene valores distintos en varias notas del mismo ámbito (AP-05).
+- **Nivel:** `rapida`
 - **Se arregla con:** PAT-1: una nota canónica declara el dato y las demás la enlazan; verde solo cubre la parte decidible sin interpretar
 - **Normas:** [AP-05](../normas/AP-05/porque.md)
 
@@ -208,6 +225,7 @@ AP-05 es `critical` desde v19 y estuvo sin detector hasta v40.15 — la única e
 
 - **Comando:** `python scripts/vault_ciclos.py --check --strict`
 - **Mide:** Ningún ciclo de importación nuevo se esquiva metiendo el import dentro de una función (AP-58).
+- **Nivel:** `rapida`
 - **Se arregla con:** invertir la dependencia: el módulo de bajo nivel deja de pedirle el módulo entero al de alto; subir el import o ampliar la baseline no son la solución, solo esconden dónde
 - **Normas:** [AP-58](../normas/AP-58/porque.md)
 
@@ -219,6 +237,7 @@ Este repo declaraba **cero ciclos de importación**, y era verdad leyendo solo l
 
 - **Comando:** `python scripts/vault_clones.py --check --strict`
 - **Mide:** Ningún cuerpo duplicado nuevo: ni sombra dentro de un módulo ni clon entre módulos (CN-05).
+- **Nivel:** `rapida`
 - **Se arregla con:** unir los cuerpos en su dueño; si no se puede fusionar —frontera de contexto o módulo de un solo uso— se declara con su motivo escrito en la baseline, que solo encoge
 - **Normas:** [CN-05](../normas/CN-05/porque.md)
 
@@ -230,6 +249,7 @@ Este repo se audita a sí mismo y publica lo que encuentra. Lo que no tenía gua
 
 - **Comando:** `python scripts/vault_kernel.py --check --strict`
 - **Mide:** La lista del núcleo no contradice a la forma medida del grafo: K1 delegada, fan-in/fan-out contra el escalón derivado y churn contra la mediana del dominio (AP-59).
+- **Nivel:** `rapida`
 - **Se arregla con:** sacar el módulo del kernel o darle forma de núcleo —fan-out abajo, consumidores reales—; los umbrales se derivan del escalón y se publican, así que ajustarlos para pasar no es una opción, y la baseline solo encoge
 - **Normas:** [AP-59](../normas/AP-59/porque.md)
 
@@ -241,6 +261,7 @@ Este repo se audita a sí mismo y publica lo que encuentra. Lo que no tenía gua
 
 - **Comando:** `python scripts/vault_excepcion_declarada.py --check --strict`
 - **Mide:** Ningún handler captura la excepción que una librería declara dejando escapar la que lanza de verdad (AP-61).
+- **Nivel:** `rapida`
 - **Se arregla con:** delegar en el dueño que ya la contuvo —para el frontmatter, vault_lib.parse_frontmatter— o nombrar la excepción citando al dueño; ampliar la tupla en trece sitios sin dueño es AP-57 cometido al arreglar AP-61
 - **Normas:** [AP-61](../normas/AP-61/porque.md)
 
@@ -252,6 +273,7 @@ Este repo se audita a sí mismo y publica lo que encuentra. Lo que no tenía gua
 
 - **Comando:** `python scripts/vault_recursos.py --check --strict`
 - **Mide:** Ningún consumidor cruza una frontera de contexto para leer un recurso que no necesita el fan-out del productor (AP-62).
+- **Nivel:** `rapida`
 - **Se arregla con:** partir el productor en catálogo y motor y repuntar a los consumidores al dueño; partir el fichero solo no mueve la cifra —lo enseñó v40.27—, y reclasificar el productor al núcleo sin medirle el fan-out lo vería AP-59
 - **Normas:** [AP-62](../normas/AP-62/porque.md)
 
@@ -263,6 +285,7 @@ v40.27 quitó veinte de los sesenta y dos cruces de contexto con un solo movimie
 
 - **Comando:** `python scripts/vault_procesos_git.py --check --strict`
 - **Mide:** Ninguna tool ni módulo levanta git por su cuenta: el verbo lo juzga vault.kernel.procesos_git y un mutador solo existe si está autorizado con su motivo (AP-68).
+- **Nivel:** `rapida`
 - **Se arregla con:** mover la llamada al dueño —ejecutar_git(repo, [...])—; si de verdad hace falta un mutador nuevo, autorizarlo en MUTADORES_AUTORIZADOS con su motivo escrito, que es el diff que lo revisa. No hay baseline: un sitio fuera del dueño es deuda nueva por definición
 - **Normas:** [AP-68](../normas/AP-68/porque.md)
 
@@ -274,6 +297,7 @@ Auditoría del 2026-10-23 sobre la pregunta «¿ejecuta alguna tool git sin supe
 
 - **Comando:** `python scripts/vault_produccion.py --check --strict`
 - **Mide:** Toda promesa hecha a quien instala esto —versión mínima, dependencia, plataforma, superficie de red— tiene a alguien que la ejerza, y los huecos están declarados con su motivo.
+- **Nivel:** `rapida`
 - **Se arregla con:** añadir el ejecutor que falta, o declarar la promesa como descubierta con el motivo escrito; las demás puertas miden el repo contra sí mismo y en esa sala no está el consumidor, que es como >=3.9 pasó en verde sin que ninguna máquina ejecutara 3.9
 
 **vault_produccion — «¿puede usar esto otra persona, y con qué fiabilidad?»**
@@ -284,6 +308,7 @@ De una pregunta del usuario, hecha con v40.30 recién cerrada y las 20 puertas e
 
 - **Comando:** `python scripts/vault_esquema.py --check --strict`
 - **Mide:** Los JSON Schema de schemas/ son los que el contrato de nota produce para cada versión, y ninguno se edita a mano.
+- **Nivel:** `rapida`
 - **Se arregla con:** python scripts/vault_esquema.py --sync; si el cambio es del contrato, va en vault_contrato_nota con su fuente en HISTORIA
 
 **vault_esquema — publica el contrato de nota como un JSON Schema por versión.**
@@ -294,6 +319,7 @@ El contrato de campos de una nota vive en `vault_contrato_nota`, que es Python. 
 
 - **Comando:** `python scripts/vault_metricas.py --check --strict`
 - **Mide:** Toda métrica de desarrollo y de producto declara qué mide, de dónde sale y su objetivo con plazo y dueño (o por qué no lo tiene), y el histórico de observaciones solo crece.
+- **Nivel:** `rapida`
 - **Se arregla con:** corregir la entrada de METRICAS; una observación borrada se restaura desde HEAD, y docs/METRICAS.md se regenera con python scripts/vault_metricas.py --doc
 
 **vault_metricas — métricas de desarrollo y de producto con objetivo, dueño y tendencia.**
@@ -304,6 +330,7 @@ Hasta 2026-10-14 el repo medía su **deuda** —las baselines llevan objetivo, f
 
 - **Comando:** `python scripts/vault_doc_staleness.py --check --strict`
 - **Mide:** Todos los artefactos derivados del vault (data-framework.json, norm-registry.json, quality-index.json, etc.) existen y contienen JSON válido.
+- **Nivel:** `rapida`
 - **Se arregla con:** Regenerar con: vault_fundamentals --framework && vault_norms --rebuild && vault_compact_contracts && vault_quality_check && vault_tags
 
 **vault_doc_staleness — verifica que los artefactos derivados existen y son válidos.**

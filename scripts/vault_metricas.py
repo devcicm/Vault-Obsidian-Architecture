@@ -174,6 +174,14 @@ METRICAS: List[Dict[str, Any]] = [
              "commit, no cada ronda: crecer aquí es AP-66 en el proceso del repo."),
      "fuente": "`seconds` de `python scripts/vault_gate.py --strict` (--registrar-puertas)",
      "objetivo": _plazo(87)},
+    {"id": "puertas_rapidas_duracion_s", "tipo": "desarrollo", "origen": "observada",
+     "sentido": "menor", "unidad": "s",
+     "que": ("Lo que tarda el nivel `rapida` de las puertas, el del carril `dev`. Es la "
+             "parte de las puertas que se paga en cada cambio de la rama de trabajo; "
+             "la corrida completa sigue midiéndose en `puertas_duracion_s`."),
+     "fuente": ("`seconds` de `python scripts/vault_gate.py --strict --nivel rapida` "
+                "(--registrar-puertas)"),
+     "objetivo": _plazo(90)},
     # ── Producto ─────────────────────────────────────────────────────────────
     {"id": "promesas_descubiertas", "tipo": "producto", "origen": "calculada",
      "sentido": "menor", "unidad": "promesas",
@@ -663,7 +671,14 @@ def leer_salida_puertas(datos: Dict[str, Any]) -> List[Dict[str, Any]]:
         raise ValueError("la salida de vault_gate no trae `seconds`")
     if datos.get("ok") is not True or datos.get("failing"):
         raise ValueError("ronda de puertas en rojo: su duración no es comparable")
-    return [{"metrica": "puertas_duracion_s", "valor": datos["seconds"]}]
+    # Cada nivel tiene su métrica: una ronda `rapida` registrada como completa
+    # bajaría la cifra sin que nada se hubiera acelerado. Sin `nivel`, la salida
+    # es anterior a los niveles y entonces corrió todas.
+    nivel = datos.get("nivel", "todas")
+    metrica = {"todas": "puertas_duracion_s", "rapida": "puertas_rapidas_duracion_s"}.get(nivel)
+    if metrica is None:
+        raise ValueError(f"nivel de puertas sin métrica propia: {nivel!r}")
+    return [{"metrica": metrica, "valor": datos["seconds"]}]
 
 
 #: Las métricas que se miden aquí y no se rellenan a mano. Una métrica de

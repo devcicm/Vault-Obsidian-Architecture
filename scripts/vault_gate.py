@@ -21,6 +21,7 @@ doc, código que la sigue— sería AP-50 estrenada en la misma versión que la 
 
     python scripts/vault_gate.py              # corre todas, envelope agregado
     python scripts/vault_gate.py --strict     # exit 1 si alguna falla
+    python scripts/vault_gate.py --strict --nivel rapida  # carril dev (~80 s)
     python scripts/vault_gate.py --list       # qué puertas hay y qué mide cada una
     python scripts/vault_gate.py --check-doc  # el checklist de AGENTS.md vs. este registro
 
@@ -61,9 +62,13 @@ SCRIPTS_DIR = Path(__file__).resolve().parent
 #: `mide` no es decoración: es lo que se lee cuando una puerta falla y hay que
 #: decidir si es un fallo real o un artefacto derivado que solo hay que
 #: regenerar. Las que tienen `fix` se arreglan solas; las que no, no.
+#:
+#: `nivel` dice en qué carril corre cada una (ver `NIVELES`). Es explícito en
+#: cada entrada y no un default: una puerta nueva tiene que decidir dónde va.
 PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "framework",
+        "nivel": "rapida",
         "cmd": ["vault_norms.py", "--check-framework"],
         "mide": "El manifiesto documenta todo id del marco de datos y toda norma "
                 "catalogada tiene sección propia",
@@ -71,12 +76,14 @@ PUERTAS: List[Dict[str, Any]] = [
     },
     {
         "id": "catalogo",
+        "nivel": "rapida",
         "cmd": ["vault_mcp_catalog.py", "--check"],
         "mide": "El catálogo Python y tools-catalog.json no divergen",
         "fix": "python scripts/vault_mcp_catalog.py --sync",
     },
     {
         "id": "contratos",
+        "nivel": "rapida",
         "cmd": ["vault_mcp_catalog.py", "--check-contracts"],
         "mide": "Toda tool del catálogo tiene entrada en tool-spec.json, toda "
                 "entrada que ya no está declara su status en vez de borrarse, y "
@@ -86,12 +93,14 @@ PUERTAS: List[Dict[str, Any]] = [
     },
     {
         "id": "conteos",
+        "nivel": "rapida",
         "cmd": ["vault_doc_counts.py", "--check", "--strict"],
         "mide": "Ninguna cifra de la documentación está escrita a mano (AP-47)",
         "fix": "python scripts/vault_doc_counts.py --fix",
     },
     {
         "id": "doc_sync",
+        "nivel": "rapida",
         "cmd": ["vault_doc_sync.py", "--check", "--strict"],
         "mide": "Toda tool tiene sección en scripts/README.md y el índice una fila "
                 "por grupo",
@@ -100,6 +109,7 @@ PUERTAS: List[Dict[str, Any]] = [
     },
     {
         "id": "toolkit_audit",
+        "nivel": "release",
         "cmd": ["vault_toolkit_audit.py", "--check"],
         "mide": "AP-42 — el ejemplo documentado de cada tool ejercita la función "
                 "que declara: corre de verdad (con el proyecto y los ficheros que "
@@ -116,6 +126,7 @@ PUERTAS: List[Dict[str, Any]] = [
     },
     {
         "id": "noop",
+        "nivel": "release",
         "cmd": ["vault_noop_audit.py", "--check", "--ejecutado", "--strict"],
         "mide": "AP-37 — ninguna tool con side effects devuelve ok: true sin "
                 "indicador de trabajo, en lo declarado y en lo que el ejemplo "
@@ -124,6 +135,7 @@ PUERTAS: List[Dict[str, Any]] = [
     },
     {
         "id": "blame",
+        "nivel": "rapida",
         "cmd": ["vault_blame_audit.py", "--check", "--strict"],
         "mide": "AP-51 — ningún handler amplio devuelve un vacío indistinguible "
                 "de un resultado legítimo",
@@ -131,6 +143,7 @@ PUERTAS: List[Dict[str, Any]] = [
     },
     {
         "id": "contrato_error",
+        "nivel": "rapida",
         "cmd": ["vault_error_contract.py", "--check", "--strict"],
         "mide": "AP-52 \u2014 ningun envelope de error nuevo se emite fuera del "
                 "contrato de ERROR_CATALOG",
@@ -138,6 +151,7 @@ PUERTAS: List[Dict[str, Any]] = [
     },
     {
         "id": "campos",
+        "nivel": "rapida",
         "cmd": ["vault_spec_catalog_check.py", "--check-fields", "--strict"],
         "mide": "Contrato de campos con los repos consumidores: ningún campo "
                 "estable desaparece sin quedar anotado en superseded_fields",
@@ -146,6 +160,7 @@ PUERTAS: List[Dict[str, Any]] = [
     },
     {
         "id": "changelog",
+        "nivel": "rapida",
         "cmd": ["vault_changelog_check.py", "--check", "--strict"],
         "mide": "El changelog no contradice a git: hash existente, fecha igual a "
                 "la del commit, ningún `pending` de una versión ya cerrada",
@@ -154,6 +169,7 @@ PUERTAS: List[Dict[str, Any]] = [
     },
     {
         "id": "arquitectura",
+        "nivel": "rapida",
         "cmd": ["vault_arch.py", "--check", "--strict"],
         "mide": "Contextos acotados: fronteras, puertos, vocabularios con dueño, "
                 "entorno declarado, AP-49 en cero",
@@ -161,6 +177,7 @@ PUERTAS: List[Dict[str, Any]] = [
     },
     {
         "id": "servicio",
+        "nivel": "rapida",
         "cmd": ["vault_servicio.py", "--check", "--strict"],
         "mide": "Trazabilidad tool → grupo → capacidad → servicio: todo grupo "
                 "pertenece a una capacidad y toda capacidad tiene tool viva",
@@ -169,6 +186,7 @@ PUERTAS: List[Dict[str, Any]] = [
     },
     {
         "id": "blueprint",
+        "nivel": "rapida",
         "cmd": ["vault_blueprint.py", "--check", "--strict"],
         "mide": "El plano de docs/BLUEPRINT.md no diverge de los registros, y "
                 "ninguna norma estrena falta de puerta y test a la vez",
@@ -178,6 +196,7 @@ PUERTAS: List[Dict[str, Any]] = [
     },
     {
         "id": "norms_coherence",
+        "nivel": "rapida",
         "cmd": ["vault_norms_coherence.py", "--check", "--strict"],
         "mide": "El catálogo de normas no se contradice ni con el código que "
                 "lo aplica ni con las penalizaciones que lo pesan (AP-55)",
@@ -187,6 +206,7 @@ PUERTAS: List[Dict[str, Any]] = [
     },
     {
         "id": "criterios",
+        "nivel": "rapida",
         "cmd": ["vault_criterios.py", "--check", "--strict"],
         "mide": "Ningún módulo que clasifica notas reescribe un criterio que "
                 "ya tiene dueño canónico (AP-57)",
@@ -195,6 +215,7 @@ PUERTAS: List[Dict[str, Any]] = [
     },
     {
         "id": "fuente_unica",
+        "nivel": "rapida",
         "cmd": ["vault_fuente_unica.py", "--check", "--strict"],
         "mide": "El mismo dato tipado no tiene valores distintos en varias "
                 "notas del mismo ámbito (AP-05)",
@@ -203,6 +224,7 @@ PUERTAS: List[Dict[str, Any]] = [
     },
     {
         "id": "ciclos",
+        "nivel": "rapida",
         "cmd": ["vault_ciclos.py", "--check", "--strict"],
         "mide": "Ningún ciclo de importación nuevo se esquiva metiendo el "
                 "import dentro de una función (AP-58)",
@@ -212,6 +234,7 @@ PUERTAS: List[Dict[str, Any]] = [
     },
     {
         "id": "clones",
+        "nivel": "rapida",
         "cmd": ["vault_clones.py", "--check", "--strict"],
         "mide": "Ningún cuerpo duplicado nuevo: ni sombra dentro de un módulo ni "
                 "clon entre módulos (CN-05)",
@@ -221,6 +244,7 @@ PUERTAS: List[Dict[str, Any]] = [
     },
     {
         "id": "kernel",
+        "nivel": "rapida",
         "cmd": ["vault_kernel.py", "--check", "--strict"],
         "mide": "La lista del núcleo no contradice a la forma medida del grafo: "
                 "K1 delegada, fan-in/fan-out contra el escalón derivado y churn "
@@ -232,6 +256,7 @@ PUERTAS: List[Dict[str, Any]] = [
     },
     {
         "id": "excepcion_declarada",
+        "nivel": "rapida",
         "cmd": ["vault_excepcion_declarada.py", "--check", "--strict"],
         "mide": "Ningún handler captura la excepción que una librería declara "
                 "dejando escapar la que lanza de verdad (AP-61)",
@@ -242,6 +267,7 @@ PUERTAS: List[Dict[str, Any]] = [
     },
     {
         "id": "recursos",
+        "nivel": "rapida",
         "cmd": ["vault_recursos.py", "--check", "--strict"],
         "mide": "Ningún consumidor cruza una frontera de contexto para leer un "
                 "recurso que no necesita el fan-out del productor (AP-62)",
@@ -252,6 +278,7 @@ PUERTAS: List[Dict[str, Any]] = [
     },
     {
         "id": "procesos_git",
+        "nivel": "rapida",
         "cmd": ["vault_procesos_git.py", "--check", "--strict"],
         "mide": "Ninguna tool ni módulo levanta git por su cuenta: el verbo lo "
                 "juzga vault.kernel.procesos_git y un mutador solo existe si "
@@ -264,6 +291,7 @@ PUERTAS: List[Dict[str, Any]] = [
     },
     {
         "id": "produccion",
+        "nivel": "rapida",
         "cmd": ["vault_produccion.py", "--check", "--strict"],
         "mide": "Toda promesa hecha a quien instala esto —versión mínima, "
                 "dependencia, plataforma, superficie de red— tiene a alguien "
@@ -276,6 +304,7 @@ PUERTAS: List[Dict[str, Any]] = [
     },
     {
         "id": "esquemas",
+        "nivel": "rapida",
         "cmd": ["vault_esquema.py", "--check", "--strict"],
         "mide": "Los JSON Schema de schemas/ son los que el contrato de nota "
                 "produce para cada versión, y ninguno se edita a mano",
@@ -284,6 +313,7 @@ PUERTAS: List[Dict[str, Any]] = [
     },
     {
         "id": "metricas",
+        "nivel": "rapida",
         "cmd": ["vault_metricas.py", "--check", "--strict"],
         "mide": "Toda métrica de desarrollo y de producto declara qué mide, de "
                 "dónde sale y su objetivo con plazo y dueño (o por qué no lo "
@@ -294,6 +324,7 @@ PUERTAS: List[Dict[str, Any]] = [
     },
     {
         "id": "doc_staleness",
+        "nivel": "rapida",
         "cmd": ["vault_doc_staleness.py", "--check", "--strict"],
         "mide": "Todos los artefactos derivados del vault (data-framework.json, "
                 "norm-registry.json, quality-index.json, etc.) existen y contienen JSON válido",
@@ -316,6 +347,30 @@ PUERTAS: List[Dict[str, Any]] = [
 # (10 min) le da margen sin pasar de "la puerta más pesada cabe en su
 # límite"; 420s empezó a quedarse corto cuando la suite cruzó ~5900 tests.
 LIMITE_POR_PUERTA = 600.0
+
+
+#: Los niveles de una puerta. Hasta la reestructura de 2026-10-31 todas corrían
+#: en cada cambio, y dos de ellas —`toolkit_audit` y `noop`, que ejecutan el
+#: ejemplo de cada tool contra una copia del sandbox— eran el 88 % de los
+#: ~665 s de la corrida. Ese coste lo pagaba cada commit en la rama de
+#: trabajo, que es justo el sitio donde menos se puede pagar.
+#:
+#: - `rapida`: mide el repo leyéndolo. Corre en el carril `dev`.
+#: - `release`: ejecuta el producto para medirlo. Corre al integrar y al
+#:   publicar, no en cada cambio. Que no corra en `dev` no la rebaja: el
+#:   carril `merge` las exige todas.
+NIVELES = ("rapida", "release")
+
+#: Lo que acepta `--nivel`. `todas` es el default para que la CI, el Makefile
+#: y el colector de release sigan pidiendo lo mismo que pedían.
+SELECCIONES = NIVELES + ("todas",)
+
+
+def seleccion(nivel: str = "todas") -> List[Dict[str, Any]]:
+    """Las puertas de un nivel, en el orden del registro."""
+    if nivel not in SELECCIONES:
+        raise ValueError(f"nivel desconocido: {nivel!r} (válidos: {', '.join(SELECCIONES)})")
+    return [p for p in PUERTAS if nivel == "todas" or p["nivel"] == nivel]
 
 
 def limite_total() -> int:
@@ -434,15 +489,19 @@ def preparar_entorno() -> Dict[str, Any]:
     return resultado
 
 
-def correr_todas(strict: bool = False) -> Dict[str, Any]:
+def correr_todas(strict: bool = False, nivel: str = "todas") -> Dict[str, Any]:
     preparacion = preparar_entorno()
-    resultados = [_correr(p) for p in PUERTAS]
+    elegidas = seleccion(nivel)
+    resultados = [_correr(p) for p in elegidas]
     fallidas = [r["gate"] for r in resultados if not r["ok"]]
     return {
         "ok": not fallidas,
         "tool": "vault_gate",
+        "nivel": nivel,
         "preparacion": preparacion,
-        "gates_total": len(PUERTAS),
+        "gates_total": len(elegidas),
+        # Lo que no corrió se dice: un verde de `rapida` no es el de `todas`.
+        "skipped_gates": [p["id"] for p in PUERTAS if p not in elegidas],
         "passing": len(resultados) - len(fallidas),
         "failing": len(fallidas),
         "failed_gates": fallidas,
@@ -481,6 +540,9 @@ def checklist() -> str:
         lineas.append(f"      {p['mide']}.")
         if p["fix"]:
             lineas.append(f"      *Se arregla con:* {p['fix']}")
+        if p["nivel"] != "rapida":
+            lineas.append(f"      *Nivel:* {p['nivel']} — no corre en el carril `dev` "
+                          "(`--nivel rapida`); la exige el carril `merge`.")
     lineas += ["", MARCA_FIN]
     return "\n".join(lineas)
 
@@ -538,7 +600,8 @@ def razones() -> str:
         r = razon(p)
         lineas += [f"## `{p['id']}`", "",
                    f"- **Comando:** `python scripts/{' '.join(p['cmd'])}`",
-                   f"- **Mide:** {p['mide']}."]
+                   f"- **Mide:** {p['mide']}.",
+                   f"- **Nivel:** `{p['nivel']}`"]
         if p["fix"]:
             lineas.append(f"- **Se arregla con:** {p['fix']}")
         if r["normas"]:
@@ -657,6 +720,7 @@ def listar() -> Dict[str, Any]:
                 "command": "python scripts/" + " ".join(p["cmd"]),
                 "measures": p["mide"],
                 "fix": p["fix"],
+                "level": p["nivel"],
             }
             for p in PUERTAS
         ],
@@ -672,6 +736,7 @@ Ejemplos:
 
   python vault_gate.py                # corre todas
   python vault_gate.py --strict       # exit 1 si alguna falla (gate de CI)
+  python vault_gate.py --strict --nivel rapida   # carril dev: sin las que ejecutan el producto
   python vault_gate.py --list         # qué mide cada puerta y cómo se arregla
   python vault_gate.py --check-doc    # el checklist de AGENTS.md vs. el registro
 
@@ -681,6 +746,9 @@ No sustituye a la suite: `python -m pytest tests/` sigue siendo obligatorio.
     )
     parser.add_argument("--strict", action="store_true",
                         help="Exit 1 si alguna puerta falla")
+    parser.add_argument("--nivel", choices=SELECCIONES, default="todas",
+                        help="Qué puertas correr: rapida (carril dev), release o todas "
+                             "(default, lo que exigen merge y la CI)")
     parser.add_argument("--list", action="store_true", dest="listar",
                         help="Lista las puertas sin ejecutarlas")
     parser.add_argument("--check-doc", action="store_true", dest="check_doc",
@@ -703,7 +771,7 @@ No sustituye a la suite: `python -m pytest tests/` sigue siendo obligatorio.
         print(json.dumps(r, ensure_ascii=False))
         return 0 if r["ok"] else (1 if args.strict else 0)
 
-    r = correr_todas(args.strict)
+    r = correr_todas(args.strict, args.nivel)
     print(json.dumps(r, ensure_ascii=False, indent=2))
     return 1 if (args.strict and not r["ok"]) else 0
 

@@ -2609,6 +2609,15 @@
             "type": "boolean",
             "description": "Exit 1 si alguna puerta falla (gate de CI)"
           },
+          "nivel": {
+            "type": "string",
+            "description": "Qué puertas correr: rapida (carril dev), release o todas (default, lo que exigen merge y la CI)",
+            "enum": [
+              "rapida",
+              "release",
+              "todas"
+            ]
+          },
           "list": {
             "type": "boolean",
             "description": "Lista las puertas y que mide cada una, sin ejecutarlas"

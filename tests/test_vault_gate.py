@@ -330,3 +330,42 @@ def test_el_envelope_de_las_puertas_publica_la_preparacion(monkeypatch):
     monkeypatch.setattr(vault_gate, "preparar_entorno", lambda: {"necesaria": False, "ok": True})
     monkeypatch.setattr(vault_gate, "PUERTAS", [])
     assert vault_gate.correr_todas()["preparacion"] == {"necesaria": False, "ok": True}
+
+
+# ── Niveles: el carril `dev` no paga lo que solo exige `merge` ─────────────────
+
+
+def test_cada_puerta_declara_su_nivel():
+    """Explícito en cada entrada: una puerta nueva decide dónde corre."""
+    for p in vault_gate.PUERTAS:
+        assert p.get("nivel") in vault_gate.NIVELES, p["id"]
+
+
+def test_el_nivel_rapido_deja_fuera_solo_lo_que_ejecuta_el_producto():
+    fuera = {p["id"] for p in vault_gate.PUERTAS if p not in vault_gate.seleccion("rapida")}
+    assert fuera == {"toolkit_audit", "noop"}
+    assert vault_gate.seleccion("todas") == vault_gate.PUERTAS
+    assert vault_gate.seleccion("rapida") + vault_gate.seleccion("release") != []
+    assert len(vault_gate.seleccion("rapida")) + len(vault_gate.seleccion("release")) \
+        == len(vault_gate.PUERTAS)
+
+
+def test_un_nivel_desconocido_no_corre_nada():
+    with pytest.raises(ValueError):
+        vault_gate.seleccion("lenta")
+
+
+def test_la_corrida_parcial_dice_lo_que_no_corrio(monkeypatch):
+    monkeypatch.setattr(vault_gate, "preparar_entorno", lambda: {"necesaria": False, "ok": True})
+    monkeypatch.setattr(vault_gate, "_correr",
+                        lambda p: {"gate": p["id"], "ok": True, "seconds": 1.0})
+    r = vault_gate.correr_todas(nivel="rapida")
+    assert r["nivel"] == "rapida" and r["ok"]
+    assert set(r["skipped_gates"]) == {"toolkit_audit", "noop"}
+    assert r["gates_total"] == len(vault_gate.PUERTAS) - 2
+    assert vault_gate.correr_todas()["skipped_gates"] == []
+
+
+def test_el_checklist_publica_el_nivel_de_las_que_no_son_rapidas():
+    bloque = vault_gate.checklist()
+    assert bloque.count("*Nivel:* release") == len(vault_gate.seleccion("release"))
