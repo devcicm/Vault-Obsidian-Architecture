@@ -23,6 +23,28 @@ El grafo de dependencia se mide, no se adivina:
 2. El alcance de un fichero cambiado es su clausura inversa: qué ficheros de
    test llegan a él transitivamente por imports, más los que lo nombran por
    literal. Un test no es fuente de nadie: la marcha se corta ahí.
+3. Un fichero que no es Python (`AGENTS.md`, `docs/PUERTAS.md`, un JSON) llega
+   a los ficheros que lo **nombran** en un literal, por ruta o por nombre: un
+   test que lo lee depende de él igual que el que importa un módulo.
+
+## Cuándo no hay subconjunto honesto (el carril `merge`)
+
+Seleccionar de menos en silencio es peor que no seleccionar: el verde del
+subconjunto se lee como verde de la suite. Por eso `decidir()` no devuelve
+solo tests, devuelve un **carril** (`vault.meta_toolkit.carriles`), y manda a
+`merge` —la suite entera— cuando el cambio toca:
+
+- la configuración de la suite (`conftest.py`, `pyproject.toml`): llega a todos
+  los tests sin que ninguno la importe;
+- un módulo del kernel (`vault/kernel/`, o un script que `vault_arch` declara
+  en el contexto `kernel`): con profundidad 2 la clausura de un módulo que
+  todo importa es arbitraria;
+- código que el mapa no alcanza (un `.py` o `.mjs` nuevo o borrado que nadie
+  nombra): no hay criterio para decir qué tests lo ejercitan.
+
+Un fichero de texto que nadie nombra **no** fuerza `merge`: sale en
+`sin_lector`. Lo que lo recorre por directorio lo vigilan las puertas
+rápidas (`vault_doc_counts`, `vault_doc_sync`), que el carril `dev` corre.
 
 Es un arnés de desarrollo, no una tool del catálogo: su consumidor es quien
 cierra un cambio en este repo, no un vault ajeno. Ya hoy hay scripts fuera del
@@ -30,8 +52,13 @@ registro por este motivo — esa es la precedencia que sigue.
 
 Ejemplos:
 
-  # El alcance del árbol de trabajo contra HEAD (y los no versionados):
-  python vault_test_scope.py --changed
+  # Lo que se va a commitear (árbol contra HEAD y no versionados), y correrlo:
+  # es el carril `dev`, que mide el commit y no la rama.
+  python vault_test_scope.py --changed --correr
+
+  # Lo cambiado en toda la rama contra main (suele ser medio repo: la rama
+  # entera la juzga el carril `merge`, no este):
+  python vault_test_scope.py --changed main
 
   # El alcance de un fichero:
   python vault_test_scope.py --for scripts/vault_smoke.py
@@ -53,8 +80,18 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
+from vault.kernel.procesos_git import ejecutar_git
+from vault.meta_toolkit.carriles import SUITE_COMPLETA
+
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 SOURCE_DIRS = ("scripts", "vault", "normas", "cli", "tests")
+
+#: Ficheros que llegan a todos los tests sin que ninguno los importe.
+CONFIGURACION_DE_LA_SUITE = ("pyproject.toml", "pytest.ini", "setup.cfg", "tox.ini")
+#: Sufijos de código: si el mapa no lo alcanza, no hay subconjunto que defender.
+SUFIJOS_DE_CODIGO = (".py", ".mjs", ".js", ".cjs")
+#: Bordes que se recortan de un token de literal antes de buscarlo como ruta.
+_BORDES = "`'\"()[]{}<>,;"
 
 
 def _resolve_module(nombre: str, desde: Path, repo_root: Path) -> Optional[Path]:
@@ -170,6 +207,7 @@ def construir_mapa(repo_root: Path = REPO_ROOT) -> Dict[str, Any]:
         pass
 
     edges: Dict[str, Set[str]] = {}
+    nombrados: Dict[str, Set[str]] = {}  # token de literal → ficheros que lo dicen
     for clave, path in ficheros.items():
         imports, literales = _refs_de_fichero(path, repo_root)
         refs: Set[str] = set()
@@ -180,7 +218,28 @@ def construir_mapa(repo_root: Path = REPO_ROOT) -> Dict[str, Any]:
                 continue
         refs |= _mapear_literales(literales, claves, nombres_tools)
         edges[clave] = refs
-    return {"ficheros": ficheros, "edges": edges}
+        for literal in literales:
+            for token in _tokens_de_literal(literal):
+                token = token.strip(_BORDES)
+                if "." in token:
+                    nombrados.setdefault(token, set()).add(clave)
+    return {"ficheros": ficheros, "edges": edges, "nombrados": nombrados}
+
+
+def lectores(ruta: str, mapa: Dict[str, Any]) -> Set[str]:
+    """Ficheros cuyo código nombra `ruta` en un literal: por ruta o por nombre.
+
+    Por nombre a secas (`"PUERTAS.md"`) porque así lo escribe quien compone la
+    ruta con `/`: `ROOT / "docs" / "PUERTAS.md"`. Un nombre repetido
+    (`README.md`) trae lectores de más, que es el lado seguro.
+    """
+    nombrados: Dict[str, Set[str]] = mapa.get("nombrados", {})
+    ruta = ruta.replace("\\", "/")
+    return set(nombrados.get(ruta, ())) | set(nombrados.get(ruta.rsplit("/", 1)[-1], ()))
+
+
+def _es_test(clave: str) -> bool:
+    return clave.startswith("tests/") and Path(clave).name.startswith("test_")
 
 
 def alcance(ficheros_cambiados: Iterable[str], mapa: Dict[str, Any],
@@ -203,15 +262,25 @@ def alcance(ficheros_cambiados: Iterable[str], mapa: Dict[str, Any],
 
     tests: Set[str] = set()
     visitadas: Set[str] = set()
-    por_visitar: List[Tuple[str, int]] = [(f, 0) for f in ficheros_cambiados
-                                          if f in edges]
+    cambiados = list(ficheros_cambiados)
+    por_visitar: List[Tuple[str, int]] = [(f, 0) for f in cambiados if f in edges]
     # Un fichero de test cambiado es su propio alcance: ningún cierre inverso
     # llega a un test (nadie lo importa), y correr los tests que un cambio
     # toca empieza por él. Medido con `--for tests/…` la primera versión
     # devolvía 0 tests: defecto del propio instrumento en C1.
     for f, _ in list(por_visitar):
-        if f.startswith("tests/") and Path(f).name.startswith("test_"):
+        if _es_test(f):
             tests.add(f)
+    # Lo que no es nodo del mapa (texto, JSON, `.mjs`) entra por quien lo nombra:
+    # esos lectores son sus dependientes de primer orden.
+    for f in cambiados:
+        if f in edges:
+            continue
+        for lector in lectores(f, mapa):
+            if _es_test(lector):
+                tests.add(lector)
+            else:
+                por_visitar.append((lector, 1))
     while por_visitar:
         current, salto = por_visitar.pop()
         if current in visitadas:
@@ -222,32 +291,94 @@ def alcance(ficheros_cambiados: Iterable[str], mapa: Dict[str, Any],
         for dependiente in reverse.get(current, ()):
             if dependiente in visitadas:
                 continue
-            if dependiente.startswith("tests/") and Path(dependiente).name.startswith("test_"):
+            if _es_test(dependiente):
                 tests.add(dependiente)
                 continue  # un test no importa a nadie: la marcha se corta ahí.
             por_visitar.append((dependiente, salto + 1))
     return sorted(tests)
 
 
-def ficheros_cambiados(base: Optional[str] = None,
-                       repo_root: Path = REPO_ROOT) -> List[str]:
-    """Ficheros cambiados del working tree (y no versionados), extensiones .py."""
-    commands = [["git", "ls-files", "--others", "--exclude-standard"]]
-    commands.append(["git", "diff", "--name-only", "HEAD"] + (
-        [base] if base and base != "HEAD" else []))
+def cambios(base: Optional[str] = None, repo_root: Path = REPO_ROOT) -> List[str]:
+    """Todo fichero cambiado: los no versionados y el diff del árbol contra `base`.
+
+    `git diff --name-only <base>` compara el árbol de trabajo —commits de la
+    rama y lo aún sin commitear— con `base`. La forma anterior,
+    `diff HEAD <base>`, comparaba dos commits y dejaba fuera lo sin commitear
+    en cuanto se pedía una base: justo lo que se está a punto de cerrar.
+    """
+    consultas = [["ls-files", "--others", "--exclude-standard"],
+                 ["diff", "--name-only", base or "HEAD"]]
     fuera: Set[str] = set()
-    for command in commands:
+    for consulta in consultas:
         try:
-            out = subprocess.run(command, capture_output=True, text=True,
-                                 cwd=str(repo_root), timeout=60,
-                                 encoding="utf-8", errors="replace")
+            out = ejecutar_git(repo_root, consulta, capture_output=True, timeout=60)
         except (OSError, subprocess.TimeoutExpired):
             continue
         for line in (out.stdout or "").splitlines():
             token = line.strip()
-            if token.endswith(".py") and "/.history/" not in token:
+            if token and "/.history/" not in token:
                 fuera.add(token)
     return sorted(fuera)
+
+
+def ficheros_cambiados(base: Optional[str] = None,
+                       repo_root: Path = REPO_ROOT) -> List[str]:
+    """Ficheros cambiados del working tree (y no versionados), extensiones .py."""
+    return [c for c in cambios(base, repo_root) if c.endswith(".py")]
+
+
+def _modulos_del_kernel() -> Set[str]:
+    """Stems que `vault_arch` declara en el contexto `kernel` (vacío sin él)."""
+    try:
+        import vault_arch
+    except ImportError:
+        # Repo sintético o wheel sin el meta-toolkit: queda el prefijo
+        # `vault/kernel/`, que no necesita registro.
+        return set()
+    return set(vault_arch.CONTEXTS[vault_arch.KERNEL]["modulos"])
+
+
+def _motivo_de_merge(f: str, mapa: Dict[str, Any], kernel: Set[str]) -> Optional[str]:
+    nombre = f.rsplit("/", 1)[-1]
+    if nombre == "conftest.py" or f in CONFIGURACION_DE_LA_SUITE:
+        return "configuracion_de_la_suite"
+    if f.startswith("vault/kernel/") or (
+            f.startswith("scripts/") and Path(nombre).stem in kernel):
+        return "kernel"
+    if (f.endswith(SUFIJOS_DE_CODIGO) and f not in mapa["edges"]
+            and not lectores(f, mapa)):
+        return "codigo_sin_mapa"
+    return None
+
+
+def decidir(cambiados: Iterable[str], mapa: Dict[str, Any],
+            profundidad: Optional[int] = 2) -> Dict[str, Any]:
+    """El carril que pide el cambio y, si es `dev`, sus tests.
+
+    `merge` no es un fallo del selector: es el selector diciendo que para este
+    cambio no hay subconjunto honesto, en vez de devolver uno.
+    """
+    cambiados = sorted(set(cambiados))
+    kernel = _modulos_del_kernel()
+    motivos = [{"fichero": f, "motivo": m} for f in cambiados
+               if (m := _motivo_de_merge(f, mapa, kernel))]
+    sin_lector = [f for f in cambiados
+                  if f not in mapa["edges"] and not f.endswith(SUFIJOS_DE_CODIGO)
+                  and not lectores(f, mapa)]
+    return {
+        "carril": "merge" if motivos else "dev",
+        "tests": alcance(cambiados, mapa, profundidad),
+        "motivos_merge": motivos,
+        "sin_lector": sin_lector,
+    }
+
+
+def comando(decision: Dict[str, Any]) -> List[str]:
+    """El pytest del carril: la suite de `merge` tal cual, o el subconjunto con sus opciones."""
+    if decision["carril"] == "merge":
+        return ["python", *SUITE_COMPLETA]
+    i = SUITE_COMPLETA.index("tests/")
+    return ["python", *SUITE_COMPLETA[:i], *decision["tests"], *SUITE_COMPLETA[i + 1:]]
 
 
 def script_de_tool(nombre: str) -> Optional[str]:
@@ -277,6 +408,9 @@ def main() -> int:
                         help="saltos inversos que se recorren (default 2: tests que "
                              "tocan el fichero + tests de sus dependientes directos)")
     parser.add_argument("--json", action="store_true", help="salida JSON")
+    parser.add_argument("--correr", action="store_true",
+                        help="ejecuta el pytest del carril decidido (en `merge`, la suite "
+                             "entera) y devuelve su exit code")
     args = parser.parse_args()
 
     if not (args.rutas or args.tool or args.changed is not None):
@@ -297,29 +431,38 @@ def main() -> int:
         objetivos.append(script)
     if args.changed is not None:
         base = None if args.changed == "HEAD" else args.changed
-        objetivos.extend(ficheros_cambiados(base))
+        objetivos.extend(cambios(base))
 
     mapa = construir_mapa()
-    tests = alcance(set(objetivos), mapa, args.depth)
-    command = ["python", "-m", "pytest", *tests, "-q", "-n", "auto", "--tb=short"]
+    decision = decidir(objetivos, mapa, args.depth)
+    command = comando(decision)
+    tests = decision["tests"]
     datos = {
         "ok": True,
+        "carril": decision["carril"],
+        "motivos_merge": decision["motivos_merge"],
+        "sin_lector": decision["sin_lector"],
         "tests": tests,
         "n": len(tests),
         "command": " ".join(command),
         "objetivos": sorted(set(objetivos)),
-        "hint": ("0 tests = el cambio no tiene cubrimiento directo: si el cambio "
-                 "toca contratos, la suite de cierre (L2) se decide por ola."),
+        "hint": ("carril merge = este cambio no tiene subconjunto honesto (ver "
+                 "motivos_merge): corre la suite entera. 0 tests en dev = el cambio "
+                 "no tiene cubrimiento directo."),
     }
+    sys.stdout.reconfigure(encoding="utf-8")
     if args.json:
-        sys.stdout.reconfigure(encoding="utf-8")
         print(json.dumps(datos, ensure_ascii=False, indent=2))
     else:
-        sys.stdout.reconfigure(encoding="utf-8")
-        print(datos["command"])
-        if not tests:
-            print("(sin tests directos: decisión de L2)")
-    return 0
+        print(f"carril {decision['carril']}: {datos['command']}")
+        for m in decision["motivos_merge"]:
+            print(f"  merge por {m['motivo']}: {m['fichero']}")
+        if decision["carril"] == "dev" and not tests:
+            print("(sin tests directos)")
+    if not args.correr or (decision["carril"] == "dev" and not tests):
+        return 0
+    sys.stdout.flush()
+    return subprocess.run([sys.executable, *command[1:]], cwd=str(REPO_ROOT)).returncode
 
 
 if __name__ == "__main__":

@@ -51,6 +51,7 @@ from typing import Any, Dict, List
 sys.path.insert(0, str(Path(__file__).parent))
 
 from vault.kernel import rutas
+from vault.meta_toolkit.carriles import CARRILES
 from vault_errors import emit_error, wrap_main
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -613,11 +614,61 @@ def razones() -> str:
     return "\n".join(lineas)
 
 
-def _razones_al_dia() -> bool:
-    doc = REPO_ROOT / RAZONES
+def _al_dia(ruta: Path, contenido: str) -> bool:
+    doc = REPO_ROOT / ruta
     if not doc.exists():
         return False
-    return doc.read_text(encoding="utf-8").replace("\r\n", "\n").strip() == razones().strip()
+    return doc.read_text(encoding="utf-8").replace("\r\n", "\n").strip() == contenido.strip()
+
+
+def _razones_al_dia() -> bool:
+    return _al_dia(RAZONES, razones())
+
+
+#: Los carriles se publican aquí, derivados de `vault.meta_toolkit.carriles`.
+CARRILES_DOC = Path("docs") / "CARRILES.md"
+
+
+def _niveles_del_carril(carril: Dict[str, Any]) -> List[str]:
+    """Los niveles de puerta que nombran los pasos de un carril."""
+    niveles = []
+    for paso in carril["pasos"]:
+        argv = paso["argv"] or ()
+        if argv and argv[0] == "scripts/vault_gate.py" and "--nivel" in argv:
+            niveles.append(argv[argv.index("--nivel") + 1])
+    return niveles
+
+
+def carriles() -> str:
+    """`docs/CARRILES.md`: qué corre cada carril, qué bloquea y qué puertas incluye."""
+    lineas = [
+        "# Los carriles: qué se corre, cuándo y qué bloquea", "",
+        "> **Derivado.** Sale de `vault.meta_toolkit.carriles.CARRILES` y de",
+        "> `vault_gate.PUERTAS`; se regenera con `python scripts/vault_gate.py --fix-doc`",
+        "> y `--check-doc` falla si diverge. El porqué está en el docstring del registro.", "",
+        "| Carril | Cuándo | Bloquea | Dónde | Presupuesto |",
+        "|---|---|---|---|---|",
+    ]
+    for nombre, c in CARRILES.items():
+        presupuesto = (f"≤ {c['presupuesto_s']} s" if c["presupuesto_s"]
+                       else c.get("presupuesto", "—"))
+        lineas.append(f"| `{nombre}` | {c['cuando']} | {c['bloquea']} | {c['donde']} "
+                      f"| {presupuesto} |")
+    for nombre, c in CARRILES.items():
+        lineas += ["", f"## `{nombre}`", ""]
+        if c.get("requiere"):
+            lineas += [f"Exige antes el carril `{c['requiere']}`.", ""]
+        for i, paso in enumerate(c["pasos"], 1):
+            argv = paso["argv"]
+            cmd = f"`python {' '.join(argv)}`" if argv else "(lo comprueba la CI)"
+            extra = "" if paso.get("cableado", True) else (
+                f" — **aún sin cablear**, deuda `{paso['deuda']}`")
+            lineas.append(f"{i}. {paso['que']}: {cmd}{extra}")
+        for nivel in _niveles_del_carril(c):
+            ids = [p["id"] for p in seleccion(nivel)]
+            lineas += ["", f"Puertas del nivel `{nivel}` ({len(ids)}): "
+                       + ", ".join(f"`{i}`" for i in ids) + "."]
+    return "\n".join(lineas) + "\n"
 
 
 def _bloque_publicado(texto: str) -> str:
@@ -640,6 +691,8 @@ def check_doc() -> Dict[str, Any]:
     3. **`docs/PUERTAS.md` coincide con `razones()`** (v41.11). El porqué de
        cada puerta vivía solo en el docstring de su tool, y quien leía el
        checklist veía qué mide pero no por qué existe.
+    4. **`docs/CARRILES.md` coincide con `carriles()`**: qué corre cada carril
+       sale de `vault.meta_toolkit.carriles`, no de una lista escrita a mano.
     """
     doc = REPO_ROOT / "AGENTS.md"
     if not doc.exists():
@@ -655,10 +708,13 @@ def check_doc() -> Dict[str, Any]:
     else:
         divergencia = None
     razones_al_dia = _razones_al_dia()
+    carriles_al_dia = _al_dia(CARRILES_DOC, carriles())
     return {
-        "ok": not ausentes and not divergencia and razones_al_dia,
+        "ok": not ausentes and not divergencia and razones_al_dia and carriles_al_dia,
         "reasons_doc": str(RAZONES).replace("\\", "/"),
         "reasons_drift": None if razones_al_dia else "razones_desactualizadas",
+        "lanes_doc": str(CARRILES_DOC).replace("\\", "/"),
+        "lanes_drift": None if carriles_al_dia else "carriles_desactualizados",
         "tool": "vault_gate",
         "action": "check-doc",
         "gates_total": len(PUERTAS),
@@ -701,9 +757,15 @@ def fix_doc() -> Dict[str, Any]:
         destino = REPO_ROOT / RAZONES
         destino.parent.mkdir(parents=True, exist_ok=True)
         destino.write_bytes(razones().encode("utf-8"))
+    carriles_cambiados = not _al_dia(CARRILES_DOC, carriles())
+    if carriles_cambiados:
+        destino = REPO_ROOT / CARRILES_DOC
+        destino.parent.mkdir(parents=True, exist_ok=True)
+        destino.write_bytes(carriles().encode("utf-8"))
     return {
         "ok": True, "tool": "vault_gate", "action": "fix-doc",
-        "changed": cambiado or razones_cambiadas, "reasons_changed": razones_cambiadas,
+        "changed": cambiado or razones_cambiadas or carriles_cambiados,
+        "reasons_changed": razones_cambiadas, "lanes_changed": carriles_cambiados,
         "gates_total": len(PUERTAS),
     }
 
@@ -754,7 +816,7 @@ No sustituye a la suite: `python -m pytest tests/` sigue siendo obligatorio.
     parser.add_argument("--check-doc", action="store_true", dest="check_doc",
                         help="Comprueba que el checklist de AGENTS.md las cite todas")
     parser.add_argument("--fix-doc", action="store_true", dest="fix_doc",
-                        help="Regenera el checklist de AGENTS.md y docs/PUERTAS.md")
+                        help="Regenera el checklist de AGENTS.md, docs/PUERTAS.md y docs/CARRILES.md")
     args = parser.parse_args()
 
     if args.fix_doc:

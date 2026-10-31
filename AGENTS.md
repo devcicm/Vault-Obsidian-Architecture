@@ -12,7 +12,7 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~12.000 líneas). Fuente normativa. |
 | `scripts/*.py` | ~168 scripts, 127 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (6629 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (6659 tests). Toda norma con guard debe tener test. |
 | `normas/` | Normas como paquete (`normas/<código>/`: `norma.py`, `porque.md`, `guard.py`, `heal.py`, `test_*.py`). Las carga `vault_norms_catalog` en su sitio del catálogo; la forma la vigila `--check-framework`. Desde m186 toda norma vive aquí (cuántas, `NORMAS_EN_PAQUETE`). `guard.py`/`heal.py` son derivados —apuntan a la función dueña; los sanadores salen de `vault_norms_catalog.SANADORES`— y se regeneran con `vault_norms_engine.escribir_caras_derivadas`, no a mano. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
@@ -136,16 +136,22 @@ Si necesitas un dato de estos, léelo del registro — no lo redefinas ni lo cop
 # Instalar (una vez): git config core.hooksPath .githooks
 # Automáticamente ejecuta vault_fix_all antes de cada commit.
 
-# Suite completa — debe quedar en verde antes de cerrar cualquier cambio.
-# La forma canónica es la paralela (xdist): toda la suite en unos 17 min en
-# local, contra las ~6 h de la serie. La serie queda para re-verificar un fallo
-# que solo aparezca con `-n auto` (AP-44: un rojo de la corrida no es real
-# hasta que la serie lo dice) y para el carril de depuración.
-python -m pytest tests/ -q -n auto --tb=short
+# Carril dev — cada commit en una rama de trabajo (docs/CARRILES.md).
+# Los tests que alcanzan al cambio y las puertas rápidas. Si el cambio no tiene
+# subconjunto honesto (kernel, conftest, pyproject, código sin mapa) el
+# selector cae a la suite entera y dice por qué.
+python scripts/vault_test_scope.py --changed --correr
+python scripts/vault_gate.py --strict --nivel rapida
 
-# Carril rápido — los 23 módulos que el perfil midió con llamadas > 25 s
-# quedan fuera; es para iterar. NO sustituye al cierre de arriba.
-python -m pytest tests/ -q -n auto -m "not slow" --tb=short
+# Carril merge — antes de integrar en main: suite completa y todas las puertas.
+# Cuatro workers y no `-n auto`, que mata a un worker (gw1) en la máquina de
+# desarrollo. La serie queda para re-verificar un fallo que solo aparezca en
+# paralelo (AP-44: un rojo de la corrida no es real hasta que la serie lo dice).
+python -m pytest tests/ -q -n 4 --tb=short -p no:cacheprovider
+
+# Para iterar dentro de un módulo: los módulos que el perfil midió con
+# llamadas > 25 s quedan fuera. NO sustituye a ningún carril.
+python -m pytest tests/ -q -n 4 -m "not slow" --tb=short
 
 # La casa de los vaults: donde viven, con su propio git
 python scripts/vault_init.py --name mi-vault   # crea ~/.vault-master/mi-vault/ (Windows: %USERPROFILE%\.vault-master\mi-vault\)
@@ -185,15 +191,28 @@ python scripts/vault_quality_check.py --min-score 0.7
 
 ## Antes de cerrar un cambio
 
-**Las puertas y la suite, las dos.** Las puertas son rápidas y la suite no; verde en las
-puertas no es verde en la suite. Cuántas puertas hay lo dice el registro `PUERTAS`, no
-este documento — escribir aquí el número lo convierte en una cifra a mano, que es AP-47.
-El pre-commit hook ejecuta `vault_fix_all` automáticamente; si está instalado, el ciclo de
-drift se cierra en cada commit sin intervención manual.
+**Qué se exige depende del carril, y cada carril bloquea una cosa distinta.** El
+registro es `vault.meta_toolkit.carriles` y `docs/CARRILES.md` lo publica derivado:
+
+- **`dev`**: un commit en una rama de trabajo. Bastan los tests que alcanzan al cambio
+  y las puertas de nivel `rapida`, con un presupuesto de dos minutos. No se le pide al
+  desarrollo lo que solo decide un release.
+- **`merge`**: integrar una rama en `main`. Todas las puertas y la suite completa.
+- **`release`**: publicar. Es `merge` más el producto construido: wheel, SBOM y recibos
+  QG. Corre en la CI y no frena el desarrollo.
+
+Verde en las puertas no es verde en la suite. Cuántas puertas hay, y en qué nivel está
+cada una, lo dice el registro `PUERTAS`, no este documento. Escribir aquí el número lo
+convierte en una cifra a mano, que es AP-47. Si el pre-commit hook está instalado,
+ejecuta `vault_fix_all` y el ciclo de drift se cierra en cada commit sin intervención
+manual.
 
 - [ ] Pre-commit hook instalado: `git config core.hooksPath .githooks`
-- [ ] `python scripts/vault_gate.py --strict` → todas verdes.
-- [ ] `python -m pytest tests/ -q -n auto --tb=short` en verde.
+- [ ] Carril `dev` en cada commit de la rama:
+      `python scripts/vault_test_scope.py --changed --correr` y
+      `python scripts/vault_gate.py --strict --nivel rapida`.
+- [ ] Carril `merge` antes de integrar en `main`: `python scripts/vault_gate.py --strict`
+      → todas verdes, y `python -m pytest tests/ -q -n 4 --tb=short` en verde.
 - [ ] Las dos, **en serie y no a la vez**. Las comparten el sandbox: `vault_toolkit_audit`
       copia `vault-sandbox/` por cada línea de ejemplo de las 126 tools, y si la suite
       está escribiendo ahí en ese momento la auditoría ve estado transitorio y publica

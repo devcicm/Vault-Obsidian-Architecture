@@ -2628,7 +2628,7 @@
           },
           "fix-doc": {
             "type": "boolean",
-            "description": "Regenera el checklist de AGENTS.md y docs/PUERTAS.md"
+            "description": "Regenera el checklist de AGENTS.md, docs/PUERTAS.md y docs/CARRILES.md"
           }
         },
         "additionalProperties": false
