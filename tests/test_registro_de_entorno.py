@@ -241,3 +241,18 @@ def test_el_nivel_de_log_del_mjs_coincide_con_el_registro():
     )["variables"]
     log = next(f for f in filas if f["name"] == "VAULT_MCP_LOG")
     assert log["default"] == "info" and log["type"] == "texto"
+
+
+def test_docs_entorno_es_el_registro_publicado():
+    """A-22 — diez variables no salían en ningún doc: quien instala no lee el
+    registro. `docs/ENTORNO.md` es su derivado, y esto falla si diverge o si una
+    variable del registro no tiene fila."""
+    import vault_entorno
+
+    doc = (REPO_ROOT / "docs" / "ENTORNO.md").read_text(encoding="utf-8")
+    assert doc == vault_entorno.documento(), (
+        "docs/ENTORNO.md diverge del registro: python scripts/vault_entorno.py --doc"
+    )
+    sin_fila = [n for n in VARIABLES if f"| `{n}` |" not in doc]
+    assert not sin_fila, sin_fila
+    assert vault_entorno.check_doc()["ok"]

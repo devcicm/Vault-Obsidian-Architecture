@@ -11,6 +11,7 @@ deriva o lo archiva.
 | Documento | Para qué |
 |---|---|
 | [Instalación limpia](INSTALACION-LIMPIA.md) | Quitar instalaciones previas, instalar la wheel, registrar el MCP y comprobar el handshake |
+| [Variables de entorno](ENTORNO.md) | Cada variable que el estándar lee, con tipo, default y quién la lee (derivado del registro) |
 | [Guía de construcción](GUIA-DE-PRODUCCION.md) | Las promesas hechas a quien instala, y quién las ejerce |
 | [Evolución hacia un toolkit instalable](EVOLUCION-PRODUCTO-INSTALABLE.md) | De la copia de carpetas a la wheel |
 | [Skills](SKILLS.md) | Capacidades del vault expuestas a un agente |

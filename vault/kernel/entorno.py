@@ -328,6 +328,71 @@ def tabla() -> list[dict]:
     ]
 
 
+def _celda(valor: str) -> str:
+    """Una celda de tabla Markdown: sin saltos y con la barra escapada."""
+    return valor.replace("\n", " ").replace("|", "\\|")
+
+
+def documento() -> str:
+    """El registro como referencia para quien instala (A-22), derivado y no a mano.
+
+    Hasta 2026-10-30 diez de las variables no aparecían en ningún sitio fuera
+    de este fichero: el registro existía, pero quien instala no lo lee. Esto lo
+    publica entero en `docs/ENTORNO.md`, con el **default** y no el valor
+    actual: el actual depende de la shell de quien regenera, y un documento que
+    cambia según quién lo escribe no se puede comparar (AP-49).
+    """
+    lineas = [
+        "# Variables de entorno",
+        "",
+        "> **Derivado** de `vault.kernel.entorno.VARIABLES`. Se regenera con",
+        "> `python scripts/vault_entorno.py --doc` y `--check-doc` falla si",
+        "> diverge; lo escrito a mano aquí se pierde. El valor que tiene cada",
+        "> una en tu shell lo da `python scripts/vault_entorno.py --filtro <nombre>`:",
+        "> se resuelve al llamarse, no al documentarse (AP-49).",
+        "",
+        f"Variables: {len(VARIABLES)}.",
+        "",
+        "| Variable | Tipo | Default | Quién la lee | Qué gobierna |",
+        "|---|---|---|---|---|",
+    ]
+    for nombre, v in sorted(VARIABLES.items()):
+        default = "—" if v.default is None else f"`{v.default!r}`"
+        lineas.append(
+            f"| `{nombre}` | {v.tipo} | {default} | {v.contexto} | "
+            f"{_celda(v.proposito)} |")
+    return "\n".join(lineas) + "\n"
+
+
+def _ruta_doc():
+    """`docs/ENTORNO.md` del checkout, pedido al dueño del layout."""
+    from vault.kernel import rutas
+
+    return rutas.ruta_repo(rutas.DOCS) / "ENTORNO.md"
+
+
+def escribir_doc() -> Dict[str, Any]:
+    """Escribe `docs/ENTORNO.md` si diverge; `changed` dice si hubo trabajo (AP-37)."""
+    from vault.kernel.escritura import escritura_atomica
+
+    ruta = _ruta_doc()
+    texto = documento()
+    previo = ruta.read_text(encoding="utf-8") if ruta.exists() else None
+    cambiado = previo != texto
+    if cambiado:
+        escritura_atomica(ruta, texto)
+    return {"ok": True, "tool": "vault_entorno", "action": "doc",
+            "changed": cambiado, "path": ruta.name}
+
+
+def check_doc() -> Dict[str, Any]:
+    """Compara `docs/ENTORNO.md` con lo que el registro produce hoy."""
+    ruta = _ruta_doc()
+    previo = ruta.read_text(encoding="utf-8") if ruta.exists() else None
+    return {"ok": previo == documento(), "tool": "vault_entorno",
+            "action": "check-doc", "path": ruta.name}
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     """Publica el registro: nombre, tipo, default, valor actual y qué gobierna.
 
@@ -354,7 +419,16 @@ def main(argv: Optional[List[str]] = None) -> int:
                              "minutos: watchdog, smoke, cachés)")
     parser.add_argument("--json", action="store_true",
                         help="Salida como JSON (para consumir, no para leer)")
+    parser.add_argument("--doc", action="store_true",
+                        help="Regenera docs/ENTORNO.md desde el registro")
+    parser.add_argument("--check-doc", action="store_true",
+                        help="Falla si docs/ENTORNO.md diverge del registro")
     args = parser.parse_args(argv)
+
+    if args.doc or args.check_doc:
+        resultado = escribir_doc() if args.doc else check_doc()
+        print(json.dumps(resultado, ensure_ascii=False))
+        return 0 if resultado["ok"] else 1
 
     def es_limite(nombre: str, proposito: str) -> bool:
         texto = (nombre + " " + proposito).lower()

@@ -83,6 +83,9 @@ notas de `00_System/` quedan exentas. Es lo primero con lo que tropezó la
 instalación ciega del 2026-10-15 (wheel limpia en un venv nuevo, siguiendo solo
 esta guía).
 
+Las demás variables que el estándar lee —con su tipo, su default y quién la
+lee— están en [Variables de entorno](ENTORNO.md), derivado del registro.
+
 ```bash
 VAULT_AGENT=claude vault run vault_write --folder 07_Knowledge   --title "Primera nota" --tags inicio --content "<al menos tres líneas>"
 ```

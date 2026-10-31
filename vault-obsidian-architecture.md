@@ -7845,7 +7845,8 @@ repositorio git:
 | Windows | `%USERPROFILE%\.vault-master\<nombre>\` |
 | Linux y macOS | `~/.vault-master/<nombre>/` |
 
-La casa se cambia con `VAULT_MASTER` (la publica `vault_entorno`) y
+La casa se cambia con `VAULT_MASTER` (la publica `vault_entorno`; todas
+las variables, con tipo y default, en `docs/ENTORNO.md`, derivado del registro) y
 se lista con `python scripts/vault_init.py --list`. Un vault se crea ahí con
 `python scripts/vault_init.py --name <nombre>`: la inicialización y su
 repositorio git, de una vez.
