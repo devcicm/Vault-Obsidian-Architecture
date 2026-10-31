@@ -672,8 +672,13 @@ def carriles() -> str:
         for i, paso in enumerate(c["pasos"], 1):
             argv = paso["argv"]
             cmd = f"`python {' '.join(argv)}`" if argv else "(lo comprueba la CI)"
-            extra = "" if paso.get("cableado", True) else (
-                f" — **aún sin cablear**, deuda `{paso['deuda']}`")
+            if not paso.get("cableado", True):
+                extra = f" — **aún sin cablear**, deuda `{paso['deuda']}`"
+            elif paso.get("verificado") is False:
+                extra = (" — cableado en `release.yml`; **falta la primera corrida "
+                         f"real**, deuda `{paso['deuda']}`")
+            else:
+                extra = ""
             lineas.append(f"{i}. {paso['que']}: {cmd}{extra}")
         for nivel in _niveles_del_carril(c):
             ids = [p["id"] for p in seleccion(nivel)]

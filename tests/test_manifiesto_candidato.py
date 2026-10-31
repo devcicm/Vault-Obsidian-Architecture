@@ -183,11 +183,18 @@ def test_release_yml_exige_la_ci_del_mismo_sha():
 # --- B-01 / B-02 (vault dev codex, Fase 1): la puerta de publicacion se EJERCE ---
 
 def _guion_de_la_puerta():
-    """El Python del paso «El tag es el candidato autorizado» de release.yml."""
-    import textwrap
-    texto = (REPO / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
-    ini = texto.index("python - <<'EOF'\n") + len("python - <<'EOF'\n")
-    return textwrap.dedent(texto[ini:texto.index("\n          EOF", ini)])
+    """El Python del paso «El tag es el candidato autorizado» de release.yml.
+
+    El paso se busca por nombre en el YAML parseado, como lo lee Actions
+    (AP-44): por posición de texto, el primer heredoc del fichero dejó de ser
+    este el día que `qg-receipts` entró delante de `publish`.
+    """
+    import yaml
+    flujo = yaml.safe_load((REPO / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8"))
+    run = next(p["run"] for p in flujo["jobs"]["publish"]["steps"]
+               if p.get("name") == "El tag es el candidato autorizado")
+    ini = run.index("python - <<'EOF'\n") + len("python - <<'EOF'\n")
+    return run[ini:run.index("\nEOF", ini)]
 
 
 def _correr_puerta(tmp_path, mutar=None):

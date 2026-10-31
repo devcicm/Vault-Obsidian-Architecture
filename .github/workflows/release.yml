@@ -17,8 +17,107 @@ permissions:
   contents: write
 
 jobs:
+  qg-receipts:
+    # B-04: los recibos de QG-00..06 los emite la máquina sobre el candidato,
+    # no una corrida a mano. El colector exige HEAD == product_sha (sobre un
+    # descendiente documental devuelve QG-00 BLOCKED por CHECKOUT_EN_OTRO_SHA),
+    # así que corre en un worktree del product_sha de
+    # audits/fase2/CANDIDATO-RELEASE.yaml y no en el checkout del tag. Todo lo
+    # que produce vive en $RUNNER_TEMP/qg, fuera del árbol: QG-00 lo quiere limpio.
+    name: Recibos QG del candidato
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Worktree en el product_sha
+        id: candidato
+        shell: bash
+        run: |
+          python -m pip install pyyaml
+          sha=$(python -c "import yaml; print(yaml.safe_load(open('audits/fase2/CANDIDATO-RELEASE.yaml', encoding='utf-8'))['release_candidate']['product_sha'])")
+          git worktree add --detach "$RUNNER_TEMP/candidato" "$sha"
+          mkdir -p "$RUNNER_TEMP/qg/recibos" "$RUNNER_TEMP/qg/paridad"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "dir=$RUNNER_TEMP/candidato" >> "$GITHUB_OUTPUT"
+
+      - name: Dependencias del candidato
+        working-directory: ${{ steps.candidato.outputs.dir }}
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]" build pip-audit
+
+      - name: Suite del candidato y su recibo de procedencia (QG-03)
+        working-directory: ${{ steps.candidato.outputs.dir }}
+        shell: bash
+        env:
+          SHA: ${{ steps.candidato.outputs.sha }}
+        run: |
+          xml="$RUNNER_TEMP/qg/suite.xml"
+          set +e
+          python -m pytest tests/ -q -n 4 --tb=short -p no:cacheprovider --junitxml="$xml"
+          salida=$?
+          set -e
+          XML="$xml" SALIDA="$salida" python - <<'EOF'
+          import hashlib, json, os
+          xml = os.environ["XML"]
+          dato = {"sha": os.environ["SHA"], "exit": int(os.environ["SALIDA"]),
+                  "junit_sha256": hashlib.sha256(open(xml, "rb").read()).hexdigest(),
+                  "comando": "python -m pytest tests/ -q -n 4 --tb=short -p no:cacheprovider --junitxml=suite.xml",
+                  "nota": "corrida de la CI (qg-receipts) sobre el worktree del product_sha"}
+          open(xml + ".procedencia.json", "w", encoding="utf-8").write(json.dumps(dato, indent=2) + "\n")
+          EOF
+
+      - name: Recorrido de tercero desde la wheel (QG-03 y QG-06)
+        working-directory: ${{ steps.candidato.outputs.dir }}
+        run: python audits/fase2/recorrido_terceros_r07.py --salida "$RUNNER_TEMP/qg/e2e.json"
+
+      - name: Venv y runtime de la paridad CLI/MCP (QG-05)
+        working-directory: ${{ steps.candidato.outputs.dir }}
+        shell: bash
+        run: |
+          python -m build --wheel --outdir "$RUNNER_TEMP/qg/dist"
+          python -m venv "$RUNNER_TEMP/qg/paridad/venv"
+          "$RUNNER_TEMP/qg/paridad/venv/bin/python" -m pip install "$RUNNER_TEMP"/qg/dist/*.whl
+          "$RUNNER_TEMP/qg/paridad/venv/bin/vault" init "$RUNNER_TEMP/qg/paridad/runtime"
+
+      - name: Colector QG
+        working-directory: ${{ steps.candidato.outputs.dir }}
+        shell: bash
+        run: |
+          python audits/fase2/colector_qg.py --sha "${{ steps.candidato.outputs.sha }}" \
+            --ejecutar --recibos "$RUNNER_TEMP/qg/recibos" \
+            --suite-xml "$RUNNER_TEMP/qg/suite.xml" \
+            --e2e-json "$RUNNER_TEMP/qg/e2e.json" \
+            --pip-audit-python "$(command -v python)" \
+            --paridad-venv "$RUNNER_TEMP/qg/paridad/venv" \
+            --paridad-runtime "$RUNNER_TEMP/qg/paridad/runtime" \
+            --json "$RUNNER_TEMP/qg/recibos/colector.json"
+
+      - name: Subir los recibos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qg-recibos-${{ steps.candidato.outputs.sha }}
+          path: |
+            ${{ runner.temp }}/qg/recibos
+            ${{ runner.temp }}/qg/suite.xml
+            ${{ runner.temp }}/qg/suite.xml.procedencia.json
+            ${{ runner.temp }}/qg/e2e.json
+
   publish:
     name: Publicar release
+    # Sin recibos QG del candidato no se publica (B-04).
+    needs: qg-receipts
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

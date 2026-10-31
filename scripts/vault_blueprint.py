@@ -160,9 +160,12 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     },
     {
         "id": "colector_qg_fuera_de_toda_puerta",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "v41.26",
         "sostenida_por": [
-            cita_repo(rutas.TESTS, "test_colector_qg_sin_puerta.py::test_limite_declarado_colector_qg_fuera_de_toda_puerta"),
+            cita_repo(rutas.TESTS, "test_release_qg_receipts.py::test_publicar_espera_a_los_recibos"),
+            cita_repo(rutas.TESTS, "test_release_qg_receipts.py::test_el_colector_corre_en_un_worktree_del_product_sha"),
+            cita_repo(rutas.TESTS, "test_release_qg_receipts.py::test_el_colector_recibe_la_evidencia_que_exige_cada_gate"),
         ],
         "desde": "v41.25",
         "capa": "5",
@@ -177,7 +180,29 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "un descendiente documental devuelve QG-00 BLOCKED por "
             "CHECKOUT_EN_OTRO_SHA, medido el 2026-10-30) y `--ejecutar` corre la "
             "suite y la construccion enteras. Hace falta un job propio con un "
-            "worktree en el product_sha, que no se puede verificar fuera de la CI."
+            "worktree en el product_sha, que no se puede verificar fuera de la CI. "
+            "Saldada: el job `qg-receipts` de `release.yml` es ese job, y "
+            "`publish` lo espera. Que corra de verdad es la deuda siguiente."
+        ),
+    },
+    {
+        "id": "colector_qg_sin_primera_corrida",
+        "estado": "pendiente",
+        "sostenida_por": [
+            cita_repo(rutas.TESTS, "test_colector_qg_sin_puerta.py::test_limite_declarado_colector_qg_sin_primera_corrida"),
+        ],
+        "desde": "v41.26",
+        "capa": "5",
+        "que": (
+            "B-04, segunda mitad: el job `qg-receipts` esta cableado en "
+            "`release.yml` y su forma la mide un test, pero nunca ha corrido. "
+            "Los recibos versionados en `audits/fase2/recibos-*/` siguen siendo "
+            "de corridas a mano."
+        ),
+        "por_que_no_ahora": (
+            "Solo una corrida real de la CI dice que el job funciona, y la CI corre "
+            "al subir un tag `v*`: sin push no hay corrida. Se salda el dia que se "
+            "versione un recibo de procedencia cuya `nota` cite `qg-receipts`."
         ),
     },
     {

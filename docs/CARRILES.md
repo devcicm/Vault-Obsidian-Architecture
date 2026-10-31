@@ -31,4 +31,4 @@ Exige antes el carril `merge`.
 1. el tag es el candidato autorizado de audits/fase2/CANDIDATO-RELEASE.yaml: (lo comprueba la CI)
 2. puertas de producto sobre la wheel instalada: `python tests/run_product_gates.py`
 3. SBOM e inventario de licencias: `python empaquetado/sbom.py --inventario`
-4. recibos del colector QG sobre el product_sha: `python audits/fase2/colector_qg.py --sha <product_sha> --ejecutar --recibos qg-recibos --json qg-informe.json` — **aún sin cablear**, deuda `colector_qg_fuera_de_toda_puerta`
+4. recibos del colector QG sobre el product_sha: `python audits/fase2/colector_qg.py --sha <product_sha> --ejecutar --recibos qg-recibos --json qg-informe.json` — cableado en `release.yml`; **falta la primera corrida real**, deuda `colector_qg_sin_primera_corrida`

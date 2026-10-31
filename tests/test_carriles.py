@@ -93,7 +93,7 @@ def test_release_exige_merge_y_declara_lo_que_falta_cablear():
     release = carriles.CARRILES["release"]
     assert release["requiere"] == "merge"
     for paso in release["pasos"]:
-        if paso.get("cableado") is False:
+        if paso.get("cableado") is False or paso.get("verificado") is False:
             assert paso.get("deuda"), paso["que"]
 
 

@@ -89,8 +89,11 @@ CARRILES: Dict[str, Dict[str, Any]] = {
              "argv": ("audits/fase2/colector_qg.py", "--sha", "<product_sha>",
                       "--ejecutar", "--recibos", "qg-recibos", "--json",
                       "qg-informe.json"),
-             "cableado": False,
-             "deuda": "colector_qg_fuera_de_toda_puerta"},
+             # Cableado en el job `qg-receipts` de release.yml (B-04); hasta que
+             # la CI lo corra una vez, lo escrito no está verificado.
+             "cableado": True,
+             "verificado": False,
+             "deuda": "colector_qg_sin_primera_corrida"},
         ],
     },
 }
