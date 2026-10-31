@@ -249,6 +249,19 @@ def test_doc_actualizado_stale_se_detecta(tmp_path, monkeypatch):
     assert tka.doc_actualizado() is True
 
 
+def test_el_last_run_y_el_doc_se_escriben_en_lf(tmp_path):
+    """`toolkit-audit-last.json` salía en CRLF en Windows y dejaba el árbol sucio.
+
+    La escritura va por `escritura_atomica` (AP-57); un `write_text` a mano
+    vuelve a meter el retorno de carro que este test busca.
+    """
+    destino = tmp_path / "last.json"
+    tka._publicar(destino, json.dumps({"a": [1, 2]}, indent=1))
+    crudo = destino.read_bytes()
+    assert b"\r" not in crudo
+    assert crudo.count(b"\n") == 5
+
+
 def test_doc_renderiza_incluyendo_deuda():
     cache = {
         "timestamp": "2026-10-20T00:00:00Z",

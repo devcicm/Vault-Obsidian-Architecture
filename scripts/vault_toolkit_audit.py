@@ -60,6 +60,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.kernel import rutas
+from vault.kernel.escritura import escritura_atomica
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPTS_DIR.parent
@@ -549,6 +550,17 @@ def _emitir(ok: bool, payload: Dict[str, Any]) -> int:
     return 0 if ok else 1
 
 
+def _publicar(path: Path, texto: str) -> None:
+    """Escribe el last-run o el informe derivado por el dueño de la escritura (AP-57).
+
+    `Path.write_text` en modo texto traduce cada salto de línea a CRLF en
+    Windows, y el repo es LF (`.gitattributes`): cada corrida dejaba `toolkit-audit-last.json`
+    modificado en el árbol sin un solo dato cambiado. `escritura_atomica` abre
+    con `newline=""` y además no deja un fichero a medias si la corrida muere.
+    """
+    escritura_atomica(path, texto)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Verificación funcional del toolkit (C0–C5). Alcance: "
@@ -595,8 +607,7 @@ def main() -> int:
                 "antes de --doc (o pasa --parcial para publicar un informe acotado)")
         desfasado = DOC_PATH.is_file() and not doc_actualizado()
         DOC_PATH.parent.mkdir(parents=True, exist_ok=True)
-        DOC_PATH.write_text(
-            _doc_de(cache, cubiertas=cubiertas, total=total), encoding="utf-8")
+        _publicar(DOC_PATH, _doc_de(cache, cubiertas=cubiertas, total=total))
         return _emitir(True, {"action": "doc",
                               "path": str(DOC_PATH.relative_to(REPO_ROOT)),
                               "tools_en_el_informe": cubiertas,
@@ -653,8 +664,7 @@ def main() -> int:
         "deuda_congelada": sorted(congelados & set(defectos)),
         "segundos": segundos,
     }
-    LAST_RUN_PATH.write_text(json.dumps(cache, ensure_ascii=False, indent=1),
-                             encoding="utf-8")
+    _publicar(LAST_RUN_PATH, json.dumps(cache, ensure_ascii=False, indent=1))
 
     respuesta: Dict[str, Any] = {
         "ok": True, "tool": "vault_toolkit_audit",
