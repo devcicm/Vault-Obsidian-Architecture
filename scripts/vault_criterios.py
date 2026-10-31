@@ -432,6 +432,37 @@ def _importa(arbol: ast.AST, modulo: str, simbolo: str) -> bool:
     return False
 
 
+def _es_sufijo_md(n: ast.AST) -> bool:
+    if isinstance(n, ast.Constant) and n.value == ".md":
+        return True
+    if isinstance(n, (ast.Tuple, ast.List, ast.Set)):
+        return any(_es_sufijo_md(e) for e in n.elts)
+    return False
+
+
+def _recorre_notas_por_sufijo(arbol: ast.AST) -> bool:
+    """¿El módulo filtra notas por sufijo en vez de con `glob("*.md")`?
+
+    `p.suffix == ".md"`, `nombre.endswith(".md")` y `ext in (".md", …)` son el
+    mismo recorrido que el glob escrito de otra forma, y la precondición del
+    `"*.md"` los dejaba fuera de la medida (A-13 del enjambre, medido con
+    fixture el 2026-10-30). Se mira la **comparación**, no el literal suelto:
+    los `*_save` nombran `".md"` para componer el fichero que escriben, y
+    admitirlos por eso metía 31 módulos y un falso positivo —`vault_subgraph`
+    escribe un fence de Mermaid, no lo lee—, que es el ruido que la
+    precondición existe para evitar (AP-57).
+    """
+    for n in ast.walk(arbol):
+        if isinstance(n, ast.Compare) and any(
+                _es_sufijo_md(x) for x in [n.left, *n.comparators]):
+            return True
+        if (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+                and n.func.attr == "endswith" and n.args
+                and _es_sufijo_md(n.args[0])):
+            return True
+    return False
+
+
 def _modulos() -> List[Path]:
     aqui = Path(__file__).parent
     return sorted(p for p in aqui.glob("*.py") if p.name != Path(__file__).name)
@@ -447,8 +478,9 @@ def medir() -> List[Dict[str, str]]:
     """Copias de un criterio con dueño, en los módulos que clasifican notas.
 
     **La precondición del `*.md` es el alcance real de esta tool, y cuesta:**
-    de 125 módulos, solo los que nombran ese literal entran en la medida; el
-    resto se salta entero. Sin ella el detector marcaría a quien escribe la
+    solo entran en la medida los módulos que nombran ese literal o filtran
+    notas por sufijo (`_recorre_notas_por_sufijo`, desde v41.25: 40 de 167 el
+    2026-10-30, eran 36); el resto se salta entero. Sin ella el detector marcaría a quien escribe la
     constante por otro motivo legítimo (`vault_restore` nombra `vault-backups`
     porque restaurar de ahí *es* su trabajo), pero el precio es que un módulo
     que clasifique notas sin nombrar `*.md` no lo mira nadie. Los dos números
@@ -478,7 +510,7 @@ def medir() -> List[Dict[str, str]]:
         # nombra `vault-backups` porque restaurar de ahí *es* su trabajo, y
         # `vault_norms` nombra el manifiesto porque lo edita. Marcarlos sería
         # llenar la baseline de ruido, que es como un guard deja de leerse.
-        if "*.md" not in literales:
+        if "*.md" not in literales and not _recorre_notas_por_sufijo(arbol):
             _ALCANCE["saltados"].append(nombre)
             continue
         _ALCANCE["medidos"].append(nombre)
@@ -942,7 +974,8 @@ def check() -> Dict[str, Any]:
         # a la mayoría, y hasta v40.16 solo se publicaba el total.
         "modules_measured": len(_ALCANCE["medidos"]),
         "modules_skipped": len(_ALCANCE["saltados"]),
-        "skip_reason": "sin literal `*.md`: no clasifica notas de forma reconocible",
+        "skip_reason": ("sin literal `*.md` ni filtro por sufijo `.md`: no "
+                        "clasifica notas de forma reconocible"),
         # Las fronteras de lenguaje, con su zona y su norma (v40.19). Se
         # publican aunque estén limpias: el alcance es la mitad del dato.
         "boundaries": resumen_de_fronteras(),
@@ -958,7 +991,8 @@ def check() -> Dict[str, Any]:
             "de una frontera—, no ampliando la baseline. Verde aquí no prueba "
             "que no haya copias: prueba que no hay copias de la forma que esta "
             "tool sabe reconocer, y en Python solo en los `modules_measured` que "
-            "nombran `*.md` — los `modules_skipped` no los mira nadie. En las "
+            "nombran `*.md` o filtran notas por sufijo `.md` — los "
+            "`modules_skipped` no los mira nadie. En las "
             "fronteras la señal es el literal en el fichero ajeno: un `.mjs` que "
             "reimplemente la decisión sin escribir la constante tampoco se ve."
         ),

@@ -12,7 +12,7 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~12.000 líneas). Fuente normativa. |
 | `scripts/*.py` | ~168 scripts, 127 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (6606 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (6609 tests). Toda norma con guard debe tener test. |
 | `normas/` | Normas como paquete (`normas/<código>/`: `norma.py`, `porque.md`, `guard.py`, `heal.py`, `test_*.py`). Las carga `vault_norms_catalog` en su sitio del catálogo; la forma la vigila `--check-framework`. Desde m186 toda norma vive aquí (cuántas, `NORMAS_EN_PAQUETE`). `guard.py`/`heal.py` son derivados —apuntan a la función dueña; los sanadores salen de `vault_norms_catalog.SANADORES`— y se regeneran con `vault_norms_engine.escribir_caras_derivadas`, no a mano. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
@@ -308,8 +308,8 @@ que costaron una tanda cada una.
 
 **1. Un guard verde dice menos de lo que parece, y cada uno declara cuánto menos.**
 `vault_criterios` (AP-57) mide dos cosas con alcances distintos. **En Python**, solo los
-módulos que nombran `*.md` —lo publica en `modules_measured`/`modules_skipped`— y por
-copia sintáctica: un módulo puede reimplementar un criterio sin repetir una constante y no
+módulos que nombran `*.md` o filtran notas por sufijo `.md` (v41.25) —lo publica en
+`modules_measured`/`modules_skipped`— y por copia sintáctica: un módulo puede reimplementar un criterio sin repetir una constante y no
 lo verá. **En las fronteras de lenguaje** (v40.19) mide los ficheros de `FRONTERAS` —el
 `.mjs`, la CI, el `Makefile`, el `.ps1`— y allí la exención no es importar al dueño, que no
 se puede, sino **leer la pasarela**: el artefacto derivado por el que el criterio cruza.

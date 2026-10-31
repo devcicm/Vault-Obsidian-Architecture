@@ -1,18 +1,21 @@
-"""A-13 — límite declarado: `vault_criterios.medir` no mira un módulo sin `"*.md"`.
+"""A-13 — `vault_criterios.medir` mira también el recorrido de notas por sufijo.
 
 La precondición del literal (`medir`, «solo puede incumplirse donde se
-clasifican notas») es el alcance real de la puerta AP-57, y deja un falso
-negativo que este test fija: el mismo criterio copiado —el fence a mano en vez
-de `vault_lib.strip_code_blocks`— se ve en un módulo que recorre notas con
-`glob("*.md")` y no en uno que las recorre con `.endswith(".md")`. Medido el
-2026-10-30: 36 de 167 módulos entran en la medida.
+clasifican notas») es el alcance real de la puerta AP-57. Hasta v41.25 dejaba un
+falso negativo: el mismo criterio copiado —el fence a mano en vez de
+`vault_lib.strip_code_blocks`— se veía en un módulo que recorre notas con
+`glob("*.md")` y no en uno que las recorre con `p.suffix == ".md"`. Medido el
+2026-10-30: 36 de 167 módulos entraban en la medida; con
+`_recorre_notas_por_sufijo` entran 40 y no estrenan ninguna copia.
 
-Falla el día que el detector vea el segundo caso, para que
-`vault_blueprint.DEUDA_DECLARADA` pase la entrada a `saldada`.
+La entrada `criterios_salta_modulos_sin_glob_md` de
+`vault_blueprint.DEUDA_DECLARADA` queda `saldada` y se sostiene en este test.
 """
 
 import sys
 from pathlib import Path
+
+import pytest
 
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "scripts"))
@@ -29,10 +32,19 @@ def enlaces(raiz):
         yield from partes[::2]
 '''
 
+#: Escribe un fence y compone un nombre `.md`, pero no clasifica notas: es la
+#: forma de `vault_subgraph`, que admitir por el literal suelto daba por copia.
+_ESCRITOR = '''
+def diagrama(seed, nodos):
+    if f"{seed}.md" in nodos:
+        return ["```mermaid", "graph LR", "```"]
+    return []
+'''
 
-def _medir(monkeypatch, tmp_path, recorrido):
+
+def _medir(monkeypatch, tmp_path, fuente):
     modulo = tmp_path / "vault_copia_del_fence.py"
-    modulo.write_text(_COPIA.format(recorrido=recorrido), encoding="utf-8")
+    modulo.write_text(fuente, encoding="utf-8")
     monkeypatch.setattr(C, "_modulos", lambda: [modulo])
     monkeypatch.setattr(C.vault_grafo_import, "fuente_de", lambda nombre: modulo)
     hallazgos = C.medir()
@@ -41,14 +53,26 @@ def _medir(monkeypatch, tmp_path, recorrido):
 
 def test_la_copia_se_ve_en_un_modulo_que_nombra_el_glob(monkeypatch, tmp_path):
     """El control: con `glob("*.md")` el detector ve la copia del fence."""
-    hallazgos, alcance = _medir(monkeypatch, tmp_path, 'Path(raiz).rglob("*.md")')
+    fuente = _COPIA.format(recorrido='Path(raiz).rglob("*.md")')
+    hallazgos, alcance = _medir(monkeypatch, tmp_path, fuente)
     assert alcance["medidos"] == ["vault_copia_del_fence"]
     assert [h["criterio"] for h in hallazgos] == ["que_es_codigo_y_no_enlace"]
 
 
-def test_limite_declarado_criterios_salta_modulos_sin_glob_md(monkeypatch, tmp_path):
-    """La misma copia, recorriendo notas por sufijo: nadie la mira."""
-    recorrido = '(p for p in Path(raiz).rglob("*") if p.suffix == ".md")'
-    hallazgos, alcance = _medir(monkeypatch, tmp_path, recorrido)
+@pytest.mark.parametrize("recorrido", [
+    '(p for p in Path(raiz).rglob("*") if p.suffix == ".md")',
+    '(p for p in Path(raiz).rglob("*") if p.name.endswith(".md"))',
+    '(p for p in Path(raiz).rglob("*") if p.suffix in (".md", ".markdown"))',
+])
+def test_la_copia_se_ve_recorriendo_notas_por_sufijo(monkeypatch, tmp_path, recorrido):
+    """La misma copia, recorriendo notas por sufijo: AP-57 ya la ve."""
+    hallazgos, alcance = _medir(monkeypatch, tmp_path, _COPIA.format(recorrido=recorrido))
+    assert alcance["medidos"] == ["vault_copia_del_fence"]
+    assert [h["criterio"] for h in hallazgos] == ["que_es_codigo_y_no_enlace"]
+
+
+def test_el_literal_md_suelto_no_mete_al_modulo_en_la_medida(monkeypatch, tmp_path):
+    """Componer `f"{x}.md"` no es clasificar notas: se sigue saltando."""
+    hallazgos, alcance = _medir(monkeypatch, tmp_path, _ESCRITOR)
     assert alcance["saltados"] == ["vault_copia_del_fence"]
-    assert not hallazgos, "ya se ve la copia: salda la deuda A-13 en DEUDA_DECLARADA"
+    assert not hallazgos

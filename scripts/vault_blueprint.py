@@ -166,23 +166,27 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     },
     {
         "id": "criterios_salta_modulos_sin_glob_md",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "v41.25",
         "sostenida_por": [
-            cita_repo(rutas.TESTS, "test_criterios_salta_modulos_sin_glob_md.py::test_limite_declarado_criterios_salta_modulos_sin_glob_md"),
+            cita_repo(rutas.TESTS, "test_criterios_salta_modulos_sin_glob_md.py::test_la_copia_se_ve_recorriendo_notas_por_sufijo"),
+            cita_repo(rutas.TESTS, "test_criterios_salta_modulos_sin_glob_md.py::test_el_literal_md_suelto_no_mete_al_modulo_en_la_medida"),
         ],
         "desde": "v41.25",
         "capa": "5",
         "que": (
             "A-13 de la nota consolidada del enjambre (no el A-13 del estudio, que "
-            "es el MCP sin perfiles): `vault_criterios.medir` solo mide los modulos "
-            "que nombran `\"*.md\"`. Un modulo que recorre notas por sufijo "
-            "(`p.suffix == \".md\"`) reescribe un criterio con dueno sin que la "
-            "puerta AP-57 lo vea; el alcance lo publican modules_measured/skipped."
+            "es el MCP sin perfiles): `vault_criterios.medir` solo media los modulos "
+            "que nombran `\"*.md\"`, y uno que recorre notas por sufijo "
+            "(`p.suffix == \".md\"`, `.endswith(\".md\")`) reescribia un criterio "
+            "con dueno sin que la puerta AP-57 lo viera. `_recorre_notas_por_sufijo` "
+            "lo mete en la medida: 40 de 167 modulos (eran 36), sin ninguna copia nueva."
         ),
         "por_que_no_ahora": (
-            "Ampliar el alcance cambia la precondicion de la puerta y puede estrenar "
-            "deuda en modulos que hoy no se miden; es una decision aparte que se "
-            "consulta antes de tocar el detector."
+            "No es una deuda viva: esta saldada. Lo que se guarda es por que la senal "
+            "es la comparacion y no el literal `\".md\"` suelto: admitir el literal "
+            "metia 31 modulos `*_save` que componen el nombre del fichero que escriben "
+            "y un falso positivo (`vault_subgraph` escribe un fence de Mermaid, no lo lee)."
         ),
     },
     {
