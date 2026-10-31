@@ -9,18 +9,17 @@ Uso:
 from __future__ import annotations
 
 import argparse
-import subprocess
+import subprocess  # noqa: F401 — nombre público del módulo desde antes de compartir `_run`
 import sys
 from pathlib import Path
 
+# El lanzador es el del instalador: el mismo programa en las dos direcciones.
+# La dependencia va de uninstall a install y nunca al revés, porque el
+# instalador corre antes de que exista nada más del paquete (CN-05).
+from vault.install import _run
+
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-
-
-def _run(cmd: list[str], **kwargs) -> int:
-    print(f"  {' '.join(cmd)}")
-    r = subprocess.run(cmd, **kwargs)
-    return r.returncode
 
 
 def _pip_uninstall() -> int:
