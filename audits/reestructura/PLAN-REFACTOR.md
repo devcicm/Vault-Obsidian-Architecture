@@ -80,9 +80,30 @@ El carril `merge` lo cerró sobre `52252b3`, con la paridad completa, las 28 pue
 
 | Paso | Hallazgo | Clase | Qué cambia | Paridad |
 |---|---|---|---|---|
-| B-1 | H-04 | PURE_REFACTOR | Contexto nuevo `vault/normativa/` con `norms_catalog`, `fundamentals_catalog`, `audit_catalog`, `mermaid_reglas`, `contrato_nota` y `vocabulario`. Cada uno se mueve en un commit propio. El viejo `vault/kernel/<x>.py` queda como alias `sys.modules` con `superseded_by`. `vault_arch` declara el contexto; `vault_kernel --check` y AP-59 se recalculan. | `superficie` (los nombres no cambian) + `estatico` |
+| B-1 | H-04 | PURE_REFACTOR — **replaneado** (ver «Obstáculos del bloque B»): subpaquete `vault/kernel/normativa/`, dentro del contexto kernel | ~~Contexto nuevo `vault/normativa/` con `norms_catalog`, `fundamentals_catalog`, `audit_catalog`, `mermaid_reglas`, `contrato_nota` y `vocabulario`. Cada uno se mueve en un commit propio. El viejo `vault/kernel/<x>.py` queda como alias `sys.modules` con `superseded_by`. `vault_arch` declara el contexto; `vault_kernel --check` y AP-59 se recalculan.~~ Los seis se mueven a `vault/kernel/normativa/`, un commit por módulo. El viejo `vault/kernel/<x>.py` queda como alias `sys.modules` con `superseded_by`. Los alias de `scripts/` y los consumidores internos apuntan al dueño nuevo. `vault_arch` no cambia: siguen siendo del contexto kernel. | `superficie` (los nombres no cambian) + `estatico` |
 | B-2 | H-04 | PURE_REFACTOR | `registry` y `proyectos` se mueven al contexto que los consume (se decide midiendo el fan-in en el momento del paso). | ídem |
 | B-3 | H-05 + C-07 | COMPATIBLE_EVOLUTION | Contexto `gobernanza_del_estandar`, que recibe `carriles`, `perfil_suite`, `test_scope`, `firma_sitio`, `spec_catalog_check` y `kernel/baseline.py`. Queda fuera de la wheel y la exclusión la vigila `vault_produccion`. Los alias en `meta_toolkit` se conservan. | `superficie` + test de contenido de la wheel |
+
+### Obstáculos del bloque B (2026-10-31, al ejecutarlo)
+
+- **B-1 como contexto aparte rompe una frontera que ya se había arreglado.**
+  - Los seis catálogos forman una pieza cerrada: solo dependen entre ellos, de `vault_registry` y de `vault_grafo_import`, todos del kernel.
+  - Pero los consumen casi todos los contextos:
+
+    | Catálogo | Consumidores | Contextos |
+    |---|---|---|
+    | `norms_catalog` | 37 | 7 |
+    | `vocabulario` | 21 | 7 |
+    | `fundamentals_catalog` | 12 | 4 |
+    | `contrato_nota` | 11 | 4 |
+    | `audit_catalog` | 7 | 3 |
+    | `mermaid_reglas` | 3 | 3 |
+
+  - Como contexto de dominio, `normativa` estrenaría 6 pares de cruce (autoria, ciclo_de_vida, consulta, gobernanza, grafo y meta_toolkit → normativa). `vault_arch --check` se pondría en rojo.
+  - Además, deshace lo que v40.27–28 arregló a propósito (AP-62): 22 de los 62 cruces de entonces eran tools leyendo una tabla constante.
+  - En DDD, un modelo que comparten todos los contextos es *shared kernel* por definición. El defecto de H-04 no es que estén en el núcleo, sino que el núcleo mezcla en el mismo directorio la infraestructura (raíz, fs, escritura, procesos) con el lenguaje compartido.
+  - **Decisión del propietario (2026-10-31):** subpaquete `vault/kernel/normativa/`. Separa las dos cosas en disco sin cambiar ninguna frontera. La alternativa de declarar un segundo shared kernel en `vault_arch` queda como candidata.
+- **B-2 merece la misma pregunta antes de ejecutarse.** `vault_registry` tiene 44 consumidores en 8 contextos, y `proyectos` entró al kernel desde autoria en v40.34 (AP-63) precisamente porque es identidad que leen todos. Se mide en su paso, pero lo esperable es NOT_APPLICABLE o subpaquete.
 
 ## Bloque C — inyección de la raíz (riesgo alto, el más valioso para la suite)
 
