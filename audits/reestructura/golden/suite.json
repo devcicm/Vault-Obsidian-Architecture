@@ -1,0 +1,7 @@
+{
+ "cifras": {
+  "passed": 6726,
+  "skipped": 16
+ },
+ "resumen": "========== 6726 passed, 16 skipped, 2 warnings in 1499.13s (0:24:59) =========="
+}

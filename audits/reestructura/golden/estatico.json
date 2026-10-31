@@ -1,0 +1,36 @@
+{
+ "ficheros": {
+  "mcp/nodejs/tools-catalog.json": "5800502f65e1c5419d1a39aa1c096905d82d138c7c7d24b9c67d5915f1297a4d",
+  "schemas/README.md": "52f1d4abec7bd253be55c64f3a8af2c61f346b92774ef0d3c036363fd4ba33e1",
+  "schemas/vault-v18.schema.json": "7b308cb0140a7a15433134089a3d0f43be02001f19e749f989dd8d0d25f54eaf",
+  "schemas/vault-v19.schema.json": "8e1a7e5fd369e4e4f7eb475d42aeb67e2741515c4d4fb202536b5563f6276cab",
+  "schemas/vault-v20.schema.json": "1cbb948601288cf3b56601307f5dca9aa0428e22d090b34acdd6cd5e0cb36b11",
+  "schemas/vault-v21.schema.json": "436d944416eee5cc634d7b6686c5cc41c0214b2133aade3aa383963c4b8cc76d",
+  "schemas/vault-v22.schema.json": "c0fb990e5115974af7cc187d0f0da8b2db80019d6b1fc195465b63e6c549b276",
+  "schemas/vault-v23.schema.json": "38b04f865e027b4fd511dccda58040584a12553b45362764b5d074ac3b0adb61",
+  "schemas/vault-v24.schema.json": "0712642717de2d71e16bd3fc5a1b34224601a3e50261f8f89e305e74174352ce",
+  "schemas/vault-v25.schema.json": "7e8ec66d015b7a2436183d3ec6bf91f1532c463d10d16b9a9f2fd8836df41a97",
+  "schemas/vault-v26.schema.json": "53878ee27ca62af0bbe49bbfe577a14e6d16a07997bf1dcb3b27b208d3f8cc9c",
+  "schemas/vault-v27.schema.json": "f1c8a6241a13e0e17e299332048f838956d830b8cb6e136258c9cc201cdb2dd0",
+  "schemas/vault-v28.schema.json": "7b7279eb9be140b1288d70e221a07ab96bae2dfe10830843b416a996b0ad40de",
+  "schemas/vault-v29.schema.json": "9557c792ab82852788e7e1aa32df4da55afaee815736b6164ea3ff7344f4227b",
+  "schemas/vault-v30.schema.json": "62d2e82b5a9701336d8998eb40f09e9af3fa0f1439fd101cb6f887f51df6efd4",
+  "schemas/vault-v31.schema.json": "06b83e553397d0c4a4b01c80b29516513b9e92b4758c0421519563c8b40bc05c",
+  "schemas/vault-v32.schema.json": "dc2af51f776c3d367239486096998ba4bb648ae89a88630b1360de750e170af1",
+  "schemas/vault-v33.schema.json": "fc13acf0f7cd7b2302439eaf2e2a3f7c67e88af707e497334a9050ab931c46f4",
+  "schemas/vault-v34.schema.json": "6978b36fd01823f5ab459755d8d308ca0f4f76749e96661903c91eede5d9aae8",
+  "schemas/vault-v35.schema.json": "07c6545e34935a06e4980dee516033c3fb7483de7814fdcb29027205aa13261b",
+  "schemas/vault-v36.schema.json": "e4988c201d75490f338df817571df42b848ee55c012460debfc8ff491780733e",
+  "schemas/vault-v37.schema.json": "376c8a6e154b6d7751b58de68bec2fbb2b8b2f931406b37911f575073d69a207",
+  "schemas/vault-v38.schema.json": "259ce0abe877d2bfd94488b3fd82e4dc8e11a3d4d36ea2e6e69595f44a8af937",
+  "schemas/vault-v39.schema.json": "2307cdc267e448d2cab94f2b7a0e71853439ca8662974408312a0f25eaf6240f",
+  "schemas/vault-v40.schema.json": "bdc9df10c6393356b6d2d5927c5dca75f765e0d6186a58a44737233646a78a9b",
+  "schemas/vault-v41.schema.json": "b8e28686fc13ae40c4c7bbf8e842a707a26cf567ff37d9e942223d8b11ebc2cf",
+  "vault-sandbox/00_System/tool-spec.json": "71d4701d994988cef31a4246c44738aa603e8029efc6b3ca66b71f73ea3e99da",
+  "vault/meta_toolkit/tools-catalog.json": "5800502f65e1c5419d1a39aa1c096905d82d138c7c7d24b9c67d5915f1297a4d"
+ },
+ "project_scripts": {
+  "vault": "vault.product_cli:main",
+  "vault_gobernanza": "vault.gobernanza.tool:main"
+ }
+}

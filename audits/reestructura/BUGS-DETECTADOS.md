@@ -1,0 +1,14 @@
+# Bugs detectados durante la reestructura
+
+Regla Teseo: un FIX no se arregla dentro de un tablón de refactor. Si se arregló, fue en
+un commit propio, fuera de los tablones, y aquí queda la referencia.
+
+| # | Ubicación | Descripción | Relacionado | Urgencia | Por qué no se arregló aquí |
+|---|---|---|---|---|---|
+| B-01 | `scripts/vault_doc_sync.py` (`fix`) | El índice de `scripts/README.md` se escribía en CRLF en Windows. | AP-47, lección CRLF | — | **Arreglado** en `c66a4c5`, en un commit propio previo a la auditoría, con test `test_fix_regenera_el_indice_y_deja_check_limpio`. |
+| B-02 | `scripts/vault_doc_counts.py` (`--fix`) | Reescribe cifras históricas que no llevan marcador, así que una fila del changelog que dice «eran 126» acaba diciendo la cifra de hoy. | AP-47 | media | **Mitigado** con el marcador histórico. Falta que `--fix` se niegue a tocar una cifra dentro de una fila fechada sin marcador. Es un cambio de comportamiento, así que es FIX y no refactor. |
+| B-03 | `scripts/README.md`, ejemplo de `vault_tests_higiene` | El ejemplo era de solo lectura y `toolkit_audit` no lo ejercitaba. | AP-42 | — | **Arreglado** antes de la auditoría. |
+| B-04 | `scripts/README.md`, «98 de las 129» | La cifra de tools expuestas por MCP está escrita a mano y `vault_doc_counts` no la mide. | AP-47, H-12 | media | Medirla exige un contador nuevo en `vault_doc_counts`: es FEATURE del guard, no refactor. |
+| B-05 | `scripts/vault_toolkit_audit.py --tools X` | Una corrida parcial sobrescribe el `toolkit-audit-last.json` global, y `DISPONIBILIDAD-DE-TOOLS.md` cae a «sin dato» para las demás tools. **Se reprodujo el 2026-10-31 en la primera captura del golden**: el ejemplo de la tool lo escribió en el repo y las corridas siguientes vieron el estado degradado, así que aquella captura se descartó. | AP-42, AP-36 | media | Corregirlo cambia el contrato del fichero (que la corrida parcial escriba aparte o fusione), así que es FIX. Mientras tanto, `paridad.py` lo contiene con `CustodiaDelRepo`: anota la escritura en `repo_escritas` y la deshace. |
+| B-06 | `scripts/vault_doc_counts.py`, `historic_exempt` | Lista la misma línea exenta dos veces. | — | baja | Es cosmético y no cambia ningún veredicto. Va con B-02. |
+| B-07 | Herramientas del agente (heredoc en Bash) | Los reemplazos con heredoc no son fiables en este entorno y dejan CRLF o escapes. | lección CRLF | — | No es un bug del repo. Se anota para que nadie lo repita: se edita con Edit y se normaliza a LF. |
