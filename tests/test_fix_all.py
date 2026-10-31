@@ -77,8 +77,8 @@ def test_ap44_la_copia_trae_los_ficheros_nuevos_sin_los_ignorados(tmp_path):
     assert _ficheros_de_la_copia(tmp_path) == [".gitignore", "nuevo.py", "viejo.py"]
 
 
-@pytest.fixture
-def repo_temporal(tmp_path, monkeypatch):
+@pytest.fixture(scope="module")
+def _copia_del_repo(tmp_path_factory):
     """AP-36/AP-44: regeneración real, sobre una copia con historia propia.
 
     Cambiar solo cwd no basta: el padre y los scripts resuelven su raíz por
@@ -86,9 +86,17 @@ def repo_temporal(tmp_path, monkeypatch):
     la superposición prueba los archivos actuales, incluidos cambios sin commit.
     Se copian los archivos del índice y los nuevos sin ignorar
     (`_ficheros_de_la_copia`), nunca lo que `.gitignore` deja fuera.
+
+    Una por módulo y no por test: hasta v41.26 cada uno de los once tests que la
+    usan levantaba su worktree y copiaba el árbol entero, y era la mitad de los
+    161 s que el perfil medía para este módulo. Compartirla no cambia lo que se
+    prueba: los pasos regeneran derivados de lo que hay, que es lo mismo que
+    hace `fix_all` al encadenarlos, y un paso que dependiera de no haber corrido
+    otro antes sería un defecto del orquestador que este test debe ver.
     """
-    destino = (tmp_path / "repo").resolve()
-    assert destino.is_relative_to(tmp_path.resolve())
+    base = tmp_path_factory.mktemp("fix_all")
+    destino = (base / "repo").resolve()
+    assert destino.is_relative_to(base.resolve())
     subprocess.run(
         ["git", "worktree", "add", "--detach", str(destino), "HEAD"],
         cwd=ROOT, capture_output=True, check=True,
@@ -100,12 +108,17 @@ def repo_temporal(tmp_path, monkeypatch):
                 copia = destino / relativa
                 copia.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(origen, copia)
-        monkeypatch.setattr(vfa, "REPO_ROOT", destino)
-        monkeypatch.setenv("VAULT_ROOT", str(destino / "vault-sandbox"))
-        monkeypatch.setenv("VAULT_STRICT_ROOT", "1")
         yield destino
     finally:
         _quitar_worktree(destino)
+
+
+@pytest.fixture
+def repo_temporal(_copia_del_repo, monkeypatch):
+    monkeypatch.setattr(vfa, "REPO_ROOT", _copia_del_repo)
+    monkeypatch.setenv("VAULT_ROOT", str(_copia_del_repo / "vault-sandbox"))
+    monkeypatch.setenv("VAULT_STRICT_ROOT", "1")
+    return _copia_del_repo
 
 
 def test_los_pasos_en_el_orden_canonico():
