@@ -3211,6 +3211,62 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         ),
         "related": ["vault_arch", "vault_norms", "vault_gate", "vault_blueprint", "vault_changelog_check"],
     },
+    "vault_tests_higiene": {
+        "name": "vault_tests_higiene",
+        "script": "vault_tests_higiene.py",
+        "group": "Normas",
+        "purpose": (
+            "AP-69: la suite crecio escribiendo cada modulo de test como si fuera "
+            "el primero — su sys.path.insert, su lanzador de subproceso, su "
+            "frontmatter pegado con + \"\\n\". Ninguna copia es un fallo; el "
+            "agregado hace que acelerar la suite exija tocar cientos de "
+            "ficheros. Esta tool recorre por AST tests/test_*.py y publica cada "
+            "sitio de seis clases (ruta_a_mano, lanzador_privado, concatenacion, "
+            "buffer_a_mano, captura_a_mano, espera_fija) con su firma de sitio y "
+            "el sustituto de cada una en tests/apoyo.py o el conftest. La "
+            "baseline solo encoge."
+        ),
+        "params": {
+            "check": {
+                "type": "boolean",
+                "required": False,
+                "description": "Publica los sitios, su resumen por clase y los nuevos frente a la baseline",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit 1 si hay sitios nuevos",
+                "validators": [],
+            },
+            "freeze": {
+                "type": "boolean",
+                "required": False,
+                "description": "Congela lo medido; se niega si crece (DEBT_WOULD_GROW)",
+                "validators": [],
+            },
+            "admitir-nuevos": {
+                "type": "boolean",
+                "required": False,
+                "description": "Con --freeze, congela tambien deuda nueva y la lista",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "Estatica: no ve un lanzador que no pase sys.executable (el binario "
+            "vault, node) ni un texto armado con join o f-strings encadenados",
+            "Solo mide tests/test_*.py: tests/apoyo.py y el conftest son el sitio "
+            "donde ese codigo tiene que estar, y normas/*/test_*.py corre sin el "
+            "conftest y si necesita su sys.path",
+            "Verde no dice que la suite sea rapida: eso lo mide perfil_suite",
+        ],
+        "side_effects": [cita_repo(rutas.SCRIPTS, "tests-higiene-baseline.json")],
+        "example": (
+            "python vault_tests_higiene.py --check\n"
+            "python vault_tests_higiene.py --check --strict"
+        ),
+        "related": ["vault_criterios", "vault_clones", "vault_gate", "vault_blueprint"],
+    },
     "vault_produccion": {
         "name": "vault_produccion",
         "script": "vault_produccion.py",
@@ -4610,6 +4666,7 @@ GROUPS: Dict[str, List[str]] = {
         "vault_excepcion_declarada",
         "vault_recursos",
         "vault_procesos_git",
+        "vault_tests_higiene",
         "vault_produccion",
         "vault_esquema",
         "vault_metricas",

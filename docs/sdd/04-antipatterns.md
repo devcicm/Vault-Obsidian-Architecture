@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-68 más
-> las familias PAT, SP y CN. Por familia: AP 68, CN 5, PAT 6, SP 4.
-> Bilingual document. Full norm catalog: antipatterns AP-01..AP-68 plus the PAT,
-> SP and CN families. By family: AP 68, CN 5, PAT 6, SP 4.
+> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-69 más
+> las familias PAT, SP y CN. Por familia: AP 69, CN 5, PAT 6, SP 4.
+> Bilingual document. Full norm catalog: antipatterns AP-01..AP-69 plus the PAT,
+> SP and CN families. By family: AP 69, CN 5, PAT 6, SP 4.
 
 ---
 
 ## ES
 
-Total de normas registradas: 83 (AP 68, CN 5, PAT 6, SP 4)
+Total de normas registradas: 84 (AP 69, CN 5, PAT 6, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -811,6 +811,22 @@ Se salda **moviendo la llamada al dueño**, nunca ampliando una lista. Si de ver
 
 Límites declarados: la puerta no ve un argv armado con `" ".join(...)` o con un f-string, ni un binario que lance git por su cuenta; los `tests/` quedan fuera del alcance **y por qué** -- un test necesita git crudo para fabricar el repositorio con el que mide, y medir una tool con su propio ejecutor sería certificarse a sí mismo (AP-44). El runtime, en cambio, no depende del análisis estático: aunque un sitio se escondiera del AST, su llamada seguiría teniendo que pasar por el dueño para ejecutarse.
 
+### AP-69: El test que construye a mano lo que ya tiene apoyo
+
+- **Severidad:** medium
+- **Enforcement:** guard
+- **Detectado por:** vault_tests_higiene
+
+Un módulo de test reescribe por su cuenta lo que la suite ya resuelve en un sitio: el `sys.path` que el conftest prepara, el lanzador de una tool por subproceso, el texto de una nota pegado con `+ "\n"`, un `+=` sobre una cadena, la captura de stdout a mano o un `time.sleep` para esperar a que algo pase. Ninguna copia es un fallo por separado; el agregado sí lo es.
+
+Medido el 2026-10-31 sobre los 555 módulos de `tests/`: 476 `sys.path.insert`, 239 lanzadores privados --`_run`, `_tool`, `_cli`, `_ejecutar`…--, 133 textos multilínea concatenados, 13 `time.sleep` y 3 buffers a mano. Cada lanzador decide el entorno, la codificación y el timeout del hijo; el día que uno de los tres cambia hay 239 sitios que tocar y ningún guard que lo diga.
+
+Es AP-57 dentro de la suite: el criterio de cómo se lanza una tool o cómo se escribe una nota de prueba está reescrito por fichero. Y es caro en el sitio donde más duele, el desarrollo: una suite cuyos tests no comparten apoyo no se puede acelerar en un sitio, solo en seiscientos.
+
+**Prevención:** `vault_tests_higiene --check --strict` recorre por AST los `tests/test_*.py` y publica cada sitio de esas seis clases con su firma de sitio; la baseline solo encoge y congelar deuda nueva exige `--freeze --admitir-nuevos`, que la lista. Cada clase publica su sustituto: `tests/apoyo.py` (`correr_tool`, `entorno`, `nota`, `escribir_nota`, `ROOT`, `SCRIPTS`), el conftest para el path, `capsys` para la salida y esperar a la condición en vez de dormir.
+
+Límites declarados: no ve un lanzador que no pase `sys.executable` (el binario `vault`, `node`), ni un texto armado con `join` a trozos; `normas/*/test_*.py` queda fuera porque corre sin el conftest de `tests/` y sí necesita su propio path. Y verde no dice que la suite sea rápida: eso lo mide `perfil_suite`, por módulo.
+
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
 - **Severidad:** high
@@ -965,7 +981,7 @@ El transporte HTTP/SSE del servidor MCP acepta sesiones sin token, responde con 
 
 ## EN
 
-Total registered norms: 83 (AP 68, CN 5, PAT 6, SP 4)
+Total registered norms: 84 (AP 69, CN 5, PAT 6, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -1766,6 +1782,22 @@ Lo que lo hace caro no es el verbo: es que la propiedad "este repo no borra hist
 Se salda **moviendo la llamada al dueño**, nunca ampliando una lista. Si de verdad hace falta un mutador nuevo, se autoriza en `MUTADORES_AUTORIZADOS` con su motivo escrito, y el diff que lo añade es exactamente la revisión que el criterio no daba.
 
 Límites declarados: la puerta no ve un argv armado con `" ".join(...)` o con un f-string, ni un binario que lance git por su cuenta; los `tests/` quedan fuera del alcance **y por qué** -- un test necesita git crudo para fabricar el repositorio con el que mide, y medir una tool con su propio ejecutor sería certificarse a sí mismo (AP-44). El runtime, en cambio, no depende del análisis estático: aunque un sitio se escondiera del AST, su llamada seguiría teniendo que pasar por el dueño para ejecutarse.
+
+### AP-69: El test que construye a mano lo que ya tiene apoyo
+
+- **Severity:** medium
+- **Enforcement:** guard
+- **Detected by:** vault_tests_higiene
+
+Un módulo de test reescribe por su cuenta lo que la suite ya resuelve en un sitio: el `sys.path` que el conftest prepara, el lanzador de una tool por subproceso, el texto de una nota pegado con `+ "\n"`, un `+=` sobre una cadena, la captura de stdout a mano o un `time.sleep` para esperar a que algo pase. Ninguna copia es un fallo por separado; el agregado sí lo es.
+
+Medido el 2026-10-31 sobre los 555 módulos de `tests/`: 476 `sys.path.insert`, 239 lanzadores privados --`_run`, `_tool`, `_cli`, `_ejecutar`…--, 133 textos multilínea concatenados, 13 `time.sleep` y 3 buffers a mano. Cada lanzador decide el entorno, la codificación y el timeout del hijo; el día que uno de los tres cambia hay 239 sitios que tocar y ningún guard que lo diga.
+
+Es AP-57 dentro de la suite: el criterio de cómo se lanza una tool o cómo se escribe una nota de prueba está reescrito por fichero. Y es caro en el sitio donde más duele, el desarrollo: una suite cuyos tests no comparten apoyo no se puede acelerar en un sitio, solo en seiscientos.
+
+**Prevention:** `vault_tests_higiene --check --strict` recorre por AST los `tests/test_*.py` y publica cada sitio de esas seis clases con su firma de sitio; la baseline solo encoge y congelar deuda nueva exige `--freeze --admitir-nuevos`, que la lista. Cada clase publica su sustituto: `tests/apoyo.py` (`correr_tool`, `entorno`, `nota`, `escribir_nota`, `ROOT`, `SCRIPTS`), el conftest para el path, `capsys` para la salida y esperar a la condición en vez de dormir.
+
+Límites declarados: no ve un lanzador que no pase `sys.executable` (el binario `vault`, `node`), ni un texto armado con `join` a trozos; `normas/*/test_*.py` queda fuera porque corre sin el conftest de `tests/` y sí necesita su propio path. Y verde no dice que la suite sea rápida: eso lo mide `perfil_suite`, por módulo.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 

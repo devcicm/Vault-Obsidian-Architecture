@@ -3,8 +3,8 @@
 Vault Obsidian Architecture es un estándar abierto con un toolkit para dar a agentes LLM memoria documental persistente, auditable y gobernada sobre Markdown plano.
 
 [![Version](https://img.shields.io/badge/version-v41.25-blue)](./vault-obsidian-architecture.md)
-[![Tools](https://img.shields.io/badge/tools-127_active-green)](./scripts/)
-[![Scripts](https://img.shields.io/badge/scripts-168_total-lightblue)](./scripts/)
+[![Tools](https://img.shields.io/badge/tools-128_active-green)](./scripts/)
+[![Scripts](https://img.shields.io/badge/scripts-169_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
 
@@ -357,7 +357,7 @@ Detalle completo en [Marco de Datos y Gobernanza](./vault-obsidian-architecture.
 | **Principios FAIR** | Findable, Accessible, Interoperable, Reusable — con el mecanismo concreto que ya los cumple | `vault_search`, `vault_master_index`, `.history/` |
 | **V's del Big Data** | Volumen, velocidad, variedad, veracidad, valor, variabilidad — cada V apunta a un número real | `vault_audit`, `vault_change_log`, `vault_delta` |
 | **Trazabilidad** | Cadena verificable `agent:` → `.change-log.json` → `.tool-trace.json` → `.history/` → manifiesto Merkle | `vault_audit --trace` |
-| **Gobernanza** | 83 normas AP/PAT/SP/CN, 0 con enforcement manual | `vault_norms --audit` |
+| **Gobernanza** | 84 normas AP/PAT/SP/CN, 0 con enforcement manual | `vault_norms --audit` |
 | **Alineación ISO** | 13 normas mapeadas cláusula → implementación → tool | `vault_fundamentals --framework` |
 
 ```bash
@@ -531,7 +531,7 @@ python scripts/vault_norms.py --check-framework    # guard anti-drift registro �
 - **AP-36** (critical): toda operación escribe solo dentro del vault, es idempotente
   y deja artefactos rastreables. Backups en `VAULT_ROOT/vault-backups/`, `.bak` de
   moves en `00_System/.trash/`, stubs de mantenimiento en `02_Observability/maintenance/stubs/`.
-- **0 normas con enforcement `manual`**: las 83 normas del catálogo tienen guard o audit.
+- **0 normas con enforcement `manual`**: las 84 normas del catálogo tienen guard o audit.
   `python scripts/vault_norms.py --audit [--root X]` audita AP-06/07/09/10/15/19/36, CN-02/03, SP-01.
 - **Saneamiento de índices**: tablas con `| [[stem]] | Título | ... |` (nunca alias en
   celda); `python scripts/vault_section_index.py --heal` cura índices legacy; escribir
@@ -542,7 +542,7 @@ python scripts/vault_norms.py --check-framework    # guard anti-drift registro �
 
 ---
 
-## Las 127 tools activas — 37 grupos
+## Las 128 tools activas — 37 grupos
 
 | Grupo | Tools |
 |---|---|
@@ -580,7 +580,7 @@ python scripts/vault_norms.py --check-framework    # guard anti-drift registro �
 | 32 — Gestión de Carpetas | `vault_folder_registry`, `vault_section` |
 | 33 — Corrección Automática | `vault_fix_brackets`, `vault_graph_fix`, `vault_frontmatter_heal`, `vault_frontmatter_completar`, `vault_supersede` |
 | 34 — Memoria de Contexto | `vault_preferences`, `vault_model_profile`, `vault_query_parse`, `vault_subgraph`, `vault_context_pack`, `vault_ingest`, `vault_arquitectura_en` |
-| 35 — Normas | `vault_norms`, `vault_arch`, `vault_blame_audit`, `vault_changelog_check`, `vault_error_contract`, `vault_foreign_check`, `vault_gate`, `vault_code_tag`, `vault_doc_counts`, `vault_doc_sync`, `vault_doc_staleness`, `vault_noop_audit`, `vault_smoke`, `vault_toolkit_audit`, `vault_voice`, `vault_servicio`, `vault_blueprint`, `vault_norms_coherence`, `vault_criterios`, `vault_ciclos`, `vault_clones`, `vault_kernel`, `vault_excepcion_declarada`, `vault_recursos`, `vault_procesos_git`, `vault_produccion`, `vault_esquema`, `vault_metricas`, `vault_fix_all` |
+| 35 — Normas | `vault_norms`, `vault_arch`, `vault_blame_audit`, `vault_changelog_check`, `vault_error_contract`, `vault_foreign_check`, `vault_gate`, `vault_code_tag`, `vault_doc_counts`, `vault_doc_sync`, `vault_doc_staleness`, `vault_noop_audit`, `vault_smoke`, `vault_toolkit_audit`, `vault_voice`, `vault_servicio`, `vault_blueprint`, `vault_norms_coherence`, `vault_criterios`, `vault_ciclos`, `vault_clones`, `vault_kernel`, `vault_excepcion_declarada`, `vault_recursos`, `vault_procesos_git`, `vault_tests_higiene`, `vault_produccion`, `vault_esquema`, `vault_metricas`, `vault_fix_all` |
 | 36 — Defectos y Cuarentena | `vault_bug_save`, `vault_quarantine` |
 | 37 — Skills | `vault_sdd_init`, `vault_sanacion` |
 
@@ -676,8 +676,8 @@ Sistema de control de asistencia con autenticación biométrica.
 
 Contiene:
 - 8 principios de diseño
-- 127 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
-- 83 normas: 68 antipatrones (AP-01–AP-68), 6 patrones (PAT-1–PAT-6), 4 SP, 5 CN
+- 128 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
+- 84 normas: 69 antipatrones (AP-01–AP-69), 6 patrones (PAT-1–PAT-6), 4 SP, 5 CN
 - norm_refs auto-embebido en frontmatter + vault_code_tag para etiquetas en código fuente
 - 8 Fundamentos de Datos (F1–F8) con trazabilidad a tools
 - CIA schema completo con semántica por tipo de nota
@@ -705,7 +705,7 @@ Contiene:
 ## Scripts — estructura del repositorio
 
 ```
-scripts/                    ← 168 archivos Python (127 tools activas + internas y de apoyo); las archivadas viven aparte en scripts/_archived/
+scripts/                    ← 169 archivos Python (128 tools activas + internas y de apoyo); las archivadas viven aparte en scripts/_archived/
 ├── vault_io.py             — I/O base: _detect_vault_root, assert_within_vault, atomic_write_text/json, file_lock
 ├── vault_errors.py         — wrap_main (timeout 60s), emit_ok, trace log
 ├── vault_write.py          — tool principal de escritura (guards AP-20, AP-21, norm_refs auto-embed)

@@ -3960,7 +3960,7 @@ Lo ingerido entra con `status: draft` y `cia_integrity: low`, de modo que el rer
 
 ### Grupo 35 — Normas
 
-> **Propósito:** gobernar **el estándar**, no la memoria documental de nadie (ver la entrada v40.9 de la tabla de versiones). Son 29 tools: el registro de normas (`vault_norms`), las puertas (`vault_gate`, `vault_arch`, `vault_blueprint`, `vault_doc_sync`, `vault_doc_counts`, `vault_doc_staleness`, `vault_changelog_check`, `vault_produccion`, `vault_servicio`, `vault_metricas`, `vault_esquema`, `vault_kernel`, `vault_recursos`, `vault_procesos_git`, `vault_ciclos`, `vault_clones`, `vault_criterios`, `vault_norms_coherence`, `vault_excepcion_declarada`), los audits con baseline que solo encoge (`vault_noop_audit`, `vault_blame_audit`, `vault_error_contract`, `vault_toolkit_audit`), la contrastación con vaults ajenos (`vault_foreign_check`) y el resto del meta-toolkit (`vault_fix_all`, `vault_smoke`, `vault_code_tag`, `vault_voice`). **No tocan las notas de nadie**: comprueban que este repositorio cumple lo que publica. Referencia de CLI: `scripts/README.md`, «Grupo 35».
+> **Propósito:** gobernar **el estándar**, no la memoria documental de nadie (ver la entrada v40.9 de la tabla de versiones). Son 30 tools: el registro de normas (`vault_norms`), las puertas (`vault_gate`, `vault_arch`, `vault_blueprint`, `vault_doc_sync`, `vault_doc_counts`, `vault_doc_staleness`, `vault_changelog_check`, `vault_produccion`, `vault_servicio`, `vault_metricas`, `vault_esquema`, `vault_kernel`, `vault_recursos`, `vault_procesos_git`, `vault_tests_higiene`, `vault_ciclos`, `vault_clones`, `vault_criterios`, `vault_norms_coherence`, `vault_excepcion_declarada`), los audits con baseline que solo encoge (`vault_noop_audit`, `vault_blame_audit`, `vault_error_contract`, `vault_toolkit_audit`), la contrastación con vaults ajenos (`vault_foreign_check`) y el resto del meta-toolkit (`vault_fix_all`, `vault_smoke`, `vault_code_tag`, `vault_voice`). **No tocan las notas de nadie**: comprueban que este repositorio cumple lo que publica. Referencia de CLI: `scripts/README.md`, «Grupo 35».
 
 ---
 
@@ -3972,7 +3972,7 @@ Lo ingerido entra con `status: draft` y `cia_integrity: low`, de modo que el rer
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **83 normas** del estándar (68 AP + 6 PAT + 4 SP + 5 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-68`. Fuente de verdad: `NORM_CATALOG` en `vault_norms_catalog.py` (`vault_norms.py` lo reexporta). Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **84 normas** del estándar (69 AP + 6 PAT + 4 SP + 5 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-69`. Fuente de verdad: `NORM_CATALOG` en `vault_norms_catalog.py` (`vault_norms.py` lo reexporta). Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -4217,7 +4217,7 @@ El vault en `{data-dir}/vault/` puede abrirse **directamente** en Obsidian deskt
 
 ## MCP Server Monolith — Servicio Directo para IAs (v37)
 
-El vault ahora expone sus 127 herramientas como un **servidor MCP monolítico** que las IAs pueden consumir directamente sin registro en harness. El archivo `mcp/nodejs/vault-mcp-server.mjs` implementa:
+El vault ahora expone sus 128 herramientas como un **servidor MCP monolítico** que las IAs pueden consumir directamente sin registro en harness. El archivo `mcp/nodejs/vault-mcp-server.mjs` implementa:
 
 ### Transporte dual
 - **Modo stdio:** el cliente MCP lanza `node mcp/nodejs/vault-mcp-server.mjs` como proceso hijo
@@ -4228,9 +4228,9 @@ El vault ahora expone sus 127 herramientas como un **servidor MCP monolítico** 
 | Capa | Función | Estrategias reutilizadas |
 |------|---------|--------------------------|
 | **MCP Protocol** | JSON-RPC 2.0 nativo (initialize, tools/list, tools/call, resources) | Cero dependencias npm |
-| **Tool Registry** | 127 herramientas con inputSchema completo | `vault_mcp_catalog.py` TOOLS_CATALOG |
+| **Tool Registry** | 128 herramientas con inputSchema completo | `vault_mcp_catalog.py` TOOLS_CATALOG |
 | **JS-native backend** | 2 tools rápidas en JavaScript puro | `vault_graph_inspect`, `vault_graph`, `vault_read`, backup/restore *(superseded_by: AP-48 — una tool no tiene a la vez backend en Node y script Python; la lista viva es `vault_mcp_catalog.NATIVE_JS_TOOLS`)* |
-| **Python backend** | 125 tools via subprocess a `scripts/*.py` | Todas las tools existentes |
+| **Python backend** | 126 tools via subprocess a `scripts/*.py` | Todas las tools existentes |
 | **Guard Chain** | 9 validadores pre-escritura en secuencia | `vault_write`, `vault_regex`, `vault_secret_scan` |
 | **File Watcher** | Detección de cambios en vault via `fs.watch` + SHA-256 | `vault_delta`, `vault_drift_detect` |
 | **Traceability** | Log inmutable de mutaciones (JSON + MD) | `vault_change_log`, `vault_mcp_context` |
@@ -7302,6 +7302,50 @@ repositorio con el que mide, y medir una tool con su propio ejecutor sería
 certificarla a sí mismo (AP-44). La puerta no ve un argv armado con
 `" ".join(...)` ni un binario que lance git por su cuenta; lo que sí lo cubre
 para siempre es el runtime, porque sin pasar por el dueño no se ejecuta.
+
+---
+
+### AP-69 — El test que construye a mano lo que ya tiene apoyo
+
+**Enforcement:** `guard` · **Severidad:** medium · **Introducido:** pendiente del release
+**Guard:** `python scripts/vault_tests_higiene.py --check --strict`
+
+**Síntoma.** Un módulo de test reescribe por su cuenta lo que la suite ya
+resuelve en un sitio: el `sys.path` que el conftest prepara, el lanzador de una
+tool por subproceso, el texto de una nota de prueba pegado con `+ "\n"`, un
+`+=` sobre una cadena, la captura de stdout a mano o un `time.sleep` para
+esperar a que algo pase.
+
+**Por qué importa.** Ninguna copia es un fallo por separado, y por eso ninguna
+puerta lo veía. El agregado sí lo es, y se paga en el sitio donde más duele: el
+desarrollo. Medido el 2026-10-31 sobre los 555 módulos de `tests/`: 476
+`sys.path.insert`, 239 lanzadores privados de subproceso —buena parte sin
+`timeout` ni `errors=`, así que un hijo colgado bloqueaba al worker entero—, 133
+textos multilínea concatenados y 13 `time.sleep`. La mitad del reloj de la suite
+era subproceso, y al buscar dónde acelerarlo no había un sitio: había
+doscientos treinta y nueve. Es AP-57 dentro de la suite: el criterio de cómo se
+lanza una tool o cómo se escribe una nota de prueba, reescrito por fichero.
+
+**Señal.** En un `tests/test_*.py`: `sys.path.insert`/`append`; una función que
+llama a `subprocess.run`/`check_output`/`Popen` con `sys.executable`; un `+`
+entre cadenas donde una lleva salto de línea; un `+=` de cadena; asignar
+`sys.stdout`/`sys.stderr` o `redirect_stdout`; `time.sleep`.
+
+**Prevención.** `vault_tests_higiene --check --strict` recorre por AST los
+`tests/test_*.py` y publica cada sitio con su firma de sitio; la baseline solo
+encoge y congelar deuda nueva exige `--freeze --admitir-nuevos`. Cada clase
+publica su sustituto: `tests/apoyo.py` (`correr_tool`, `entorno`, `nota`,
+`escribir_nota`, `ROOT`, `SCRIPTS`), el conftest para el path, `capsys` para la
+salida y esperar a la condición en vez de dormir. Se salda **usando el apoyo**,
+nunca ampliando la baseline.
+
+**Lo que la norma no dice.** No dice que un test no pueda lanzar subprocesos
+—los tests de contrato de CLI tienen que hacerlo—, sino que no se lancen con un
+lanzador propio. No mide `tests/apoyo.py` ni el conftest, que son el sitio de
+ese código, ni `normas/*/test_*.py`, que corren sin el conftest y necesitan su
+path. La puerta es estática: no ve un lanzador sin `sys.executable` ni un texto
+armado con `join`. Y verde no dice que la suite sea rápida: eso lo mide
+`perfil_suite`, por módulo, contra el presupuesto del carril `dev`.
 
 ---
 

@@ -1,13 +1,13 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture** (versión vigente: `vault_version.CURRENT_VERSION`). Implementan las 127 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture** (versión vigente: `vault_version.CURRENT_VERSION`). Implementan las 128 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **168 archivos Python** — 127 tools activas (125 con script + 2 JS-native backup/restore base64) + tools internas + meta/spec + bibliotecas; las 8 archivadas viven aparte en `_archived/`. Cuáles están disponibles, cuáles tienen ejemplo verificado y cuáles no deben usarse: [`../docs/DISPONIBILIDAD-DE-TOOLS.md`](../docs/DISPONIBILIDAD-DE-TOOLS.md)
+- **169 archivos Python** — 128 tools activas (125 con script + 2 JS-native backup/restore base64) + tools internas + meta/spec + bibliotecas; las 8 archivadas viven aparte en `_archived/`. Cuáles están disponibles, cuáles tienen ejemplo verificado y cuáles no deben usarse: [`../docs/DISPONIBILIDAD-DE-TOOLS.md`](../docs/DISPONIBILIDAD-DE-TOOLS.md)
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
 - **Saneamiento de índices (v38.1)** — `vault_section_index.py --heal [--root]` regenera índices con formato legacy `[[stem|alias]]` o ausentes; el auto-index post-write se auto-cura si un agente escribe `index.md` a mano
-- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone 97 de las 127 tools activas via MCP Protocol (las otras 30 se ejecutan por CLI o en el checkout) (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
+- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone 97 de las 128 tools activas via MCP Protocol (las otras 30 se ejecutan por CLI o en el checkout) (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — una dependencia obligatoria, PyYAML (declarada en `pyproject.toml`)
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault; requiere marcador de CONTENIDO (01_Projects/02_Observability/03_Decisions/.obsidian), no solo 00_System/99_Index (evita el ciclo auto-reforzado de detección); override runtime con `set_vault_root()`/env `VAULT_ROOT`
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -59,7 +59,7 @@ Scripts Python del estándar **Vault Obsidian Architecture** (versión vigente: 
 | [Grupo 32 — Gestión de Carpetas](#grupo-32--gestión-de-carpetas) | vault_folder_registry, vault_section |
 | [Grupo 33 — Corrección Automática](#grupo-33--corrección-automática) | vault_fix_brackets, vault_graph_fix, vault_frontmatter_heal, vault_frontmatter_completar, vault_supersede |
 | [Grupo 34 — Memoria de Contexto](#grupo-34--memoria-de-contexto) | vault_preferences, vault_model_profile, vault_query_parse, vault_subgraph, vault_context_pack, vault_ingest, vault_arquitectura_en |
-| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_changelog_check, vault_error_contract, vault_foreign_check, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_doc_staleness, vault_noop_audit, vault_smoke, vault_toolkit_audit, vault_voice, vault_servicio, vault_blueprint, vault_norms_coherence, vault_criterios, vault_ciclos, vault_clones, vault_kernel, vault_excepcion_declarada, vault_recursos, vault_procesos_git, vault_produccion, vault_esquema, vault_metricas, vault_fix_all |
+| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_changelog_check, vault_error_contract, vault_foreign_check, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_doc_staleness, vault_noop_audit, vault_smoke, vault_toolkit_audit, vault_voice, vault_servicio, vault_blueprint, vault_norms_coherence, vault_criterios, vault_ciclos, vault_clones, vault_kernel, vault_excepcion_declarada, vault_recursos, vault_procesos_git, vault_tests_higiene, vault_produccion, vault_esquema, vault_metricas, vault_fix_all |
 | [Grupo 36 — Defectos y Cuarentena](#grupo-36--defectos-y-cuarentena) | vault_bug_save, vault_quarantine |
 | [Grupo 37 — Skills](#grupo-37--skills) | vault_sdd_init, vault_sanacion |
 | [Observabilidad de Tools](#observabilidad-de-tools) | vault_errors |
@@ -2174,7 +2174,7 @@ El vault expone sus herramientas como un **servidor MCP** que las IAs consumen d
 
 **Archivo:** `../mcp/nodejs/vault-mcp-server.mjs` (~1650 líneas, cero dependencias npm)  
 **Plan:** `../mcp/PLAN.md` — documento de evidencia con 8 fases de implementación
-**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (127 tools)
+**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (128 tools)
 
 Los parámetros que el catálogo publica **se derivan del `argparse` de cada script**,
 no se escriben a mano: el servidor compone `--<param>` literal, así que un param
@@ -2235,7 +2235,7 @@ VAULT_MCP_PERFIL=agente node mcp/nodejs/vault-mcp-server.mjs
 
 ### `vault_norms.py`
 
-Registro canónico de las 83 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
+Registro canónico de las 84 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
 
 **Desde v40.26 son tres ficheros y una sola tool.** Eran 5.158 líneas que hacían de catálogo, de motor y de fachada a la vez, con el 60% del fichero ocupado por una constante. Ahora `vault_norms_catalog.py` tiene los datos —`NORM_CATALOG` y el vocabulario de estado, sin leer el vault, sin escribir nada y sin importar ninguna tool—, `vault_norms_engine.py` tiene el motor de `--audit`, el drift del marco y el heal de AP-46, y este módulo se queda con la fachada de datos, la CLI y la **reexportación** de todo lo que el repo consumía antes. Esa reexportación es el punto: la superficie externa real son siete símbolos y los tests usan cinco privados más, así que reexportarlos hace que **ningún llamador se toque** y el diff se lea como movimiento puro. Recortar de paso la superficie que usan los tests habría mezclado dos cambios y hecho imposible saber cuál rompió qué.
 
@@ -2360,7 +2360,7 @@ python vault_doc_counts.py --check --no-slow  # omite el conteo de tests (lanza 
 
 **El changelog y la tabla de versiones quedan fuera del escaneo.** "76 tools" dentro de la entrada de v37 es historia correcta, no drift; reescribirla sería derogar el registro histórico. Los patrones son deliberadamente específicos por el mismo motivo: `"N normas"` a secas también casa con "las 14 normas manuales eliminadas", que es otro hecho. Un patrón laxo produce falsos positivos y el guard acaba desactivado — que es como mueren los guards.
 
-Fuera de esas secciones también hay historia: un censo hecho en una versión concreta («41 de las 127 tools del catálogo no se han ejecutado») casa con el patrón de tools activas, y `--fix` lo reescribió con cada tool nueva hasta que el censo dejó de decir lo que se midió. Una línea así lleva `<!-- cifra histórica: <motivo> -->`: exime solo esa línea, sin motivo no exime, y el envelope la publica en `historic_exempt` para que eximir no sea una forma callada de apagar el guard.
+Fuera de esas secciones también hay historia: un censo hecho en una versión concreta («41 de las 128 tools del catálogo no se han ejecutado») casa con el patrón de tools activas, y `--fix` lo reescribió con cada tool nueva hasta que el censo dejó de decir lo que se midió. Una línea así lleva `<!-- cifra histórica: <motivo> -->`: exime solo esa línea, sin motivo no exime, y el envelope la publica en `historic_exempt` para que eximir no sea una forma callada de apagar el guard.
 
 ### `vault_doc_sync.py`
 
@@ -2908,6 +2908,34 @@ Todo correcto, y todo **solo en la inspección de quien miró**. Al día siguien
 **Un verbo nuevo no se autoriza en la puerta: se autoriza en el código.** Añadir un mutador a `MUTADORES_AUTORIZADOS` es un diff que dice qué muta, dónde y por qué — esa es la revisión que la norma no daba. La puerta mide la cobertura del dueño: si alguien mete un `subprocess.run(["git", ...])` por la puerta de atrás, `sitios_git_fuera_del_dueno()` lo publica por AST (literal, concatenado o por variable) y el rojo es inmediato.
 
 **Lo que la puerta no ve, declarado.** Los `tests/` quedan fuera del alcance **y por qué**: un test necesita git crudo para fabricar el repositorio con el que va a medir, y medir una tool con su propio ejecutor sería certificarla a sí mismo (AP-44); los tests tampoco viajan en la wheel, donde no hay repo al que tocar. Tampoco ve un argv armado con `" ".join(...)` ni un binario que lance git por su cuenta — pero el runtime no depende del análisis estático: **aunque un sitio se escondiera del AST, su llamada seguiría sin poder ejecutarse sin pasar por el dueño.** Por eso la puerta es cobertura y el dueño es garantía.
+
+### `vault_tests_higiene.py`
+
+**El test que construye a mano lo que ya tiene apoyo (AP-69).** La suite creció escribiendo cada módulo de test como si fuera el primero: su `sys.path.insert`, su `_run` de subproceso, su frontmatter pegado con `+ "\n"`. Ninguna copia es un fallo; el agregado hace que acelerar la suite —pasar las tools puras a proceso, fijar un timeout, cambiar el entorno del hijo— exija tocar cientos de ficheros en vez de uno.
+
+```bash
+python vault_tests_higiene.py --check                   # sitios por clase, peores módulos y nuevos
+python vault_tests_higiene.py --check --strict          # exit 1 si hay sitios nuevos (puerta de nivel rapida)
+python vault_tests_higiene.py --freeze                  # recongela; solo encoge
+python vault_tests_higiene.py --freeze --admitir-nuevos # congela deuda nueva y la lista
+```
+
+**Lo que mide, y su sustituto.** Recorre por AST `tests/test_*.py`; cada clase de `CLASES` publica qué se ve, qué se usa en su lugar y por qué:
+
+| Clase | Se ve | En su lugar |
+|---|---|---|
+| `ruta_a_mano` | `sys.path.insert`/`append` | nada: el conftest pone `scripts/`; `from apoyo import ROOT, SCRIPTS` |
+| `lanzador_privado` | función que lanza `subprocess` con `sys.executable` | `apoyo.correr_tool(nombre, *args, vault=, env=)` |
+| `concatenacion` | texto con salto de línea pegado con `+` | `textwrap.dedent` o `apoyo.nota(frontmatter, cuerpo)` |
+| `buffer_a_mano` | `+=` sobre una cadena | una lista y `"\n".join(...)` |
+| `captura_a_mano` | asignar `sys.stdout`/`sys.stderr`, `redirect_stdout` | la fixture `capsys` |
+| `espera_fija` | `time.sleep` | esperar a la condición con plazo, o inyectar el reloj |
+
+**El apoyo.** `tests/apoyo.py` decide una vez el entorno del hijo (utf-8, `VAULT_AGENT=pytest` y, con `vault=`, `VAULT_ROOT` + `VAULT_STRICT_ROOT=1`), la codificación (`errors="replace"`) y el timeout; `Corrida.envelope` lee el JSON desde la primera `{` y, si no llega, falla enseñando la cola del stderr. `nota()` serializa el frontmatter con `yaml.safe_dump`, el mismo criterio con el que el vault lo lee (AP-44).
+
+**La baseline** (`scripts/tests-higiene-baseline.json`) se indexa por firma de sitio —mover un sitio o comentarlo no lo reporta como nuevo— y nace con toda la deuda medida el día de la norma, congelada con `--admitir-nuevos` y un objetivo con plazo. Cada módulo que se migra al apoyo la encoge.
+
+**Lo que la puerta no ve, declarado.** Un lanzador que no pase `sys.executable` (el binario `vault`, `node`) y un texto armado con `join` o f-strings encadenados. `tests/apoyo.py` y el conftest no se miden: son el sitio de ese código. `normas/*/test_*.py` tampoco: corren con `pytest normas/` sin el conftest de `tests/` y su path es necesario. Y verde no dice que la suite sea rápida —eso lo mide `perfil_suite`, por módulo—.
 
 ### `vault_produccion.py`
 

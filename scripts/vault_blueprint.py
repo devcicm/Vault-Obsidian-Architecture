@@ -181,6 +181,27 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         ),
     },
     {
+        "id": "ap69_sin_version_publicada",
+        "estado": "pendiente",
+        "sostenida_por": [
+            cita_repo(rutas.TESTS, "test_ap69_sin_version_publicada.py::test_limite_declarado_ap69_sin_version_publicada"),
+        ],
+        "desde": "v41.25",
+        "capa": "5",
+        "que": (
+            "AP-69 (higiene de los tests) entra en la rama reestructura/teseo sin "
+            "`introduced_version`: la vigente es v41.25 y AP-55 rechaza una version "
+            "futura. Una norma del catalogo sin version publicada no tiene entrada "
+            "de changelog que la anuncie."
+        ),
+        "por_que_no_ahora": (
+            "La rama no sube version mientras dura (decision del plan de la "
+            "reestructura). El release que la integre escribe la version en "
+            "`normas/AP-69/norma.py`, la nombra en su entrada de changelog y "
+            "salda esta deuda."
+        ),
+    },
+    {
         "id": "criterios_salta_modulos_sin_glob_md",
         "estado": "saldada",
         "saldada_en": "v41.26",
@@ -1866,6 +1887,8 @@ _BASELINES = [
      "AP-62 — el consumidor cruza para leer un recurso y paga el fan-out"),
     ("rutas-baseline.json", "sitios",
      "v41.21 — el layout del repo escrito como literal fuera de su dueño vault/kernel/rutas.py; solo encoge"),
+    ("tests-higiene-baseline.json", "sitios",
+     "AP-69 — el test que construye a mano lo que tests/apoyo.py o el conftest ya dan"),
     ("clones-baseline.json", "sitios",
      "CN-05 — cuerpos duplicados que no se pueden fusionar sin cruzar una frontera"),
 ]

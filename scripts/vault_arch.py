@@ -654,6 +654,10 @@ CONTEXTS: dict[str, dict] = {
             # de escritura; consume `vault.kernel.procesos_git`, la hoja del
             # núcleo que es el criterio, para no reimplementarlo (AP-57).
             "vault_procesos_git",
+            # AP-69 (v41.26). Meta-toolkit por sujeto: mide la suite de este
+            # repo, no ninguna nota. Consume la firma de sitio y la baseline
+            # que ya tienen dueño en vez de reimplementarlas (AP-57).
+            "vault_tests_higiene",
             # v40.31. Meta-toolkit por sujeto —mide este repo, no ninguna nota—
             # pero con una diferencia respecto a todas sus vecinas: las demás
             # miden el repo contra sí mismo, y esta mide el repo contra lo que

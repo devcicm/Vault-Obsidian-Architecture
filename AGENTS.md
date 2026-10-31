@@ -10,9 +10,9 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | Ruta | Qué es |
 |---|---|
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~12.000 líneas). Fuente normativa. |
-| `scripts/*.py` | ~168 scripts, 127 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
+| `scripts/*.py` | ~169 scripts, 128 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (6701 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (6725 tests). Toda norma con guard debe tener test. |
 | `normas/` | Normas como paquete (`normas/<código>/`: `norma.py`, `porque.md`, `guard.py`, `heal.py`, `test_*.py`). Las carga `vault_norms_catalog` en su sitio del catálogo; la forma la vigila `--check-framework`. Desde m186 toda norma vive aquí (cuántas, `NORMAS_EN_PAQUETE`). `guard.py`/`heal.py` son derivados —apuntan a la función dueña; los sanadores salen de `vault_norms_catalog.SANADORES`— y se regeneran con `vault_norms_engine.escribir_caras_derivadas`, no a mano. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
@@ -310,6 +310,9 @@ abajo, en «Cuatro cosas que el registro no puede decirte».
 - [ ] `python scripts/vault_procesos_git.py --check --strict`
       Ninguna tool ni módulo levanta git por su cuenta: el verbo lo juzga vault.kernel.procesos_git y un mutador solo existe si está autorizado con su motivo (AP-68).
       *Se arregla con:* mover la llamada al dueño —ejecutar_git(repo, [...])—; si de verdad hace falta un mutador nuevo, autorizarlo en MUTADORES_AUTORIZADOS con su motivo escrito, que es el diff que lo revisa. No hay baseline: un sitio fuera del dueño es deuda nueva por definición
+- [ ] `python scripts/vault_tests_higiene.py --check --strict`
+      Ningún test nuevo construye a mano lo que la suite ya resuelve en un sitio: el path, el lanzador de una tool, el texto de una nota, la captura de salida o la espera (AP-69).
+      *Se arregla con:* usar el apoyo de su clase —tests/apoyo.py, el conftest, capsys—; la baseline solo encoge y congelar deuda nueva exige --freeze --admitir-nuevos
 - [ ] `python scripts/vault_produccion.py --check --strict`
       Toda promesa hecha a quien instala esto —versión mínima, dependencia, plataforma, superficie de red— tiene a alguien que la ejerza, y los huecos están declarados con su motivo.
       *Se arregla con:* añadir el ejecutor que falta, o declarar la promesa como descubierta con el motivo escrito; las demás puertas miden el repo contra sí mismo y en esa sala no está el consumidor, que es como >=3.9 pasó en verde sin que ninguna máquina ejecutara 3.9

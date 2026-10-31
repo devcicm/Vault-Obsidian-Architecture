@@ -5,7 +5,7 @@
 > falla si diverge. Lo escrito a mano aquí se pierde: el porqué se corrige
 > en el docstring de la tool.
 
-Puertas: 27. Verde en todas no es verde en la suite.
+Puertas: 28. Verde en todas no es verde en la suite.
 
 ## `framework`
 
@@ -292,6 +292,18 @@ v40.27 quitó veinte de los sesenta y dos cruces de contexto con un solo movimie
 **vault_procesos_git — el git del toolkit pasa por un dueño, y el dueño mira (AP-68).**
 
 Auditoría del 2026-10-23 sobre la pregunta «¿ejecuta alguna tool git sin supervisión?». El veredicto fue que no —doce sitios de lectura, un único mutador acotado al bootstrap de `vault_init`, cero `shell=True`, cero `--force`— pero que **nadie lo verificaba**: la propiedad era verdad por inspección de una tarde, no por guard. Mañana un `git clean -fdx` en una tool entraría sin que ninguna puerta se pusoera roja.
+
+## `tests_higiene`
+
+- **Comando:** `python scripts/vault_tests_higiene.py --check --strict`
+- **Mide:** Ningún test nuevo construye a mano lo que la suite ya resuelve en un sitio: el path, el lanzador de una tool, el texto de una nota, la captura de salida o la espera (AP-69).
+- **Nivel:** `rapida`
+- **Se arregla con:** usar el apoyo de su clase —tests/apoyo.py, el conftest, capsys—; la baseline solo encoge y congelar deuda nueva exige --freeze --admitir-nuevos
+- **Normas:** [AP-69](../normas/AP-69/porque.md)
+
+**Higiene de los tests: lo que un test construye a mano teniendo un apoyo (AP-69).**
+
+La suite de este repo pasó de cuatro mil a casi siete mil tests escribiendo cada fichero como si fuera el primero. Medido el 2026-10-31 sobre los 555 módulos de `tests/`: 476 `sys.path.insert` que repiten lo que el conftest ya hace, 239 lanzadores privados de subproceso —`_run`, `_cli`, `_ejecutar`…, uno por fichero y casi iguales—, 133 textos con varias líneas pegados con `+`, 13 `time.sleep` y un `+=` sobre una cadena dentro de un bucle. Ninguno es un fallo por separado. El agregado es lo que hace caro el desarrollo: cada copia del lanzador decide por su cuenta el entorno, la codificación y el timeout, y el día que uno de los tres cambia hay 239 sitios que tocar y ninguno que lo diga.
 
 ## `produccion`
 

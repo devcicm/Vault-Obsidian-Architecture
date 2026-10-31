@@ -7014,6 +7014,52 @@
         "vault_code_module"
       ]
     },
+    "vault_tests_higiene": {
+      "name": "vault_tests_higiene",
+      "description": "AP-69: la suite crecio escribiendo cada modulo de test como si fuera el primero — su sys.path.insert, su lanzador de subproceso, su frontmatter pegado con + \"\\n\". Ninguna copia es un fallo; el agregado hace que acelerar la suite exija tocar cientos de ficheros. Esta tool recorre por AST tests/test_*.py y publica cada sitio de seis clases (ruta_a_mano, lanzador_privado, concatenacion, buffer_a_mano, captura_a_mano, espera_fija) con su firma de sitio y el sustituto de cada una en tests/apoyo.py o el conftest. La baseline solo encoge.",
+      "group": "Normas",
+      "script": "vault_tests_higiene.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "check": {
+            "type": "boolean",
+            "description": "Publica los sitios, su resumen por clase y los nuevos frente a la baseline"
+          },
+          "strict": {
+            "type": "boolean",
+            "description": "Exit 1 si hay sitios nuevos"
+          },
+          "freeze": {
+            "type": "boolean",
+            "description": "Congela lo medido; se niega si crece (DEBT_WOULD_GROW)"
+          },
+          "admitir-nuevos": {
+            "type": "boolean",
+            "description": "Con --freeze, congela tambien deuda nueva y la lista"
+          }
+        },
+        "additionalProperties": false
+      },
+      "guards": [
+        "Estatica: no ve un lanzador que no pase sys.executable (el binario vault, node) ni un texto armado con join o f-strings encadenados",
+        "Solo mide tests/test_*.py: tests/apoyo.py y el conftest son el sitio donde ese codigo tiene que estar, y normas/*/test_*.py corre sin el conftest y si necesita su sys.path",
+        "Verde no dice que la suite sea rapida: eso lo mide perfil_suite"
+      ],
+      "side_effects": [
+        "scripts/tests-higiene-baseline.json"
+      ],
+      "perfil_minimo": "operador",
+      "status": "active",
+      "exposed_via_mcp": false,
+      "execution_module": null,
+      "related": [
+        "vault_criterios",
+        "vault_clones",
+        "vault_gate",
+        "vault_blueprint"
+      ]
+    },
     "vault_timeline": {
       "name": "vault_timeline",
       "description": "Genera línea temporal de eventos del vault.",
@@ -7658,6 +7704,7 @@
       "vault_excepcion_declarada",
       "vault_recursos",
       "vault_procesos_git",
+      "vault_tests_higiene",
       "vault_produccion",
       "vault_esquema",
       "vault_metricas",

@@ -70,6 +70,13 @@ NORMA = {'code': 'AP-44',
                              'medir perfectamente sus propios resultados y '
                              'aun así pedir un `git reset --hard`, que es '
                              'lo que hacía falta cerrar antes de poder '
-                             'afirmar nada con credibilidad sobre git.'},
+                             'afirmar nada con credibilidad sobre git.',
+                    'AP-69': 'AP-44 decide con qué criterio mide un '
+                             'test. AP-69 no lo toca: vigila cómo se '
+                             'fabrica lo que el test mide. Un test que '
+                             'pasa de su lanzador privado a `correr_tool` '
+                             'sigue lanzando el mismo proceso con el mismo '
+                             'criterio, y uno que mide con el criterio del '
+                             'productor puede estar perfectamente escrito.'},
  'introduced_version': 'v39',
  'revisado_en': '2026-10-09'}

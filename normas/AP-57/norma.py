@@ -109,6 +109,14 @@ NORMA = {
             "dándole dueño a algo— pero AP-57 se salda importando al dueño "
             "y AP-59 derivando el dato de la forma medida."
         ),
+        "AP-69": (
+            "AP-57 mide el criterio de clasificar notas reescrito en el "
+            "código que se instala; AP-69, el andamiaje de la suite "
+            "reescrito en los módulos de test. Es el mismo defecto de forma "
+            "en dos sitios con consumidores distintos, y por eso cada uno "
+            "tiene su guard y su baseline: saldar uno no mueve la cifra del "
+            "otro."
+        ),
     },
     "introduced_version": "v40.13",
     "revisado_en": "2026-10-09",

@@ -10,11 +10,11 @@ Responde tres preguntas sobre cada tool: **dónde se puede usar**, **si hay evid
 |---|---|---|---|
 | Operaciones del vault por CLI | 96 | `vault run <tool>` desde la wheel instalada; por MCP las que estén expuestas | agentes y personas con un vault |
 | Operaciones del vault solo por MCP | 2 | servidor MCP (JavaScript nativo); `vault run` no las ejecuta | agentes por MCP |
-| Mantenimiento del estándar | 29 | solo en un checkout de este repo (`python scripts/<tool>.py`); la wheel no las instala | quien mantiene el estándar |
+| Mantenimiento del estándar | 30 | solo en un checkout de este repo (`python scripts/<tool>.py`); la wheel no las instala | quien mantiene el estándar |
 | Internas | 19 | no son tools de un vault: librerías, registros o CLIs de diagnóstico del toolkit | nadie desde fuera |
 | Archivadas | 5 | no se ejecutan; cada una nombra su reemplazo | nadie |
 
-Las 127 activas son 96 + 2 + 29. Expuestas por el servidor MCP: **97**; las otras 30 se ejecutan por CLI o en el checkout.
+Las 128 activas son 96 + 2 + 30. Expuestas por el servidor MCP: **97**; las otras 31 se ejecutan por CLI o en el checkout.
 
 `vault tools list` dice lo mismo desde la wheel: `class: runtime` con `installed: true` es lo que corre; `class: maintenance` con `installed: false` es del checkout, y `vault run` la rechaza con `not_runtime_operation`.
 
@@ -165,6 +165,7 @@ Comprueban o regeneran este repositorio. **No** operan el vault de nadie y no es
 | `vault_recursos` | Normas | no | sí | OK |
 | `vault_servicio` | Normas | no | no | OK |
 | `vault_smoke` | Normas | no | sí | OK |
+| `vault_tests_higiene` | Normas | no | sí | sin dato |
 | `vault_toolkit_audit` | Normas | no | sí | OK |
 | `vault_voice` | Normas | no | sí | OK |
 

@@ -20,6 +20,12 @@ NORMA = {
             "cuerpo de código. Una es convención de escritura y la otra de "
             "estructura del repo: no se solapan ni se contradicen."
         ),
+        "AP-69": (
+            "CN-05 ve cuerpos idénticos entre módulos. Los lanzadores de "
+            "los tests casi nunca lo son —cambian el nombre, un `cwd`, un "
+            "timeout— y por eso CN-05 no los ve; AP-69 los reconoce por lo "
+            "que hacen y no por cómo están escritos."
+        ),
     },
     "name": "One body, one owner — un cuerpo, un dueño",
     "type": "antipattern",

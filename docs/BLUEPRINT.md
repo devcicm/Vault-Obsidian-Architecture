@@ -35,7 +35,7 @@ Restricciones que son decisión de producto, no limitación pendiente:
 |---|---|---|---|
 | **Escritura → gobernanza** (`escritura_a_gobernanza`) | Lo que el agente captura queda escrito una sola vez, normalizado contra las normas, versionado y auditable después. | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 36, 37 | 88 |
 | **Consulta → contexto** (`consulta_a_contexto`) | Una pregunta del agente se convierte en un paquete de contexto acotado y presupuestado, recorriendo el grafo del vault sin índice externo. | 26, 34 | 10 |
-| **Gobernanza del estándar** (`gobernanza_del_estandar`) | El estándar cumple lo que publica: registro canónico primero, doc derivada, guard que falla si divergen. Ninguna de estas tools toca las notas de un usuario. | 35 | 29 |
+| **Gobernanza del estándar** (`gobernanza_del_estandar`) | El estándar cumple lo que publica: registro canónico primero, doc derivada, guard que falla si divergen. Ninguna de estas tools toca las notas de un usuario. | 35 | 30 |
 
 - **`consulta_a_contexto`** — El grupo 26 (Tokens) cae en el rango 1–33 que `AGENTS.md` atribuye al primer eje, pero sus tres tools viven en el contexto `consulta` y existen para que el paquete quepa en la ventana. El rango es cronológico, no clasificatorio.
 - **`gobernanza_del_estandar`** — Tercera capacidad que `AGENTS.md` no nombraba. Existía desde que se escribió la primera puerta; declararla es lo que impide que sus tools se cuenten como si sirvieran a la memoria del agente.
@@ -60,7 +60,7 @@ regenera.*
 | **Consulta** (`consulta`) | 7 | 11 | 0 | base de datos; embeddings; servicio externo |
 | **Ciclo de vida** (`ciclo_de_vida`) | 3 | 10 | 0 | — |
 | **Durabilidad** (`durabilidad`) | 4 | 4 | 0 | escribir fuera de la raíz del vault (AP-36) |
-| **Meta-toolkit** (`meta_toolkit`) | 6 | 39 | 1 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
+| **Meta-toolkit** (`meta_toolkit`) | 6 | 40 | 1 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
 | **CLI** (`cli`) | 0 | 8 | 0 | decidir: traduce argumentos a llamadas y envelopes a salida; la decisión vive en la tool |
 
 **Puente de ADR-0002:** 2 módulos de `scripts/` no importan nada de `vault/<su contexto>/` (`vault_arch.modulos_sin_hogar`). La cifra solo encoge: un módulo nuevo sin hogar bloquea `vault_arch --check`. Importar del contexto es empezar a delegar, no haber migrado.
@@ -69,7 +69,7 @@ regenera.*
 
 *Registros: `vault_norms.NORM_CATALOG` + `vault_gate.PUERTAS` + `tests/`*
 
-82 de 83 normas tienen puerta o test que las nombre.
+83 de 84 normas tienen puerta o test que las nombre.
 **Es la única capa con baseline**, y por un motivo concreto: las demás se midieron
 en cero el día que se declararon porque sus datos ya existían y solo faltaba
 atarlos. Ésta no. Exigir cero aquí el primer día habría hecho nacer la puerta en
@@ -150,6 +150,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-66** — El coste crece con lo que no es trabajo | guard | `arquitectura` | — |
 | **AP-67** — El material que el agente opera, sin nota que lo apunte | guard+audit | — | `test_ap67_conocimiento_del_material.py` |
 | **AP-68** — El git que ejecuta el toolkit, sin dueño | guard | `procesos_git` | `test_procesos_git.py` |
+| **AP-69** — El test que construye a mano lo que ya tiene apoyo | guard | `tests_higiene` | `test_ap69_sin_version_publicada.py` |
 | **PAT-6** — Semantic graph enrichment — enriquecimiento periodico del grafo | recommended | — | `test_capa4_audit_ejercitada.py` |
 | **SP-01** — Delete protocol — change_log obligatorio antes de eliminar | audit | `framework` | `test_mermaid_reglas_parsers.py`, `test_vault_norms.py` |
 | **SP-02** — Forward-link verification — buscar antes de linkar | guard | — | `test_normas_enlaces_sin_solape.py`, `test_vault_norms.py` |
@@ -167,7 +168,7 @@ Sin puerta ni test (1): `AP-04`.
 
 *Registros: `vault_mcp_catalog.TOOLS_CATALOG` + `<vault>/00_System/tool-spec.json`*
 
-127 tools activas en 37 grupos. Toda tool
+128 tools activas en 37 grupos. Toda tool
 del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 `status: archived | internal | orphan` — no se borra, se anota
 (`vault_mcp_catalog.py --check-contracts`).
@@ -193,7 +194,7 @@ del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 | Línea de Tiempo | 1 |
 | Memoria de Contexto | 7 |
 | Migración | 2 |
-| Normas | 29 |
+| Normas | 30 |
 | Observabilidad | 1 |
 | Patrones | 2 |
 | Producción/SRE | 2 |
@@ -340,6 +341,7 @@ falla — no se rellena con el valor más cercano.
 | `vault_supersede` | 33 — Corrección Automática | escritura_a_gobernanza |
 | `vault_tags` | 27 — Session Delta y Tags | escritura_a_gobernanza |
 | `vault_test_save` | 20 — Tests | escritura_a_gobernanza |
+| `vault_tests_higiene` | 35 — Normas | gobernanza_del_estandar |
 | `vault_timeline` | 10 — Línea de Tiempo | escritura_a_gobernanza |
 | `vault_token_counter` | 26 — Tokens | consulta_a_contexto |
 | `vault_token_service` | 26 — Tokens | consulta_a_contexto |
@@ -358,7 +360,7 @@ Deuda **declarada**: conocida, medida y con motivo escrito de por qué no se ata
 todavía. Lo que no está aquí no es que no exista — es que nadie lo ha medido, que
 es una situación distinta y peor.
 
-**2 pendientes** de 31 declaradas. Una deuda saldada no
+**3 pendientes** de 32 declaradas. Una deuda saldada no
 desaparece de la tabla: se queda con `estado: saldada` y la versión que la cerró,
 porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 
@@ -368,6 +370,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `mcp_sin_perfiles_por_token` | saldada en v41.26 | v41.25 | 5 | A-13 del estudio vault-dev-codex: el servidor MCP tiene un unico Bearer; quien lo posee llama a toda tool, incluidas `vault_delete` y `vault_standard_upgrade`. No hay perfiles por token ni por tool. Saldada: `VAULT_MCP_TOKENS=lector:<t>,operador:<t>`; el perfil de cada tool es `perfil_minimo`, derivado de `side_effects` en `vault_mcp_catalog` y publicado en `tools-catalog.json`; `lector` no ve ni ejecuta lo que escribe y una sesion solo se habla con el token que la abrio. | No es una deuda viva: esta saldada. El contrato de arranque no cambia para quien ya usaba `VAULT_MCP_TOKEN`, que sigue siendo `operador`. Rotar el token expuesto en el historial sigue siendo cosa de la persona. |
 | `raiz_explicita_apunta_al_repo` | saldada en v41.26 | v41.25 | 5 | A-11 del estudio vault-dev-codex: `escritura_admitida` admitia toda raiz explicita, tambien el propio repo del estandar, que la regla 1 prohibe. Con `VAULT_ROOT=<repo>` `vault_audit` corria y dejaba la traza en el `00_System/` de la raiz. `vault_raiz.es_repo_del_estandar` (manifiesto + `vault/kernel/`, sin contenido de vault) es el dueno: el origen pasa a `env_repo_del_estandar`, `wrap_main` no ejecuta nada y un `--root` al repo deja de ser confiado. | No es una deuda viva: esta saldada. El miedo que la aplazaba —que la suite fija VAULT_ROOT explicito en cientos de tests— se midio y no era cierto: solo el propio test de A-11 apuntaba al repo. La firma doble evita confundir con el repo un vault consumidor que guarda el manifiesto. |
 | `colector_qg_fuera_de_toda_puerta` | pendiente | v41.25 | 5 | B-04 del estudio vault-dev-codex: `audits/fase2/colector_qg.py` emite los recibos de QG-00..06 y ni `vault_gate.PUERTAS` ni ningun workflow lo ejecutan. Los recibos que lleva el manifiesto son de una corrida manual. | Cablearlo no es un paso: el colector exige HEAD == product_sha (sobre un descendiente documental devuelve QG-00 BLOCKED por CHECKOUT_EN_OTRO_SHA, medido el 2026-10-30) y `--ejecutar` corre la suite y la construccion enteras. Hace falta un job propio con un worktree en el product_sha, que no se puede verificar fuera de la CI. |
+| `ap69_sin_version_publicada` | pendiente | v41.25 | 5 | AP-69 (higiene de los tests) entra en la rama reestructura/teseo sin `introduced_version`: la vigente es v41.25 y AP-55 rechaza una version futura. Una norma del catalogo sin version publicada no tiene entrada de changelog que la anuncie. | La rama no sube version mientras dura (decision del plan de la reestructura). El release que la integre escribe la version en `normas/AP-69/norma.py`, la nombra en su entrada de changelog y salda esta deuda. |
 | `criterios_salta_modulos_sin_glob_md` | saldada en v41.26 | v41.25 | 5 | A-13 de la nota consolidada del enjambre (no el A-13 del estudio, que es el MCP sin perfiles): `vault_criterios.medir` solo media los modulos que nombran `"*.md"`, y uno que recorre notas por sufijo (`p.suffix == ".md"`, `.endswith(".md")`) reescribia un criterio con dueno sin que la puerta AP-57 lo viera. `_recorre_notas_por_sufijo` lo mete en la medida: 40 de 167 modulos (eran 36), sin ninguna copia nueva. | No es una deuda viva: esta saldada. Lo que se guarda es por que la senal es la comparacion y no el literal `".md"` suelto: admitir el literal metia 31 modulos `*_save` que componen el nombre del fichero que escriben y un falso positivo (`vault_subgraph` escribe un fence de Mermaid, no lo lee). |
 | `barrido_del_toolkit_con_deuda_congelada` | saldada en v41.14 | v41.12 | 4 | La primera corrida del barrido del catálogo (v41.12) dejó un DEFECTO congelado: `vault_changelog_check`. No era un defecto de la tool, era **la línea de release en curso**: el changelog publicaba `git: pending` de una versión que todavía no era la vigente, y el check trata eso como error hasta que `--fijar-hash` la cierra. Congelarlo era medir el momento del release, no la tool — y una baseline que congela el reloj no congela un defecto. Con la entrada escrita (la versión en curso es v41.14) el veredicto pasó a OK: `scripts/toolkit-audit-baseline.json` queda **vacía por primera vez**, con 122 OK y 3 NO-VERIFICABLE sobre 125 tools. El motivo se conserva porque es el que reaparece: barrer el catálogo dentro de la ventana de release vuelve a medir la línea en curso. | No es una deuda viva: está saldada, y lo que se guarda es la explicación de por qué apareció —una tool se declara DEFECTO por estar en plena línea de release—, no la obligación de arreglarla. |
 | `envelopes_del_dominio_sin_error_code` | saldada en v40.29 | v40.9 | 5 | Nueve `{"ok": False, "error": ...}` en `vault/durabilidad/` y `vault/indices/` que los adaptadores de `scripts/` devuelven tal cual al consumidor: el envelope sale sin `error_code` ni `recovery`. Aparecieron en v40.9 al ensanchar el alcance de AP-52 más allá de `scripts/`, y quedan congelados en `error-contract-baseline.json`. v40.29 los saldó partiendo la frase en dos mitades con dueño: el dominio levanta un `FalloDeDominio` que nombra la **causa** (`vault/kernel/fallos.py`, sin un solo import fuera de `typing`) y la traducción a `error_code` vive en un único sitio del lado de la herramienta, `vault_errors.emit_fallo`. Se levanta en vez de devolver porque un fallo devuelto como valor se ignora por olvido, y uno de los cuatro casos es el borrado del vault sin confirmar. La baseline de AP-52 queda **vacía por primera vez desde que la norma existe**, y los campos que el contrato declara estables —`error`, `hint`, `searched`— siguen saliendo: mejorar el envelope por debajo no autoriza a romper el contrato de arriba. | La pregunta de fondo no es cómo se escribe el envelope sino quién lo escribe: hacer que el dominio importe `vault_errors` lo ata al catálogo de la herramienta, y convertirlo en el adaptador exige decidir qué devuelve el dominio en su lugar. Es una decisión de capas, no un reemplazo de literales. |
@@ -437,10 +440,11 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 4 | ≤ 2 para 2027-03-31 · cada 90 d · meta_toolkit — vault_kernel → **en_plazo** | 5 → 6 → 6 → 5 → 4 → 4 (encoge, Δ-1) |
 | `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_norms_distincion → **cumple** | 57 → 0 → 0 → 0 (encoge, Δ-57) |
 | `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_norms_coherence → **cumple** | 47 → 0 → 0 → 0 (encoge, Δ-47) |
-| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1471 | — *no aplica*: No es deuda: es el contrato de campos estables con los repos consumidores y crece por diseño cada vez que una tool publica un campo nuevo (1334 → 1410 entre 2026-08-30 y 2026-10-08). Lo que la puerta vigila es que ningún campo desaparezca sin `superseded_fields`, no su tamaño. Declarado el 2026-10-09 con la deuda #8. | 1427 → 1435 → 1437 → 1436 → 1448 → 1471 (crece, Δ+137) |
+| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1489 | — *no aplica*: No es deuda: es el contrato de campos estables con los repos consumidores y crece por diseño cada vez que una tool publica un campo nuevo (1334 → 1410 entre 2026-08-30 y 2026-10-08). Lo que la puerta vigila es que ningún campo desaparezca sin `superseded_fields`, no su tamaño. Declarado el 2026-10-09 con la deuda #8. | 1435 → 1437 → 1436 → 1448 → 1471 → 1489 (crece, Δ+155) |
 | `scripts/excepcion-declarada-baseline.json` | AP-61 — la excepción declarada no es la que escapa | 0 | ≤ 0 para 2027-06-30 · cada 180 d · gobernanza → **cumple** | 0 → 0 (plana, Δ+0) |
 | `scripts/recursos-baseline.json` | AP-62 — el consumidor cruza para leer un recurso y paga el fan-out | 2 | ≤ 0 para 2027-03-31 · cada 90 d · meta_toolkit — vault_recursos → **en_plazo** | 2 → 2 (plana, Δ+0) |
 | `scripts/rutas-baseline.json` | v41.21 — el layout del repo escrito como literal fuera de su dueño vault/kernel/rutas.py; solo encoge | 15 | ≤ 15 para 2027-06-30 · cada 90 d · meta_toolkit — vault.kernel.rutas → **cumple** | 177 → 175 → 16 → 15 (encoge, Δ-162) |
+| `scripts/tests-higiene-baseline.json` | AP-69 — el test que construye a mano lo que tests/apoyo.py o el conftest ya dan | 864 | ≤ 432 para 2027-03-31 · cada 30 d · meta_toolkit — vault_tests_higiene → **en_plazo** | — *1 muestra* |
 | `scripts/clones-baseline.json` | CN-05 — cuerpos duplicados que no se pueden fusionar sin cruzar una frontera | 1 | ≤ 2 para 2027-03-31 · cada 90 d · meta_toolkit ? vault_clones → **cumple** | 4 → 3 → 1 (encoge, Δ-3) |
 
 Todas encogen y ninguna crece sin decirlo: los tres audits con baseline indexan
@@ -458,4 +462,4 @@ sobre la historia sin que git la respalde (AP-53).
 
 ---
 
-*27 puertas de cierre. Generado por `scripts/vault_blueprint.py`.*
+*28 puertas de cierre. Generado por `scripts/vault_blueprint.py`.*

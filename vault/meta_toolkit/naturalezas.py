@@ -103,6 +103,9 @@ NATURALEZAS: Dict[str, Dict[str, Any]] = {
             # dueño y con verbo declarado. No abre ningún vault; lo que
             # mide es este repositorio y los procesos que lanza.
             "vault_procesos_git",
+            # AP-69: mide cómo están escritos los tests de este repo. No abre
+            # ningún vault ni se instala con la wheel.
+            "vault_tests_higiene",
             # v40.31. Meta-estándar con un matiz que ninguna otra de esta lista
             # tiene: las demás miden el repo contra sus propios registros, y
             # esta lo mide contra lo que le promete a quien lo instala.

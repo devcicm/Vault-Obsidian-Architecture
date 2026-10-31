@@ -4536,6 +4536,46 @@
       "fundamentals": [],
       "reason": "Arnés de desarrollo: el alcance de tests que toca un cambio, para cerrar sin arrastrar la suite entera. Mantiene el toolkit, no el vault: no se publica en el catálogo MCP."
     },
+    "vault_tests_higiene": {
+      "group": "Normas",
+      "group_id": 35,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "action",
+        "admitted_new",
+        "baseline_size",
+        "clases",
+        "error_code",
+        "frozen",
+        "hint",
+        "modulos_con_deuda",
+        "new_sites",
+        "norm",
+        "ok",
+        "peores",
+        "por_clase",
+        "recovery",
+        "resolved_since_baseline",
+        "sites_total",
+        "tool",
+        "written"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency",
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F8"
+      ]
+    },
     "vault_timeline": {
       "group": "Línea de Tiempo",
       "group_id": 10,
@@ -4837,10 +4877,10 @@
     }
   },
   "_counts": {
-    "active": 127,
+    "active": 128,
     "internal": 19,
     "archived": 5,
-    "total": 151,
+    "total": 152,
     "active_groups": 37,
     "schema_version": "1.0"
   }

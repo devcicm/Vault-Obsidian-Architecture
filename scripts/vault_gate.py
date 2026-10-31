@@ -291,6 +291,17 @@ PUERTAS: List[Dict[str, Any]] = [
                "deuda nueva por definición",
     },
     {
+        "id": "tests_higiene",
+        "nivel": "rapida",
+        "cmd": ["vault_tests_higiene.py", "--check", "--strict"],
+        "mide": "Ningún test nuevo construye a mano lo que la suite ya resuelve "
+                "en un sitio: el path, el lanzador de una tool, el texto de una "
+                "nota, la captura de salida o la espera (AP-69)",
+        "fix": "usar el apoyo de su clase —tests/apoyo.py, el conftest, "
+               "capsys—; la baseline solo encoge y congelar deuda nueva exige "
+               "--freeze --admitir-nuevos",
+    },
+    {
         "id": "produccion",
         "nivel": "rapida",
         "cmd": ["vault_produccion.py", "--check", "--strict"],
