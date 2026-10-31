@@ -919,6 +919,11 @@ Regenera `99_Index/graph.json` escaneando todos los wiki-links `[[nota]]` del va
 
 **Cuándo usar:** después de eliminar o renombrar notas, después de una migración, al detectar AP-14 (broken links), periódicamente como mantenimiento del grafo de conocimiento.
 
+**Tools del grupo sin entrada propia en este bloque** (el grupo lo da el registro, `vault_servicio --trace`; la descripción, el catálogo MCP; referencia de CLI en `scripts/README.md`):
+
+- `vault_merge` — Detecta y resuelve duplicados entre vaults o dentro del mismo vault. Su entrada de contrato está escrita en el Grupo 9; el registro la asigna a este.
+- `vault_move` — Reubica notas entre carpetas del vault, actualiza wiki-links, índices y grafo.
+
 ---
 
 ### Grupo 2 — Observabilidad
@@ -1219,6 +1224,11 @@ Agrega una relación de cardinalidad o dependencia y **auto-genera el ERD Mermai
 
 **Regla:** para ERDs y grafos de dependencias → `vault_relation_add`. Para diagramas de secuencia, flujo, componentes o cualquier diagrama sin fuente de datos incremental → `vault_diagram_save`.
 
+**Tools del grupo sin entrada propia en este bloque** (el grupo lo da el registro, `vault_servicio --trace`; la descripción, el catálogo MCP; referencia de CLI en `scripts/README.md`):
+
+- `vault_diagram_export` — Exporta diagramas con opciones de zoom, pan y filtros.
+- `vault_mermaid_check` — Valida diagramas Mermaid con el compilador real (oráculo) y sana los bloques que rechaza con sanadores mecánicos verificados.
+
 ---
 
 ### Grupo 5 — Conocimiento de Dominio
@@ -1434,6 +1444,13 @@ Valida frontmatter YAML, campos requeridos, estructura de carpetas e integridad 
 
 
 **`vault_gobernanza.py`** (puerta de entrada del MCP): valida contenido contra las normas de gobernanza antes de que un agente lo escriba — secret scan (AP-08), content gate, brackets y Mermaid. No escribe en el vault.
+**Tools del grupo sin entrada propia en este bloque** (el grupo lo da el registro, `vault_servicio --trace`; la descripción, el catálogo MCP; referencia de CLI en `scripts/README.md`):
+
+- `vault_fuente_unica` — AP-05: el mismo dato con valores distintos en varias notas. Era la unica norma critical sin detector desde v19, porque decidir que es el mismo dato sin embeddings es un problema abierto. Lo es en general, no para un valor tipado: una IP, una URL, un puerto o un semver escritos como clave: valor llevan su identidad al lado y se comparan por igualdad. Cubre esa parte y declara el resto.
+- `vault_graph` — Genera grafo de relaciones entre notas. Su entrada de contrato está escrita en el Grupo 1; el registro la asigna a este.
+- `vault_graph_inspect` — Analiza el grafo del vault: broken links, orphans, duplicates, syntax errors, hubs.
+- `vault_graph_merge` — Unifica wikilinks + entity relations + code relations en graph-enriched.json con predicados semánticos.
+
 ---
 
 ### Grupo 7 — Runbooks Operacionales
@@ -1660,6 +1677,11 @@ Regenera el mapa de red Mermaid desde el índice `.infra-index.json`.
 ```
 
 **Cuándo usar:** si el mapa se desfasó, para generar una vista parcial (solo homelab, solo cloud), al inicio de trabajo en infraestructura para tener el mapa actualizado.
+
+**Tools del grupo sin entrada propia en este bloque** (el grupo lo da el registro, `vault_servicio --trace`; la descripción, el catálogo MCP; referencia de CLI en `scripts/README.md`):
+
+- `vault_env_matrix` — Genera matriz comparativa de entornos. Su entrada de contrato está escrita en el Grupo 29; el registro la asigna a este.
+- `vault_env_save` — Guarda variables de entorno y secretos para un proyecto. Su entrada de contrato está escrita en el Grupo 2; el registro la asigna a este.
 
 ---
 
@@ -2161,6 +2183,10 @@ _Actualizado: 2026-05-06 · deps: 4 · frameworks: 1 · ADRs: 2 · patrones: 3_
 ```
 
 **Diferencia con `vault_project_status`:** `vault_project_status` registra el estado operacional del proyecto (en_desarrollo, bloqueado, completado) con un resumen de qué se hizo. `vault_project_overview` consolida el conocimiento técnico estructural del proyecto — no qué se hizo hoy, sino qué es este proyecto y cómo está construido.
+
+**Tools del grupo sin entrada propia en este bloque** (el grupo lo da el registro, `vault_servicio --trace`; la descripción, el catálogo MCP; referencia de CLI en `scripts/README.md`):
+
+- `vault_project` — Registro de proyectos (AP-63): lista, resuelve nombre->slug, audita fantasmas, da de alta con alias y enlaza la ruta local en 00_System/.local/.
 
 ---
 
@@ -2749,6 +2775,11 @@ Backup previo a migración de esquema v3 → v4 (columna archived en orders).
 
 **Regla:** todo backup ejecutado por el agente — de vault, BD o archivos — debe tener su nota en `00_System/backups/` para poder rastrear qué copias existen, cuándo se hicieron y cómo restaurarlas.
 
+**Tools del grupo sin entrada propia en este bloque** (el grupo lo da el registro, `vault_servicio --trace`; la descripción, el catálogo MCP; referencia de CLI en `scripts/README.md`):
+
+- `vault_backup_base64` — Crea backup comprimido base64 del vault completo. Antes de cualquier migración o modificación masiva.
+- `vault_restore_base64` — Restaura vault desde backup base64. Requiere --confirm true. Restaura a directorio nuevo sin tocar el original.
+
 ---
 
 ### Grupo 14 — Auditoría de Seguridad
@@ -3269,6 +3300,11 @@ tool escribía solo el segundo.
 - Cuando hay un bug — crear un test de regresión antes de corregirlo
 - Para tests de aceptación que verifican los criterios de `vault_requirement_save`
 
+**Tools del grupo sin entrada propia en este bloque** (el grupo lo da el registro, `vault_servicio --trace`; la descripción, el catálogo MCP; referencia de CLI en `scripts/README.md`):
+
+- `vault_qa_save` — Registra planes de test, métricas, reportes y estrategias QA en 21_QA/.
+- `vault_quality_dashboard` — Genera dashboard de calidad operacional en 02_Observability/qa/ combinando quality-index, tag-registry, qa-index y tests-index.
+
 ---
 
 ### Grupo 21 — Gobernanza de IA (ISO/IEC 42001:2023)
@@ -3514,6 +3550,10 @@ Consulta el log de cambios.
 
 **Regla de gobernanza:**
 > **OBLIGATORIO:** antes de eliminar cualquier nota del vault, el agente DEBE llamar `vault_change_log(action:"deleted", path:X, reason:Y)`. Sin este registro, la eliminación viola el protocolo de gobernanza del vault. Esta regla aplica también a movimientos a `10_Migrated/`.
+
+**Tools del grupo sin entrada propia en este bloque** (el grupo lo da el registro, `vault_servicio --trace`; la descripción, el catálogo MCP; referencia de CLI en `scripts/README.md`):
+
+- `vault_delete` — Elimina notas con SP-01 obligatorio: crea change-log antes de borrar.
 
 ---
 
@@ -3910,6 +3950,11 @@ Es exactamente la vía por la que un vault se envenena, y el contrato lo refleja
 Lo ingerido entra con `status: draft` y `cia_integrity: low`, de modo que el rerank de `vault_context_pack` lo ordena por detrás del conocimiento verificado hasta que alguien lo revise. La procedencia (`source`, `ingest_origin`) se conserva siempre — PAT-5.
 
 **Retorna:** `{ ok, committed, preflight, entities, proposed, written, skipped, stats }`
+
+**Tools del grupo sin entrada propia en este bloque** (el grupo lo da el registro, `vault_servicio --trace`; la descripción, el catálogo MCP; referencia de CLI en `scripts/README.md`):
+
+- `vault_arquitectura_en` — La arquitectura de un proyecto vista en una fecha o versión, o lo que cambió entre dos: qué notas regían, su texto entonces (desde .history/) y sus files:. Solo lectura.
+- `vault_model_profile` — Perfil de modelo LLM para contexto adaptativo. Auto-detecta el modelo desde VAULT_MODEL_PROFILE y expone budget correcto para vault_context_pack.
 
 ---
 

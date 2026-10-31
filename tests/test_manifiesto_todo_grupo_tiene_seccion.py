@@ -50,3 +50,43 @@ def test_toda_tool_del_registro_esta_nombrada_en_el_manifiesto():
     vault_history_compact): el README las tenía, la fuente normativa no."""
     sin = [t for ts in _grupos().values() for t in ts if t not in MANIFIESTO]
     assert not sin, f"tools sin mención en el manifiesto: {sin}"
+
+
+_APERTURA = re.compile(r"^ {0,3}(`{3,}|~{3,})")
+
+
+def _fin_del_contrato(desde):
+    """El primer `## ` fuera de un bloque cercado a partir de `desde`: los
+    ejemplos de nota del contrato traen sus propios `## ` dentro de fences."""
+    pos, fence = 0, None
+    for linea in MANIFIESTO.splitlines(keepends=True):
+        m = _APERTURA.match(linea)
+        if fence is None and m:
+            fence = m.group(1)
+        elif fence is not None and m and m.group(1)[0] == fence[0] and len(m.group(1)) >= len(fence):
+            fence = None
+        elif fence is None and pos > desde and linea.startswith("## "):
+            return pos
+        pos += len(linea)
+    return len(MANIFIESTO)
+
+
+def _bloques_de_grupo():
+    """`{N: texto}` desde `### Grupo N` hasta el siguiente `### Grupo` o el fin
+    de la sección del contrato. Un `###` interno no corta el bloque."""
+    heads = [(m.start(), int(m.group(1)))
+             for m in re.finditer(r"^### Grupo (\d+) — ", MANIFIESTO, re.M)]
+    fin = _fin_del_contrato(heads[-1][0])
+    return {n: MANIFIESTO[s:(heads[i + 1][0] if i + 1 < len(heads) else fin)]
+            for i, (s, n) in enumerate(heads)}
+
+
+def test_toda_tool_esta_nombrada_en_el_bloque_de_su_grupo():
+    """A-18 — medido el 2026-10-30: 18 tools solo salían fuera del bloque de su
+    `group_id` (en la sección de otro grupo, en el changelog o en ninguna parte
+    de la sección del contrato). Que el manifiesto las nombre en algún sitio no
+    basta: quien busca una tool la busca en el bloque de su grupo."""
+    bloques = _bloques_de_grupo()
+    fuera = sorted((n, t) for n, ts in _grupos().items() for t in ts
+                   if not re.search(rf"\b{t}\b", bloques.get(n, "")))
+    assert not fuera, f"tools no nombradas en el bloque de su grupo: {fuera}"

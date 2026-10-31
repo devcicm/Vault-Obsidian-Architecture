@@ -144,8 +144,9 @@ Resultado de aplicar la tabla consolidada de remediaciones a este repo. Nada se 
 | D-01 a D-06 | hechos | `e176303`, `8bc42bf`, `1bc5e37`, `70a3fc2`, `7b2e6e7`, `7ed183c` |
 | D-07 | límite declarado: `round_id` no existe en el contrato ni en ninguna tool; declararlo sin quien lo escriba sería inventarlo | `02d072b` |
 | A-20 | hecho: el bloque de Normas pasa bajo `### Grupo 35`, 29–31 se renumeran a 28–30 y Bootstrap estrena `### Grupo 31`; `tests/test_manifiesto_numeracion_de_grupos.py` exige que cada número sea el `group_id` de las tools que el bloque cita | `d2392f9` |
-| A-19 | hecho: `vault_doc_counts` vigila «sus N herramientas», «\| N herramientas con», «N tools rápidas en JavaScript» y «N tools via subprocess»; `--fix` llevó 76/76/~10/~66 a 127/127/2/125 y la columna de ejemplos JS-native, que AP-48 desmiente, queda anotada `superseded_by` | este commit |
-| A-18, A-22 | re-medidos el 2026-10-30 sobre el HEAD: siguen abiertos (13 tools activas sin mención en la sección del contrato; 10 de 25 variables fuera del manifiesto) | pendiente |
+| A-19 | hecho: `vault_doc_counts` vigila «sus N herramientas», «\| N herramientas con», «N tools rápidas en JavaScript» y «N tools via subprocess»; `--fix` llevó 76/76/~10/~66 a 127/127/2/125 y la columna de ejemplos JS-native, que AP-48 desmiente, queda anotada `superseded_by` | `4c644a0` |
+| A-18 | hecho: el test, que exige cada tool activa en el bloque `### Grupo N` de su `group_id` (no en cualquier parte de la sección), encontró 18 y no 13 (cinco tenían su entrada escrita en el bloque de otro grupo); las 18 quedan nombradas en el bloque de su grupo con la descripción del catálogo MCP, sin contrato nuevo | este commit |
+| A-22 | re-medido el 2026-10-30 sobre el HEAD: sigue abierto (10 de 25 variables fuera del manifiesto) | pendiente |
 | `requirement_state` (D-02) | no existe en este repo; no se inventó | — |
 | C-09 | no es defecto: `es_nota_indexable` rechaza la nota suelta en la raíz por diseño (AP-15); la salida es mover la nota a `00_System/` en el vault | — |
 | C-12 | ya resuelto en el código (`vault_audit` no cuenta `99_Index/tag-index.md` como nota); el 1 huérfano venía de una copia instalada anterior | — |
