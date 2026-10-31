@@ -628,7 +628,10 @@ def fix() -> Dict:
                              "las filas del índice no son contiguas; corregir a mano"),
                 "action": "fix", "fixes_applied": 0}
 
-    README.write_text(text.replace(bloque_viejo, "\n".join(nuevas)), encoding="utf-8")
+    # En bytes, como `disponibilidad_fix`: `write_text` traduce `\n` a CRLF en
+    # Windows y el README salía en CRLF, que rompe a quien parte sus bloques
+    # por "```bash\n" (los ejemplos AP-42 de test_comandos_publicados).
+    README.write_bytes(text.replace(bloque_viejo, "\n".join(nuevas)).encode("utf-8"))
     return {
         "ok": True,
         "tool": "vault_doc_sync",

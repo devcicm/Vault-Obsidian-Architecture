@@ -96,6 +96,8 @@ def test_fix_regenera_el_indice_y_deja_check_limpio(readme_temporal):
     assert not vds.scan()["ok"]
     assert vds.fix()["ok"]
     assert vds.scan()["ok"]
+    # El índice se reescribe en LF también en Windows (antes salía en CRLF).
+    assert b"\r\n" not in readme_temporal.read_bytes()
 
 
 def test_fix_no_inventa_secciones(readme_temporal):
