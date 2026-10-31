@@ -356,8 +356,11 @@ def _politica_de_vulnerabilidades() -> bool:
 def _superficie_autenticada() -> bool:
     """Los dos servicios HTTP exigen token y sus tests contra el real existen."""
     # SP-04: sin estos ejecutores la promesa vuelve a ser un párrafo.
+    # A-13: el Bearer se resuelve a un perfil (`perfilDeToken`), y el perfil
+    # recorta lo que la sesión ve y ejecuta; su test es el del servidor real.
     return (_existe(cita_repo(rutas.TESTS, "test_mcp_http_seguridad.py"))
-            and "tokenValido" in (RAIZ / rutas.MCP / "nodejs" / "vault-mcp-server.mjs").read_text(encoding="utf-8")
+            and _existe(cita_repo(rutas.TESTS, "test_mcp_perfiles_por_token.py"))
+            and "perfilDeToken" in (RAIZ / rutas.MCP / "nodejs" / "vault-mcp-server.mjs").read_text(encoding="utf-8")
             and _existe(cita_repo(rutas.TESTS, "test_token_service_seguridad.py"))
             and "_autorizado" in (RAIZ / "scripts" / "vault_token_service.py").read_text(encoding="utf-8"))
 
@@ -484,6 +487,7 @@ PREGUNTAS: List[Dict[str, Any]] = [
         "ejerce": _superficie_autenticada,
         "quien": (
             f"{cita_repo(rutas.TESTS, 'test_mcp_http_seguridad.py')} (servidor real por HTTP) + "
+            f"{cita_repo(rutas.TESTS, 'test_mcp_perfiles_por_token.py')} (perfiles por token) + "
             f"{cita_repo(rutas.TESTS, 'test_token_service_seguridad.py')} (servicio de tokens real) + README.md"
         ),
         "estado": "cubierta",

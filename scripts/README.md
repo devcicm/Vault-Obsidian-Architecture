@@ -2198,6 +2198,12 @@ VAULT_MCP_TOKEN=<secreto> node mcp/nodejs/vault-mcp-server.mjs --port 3000
 # Sin VAULT_MCP_TOKEN se genera un token por arranque y se imprime por stderr.
 # Se rechaza toda petición con cabecera Origin o con un Host que no sea 127.0.0.1/localhost.
 
+# Perfiles por token (A-13): `lector` solo ve y llama a las tools sin side effects
+# (`perfil_minimo` de tools-catalog.json, derivado de `side_effects`); `operador`, a todas.
+# VAULT_MCP_TOKEN se suma como `operador`. Un perfil que la pasarela no conoce no arranca,
+# y cada sesión se habla con el token que la abrió (otro token → 403).
+VAULT_MCP_TOKENS=lector:<t1>,operador:<t2> node mcp/nodejs/vault-mcp-server.mjs --port 3000
+
 # Perfil de agente: tools/list y tools/call se limitan a las tools del protocolo
 # de sesión (vault.meta_toolkit.protocolo_de_sesion → tools-catalog.json "perfiles").
 # Sin la variable, el catálogo expuesto entero; un perfil desconocido no arranca.

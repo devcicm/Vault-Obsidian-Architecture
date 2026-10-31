@@ -111,6 +111,10 @@ let LOG_LEVEL = process.env.VAULT_MCP_LOG || envDefault("VAULT_MCP_LOG");
 const PERFIL = process.env.VAULT_MCP_PERFIL || envDefault("VAULT_MCP_PERFIL");
 let PERFILES = {};
 let TOOLS_DEL_PERFIL = null;
+// A-13 — los perfiles de token, de menor a mayor, de la pasarela. El de cada
+// tool es su `perfil_minimo`, derivado de `side_effects` en Python; aquí no se
+// nombra ninguno: el mayor es el último, y es el del `VAULT_MCP_TOKEN` de siempre.
+let PERFILES_DE_TOKEN = [];
 
 const VAULT_REGISTRY = new Map();
 const sessions = new Map();
@@ -138,6 +142,7 @@ function loadCatalog() {
     TOOL_GROUPS = data.groups || {};
     ERROR_CATALOG = data.errors || {};
     PERFILES = data.perfiles || {};
+    if (Array.isArray(data.perfiles_de_token)) PERFILES_DE_TOKEN = data.perfiles_de_token;
     if (Array.isArray(data.js_native_tools)) JS_NATIVE_TOOLS = new Set(data.js_native_tools);
     // El catálogo describe el repo entero; la instalación lleva solo el
     // producto. Ofrecer una tool cuyo script no viajó sería prometer algo que
@@ -1033,13 +1038,14 @@ function handleInitialized(session) {
   return {};
 }
 
-async function handleToolsList() {
+async function handleToolsList(params, session) {
   // Solo se exponen via MCP las tools con exposed_via_mcp !== false.
   // Las de gobernanza (Normas), meta e internal viven en el catálogo
   // para vault_smoke y vault_spec_validate, pero no en el MCP del agente.
   const tools = Object.values(TOOLS_CATALOG)
     .filter(t => t.exposed_via_mcp !== false)
     .filter(t => !TOOLS_DEL_PERFIL || TOOLS_DEL_PERFIL.has(t.name))
+    .filter(t => permitidaPorToken(t, session))
     .map(t => ({
       name: t.name,
       description: t.description,
@@ -1057,7 +1063,7 @@ async function handleToolsCall(params, session) {
     return formatToolError("missing_tool_name", "Tool name is required");
   }
 
-  const rechazo = comprobarLlamada(name, args);
+  const rechazo = comprobarLlamada(name, args, session);
   if (rechazo) {
     log("warn", `Tool ${name} rechazada: ${rechazo.message}`);
     return formatToolError(rechazo.code, rechazo.message, name);
@@ -1149,7 +1155,7 @@ function esObjetoPlano(v) {
   return v !== null && typeof v === "object" && !Array.isArray(v);
 }
 
-function comprobarLlamada(name, args) {
+function comprobarLlamada(name, args, session) {
   if (!esObjetoPlano(args)) {
     return { code: "INVALID_ARGS", message: "`arguments` tiene que ser un objeto" };
   }
@@ -1168,6 +1174,13 @@ function comprobarLlamada(name, args) {
     return {
       code: "tool_not_found",
       message: `Tool '${name}' no está en el perfil '${PERFIL}' (VAULT_MCP_PERFIL).`,
+    };
+  }
+  // Ni lo que el token de la sesión no deja ver (A-13).
+  if (!permitidaPorToken(tool, session)) {
+    return {
+      code: "tool_not_found",
+      message: `Tool '${name}' requiere el perfil de token '${tool.perfil_minimo || perfilMayor()}' (VAULT_MCP_TOKENS).`,
     };
   }
   const error = validarArgumentos(tool.inputSchema || { properties: {} }, args)
@@ -1672,20 +1685,59 @@ function startStdio() {
 //              `evil.example` y en realidad llega aquí.
 // El token sale de `VAULT_MCP_TOKEN` o se genera al arrancar y se imprime una
 // vez por stderr: el default es cerrado, no abierto.
+//
+// A-13 — cada token abre un perfil. `VAULT_MCP_TOKENS=lector:<t>,operador:<t>`
+// declara varios; `VAULT_MCP_TOKEN` y el generado son el perfil mayor. Un
+// perfil que la pasarela no conoce no arranca: caer al mayor sería dar más de
+// lo que se pidió.
+const digest = (texto) => createHash("sha256").update(texto).digest();
+const perfilMayor = () => PERFILES_DE_TOKEN[PERFILES_DE_TOKEN.length - 1];
+
 function resolverTokenHttp() {
+  const permisosPorToken = [];
+  const lista = process.env.VAULT_MCP_TOKENS || envDefault("VAULT_MCP_TOKENS");
+  for (const par of (lista || "").split(",").map(p => p.trim()).filter(Boolean)) {
+    const corte = par.indexOf(":");
+    const perfil = corte > 0 ? par.slice(0, corte).trim() : "";
+    const token = corte > 0 ? par.slice(corte + 1).trim() : "";
+    if (!token || !PERFILES_DE_TOKEN.includes(perfil)) {
+      throw new Error(
+        `VAULT_MCP_TOKENS: '${perfil || par.slice(0, 12)}' no es '<perfil>:<token>' con un perfil ` +
+        `de tools-catalog.json (perfiles_de_token: ${PERFILES_DE_TOKEN.join(", ") || "ninguno"}).`,
+      );
+    }
+    permisosPorToken.push({ digest: digest(token), perfil });
+  }
   const declarado = process.env.VAULT_MCP_TOKEN || envDefault("VAULT_MCP_TOKEN");
-  if (declarado) return { token: declarado, generado: false };
-  return { token: randomBytes(32).toString("hex"), generado: true };
+  if (declarado) permisosPorToken.push({ digest: digest(declarado), perfil: perfilMayor() });
+  if (permisosPorToken.length) return { permisosPorToken, token: null, generado: false };
+  const token = randomBytes(32).toString("hex");
+  return { permisosPorToken: [{ digest: digest(token), perfil: perfilMayor() }], token, generado: true };
 }
 
-function tokenValido(cabecera, esperado) {
+// El perfil del token de la cabecera, o null. Se comparan digests de longitud
+// fija —`timingSafeEqual` exige longitudes iguales, y comparar longitudes
+// primero filtraría la del token— contra todas las entradas, sin cortar en la
+// primera que coincide.
+function perfilDeToken(cabecera, permisosPorToken) {
   const m = /^Bearer\s+(.+)$/i.exec(cabecera || "");
-  if (!m) return false;
-  // Se comparan digests de longitud fija: `timingSafeEqual` exige longitudes
-  // iguales, y comparar longitudes primero filtraría la del token.
-  const a = createHash("sha256").update(m[1].trim()).digest();
-  const b = createHash("sha256").update(esperado).digest();
-  return timingSafeEqual(a, b);
+  if (!m) return null;
+  const a = digest(m[1].trim());
+  let perfil = null;
+  for (const entrada of permisosPorToken) {
+    if (timingSafeEqual(a, entrada.digest) && perfil === null) perfil = entrada.perfil;
+  }
+  return perfil;
+}
+
+// Lo que el token de la sesión deja ver y ejecutar. Sin perfil de token
+// (stdio) no hay recorte: el proceso lo lanzó el propio cliente. Una tool sin
+// `perfil_minimo` conocido exige el mayor.
+function permitidaPorToken(tool, session) {
+  const perfil = session?.perfilToken;
+  if (!perfil) return true;
+  const necesario = PERFILES_DE_TOKEN.indexOf(tool.perfil_minimo);
+  return necesario !== -1 && necesario <= PERFILES_DE_TOKEN.indexOf(perfil);
 }
 
 function hostPermitido(host, port) {
@@ -1693,7 +1745,7 @@ function hostPermitido(host, port) {
 }
 
 function startSSE(port) {
-  const { token, generado } = resolverTokenHttp();
+  const { permisosPorToken, token, generado } = resolverTokenHttp();
   if (generado) {
     process.stderr.write(`[MCP AUTH] token de esta ejecución: ${token}\n`);
     process.stderr.write(`[MCP AUTH] envíalo como 'Authorization: Bearer <token>' o fija VAULT_MCP_TOKEN\n`);
@@ -1714,7 +1766,8 @@ function startSSE(port) {
       return;
     }
 
-    const autenticado = tokenValido(req.headers.authorization, token);
+    const perfilToken = perfilDeToken(req.headers.authorization, permisosPorToken);
+    const autenticado = perfilToken !== null;
 
     if (req.method === "GET" && req.url.startsWith("/health")) {
       // Sin token solo se contesta a la comprobación de vida, y sin rutas: el
@@ -1782,6 +1835,7 @@ function startSSE(port) {
         clientInfo: null,
         clientModelProfile: null,
         connectedAt: new Date().toISOString(),
+        perfilToken,
         res,
       });
 
@@ -1804,6 +1858,12 @@ function startSSE(port) {
       if (!session) {
         res.writeHead(401, { "Content-Type": "application/json" });
         res.end(JSON.stringify(jsonrpcError(null, -32001, "No active session. Connect via GET /sse?vault=NAME first.")));
+        return;
+      }
+      // La sesión la abrió un token; no se le habla con otro. Si no, un token
+      // `lector` conocería el id de una sesión `operador` y escribiría con ella.
+      if (session.perfilToken !== perfilToken) {
+        rechazar(403, "Esta sesión se abrió con otro token: cada sesión se habla con el suyo.");
         return;
       }
 
@@ -2382,7 +2442,12 @@ function main() {
   refreshVaultRegistry();
 
   if (SSE_PORT > 0) {
-    startSSE(SSE_PORT);
+    try {
+      startSSE(SSE_PORT);
+    } catch (e) {
+      log("error", e.message);
+      process.exit(2);
+    }
   } else {
     startStdio();
   }

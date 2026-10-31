@@ -5079,6 +5079,25 @@ def _convert_to_json_schema(py_tool: Dict[str, Any]) -> Dict[str, Any]:
     return schema
 
 
+#: Lo que puede hacer quien presenta un token del transporte HTTP (A-13).
+#: Hasta v41.25 había un único Bearer y quien lo tenía llamaba a toda tool,
+#: `vault_delete` y `vault_standard_upgrade` incluidas. `lector` solo ve y
+#: ejecuta las tools sin side effects declarados; `operador`, todas. Los
+#: tokens los declara `VAULT_MCP_TOKENS` (`lector:<t>,operador:<t>`); el
+#: `VAULT_MCP_TOKEN` de siempre es `operador`, para no romper a quien ya lo usa.
+PERFILES_DE_TOKEN = ("lector", "operador")
+
+
+def perfil_minimo(py_tool: Dict[str, Any]) -> str:
+    """El perfil de token más bajo que puede llamar a la tool.
+
+    Se deriva de `side_effects` y no se declara a mano: una tool que escribe y
+    se olvida de decirlo ya es deuda de AP-37, y una lista de lectoras escrita
+    aparte envejecería sin que nada la comparase (AP-05).
+    """
+    return "operador" if py_tool.get("side_effects") else "lector"
+
+
 def errores_para_transporte() -> Dict[str, Any]:
     """La parte de `ERROR_CATALOG` que el servidor MCP necesita para emitir el
     envelope canónico: lo mismo que `construir_error` copia de cada entrada.
@@ -5166,6 +5185,7 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
             "inputSchema": _convert_to_json_schema(tool),
             "guards": tool.get("guards", []),
             "side_effects": tool.get("side_effects", []),
+            "perfil_minimo": perfil_minimo(tool),
             "status": status,
             "exposed_via_mcp": exposed,
             # A2: se deriva inline (misma lógica que clasificar_tools, sin ciclo).
@@ -5213,6 +5233,9 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
         # unión de las que nombra `PROTOCOLO_DE_SESION`, y viaja por esta
         # pasarela porque el `.mjs` no puede importar el registro.
         "perfiles": {p: tools_del_perfil(p) for p in sorted(PERFILES)},
+        # A-13 — los perfiles de token, de menor a mayor. El `.mjs` no arranca
+        # con un `VAULT_MCP_TOKENS` que nombre otro.
+        "perfiles_de_token": list(PERFILES_DE_TOKEN),
     }
 
     with open(output_path, "w", encoding="utf-8", newline="\n") as f:
@@ -5342,6 +5365,10 @@ def check_sync(json_path: Optional[str] = None) -> Dict[str, Any]:
             f"JSON={sorted(js_en_json)}"
         )
 
+    if existing.get("perfiles_de_token") != list(PERFILES_DE_TOKEN):
+        result["ok"] = False
+        result["diffs"].append("perfiles_de_token divergen (regenerar con --sync)")
+
     existing_groups = set(existing.get("groups", {}).keys())
     py_groups = set(GROUPS.keys())
 
@@ -5378,6 +5405,11 @@ def check_sync(json_path: Optional[str] = None) -> Dict[str, Any]:
         if existing["tools"][name].get("requires_one_of") != (alternativas_obligatorias(TOOLS_CATALOG[name]) or None):
             result["ok"] = False
             result["diffs"].append(f"{name}: requires_one_of differs (regenerar con --sync)")
+        # A-13 — lo que decide qué token puede llamarla; una copia vieja daría
+        # a un `lector` una tool que ya escribe.
+        if existing["tools"][name].get("perfil_minimo") != perfil_minimo(TOOLS_CATALOG[name]):
+            result["ok"] = False
+            result["diffs"].append(f"{name}: perfil_minimo differs (regenerar con --sync)")
 
         py_guard_count = len(TOOLS_CATALOG[name].get("guards", []))
         js_guard_count = len(existing["tools"][name].get("guards", []))

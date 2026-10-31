@@ -135,6 +135,13 @@
       "purpose": "Token que exige el transporte HTTP/SSE del servidor MCP (`Authorization: Bearer`). Si falta, se genera uno por arranque. Solo la lee el `.mjs`; stdio no la usa."
     },
     {
+      "name": "VAULT_MCP_TOKENS",
+      "type": "texto",
+      "default": "",
+      "context": "meta_toolkit",
+      "purpose": "Tokens del transporte HTTP/SSE con su perfil, `lector:<t>,operador:<t>` (perfiles de `tools-catalog.json` → `perfiles_de_token`). `lector` solo ve y llama a las tools sin side effects. Se suma a `VAULT_MCP_TOKEN`, que es `operador`. Solo la lee el `.mjs`."
+    },
+    {
       "name": "VAULT_MCP_PERFIL",
       "type": "texto",
       "default": "",

@@ -106,21 +106,29 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     },
     {
         "id": "mcp_sin_perfiles_por_token",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "v41.25",
         "sostenida_por": [
-            cita_repo(rutas.TESTS, "test_mcp_perfiles_por_token.py::test_limite_declarado_mcp_sin_perfiles_por_token"),
+            cita_repo(rutas.TESTS, "test_mcp_perfiles_por_token.py::test_lector_solo_ve_las_tools_sin_side_effects"),
+            cita_repo(rutas.TESTS, "test_mcp_perfiles_por_token.py::test_lector_no_ejecuta_lo_que_no_ve"),
+            cita_repo(rutas.TESTS, "test_mcp_perfiles_por_token.py::test_una_sesion_no_se_habla_con_otro_token"),
+            cita_repo(rutas.TESTS, "test_mcp_perfiles_por_token.py::test_la_pasarela_publica_el_perfil_de_cada_tool"),
         ],
         "desde": "v41.25",
         "capa": "5",
         "que": (
             "A-13 del estudio vault-dev-codex: el servidor MCP tiene un unico Bearer; "
             "quien lo posee llama a toda tool, incluidas `vault_delete` y "
-            "`vault_standard_upgrade`. No hay perfiles por token ni por tool."
+            "`vault_standard_upgrade`. No hay perfiles por token ni por tool. "
+            "Saldada: `VAULT_MCP_TOKENS=lector:<t>,operador:<t>`; el perfil de cada "
+            "tool es `perfil_minimo`, derivado de `side_effects` en `vault_mcp_catalog` "
+            "y publicado en `tools-catalog.json`; `lector` no ve ni ejecuta lo que "
+            "escribe y una sesion solo se habla con el token que la abrio."
         ),
         "por_que_no_ahora": (
-            "Pide decidir el modelo de perfiles (agente / operador) y como se declaran "
-            "los tokens; cambia el contrato de arranque de los consumidores. Mientras "
-            "tanto conviene rotar el token expuesto en el historial."
+            "No es una deuda viva: esta saldada. El contrato de arranque no cambia "
+            "para quien ya usaba `VAULT_MCP_TOKEN`, que sigue siendo `operador`. "
+            "Rotar el token expuesto en el historial sigue siendo cosa de la persona."
         ),
     },
     {

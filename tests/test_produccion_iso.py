@@ -49,6 +49,8 @@ def test_security_md_no_afirma_lo_que_el_codigo_no_hace():
     afirmaciones = {
         "127.0.0.1": 'server.listen(port, "127.0.0.1"' in servidor,
         "VAULT_MCP_TOKEN": "process.env.VAULT_MCP_TOKEN" in servidor,
+        "VAULT_MCP_TOKENS": "process.env.VAULT_MCP_TOKENS" in servidor
+        and "permitidaPorToken(tool, session)" in servidor,
         "tiempo constante": "timingSafeEqual(" in servidor,
         "cabecera `Origin`": "rechazar(403" in servidor,
         "--allow-network": "NETWORK_DISABLED" in ingest,

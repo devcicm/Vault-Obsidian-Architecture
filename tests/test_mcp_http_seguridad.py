@@ -40,12 +40,15 @@ def _puerto_libre() -> int:
 
 
 class Servidor:
-    def __init__(self, vault: Path, token=TOKEN):
+    def __init__(self, vault: Path, token=TOKEN, tokens=None):
         self.port = _puerto_libre()
         env = {**os.environ, "VAULT_ROOT": str(vault), "VAULT_SCAN_ROOTS": str(vault)}
         env.pop("VAULT_MCP_TOKEN", None)
+        env.pop("VAULT_MCP_TOKENS", None)
         if token is not None:
             env["VAULT_MCP_TOKEN"] = token
+        if tokens is not None:
+            env["VAULT_MCP_TOKENS"] = tokens
         self.proc = subprocess.Popen(
             ["node", str(SERVER), "--port", str(self.port)],
             stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,

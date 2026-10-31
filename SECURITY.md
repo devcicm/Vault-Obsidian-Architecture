@@ -48,7 +48,9 @@ Lo que sigue lo hace el código hoy; cada punto tiene su guard o su test.
   `Authorization: Bearer <token>` —de `VAULT_MCP_TOKEN` o generado al arrancar—
   comparado en tiempo constante, rechaza con 403 un `Host` ajeno (DNS
   rebinding) y toda petición con cabecera `Origin` (navegadores). Es la norma
-  SP-04.
+  SP-04. Con `VAULT_MCP_TOKENS=lector:<t>,operador:<t>` cada token abre un
+  perfil: `lector` solo ve y llama a las tools sin side effects, y una sesión
+  no acepta mensajes con otro token que el que la abrió.
 - **Escrituras**: toda ruta pasa por `vault_io.assert_within_vault`; una tool
   no escribe fuera del vault que se le señala (AP-36).
 - **Ingesta**: `vault_ingest` ejecuta un pre-vuelo anti-poison que no se puede

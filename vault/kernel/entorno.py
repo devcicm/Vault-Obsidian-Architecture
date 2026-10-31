@@ -215,6 +215,16 @@ VARIABLES: Dict[str, Variable] = {
             "(`Authorization: Bearer`). Si falta, se genera uno por arranque. "
             "Solo la lee el `.mjs`; stdio no la usa.",
         ),
+        # A-13. Con un solo token, quien lo tenía llamaba a `vault_delete`; aquí
+        # cada token dice qué perfil abre. `VAULT_MCP_TOKEN` sigue valiendo, como
+        # `operador`.
+        Variable(
+            "VAULT_MCP_TOKENS", "texto", "", "meta_toolkit",
+            "Tokens del transporte HTTP/SSE con su perfil, `lector:<t>,operador:<t>` "
+            "(perfiles de `tools-catalog.json` → `perfiles_de_token`). `lector` solo ve "
+            "y llama a las tools sin side effects. Se suma a `VAULT_MCP_TOKEN`, que es "
+            "`operador`. Solo la lee el `.mjs`.",
+        ),
         # v41.2. Vacía es el catálogo entero, que es lo que recibía todo
         # cliente hasta ahora; un nombre que no está en `perfiles` no arranca,
         # porque caer al catálogo entero sería exponer lo que se pidió no exponer.

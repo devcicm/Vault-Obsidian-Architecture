@@ -7403,6 +7403,14 @@ imprime una vez por stderr: el default es cerrado. Además:
 
 stdio no abre puerto y no cambia.
 
+**Perfiles por token (A-13, v41.25):** un único Bearer daba a quien lo tuviera toda tool, incluidas
+`vault_delete` y `vault_standard_upgrade`. `VAULT_MCP_TOKENS=lector:<t>,operador:<t>` declara varios
+tokens con su perfil, y `VAULT_MCP_TOKEN` sigue valiendo como `operador`. El perfil que exige cada
+tool es su `perfil_minimo` en `tools-catalog.json`, derivado en `vault_mcp_catalog` de
+`side_effects`: el servidor no nombra ninguno. `lector` no ve en `tools/list` ni ejecuta en
+`tools/call` lo que tiene side effects; un perfil que la pasarela no conoce no arranca, y una
+sesión no acepta mensajes con otro token que el que la abrió (403).
+
 **Alcance (v41.3):** la regla vale para todo servicio HTTP local del toolkit, no solo para el MCP.
 `vault_token_service` (grupo 26) atendía `/status`, `/flows/<id>` y `POST /stop` sin credencial y
 aceptaba JSON con cualquier `Content-Type`: un formulario de cualquier página lo apagaba. Hoy aplica
