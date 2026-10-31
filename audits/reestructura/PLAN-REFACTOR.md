@@ -50,9 +50,30 @@ siguen en `AUDITORIA.md`.
 |---|---|---|---|---|
 | A-1 | H-01 | ~~COMPATIBLE_EVOLUTION~~ **descartado**: al deconstruirlo resultó NOT_APPLICABLE (ver H-01). No se toca código. | `vault/meta_toolkit/tools-catalog.json` queda como fuente única. `mcp/nodejs/tools-catalog.json` sigue existiendo como derivado: `--sync` lo escribe y `--check` exige igualdad. Se declara en `DERIVADOS`, para que nadie lo edite pensando que es la fuente. | `estatico` (los dos hashes no cambian) |
 | A-2 | H-08 | PURE_REFACTOR | `install`/`uninstall::_run` pasan a un único lanzador en `vault/kernel` o en el dueño de procesos. `clones-baseline` queda saldada. | `superficie` + `envelopes` |
-| A-3 | H-02 | PURE_REFACTOR | `vault_io` deja de importar `vault_section_index` y `vault_tags`: recibe el registro por el puerto `RegistroSecciones` de `vault/kernel/puertos.py`, que se inyecta al importarse el productor. `ciclos-baseline` pasa de 3 a 0. | `envelopes` (todas las tools que escriben notas) |
-| A-4 | H-03 | PURE_REFACTOR | `vault_errors._inject_voice` llama a un puerto `Voz` con `None` por defecto. `vault.autoria.voz` se registra al importarse. El cruce kernel→autoria desaparece de `PRESUPUESTO_DE_CRUCES` y pasa a `saldada`. | `envelopes` (los errores conservan su campo de voz) |
-| A-5 | H-11 | PURE_REFACTOR | Se quita el cruce gobernanza→meta_toolkit, que está declarado `a_eliminar`. | `superficie` |
+| A-3 | H-02 | **bloqueado → replaneado tras C-2** (ver «Obstáculos del bloque A») | `vault_io` deja de importar `vault_section_index` y `vault_tags`: recibe el registro por el puerto `RegistroSecciones` de `vault/kernel/puertos.py`, que se inyecta al importarse el productor. `ciclos-baseline` pasa de 3 a 0. | `envelopes` (todas las tools que escriben notas) |
+| A-4 | H-03 | **bloqueado → replaneado tras C-2** (ver «Obstáculos del bloque A») | `vault_errors._inject_voice` llama a un puerto `Voz` con `None` por defecto. `vault.autoria.voz` se registra al importarse. El cruce kernel→autoria desaparece de `PRESUPUESTO_DE_CRUCES` y pasa a `saldada`. | `envelopes` (los errores conservan su campo de voz) |
+| A-5 | H-11 | **bloqueado: decisión del propietario** (ver «Obstáculos del bloque A») | Se quita el cruce gobernanza→meta_toolkit, que está declarado `a_eliminar`. | `superficie` |
+
+### Obstáculos del bloque A (2026-10-31, al ejecutarlo)
+
+Resultado del bloque: A-1 descartado (NOT_APPLICABLE), A-2 hecho (`428c895`) y A-3, A-4 y A-5 bloqueados.
+Ninguno de los tres se forzó.
+
+- **A-3 y A-4 necesitan una raíz de composición que hoy no existe.**
+  - `vault_io` dispara el índice de sección y la bitácora de tags en cada escritura de nota.
+  - `vault_errors` pone `vault_says` en cada envelope.
+  - Las dos cosas valen para todas las tools, también para las que nunca importan `vault_section_index`, `vault_tags` o `vault.autoria.voz`.
+  - Si el productor se registra al importarse, esas tools pierden el gancho en silencio, y eso cambia C(P).
+  - Si el kernel resuelve el productor por nombre (`importlib`), el import diferido se queda donde está pero AP-58 no lo ve. Eso es esconder el ciclo, no romperlo.
+  - Además, el puerto que proponía el plan (`RegistroSecciones`) da los nombres de sección y no regenera índices. No encaja.
+  - **Lo que falta medir:** el golden compara envelopes, no los ficheros que la tool deja en el vault. En A-3 una regresión sería invisible para `paridad.py`, que es el punto ciego que AP-44 nombra.
+  - **Replan:** van detrás de C-2. Cuando cada tool construye su `VaultContext` en `main()`, ese `main()` es la raíz de composición. Allí se inyectan el regenerador de índices y la voz, con el valor por defecto que hoy da el import. Antes de A-3, `paridad.py` añade una instantánea de los ficheros escritos por corrida.
+- **A-5 es decisión del propietario.**
+  - El registro lo dice: «PENDIENTE DE RATIFICACIÓN DEL PROPIETARIO».
+  - Las tres opciones son (A) componer desde el meta-toolkit, (B) un dueño con puerto declarado y (C) una excepción formal con plazo.
+  - Medido hoy, el único sitio vivo del par es `vault/gobernanza/tool.py::_create_gobernanza` → `vault.meta_toolkit.catalog_adapter`. Es la raíz de composición de la tool `vault_gobernanza`, que ya recibe catálogo y normas por inyección.
+  - El texto del cruce sigue describiendo `vault_norms` → `vault_mcp_catalog`/`vault_smoke`, que pasaron al puerto de controles en R22 (B-08).
+- **La dependencia de orden «H-02/H-03 antes de H-04» no se sostiene medida.** Ninguno de los ocho módulos de B-1 y B-2 importa `vault_io`, `vault_errors`, `vault_section_index`, `vault_tags` ni `autoria`. El bloque B no arrastra ningún ciclo y puede ir antes.
 
 ## Bloque B — núcleo (riesgo medio)
 
