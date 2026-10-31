@@ -653,6 +653,46 @@ def strip_code_blocks(content: str) -> str:
     return clean
 
 
+_APERTURA_DE_FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
+_CIERRE_DE_FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})[ \t]*$")
+
+
+def sin_bloques_cercados(content: str) -> str:
+    """El texto con cada línea de bloque cercado vaciada, como lo lee CommonMark.
+
+    `strip_code_blocks` empareja un fence de tres backticks con el siguiente en
+    cualquier posición: no ve `~~~`, ni que un fence de cuatro solo lo cierra
+    otro de cuatro o más, ni que un fence con lenguaje a mitad de línea no abre
+    nada. Sobre el manifiesto eso emparejaba fences cruzados. Aquí se recorre
+    por líneas: abre un fence de tres o más backticks o tildes con hasta tres
+    espacios delante (el de backticks, sin backticks en la info), y lo cierra
+    una línea que solo tenga el mismo carácter, al menos tantas veces.
+
+    Las líneas de dentro se sustituyen por una vacía en vez de quitarse: el
+    número de línea de lo que queda fuera sigue siendo el del original. El
+    código en línea se conserva, porque un id citado entre backticks es prosa
+    para quien lee. Un fence sin cerrar llega hasta el final, como en CommonMark.
+    """
+    fuera: List[str] = []
+    fence: Optional[str] = None
+    for linea in content.splitlines(keepends=True):
+        vacia = "\n" if linea.endswith("\n") else ""
+        if fence is None:
+            m = _APERTURA_DE_FENCE.match(linea)
+            info = linea.strip()[len(m.group(1)):] if m else ""
+            if m and not (m.group(1)[0] == "`" and "`" in info):
+                fence = m.group(1)
+                fuera.append(vacia)
+            else:
+                fuera.append(linea)
+            continue
+        m = _CIERRE_DE_FENCE.match(linea)
+        if m and m.group(1)[0] == fence[0] and len(m.group(1)) >= len(fence):
+            fence = None
+        fuera.append(vacia)
+    return "".join(fuera)
+
+
 __all__ = [
     "WIKILINK_MAX_LEN", "WIKILINK_MIN_LEN",
     "UNICODE_BRACKETS", "UNICODE_OPEN_BRACKETS", "UNICODE_CLOSE_BRACKETS",
@@ -668,5 +708,5 @@ __all__ = [
     "fix_nested_brackets", "fix_whitespace_in_links", "fix_all_brackets",
     "extract_wiki_links_strict", "validate_and_fix",
     "fix_brackets", "clean_whitespace", "validate_link",
-    "strip_code_blocks",
+    "strip_code_blocks", "sin_bloques_cercados",
 ]

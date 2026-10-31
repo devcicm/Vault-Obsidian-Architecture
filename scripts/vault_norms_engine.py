@@ -34,6 +34,7 @@ import yaml  # el criterio del consumidor, no un regex (AP-44)
 
 from vault_errors import emit_error
 from vault.kernel import rutas
+from vault.kernel.regex import sin_bloques_cercados
 from vault_io import (
     is_snapshot_path,
     normalize_stem,
@@ -173,10 +174,15 @@ def framework_drift_check(spec_path: Optional[Path] = None) -> Dict[str, Any]:
         )
 
     text = spec.read_text(encoding="utf-8", errors="replace")
+    # AP-44 (A-17): se mide como lee quien abre el manifiesto. Un id o un
+    # encabezado dentro de un bloque cercado es un ejemplo, no documentación, y
+    # `"F1" in text` daba verde con solo `F13` escrito: el id se busca entero.
+    prosa = sin_bloques_cercados(text)
     missing: List[Dict[str, str]] = []
     for registry_name, entries in FRAMEWORK_REGISTRIES.items():
         for entry in entries:
-            if entry["id"] not in text:
+            if not re.search(rf"(?<![A-Za-z0-9-]){re.escape(entry['id'])}(?![0-9A-Za-z])",
+                             prosa):
                 missing.append(
                     {
                         "registry": registry_name,
@@ -192,7 +198,7 @@ def framework_drift_check(spec_path: Optional[Path] = None) -> Dict[str, Any]:
     # `vault_norms --list` las mostraba y el manifiesto no las explicaba. Un
     # `in text` habría dado verde — es AP-44 otra vez: medir con el criterio
     # cómodo en vez de con el del lector, que busca la sección.
-    encabezados = set(re.findall(r"^#{2,4}\s+((?:AP|PAT|SP|CN)-\d+)", text, re.M))
+    encabezados = set(re.findall(r"^#{2,4}\s+((?:AP|PAT|SP|CN)-\d+)", prosa, re.M))
     sin_seccion = [n["code"] for n in NORM_CATALOG if n["code"] not in encabezados]
     iso = iso_coverage_check()
     # La norma como paquete (deuda #10): la forma de `normas/<código>/` la

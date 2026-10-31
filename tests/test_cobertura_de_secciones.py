@@ -92,3 +92,53 @@ def test_el_manifiesto_real_esta_completo():
         f"sin sección: {r['norms_without_section']} | ids sin doc: {r['missing']}"
     )
     assert r["norms_total"] == len(vault_norms.NORM_CATALOG)
+
+
+def test_un_encabezado_dentro_de_un_bloque_de_codigo_no_cuenta(tmp_path):
+    """A-17 — la sección quitada y su encabezado sobreviviendo en un ejemplo.
+
+    Un `## AP-NN` dentro de un fence es un ejemplo de nota: el lector no lo ve
+    como sección, y el `re.M` sobre el texto crudo sí lo contaba.
+    """
+    falso = tmp_path / "manifiesto.md"
+    original = MANIFIESTO.read_text(encoding="utf-8", errors="replace")
+    codigo = vault_norms.NORM_CATALOG[0]["code"]
+    sin_seccion = re.sub(rf"^#{{2,4}}\s+{re.escape(codigo)}\b", "#### xxx",
+                         original, flags=re.M)
+    falso.write_text(sin_seccion + f"\n~~~~markdown\n## {codigo} — ejemplo\n~~~~\n",
+                     encoding="utf-8")
+
+    assert ENCABEZADO.search(falso.read_text(encoding="utf-8")), "el encabezado sigue ahí"
+    assert codigo in vault_norms.framework_drift_check(falso)["norms_without_section"]
+
+
+def test_un_id_del_marco_no_se_satisface_con_otro_mas_largo(tmp_path):
+    """A-17 — `"F1" in texto` daba verde con solo `F13` escrito."""
+    from vault_fundamentals_catalog import FRAMEWORK_REGISTRIES
+
+    falso = tmp_path / "manifiesto.md"
+    original = MANIFIESTO.read_text(encoding="utf-8", errors="replace")
+    ident = FRAMEWORK_REGISTRIES["fundamentals"][0]["id"]
+    borrado = re.sub(rf"(?<![A-Za-z0-9-]){re.escape(ident)}(?![0-9A-Za-z])", "",
+                     original)
+    falso.write_text(borrado + f"\nVer {ident}3 en otro sitio.\n", encoding="utf-8")
+
+    assert ident in falso.read_text(encoding="utf-8"), "la subcadena sigue ahí"
+    faltan = [m["id"] for m in vault_norms.framework_drift_check(falso)["missing"]]
+    assert ident in faltan
+
+
+def test_un_id_citado_solo_en_un_bloque_de_codigo_no_cuenta(tmp_path):
+    """A-17 — el id que solo sale en un ejemplo de código no está documentado."""
+    from vault_fundamentals_catalog import FRAMEWORK_REGISTRIES
+
+    falso = tmp_path / "manifiesto.md"
+    original = MANIFIESTO.read_text(encoding="utf-8", errors="replace")
+    ident = FRAMEWORK_REGISTRIES["fundamentals"][0]["id"]
+    borrado = re.sub(rf"(?<![A-Za-z0-9-]){re.escape(ident)}(?![0-9A-Za-z])", "",
+                     original)
+    falso.write_text(borrado + f"\n```yaml\nfundamento: {ident}\n```\n",
+                     encoding="utf-8")
+
+    faltan = [m["id"] for m in vault_norms.framework_drift_check(falso)["missing"]]
+    assert ident in faltan
