@@ -6078,6 +6078,59 @@
         "vault_privacy_save"
       ]
     },
+    "vault_ronda": {
+      "name": "vault_ronda",
+      "description": "D-07: la ronda de trabajo de un agente. --abrir acuna un round_id (r<AAAAMMDD>-<6 hex>) y lo deja en 00_System/ronda-activa.json; mientras sigue abierta, vault_write lo estampa en cada nota. --cerrar escribe la nota de sesion en 04_Sessions/ con las notas que lo llevan y quita la ronda activa. La abre el agente, nunca nadie por el: sin --abrir, vault_write escribe igual que antes.",
+      "group": "Session Delta y Tags",
+      "script": "vault_ronda.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "abrir": {
+            "type": "boolean",
+            "description": "Abrir una ronda nueva (con --agente y --objetivo)"
+          },
+          "cerrar": {
+            "type": "boolean",
+            "description": "Cerrar la ronda abierta (con --resumen)"
+          },
+          "activa": {
+            "type": "boolean",
+            "description": "Consultar la ronda abierta (por defecto)"
+          },
+          "agente": {
+            "type": "string",
+            "description": "Quien abre la ronda"
+          },
+          "objetivo": {
+            "type": "string",
+            "description": "Para que se abre la ronda"
+          },
+          "resumen": {
+            "type": "string",
+            "description": "Que se hizo en la ronda (va a la nota de sesion)"
+          }
+        },
+        "additionalProperties": false
+      },
+      "guards": [
+        "Dos rondas a la vez no: con una abierta, --abrir devuelve ROUND_ALREADY_ACTIVE",
+        "Un ronda-activa.json ilegible es DATA_FILE_CORRUPT, no una ronda ausente (AP-51)",
+        "La nota de sesion se escribe por vault_write (AP-46); si falla, la ronda sigue abierta"
+      ],
+      "side_effects": [
+        "Escribe y borra 00_System/ronda-activa.json",
+        "Al cerrar, escribe la nota de sesion en 04_Sessions/ por vault_write"
+      ],
+      "perfil_minimo": "operador",
+      "status": "active",
+      "exposed_via_mcp": true,
+      "execution_module": "vault_toolkit.operations.vault_ronda",
+      "related": [
+        "vault_write",
+        "vault_delta"
+      ]
+    },
     "vault_runbook_log": {
       "name": "vault_runbook_log",
       "description": "Registra ejecución de runbook.",
@@ -7676,6 +7729,7 @@
     ],
     "Session Delta y Tags": [
       "vault_delta",
+      "vault_ronda",
       "vault_tags"
     ],
     "Normas": [
@@ -9139,6 +9193,26 @@
       "recovery": {
         "action": "fix_input",
         "hint": "Los nombres reservados son 'index' y 'readme' (y sus variantes con mayúsculas). Son nombres de los índices de sección y maestro; elegir otro título.",
+        "docs": null
+      }
+    },
+    "ROUND_ALREADY_ACTIVE": {
+      "category": "validation",
+      "severity": "error",
+      "message": "Ya hay una ronda de trabajo abierta.",
+      "recovery": {
+        "action": "fix_input",
+        "hint": "Cerrar la abierta con vault_ronda --cerrar --resumen antes de abrir otra; vault_ronda --activa dice cuál es.",
+        "docs": null
+      }
+    },
+    "ROUND_NOT_ACTIVE": {
+      "category": "validation",
+      "severity": "error",
+      "message": "No hay ninguna ronda de trabajo abierta.",
+      "recovery": {
+        "action": "fix_input",
+        "hint": "Abrir una con vault_ronda --abrir --agente --objetivo.",
         "docs": null
       }
     },

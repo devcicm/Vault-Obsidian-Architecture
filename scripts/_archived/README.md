@@ -22,7 +22,7 @@ Qué implica estar en esta carpeta:
 | `vault_migrate.py` | `vault_migrate_docs.py` | Migración con clasificación, reporte de rollback (AP-10) y trazabilidad. |
 | `vault_render.py` | `vault_diagram_export.py` | Renderizado de Mermaid con validación AP-25 y export contenido en el vault (AP-36). |
 | `vault_reorganize.py` | `vault_move.py` | El movimiento puntual de notas actualiza wiki-links, `search-index.json` y `graph.json`. |
-| `vault_session.py` | `vault_delta.py` | La observabilidad de sesión se deriva del cambio real registrado, no de un log escrito a mano. |
+| `vault_session.py` | `vault_delta.py`, `vault_ronda.py` | La observabilidad de sesión se deriva del cambio real registrado, no de un log escrito a mano; la ronda de trabajo (quién la abre, para qué y qué se escribió en ella) la lleva `vault_ronda` desde v41.26 (D-07). |
 | `vault_tools.py` | `cli/vault_cli.py` | Script paraguas reemplazado por la CLI consolidada. |
 
 ## Estado conocido

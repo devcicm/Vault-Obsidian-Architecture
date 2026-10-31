@@ -311,6 +311,9 @@ SIN_ESCRITURA_DECLARADA: Dict[str, str] = {
     "vault_mermaid_check": "el sandbox no tiene diagramas rotos: --fix concluye en healed 0 sin tocar nada, --dry-run nunca escribe y el scan es de solo lectura",
     "vault_migrate_rollback": "no hay informe de una migración previa que deshacer",
     "vault_propagate": "--queue-report solo lee la cola de propagación",
+    # D-07: el ejemplo publicado es la consulta; abrir y cerrar escriben y lo
+    # miden tests/test_vault_ronda.py, que no deja una ronda abierta en el banco.
+    "vault_ronda": "el ejemplo --activa solo consulta la ronda abierta; --abrir y --cerrar los ejercita tests/test_vault_ronda.py",
     "vault_restore": "la copia no tiene backups; sin --confirm true la tool rehúsa (CONFIRMACION_REQUERIDA)",
     # O2: declaraba `side_effects` vacío y no se medía; ahora declara lo que
     # hace y el banco no puede reproducirlo porque la nota del ejemplo no

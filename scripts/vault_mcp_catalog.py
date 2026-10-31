@@ -592,6 +592,68 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "example": "python vault_delta.py --snapshot\npython vault_delta.py",
         "related": ["vault_tags", "vault_reindex", "vault_drift_detect"],
     },
+    "vault_ronda": {
+        "name": "vault_ronda",
+        "script": "vault_ronda.py",
+        "group": "Session Delta y Tags",
+        "purpose": (
+            "D-07: la ronda de trabajo de un agente. --abrir acuna un round_id "
+            "(r<AAAAMMDD>-<6 hex>) y lo deja en 00_System/ronda-activa.json; "
+            "mientras sigue abierta, vault_write lo estampa en cada nota. "
+            "--cerrar escribe la nota de sesion en 04_Sessions/ con las notas que "
+            "lo llevan y quita la ronda activa. La abre el agente, nunca nadie "
+            "por el: sin --abrir, vault_write escribe igual que antes."
+        ),
+        "params": {
+            "abrir": {
+                "type": "boolean",
+                "required": False,
+                "description": "Abrir una ronda nueva (con --agente y --objetivo)",
+                "validators": [],
+            },
+            "cerrar": {
+                "type": "boolean",
+                "required": False,
+                "description": "Cerrar la ronda abierta (con --resumen)",
+                "validators": [],
+            },
+            "activa": {
+                "type": "boolean",
+                "required": False,
+                "description": "Consultar la ronda abierta (por defecto)",
+                "validators": [],
+            },
+            "agente": {
+                "type": "string",
+                "required": False,
+                "description": "Quien abre la ronda",
+                "validators": [],
+            },
+            "objetivo": {
+                "type": "string",
+                "required": False,
+                "description": "Para que se abre la ronda",
+                "validators": [],
+            },
+            "resumen": {
+                "type": "string",
+                "required": False,
+                "description": "Que se hizo en la ronda (va a la nota de sesion)",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "Dos rondas a la vez no: con una abierta, --abrir devuelve ROUND_ALREADY_ACTIVE",
+            "Un ronda-activa.json ilegible es DATA_FILE_CORRUPT, no una ronda ausente (AP-51)",
+            "La nota de sesion se escribe por vault_write (AP-46); si falla, la ronda sigue abierta",
+        ],
+        "side_effects": [
+            "Escribe y borra 00_System/ronda-activa.json",
+            "Al cerrar, escribe la nota de sesion en 04_Sessions/ por vault_write",
+        ],
+        "example": "python vault_ronda.py --activa",
+        "related": ["vault_write", "vault_delta"],
+    },
     "vault_tags": {
         "name": "vault_tags",
         "script": "vault_tags.py",
@@ -3263,7 +3325,10 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "side_effects": [cita_repo(rutas.SCRIPTS, "tests-higiene-baseline.json")],
         "example": (
             "python vault_tests_higiene.py --check\n"
-            "python vault_tests_higiene.py --check --strict"
+            "python vault_tests_higiene.py --check --strict\n"
+            # La línea que escribe: sin ella el ejemplo entero es de solo
+            # lectura y la tool declara la baseline como side effect (AP-42 c1).
+            "python vault_tests_higiene.py --freeze"
         ),
         "related": ["vault_criterios", "vault_clones", "vault_gate", "vault_blueprint"],
     },
@@ -4639,7 +4704,7 @@ GROUPS: Dict[str, List[str]] = {
     "Data Quality": ["vault_quality_check", "vault_fundamentals"],
     "Propagación": ["vault_impact", "vault_propagate"],
     "Tokens": ["vault_tokens", "vault_token_counter", "vault_token_service"],
-    "Session Delta y Tags": ["vault_delta", "vault_tags"],
+    "Session Delta y Tags": ["vault_delta", "vault_ronda", "vault_tags"],
     "Normas": [
         "vault_norms",
         "vault_arch",

@@ -31,8 +31,10 @@ Usage:
     python vault_session.py --list --last 10
 
 ARCHIVADA (politica de no-derogacion; ver scripts/_archived/README.md).
-superseded_by: vault_delta.py
-reason: La sesion se deriva del cambio real registrado, no de un log a mano.
+superseded_by: vault_delta.py, vault_ronda.py
+reason: La sesion se deriva del cambio real registrado, no de un log a mano;
+  la ronda de trabajo (quien la abre, para que, que se escribio) la lleva
+  vault_ronda desde v41.26 (D-07).
 """
 
 from __future__ import annotations

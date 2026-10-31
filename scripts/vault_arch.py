@@ -314,6 +314,9 @@ CONTEXTS: dict[str, dict] = {
         "modulos": [
             "vault_write", "vault_append", "vault_move", "vault_merge",
             "vault_read", "vault_diff", "vault_delta", "vault_list",
+            # D-07 (v41.26): abre y cierra la ronda; la nota de sesion la
+            # escribe por vault_write, que es de este mismo contexto.
+            "vault_ronda",
             "vault_search", "vault_knowledge_get", "vault_knowledge_save",
             "vault_bibliography_save", "vault_bug_save", "vault_diagram_save",
             "vault_diagram_export", "vault_env_save", "vault_flow_save",

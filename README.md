@@ -3,8 +3,8 @@
 Vault Obsidian Architecture es un estándar abierto con un toolkit para dar a agentes LLM memoria documental persistente, auditable y gobernada sobre Markdown plano.
 
 [![Version](https://img.shields.io/badge/version-v41.25-blue)](./vault-obsidian-architecture.md)
-[![Tools](https://img.shields.io/badge/tools-128_active-green)](./scripts/)
-[![Scripts](https://img.shields.io/badge/scripts-169_total-lightblue)](./scripts/)
+[![Tools](https://img.shields.io/badge/tools-129_active-green)](./scripts/)
+[![Scripts](https://img.shields.io/badge/scripts-170_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
 
@@ -542,7 +542,7 @@ python scripts/vault_norms.py --check-framework    # guard anti-drift registro �
 
 ---
 
-## Las 128 tools activas — 37 grupos
+## Las 129 tools activas — 37 grupos
 
 | Grupo | Tools |
 |---|---|
@@ -572,7 +572,7 @@ python scripts/vault_norms.py --check-framework    # guard anti-drift registro �
 | 24 — Data Quality | `vault_quality_check`, `vault_fundamentals` |
 | 25 — Propagación | `vault_impact`, `vault_propagate` |
 | 26 — Tokens | `vault_tokens`, `vault_token_counter`, `vault_token_service` |
-| 27 — Session Delta y Tags | `vault_delta`, `vault_tags` |
+| 27 — Session Delta y Tags | `vault_delta`, `vault_ronda`, `vault_tags` |
 | 28 — Producción/SRE | `vault_incident_save`, `vault_slo_save` |
 | 29 — Release | `vault_release_save` |
 | 30 — Riesgos/Calidad | `vault_risk_save`, `vault_privacy_save`, `vault_ncr_save` |
@@ -676,7 +676,7 @@ Sistema de control de asistencia con autenticación biométrica.
 
 Contiene:
 - 8 principios de diseño
-- 128 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
+- 129 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
 - 84 normas: 69 antipatrones (AP-01–AP-69), 6 patrones (PAT-1–PAT-6), 4 SP, 5 CN
 - norm_refs auto-embebido en frontmatter + vault_code_tag para etiquetas en código fuente
 - 8 Fundamentos de Datos (F1–F8) con trazabilidad a tools
@@ -705,7 +705,7 @@ Contiene:
 ## Scripts — estructura del repositorio
 
 ```
-scripts/                    ← 169 archivos Python (128 tools activas + internas y de apoyo); las archivadas viven aparte en scripts/_archived/
+scripts/                    ← 170 archivos Python (129 tools activas + internas y de apoyo); las archivadas viven aparte en scripts/_archived/
 ├── vault_io.py             — I/O base: _detect_vault_root, assert_within_vault, atomic_write_text/json, file_lock
 ├── vault_errors.py         — wrap_main (timeout 60s), emit_ok, trace log
 ├── vault_write.py          — tool principal de escritura (guards AP-20, AP-21, norm_refs auto-embed)

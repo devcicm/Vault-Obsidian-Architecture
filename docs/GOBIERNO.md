@@ -35,7 +35,7 @@ El catálogo marca `exposed_via_mcp` y el servidor MCP lo respeta: las 30 tools 
 
 ## El mapa: capacidad → grupo → tool
 
-### Escritura → gobernanza — 88 tools (`escritura_a_gobernanza`)
+### Escritura → gobernanza — 89 tools (`escritura_a_gobernanza`)
 
 - **Backups (13)** — vault_backup, vault_backup_base64, vault_backup_list, vault_restore, vault_restore_base64
 - **Bibliografía (16)** — vault_bibliography_save
@@ -65,7 +65,7 @@ El catálogo marca `exposed_via_mcp` y el servidor MCP lo respeta: las 30 tools 
 - **Runbooks (7)** — vault_runbook_log, vault_runbook_save
 - **Salud del Vault (6)** — vault_audit, vault_fuente_unica, vault_gobernanza, vault_graph, vault_graph_inspect, vault_graph_merge, vault_validate
 - **Seguridad (14)** — vault_security_scan
-- **Session Delta y Tags (27)** — vault_delta, vault_tags
+- **Session Delta y Tags (27)** — vault_delta, vault_ronda, vault_tags
 - **Skills (37)** — vault_sanacion, vault_sdd_init
 - **Tests (20)** — vault_qa_save, vault_quality_dashboard, vault_test_save
 - **Versionado (22)** — vault_history_compact, vault_standard_upgrade, vault_undo

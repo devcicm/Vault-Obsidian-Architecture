@@ -3628,6 +3628,16 @@ Compara `99_Index/hash-index.json` (baseline de la sesión anterior) contra el e
 
 **Cuándo usar:** al inicio de cada sesión con `--snapshot` para capturar estado baseline; al final para ver qué cambió.
 
+#### `vault_ronda(abrir?, cerrar?, activa?, agente?, objetivo?, resumen?)` (v41.26, D-07)
+
+La ronda de trabajo de un agente. `--abrir --agente --objetivo` acuña un `round_id` (`r<AAAAMMDD>-<6 hex>`, patrón del contrato de nota) y lo deja en `00_System/ronda-activa.json`; mientras sigue abierta, `vault_write` lo estampa en cada nota. `--cerrar --resumen` escribe la nota de sesión en `04_Sessions/` por `vault_write` con las notas que lo llevan y quita la ronda activa.
+
+**Retorna:** `{ ok, action, round: {round_id, agent, objective, opened_at}, written }`; al cerrar, además `session_note`, `notes` y `closed`.
+
+**Errores:** `ROUND_ALREADY_ACTIVE` (no pisa la abierta), `ROUND_NOT_ACTIVE` (cerrar sin ronda), `DATA_FILE_CORRUPT` (estado ilegible: no se lee como «sin ronda», AP-51).
+
+**Cuándo usar:** la abre el agente al empezar una tanda de trabajo y la cierra al terminarla. Nadie la abre por él: sin `--abrir`, `vault_write` escribe igual que antes.
+
 #### `vault_tags(dry_run?, project?)`
 
 Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `{tag: {notes, count}}`, genera `99_Index/tag-index.md` con wiki-links agrupados por tag.
@@ -4217,7 +4227,7 @@ El vault en `{data-dir}/vault/` puede abrirse **directamente** en Obsidian deskt
 
 ## MCP Server Monolith — Servicio Directo para IAs (v37)
 
-El vault ahora expone sus 128 herramientas como un **servidor MCP monolítico** que las IAs pueden consumir directamente sin registro en harness. El archivo `mcp/nodejs/vault-mcp-server.mjs` implementa:
+El vault ahora expone sus 129 herramientas como un **servidor MCP monolítico** que las IAs pueden consumir directamente sin registro en harness. El archivo `mcp/nodejs/vault-mcp-server.mjs` implementa:
 
 ### Transporte dual
 - **Modo stdio:** el cliente MCP lanza `node mcp/nodejs/vault-mcp-server.mjs` como proceso hijo
@@ -4228,9 +4238,9 @@ El vault ahora expone sus 128 herramientas como un **servidor MCP monolítico** 
 | Capa | Función | Estrategias reutilizadas |
 |------|---------|--------------------------|
 | **MCP Protocol** | JSON-RPC 2.0 nativo (initialize, tools/list, tools/call, resources) | Cero dependencias npm |
-| **Tool Registry** | 128 herramientas con inputSchema completo | `vault_mcp_catalog.py` TOOLS_CATALOG |
+| **Tool Registry** | 129 herramientas con inputSchema completo | `vault_mcp_catalog.py` TOOLS_CATALOG |
 | **JS-native backend** | 2 tools rápidas en JavaScript puro | `vault_graph_inspect`, `vault_graph`, `vault_read`, backup/restore *(superseded_by: AP-48 — una tool no tiene a la vez backend en Node y script Python; la lista viva es `vault_mcp_catalog.NATIVE_JS_TOOLS`)* |
-| **Python backend** | 126 tools via subprocess a `scripts/*.py` | Todas las tools existentes |
+| **Python backend** | 127 tools via subprocess a `scripts/*.py` | Todas las tools existentes |
 | **Guard Chain** | 9 validadores pre-escritura en secuencia | `vault_write`, `vault_regex`, `vault_secret_scan` |
 | **File Watcher** | Detección de cambios en vault via `fs.watch` + SHA-256 | `vault_delta`, `vault_drift_detect` |
 | **Traceability** | Log inmutable de mutaciones (JSON + MD) | `vault_change_log`, `vault_mcp_context` |

@@ -33,7 +33,7 @@ Restricciones que son decisión de producto, no limitación pendiente:
 
 | Capacidad | Resultado | Grupos | Tools |
 |---|---|---|---|
-| **Escritura → gobernanza** (`escritura_a_gobernanza`) | Lo que el agente captura queda escrito una sola vez, normalizado contra las normas, versionado y auditable después. | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 36, 37 | 88 |
+| **Escritura → gobernanza** (`escritura_a_gobernanza`) | Lo que el agente captura queda escrito una sola vez, normalizado contra las normas, versionado y auditable después. | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 36, 37 | 89 |
 | **Consulta → contexto** (`consulta_a_contexto`) | Una pregunta del agente se convierte en un paquete de contexto acotado y presupuestado, recorriendo el grafo del vault sin índice externo. | 26, 34 | 10 |
 | **Gobernanza del estándar** (`gobernanza_del_estandar`) | El estándar cumple lo que publica: registro canónico primero, doc derivada, guard que falla si divergen. Ninguna de estas tools toca las notas de un usuario. | 35 | 30 |
 
@@ -53,7 +53,7 @@ regenera.*
 | Contexto | Puertos | Módulos | Sin hogar | Prohíbe |
 |---|---|---|---|
 | **Kernel** (`kernel`) | 4 | 23 | 1 | depender de cualquier contexto de dominio |
-| **Autoría** (`autoria`) | 7 | 46 | 0 | — |
+| **Autoría** (`autoria`) | 7 | 47 | 0 | — |
 | **Grafo** (`grafo`) | 4 | 15 | 0 | — |
 | **Gobernanza** (`gobernanza`) | 21 | 13 | 0 | — |
 | **Índices** (`indices`) | 12 | 7 | 0 | — |
@@ -168,7 +168,7 @@ Sin puerta ni test (1): `AP-04`.
 
 *Registros: `vault_mcp_catalog.TOOLS_CATALOG` + `<vault>/00_System/tool-spec.json`*
 
-128 tools activas en 37 grupos. Toda tool
+129 tools activas en 37 grupos. Toda tool
 del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 `status: archived | internal | orphan` — no se borra, se anota
 (`vault_mcp_catalog.py --check-contracts`).
@@ -205,7 +205,7 @@ del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 | Runbooks | 2 |
 | Salud del Vault | 7 |
 | Seguridad | 1 |
-| Session Delta y Tags | 2 |
+| Session Delta y Tags | 3 |
 | Skills | 2 |
 | Tests | 3 |
 | Tokens | 3 |
@@ -325,6 +325,7 @@ falla — no se rellena con el valor más cercano.
 | `vault_restore` | 13 — Backups | escritura_a_gobernanza |
 | `vault_restore_base64` | 13 — Backups | escritura_a_gobernanza |
 | `vault_risk_save` | 30 — Riesgos/Calidad | escritura_a_gobernanza |
+| `vault_ronda` | 27 — Session Delta y Tags | escritura_a_gobernanza |
 | `vault_runbook_log` | 7 — Runbooks | escritura_a_gobernanza |
 | `vault_runbook_save` | 7 — Runbooks | escritura_a_gobernanza |
 | `vault_sanacion` | 37 — Skills | escritura_a_gobernanza |
@@ -360,13 +361,13 @@ Deuda **declarada**: conocida, medida y con motivo escrito de por qué no se ata
 todavía. Lo que no está aquí no es que no exista — es que nadie lo ha medido, que
 es una situación distinta y peor.
 
-**3 pendientes** de 33 declaradas. Una deuda saldada no
+**2 pendientes** de 33 declaradas. Una deuda saldada no
 desaparece de la tabla: se queda con `estado: saldada` y la versión que la cerró,
 porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 
 | Deuda | Estado | Desde | Capa | Qué | Por qué no ahora |
 |---|---|---|---|---|---|
-| `ronda_sin_contenedor_round_id` | pendiente | v41.25 | 5 | D-07 del estudio vault-dev-codex: una ronda de trabajo no tiene contenedor. Ni el contrato de nota ni ninguna tool declaran `round_id`, y nada escribe un `session-log` por ronda en 04_Sessions. | Es la ultima del orden de la secuencia 4: una ronda es una vista sobre notas que ya tienen identidad, y declarar `round_id` sin una tool que lo escriba y una puerta que lo lea seria un campo inventado. Pide decidir antes quien abre la ronda. |
+| `ronda_sin_contenedor_round_id` | saldada en v41.26 | v41.25 | 5 | D-07 del estudio vault-dev-codex: una ronda de trabajo no tiene contenedor. Ni el contrato de nota ni ninguna tool declaran `round_id`, y nada escribe un `session-log` por ronda en 04_Sessions. Saldada: la ronda la abre el agente con `vault_ronda --abrir` (vía MCP); `round_id` es campo opcional del contrato de nota con su patrón y su fuente en HISTORIA, `vault_write` lo estampa mientras la ronda sigue abierta y `vault_ronda --cerrar` escribe la nota de sesión con las notas que lo llevan. | No es una deuda viva: esta saldada. Sin `--abrir`, `vault_write` escribe igual que antes; la ronda es una vista sobre notas que ya tienen identidad, no un contenedor nuevo. |
 | `mcp_sin_perfiles_por_token` | saldada en v41.26 | v41.25 | 5 | A-13 del estudio vault-dev-codex: el servidor MCP tiene un unico Bearer; quien lo posee llama a toda tool, incluidas `vault_delete` y `vault_standard_upgrade`. No hay perfiles por token ni por tool. Saldada: `VAULT_MCP_TOKENS=lector:<t>,operador:<t>`; el perfil de cada tool es `perfil_minimo`, derivado de `side_effects` en `vault_mcp_catalog` y publicado en `tools-catalog.json`; `lector` no ve ni ejecuta lo que escribe y una sesion solo se habla con el token que la abrio. | No es una deuda viva: esta saldada. El contrato de arranque no cambia para quien ya usaba `VAULT_MCP_TOKEN`, que sigue siendo `operador`. Rotar el token expuesto en el historial sigue siendo cosa de la persona. |
 | `raiz_explicita_apunta_al_repo` | saldada en v41.26 | v41.25 | 5 | A-11 del estudio vault-dev-codex: `escritura_admitida` admitia toda raiz explicita, tambien el propio repo del estandar, que la regla 1 prohibe. Con `VAULT_ROOT=<repo>` `vault_audit` corria y dejaba la traza en el `00_System/` de la raiz. `vault_raiz.es_repo_del_estandar` (manifiesto + `vault/kernel/`, sin contenido de vault) es el dueno: el origen pasa a `env_repo_del_estandar`, `wrap_main` no ejecuta nada y un `--root` al repo deja de ser confiado. | No es una deuda viva: esta saldada. El miedo que la aplazaba —que la suite fija VAULT_ROOT explicito en cientos de tests— se midio y no era cierto: solo el propio test de A-11 apuntaba al repo. La firma doble evita confundir con el repo un vault consumidor que guarda el manifiesto. |
 | `colector_qg_fuera_de_toda_puerta` | saldada en v41.26 | v41.25 | 5 | B-04 del estudio vault-dev-codex: `audits/fase2/colector_qg.py` emite los recibos de QG-00..06 y ni `vault_gate.PUERTAS` ni ningun workflow lo ejecutan. Los recibos que lleva el manifiesto son de una corrida manual. | Cablearlo no es un paso: el colector exige HEAD == product_sha (sobre un descendiente documental devuelve QG-00 BLOCKED por CHECKOUT_EN_OTRO_SHA, medido el 2026-10-30) y `--ejecutar` corre la suite y la construccion enteras. Hace falta un job propio con un worktree en el product_sha, que no se puede verificar fuera de la CI. Saldada: el job `qg-receipts` de `release.yml` es ese job, y `publish` lo espera. Que corra de verdad es la deuda siguiente. |
@@ -430,7 +431,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 |---|---|---|---|---|
 | `scripts/arch-baseline.json` | cruces entre contextos | 34 | ≤ 30 para 2027-03-31 · cada 90 d · meta_toolkit — vault_arch → **en_plazo** | 37 → 37 → 37 → 37 → 37 → 34 (encoge, Δ-3) |
 | `scripts/arch-baseline.json` | cruces fuera de puerto | 0 | ≤ 4 para 2027-03-31 · cada 90 d · meta_toolkit — vault_arch → **cumple** | 8 → 8 → 6 → 5 → 5 → 0 (encoge, Δ-8) |
-| `scripts/blame-baseline.json` | AP-51 | 30 | ≤ 20 para 2027-03-31 · cada 90 d · meta_toolkit — vault_blame_audit → **en_plazo** | 30 → 30 → 30 → 30 → 30 → 30 (encoge, Δ-57) |
+| `scripts/blame-baseline.json` | AP-51 | 30 | ≤ 20 para 2027-03-31 · cada 90 d · meta_toolkit — vault_blame_audit → **en_plazo** | 30 → 30 → 30 → 30 → 30 → 30 (encoge, Δ-54) |
 | `scripts/error-contract-baseline.json` | AP-52 | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_error_contract → **cumple** | 110 → 110 → 0 → 9 → 0 → 0 (encoge, Δ-158) |
 | `scripts/noop-baseline.json` | AP-37 | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_noop_audit → **cumple** | 0 → 0 → 0 → 0 (plana, Δ+0) |
 | `scripts/smoke-baseline.json` | AP-42 | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_smoke → **cumple** | 0 → 0 (plana, Δ+0) |
@@ -441,7 +442,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 4 | ≤ 2 para 2027-03-31 · cada 90 d · meta_toolkit — vault_kernel → **en_plazo** | 5 → 6 → 6 → 5 → 4 → 4 (encoge, Δ-1) |
 | `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_norms_distincion → **cumple** | 57 → 0 → 0 → 0 (encoge, Δ-57) |
 | `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_norms_coherence → **cumple** | 47 → 0 → 0 → 0 (encoge, Δ-47) |
-| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1489 | — *no aplica*: No es deuda: es el contrato de campos estables con los repos consumidores y crece por diseño cada vez que una tool publica un campo nuevo (1334 → 1410 entre 2026-08-30 y 2026-10-08). Lo que la puerta vigila es que ningún campo desaparezca sin `superseded_fields`, no su tamaño. Declarado el 2026-10-09 con la deuda #8. | 1435 → 1437 → 1436 → 1448 → 1471 → 1489 (crece, Δ+155) |
+| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1505 | — *no aplica*: No es deuda: es el contrato de campos estables con los repos consumidores y crece por diseño cada vez que una tool publica un campo nuevo (1334 → 1410 entre 2026-08-30 y 2026-10-08). Lo que la puerta vigila es que ningún campo desaparezca sin `superseded_fields`, no su tamaño. Declarado el 2026-10-09 con la deuda #8. | 1437 → 1436 → 1448 → 1471 → 1489 → 1505 (crece, Δ+171) |
 | `scripts/excepcion-declarada-baseline.json` | AP-61 — la excepción declarada no es la que escapa | 0 | ≤ 0 para 2027-06-30 · cada 180 d · gobernanza → **cumple** | 0 → 0 (plana, Δ+0) |
 | `scripts/recursos-baseline.json` | AP-62 — el consumidor cruza para leer un recurso y paga el fan-out | 2 | ≤ 0 para 2027-03-31 · cada 90 d · meta_toolkit — vault_recursos → **en_plazo** | 2 → 2 (plana, Δ+0) |
 | `scripts/rutas-baseline.json` | v41.21 — el layout del repo escrito como literal fuera de su dueño vault/kernel/rutas.py; solo encoge | 15 | ≤ 15 para 2027-06-30 · cada 90 d · meta_toolkit — vault.kernel.rutas → **cumple** | 177 → 175 → 16 → 15 (encoge, Δ-162) |

@@ -131,6 +131,13 @@
       ],
       "cambio": "opcional: mapa paquete → versión que la nota da por buena; si está, un mapa no vacío sin claves ni valores vacíos (AP-08)",
       "fuente": "MIGRATIONS:version_pinned (opcional)"
+    },
+    {
+      "campos": [
+        "round_id"
+      ],
+      "cambio": "opcional: la ronda de trabajo en que se escribió la nota por última vez; si está, con la forma r<AAAAMMDD>-<6 hex> (D-07)",
+      "fuente": "MIGRATIONS:round_id (opcional)"
     }
   ],
   "type": "object",
@@ -285,6 +292,11 @@
         ],
         "pattern": "\\S"
       }
+    },
+    "round_id": {
+      "x-vault-tipo-esperado": "string",
+      "x-vault-nivel": "opcional",
+      "pattern": "^r\\d{8}-[0-9a-f]{6}$"
     }
   },
   "additionalProperties": true,
@@ -442,6 +454,11 @@
             ],
             "pattern": "\\S"
           }
+        },
+        "round_id": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "opcional",
+          "pattern": "^r\\d{8}-[0-9a-f]{6}$"
         }
       },
       "additionalProperties": true
@@ -592,6 +609,11 @@
             ],
             "pattern": "\\S"
           }
+        },
+        "round_id": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "opcional",
+          "pattern": "^r\\d{8}-[0-9a-f]{6}$"
         }
       },
       "additionalProperties": true
@@ -742,6 +764,11 @@
             ],
             "pattern": "\\S"
           }
+        },
+        "round_id": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "opcional",
+          "pattern": "^r\\d{8}-[0-9a-f]{6}$"
         }
       },
       "additionalProperties": true

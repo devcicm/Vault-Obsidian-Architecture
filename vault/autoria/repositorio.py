@@ -26,6 +26,9 @@ CARPETA_HISTORIAL = ".history"
 
 FICHERO_INDICE_PALABRAS = "keywords-index.json"
 FICHERO_NOTAS_PALABRAS = "notes-keywords.json"
+#: La ronda de trabajo abierta (D-07). Lo escribe `vault_ronda` y lo lee
+#: `vault_write` para estampar su `round_id`.
+FICHERO_RONDA_ACTIVA = "ronda-activa.json"
 
 
 class RepositorioAutoria:
@@ -71,6 +74,10 @@ class RepositorioAutoria:
     @property
     def dir_historial(self) -> Path:
         return self._ctx.ruta(CARPETA_HISTORIAL)
+
+    @property
+    def ronda_activa(self) -> Path:
+        return self._ctx.ruta(CARPETA_SISTEMA, FICHERO_RONDA_ACTIVA)
 
     # ── Ficheros ─────────────────────────────────────────────────────────────
 

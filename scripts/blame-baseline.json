@@ -113,11 +113,11 @@
     },
     {
       "firma": "vault_standard_upgrade.py::_run_compliance_check::a36080b0",
-      "visto_en": "vault_standard_upgrade.py:722"
+      "visto_en": "vault_standard_upgrade.py:724"
     },
     {
       "firma": "vault_standard_upgrade.py::vault_standard_upgrade::a36080b0",
-      "visto_en": "vault_standard_upgrade.py:947"
+      "visto_en": "vault_standard_upgrade.py:949"
     },
     {
       "firma": "vault_voice.py::_catalog::08d90f38",

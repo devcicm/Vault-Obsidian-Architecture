@@ -112,6 +112,7 @@ from vault_entorno import agente_por_defecto, leer as _env
 from vault_change_log import vault_change_log_add
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.autoria.ronda import es_round_id, round_id_activo  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 from vault.kernel import historia  # noqa: E402
 from vault.kernel.contenido import con_titulo  # noqa: E402
@@ -631,6 +632,14 @@ def problemas_de_meta(meta: Any, folder: str = "", raiz: Optional[Path] = None) 
                 f"{folder.split('/')[0]} (CN-02): escribe la nota allí o deja que el "
                 "tipo se derive de la carpeta"
             )
+
+    # D-07: el patrón es del contrato de nota; un `round_id` que no lo cumple
+    # no enlazaría la nota con ninguna ronda y nadie lo notaría.
+    if "round_id" in meta and not es_round_id(meta["round_id"]):
+        problemas.append(
+            f"round_id {meta['round_id']!r} no tiene la forma r<AAAAMMDD>-<6 hex>; "
+            "lo acuña vault_ronda --abrir y vault_write lo estampa solo"
+        )
     return problemas
 
 
@@ -924,6 +933,18 @@ def vault_write(
         )
 
     meta = dict(meta or {})
+
+    # D-07: mientras el agente tiene una ronda abierta, cada nota que escribe
+    # la lleva. Un estado ilegible no se lee como «sin ronda» (AP-51): la nota
+    # se escribiría sin su round_id y la nota de sesión no la vería.
+    if "round_id" not in meta:
+        try:
+            activa = round_id_activo(_raiz())
+        except ValueError as exc:
+            return emit_error("vault_write", "DATA_FILE_CORRUPT", str(exc),
+                              pista="revisar 00_System/ronda-activa.json con vault_ronda --activa")
+        if activa:
+            meta["round_id"] = activa
 
     # Secretos antes que forma (2026-10-01). El escaneo solo ocurría al escribir,
     # detrás de once guardas: una nota con una clave AWS y sin tags volvía

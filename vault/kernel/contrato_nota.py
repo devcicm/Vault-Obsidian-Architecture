@@ -154,6 +154,14 @@ CAMPOS: Dict[str, Dict[str, Any]] = {
     "version_pinned": {"tipo": "object", "nivel": "opcional", "clases": ("contenido",),
                        "requerido_desde": None, "valores_desde": "v41", "norma": "AP-08",
                        "mapa_no_vacio": True},
+    # La ronda de trabajo en que se escribió la nota por última vez (D-07). La
+    # abre el agente con `vault_ronda --abrir` y la estampa `vault_write`
+    # mientras sigue abierta; `r<AAAAMMDD>-<6 hex>`, con la fecha dentro para
+    # que las notas de sesión se ordenen solas. Este patrón es el único: lo
+    # lee `vault.autoria.ronda` para acuñar y reconocer el identificador.
+    "round_id": {"tipo": "string", "nivel": "opcional", "clases": ("contenido",),
+                 "requerido_desde": None, "valores_desde": "v41",
+                 "patron": r"^r\d{8}-[0-9a-f]{6}$"},
 }
 
 #: Cuándo cambió el contrato y quién lo atestigua. `fuente` es
@@ -212,7 +220,11 @@ HISTORIA: Dict[str, List[Dict[str, Any]]] = {
             {"campos": ["version_pinned"],
              "cambio": ("opcional: mapa paquete → versión que la nota da por buena; si está, "
                         "un mapa no vacío sin claves ni valores vacíos (AP-08)"),
-             "fuente": "MIGRATIONS:version_pinned (opcional)"}],
+             "fuente": "MIGRATIONS:version_pinned (opcional)"},
+            {"campos": ["round_id"],
+             "cambio": ("opcional: la ronda de trabajo en que se escribió la nota por "
+                        "última vez; si está, con la forma r<AAAAMMDD>-<6 hex> (D-07)"),
+             "fuente": "MIGRATIONS:round_id (opcional)"}],
 }
 
 #: Lo que el escritor pone cuando nadie dice otra cosa. Estaba como literal en

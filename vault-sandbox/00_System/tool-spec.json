@@ -3818,6 +3818,44 @@
       },
       "fundamentals": []
     },
+    "vault_ronda": {
+      "group": "Session Delta y Tags",
+      "group_id": 27,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "action",
+        "active",
+        "closed",
+        "created",
+        "error_code",
+        "hint",
+        "message",
+        "notes",
+        "ok",
+        "recovery",
+        "round",
+        "session_note",
+        "tool",
+        "unchanged",
+        "updated",
+        "written"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity",
+          "authenticity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F7"
+      ]
+    },
     "vault_runbook_log": {
       "group": "Runbooks",
       "group_id": 7,
@@ -4877,10 +4915,10 @@
     }
   },
   "_counts": {
-    "active": 128,
+    "active": 129,
     "internal": 19,
     "archived": 5,
-    "total": 152,
+    "total": 153,
     "active_groups": 37,
     "schema_version": "1.0"
   }

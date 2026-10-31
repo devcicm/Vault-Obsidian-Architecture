@@ -1,21 +1,18 @@
-"""D-07 — limite declarado: una ronda de trabajo no tiene contenedor.
+"""D-07 — la ronda de trabajo tiene contenedor (saldada en v41.26).
 
-El estudio pide un `session-log` por ronda con `round_id:` en 04_Sessions y que
-las notas de la ronda lo lleven. Hoy ni el contrato de nota ni ninguna tool
-activa declaran `round_id`; declararlo sin quien lo escriba seria inventarlo.
-Este test fija el hueco y falla el dia que se cierre, para que
-`vault_blueprint.DEUDA_DECLARADA` pase a `saldada`.
+Hasta v41.26 este test fijaba el hueco: ni el contrato de nota ni ninguna tool
+activa declaraban `round_id`. Ahora `vault_ronda` abre y cierra la ronda, el
+contrato declara el campo y `vault_write` lo estampa mientras está abierta; el
+comportamiento lo mide `test_vault_ronda.py`. Aquí queda lo que la deuda
+`ronda_sin_contenedor_round_id` decía que faltaba, para que no vuelva a faltar.
 """
-from pathlib import Path
+from apoyo import ROOT
 
 from vault.kernel.contrato_nota import CAMPOS
 
-ROOT = Path(__file__).resolve().parent.parent
 
-
-def test_limite_declarado_round_id_no_existe_en_el_contrato():
-    assert "round_id" not in CAMPOS, "ya se declara: salda la deuda D-07"
-    escritores = [p.name for p in (ROOT / "scripts").glob("vault_*.py")
-                  if p.name != "vault_blueprint.py"  # ahi se declara la deuda
-                  and "round_id" in p.read_text(encoding="utf-8", errors="replace")]
-    assert escritores == [], f"{escritores} ya escriben round_id: salda la deuda D-07"
+def test_round_id_tiene_contrato_y_quien_lo_escribe():
+    assert CAMPOS["round_id"]["nivel"] == "opcional"
+    escritores = {p.name for p in (ROOT / "scripts").glob("vault_*.py")
+                  if "round_id" in p.read_text(encoding="utf-8", errors="replace")}
+    assert {"vault_ronda.py", "vault_write.py"} <= escritores, sorted(escritores)

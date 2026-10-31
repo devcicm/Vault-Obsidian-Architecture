@@ -291,6 +291,29 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": None,
         },
     },
+    # D-07: dos rondas a la vez harían que cada nota perteneciera a la que
+    # llegó última; cerrar sin ronda no tiene nota de sesión que escribir.
+    "ROUND_ALREADY_ACTIVE": {
+        "category": "validation",
+        "severity": "error",
+        "message": "Ya hay una ronda de trabajo abierta.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Cerrar la abierta con vault_ronda --cerrar --resumen antes de abrir otra; "
+                    "vault_ronda --activa dice cuál es.",
+            "docs": None,
+        },
+    },
+    "ROUND_NOT_ACTIVE": {
+        "category": "validation",
+        "severity": "error",
+        "message": "No hay ninguna ronda de trabajo abierta.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Abrir una con vault_ronda --abrir --agente --objetivo.",
+            "docs": None,
+        },
+    },
     "INVALID_ACTION": {
         "category": "validation",
         "severity": "error",

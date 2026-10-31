@@ -1,13 +1,13 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture** (versión vigente: `vault_version.CURRENT_VERSION`). Implementan las 128 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture** (versión vigente: `vault_version.CURRENT_VERSION`). Implementan las 129 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **169 archivos Python** — 128 tools activas (125 con script + 2 JS-native backup/restore base64) + tools internas + meta/spec + bibliotecas; las 8 archivadas viven aparte en `_archived/`. Cuáles están disponibles, cuáles tienen ejemplo verificado y cuáles no deben usarse: [`../docs/DISPONIBILIDAD-DE-TOOLS.md`](../docs/DISPONIBILIDAD-DE-TOOLS.md)
+- **170 archivos Python** — 129 tools activas (125 con script + 2 JS-native backup/restore base64) + tools internas + meta/spec + bibliotecas; las 8 archivadas viven aparte en `_archived/`. Cuáles están disponibles, cuáles tienen ejemplo verificado y cuáles no deben usarse: [`../docs/DISPONIBILIDAD-DE-TOOLS.md`](../docs/DISPONIBILIDAD-DE-TOOLS.md)
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
 - **Saneamiento de índices (v38.1)** — `vault_section_index.py --heal [--root]` regenera índices con formato legacy `[[stem|alias]]` o ausentes; el auto-index post-write se auto-cura si un agente escribe `index.md` a mano
-- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone 97 de las 128 tools activas via MCP Protocol (las otras 30 se ejecutan por CLI o en el checkout) (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
+- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone 98 de las 129 tools activas via MCP Protocol (las otras 31 se ejecutan por CLI o en el checkout) (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — una dependencia obligatoria, PyYAML (declarada en `pyproject.toml`)
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault; requiere marcador de CONTENIDO (01_Projects/02_Observability/03_Decisions/.obsidian), no solo 00_System/99_Index (evita el ciclo auto-reforzado de detección); override runtime con `set_vault_root()`/env `VAULT_ROOT`
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -51,7 +51,7 @@ Scripts Python del estándar **Vault Obsidian Architecture** (versión vigente: 
 | [Grupo 24 — Data Quality](#grupo-24--data-quality) | vault_quality_check, vault_fundamentals |
 | [Grupo 25 — Propagación](#grupo-25--propagación) | vault_impact, vault_propagate |
 | [Grupo 26 — Tokens](#grupo-26--tokens) | vault_tokens, vault_token_counter, vault_token_service |
-| [Grupo 27 — Session Delta y Tags](#grupo-27--session-delta-y-tags) | vault_delta, vault_tags |
+| [Grupo 27 — Session Delta y Tags](#grupo-27--session-delta-y-tags) | vault_delta, vault_ronda, vault_tags |
 | [Grupo 28 — Producción/SRE](#grupo-28--producciónsre) | vault_incident_save, vault_slo_save |
 | [Grupo 29 — Release](#grupo-29--release) | vault_release_save |
 | [Grupo 30 — Riesgos/Calidad](#grupo-30--riesgoscalidad) | vault_risk_save, vault_privacy_save, vault_ncr_save |
@@ -1484,6 +1484,17 @@ python vault_delta.py --min-risk high         # solo stale_deps de riesgo high/c
 }
 ```
 
+### `vault_ronda.py`
+La ronda de trabajo de un agente (D-07). `--abrir` acuña un `round_id` con la forma `r<AAAAMMDD>-<6 hex>` —el patrón lo declara el contrato de nota— y lo deja en `00_System/ronda-activa.json`; mientras sigue abierta, `vault_write` lo estampa en cada nota que escribe. `--cerrar` escribe `04_Sessions/` con la nota de sesión —por `vault_write`, el write path único— que enlaza las notas que llevan ese `round_id`, y quita la ronda activa.
+
+```bash
+python vault_ronda.py --activa                                            # la ronda abierta, si la hay
+python vault_ronda.py --abrir --agente claude --objetivo "sanar 10_Migrated"
+python vault_ronda.py --cerrar --resumen "tres notas canónicas y dos supersedidas"
+```
+
+La ronda la abre **el agente**, vía MCP; nadie la abre por él, y sin `--abrir` `vault_write` escribe igual que antes. Con otra abierta, `--abrir` devuelve `ROUND_ALREADY_ACTIVE` y no la pisa; sin ninguna, `--cerrar` devuelve `ROUND_NOT_ACTIVE`. Un `ronda-activa.json` ilegible es `DATA_FILE_CORRUPT` en las dos tools: leerlo como «no hay ronda» escribiría notas sin su `round_id` sin que nadie lo notara (AP-51). Sucede a la archivada `vault_session` en la parte de la ronda; la observabilidad del cambio sigue siendo de `vault_delta`.
+
 ### `vault_tags.py`
 Registro canónico de tags. Construye y mantiene `00_System/tag-registry.json` escaneando todos los frontmatter. Detecta tags huérfanos, near-duplicados y notas sin tags. Genera `99_Index/tag-index.md` con backlinks por tag.
 
@@ -2174,7 +2185,7 @@ El vault expone sus herramientas como un **servidor MCP** que las IAs consumen d
 
 **Archivo:** `../mcp/nodejs/vault-mcp-server.mjs` (~1650 líneas, cero dependencias npm)  
 **Plan:** `../mcp/PLAN.md` — documento de evidencia con 8 fases de implementación
-**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (128 tools)
+**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (129 tools)
 
 Los parámetros que el catálogo publica **se derivan del `argparse` de cada script**,
 no se escriben a mano: el servidor compone `--<param>` literal, así que un param
@@ -2360,7 +2371,7 @@ python vault_doc_counts.py --check --no-slow  # omite el conteo de tests (lanza 
 
 **El changelog y la tabla de versiones quedan fuera del escaneo.** "76 tools" dentro de la entrada de v37 es historia correcta, no drift; reescribirla sería derogar el registro histórico. Los patrones son deliberadamente específicos por el mismo motivo: `"N normas"` a secas también casa con "las 14 normas manuales eliminadas", que es otro hecho. Un patrón laxo produce falsos positivos y el guard acaba desactivado — que es como mueren los guards.
 
-Fuera de esas secciones también hay historia: un censo hecho en una versión concreta («41 de las 128 tools del catálogo no se han ejecutado») casa con el patrón de tools activas, y `--fix` lo reescribió con cada tool nueva hasta que el censo dejó de decir lo que se midió. Una línea así lleva `<!-- cifra histórica: <motivo> -->`: exime solo esa línea, sin motivo no exime, y el envelope la publica en `historic_exempt` para que eximir no sea una forma callada de apagar el guard.
+Fuera de esas secciones también hay historia: un censo hecho en una versión concreta («41 de las 120 tools del catálogo no se han ejecutado») casa con el patrón de tools activas, y `--fix` lo reescribió con cada tool nueva hasta que el censo dejó de decir lo que se midió. Una línea así lleva `<!-- cifra histórica: <motivo> -->`: exime solo esa línea, sin motivo no exime, y el envelope la publica en `historic_exempt` para que eximir no sea una forma callada de apagar el guard. <!-- cifra histórica: el censo de 14dbb55 (2026-10-05) se hizo con 120 tools activas; este párrafo lo cita como ejemplo y --fix lo reescribió hasta v41.26 -->
 
 ### `vault_doc_sync.py`
 

@@ -168,6 +168,7 @@ El vault declara la versión que aplica en `00_System/standard-version.json` (`v
 | v41 | validador | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags`, `type`, `status` | opcionales: quién responde del contenido y cuándo se comprobó por última vez; si están, responsable no vacío y revisado_en con fecha ISO | `MIGRATIONS` |
 | v41 | validador | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags`, `type`, `status` | opcional: la nota que reemplaza a esta; si está, no vacío (no-derogación: lo reemplazado se anota, no se borra) | `MIGRATIONS` |
 | v41 | validador | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags`, `type`, `status` | opcional: mapa paquete → versión que la nota da por buena; si está, un mapa no vacío sin claves ni valores vacíos (AP-08) | `MIGRATIONS` |
+| v41 | validador | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags`, `type`, `status` | opcional: la ronda de trabajo en que se escribió la nota por última vez; si está, con la forma r<AAAAMMDD>-<6 hex> (D-07) | `MIGRATIONS` |
 
 ### Estructura mínima (guideline)
 

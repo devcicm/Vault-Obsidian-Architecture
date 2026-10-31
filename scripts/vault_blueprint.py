@@ -86,22 +86,29 @@ ESTADOS_DE_DEUDA = ("pendiente", "saldada")
 DEUDA_DECLARADA: List[Dict[str, Any]] = [
     {
         "id": "ronda_sin_contenedor_round_id",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "v41.26",
         "sostenida_por": [
-            cita_repo(rutas.TESTS, "test_d07_ronda_sin_contenedor.py::test_limite_declarado_round_id_no_existe_en_el_contrato"),
+            cita_repo(rutas.TESTS, "test_vault_ronda.py::test_una_ronda_abierta_se_estampa_y_se_cierra_en_su_nota_de_sesion"),
+            cita_repo(rutas.TESTS, "test_vault_ronda.py::test_un_estado_ilegible_no_se_lee_como_sin_ronda"),
+            cita_repo(rutas.TESTS, "test_d07_ronda_sin_contenedor.py::test_round_id_tiene_contrato_y_quien_lo_escribe"),
         ],
         "desde": "v41.25",
         "capa": "5",
         "que": (
             "D-07 del estudio vault-dev-codex: una ronda de trabajo no tiene "
             "contenedor. Ni el contrato de nota ni ninguna tool declaran "
-            "`round_id`, y nada escribe un `session-log` por ronda en 04_Sessions."
+            "`round_id`, y nada escribe un `session-log` por ronda en 04_Sessions. "
+            "Saldada: la ronda la abre el agente con `vault_ronda --abrir` (vía "
+            "MCP); `round_id` es campo opcional del contrato de nota con su patrón "
+            "y su fuente en HISTORIA, `vault_write` lo estampa mientras la ronda "
+            "sigue abierta y `vault_ronda --cerrar` escribe la nota de sesión con "
+            "las notas que lo llevan."
         ),
         "por_que_no_ahora": (
-            "Es la ultima del orden de la secuencia 4: una ronda es una vista sobre "
-            "notas que ya tienen identidad, y declarar `round_id` sin una tool que "
-            "lo escriba y una puerta que lo lea seria un campo inventado. Pide "
-            "decidir antes quien abre la ronda."
+            "No es una deuda viva: esta saldada. Sin `--abrir`, `vault_write` "
+            "escribe igual que antes; la ronda es una vista sobre notas que ya "
+            "tienen identidad, no un contenedor nuevo."
         ),
     },
     {

@@ -470,6 +470,8 @@ MIGRATIONS: Dict[str, Dict[str, Any]] = {
             "no-derogacion: lo reemplazado se anota, no se borra",
             "version_pinned (opcional): mapa paquete -> version que la nota da por buena; "
             "vault_drift_detect --mode vigencia lo cruza con el manifiesto del repo (AP-08)",
+            "round_id (opcional): la ronda de trabajo (vault_ronda) en que se escribio la "
+            "nota por ultima vez; lo estampa vault_write mientras hay una ronda abierta",
         ],
     },
 }
