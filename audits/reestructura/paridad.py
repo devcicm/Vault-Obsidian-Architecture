@@ -32,6 +32,7 @@ argv y los contenidos en el golden. A partir de ahí el golden se basta solo.
 |---|---|---|---|
 | ruta del directorio desechable de la corrida | `<TMP>` | cambia en cada corrida | una ruta relativa al vault |
 | ruta del repo | `<REPO>` | depende del clon | `scripts/vault_x.py` |
+| ruta del directorio que contiene al repo | `<REPO_PADRE>` | depende del clon; `vault_restore` busca ahí `vault-backups/` y la lista en `searched` | una ruta dentro del vault |
 | ruta de `sys.executable` | `<PY>` | depende de la máquina | `python` en un texto |
 | fecha-hora ISO 8601 | `<TS>` | reloj | una fecha sin hora de una nota del sandbox |
 | la fecha de hoy (`AAAA-MM-DD`) | `<HOY>` | reloj | cualquier otra fecha |
@@ -164,6 +165,8 @@ class Normalizador:
         if tmp:
             self.pares += [(v, "<TMP>") for v in _variantes(tmp)]
         self.pares += [(v, "<REPO>") for v in _variantes(str(REPO))]
+        # Después de <REPO>, que la contiene: si no, el repo saldría como <REPO_PADRE>\<nombre>.
+        self.pares += [(v, "<REPO_PADRE>") for v in _variantes(str(REPO.parent))]
         self.pares += [(v, "<PY>") for v in _variantes(sys.executable)]
         self.hoy = _dt.date.today().isoformat()
 

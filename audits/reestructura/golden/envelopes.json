@@ -24865,7 +24865,7 @@
      },
      "searched": [
       "<TMP>\\vault\\vault-backups\\2026-06-24_120000",
-      "C:\\Users\\Carlos Ivan\\Documents\\GitHub\\vault-backups\\2026-06-24_120000"
+      "<REPO_PADRE>\\vault-backups\\2026-06-24_120000"
      ],
      "severity": "error",
      "timestamp": "<TS>",
