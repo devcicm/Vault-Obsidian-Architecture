@@ -22,11 +22,17 @@ Al cerrar cada bloque se corre el carril `merge`, en serie.
 | `paridad.py --comparar --tools <las que toca el tablón>` | envelopes de esas tools | segundos por tool | cada tablón |
 | `paridad.py --comparar` | todo, 126 tools y 233 líneas | unos 15 min | al cerrar cada bloque |
 
-**Riesgo conocido.** Algunas tools leen la historia de git (`vault_changelog_check`,
-`vault_init`). Si una crece con cada commit, romperá la paridad en todos los tablones
-sin que haya regresión. Se mide en la primera comparación completa tras el commit de la
-auditoría. Si aparece, se declara como normalizador con su contraejemplo; no se
-recaptura.
+**Riesgo medido.** Algunas tools leen la historia de git (`vault_changelog_check`,
+`vault_init`), y se temía que rompieran la paridad en cada commit. La primera
+comparación completa tras el commit de la auditoría (`bad1750`) lo descartó: las dos
+quedaron en verde. Lo que sí salió rojo fueron tres hashes sobre contenido con la hora
+del alta de `mi-api` (`merkle_root` de `vault_backup#0/#1` y `source_sha` de
+`vault_graph_fix#0`). No era una regresión: el detector de volátiles compartía el
+vault de origen entre las dos repeticiones y no podía verlos variar. Se arregló el
+instrumento (cada repetición construye su origen) y se recapturó solo `envelopes`, como
+operación explícita fuera de un tablón. El golden nuevo es idéntico al anterior fuera
+de los volátiles. Esos pasan de 12 a 14 corridas: los tres hashes y `segundos` de
+`vault_toolkit_audit#0`, que es una duración.
 
 **Mientras corre `paridad.py` no se edita nada del repo.** `CustodiaDelRepo` tomaría la
 edición por una escritura de una tool y la desharía.

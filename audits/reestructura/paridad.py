@@ -41,6 +41,14 @@ volátil por su ruta JSON y se lista en `golden/envelopes.json`
 (`volatiles`). El comparador solo ignora el *valor* de esas rutas, nunca su
 presencia ni su tipo. Nada se da por volátil sin haberlo visto variar.
 
+Cada repetición construye **su propio vault de origen**. Dar de alta `mi-api`
+estampa la hora en la nota y en el índice, y un hash sobre ese contenido
+(`merkle_root` de `vault_backup`, `source_sha` de `vault_graph_fix`) varía con
+el origen y no con la corrida. Hasta el 2026-10-31 las dos repeticiones
+compartían un origen, el detector no podía verlo y la primera comparación
+completa lo dio por rotura. Contraejemplo: `cambiadas` de esas mismas líneas
+no depende del reloj y sigue sin declararse volátil.
+
 Uso:
     python audits/reestructura/paridad.py --capturar [--repeticiones 2]
     python audits/reestructura/paridad.py --comparar [--solo estatico,superficie,ayuda]
@@ -544,8 +552,11 @@ def capturar(componentes: List[str], tools: Optional[Set[str]], repeticiones: in
             resumen["componentes"]["ayuda"] = len(ayu)
         if "envelopes" in componentes:
             plan = plan_de_envelopes(tools)
-            origen = _origen(base, plan["proyecto"])
-            corridas = [capturar_envelopes(plan, origen) for _ in range(max(1, repeticiones))]
+            corridas = []
+            for i in range(max(1, repeticiones)):
+                rep = base / f"rep{i}"
+                rep.mkdir()
+                corridas.append(capturar_envelopes(plan, _origen(rep, plan["proyecto"])))
             volatiles: Dict[str, List[str]] = {}
             for otra in corridas[1:]:
                 for clave, rutas in volatiles_entre(corridas[0], otra).items():
