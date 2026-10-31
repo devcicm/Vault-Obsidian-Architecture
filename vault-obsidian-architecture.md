@@ -4172,7 +4172,7 @@ El vault en `{data-dir}/vault/` puede abrirse **directamente** en Obsidian deskt
 
 ## MCP Server Monolith — Servicio Directo para IAs (v37)
 
-El vault ahora expone sus 76 herramientas como un **servidor MCP monolítico** que las IAs pueden consumir directamente sin registro en harness. El archivo `mcp/nodejs/vault-mcp-server.mjs` implementa:
+El vault ahora expone sus 127 herramientas como un **servidor MCP monolítico** que las IAs pueden consumir directamente sin registro en harness. El archivo `mcp/nodejs/vault-mcp-server.mjs` implementa:
 
 ### Transporte dual
 - **Modo stdio:** el cliente MCP lanza `node mcp/nodejs/vault-mcp-server.mjs` como proceso hijo
@@ -4183,9 +4183,9 @@ El vault ahora expone sus 76 herramientas como un **servidor MCP monolítico** q
 | Capa | Función | Estrategias reutilizadas |
 |------|---------|--------------------------|
 | **MCP Protocol** | JSON-RPC 2.0 nativo (initialize, tools/list, tools/call, resources) | Cero dependencias npm |
-| **Tool Registry** | 76 herramientas con inputSchema completo | `vault_mcp_catalog.py` TOOLS_CATALOG |
-| **JS-native backend** | ~10 tools rápidas en JavaScript puro | `vault_graph_inspect`, `vault_graph`, `vault_read`, backup/restore |
-| **Python backend** | ~66 tools via subprocess a `scripts/*.py` | Todas las tools existentes |
+| **Tool Registry** | 127 herramientas con inputSchema completo | `vault_mcp_catalog.py` TOOLS_CATALOG |
+| **JS-native backend** | 2 tools rápidas en JavaScript puro | `vault_graph_inspect`, `vault_graph`, `vault_read`, backup/restore *(superseded_by: AP-48 — una tool no tiene a la vez backend en Node y script Python; la lista viva es `vault_mcp_catalog.NATIVE_JS_TOOLS`)* |
+| **Python backend** | 125 tools via subprocess a `scripts/*.py` | Todas las tools existentes |
 | **Guard Chain** | 9 validadores pre-escritura en secuencia | `vault_write`, `vault_regex`, `vault_secret_scan` |
 | **File Watcher** | Detección de cambios en vault via `fs.watch` + SHA-256 | `vault_delta`, `vault_drift_detect` |
 | **Traceability** | Log inmutable de mutaciones (JSON + MD) | `vault_change_log`, `vault_mcp_context` |

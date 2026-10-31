@@ -267,3 +267,40 @@ def test_el_tamano_del_manifiesto_se_vigila_en_miles(tmp_path, monkeypatch):
     r = vdc.scan(docs=["FAKE.md"], include_slow=False)
     reclamadas = {(m["claimed"], m["actual"]) for m in r["mismatches"]}
     assert reclamadas == {(real + 5, real), (real + 6, real)}
+
+
+def test_la_cifra_en_herramientas_se_vigila(tmp_path, monkeypatch):
+    """A-19 — el manifiesto decía «expone sus 76 herramientas» y «| 76 herramientas
+    con inputSchema» con 127 en el catálogo: ningún patrón miraba la palabra en
+    castellano, y la tabla del MCP desglosaba «~10 tools rápidas en JavaScript» y
+    «~66 tools via subprocess» sin que nadie lo comparase con `NATIVE_JS_TOOLS`.
+    """
+    import vault_mcp_catalog
+
+    total = len(vault_mcp_catalog.TOOLS_CATALOG)
+    nativas = len(vault_mcp_catalog.NATIVE_JS_TOOLS)
+    doc = tmp_path / "FAKE.md"
+    doc.write_bytes(("El vault expone sus 76 herramientas como servidor.\n"
+                     "| **Tool Registry** | 76 herramientas con inputSchema completo |\n"
+                     "| **JS-native backend** | ~10 tools rápidas en JavaScript puro |\n"
+                     "| **Python backend** | ~66 tools via subprocess a `scripts/*.py` |\n"
+                     ).encode("utf-8"))
+    monkeypatch.setattr(vdc, "REPO_ROOT", tmp_path)
+
+    r = vdc.scan(docs=["FAKE.md"], include_slow=False)
+    reclamadas = sorted((m["line"], m["claimed"], m["actual"]) for m in r["mismatches"])
+    assert reclamadas == [(1, 76, total), (2, 76, total), (3, 10, nativas), (4, 66, total - nativas)]
+
+
+def test_herramientas_en_sentido_generico_no_casa(tmp_path, monkeypatch):
+    """Los patrones son estrechos a propósito: «las 71 herramientas» de una
+    retrospectiva o «herramientas de sistema de archivos» no son la cifra del
+    catálogo, y un patrón genérico las reescribiría con cada tool nueva."""
+    doc = tmp_path / "FAKE.md"
+    doc.write_bytes(("Con el estándar en v40.29 y «las 71 herramientas» cuando eran 107.\n"
+                     "Harnesses que pasan herramientas de sistema de archivos directas.\n"
+                     ).encode("utf-8"))
+    monkeypatch.setattr(vdc, "REPO_ROOT", tmp_path)
+
+    r = vdc.scan(docs=["FAKE.md"], include_slow=False)
+    assert r["mismatches"] == []

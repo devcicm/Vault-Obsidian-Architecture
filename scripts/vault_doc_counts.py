@@ -231,6 +231,12 @@ COUNTED_FACTS: List[Dict] = [
             # `--sync` (84 tools): la cifra entre paréntesis tras un comando.
             # Decía 84 con 86 en el catálogo y ningún patrón la miraba.
             r"--sync`?\s*\((\d+)\s+tools\)",
+            # A-19: el manifiesto decía «expone sus 76 herramientas» y «| 76
+            # herramientas con inputSchema» con 127 en el catálogo. Ningún
+            # patrón miraba la palabra en castellano. Estrechos a propósito:
+            # «las 71 herramientas» de una retrospectiva no es esta cifra.
+            r"sus\s+(\d+)\s+herramientas",
+            r"\|\s*(\d+)\s+herramientas\s+con",
         ],
     },
     {
@@ -239,13 +245,15 @@ COUNTED_FACTS: List[Dict] = [
         "id": "tools_python",
         "description": "Tools del catálogo con implementación Python",
         "value": count_tools_python,
-        "patterns": [r"\((\d+) Python \+"],
+        # La tabla del MCP del manifiesto: «~66 tools via subprocess» (A-19).
+        "patterns": [r"\((\d+) Python \+", r"~?(\d+) tools via subprocess"],
     },
     {
         "id": "tools_js_native",
         "description": "Tools del catálogo con backend nativo en el servidor MCP",
         "value": count_tools_js_native,
-        "patterns": [r"(\d+) JS-native"],
+        # «~10 tools rápidas en JavaScript puro» con dos en `NATIVE_JS_TOOLS` (A-19).
+        "patterns": [r"(\d+) JS-native", r"~?(\d+) tools rápidas en JavaScript"],
     },
     {
         "id": "groups",
