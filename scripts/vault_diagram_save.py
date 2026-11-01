@@ -33,7 +33,7 @@ from vault_registry import section_default_type
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_encoding import sanitize_content
 from vault_io import atomic_write_text, assert_within_vault, write_report
-from vault.kernel.mermaid_reglas import validate_mermaid
+from vault.kernel.normativa.mermaid_reglas import validate_mermaid
 
 import uuid
 

@@ -208,7 +208,7 @@ jobs:
           python -c "
           import re, sys
           sys.path.insert(0, 'vault')
-          from vault.kernel.mermaid_reglas import validate_mermaid
+          from vault.kernel.normativa.mermaid_reglas import validate_mermaid
           text = open('vault-obsidian-architecture.md', encoding='utf-8', errors='replace').read()
           errores = []
           for i, m in enumerate(re.finditer(r'\`\`\`mermaid\n(.*?)\n\`\`\`', text, re.DOTALL), 1):
