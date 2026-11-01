@@ -538,7 +538,7 @@ def _san_corchete_abierto(diagram: str) -> Optional[str]:
 
 
 #: El registro de sanadores, con la norma que sostienen. El nombre de la tool
-#: está en `SANADORES` de `vault/kernel/norms_catalog.py`; el par lo sostiene
+#: está en `SANADORES` de `vault/kernel/normativa/norms_catalog.py`; el par lo sostiene
 #: este módulo nombrando AP-25 en el docstring de `sanar_bloques` (AP-55).
 SANADORES_MERMAID: List[Tuple[str, Any]] = [
     ("saltos_literales", _san_saltos_literales),

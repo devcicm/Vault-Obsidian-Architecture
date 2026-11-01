@@ -8,6 +8,6 @@ de derivarlo; se regenera con `vault_norms_engine.escribir_caras_derivadas`.
 """
 
 GUARD = [
-    'vault/kernel/norms_catalog.py::status_frontmatter_lines',
+    'vault/kernel/normativa/norms_catalog.py::status_frontmatter_lines',
     'vault/gobernanza/auditoria_runtime.py::auditar_runtime',
 ]

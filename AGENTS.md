@@ -109,7 +109,7 @@ Si necesitas un dato de estos, léelo del registro — no lo redefinas ni lo cop
 
 | Dato | Fuente |
 |---|---|
-| Normas AP/PAT/SP/CN y su enforcement | `vault_norms_catalog` (dueño `vault/kernel/norms_catalog.py` desde 2026-10-16) — **hoja del núcleo desde v40.27**. Importa de aquí si solo necesitas el dato; `vault_norms` sigue reexportándolo, pero entrar por la fachada arrastra el motor y sus once dependencias |
+| Normas AP/PAT/SP/CN y su enforcement | `vault_norms_catalog` (dueño `vault/kernel/normativa/norms_catalog.py` desde 2026-10-31; antes `vault/kernel/norms_catalog.py`, desde 2026-10-16) — **hoja del núcleo desde v40.27**. Importa de aquí si solo necesitas el dato; `vault_norms` sigue reexportándolo, pero entrar por la fachada arrastra el motor y sus once dependencias |
 | Dirección de cada frontera entre contextos | `vault_arch.PRESUPUESTO_DE_CRUCES` (un par nuevo bloquea la puerta) |
 | Vocabulario de `status` (12 valores) | `vault_norms.STATUS_VOCAB` |
 | Clase de documento de cada sección (Diátaxis + `registro` + `indice`) | `vault_registry.SECTION_DOCUMENTACION`; el SDD `06-documentation-methodology.md` la publica derivada |

@@ -746,7 +746,7 @@ def test_lote_d_el_catalogo_de_normas_migra_y_el_puente_solo_guarda_el_ancla():
     import vault_grafo_import as gi
     import vault_norms_catalog
 
-    modulo, dueno = "vault_norms_catalog", "vault/kernel/norms_catalog.py"
+    modulo, dueno = "vault_norms_catalog", "vault/kernel/normativa/norms_catalog.py"
     assert modulo not in set(vault_arch.modulos_sin_hogar())
     assert vault_norms_catalog is importlib.import_module("vault.kernel.norms_catalog")
     assert gi.fuente_de(modulo) == (ROOT / dueno).resolve()

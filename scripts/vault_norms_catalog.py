@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""vault_norms_catalog — alias de `vault.kernel.norms_catalog` (ADR-0002, deuda #12).
+"""vault_norms_catalog — alias de `vault.kernel.normativa.norms_catalog` (ADR-0002, deuda #12).
 
-El dueño vive en `vault/kernel/norms_catalog.py` desde 2026-10-16 (lote D de la quinta tanda,
+El dueño vive en `vault/kernel/normativa/norms_catalog.py` desde 2026-10-31 (B-1 de la
+reestructura); antes, en `vault/kernel/norms_catalog.py` desde 2026-10-16 (lote D de la quinta tanda,
 el catálogo de normas, que se anclaba en su `__file__`). Este nombre se conserva
 (no-derogación) como **alias en `sys.modules`**, no como fachada que reexporta:
 `import vault_norms_catalog` devuelve el módulo del dueño, así que un
@@ -20,6 +21,6 @@ _repo_root = next(
 if _repo_root and str(_repo_root) not in sys.path:
     sys.path.insert(0, str(_repo_root))
 
-import vault.kernel.norms_catalog as _dueno  # noqa: E402
+import vault.kernel.normativa.norms_catalog as _dueno  # noqa: E402
 
 sys.modules[__name__] = _dueno
