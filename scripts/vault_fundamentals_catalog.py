@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""vault_fundamentals_catalog — alias de `vault.kernel.fundamentals_catalog` (ADR-0002, deuda #12).
+"""vault_fundamentals_catalog — alias de `vault.kernel.normativa.fundamentals_catalog` (ADR-0002, deuda #12).
 
-El dueño vive en `vault/kernel/fundamentals_catalog.py` desde 2026-10-09 (tercera migración
+El dueño vive en `vault/kernel/normativa/fundamentals_catalog.py` desde 2026-10-31 (B-1 de la
+reestructura); antes, en `vault/kernel/fundamentals_catalog.py` desde 2026-10-09 (tercera migración
 del puente). Este nombre se conserva (no-derogación) como **alias en
 `sys.modules`**, no como fachada que reexporta: `import vault_fundamentals_catalog` devuelve el
 módulo del dueño, así que un `monkeypatch.setattr(vault_fundamentals_catalog, ...)` cambia lo que
@@ -19,6 +20,6 @@ _repo_root = next(
 if _repo_root and str(_repo_root) not in sys.path:
     sys.path.insert(0, str(_repo_root))
 
-import vault.kernel.fundamentals_catalog as _dueno  # noqa: E402
+import vault.kernel.normativa.fundamentals_catalog as _dueno  # noqa: E402
 
 sys.modules[__name__] = _dueno

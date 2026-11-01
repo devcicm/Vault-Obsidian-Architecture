@@ -130,7 +130,7 @@ def test_lo_que_no_viaja_en_la_wheel_no_cuenta_como_puente():
 
 LOTE_A = {
     "vault_audit_catalog": "vault.kernel.normativa.audit_catalog",
-    "vault_fundamentals_catalog": "vault.kernel.fundamentals_catalog",
+    "vault_fundamentals_catalog": "vault.kernel.normativa.fundamentals_catalog",
     "vault_mermaid_reglas": "vault.kernel.normativa.mermaid_reglas",
     "vault_security_rules": "vault.gobernanza.security_rules",
 }
