@@ -40,7 +40,7 @@ argv y los contenidos en el golden. A partir de ahí el golden se basta solo.
 | ruta del directorio que contiene al repo | `<REPO_PADRE>` | depende del clon; `vault_restore` busca ahí `vault-backups/` y la lista en `searched` | una ruta dentro del vault |
 | ruta de `sys.executable` | `<PY>` | depende de la máquina | `python` en un texto |
 | fecha-hora ISO 8601 | `<TS>` | reloj | una fecha sin hora de una nota del sandbox |
-| la fecha de hoy (`AAAA-MM-DD`) | `<HOY>` | reloj | cualquier otra fecha |
+| la fecha de hoy (`AAAA-MM-DD`), local y UTC, en el envelope y en `cambiadas` | `<HOY>` | reloj; las tools fechan en UTC y por la tarde ya es mañana | cualquier otra fecha |
 
 Lo que sigue variando entre **dos capturas del mismo commit** se declara
 volátil por su ruta JSON y se lista en `golden/envelopes.json`
@@ -59,6 +59,7 @@ después del golden, sin que el tablón tocara nada de su camino:
 | `vault_context_pack#0` | la cuarta cifra de cada `score` | la puntuación suma la recencia contra el reloj (vida media de 90 días) | qué notas entran, en qué orden y el texto del paquete fuera de `score N` |
 | `vault_audit#0`, `vault_init#0/#1/#2` | `daysSinceUpdate` de cada nota `stale` | son días contra el reloj; el golden se capturó el 2026-10-30 y el primer tablón de B se midió al día siguiente | qué notas salen como `stale`, en qué orden y su `updated` |
 | `vault_metricas#0` | `dias_restantes` de cada fila | los días hasta el plazo del objetivo, contados desde hoy | el plazo, el valor y el estado de cada fila |
+| `vault_quality_check#0` | `scores.timeliness` de cada nota y la cifra de su aviso `timeliness: N days since update` | días contra el reloj, como `daysSinceUpdate` | qué notas avisan de vigencia, el resto de avisos y de puntuaciones |
 
 Las tools que miden el propio repo (`vault_clones`, `vault_metricas`, …)
 **no** se declaran: cuando un tablón cambia lo que miden, su rojo es el delta
@@ -175,14 +176,19 @@ class Normalizador:
         # Después de <REPO>, que la contiene: si no, el repo saldría como <REPO_PADRE>\<nombre>.
         self.pares += [(v, "<REPO_PADRE>") for v in _variantes(str(REPO.parent))]
         self.pares += [(v, "<PY>") for v in _variantes(sys.executable)]
-        self.hoy = _dt.date.today().isoformat()
+        # Local y UTC: las tools fechan con `utcnow()` y entre las 18:00 y la
+        # medianoche de aquí ya son otro día. Medido el 2026-10-31.
+        self.hoys = sorted({_dt.date.today().isoformat(),
+                            _dt.datetime.now(_dt.timezone.utc).date().isoformat()})
 
     def texto(self, s: str) -> str:
         for viejo, nuevo in self.pares:
             if viejo in s:
                 s = s.replace(viejo, nuevo)
         s = _TS.sub("<TS>", s)
-        return s.replace(self.hoy, "<HOY>")
+        for hoy in self.hoys:
+            s = s.replace(hoy, "<HOY>")
+        return s
 
     def valor(self, v: Any) -> Any:
         if isinstance(v, str):
@@ -484,8 +490,10 @@ def _correr_linea(linea: List[str], ficheros: Dict[str, str], origen: Path) -> D
             return {"exit": None, "problema": "timeout"}
         duracion = round(time.monotonic() - inicio, 2)
         despues = _arbol(vault)
-        cambiadas = sorted(r for r in set(antes) | set(despues) if antes.get(r) != despues.get(r))
         norm = Normalizador(str(destino))
+        # Se ordena antes de normalizar: el índice de una ruta volátil no se mueve.
+        cambiadas = [norm.texto(r) for r in
+                     sorted(r for r in set(antes) | set(despues) if antes.get(r) != despues.get(r))]
         datos = _json_de(proc.stdout)
         corrida: Dict[str, Any] = {"exit": proc.returncode, "cambiadas": cambiadas,
                                    "_duracion_s": duracion}
@@ -580,6 +588,28 @@ def _sin_volatiles(corrida: Dict[str, Any], rutas: List[str]) -> Dict[str, Any]:
 
 
 _SCORE = re.compile(r"score \d+\.\d+")
+_DIAS = re.compile(r"timeliness: \d+ days since update")
+
+
+def _timeliness_sin_reloj(c: Dict[str, Any]) -> Dict[str, Any]:
+    """`vault_quality_check`: los días de cada nota y su puntuación de vigencia.
+
+    Las claves de `notes` son rutas con puntos, que la sintaxis de rutas no
+    puede nombrar; por eso es una función y no una entrada de `rutas`.
+    """
+    notas = (c.get("datos") or {}).get("notes")
+    if isinstance(notas, dict):
+        for nota in notas.values():
+            if not isinstance(nota, dict):
+                continue
+            if isinstance(nota.get("scores"), dict) and "timeliness" in nota["scores"]:
+                nota["scores"]["timeliness"] = "<volatil:float>"
+            if isinstance(nota.get("issues"), list):
+                nota["issues"] = [_DIAS.sub("timeliness: <N> days since update", i)
+                                  if isinstance(i, str) else i for i in nota["issues"]]
+    return c
+
+
 # Lo que la captura no puede ver variar (ver el docstring). `[*]` cubre cada
 # elemento de la lista; los textos se normalizan solo en el patrón declarado.
 VOLATILES_DECLARADOS: Dict[str, Dict[str, Any]] = {
@@ -592,6 +622,7 @@ VOLATILES_DECLARADOS: Dict[str, Dict[str, Any]] = {
     **{f"vault_init#{i}": {"rutas": [".datos.steps[*].output.issues.stale[*].daysSinceUpdate"]}
        for i in (0, 1, 2)},
     "vault_metricas#0": {"rutas": [".datos.filas[*].dias_restantes"]},
+    "vault_quality_check#0": {"ajuste": _timeliness_sin_reloj},
 }
 
 
@@ -626,6 +657,8 @@ def _sin_declarados(corrida: Dict[str, Any], clave: str) -> Dict[str, Any]:
     for ruta in decl.get("rutas", []):
         for concreta in _expandir(c, ruta):
             c = _quitar(c, concreta)
+    if decl.get("ajuste"):
+        c = decl["ajuste"](c)
     return c
 
 
