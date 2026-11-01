@@ -81,7 +81,7 @@ El carril `merge` lo cerró sobre `52252b3`, con la paridad completa, las 28 pue
 | Paso | Hallazgo | Clase | Qué cambia | Paridad |
 |---|---|---|---|---|
 | B-1 | H-04 | **hecho** (cierre en `CHANGELOG-REFACTOR.md`, `aa93254`) · PURE_REFACTOR — **replaneado** (ver «Obstáculos del bloque B»): subpaquete `vault/kernel/normativa/`, dentro del contexto kernel | ~~Contexto nuevo `vault/normativa/` con `norms_catalog`, `fundamentals_catalog`, `audit_catalog`, `mermaid_reglas`, `contrato_nota` y `vocabulario`. Cada uno se mueve en un commit propio. El viejo `vault/kernel/<x>.py` queda como alias `sys.modules` con `superseded_by`. `vault_arch` declara el contexto; `vault_kernel --check` y AP-59 se recalculan.~~ Los seis se mueven a `vault/kernel/normativa/`, un commit por módulo. El viejo `vault/kernel/<x>.py` queda como alias `sys.modules` con `superseded_by`. Los alias de `scripts/` y los consumidores internos apuntan al dueño nuevo. `vault_arch` no cambia: siguen siendo del contexto kernel. | `superficie` (los nombres no cambian) + `estatico` |
-| B-2 | H-04 | PURE_REFACTOR | `registry` y `proyectos` se mueven al contexto que los consume (se decide midiendo el fan-in en el momento del paso). | ídem |
+| B-2 | H-04 | **hecho: NOT_APPLICABLE** (medido sobre `4d9d031`, ver «Obstáculos del bloque B») · ~~PURE_REFACTOR~~ | ~~`registry` y `proyectos` se mueven al contexto que los consume (se decide midiendo el fan-in en el momento del paso).~~ Nada: no hay un contexto que los consuma por encima del resto. | no aplica: no hay código tocado |
 | B-3 | H-05 + C-07 | COMPATIBLE_EVOLUTION | Contexto `gobernanza_del_estandar`, que recibe `carriles`, `perfil_suite`, `test_scope`, `firma_sitio`, `spec_catalog_check` y `kernel/baseline.py`. Queda fuera de la wheel y la exclusión la vigila `vault_produccion`. Los alias en `meta_toolkit` se conservan. | `superficie` + test de contenido de la wheel |
 
 ### Obstáculos del bloque B (2026-10-31, al ejecutarlo)
@@ -104,6 +104,17 @@ El carril `merge` lo cerró sobre `52252b3`, con la paridad completa, las 28 pue
   - En DDD, un modelo que comparten todos los contextos es *shared kernel* por definición. El defecto de H-04 no es que estén en el núcleo, sino que el núcleo mezcla en el mismo directorio la infraestructura (raíz, fs, escritura, procesos) con el lenguaje compartido.
   - **Decisión del propietario (2026-10-31):** subpaquete `vault/kernel/normativa/`. Separa las dos cosas en disco sin cambiar ninguna frontera. La alternativa de declarar un segundo shared kernel en `vault_arch` queda como candidata.
 - **B-2 merece la misma pregunta antes de ejecutarse.** `vault_registry` tiene 44 consumidores en 8 contextos, y `proyectos` entró al kernel desde autoria en v40.34 (AP-63) precisamente porque es identidad que leen todos. Se mide en su paso, pero lo esperable es NOT_APPLICABLE o subpaquete.
+  - **Medido al ejecutarlo (sobre `4d9d031`, imports AST de `scripts/`, `vault/`, `cli/`, `vault_toolkit/` y `normas/`, contexto según `vault_arch.contexto_de`):**
+
+    | Módulo | Consumidores | Contextos | Mayor consumidor |
+    |---|---|---|---|
+    | `registry` | 47 | 9 | autoria, 21 |
+    | `proyectos` | 21 | 5 (kernel incluido) | autoria, 12 |
+
+  - Llevar `registry` a autoria estrenaría tres pares que `PRESUPUESTO_DE_CRUCES` no tiene: gobernanza → autoria, meta_toolkit → autoria e indices → autoria. `vault_arch --check` se pondría en rojo.
+  - Llevar `proyectos` a autoria devuelve el sitio de donde salió en v40.34 (AP-63) y deja a `vault_errors` cruzando de kernel a autoria, que es el cruce que C-1 quiere eliminar.
+  - **Resultado: NOT_APPLICABLE**, como A-1. Los dos son *shared kernel* por la misma razón que los seis de B-1.
+  - Queda como CANDIDATE meter `registry` en `vault/kernel/normativa/`. Es lenguaje compartido (secciones y clase de documento), pero no es hoja: importa `vault_grafo_import`. Ante la duda no se ejecuta. `proyectos` no es candidato, porque escribe (`escritura_atomica`) y resuelve identidad: es servicio, no vocabulario.
 
 ## Bloque C — inyección de la raíz (riesgo alto, el más valioso para la suite)
 
