@@ -52,7 +52,7 @@ siguen en `AUDITORIA.md`.
 | A-2 | H-08 | **hecho** (`428c895`, cierre A en `52252b3`) · PURE_REFACTOR | `install`/`uninstall::_run` pasan a un único lanzador en `vault/kernel` o en el dueño de procesos. `clones-baseline` queda saldada. | `superficie` + `envelopes` |
 | A-3 | H-02 | **bloqueado → replaneado tras C-2** (ver «Obstáculos del bloque A») | `vault_io` deja de importar `vault_section_index` y `vault_tags`: recibe el registro por el puerto `RegistroSecciones` de `vault/kernel/puertos.py`, que se inyecta al importarse el productor. `ciclos-baseline` pasa de 3 a 0. | `envelopes` (todas las tools que escriben notas) |
 | A-4 | H-03 | **bloqueado → replaneado tras C-2** (ver «Obstáculos del bloque A») | `vault_errors._inject_voice` llama a un puerto `Voz` con `None` por defecto. `vault.autoria.voz` se registra al importarse. El cruce kernel→autoria desaparece de `PRESUPUESTO_DE_CRUCES` y pasa a `saldada`. | `envelopes` (los errores conservan su campo de voz) |
-| A-5 | H-11 | **bloqueado: decisión del propietario** (ver «Obstáculos del bloque A») | Se quita el cruce gobernanza→meta_toolkit, que está declarado `a_eliminar`. | `superficie` |
+| A-5 | H-11 | **hecho** (`b883083`), ruta B ratificada el 2026-11-01 · COMPATIBLE_EVOLUTION. Antes: «bloqueado: decisión del propietario» (ver «Obstáculos del bloque A») | Se quita el cruce gobernanza→meta_toolkit, que está declarado `a_eliminar`. | `superficie` |
 
 ### Obstáculos del bloque A (2026-10-31, al ejecutarlo)
 
