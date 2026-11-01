@@ -24,7 +24,7 @@ biblioteca estándar, de la que toma una ruta y nada más: el directorio del
 programa (ver `_detect_vault_root`). Si alguna vez necesita importar otro, el
 corte se ha perdido y `vault_ciclos` lo dirá.
 
-Compatibilidad: `vault_io` reexporta todo lo público de aquí, así que los ~89
+Compatibilidad: `vault_io` reexporta todo lo público de aquí, así que los
 módulos que hacen `from vault_io import VAULT_ROOT, get_vault_root` siguen
 funcionando sin tocarse (no-derogación).
 """
@@ -460,15 +460,16 @@ _ACTIVE_VAULT_ROOT: Optional[Path] = None
 def _reanclar_constantes(anterior: Path, nueva: Path) -> List[str]:
     """Reapunta al vault nuevo las constantes de módulo derivadas del viejo.
 
-    El problema que resuelve: 89 de 98 módulos hacen `from vault_io import
-    VAULT_ROOT` y derivan sus rutas EN EL IMPORT (`CODE_DIR = VAULT_ROOT /
+    El problema que resuelve: los módulos que hacían `from vault_io import
+    VAULT_ROOT` derivaban sus rutas EN EL IMPORT (`CODE_DIR = VAULT_ROOT /
     "11_Code"`). Eso congela un `Path` literal, así que `set_vault_root()`
     cambiaba `get_vault_root()` y no cambiaba nada de lo que las tools usan de
     verdad para leer y escribir. Había dos verdades para "cuál es el vault", y
     la API pública de cambiarlo mentía: medido, `get_vault_root()` devolvía el
     vault nuevo mientras `vault_audit.VAULT_ROOT` seguía en el viejo.
 
-    Reanclar es lo único que arregla el caso sin reescribir los 89 módulos:
+    Reanclar es lo único que arregla el caso sin reescribir esos módulos
+    —cuáles tocó lo dice `rebound_constants()`, no una cifra escrita aquí—:
     ningún proxy perezoso sobre `VAULT_ROOT` alcanzaría a las constantes ya
     derivadas de él. Se toca solo lo inequívoco —nombres en MAYÚSCULAS de
     módulos `vault_*` cuyo valor es un `Path` DENTRO de la raíz anterior—;

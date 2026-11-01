@@ -72,11 +72,25 @@ def test_dentro_de_una_funcion_no_es_vinculo(tmp_path, monkeypatch):
     assert _bindings(fuente, tmp_path, monkeypatch) == []
 
 
-def test_resolver_tarde_no_es_vinculo_aunque_se_guarde(tmp_path, monkeypatch):
-    """Pasar por el kernel es la vía correcta; el guard no la penaliza."""
+def test_llamar_a_get_vault_root_al_importar_tambien_congela(tmp_path, monkeypatch):
+    """C-1: hasta el 2026-11-01 este test afirmaba lo contrario —«Pasar por el
+    kernel es la vía correcta; el guard no la penaliza.»— y era el hueco de la
+    norma: la llamada se evalúa una vez, al importar, y el `Path` queda tan
+    congelado como si derivara de `VAULT_ROOT`."""
     fuente = (
         "import vault_io\n"
         "SYSTEM_DIR = vault_io.get_vault_root() / '00_System'\n"
+        "from vault_io import get_vault_root\n"
+        "CODE_DIR: object = get_vault_root() / '11_Code'\n"
+    )
+    assert _bindings(fuente, tmp_path, monkeypatch) == ["SYSTEM_DIR", "CODE_DIR"]
+
+
+def test_resolver_tarde_en_una_lambda_no_es_vinculo(tmp_path, monkeypatch):
+    """La lambda se evalúa en cada llamada: respeta `set_vault_root()`."""
+    fuente = (
+        "import vault_io\n"
+        "SYSTEM_DIR = lambda: vault_io.get_vault_root() / '00_System'\n"
     )
     assert _bindings(fuente, tmp_path, monkeypatch) == []
 

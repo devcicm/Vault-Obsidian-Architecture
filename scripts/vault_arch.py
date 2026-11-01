@@ -1015,6 +1015,18 @@ def usos_del_nombre_congelado() -> list[dict]:
     return hallazgos
 
 
+def _llama_a_la_raiz_al_importar(valor: ast.AST) -> bool:
+    """`get_vault_root()` evaluado al importar: fuera de toda lambda (AP-49, C-1)."""
+    if isinstance(valor, ast.Lambda):
+        return False
+    if isinstance(valor, ast.Call) and (
+        getattr(valor.func, "id", None) == "get_vault_root"
+        or getattr(valor.func, "attr", None) == "get_vault_root"
+    ):
+        return True
+    return any(_llama_a_la_raiz_al_importar(h) for h in ast.iter_child_nodes(valor))
+
+
 def vinculos_congelados() -> list[dict]:
     """Asignaciones de nivel de módulo que derivan de `VAULT_ROOT` (AP-49).
 
@@ -1023,8 +1035,13 @@ def vinculos_congelados() -> list[dict]:
     exactamente el arreglo que la norma pide, así que marcarlo sería marcar la
     solución.
 
-    Tampoco cuenta si la expresión llama a `get_vault_root()`: resolver tarde a
-    través del kernel es la vía correcta aunque el resultado se guarde.
+    Llamar a `get_vault_root()` **también** cuenta si la llamada se evalúa al
+    importar (C-1, 2026-11-01): `X = get_vault_root() / "a"` congela el `Path`
+    igual que `X = VAULT_ROOT / "a"`. Hasta entonces este docstring decía
+    «Tampoco cuenta si la expresión llama a `get_vault_root()`: resolver tarde a
+    través del kernel es la vía correcta aunque el resultado se guarde», y la
+    llamada al importar no es resolver tarde. Lo tarde es dentro de una función
+    —fuera del alcance— o de una lambda, que es lo único que se exime aquí.
     """
     hallazgos = []
     for nombre in _modulos_en_disco():
@@ -1043,14 +1060,7 @@ def vinculos_congelados() -> list[dict]:
                 isinstance(n, ast.Name) and n.id == "VAULT_ROOT"
                 for n in ast.walk(valor)
             )
-            resuelve_tarde = any(
-                isinstance(n, ast.Call) and (
-                    getattr(n.func, "id", None) == "get_vault_root"
-                    or getattr(n.func, "attr", None) == "get_vault_root"
-                )
-                for n in ast.walk(valor)
-            )
-            if not usa_root or resuelve_tarde:
+            if not (usa_root or _llama_a_la_raiz_al_importar(valor)):
                 continue
             destinos = (
                 [nodo.target] if isinstance(nodo, ast.AnnAssign) else nodo.targets

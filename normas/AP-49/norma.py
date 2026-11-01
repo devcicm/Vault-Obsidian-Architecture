@@ -53,15 +53,16 @@ NORMA = {
         "Las pruebas necesitan subprocesos para aislarse unas de otras; "
         "`set_vault_root()` no cambia dónde escribe una tool; dos raíces de "
         "vault no pueden coexistir en el mismo intérprete; una asignación de "
-        "nivel de módulo deriva de `VAULT_ROOT` sin pasar por "
-        "`get_vault_root()`."
+        "nivel de módulo deriva de `VAULT_ROOT`, o llama a "
+        "`get_vault_root()` al importar y guarda el resultado."
     ),
     "prevention": (
         "La raíz y sus derivadas se reciben, no se importan: el dominio toma "
         "un contexto (`VaultContext`) y el adaptador lo construye por "
         "llamada. Si un módulo necesita la ruta, la resuelve **tarde** con "
-        "`get_vault_root()` dentro de la función. El guard es AST sobre "
-        "asignaciones de nivel de módulo que derivan de `VAULT_ROOT`, con "
+        "`get_vault_root()` dentro de la función (o de una lambda). El guard "
+        "es AST sobre asignaciones de nivel de módulo que derivan de "
+        "`VAULT_ROOT` o que llaman a `get_vault_root()` al importar, con "
         "baseline que solo puede encoger — la deuda medida no se arregla en "
         "un commit, pero no puede crecer."
     ),
