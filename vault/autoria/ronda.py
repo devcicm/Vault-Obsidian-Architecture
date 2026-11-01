@@ -38,7 +38,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from ..kernel.contexto import construir
-from ..kernel.contrato_nota import CAMPOS
+from ..kernel.normativa.contrato_nota import CAMPOS
 from .repositorio import RepositorioAutoria
 
 #: `r<AAAAMMDD>-<6 hex>`. El dueño es el contrato de nota (`CAMPOS["round_id"]`):
