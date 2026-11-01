@@ -134,6 +134,16 @@ def _candidato_a_alias(ruta: Path) -> bool:
         return False
 
 
+def dueno_del_alias(ruta: Path) -> str | None:
+    """El dueño si `ruta` es un alias del puente —de `scripts/` o de `vault/`—, o None.
+
+    La puerta pública del criterio que usa `_puente`, para quien juzga un
+    fichero suelto: `vault_servicio` deja fuera de la wheel el alias cuyo dueño
+    no viaja. Copiar allí la forma del alias sería AP-57.
+    """
+    return _dueno_del_alias(ruta) if _candidato_a_alias(ruta) else None
+
+
 @lru_cache(maxsize=1)
 def _puente() -> Dict[str, Path]:
     """Alias de `scripts/` → fichero de su dueño. Se deriva del disco."""

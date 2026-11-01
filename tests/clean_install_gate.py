@@ -194,6 +194,14 @@ def main(*, gate: str = "CLEAN_INSTALL_GATE") -> int:
             f"vault_toolkit/_impl/{m}.py" for m in fuera["modulos"]
             if f"vault_toolkit/_impl/{m}.py" in members
         )
+        # B-3: los subpaquetes que no viajan y los alias de sus módulos.
+        forbidden += sorted(
+            f"{paquete.replace('.', '/')}/{m}.py"
+            for paquete, mods in fuera["alias"].items() for m in mods
+            if f"{paquete.replace('.', '/')}/{m}.py" in members
+        )
+        sub = tuple(s.replace(".", "/") + "/" for s in fuera["subpaquetes"])
+        forbidden += sorted(member for member in members if member.startswith(sub))
         if missing or forbidden:
             _fail(f"wheel content invalid: missing={missing}, forbidden={forbidden}")
 

@@ -1,6 +1,6 @@
 {
   "_generado_por": "python scripts/vault_servicio.py --wheel-sync",
-  "_no_editar": "Derivado de vault_servicio.CAPACIDADES['gobernanza_del_estandar']. vault_servicio --check falla si diverge.",
+  "_no_editar": "Derivado de vault_servicio.CAPACIDADES['gobernanza_del_estandar'] y SUBPAQUETES_FUERA_DE_LA_WHEEL. vault_servicio --check falla si diverge.",
   "capacidad": "gobernanza_del_estandar",
   "paquete": "vault_toolkit._impl",
   "modulos": [
@@ -34,5 +34,9 @@
     "vault_tests_higiene",
     "vault_toolkit_audit",
     "vault_voice"
-  ]
+  ],
+  "subpaquetes": [
+    "vault.meta_toolkit.estandar"
+  ],
+  "alias": {}
 }

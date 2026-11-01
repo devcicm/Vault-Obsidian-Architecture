@@ -58,7 +58,7 @@ import re
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, Iterable, List
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -68,6 +68,7 @@ from vault.kernel import rutas
 from vault.kernel.rutas import cita_repo
 
 from vault_errors import emit_error, wrap_main
+from vault_grafo_import import dueno_del_alias
 
 
 # ── El servicio ──────────────────────────────────────────────────────────────
@@ -196,6 +197,13 @@ GOBIERNO_DOC = _RAIZ / rutas.DOCS / "GOBIERNO.md"
 FUERA_DE_LA_WHEEL = _RAIZ / "empaquetado" / "fuera-de-la-wheel.json"
 PAQUETE_DE_LA_WHEEL = "vault_toolkit._impl"
 _EXCEPCIONES_DE_IMPORT = {"ImportError", "ModuleNotFoundError"}
+#: Subpaquetes de `vault/` que no viajan (B-3 de la reestructura, 2026-10-31).
+#: Lo que vive dentro es gobernanza del estándar sin tool propia en el catálogo
+#: —los carriles, el perfil y el alcance de la suite, la firma de sitio de las
+#: baselines—, así que `modulos_fuera_de_la_wheel`, que sale de las tools, no lo
+#: ve. Sus alias salen con él: un alias cuyo dueño no viaja es un `ImportError`
+#: esperando en la instalación de un tercero.
+SUBPAQUETES_FUERA_DE_LA_WHEEL = ("vault.meta_toolkit.estandar",)
 
 
 def _scripts_por_tool() -> Dict[str, str]:
@@ -220,16 +228,42 @@ def modulos_fuera_de_la_wheel() -> List[str]:
     )
 
 
+def _en_subpaquete_fuera(modulo: str) -> bool:
+    return any(modulo == s or modulo.startswith(s + ".") for s in SUBPAQUETES_FUERA_DE_LA_WHEEL)
+
+
+def _modulos_en_disco() -> List[tuple]:
+    """`(paquete, ruta)` de cada módulo de `scripts/` y `vault/` que el build podría llevar."""
+    pares = [(PAQUETE_DE_LA_WHEEL, p) for p in sorted((_RAIZ / "scripts").glob("*.py"))]
+    pares += [(".".join(p.relative_to(_RAIZ).parent.parts), p)
+              for p in sorted((_RAIZ / "vault").rglob("*.py"))]
+    return pares
+
+
+def alias_fuera_de_la_wheel() -> Dict[str, List[str]]:
+    """`{paquete: [módulo]}`: los alias cuyo dueño vive en un subpaquete que no viaja."""
+    salida: Dict[str, List[str]] = {}
+    for paquete, ruta in _modulos_en_disco():
+        if _en_subpaquete_fuera(paquete):
+            continue
+        dueno = dueno_del_alias(ruta)
+        if dueno and _en_subpaquete_fuera(dueno):
+            salida.setdefault(paquete, []).append(ruta.stem)
+    return {k: sorted(v) for k, v in sorted(salida.items())}
+
+
 def volcado_de_la_wheel() -> Dict[str, Any]:
     return {
         "_generado_por": "python scripts/vault_servicio.py --wheel-sync",
         "_no_editar": (
-            "Derivado de vault_servicio.CAPACIDADES['gobernanza_del_estandar']. "
-            "vault_servicio --check falla si diverge."
+            "Derivado de vault_servicio.CAPACIDADES['gobernanza_del_estandar'] y "
+            "SUBPAQUETES_FUERA_DE_LA_WHEEL. vault_servicio --check falla si diverge."
         ),
         "capacidad": "gobernanza_del_estandar",
         "paquete": PAQUETE_DE_LA_WHEEL,
         "modulos": modulos_fuera_de_la_wheel(),
+        "subpaquetes": list(SUBPAQUETES_FUERA_DE_LA_WHEEL),
+        "alias": alias_fuera_de_la_wheel(),
     }
 
 
@@ -239,7 +273,9 @@ def escribir_volcado_de_la_wheel() -> Dict[str, Any]:
     FUERA_DE_LA_WHEEL.write_bytes((json.dumps(datos, indent=2, ensure_ascii=False) + "\n").encode("utf-8"))
     return {"ok": True, "tool": "vault_servicio", "action": "wheel_sync",
             "written": str(FUERA_DE_LA_WHEEL.relative_to(_RAIZ)).replace("\\", "/"),
-            "modules": len(datos["modulos"])}
+            "modules": len(datos["modulos"]),
+            "subpackages": len(datos["subpaquetes"]),
+            "aliases": sum(len(v) for v in datos["alias"].values())}
 
 
 def _protegido(cadena: List[ast.AST]) -> bool:
@@ -255,17 +291,42 @@ def _protegido(cadena: List[ast.AST]) -> bool:
     return False
 
 
-def importaciones_sin_proteger(codigo: str, fuera: set) -> List[Dict[str, Any]]:
+def _absoluto(nodo: ast.ImportFrom, paquete: str) -> str:
+    """El módulo de un `from` resuelto contra el paquete del fichero."""
+    if not nodo.level:
+        return nodo.module or ""
+    partes = paquete.split(".")
+    base = partes[: len(partes) - nodo.level + 1]
+    return ".".join(base + ([nodo.module] if nodo.module else []))
+
+
+def importaciones_sin_proteger(codigo: str, fuera: set, *, paquete: str = "",
+                               prohibidos: Iterable[str] = ()) -> List[Dict[str, Any]]:
     """Imports de un módulo excluido que fallarían en la wheel.
 
-    Cuenta `import x`, `from x import …` e `import_toolkit_module("x")`. Un
-    import dentro de un `try` que captura `ImportError` es una degradación
-    declarada —`vault_norms_engine` hace eso con `vault_smoke`— y no cuenta.
+    Cuenta `import x`, `from x import …` e `import_toolkit_module("x")` por el
+    último componente contra `fuera`, que son módulos de `scripts/`.
+    `prohibidos` son nombres completos —un subpaquete, o un alias de `vault/`— y
+    se comparan por prefijo con el nombre completo del import; el relativo se
+    resuelve si se da `paquete`, el del fichero. Un import dentro de un `try`
+    que captura `ImportError` es una degradación declarada —`vault_norms_engine`
+    hace eso con `vault_smoke`— y no cuenta.
     """
     hallados: List[Dict[str, Any]] = []
+    prohibidos = tuple(prohibidos)
+
+    def prohibido(nombre: str) -> bool:
+        return any(nombre == p or nombre.startswith(p + ".") for p in prohibidos)
 
     def visitar(nodo: ast.AST, cadena: List[ast.AST]) -> None:
         nombres: List[str] = []
+        completos: List[str] = []
+        if isinstance(nodo, ast.Import):
+            completos = [a.name for a in nodo.names]
+        elif isinstance(nodo, ast.ImportFrom) and (paquete or not nodo.level):
+            base = _absoluto(nodo, paquete)
+            if base:
+                completos = [base] + [f"{base}.{a.name}" for a in nodo.names]
         if isinstance(nodo, ast.Import):
             nombres = [a.name.split(".")[0] for a in nodo.names]
         elif isinstance(nodo, ast.ImportFrom) and nodo.module and not nodo.level:
@@ -281,6 +342,9 @@ def importaciones_sin_proteger(codigo: str, fuera: set) -> List[Dict[str, Any]]:
         for n in nombres:
             if n in fuera and not _protegido(cadena):
                 hallados.append({"module": n, "line": nodo.lineno})
+        vistos = [c for c in completos if prohibido(c)]
+        if vistos and not _protegido(cadena):
+            hallados.append({"module": vistos[-1], "line": nodo.lineno})
         for hijo in ast.iter_child_nodes(nodo):
             visitar(hijo, cadena + [nodo])
 
@@ -288,29 +352,41 @@ def importaciones_sin_proteger(codigo: str, fuera: set) -> List[Dict[str, Any]]:
     return hallados
 
 
-def _fuentes_de_la_wheel(fuera: set) -> List[Path]:
-    fuentes = [p for p in sorted((_RAIZ / "scripts").glob("*.py")) if p.stem not in fuera]
-    for paquete in ("vault", "vault_toolkit"):
-        fuentes += sorted((_RAIZ / paquete).rglob("*.py"))
+def _fuentes_de_la_wheel(fuera: set, alias: Dict[str, List[str]]) -> List[tuple]:
+    """`(paquete, ruta)` de lo que viaja: ni lo excluido, ni el subpaquete, ni sus alias."""
+    fuentes = [(paq, p) for paq, p in _modulos_en_disco()
+               if not (paq == PAQUETE_DE_LA_WHEEL and p.stem in fuera)
+               and not _en_subpaquete_fuera(paq)
+               and p.stem not in alias.get(paq, ())]
+    fuentes += [(".".join(p.relative_to(_RAIZ).parent.parts), p)
+                for p in sorted((_RAIZ / "vault_toolkit").rglob("*.py"))]
     return fuentes
 
 
 def check_de_la_wheel() -> Dict[str, Any]:
-    derivado = modulos_fuera_de_la_wheel()
+    volcado = volcado_de_la_wheel()
     try:
-        volcado = json.loads(FUERA_DE_LA_WHEEL.read_text(encoding="utf-8")).get("modulos")
+        leido = json.loads(FUERA_DE_LA_WHEEL.read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        volcado = None
-    fuera = set(derivado)
+        leido = {}
+    divergen = [k for k in ("modulos", "subpaquetes", "alias") if leido.get(k) != volcado[k]]
+    alias = volcado["alias"]
+    fuera = set(volcado["modulos"]) | set(alias.get(PAQUETE_DE_LA_WHEEL, ()))
+    prohibidos = list(SUBPAQUETES_FUERA_DE_LA_WHEEL) + [
+        f"{paq}.{m}" for paq, mods in alias.items() if paq != PAQUETE_DE_LA_WHEEL for m in mods]
     rotos = []
-    for fuente in _fuentes_de_la_wheel(fuera):
-        for h in importaciones_sin_proteger(fuente.read_text(encoding="utf-8"), fuera):
+    for paquete, fuente in _fuentes_de_la_wheel(fuera, alias):
+        for h in importaciones_sin_proteger(fuente.read_text(encoding="utf-8"), fuera,
+                                            paquete=paquete, prohibidos=prohibidos):
             rel = str(fuente.relative_to(_RAIZ)).replace("\\", "/")
             rotos.append({"file": rel, **h})
     return {
-        "excluded_modules": len(derivado),
-        "exclusion_drift": None if volcado == derivado else {
-            "derived": derivado, "dumped": volcado,
+        "excluded_modules": len(volcado["modulos"]),
+        "excluded_subpackages": len(volcado["subpaquetes"]),
+        "excluded_aliases": sum(len(v) for v in alias.values()),
+        "exclusion_drift": None if not divergen else {
+            "derived": volcado["modulos"], "dumped": leido.get("modulos"),
+            "diverging_keys": divergen,
             "fix": "python scripts/vault_servicio.py --wheel-sync",
         },
         "shipped_imports_of_excluded": rotos,

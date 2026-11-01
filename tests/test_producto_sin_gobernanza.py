@@ -116,3 +116,78 @@ def test_el_hook_de_build_deja_fuera_la_gobernanza():
     assert paquete == "vault_toolkit._impl"
     assert fuera and not (viajan & fuera), sorted(viajan & fuera)
     assert {"vault_write", "vault_io", "vault_norms_catalog"} <= viajan
+
+
+# ── Subpaquetes fuera de la wheel (B-3 de la reestructura) ───────────────────
+
+def test_la_lista_de_la_wheel_declara_subpaquetes_y_alias():
+    vs = _servicio()
+    volcado = json.loads(vs.FUERA_DE_LA_WHEEL.read_text(encoding="utf-8"))
+    assert volcado["subpaquetes"] == list(vs.SUBPAQUETES_FUERA_DE_LA_WHEEL)
+    assert "vault.meta_toolkit.estandar" in volcado["subpaquetes"]
+    assert volcado["alias"] == vs.alias_fuera_de_la_wheel()
+    for paquete, mods in volcado["alias"].items():
+        assert not vs._en_subpaquete_fuera(paquete), paquete
+        assert mods == sorted(mods)
+
+
+def test_una_clave_de_subpaquetes_desfasada_rompe_la_puerta(tmp_path, monkeypatch):
+    vs = _servicio()
+    leido = vs.volcado_de_la_wheel()
+    leido["subpaquetes"] = []
+    falso = tmp_path / "fuera.json"
+    falso.write_text(json.dumps(leido), encoding="utf-8")
+    monkeypatch.setattr(vs, "FUERA_DE_LA_WHEEL", falso)
+    r = vs.check_de_la_wheel()
+    assert r["exclusion_drift"]["diverging_keys"] == ["subpaquetes"]
+
+
+def test_importar_el_subpaquete_por_nombre_completo_o_relativo_se_detecta():
+    vs = _servicio()
+    sub = ("vault.meta_toolkit.estandar",)
+    casos = {
+        "import vault.meta_toolkit.estandar.carriles\n": "vault.meta_toolkit",
+        "from vault.meta_toolkit.estandar import carriles\n": "vault.meta_toolkit",
+        "from vault.meta_toolkit import estandar\n": "vault.meta_toolkit",
+        "from .estandar.carriles import CARRILES\n": "vault.meta_toolkit",
+        "from ..meta_toolkit.estandar import carriles\n": "vault.grafo",
+    }
+    for codigo, paquete in casos.items():
+        assert vs.importaciones_sin_proteger(
+            codigo, set(), paquete=paquete, prohibidos=sub), codigo
+    limpio = "from vault.meta_toolkit import repositorio\nfrom .estandarte import x\n"
+    assert vs.importaciones_sin_proteger(
+        limpio, set(), paquete="vault.meta_toolkit", prohibidos=sub) == []
+    protegido = ("try:\n    from vault.meta_toolkit.estandar import carriles\n"
+                 "except ImportError:\n    carriles = None\n")
+    assert vs.importaciones_sin_proteger(
+        protegido, set(), paquete="vault.meta_toolkit", prohibidos=sub) == []
+
+
+def test_el_hook_de_build_deja_fuera_el_subpaquete_y_sus_alias(monkeypatch):
+    """El `build_py` real: el subpaquete entero y los alias de sus módulos."""
+    pytest = __import__("pytest")
+    pytest.importorskip("setuptools")
+    from empaquetado import construir
+    from setuptools.dist import Distribution
+
+    assert "vault.meta_toolkit.estandar" not in (RAIZ / "pyproject.toml").read_text(
+        encoding="utf-8"), "el subpaquete no se declara en packages"
+    por_paquete, subpaquetes = construir.excluidos()
+    assert subpaquetes == ("vault.meta_toolkit.estandar",)
+    assert por_paquete["vault_toolkit._impl"] >= construir.fuera_de_la_wheel()[1]
+
+    dist = Distribution({"name": "x"})
+    dist.script_name = "setup.py"
+    cmd = construir.BuildPy(dist)
+    cmd.initialize_options()
+    sub = RAIZ / "vault" / "meta_toolkit" / "estandar"
+    assert cmd.find_package_modules("vault.meta_toolkit.estandar", str(sub)) == []
+    meta = RAIZ / "vault" / "meta_toolkit"
+    todos = {m[1] for m in cmd.find_package_modules("vault.meta_toolkit", str(meta))}
+    assert "repositorio" in todos
+
+    monkeypatch.setattr(construir, "excluidos", lambda: (
+        {"vault.meta_toolkit": frozenset({"repositorio"})}, ()))
+    viajan = {m[1] for m in cmd.find_package_modules("vault.meta_toolkit", str(meta))}
+    assert viajan == todos - {"repositorio"}

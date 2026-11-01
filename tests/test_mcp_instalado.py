@@ -33,11 +33,18 @@ requiere_node = pytest.mark.skipif(
 
 def _instalacion(destino: Path, *, sin=()) -> Path:
     """`site-packages` mínimo con la forma de la wheel. Devuelve el `.mjs`."""
-    fuera = set(json.loads(
-        (RAIZ / "empaquetado" / "fuera-de-la-wheel.json").read_text(encoding="utf-8")
-    )["modulos"]) | set(sin)
+    lista = json.loads(
+        (RAIZ / "empaquetado" / "fuera-de-la-wheel.json").read_text(encoding="utf-8"))
+    fuera = set(lista["modulos"]) | set(lista["alias"].get("vault_toolkit._impl", ())) | set(sin)
     basura = shutil.ignore_patterns("__pycache__", "*.pyc")
     shutil.copytree(RAIZ / "vault", destino / "vault", ignore=basura)
+    # B-3: lo que la wheel no lleva de `vault/` tampoco está en esta instalación.
+    for sub in lista["subpaquetes"]:
+        shutil.rmtree(destino.joinpath(*sub.split(".")), ignore_errors=True)
+    for paquete, mods in lista["alias"].items():
+        if paquete != "vault_toolkit._impl":
+            for m in mods:
+                destino.joinpath(*paquete.split("."), f"{m}.py").unlink(missing_ok=True)
     shutil.copytree(RAIZ / "vault_toolkit", destino / "vault_toolkit", ignore=basura)
     impl = destino / "vault_toolkit" / "_impl"
     impl.mkdir()
