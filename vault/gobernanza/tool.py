@@ -21,18 +21,28 @@ import argparse
 import json
 from typing import Any, Dict, List
 
+from vault.kernel.puertos import CatalogoTools
+
 from .mcp_gobernanza import GobernanzaMCP
 from .base import ValidationResult
 
 TOOL_NAME = "vault_gobernanza"
 
 
-def _create_gobernanza(vault_root: str | None) -> GobernanzaMCP:
-    """Crea una instancia de GobernanzaMCP con el catálogo y normas canónicos."""
-    from vault.meta_toolkit.catalog_adapter import ToolsCatalogAdapter
-    from vault.kernel.adaptadores import NormasDelCatalogo
+def _create_gobernanza(vault_root: str | None,
+                       catalogo: CatalogoTools | None = None) -> GobernanzaMCP:
+    """Crea una instancia de GobernanzaMCP con el catálogo y normas canónicos.
 
-    catalog = ToolsCatalogAdapter()
+    El catálogo llega por el puerto del kernel (A-5, 2026-11-01). Hasta entonces
+    se importaba aquí `vault.meta_toolkit.catalog_adapter`, y ese import era
+    todo el par `gobernanza -> meta_toolkit`. El preflight del MCP no consulta
+    el catálogo, así que por defecto recibe uno que falla si alguien lo usa sin
+    haberlo inyectado; la raíz de composición (`vault.product_cli`) es quien
+    pasa el adaptador del dueño.
+    """
+    from vault.kernel.adaptadores import CatalogoToolsNoInyectado, NormasDelCatalogo
+
+    catalog = catalogo if catalogo is not None else CatalogoToolsNoInyectado()
     norms = NormasDelCatalogo()
     return GobernanzaMCP(catalog, norms, vault_root=vault_root, trace_enabled=True)
 

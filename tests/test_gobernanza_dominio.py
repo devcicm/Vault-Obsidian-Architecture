@@ -161,3 +161,54 @@ def test_importar_la_tool_no_mete_en_sys_path_una_ruta_que_no_existe():
         text=True, encoding="utf-8", check=True,
     ).stdout
     assert json.loads(salida.strip().splitlines()[-1]) == []
+
+
+def test_a5_gobernanza_recibe_el_catalogo_por_el_puerto_y_no_importa_el_meta_toolkit():
+    """A-5 (ruta B): el par `gobernanza -> meta_toolkit` era un solo import,
+    el de `vault/gobernanza/tool.py` al adaptador del catálogo. El catálogo
+    llega ahora por `vault.kernel.puertos.CatalogoTools`; si nadie lo inyecta,
+    el adaptador por defecto falla nombrando a quien debía dárselo, en vez de
+    contestar vacío (AP-51)."""
+    import ast
+
+    from apoyo import ROOT
+    from vault.gobernanza.tool import _create_gobernanza
+    from vault.kernel.adaptadores import CatalogoToolsNoInyectado
+    from vault.kernel.puertos import CatalogoTools
+
+    def _importa_meta_toolkit(nodo) -> bool:
+        if isinstance(nodo, ast.Import):
+            nombres = [a.name for a in nodo.names]
+        elif isinstance(nodo, ast.ImportFrom) and nodo.level == 0:
+            nombres = [nodo.module or ""]
+        elif isinstance(nodo, ast.ImportFrom):
+            nombres = ["vault." + (nodo.module or "")] if nodo.level == 2 else []
+        else:
+            return False
+        return any(n == "vault.meta_toolkit" or n.startswith("vault.meta_toolkit.")
+                   for n in nombres)
+
+    importan = sorted(
+        py.name for py in (ROOT / "vault" / "gobernanza").rglob("*.py")
+        if any(_importa_meta_toolkit(n)
+               for n in ast.walk(ast.parse(py.read_text(encoding="utf-8"))))
+    )
+    assert importan == []
+
+    no_inyectado = CatalogoToolsNoInyectado()
+    assert isinstance(no_inyectado, CatalogoTools)
+    with pytest.raises(RuntimeError, match="vault.product_cli"):
+        no_inyectado.todas()
+
+    class _Catalogo:
+        def por_nombre(self, name):
+            return None
+
+        def todas(self):
+            return []
+
+        def por_grupo(self, group):
+            return []
+
+    inyectado = _Catalogo()
+    assert _create_gobernanza(None, inyectado).get_catalog() is inyectado

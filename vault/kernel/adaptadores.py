@@ -137,6 +137,33 @@ class NormasDelCatalogo:
         return [n for n in self._catalogo() if not n.get("superseded_by")]
 
 
+class CatalogoToolsNoInyectado:
+    """Lo que recibe Gobernanza cuando la raíz de composición no le dio catálogo.
+
+    No lee nada: el preflight del MCP (`vault.gobernanza.tool`) no consulta el
+    catálogo, y quien sí lo necesita —`vault.product_cli`— inyecta el adaptador
+    del dueño. Si alguien lo consulta sin haberlo inyectado, falla diciendo
+    quién tenía que dárselo, en vez de contestar «no existe» como un catálogo
+    vacío, que es un vacío indistinguible de un resultado legítimo (AP-51).
+    """
+
+    def _sin_catalogo(self):
+        raise RuntimeError(
+            "Gobernanza no recibió el catálogo de tools: lo inyecta la raíz de "
+            "composición (vault.product_cli) con "
+            "vault.meta_toolkit.catalog_adapter.ToolsCatalogAdapter."
+        )
+
+    def por_nombre(self, name: str):
+        self._sin_catalogo()
+
+    def todas(self):
+        self._sin_catalogo()
+
+    def por_grupo(self, group: str):
+        self._sin_catalogo()
+
+
 class RelojUTC:
     def ahora(self) -> datetime:
         return datetime.now(timezone.utc)

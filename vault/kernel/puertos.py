@@ -102,6 +102,25 @@ class CatalogoNormas(Protocol):
 
 
 @runtime_checkable
+class CatalogoTools(Protocol):
+    """El catálogo de tools, sin importar el meta-toolkit.
+
+    El dueño es `vault.meta_toolkit.catalogo_producto` y Gobernanza lo recibe
+    inyectado por la raíz de composición —`vault.product_cli`, que no pertenece
+    a ningún contexto y por eso puede cruzar—. Hasta A-5 (2026-11-01) era
+    `vault/gobernanza/tool.py` quien importaba el adaptador del meta-toolkit, y
+    eso era todo el par `gobernanza -> meta_toolkit`.
+    `vault.gobernanza.base.ToolsCatalog` lo refina con sus tipos.
+    """
+
+    def por_nombre(self, name: str) -> object | None: ...
+
+    def todas(self) -> Sequence[object]: ...
+
+    def por_grupo(self, group: str) -> Sequence[object]: ...
+
+
+@runtime_checkable
 class Reloj(Protocol):
     """El tiempo, inyectado.
 

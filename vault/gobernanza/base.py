@@ -22,6 +22,8 @@ from typing import Any, Callable, Dict, List, Optional, Protocol, Sequence
 
 import yaml
 
+from vault.kernel.puertos import CatalogoTools
+
 
 class ValidationResult:
     """Resultado de una validación de pre-flight."""
@@ -103,8 +105,12 @@ class ToolFragment:
     runtime: str = "python"
 
 
-class ToolsCatalog(Protocol):
-    """Protocolo del catálogo de tools — source of truth."""
+class ToolsCatalog(CatalogoTools, Protocol):
+    """Protocolo del catálogo de tools — source of truth.
+
+    Refina el puerto del kernel (`vault.kernel.puertos.CatalogoTools`) con los
+    tipos de Gobernanza; el puerto es lo que la raíz de composición inyecta.
+    """
 
     def por_nombre(self, name: str) -> Optional[ToolFragment]:
         ...

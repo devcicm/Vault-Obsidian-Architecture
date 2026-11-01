@@ -1954,18 +1954,17 @@ _cruce("ciclo_de_vida", "gobernanza", "permanente", "ciclo_de_vida",
        "Sanación y onboarding aplican las normas al vault del usuario. Sin este "
        "cruce las doce fases tendrían que reimplementar el criterio, que es "
        "AP-57.")
-_cruce("gobernanza", "meta_toolkit", "a_eliminar", "gobernanza",
-       "La FACHADA de mantenimiento (`vault_norms`) compone los controles del "
-       "estándar (AP-40/42/43) importando `vault_mcp_catalog` y `vault_smoke`. "
-       "El sitio del cruce se movió desde `vault_norms_engine` (commit 667a6a5, "
-       "inversión TD-0003) para que el motor empaquetado no importe módulos que "
-       "no viajan en la wheel; el adeudado es el MISMO y sigue vigente: lo que "
-       "elimina es que el motor de normas sea quien pide el audit del catálogo. "
-       "PENDIENTE DE RATIFICACIÓN DEL PROPIETARIO: (A) eliminar el cruce "
-       "componiendo desde el meta-toolkit; (B) migrarlo a un owner con puerto "
-       "declarado; (C) excepción formal con plazo y riesgo. Ver "
-       "audits/architecture/QA-RC-03-CRUZES.md y las fichas DIV-01..DIV-10.",
-       fecha_limite="2027-06-30")
+# CERRADO en reestructura/teseo (A-5, ruta B — puerto de catálogo). El único
+# sitio medido del par `gobernanza -> meta_toolkit` era `vault/gobernanza/tool.py`,
+# que importaba `vault.meta_toolkit.catalog_adapter`. Ahora Gobernanza recibe el
+# catálogo por `vault.kernel.puertos.CatalogoTools`, lo inyecta la raíz de
+# composición (`vault.product_cli`) y la arista desaparece del grafo. La entrada
+# se RETIRA, como en R22, porque `presupuesto_de_cruces_huerfano()` no admite
+# un par resuelto. Corrige además B-08: el motivo atribuía el cruce a otro
+# sitio. Decía: «La FACHADA de mantenimiento (`vault_norms`) compone los
+# controles del estándar (AP-40/42/43) importando `vault_mcp_catalog` y
+# `vault_smoke`.» —ese import no figura entre los cruces medidos—. Registro en
+# `audits/reestructura/CHANGELOG-REFACTOR.md` y `BUGS-DETECTADOS.md` (B-08).
 # CERRADO en R22 (DEC-02, ruta B — puerto de controles). El par
 # `gobernanza -> autoria` existia solo porque `vault_norms` importaba
 # `vault_voice` para ejecutar AP-43. El puerto `vault.kernel.controles` lanza
