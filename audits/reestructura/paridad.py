@@ -62,6 +62,7 @@ después del golden, sin que el tablón tocara nada de su camino:
 | `vault_change_log#0` | `total` y el `id` de cada entrada | el origen copia `.change-log.json` del sandbox, que no está versionado y crece con cada test (403 → 424 entre el golden y B-1) | la acción, la ruta, el motivo y el agente de cada una de las diez entradas |
 | `vault_quality_check#0` | `scores.timeliness` de cada nota y la cifra de su aviso `timeliness: N days since update` | días contra el reloj, como `daysSinceUpdate` | qué notas avisan de vigencia, el resto de avisos y de puntuaciones |
 | `vault_ncr_save#0` | el mes (`AAAA-MM`) del nombre de la nota, en `datos.path` y en `cambiadas` | la tool pone el mes UTC en el nombre; el golden es de octubre y la noche del 2026-10-31 ya era noviembre en UTC | la carpeta, el resto del nombre y las demás rutas de `cambiadas` |
+| `vault_query_parse#0` | la fecha `since` de una expresión temporal relativa, allí donde aparece (`structured.temporal`, `evidence`, `plan`) | «la semana pasada» se resuelve contra el reloj UTC (hoy menos 14 días): 2026-10-17 en el golden, 2026-10-18 en el cierre de B-1 | la expresión, su `kind`, qué evidencias y pasos del plan llevan la fecha y todo lo demás |
 
 Las tools que miden el propio repo (`vault_clones`, `vault_metricas`, …)
 **no** se declaran: cuando un tablón cambia lo que miden, su rojo es el delta
@@ -629,6 +630,31 @@ def _mes_sin_reloj(c: Dict[str, Any]) -> Dict[str, Any]:
     return c
 
 
+
+def _desde_sin_reloj(c: Dict[str, Any]) -> Dict[str, Any]:
+    """`vault_query_parse`: el `since` de una expresión relativa, que sale del reloj.
+
+    Solo se sustituye ese valor exacto, y solo si la expresión es `relative`:
+    una fecha absoluta de la consulta sigue comparándose.
+    """
+    datos = c.get("datos")
+    temporal = ((datos or {}).get("structured") or {}).get("temporal") if isinstance(datos, dict) else None
+    if not (isinstance(temporal, dict) and temporal.get("kind") == "relative"
+            and isinstance(temporal.get("since"), str)):
+        return c
+    desde = temporal["since"]
+
+    def sustituir(v: Any) -> Any:
+        if isinstance(v, dict):
+            return {k: sustituir(x) for k, x in v.items()}
+        if isinstance(v, list):
+            return [sustituir(x) for x in v]
+        return "<DESDE>" if v == desde else v
+
+    c["datos"] = sustituir(datos)
+    return c
+
+
 # Lo que la captura no puede ver variar (ver el docstring). `[*]` cubre cada
 # elemento de la lista; los textos se normalizan solo en el patrón declarado.
 VOLATILES_DECLARADOS: Dict[str, Dict[str, Any]] = {
@@ -644,6 +670,7 @@ VOLATILES_DECLARADOS: Dict[str, Dict[str, Any]] = {
     "vault_quality_check#0": {"ajuste": _timeliness_sin_reloj},
     "vault_change_log#0": {"rutas": [".datos.total", ".datos.entries[*].id"]},
     "vault_ncr_save#0": {"ajuste": _mes_sin_reloj},
+    "vault_query_parse#0": {"ajuste": _desde_sin_reloj},
 }
 
 
