@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""vault_spec_catalog_check — alias de `vault.meta_toolkit.spec_catalog_check` (ADR-0002, deuda #12).
+"""vault_spec_catalog_check — alias de `vault.meta_toolkit.estandar.spec_catalog_check` (ADR-0002, deuda #12).
 
-El dueño vive en `vault/meta_toolkit/spec_catalog_check.py` desde 2026-10-10 (lote G de la migración
-del puente). Este nombre se conserva (no-derogación) como **alias en
-`sys.modules`**, no como fachada que reexporta: `import vault_spec_catalog_check` devuelve el
+El dueño vive en `vault/meta_toolkit/estandar/spec_catalog_check.py`, fuera de la
+wheel (B-3 de la reestructura, 2026-10-31; antes en `vault/meta_toolkit/`, desde
+2026-10-10, lote G de la migración del puente), y este alias tampoco viaja. Este
+nombre se conserva (no-derogación) como **alias en `sys.modules`**, no como fachada
+que reexporta: `import vault_spec_catalog_check` devuelve el
 módulo del dueño, así que un `monkeypatch.setattr(vault_spec_catalog_check, ...)` cambia lo que
 el dueño ve, y no hay dos copias de nada. En el checkout añade la raíz del
 repo al path para encontrar `vault/`; instalado (en `_impl`) ya es importable.
@@ -24,8 +26,8 @@ if __name__ == "__main__":
     # `sys.modules` no lo correría, porque el dueño se carga con su nombre.
     import runpy
 
-    runpy.run_module("vault.meta_toolkit.spec_catalog_check", run_name="__main__", alter_sys=True)
+    runpy.run_module("vault.meta_toolkit.estandar.spec_catalog_check", run_name="__main__", alter_sys=True)
 else:
-    import vault.meta_toolkit.spec_catalog_check as _dueno  # noqa: E402
+    import vault.meta_toolkit.estandar.spec_catalog_check as _dueno  # noqa: E402
 
     sys.modules[__name__] = _dueno

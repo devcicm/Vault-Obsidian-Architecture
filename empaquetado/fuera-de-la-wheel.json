@@ -43,10 +43,12 @@
       "carriles",
       "firma_sitio",
       "perfil_suite",
+      "spec_catalog_check",
       "test_scope"
     ],
     "vault_toolkit._impl": [
       "vault_firma_sitio",
+      "vault_spec_catalog_check",
       "vault_test_scope"
     ]
   }

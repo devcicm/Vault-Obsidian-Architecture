@@ -562,7 +562,7 @@ def test_el_escaner_de_la_cli_mira_el_codigo_del_dueno():
 
 LOTE_G = [
     ("vault_mcp", "vault/meta_toolkit/mcp.py", "SCRIPTS_DIR", ""),
-    ("vault_spec_catalog_check", "vault/meta_toolkit/spec_catalog_check.py",
+    ("vault_spec_catalog_check", "vault/meta_toolkit/estandar/spec_catalog_check.py",
      "FIELDS_BASELINE", "field-compat-baseline.json"),
     ("vault_test_runner", "vault/meta_toolkit/test_runner.py", "SCRIPTS_DIR", ""),
     ("vault_fuente_unica", "vault/gobernanza/fuente_unica.py", "BASELINE", "fuente-unica-baseline.json"),
