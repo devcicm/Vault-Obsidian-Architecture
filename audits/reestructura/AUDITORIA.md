@@ -55,7 +55,7 @@ importan los consumidores sí lo son, y por eso se conservan con alias `sys.modu
 | C-04 | D-01 | `scripts/` (76,5 k LOC) frente a `vault/` (33,9 k): la lógica está en la capa de entrada | Moverla es PURE_REFACTOR solo si el alias conserva **todos** los nombres públicos, incluidos los privados que importan los tests. El golden de `superficie` los fija, pero el coste por módulo no está medido. |
 | C-05 | BE | `vault-mcp-server.mjs` monolítico | El servidor está cubierto por `node --test` y por `paridad_cli_mcp`. Partirlo no mejora ninguna métrica medida hoy. |
 | C-06 | RES | Subprocesos de las tools con `timeout` dispares | AP-68 ya centraliza git, pero no python. Hace falta inventariar antes de clasificar. |
-| C-07 | N-07 | `vault/kernel/errores.py` 2.166 LOC, `baseline.py` 545 | `errores` es núcleo legítimo, pero arrastra el catálogo entero. `baseline` es infraestructura de la gobernanza del estándar y no del producto. Hay que decidir el destino junto con H-05. |
+| C-07 | N-07 | `vault/kernel/errores.py` 2.166 LOC, `baseline.py` 545 | `errores` es núcleo legítimo, pero arrastra el catálogo entero. `baseline` es infraestructura de la gobernanza del estándar y no del producto. Hay que decidir el destino junto con H-05. **Decidido en B-3 (sobre `be613d2`):** `baseline` se queda en el núcleo y en la wheel, porque la importa `vault.gobernanza.fuente_unica`, que es la tool de producto `vault_fuente_unica`. Infraestructura compartida, no gobernanza. |
 
 ## Zonas limpias
 
