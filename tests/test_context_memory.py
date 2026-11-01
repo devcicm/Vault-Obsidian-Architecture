@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -233,6 +234,34 @@ def test_query_parse_entiende_expresiones_temporales(frase):
     parsed = vault_query_parse(f"que paso {frase}")["structured"]
     assert parsed["temporal"] is not None
     assert len(parsed["temporal"]["since"]) == 10
+
+
+# B-09: el test de arriba solo mira que `since` sea una fecha, y la paridad
+# sustituye ese campo por <DESDE> porque sale del reloj. Con `now` fijo la
+# ventana de cada expresión queda escrita: cambiarla rompe aquí.
+_AHORA = datetime(2026, 10, 31, 12, 0, tzinfo=timezone.utc)
+
+
+@pytest.mark.parametrize("frase,desde,clase", [
+    ("hoy", "2026-10-31", "relative"),
+    ("ayer", "2026-10-30", "relative"),
+    ("esta semana", "2026-10-24", "relative"),
+    ("la semana pasada", "2026-10-17", "relative"),
+    ("este mes", "2026-10-01", "relative"),
+    ("el mes pasado", "2026-09-01", "relative"),
+    ("el último trimestre", "2026-08-02", "relative"),
+    ("este año", "2025-10-31", "relative"),
+    ("ultimos 5 dias", "2026-10-26", "relative"),
+    ("ultimas 2 semanas", "2026-10-17", "relative"),
+    ("ultimos 2 meses", "2026-09-01", "relative"),
+    ("2026-03", "2026-03-01", "explicit"),
+    ("2026-03-15", "2026-03-15", "explicit"),
+    ("marzo", "2026-03-01", "month"),
+    ("noviembre", "2025-11-01", "month"),
+])
+def test_b09_la_ventana_de_cada_expresion_temporal(frase, desde, clase):
+    temporal = vault_query_parse(f"que paso {frase}", now=_AHORA)["structured"]["temporal"]
+    assert (temporal["since"], temporal["kind"]) == (desde, clase)
 
 
 def test_query_parse_plural_espanol():
