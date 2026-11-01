@@ -38,5 +38,14 @@
   "subpaquetes": [
     "vault.meta_toolkit.estandar"
   ],
-  "alias": {}
+  "alias": {
+    "vault.meta_toolkit": [
+      "carriles",
+      "perfil_suite",
+      "test_scope"
+    ],
+    "vault_toolkit._impl": [
+      "vault_test_scope"
+    ]
+  }
 }

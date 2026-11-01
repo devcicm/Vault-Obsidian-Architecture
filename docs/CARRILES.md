@@ -1,6 +1,6 @@
 # Los carriles: qué se corre, cuándo y qué bloquea
 
-> **Derivado.** Sale de `vault.meta_toolkit.carriles.CARRILES` y de
+> **Derivado.** Sale de `vault.meta_toolkit.estandar.carriles.CARRILES` y de
 > `vault_gate.PUERTAS`; se regenera con `python scripts/vault_gate.py --fix-doc`
 > y `--check-doc` falla si diverge. El porqué está en el docstring del registro.
 

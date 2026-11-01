@@ -16,7 +16,7 @@ import pytest
 
 
 import vault_test_scope as scope  # noqa: E402
-from vault.meta_toolkit import carriles  # noqa: E402
+from vault.meta_toolkit.estandar import carriles  # noqa: E402
 
 
 REPO = Path(__file__).resolve().parent.parent
@@ -262,7 +262,7 @@ def test_cambios_ve_lo_que_no_es_python():
 
 def test_git_se_lanza_por_su_dueno():
     """AP-68: el selector no levanta git por su cuenta."""
-    texto = (REPO / "vault" / "meta_toolkit" / "test_scope.py").read_text(encoding="utf-8")
+    texto = (REPO / "vault" / "meta_toolkit" / "estandar" / "test_scope.py").read_text(encoding="utf-8")
     assert "ejecutar_git(" in texto
     assert '["git"' not in texto
 

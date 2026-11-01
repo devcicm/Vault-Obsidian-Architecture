@@ -1,6 +1,6 @@
 """`slow` se deriva del perfil medido, no se escribe a mano (v41.26).
 
-El dueño es `vault.meta_toolkit.perfil_suite`; lo leen el conftest (marca),
+El dueño es `vault.meta_toolkit.estandar.perfil_suite`; lo leen el conftest (marca),
 `reparto` (shards) y `vault_test_scope` (carril `dev`).
 """
 
@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 
 import reparto
-from vault.meta_toolkit import perfil_suite
+from vault.meta_toolkit.estandar import perfil_suite
 
 TESTS = Path(__file__).resolve().parent
 

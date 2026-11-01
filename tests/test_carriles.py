@@ -1,6 +1,6 @@
 """El registro de carriles no promete pasos que no existen ni deja puertas fuera.
 
-`vault.meta_toolkit.carriles` es un dato que lee una persona y la CI: si un
+`vault.meta_toolkit.estandar.carriles` es un dato que lee una persona y la CI: si un
 paso nombra un script borrado o un flag que su argparse no declara, el carril
 falla justo cuando alguien lo corre. Se comprueba leyendo el código, sin
 ejecutar nada: el carril `dev` existe para que comprobarlo sea barato.
@@ -17,7 +17,7 @@ import pytest
 REPO = Path(__file__).resolve().parent.parent
 
 import vault_gate  # noqa: E402
-from vault.meta_toolkit import carriles  # noqa: E402
+from vault.meta_toolkit.estandar import carriles  # noqa: E402
 
 _ALIAS = re.compile(r"El dueño vive en `([^`]+\.py)`")
 

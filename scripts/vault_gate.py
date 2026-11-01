@@ -51,7 +51,7 @@ from typing import Any, Dict, List
 sys.path.insert(0, str(Path(__file__).parent))
 
 from vault.kernel import rutas
-from vault.meta_toolkit.carriles import CARRILES
+from vault.meta_toolkit.estandar.carriles import CARRILES
 from vault_errors import emit_error, wrap_main
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -636,7 +636,7 @@ def _razones_al_dia() -> bool:
     return _al_dia(RAZONES, razones())
 
 
-#: Los carriles se publican aquí, derivados de `vault.meta_toolkit.carriles`.
+#: Los carriles se publican aquí, derivados de `vault.meta_toolkit.estandar.carriles`.
 CARRILES_DOC = Path("docs") / "CARRILES.md"
 
 
@@ -654,7 +654,7 @@ def carriles() -> str:
     """`docs/CARRILES.md`: qué corre cada carril, qué bloquea y qué puertas incluye."""
     lineas = [
         "# Los carriles: qué se corre, cuándo y qué bloquea", "",
-        "> **Derivado.** Sale de `vault.meta_toolkit.carriles.CARRILES` y de",
+        "> **Derivado.** Sale de `vault.meta_toolkit.estandar.carriles.CARRILES` y de",
         "> `vault_gate.PUERTAS`; se regenera con `python scripts/vault_gate.py --fix-doc`",
         "> y `--check-doc` falla si diverge. El porqué está en el docstring del registro.", "",
         "| Carril | Cuándo | Bloquea | Dónde | Presupuesto |",
@@ -708,7 +708,7 @@ def check_doc() -> Dict[str, Any]:
        cada puerta vivía solo en el docstring de su tool, y quien leía el
        checklist veía qué mide pero no por qué existe.
     4. **`docs/CARRILES.md` coincide con `carriles()`**: qué corre cada carril
-       sale de `vault.meta_toolkit.carriles`, no de una lista escrita a mano.
+       sale de `vault.meta_toolkit.estandar.carriles`, no de una lista escrita a mano.
     """
     doc = REPO_ROOT / "AGENTS.md"
     if not doc.exists():

@@ -83,10 +83,10 @@ python_functions = ["test_*"]
 addopts = "-v --tb=short --timeout=300"
 # `slow` no se escribe a mano: el conftest lo marca a los módulos que el perfil
 # (`tests/duraciones-por-modulo.json`) mide por encima del umbral de
-# `vault.meta_toolkit.perfil_suite`. `-m "not slow"` sirve para iterar; no
+# `vault.meta_toolkit.estandar.perfil_suite`. `-m "not slow"` sirve para iterar; no
 # sustituye a ningún carril (`docs/CARRILES.md`).
 markers = [
-    "slow: módulo lento según el perfil de la suite (lo marca el conftest; ver vault/meta_toolkit/perfil_suite.py)",
+    "slow: módulo lento según el perfil de la suite (lo marca el conftest; ver vault/meta_toolkit/estandar/perfil_suite.py)",
 ]
 
 [tool.setuptools.exclude-package-data]

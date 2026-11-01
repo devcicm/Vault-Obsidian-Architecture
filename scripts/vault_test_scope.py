@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""vault_test_scope — alias de `vault.meta_toolkit.test_scope` (ADR-0002, deuda #12).
+"""vault_test_scope — alias de `vault.meta_toolkit.estandar.test_scope` (ADR-0002, deuda #12).
 
-El dueño vive en `vault/meta_toolkit/test_scope.py` desde v41.12. Este nombre se
+El dueño vive en `vault/meta_toolkit/estandar/test_scope.py` (B-3 de la
+reestructura, 2026-10-31; antes en `vault/meta_toolkit/`, desde v41.12), fuera
+de la wheel, y este alias tampoco viaja. Este nombre se
 conserva (no-derogación) como **alias en `sys.modules`**, no como fachada que
 reexporta: `import vault_test_scope` devuelve el módulo del dueño, y un
 `monkeypatch.setattr(vault_test_scope, ...)` cambia lo que el dueño ve. En el
@@ -24,8 +26,8 @@ if __name__ == "__main__":
     # `sys.modules` no lo correría, porque el dueño se carga con su nombre.
     import runpy
 
-    runpy.run_module("vault.meta_toolkit.test_scope", run_name="__main__", alter_sys=True)
+    runpy.run_module("vault.meta_toolkit.estandar.test_scope", run_name="__main__", alter_sys=True)
 else:
-    import vault.meta_toolkit.test_scope as _dueno  # noqa: E402
+    import vault.meta_toolkit.estandar.test_scope as _dueno  # noqa: E402
 
     sys.modules[__name__] = _dueno

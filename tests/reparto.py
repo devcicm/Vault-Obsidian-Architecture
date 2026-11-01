@@ -10,7 +10,7 @@ Reglas:
 - Cada módulo cae en exactamente un trozo (`tests/test_reparto.py` lo fija):
   la unión de los `n` trozos es la suite completa.
 - El equilibrio usa `tests/duraciones-por-modulo.json` (segundos medidos), que
-  lee su dueño, `vault.meta_toolkit.perfil_suite` (v41.26: el mismo perfil
+  lee su dueño, `vault.meta_toolkit.estandar.perfil_suite` (v41.26: el mismo perfil
   decide `slow`). Un módulo que no está ahí pesa la mediana. Un dato viejo solo
   empeora el equilibrio; nunca saca un test de la corrida.
 """
@@ -20,7 +20,7 @@ from pathlib import Path
 from statistics import median
 from typing import Dict, Iterable, Optional, Tuple
 
-from vault.meta_toolkit import perfil_suite
+from vault.meta_toolkit.estandar import perfil_suite
 
 DURACIONES = perfil_suite.DURACIONES
 

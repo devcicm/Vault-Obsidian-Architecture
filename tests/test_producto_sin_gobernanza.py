@@ -171,8 +171,12 @@ def test_el_hook_de_build_deja_fuera_el_subpaquete_y_sus_alias(monkeypatch):
     from empaquetado import construir
     from setuptools.dist import Distribution
 
-    assert "vault.meta_toolkit.estandar" not in (RAIZ / "pyproject.toml").read_text(
-        encoding="utf-8"), "el subpaquete no se declara en packages"
+    tomllib = pytest.importorskip("tomllib")  # 3.11+; requires-python dice >=3.9
+
+    proyecto = tomllib.loads((RAIZ / "pyproject.toml").read_text(encoding="utf-8"))
+    paquetes = proyecto["tool"]["setuptools"]["packages"]
+    assert not [p for p in paquetes if p.startswith("vault.meta_toolkit.estandar")], (
+        "el subpaquete no se declara en packages")
     por_paquete, subpaquetes = construir.excluidos()
     assert subpaquetes == ("vault.meta_toolkit.estandar",)
     assert por_paquete["vault_toolkit._impl"] >= construir.fuera_de_la_wheel()[1]
@@ -184,8 +188,12 @@ def test_el_hook_de_build_deja_fuera_el_subpaquete_y_sus_alias(monkeypatch):
     sub = RAIZ / "vault" / "meta_toolkit" / "estandar"
     assert cmd.find_package_modules("vault.meta_toolkit.estandar", str(sub)) == []
     meta = RAIZ / "vault" / "meta_toolkit"
+    reales = {m[1] for m in cmd.find_package_modules("vault.meta_toolkit", str(meta))}
+    assert not (reales & por_paquete.get("vault.meta_toolkit", frozenset())), reales
+    # Sin exclusiones, para que el resto lo ponga la lista y no el disco de hoy.
+    monkeypatch.setattr(construir, "excluidos", lambda: ({}, ()))
     todos = {m[1] for m in cmd.find_package_modules("vault.meta_toolkit", str(meta))}
-    assert "repositorio" in todos
+    assert "repositorio" in todos and reales <= todos
 
     monkeypatch.setattr(construir, "excluidos", lambda: (
         {"vault.meta_toolkit": frozenset({"repositorio"})}, ()))

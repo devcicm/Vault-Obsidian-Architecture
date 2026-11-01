@@ -150,7 +150,7 @@ python scripts/vault_gate.py --strict --nivel rapida
 python -m pytest tests/ -q -n 4 --tb=short -p no:cacheprovider
 
 # Para iterar: fuera los módulos que el perfil mide como lentos (los marca el
-# conftest; `python -m vault.meta_toolkit.perfil_suite` los lista y
+# conftest; `python -m vault.meta_toolkit.estandar.perfil_suite` los lista y
 # `--refrescar` los vuelve a medir tras una corrida de merge). El carril `dev`
 # ya los saca de su lista salvo el test que el cambio edita, y los nombra.
 # NO sustituye a ningún carril.
@@ -195,7 +195,7 @@ python scripts/vault_quality_check.py --min-score 0.7
 ## Antes de cerrar un cambio
 
 **Qué se exige depende del carril, y cada carril bloquea una cosa distinta.** El
-registro es `vault.meta_toolkit.carriles` y `docs/CARRILES.md` lo publica derivado:
+registro es `vault.meta_toolkit.estandar.carriles` y `docs/CARRILES.md` lo publica derivado:
 
 - **`dev`**: un commit en una rama de trabajo. Bastan los tests que alcanzan al cambio
   y las puertas de nivel `rapida`, con un presupuesto de dos minutos. No se le pide al

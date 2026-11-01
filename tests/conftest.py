@@ -73,14 +73,14 @@ def pytest_collection_modifyitems(config, items):
     """Marca `slow` desde el perfil y aplica `VAULT_SHARD=i/n` (ver `reparto.py`).
 
     `slow` no se escribe a mano en ningún módulo: lo decide
-    `vault.meta_toolkit.perfil_suite` con los segundos medidos. Corre antes que
+    `vault.meta_toolkit.estandar.perfil_suite` con los segundos medidos. Corre antes que
     el `-m` de pytest (`tryfirst`), que si no deseleccionaría sin ver la marca.
 
     Sin `VAULT_SHARD` el reparto no cambia nada. Con xdist, cada worker colecta,
     marca y reparte igual porque todo es determinista.
     """
     import reparto
-    from vault.meta_toolkit import perfil_suite
+    from vault.meta_toolkit.estandar import perfil_suite
 
     lentos = perfil_suite.lentos()
     for item in items:
