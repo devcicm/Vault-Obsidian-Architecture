@@ -41,10 +41,12 @@
   "alias": {
     "vault.meta_toolkit": [
       "carriles",
+      "firma_sitio",
       "perfil_suite",
       "test_scope"
     ],
     "vault_toolkit._impl": [
+      "vault_firma_sitio",
       "vault_test_scope"
     ]
   }

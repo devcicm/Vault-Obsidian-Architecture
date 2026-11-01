@@ -53,7 +53,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import vault_baseline
 import vault_grafo_import
 from vault.kernel import rutas
-from vault.meta_toolkit.firma_sitio import firmar_todos, mapa_de_qualnames
+from vault.meta_toolkit.estandar.firma_sitio import firmar_todos, mapa_de_qualnames
 from vault_errors import emit_error, wrap_main
 
 TOOL = "vault_tests_higiene"

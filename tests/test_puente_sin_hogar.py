@@ -228,7 +228,7 @@ def test_lote_c_vault_entorno_vive_en_el_kernel():
 LOTE_D = [
     ("vault_link_safety", "vault/grafo/link_safety.py"),
     ("vault_escaneo_grafo", "vault/kernel/escaneo_grafo.py"),
-    ("vault_firma_sitio", "vault/meta_toolkit/firma_sitio.py"),
+    ("vault_firma_sitio", "vault/meta_toolkit/estandar/firma_sitio.py"),
     ("vault_index", "vault/indices/indice.py"),
 ]
 
