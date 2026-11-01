@@ -61,6 +61,7 @@ después del golden, sin que el tablón tocara nada de su camino:
 | `vault_metricas#0` | `dias_restantes` de cada fila | los días hasta el plazo del objetivo, contados desde hoy | el plazo, el valor y el estado de cada fila |
 | `vault_change_log#0` | `total` y el `id` de cada entrada | el origen copia `.change-log.json` del sandbox, que no está versionado y crece con cada test (403 → 424 entre el golden y B-1) | la acción, la ruta, el motivo y el agente de cada una de las diez entradas |
 | `vault_quality_check#0` | `scores.timeliness` de cada nota y la cifra de su aviso `timeliness: N days since update` | días contra el reloj, como `daysSinceUpdate` | qué notas avisan de vigencia, el resto de avisos y de puntuaciones |
+| `vault_ncr_save#0` | el mes (`AAAA-MM`) del nombre de la nota, en `datos.path` y en `cambiadas` | la tool pone el mes UTC en el nombre; el golden es de octubre y la noche del 2026-10-31 ya era noviembre en UTC | la carpeta, el resto del nombre y las demás rutas de `cambiadas` |
 
 Las tools que miden el propio repo (`vault_clones`, `vault_metricas`, …)
 **no** se declaran: cuando un tablón cambia lo que miden, su rojo es el delta
@@ -611,6 +612,23 @@ def _timeliness_sin_reloj(c: Dict[str, Any]) -> Dict[str, Any]:
     return c
 
 
+_MES = re.compile(r"(?<!\d)\d{4}-\d{2}(?!-?\d)")
+
+
+def _mes_sin_reloj(c: Dict[str, Any]) -> Dict[str, Any]:
+    """El `AAAA-MM` suelto de `datos.path` y de `cambiadas`: el mes del reloj.
+
+    Una fecha completa (`AAAA-MM-DD`) no casa, ni un id como `NCR-2026-118`.
+    """
+    if isinstance(c.get("cambiadas"), list):
+        c["cambiadas"] = [_MES.sub("<MES>", r) if isinstance(r, str) else r
+                          for r in c["cambiadas"]]
+    datos = c.get("datos")
+    if isinstance(datos, dict) and isinstance(datos.get("path"), str):
+        datos["path"] = _MES.sub("<MES>", datos["path"])
+    return c
+
+
 # Lo que la captura no puede ver variar (ver el docstring). `[*]` cubre cada
 # elemento de la lista; los textos se normalizan solo en el patrón declarado.
 VOLATILES_DECLARADOS: Dict[str, Dict[str, Any]] = {
@@ -625,6 +643,7 @@ VOLATILES_DECLARADOS: Dict[str, Dict[str, Any]] = {
     "vault_metricas#0": {"rutas": [".datos.filas[*].dias_restantes"]},
     "vault_quality_check#0": {"ajuste": _timeliness_sin_reloj},
     "vault_change_log#0": {"rutas": [".datos.total", ".datos.entries[*].id"]},
+    "vault_ncr_save#0": {"ajuste": _mes_sin_reloj},
 }
 
 
