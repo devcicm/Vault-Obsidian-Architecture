@@ -8,6 +8,7 @@ Estos tests protegen dos cosas distintas:
    segundo es el que falla cuando alguien escribe "34 grupos" a mano.
 """
 
+import json
 import re
 from pathlib import Path
 
@@ -169,6 +170,23 @@ def test_el_marcador_exige_motivo(tmp_path, monkeypatch):
 
     r = vdc.scan(docs=["FAKE.md"], include_slow=False)
     assert [m["claimed"] for m in r["mismatches"]] == [88]
+
+
+def test_b04_las_tools_expuestas_por_mcp_salen_de_la_pasarela(tmp_path, monkeypatch):
+    """«expone N de las M … (las otras K …)»: las dos partes se miden."""
+    ruta = REPO_ROOT / "mcp" / "nodejs" / "tools-catalog.json"
+    tools = json.loads(ruta.read_text(encoding="utf-8"))["tools"].values()
+    expuestas = sum(1 for t in tools if t["exposed_via_mcp"])
+    assert vdc.count_tools_mcp_expuestas() == expuestas
+    assert expuestas + vdc.count_tools_mcp_no_expuestas() == vdc.count_tools_active()
+
+    doc = tmp_path / "FAKE.md"
+    doc.write_bytes("expone 1 de las tools; las otras 2 se ejecutan por CLI.\n"
+                    .encode("utf-8"))
+    monkeypatch.setattr(vdc, "REPO_ROOT", tmp_path)
+    r = vdc.scan(docs=["FAKE.md"], include_slow=False)
+    assert {m["fact"]: m["claimed"] for m in r["mismatches"]} == {
+        "tools_mcp_expuestas": 1, "tools_mcp_no_expuestas": 2}
 
 
 def test_b06_la_cifra_del_motivo_no_es_una_afirmacion(tmp_path, monkeypatch):

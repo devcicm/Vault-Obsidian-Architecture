@@ -116,6 +116,27 @@ def count_tools_python() -> int:
     return count_tools_active() - count_tools_js_native()
 
 
+def _exposicion_mcp() -> List[bool]:
+    """`exposed_via_mcp` de cada tool, leído de la pasarela que sirve el MCP.
+
+    El criterio (status, grupo de gobernanza, servicio de proceso largo) lo
+    decide `vault_mcp_catalog.sync_to_json` con el `status` de tool-spec.json;
+    recontarlo aquí sería copiarlo (AP-57). Se lee el JSON que consume el
+    servidor, y su frescura la vigila `vault_mcp_catalog --check`.
+    """
+    ruta = rutas.ruta_repo(rutas.MCP) / "nodejs" / "tools-catalog.json"
+    tools = json.loads(ruta.read_text(encoding="utf-8"))["tools"]
+    return [bool(t.get("exposed_via_mcp")) for t in tools.values()]
+
+
+def count_tools_mcp_expuestas() -> int:
+    return sum(_exposicion_mcp())
+
+
+def count_tools_mcp_no_expuestas() -> int:
+    return sum(not e for e in _exposicion_mcp())
+
+
 def count_groups() -> int:
     return len(_catalog().GROUPS)
 
@@ -282,6 +303,22 @@ COUNTED_FACTS: List[Dict] = [
         "value": count_tools_js_native,
         # «~10 tools rápidas en JavaScript puro» con dos en `NATIVE_JS_TOOLS` (A-19).
         "patterns": [r"(\d+) JS-native", r"~?(\d+) tools rápidas en JavaScript"],
+    },
+    {
+        # B-04: `scripts/README.md` dice «expone 98 de las 129 tools activas
+        # […] (las otras 31 se ejecutan por CLI o en el checkout)». El total
+        # tenía patrón y las dos partes no, así que la frase podía dejar de
+        # sumar sin que nadie lo viera. Estrechos a propósito, como el resto.
+        "id": "tools_mcp_expuestas",
+        "description": "Tools del catálogo que el servidor MCP sirve en tools/list",
+        "value": count_tools_mcp_expuestas,
+        "patterns": [r"expone\s+(\d+)\s+de las"],
+    },
+    {
+        "id": "tools_mcp_no_expuestas",
+        "description": "Tools del catálogo que no expone el MCP: solo CLI o checkout",
+        "value": count_tools_mcp_no_expuestas,
+        "patterns": [r"las otras\s+(\d+)\s+se ejecutan"],
     },
     {
         "id": "groups",
