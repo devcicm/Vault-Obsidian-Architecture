@@ -377,3 +377,58 @@ def test_doc_con_parcial_publica_y_lo_declara(tmp_path, monkeypatch, capsys):
     texto = doc.read_text(encoding="utf-8")
     assert "Alcance parcial" in texto
     capsys.readouterr()
+
+
+# ————————————————————————— la corrida acotada no pisa el last-run (B-05) ——————
+
+def _corrida_falsa(tmp_path, monkeypatch, *argv) -> tuple:
+    """`main()` sin copiar el sandbox: `auditar` y C4 falsificados."""
+    glob, parcial = tmp_path / "last.json", tmp_path / "last-parcial.json"
+    glob.write_text('{"timestamp": "foto-completa"}', encoding="utf-8")
+    monkeypatch.setattr(tka, "LAST_RUN_PATH", glob)
+    monkeypatch.setattr(tka, "LAST_RUN_PARCIAL_PATH", parcial)
+    monkeypatch.setattr(tka, "BASELINE_PATH", tmp_path / "baseline.json")
+    monkeypatch.setattr(tka, "_origen_con_proyecto", lambda: None)
+    monkeypatch.setattr(tka, "repartir_c4", lambda tools: {})
+    monkeypatch.setattr(tka, "auditar", lambda nombre, *a, **k: {
+        "tool": nombre, "veredicto": "OK", "motivos": []})
+    monkeypatch.setattr(sys, "argv", ["vault_toolkit_audit.py", *argv])
+    return glob, parcial
+
+
+def test_b05_tools_acotado_escribe_el_parcial_y_no_el_global(
+        tmp_path, monkeypatch, capsys):
+    glob, parcial = _corrida_falsa(tmp_path, monkeypatch, "--tools", "vault_voice")
+    assert tka.main() == 0
+    envelope = json.loads(capsys.readouterr().out)
+    assert envelope["last_run"] == parcial.name
+    assert glob.read_text(encoding="utf-8") == '{"timestamp": "foto-completa"}'
+    leido = json.loads(parcial.read_text(encoding="utf-8"))
+    assert leido["alcance"]["herramientas"] == ["vault_voice"]
+
+
+def test_b05_el_barrido_completo_escribe_el_global(tmp_path, monkeypatch, capsys):
+    import vault_mcp_catalog as mc
+
+    glob, parcial = _corrida_falsa(tmp_path, monkeypatch, "--todo")
+    assert tka.main() == 0
+    assert json.loads(capsys.readouterr().out)["last_run"] == glob.name
+    assert len(json.loads(glob.read_text(encoding="utf-8"))["results"]) == len(
+        mc.TOOLS_CATALOG)
+    assert not parcial.exists()
+
+
+def test_b05_doc_parcial_lee_la_corrida_acotada(tmp_path, monkeypatch, capsys):
+    glob, parcial = tmp_path / "last.json", tmp_path / "last-parcial.json"
+    glob.write_text(json.dumps(_cache_dos_tools()), encoding="utf-8")
+    acotada = _cache_dos_tools()
+    acotada["results"] = acotada["results"][:1]
+    parcial.write_text(json.dumps(acotada), encoding="utf-8")
+    monkeypatch.setattr(tka, "LAST_RUN_PATH", glob)
+    monkeypatch.setattr(tka, "LAST_RUN_PARCIAL_PATH", parcial)
+    monkeypatch.setattr(tka, "DOC_PATH", tmp_path / "doc.md")
+    monkeypatch.setattr(tka, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(sys, "argv",
+                        ["vault_toolkit_audit.py", "--doc", "--parcial"])
+    tka.main()
+    assert json.loads(capsys.readouterr().out)["tools_en_el_informe"] == 1

@@ -2654,7 +2654,7 @@ python vault_toolkit_audit.py --freeze                 # recongela la baseline t
 python vault_toolkit_audit.py --doc                    # regenera docs/auditorias/auditoria-toolkit.md
 ```
 
-Del veredicto solo `DEFECTO` entra en `scripts/toolkit-audit-baseline.json`, que **solo puede encoger**: crecer exige `--freeze --admitir-nuevos` y el envelope lista lo admitido. Las exenciones (`NO-VERIFICABLE`) se declaran con su motivo; el informe es derivado —`--doc` desde `scripts/toolkit-audit-last.json`— y `--doc` falla si el last‑run es más viejo que el registro (AP‑47). El alcance por defecto está acotado porque cada línea paga una copia del sandbox: el barrido entero se pide con `--todo`, y ese precio lo paga quien decide.
+Del veredicto solo `DEFECTO` entra en `scripts/toolkit-audit-baseline.json`, que **solo puede encoger**: crecer exige `--freeze --admitir-nuevos` y el envelope lista lo admitido. Las exenciones (`NO-VERIFICABLE`) se declaran con su motivo; el informe es derivado —`--doc` desde `scripts/toolkit-audit-last.json`— y `--doc` falla si el last‑run es más viejo que el registro (AP‑47). Ese last‑run es la foto del último barrido completo: una corrida con `--tools` o `--grupo` que no cubre el catálogo escribe en `scripts/toolkit-audit-last-parcial.json` (ignorado por git), y `--doc --parcial` publica desde ahí. El alcance por defecto está acotado porque cada línea paga una copia del sandbox: el barrido entero se pide con `--todo`, y ese precio lo paga quien decide.
 
 ---
 

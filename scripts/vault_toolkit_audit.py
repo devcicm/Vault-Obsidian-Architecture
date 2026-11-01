@@ -40,7 +40,10 @@ vez y regenerado siempre por la tool — nunca a mano (AP-47).
 
 El coste por invocación es alto (cada línea paga una copia del sandbox), por
 eso el alcance se acota: `--todo` para el barrido completo, `--grupo N` para
-una ola, `--tools a,b` para el caso puntual.
+una ola, `--tools a,b` para el caso puntual. Una corrida que no cubre el
+catálogo entero escribe en `toolkit-audit-last-parcial.json` y no en el
+last-run: este es la foto del último barrido completo y lo leen
+`DISPONIBILIDAD-DE-TOOLS.md` y `--doc` (B-05 de la reestructura, 2026-10-31).
 """
 
 from __future__ import annotations
@@ -67,6 +70,11 @@ REPO_ROOT = SCRIPTS_DIR.parent
 SANDBOX = REPO_ROOT / rutas.SANDBOX
 BASELINE_PATH = SCRIPTS_DIR / "toolkit-audit-baseline.json"
 LAST_RUN_PATH = SCRIPTS_DIR / "toolkit-audit-last.json"
+#: B-05: el `--tools`/`--grupo` acotado pisaba el last-run global y las demás
+#: tools caían a «sin dato» en `DISPONIBILIDAD-DE-TOOLS.md`. Fusionar mezclaría
+#: veredictos de corridas distintas bajo un solo `timestamp`; la corrida acotada
+#: va aquí, con su alcance, y el global solo lo escribe un barrido completo.
+LAST_RUN_PARCIAL_PATH = SCRIPTS_DIR / "toolkit-audit-last-parcial.json"
 DOC_PATH = REPO_ROOT / "docs" / "auditorias" / "auditoria-toolkit.md"
 
 #: Flags que miran sin hacer. Una tool que declara side effects y cuyo ejemplo
@@ -586,14 +594,20 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.doc:
-        if not LAST_RUN_PATH.is_file():
+        # `--parcial` pide el informe acotado: sale de la corrida acotada si
+        # la hay; sin ella, del last-run como hasta B-05.
+        fuente = (LAST_RUN_PARCIAL_PATH
+                  if args.parcial and LAST_RUN_PARCIAL_PATH.is_file()
+                  else LAST_RUN_PATH)
+        if not fuente.is_file():
             # El informe no inventa resultados que no corrieron: sin last-run
             # no hay dato de qué derivar.
             return _salir_con_error(
                 "STALE_REPORT",
                 "sin last-run: correr la auditoría antes de regenerar el doc")
-        cache = json.loads(LAST_RUN_PATH.read_text(encoding="utf-8"))
-        # O2: `--tools`/`--grupo` pisan el last-run con esa corrida acotada.
+        cache = json.loads(fuente.read_text(encoding="utf-8"))
+        # O2: `--tools`/`--grupo` pisaban el last-run con esa corrida acotada
+        # (hasta B-05; ahora van a LAST_RUN_PARCIAL_PATH).
         # Regenerar el informe desde ahí lo encogía a 8 filas sin que nada
         # lo dijera — le pasó a la propia ola O2 al cerrar. El doc completo
         # se deriva de un barrido completo, o se declara parcial.
@@ -664,11 +678,14 @@ def main() -> int:
         "deuda_congelada": sorted(congelados & set(defectos)),
         "segundos": segundos,
     }
-    _publicar(LAST_RUN_PATH, json.dumps(cache, ensure_ascii=False, indent=1))
+    completo = set(tools_pedidas) >= set(mc.TOOLS_CATALOG)
+    destino = LAST_RUN_PATH if completo else LAST_RUN_PARCIAL_PATH
+    _publicar(destino, json.dumps(cache, ensure_ascii=False, indent=1))
 
     respuesta: Dict[str, Any] = {
         "ok": True, "tool": "vault_toolkit_audit",
         "total": len(tools_pedidas),
+        "last_run": destino.name,
         "alcance": {
             "total": len(tools_pedidas),
             **{veredicto: resumen.get(veredicto, 0)

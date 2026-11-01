@@ -7372,7 +7372,8 @@
       ],
       "side_effects": [
         "scripts/toolkit-audit-baseline.json",
-        "scripts/toolkit-audit-last.json"
+        "scripts/toolkit-audit-last.json",
+        "scripts/toolkit-audit-last-parcial.json"
       ],
       "perfil_minimo": "operador",
       "status": "active",

@@ -2326,6 +2326,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "side_effects": [
             cita_repo(rutas.SCRIPTS, "toolkit-audit-baseline.json"),
             cita_repo(rutas.SCRIPTS, "toolkit-audit-last.json"),
+            cita_repo(rutas.SCRIPTS, "toolkit-audit-last-parcial.json"),
         ],
         "example": "python vault_toolkit_audit.py --tools vault_voice",
         "related": ["vault_smoke", "vault_noop_audit", "vault_mcp_catalog", "vault_baseline"],

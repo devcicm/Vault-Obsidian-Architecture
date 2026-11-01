@@ -96,3 +96,7 @@ scripts/%V%/
 
 # Spans de la ultima corrida de la suite (metrica local, no se versiona)
 tests/.spans/
+
+# Corrida acotada de vault_toolkit_audit (`--tools`/`--grupo`): no es la foto
+# del catálogo y no se versiona; el last-run global sí (B-05, 2026-10-31).
+scripts/toolkit-audit-last-parcial.json
