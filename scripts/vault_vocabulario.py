@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""vault_vocabulario — alias de `vault.kernel.vocabulario` (ADR-0002, deuda #12).
+"""vault_vocabulario — alias de `vault.kernel.normativa.vocabulario` (ADR-0002, deuda #12).
 
-El dueño vive en `vault/kernel/vocabulario.py` desde 2026-10-10 (lote D, raíces del kernel, de la migración
+El dueño vive en `vault/kernel/normativa/vocabulario.py` desde 2026-10-31 (B-1 de la
+reestructura); antes, en `vault/kernel/vocabulario.py` desde 2026-10-10 (lote D, raíces del kernel, de la migración
 del puente). Este nombre se conserva (no-derogación) como **alias en
 `sys.modules`**, no como fachada que reexporta: `import vault_vocabulario` devuelve el
 módulo del dueño, así que un `monkeypatch.setattr(vault_vocabulario, ...)` cambia lo que
@@ -19,6 +20,6 @@ _repo_root = next(
 if _repo_root and str(_repo_root) not in sys.path:
     sys.path.insert(0, str(_repo_root))
 
-import vault.kernel.vocabulario as _dueno  # noqa: E402
+import vault.kernel.normativa.vocabulario as _dueno  # noqa: E402
 
 sys.modules[__name__] = _dueno

@@ -594,7 +594,7 @@ def test_lote_g_migra_y_sus_rutas_salen_del_puente(modulo, dueno, ruta, fichero)
 
 LOTE_D_HOJAS = [
     ("vault_version", "vault/kernel/version.py"),
-    ("vault_vocabulario", "vault/kernel/vocabulario.py"),
+    ("vault_vocabulario", "vault/kernel/normativa/vocabulario.py"),
     ("vault_contrato_nota", "vault/kernel/contrato_nota.py"),
 ]
 
