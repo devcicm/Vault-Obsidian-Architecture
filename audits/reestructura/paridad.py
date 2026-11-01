@@ -57,6 +57,8 @@ después del golden, sin que el tablón tocara nada de su camino:
 |---|---|---|---|
 | `vault_backup#0/#1` | `sizeKB` de la sección y del total | el origen copia el estado de ejecución del sandbox, que no está versionado (`.tool-trace.json` crece con cada test o puerta) | los ficheros copiados, `cambiadas` y el resto del manifiesto |
 | `vault_context_pack#0` | la cuarta cifra de cada `score` | la puntuación suma la recencia contra el reloj (vida media de 90 días) | qué notas entran, en qué orden y el texto del paquete fuera de `score N` |
+| `vault_audit#0`, `vault_init#0/#1/#2` | `daysSinceUpdate` de cada nota `stale` | son días contra el reloj; el golden se capturó el 2026-10-30 y el primer tablón de B se midió al día siguiente | qué notas salen como `stale`, en qué orden y su `updated` |
+| `vault_metricas#0` | `dias_restantes` de cada fila | los días hasta el plazo del objetivo, contados desde hoy | el plazo, el valor y el estado de cada fila |
 
 Las tools que miden el propio repo (`vault_clones`, `vault_metricas`, …)
 **no** se declaran: cuando un tablón cambia lo que miden, su rojo es el delta
@@ -586,6 +588,10 @@ VOLATILES_DECLARADOS: Dict[str, Dict[str, Any]] = {
        for i in (0, 1)},
     "vault_context_pack#0": {"rutas": [".datos.included[*].score"],
                              "textos": {".datos.context": (_SCORE, "score <S>")}},
+    "vault_audit#0": {"rutas": [".datos.issues.stale[*].daysSinceUpdate"]},
+    **{f"vault_init#{i}": {"rutas": [".datos.steps[*].output.issues.stale[*].daysSinceUpdate"]}
+       for i in (0, 1, 2)},
+    "vault_metricas#0": {"rutas": [".datos.filas[*].dias_restantes"]},
 }
 
 
