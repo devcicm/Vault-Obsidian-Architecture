@@ -59,6 +59,7 @@ después del golden, sin que el tablón tocara nada de su camino:
 | `vault_context_pack#0` | la cuarta cifra de cada `score` | la puntuación suma la recencia contra el reloj (vida media de 90 días) | qué notas entran, en qué orden y el texto del paquete fuera de `score N` |
 | `vault_audit#0`, `vault_init#0/#1/#2` | `daysSinceUpdate` de cada nota `stale` | son días contra el reloj; el golden se capturó el 2026-10-30 y el primer tablón de B se midió al día siguiente | qué notas salen como `stale`, en qué orden y su `updated` |
 | `vault_metricas#0` | `dias_restantes` de cada fila | los días hasta el plazo del objetivo, contados desde hoy | el plazo, el valor y el estado de cada fila |
+| `vault_change_log#0` | `total` y el `id` de cada entrada | el origen copia `.change-log.json` del sandbox, que no está versionado y crece con cada test (403 → 424 entre el golden y B-1) | la acción, la ruta, el motivo y el agente de cada una de las diez entradas |
 | `vault_quality_check#0` | `scores.timeliness` de cada nota y la cifra de su aviso `timeliness: N days since update` | días contra el reloj, como `daysSinceUpdate` | qué notas avisan de vigencia, el resto de avisos y de puntuaciones |
 
 Las tools que miden el propio repo (`vault_clones`, `vault_metricas`, …)
@@ -623,6 +624,7 @@ VOLATILES_DECLARADOS: Dict[str, Dict[str, Any]] = {
        for i in (0, 1, 2)},
     "vault_metricas#0": {"rutas": [".datos.filas[*].dias_restantes"]},
     "vault_quality_check#0": {"ajuste": _timeliness_sin_reloj},
+    "vault_change_log#0": {"rutas": [".datos.total", ".datos.entries[*].id"]},
 }
 
 
