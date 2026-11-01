@@ -171,6 +171,40 @@ def test_el_marcador_exige_motivo(tmp_path, monkeypatch):
     assert [m["claimed"] for m in r["mismatches"]] == [88]
 
 
+def test_b06_la_cifra_del_motivo_no_es_una_afirmacion(tmp_path, monkeypatch):
+    """El motivo cita la medida; antes salía como segunda línea exenta."""
+    doc = tmp_path / "FAKE.md"
+    doc.write_bytes(("Entonces 41 de las 88 tools del catálogo no se ejecutaban. "
+                     "<!-- cifra histórica: se midió con 88 tools activas -->\n")
+                    .encode("utf-8"))
+    monkeypatch.setattr(vdc, "REPO_ROOT", tmp_path)
+
+    r = vdc.scan(docs=["FAKE.md"], include_slow=False)
+    assert [(e["line"], e["claimed"]) for e in r["historic_exempt"]] == [(1, 88)]
+    assert r["mismatches"] == []
+    assert r["claims_checked"] == 1
+
+
+def test_b02_fix_no_reescribe_una_fila_fechada_sin_marcador(tmp_path, monkeypatch):
+    """«| 2026-10-05 | eran 88 tools activas |» es un registro, no el presente."""
+    doc = tmp_path / "FAKE.md"
+    texto = ("Hoy: 999 tools activas.\n"
+             "| 2026-10-05 | eran 88 tools activas |\n")
+    doc.write_bytes(texto.encode("utf-8"))
+    monkeypatch.setattr(vdc, "REPO_ROOT", tmp_path)
+
+    r = vdc.scan(docs=["FAKE.md"], include_slow=False)
+    filas = {m["claimed"]: m["dated_row"] for m in r["mismatches"]}
+    assert filas == {999: False, 88: True}, "la fila fechada sigue siendo discrepancia"
+
+    f = vdc.fix(docs=["FAKE.md"], include_slow=False)
+    nuevo = doc.read_text(encoding="utf-8")
+    assert "| 2026-10-05 | eran 88 tools activas |" in nuevo
+    assert "999" not in nuevo
+    assert [(x["line"], x["claimed"], x["reason"]) for x in f["refused"]] == [
+        (2, 88, "dated_row")]
+
+
 def test_las_cifras_historicas_del_manifiesto_son_las_medidas():
     texto = (REPO_ROOT / "vault-obsidian-architecture.md").read_text(encoding="utf-8")
     assert "41 de las 88 tools del catálogo" in texto

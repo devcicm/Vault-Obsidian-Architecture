@@ -25,7 +25,7 @@ import subprocess
 import vault_subproceso
 import sys
 from pathlib import Path
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Tuple
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -55,13 +55,41 @@ HISTORY_MARKERS = (
 # `historic_exempt`, para que eximir no sea una forma callada de apagar el guard.
 CIFRA_HISTORICA = re.compile(r"<!--\s*cifra histórica:\s*(\S[^>]*?)\s*-->")
 
+# B-02: una fila de tabla con fecha ISO es el registro de un momento —una fila
+# de changelog fuera de su sección, una observación de métrica—. Si su cifra no
+# cuadra, `--fix` no la reescribe: decide quien lee la fila, poniéndole el
+# marcador o corrigiéndola a mano. `scan` la sigue contando como discrepancia,
+# porque eximirla sin motivo escrito sería apagar el guard en silencio.
+FILA_FECHADA = re.compile(r"^\s*\|.*\b\d{4}-\d{2}-\d{2}\b")
+
+
+def _linea(texto: str, offset: int) -> Tuple[int, str]:
+    """Inicio y texto de la línea que contiene `offset`."""
+    inicio = texto.rfind("\n", 0, offset) + 1
+    fin = texto.find("\n", offset)
+    return inicio, texto[inicio : fin if fin != -1 else len(texto)]
+
 
 def _linea_historica(texto: str, offset: int) -> Optional[str]:
     """El motivo del marcador en la línea de `offset`, o `None` si no lo hay."""
-    inicio = texto.rfind("\n", 0, offset) + 1
-    fin = texto.find("\n", offset)
-    m = CIFRA_HISTORICA.search(texto[inicio : fin if fin != -1 else len(texto)])
+    m = CIFRA_HISTORICA.search(_linea(texto, offset)[1])
     return m.group(1) if m else None
+
+
+def _dentro_del_marcador(texto: str, offset: int) -> bool:
+    """B-06: la cifra está escrita en el motivo del marcador, no en el texto.
+
+    El motivo cita la medida («se hizo con 120 tools activas») y el patrón la
+    atrapaba como una segunda afirmación de la misma línea: `historic_exempt`
+    publicaba la línea dos veces. El motivo es metadato del marcador.
+    """
+    inicio, linea = _linea(texto, offset)
+    return any(m.start() <= offset - inicio < m.end()
+               for m in CIFRA_HISTORICA.finditer(linea))
+
+
+def _fila_fechada(texto: str, offset: int) -> bool:
+    return bool(FILA_FECHADA.match(_linea(texto, offset)[1]))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -460,6 +488,8 @@ def scan(
             body = _live_body(path)
             for pattern in fact["patterns"]:
                 for m in re.finditer(pattern, body):
+                    if _dentro_del_marcador(body, m.start()):
+                        continue
                     checked += 1
                     found = int(m.group(1))
                     motivo = _linea_historica(body, m.start())
@@ -479,6 +509,7 @@ def scan(
                                 "context": body[
                                     max(0, m.start() - 40) : m.end() + 40
                                 ].replace("\n", " "),
+                                "dated_row": _fila_fechada(body, m.start()),
                             }
                         )
 
@@ -497,6 +528,7 @@ def fix(docs: Optional[List[str]] = None, include_slow: bool = True) -> Dict:
     """Reescribe solo el número capturado, nunca la frase que lo rodea."""
     docs = docs or WATCHED_DOCS
     applied: List[Dict] = []
+    refused: List[Dict] = []
 
     for fact in COUNTED_FACTS:
         if fact.get("slow") and not include_slow:
@@ -521,6 +553,12 @@ def fix(docs: Optional[List[str]] = None, include_slow: bool = True) -> Dict:
                     if int(m.group(1)) == expected:
                         return m.group(0)
                     if _linea_historica(cuerpo, m.start()) is not None:
+                        return m.group(0)
+                    if _fila_fechada(cuerpo, m.start()):
+                        refused.append({"fact": fact["id"], "file": rel,
+                                        "line": _line_of(cuerpo, m.start()),
+                                        "claimed": int(m.group(1)),
+                                        "actual": expected, "reason": "dated_row"})
                         return m.group(0)
                     applied.append(
                         {
@@ -549,6 +587,7 @@ def fix(docs: Optional[List[str]] = None, include_slow: bool = True) -> Dict:
         "tool": "vault_doc_counts",
         "fixes_applied": len(applied),
         "fixes": applied,
+        "refused": refused,
     }
 
 

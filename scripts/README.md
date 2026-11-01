@@ -2373,6 +2373,8 @@ python vault_doc_counts.py --check --no-slow  # omite el conteo de tests (lanza 
 
 Fuera de esas secciones también hay historia: un censo hecho en una versión concreta («41 de las 120 tools del catálogo no se han ejecutado») casa con el patrón de tools activas, y `--fix` lo reescribió con cada tool nueva hasta que el censo dejó de decir lo que se midió. Una línea así lleva `<!-- cifra histórica: <motivo> -->`: exime solo esa línea, sin motivo no exime, y el envelope la publica en `historic_exempt` para que eximir no sea una forma callada de apagar el guard. <!-- cifra histórica: el censo de 14dbb55 (2026-10-05) se hizo con 120 tools activas; este párrafo lo cita como ejemplo y --fix lo reescribió hasta v41.26 -->
 
+La cifra que cita el propio motivo del marcador es metadato y no cuenta como afirmación: hasta B-06 la línea salía dos veces en `historic_exempt`. Y una fila de tabla con fecha ISO es el registro de un momento: si su cifra no cuadra, `--fix` no la reescribe y la devuelve en `refused`, mientras `--check` la sigue contando como discrepancia con `dated_row: true`. Quien lee la fila decide si lleva marcador o se corrige a mano (B-02).
+
 ### `vault_doc_sync.py`
 
 Guard anti-drift de **nombres**. `vault_doc_counts` vigila las cifras; esta vigila que la referencia de tools no se quede atrás del catálogo. Comprueba que toda tool tenga su sección `###`, que toda clave de `GROUPS` tenga su `## Grupo N`, y que el índice tenga exactamente una fila por sección con el ancla resuelta.
