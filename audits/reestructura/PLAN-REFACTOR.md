@@ -127,7 +127,7 @@ El carril `merge` lo cerró sobre `52252b3`, con la paridad completa, las 28 pue
 
 | Paso | Hallazgo | Clase | Qué cambia | Paridad |
 |---|---|---|---|---|
-| C-1 | H-09 | COMPATIBLE_EVOLUTION | Guard nuevo: ninguna constante `Path` nueva derivada de la raíz al importarse. Lleva baseline por firma, que hoy recoge los 89 módulos y solo encoge. `_reanclar_constantes` queda como compatibilidad. | ninguna salida cambia |
+| C-1 | H-09 | **hecho** (cierre en `CHANGELOG-REFACTOR.md`, carril `merge` el 2026-11-01) · COMPATIBLE_EVOLUTION — **la baseline por firma no hizo falta**: el guard extendido (la llamada a `get_vault_root()` al importar también congela el vínculo) mide **0** vínculos; la migración previa no dejó nada que congelar. `_reanclar_constantes` queda como compatibilidad. | Guard nuevo: ninguna constante `Path` nueva derivada de la raíz al importarse. Lleva baseline por firma, que hoy recoge los 89 módulos y solo encoge. Se lo tomó el guard como su hueco: la asignación `X = get_vault_root() / "a"` era la misma deuda con otra sintaxis y no la veía. Eximido solo lo tarde de verdad: el cuerpo de una función y la lambda. | ninguna salida cambia —verificado: ningún delta nuevo en `estatico`, `superficie`, `ayuda` ni envelopes frente a lo ya declarado de tablones previos |
 | C-2 | H-10 | COMPATIBLE_EVOLUTION | Las tools de más subprocesos en la suite (las elige el perfil) exponen `ejecutar(ctx: VaultContext, args)` y su `main()` solo construye el contexto. Los tests de esas tools pasan a ejecución en proceso. Los tests de contrato CLI conservan un subproceso por tool. | `envelopes` + `ayuda` |
 
 ## Bloque D — dioses (riesgo medio, el último)
