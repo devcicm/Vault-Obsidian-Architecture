@@ -127,7 +127,7 @@ El carril `merge` lo cerró sobre `52252b3`, con la paridad completa, las 28 pue
 
 | Paso | Hallazgo | Clase | Qué cambia | Paridad |
 |---|---|---|---|---|
-| C-1 | H-09 | COMPATIBLE_EVOLUTION | Guard nuevo: ninguna constante `Path` nueva derivada de la raíz al importarse. Lleva baseline por firma, que hoy recoge los 89 módulos y solo encoge. `_reanclar_constantes` queda como compatibilidad. | ninguna salida cambia |
+| C-1 | H-09 | COMPATIBLE_EVOLUTION | **hecho** (`9a59ef0`). No hizo falta guard nuevo: AP-49 ya medía las constantes derivadas de `VAULT_ROOT` y daba 0. Una segunda norma para lo mismo sería AP-57. Se cerró su hueco: `vinculos_congelados` eximía `get_vault_root()` también cuando se llama al importar, y ahora solo exime la lambda. Medido: 0 sitios, la baseline no cambia. `_reanclar_constantes` queda como compatibilidad y pierde la cifra a mano «89 de 98». Antes: «Guard nuevo: ninguna constante `Path` nueva derivada de la raíz al importarse. Lleva baseline por firma, que hoy recoge los 89 módulos y solo encoge. `_reanclar_constantes` queda como compatibilidad.» | ninguna salida cambia |
 | C-2 | H-10 | COMPATIBLE_EVOLUTION | Las tools de más subprocesos en la suite (las elige el perfil) exponen `ejecutar(ctx: VaultContext, args)` y su `main()` solo construye el contexto. Los tests de esas tools pasan a ejecución en proceso. Los tests de contrato CLI conservan un subproceso por tool. | `envelopes` + `ayuda` |
 
 ## Bloque D — dioses (riesgo medio, el último)
