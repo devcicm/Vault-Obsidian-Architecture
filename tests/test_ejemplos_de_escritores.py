@@ -16,13 +16,13 @@ from __future__ import annotations
 import json
 import os
 import shlex
-import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 
+from apoyo import correr_tool
 from sandbox_fixture import copiar_vault
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -44,33 +44,11 @@ def _env(v: Path) -> dict:
 @pytest.fixture(scope="module")
 def copia_con_proyecto(tmp_path_factory):
     v = tmp_path_factory.mktemp("ejemplos") / "vault"
-    # Copiar el sandbox compartido mientras otros workers escriben en él
-    # falla en Windows: un fichero abierto para escritura no se puede leer,
-    # y `copytree` levanta PermissionError —que pytest reporta como ERROR
-    # de fixture, no como fallo de aserción—. Se reintenta: la copia es
-    # idempotente y lo que hace falta es una foto estable, no la primera.
-    import time
-
-    ultimo_error = None
-    for intento in range(5):
-        try:
-            copiar_vault(ROOT / "vault-sandbox", v)
-            ultimo_error = None
-            break
-        except PermissionError as exc:
-            ultimo_error = exc
-            shutil.rmtree(v, ignore_errors=True)
-            time.sleep(0.5 * (intento + 1))
-    assert ultimo_error is None, (
-        f"no se pudo copiar el sandbox tras 5 intentos: {ultimo_error}"
-    )
+    copiar_vault(ROOT / "vault-sandbox", v)
     if not (v / "01_Projects" / "mi-api").exists():
-        r = subprocess.run(
-            [sys.executable, str(ROOT / "scripts" / "vault_project.py"),
-             "--add", "mi-api", "--title", "Mi API"],
-            cwd=ROOT, env=_env(v), capture_output=True, text=True,
-            encoding="utf-8", errors="replace", timeout=300)
-        assert r.returncode == 0, r.stdout + r.stderr
+        r = correr_tool("vault_project", "--add", "mi-api", "--title", "Mi API",
+                        env=_env(v), timeout=300)
+        assert r.codigo == 0, r.stdout + r.stderr
     return v
 
 

@@ -33,7 +33,12 @@ DERIVED_FILES = (
 #: ENOENT), no por el contenido. Misma clase que el defecto R13-03b del
 #: backup, ya corregido alli: aqui se centraliza para que TODOS los sitios
 #: que copian un vault vivo usen el MISMO conjunto.
-ESTADO_DE_EJECUCION = (".locks", "*.lock")
+#: `.tmp.*` es el temporal de un escritor atomico (`vault/kernel/escritura.py`):
+#: vive entre su creacion y el rename, y una copia que lo lista y llega tarde
+#: falla con WinError 2 dentro de un `shutil.Error`. Medido el 2026-10-31 (B-10):
+#: tres escritores contra 150 copias, 117 fallaron asi y ninguna con
+#: `PermissionError`.
+ESTADO_DE_EJECUCION = (".locks", "*.lock", ".tmp.*")
 
 
 def copiar_vault(origen: Path, destino: Path, *,

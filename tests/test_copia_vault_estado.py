@@ -79,6 +79,19 @@ def test_una_copia_con_locks_extra_que_se_retira_no_rompe(tmp_path):
 
 def test_la_copia_acepta_patrones_extra(tmp_path):
     origen = _vault_con_locks(tmp_path / "vivo")
-    (origen / "00_System" / ".tmp.abc").write_text("x")
-    copia = copiar_vault(origen, tmp_path / "copia", ignore_extra=(".tmp.*",))
-    assert not (copia / "00_System" / ".tmp.abc").exists()
+    (origen / "00_System" / "volcado.bak").write_text("x")
+    copia = copiar_vault(origen, tmp_path / "copia", ignore_extra=("*.bak",))
+    assert not (copia / "00_System" / "volcado.bak").exists()
+
+
+def test_la_copia_no_arrastra_el_temporal_de_un_escritor_atomico(tmp_path):
+    """B-10, medido el 2026-10-31: el `.tmp.*` de `vault/kernel/escritura.py`
+    desaparece al renombrarse y la copia que llega tarde falla con
+    `shutil.Error` (WinError 2), no con `PermissionError`. Es estado de
+    ejecucion, como los locks, y lo excluye el dueño sin que nadie lo pida."""
+    assert ".tmp.*" in ESTADO_DE_EJECUCION
+    origen = _vault_con_locks(tmp_path / "vivo")
+    (origen / "07_Knowledge" / ".tmp.4242.abcd1234").write_text("x")
+    copia = copiar_vault(origen, tmp_path / "copia")
+    assert not list(copia.rglob(".tmp.*"))
+    assert (copia / "07_Knowledge" / "nota.md").is_file()
