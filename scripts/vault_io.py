@@ -49,7 +49,7 @@ from vault_entorno import leer as _env
 # escribir. Extraído a una hoja, la arista se corta en vez de esquivarse con un
 # import diferido.
 #
-# Se reexporta todo lo público **sin cambiar un solo nombre**: los ~89 módulos
+# Se reexporta todo lo público **sin cambiar un solo nombre**: los módulos
 # que hacen `from vault_io import VAULT_ROOT, get_vault_root, set_vault_root`
 # siguen funcionando sin tocarse. No-derogación: la puerta de entrada histórica
 # no se retira porque haya aparecido otra mejor.
