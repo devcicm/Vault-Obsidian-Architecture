@@ -10,7 +10,12 @@ cada tablón, comprueba que sigue siendo el mismo barco. Cuatro componentes:
 - **superficie** — los nombres públicos de cada módulo de `scripts/` y de
   `vault/`, importados de verdad (los alias `sys.modules` cuentan). Mover un
   módulo sin dejar su alias es romper a quien lo importa. Comparador `exact`
-  sobre el conjunto; un nombre nuevo se reporta y no rompe.
+  sobre el conjunto; un nombre nuevo se reporta y no rompe. Tampoco rompe que
+  a un paquete le falte un nombre que es un submódulo suyo que sigue
+  importando: ese atributo lo pone el sistema de imports cuando *alguien* del
+  proceso de la sonda importó el submódulo antes, así que depende del orden y
+  no del contrato. `from paquete import sub` lo resuelve igual, y si el
+  submódulo desaparece su propia clave se rompe. Se reporta aparte.
 - **ayuda** — `--help` de cada script de tool y de las dos entradas de
   consola. Es la CLI publicada. Comparador `exact` tras sustituir la ruta del
   repo y del intérprete.
@@ -243,6 +248,32 @@ def capturar_superficie(vault_tmp: Path) -> Dict[str, Any]:
     if proc.returncode != 0:
         raise RuntimeError("la sonda de superficie falló: " + proc.stderr[-500:])
     return json.loads(proc.stdout.strip().splitlines()[-1])
+
+
+def comparar_superficie(viejo: Dict[str, Any], nuevo: Dict[str, Any]) -> Dict[str, Any]:
+    roturas: Dict[str, Any] = {}
+    nuevos: Dict[str, Any] = {}
+    por_orden: Dict[str, Any] = {}
+    for modulo, nombres in viejo.items():
+        actual = nuevo.get(modulo, {"error": "modulo_ausente"})
+        if isinstance(nombres, dict) or isinstance(actual, dict):
+            if nombres != actual:
+                roturas[modulo] = {"antes": nombres if isinstance(nombres, dict) else "importaba",
+                                   "ahora": actual if isinstance(actual, dict) else "importa"}
+            continue
+        d = _diff_conjuntos(nombres, actual)
+        submodulos = [n for n in d["faltan"] if isinstance(nuevo.get(f"{modulo}.{n}"), list)]
+        faltan = [n for n in d["faltan"] if n not in submodulos]
+        if faltan:
+            roturas[modulo] = faltan
+        if submodulos:
+            por_orden[modulo] = submodulos
+        if d["nuevos"]:
+            nuevos[modulo] = d["nuevos"]
+    return {"ok": not roturas, "roturas": roturas,
+            "modulos_nuevos": sorted(set(nuevo) - set(viejo)),
+            "nombres_nuevos": nuevos,
+            "submodulos_que_dependen_del_orden": por_orden}
 
 
 # ── ayuda ──────────────────────────────────────────────────────────────────
@@ -662,23 +693,8 @@ def comparar(componentes: List[str], tools: Optional[Set[str]]) -> Dict[str, Any
             informe["estatico"] = {"ok": not difs and ps, "ficheros_distintos": difs,
                                    "project_scripts_iguales": ps}
         if "superficie" in componentes:
-            viejo, nuevo = _leer(GOLDEN / "superficie.json"), capturar_superficie(vault_plano)
-            roturas, nuevos = {}, {}
-            for modulo, nombres in viejo.items():
-                actual = nuevo.get(modulo, {"error": "modulo_ausente"})
-                if isinstance(nombres, dict) or isinstance(actual, dict):
-                    if nombres != actual:
-                        roturas[modulo] = {"antes": nombres if isinstance(nombres, dict) else "importaba",
-                                           "ahora": actual if isinstance(actual, dict) else "importa"}
-                    continue
-                d = _diff_conjuntos(nombres, actual)
-                if d["faltan"]:
-                    roturas[modulo] = d["faltan"]
-                if d["nuevos"]:
-                    nuevos[modulo] = d["nuevos"]
-            informe["superficie"] = {"ok": not roturas, "roturas": roturas,
-                                     "modulos_nuevos": sorted(set(nuevo) - set(viejo)),
-                                     "nombres_nuevos": nuevos}
+            informe["superficie"] = comparar_superficie(
+                _leer(GOLDEN / "superficie.json"), capturar_superficie(vault_plano))
         if "ayuda" in componentes:
             viejo, nuevo = _leer(GOLDEN / "ayuda.json"), capturar_ayuda(vault_plano)
             difs = sorted(k for k in viejo if viejo[k] != nuevo.get(k))
