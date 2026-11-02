@@ -21,6 +21,9 @@ tiene que estar.
 
 from __future__ import annotations
 
+import contextlib
+import importlib
+import io
 import json
 import os
 import subprocess
@@ -91,6 +94,52 @@ def correr_tool(nombre: str, *argv: Any, vault: Optional[Path] = None,
         cwd=str(cwd or ROOT), capture_output=True, text=True,
         encoding="utf-8", errors="replace", timeout=timeout)
     return Corrida(p.returncode, p.stdout, p.stderr)
+
+
+def correr_en_proceso(nombre: str, *argv: Any, vault: Optional[Path] = None) -> Corrida:
+    """Ejecuta `scripts/<nombre>.py` en ESTE intérprete: repone argv en `sys.argv` y corre `main()`.
+
+    Mismo contrato que `correr_tool` —código, stdout, stderr y el envelope— sin
+    el arranque del intérprete, que medido era la mayor parte del tiempo de los
+    dos test modules con más subprocesos de la suite (C-2, tablón de la raíz de
+    composición). La frontera es la de la casa:
+
+    - **En proceso**, el comportamiento: que la tool acepte estos argumentos,
+      escriba donde debe y conteste `ok: true`.
+    - **Por subproceso** (`correr_tool`), el contrato CLI: que el script
+      publicado arranca, rechaza lo malformado sin traceback y su envelope
+      llega por stdout. Uno por tool, no por caso.
+
+    La raíz va por `set_vault_root()`, el API que AP-49 dejó honesta (0
+    vínculos congelados medidos el 2026-11-01): se fija, se reanchan las
+    constantes y se restaura la anterior al salir — el patrón que ya usan
+    `test_alcance_medido_v4030` y `test_ap07`, con el autouse
+    `_raiz_de_vault_limpia` del conftest respaldando al conjunto.
+    """
+    import vault_io
+
+    salida, errores = io.StringIO(), io.StringIO()
+    anterior = None
+    if vault is not None:
+        anterior = vault_io.get_vault_root()
+        vault_io.set_vault_root(vault)
+    try:
+        modulo = importlib.import_module(nombre)
+        codigo = 0
+        argv_previo = sys.argv
+        sys.argv = [f"{nombre}.py", *map(str, argv)]
+        try:
+            with contextlib.redirect_stdout(salida), contextlib.redirect_stderr(errores):
+                try:
+                    modulo.main()
+                except SystemExit as fin:
+                    codigo = 0 if fin.code is None else int(fin.code or 0)
+        finally:
+            sys.argv = argv_previo
+    finally:
+        if anterior is not None:
+            vault_io.set_vault_root(anterior)
+    return Corrida(codigo, salida.getvalue(), errores.getvalue())
 
 
 def nota(frontmatter: Mapping[str, Any], cuerpo: str = "") -> str:

@@ -34,6 +34,7 @@ import vault_doc_sync as vds  # noqa: E402
 TOOLS_DE_SALUD = ("vault_audit.py", "vault_quality_check.py")
 
 import vault_grafo_import as gi  # noqa: E402
+from apoyo import correr_en_proceso  # noqa: E402
 
 
 def test_ningun_comando_publicado_usa_un_flag_que_su_tool_rechaza():
@@ -234,7 +235,14 @@ def vault_con_proyecto(tmp_path_factory):
 
 @pytest.mark.parametrize("tool", EJEMPLOS_EJECUTADOS)
 def test_ap42_los_ejemplos_del_readme_corren_en_un_vault(tool, tmp_path, vault_con_proyecto):
-    import json
+    """C-2 tanda 1: el comportamiento va en proceso; el contrato CLI, por subproceso.
+
+    Lo que se comprueba es que la tool acepta los argumentos del README y
+    contesta `ok: true` en ese vault — ejecutar `main(argv)` aquí abajo es una
+    vía más corta al mismo código. El subproceso queda donde es contrato: los
+    dos comandos de salud publicados en `AGENTS.md` arriba conservan su
+    intérprete, porque lo publicado es que copiar esa línea funciona.
+    """
     import shutil
 
     raiz = tmp_path / "vault"
@@ -242,6 +250,6 @@ def test_ap42_los_ejemplos_del_readme_corren_en_un_vault(tool, tmp_path, vault_c
     ejemplos = _ejemplos_del_readme(tool)
     assert ejemplos, f"scripts/README.md ya no publica ejemplos de {tool}"
     for args in ejemplos:
-        proc = _correr_script(raiz, f"{tool}.py", *args)
-        assert proc.returncode == 0, (args, proc.stdout[-400:], proc.stderr[-400:])
-        assert json.loads(proc.stdout)["ok"] is True
+        corrida = correr_en_proceso(tool, *args, vault=raiz)
+        assert corrida.codigo == 0, (args, corrida.stdout[-400:], corrida.stderr[-400:])
+        assert corrida.envelope["ok"] is True

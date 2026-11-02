@@ -30,6 +30,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 import vault_error_contract as vec  # noqa: E402
 import vault_gate  # noqa: E402
+from apoyo import correr_en_proceso  # noqa: E402
 import vault_mcp_catalog  # noqa: E402
 import vault_norms  # noqa: E402
 
@@ -388,22 +389,19 @@ def test_un_flag_desconocido_no_produce_traceback():
     """La otra sonda, sobre una muestra: argparse rechaza, nadie explota.
 
     Se corre sobre las tools de Normas y no sobre las 94 porque el barrido
-    completo son ~90 subprocesos y la suite ya dura 17 minutos. El barrido
-    completo se hizo una vez, a mano, y su resultado está en la sección AP-52
-    del manifiesto: 92/92.
+    completo es caro y ya se hizo una vez a mano (el resultado está en la
+    sección AP-52 del manifiesto: 92/92). C-2 tanda 1: el comportamiento va en
+    proceso — repone `--parametro-que-no-existe` en `sys.argv` y corre `main()`
+    aquí abajo, que es el mismo código con el arranque del intérprete fuera.
+    El contrato CLI por script lo lleva el otro test, uno por tool.
     """
     for tool in sorted(vault_mcp_catalog.GROUPS["Normas"]):
         meta = vault_mcp_catalog.TOOLS_CATALOG[tool]
         if not meta.get("script"):
             continue
-        proc = subprocess.run(
-            [sys.executable, str(REPO_ROOT / "scripts" / meta["script"]),
-             "--parametro-que-no-existe"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace",
-            cwd=str(REPO_ROOT), timeout=60,
-        )
-        assert proc.returncode != 0, f"{tool} aceptó un flag inexistente"
-        assert "Traceback (most recent call last)" not in (proc.stderr or ""), tool
+        corrida = correr_en_proceso(Path(meta["script"]).stem, "--parametro-que-no-existe")
+        assert corrida.codigo != 0, f"{tool} aceptó un flag inexistente"
+        assert "Traceback (most recent call last)" not in (corrida.stderr or ""), tool
 
 
 def test_el_detector_no_se_mide_por_texto():
