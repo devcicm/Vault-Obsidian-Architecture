@@ -1,0 +1,3726 @@
+{
+ "corridas": {
+  "vault_ai_decision": [
+   {
+    "escritos": {
+     "vault/16_AI_Governance/.decisions-log.json": "7f0c5d30bedb598075f227259713170de956c883bda4a141726db0c8824c08b9",
+     "vault/16_AI_Governance/decisions/index.md": "bb0059a0a16ac0f2fe38748c558f6271ed80f42d19d665a340ef93e7e1e23a22",
+     "vault/16_AI_Governance/decisions/mi-api-elegir-postgresql.md": "5d8bb8e0b81df78d3e1bb43e7e9424b0c871c369e98a23023b2fd79ae07a195c",
+     "vault/16_AI_Governance/index.md": "b15c1662b7564dc5e0ee744667e8efd3efabcabb387a3882786cb8fa54afa244",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "63aaf504bcc9bb789ac5f9d2f88aafa28f47608108051dc775ef9a4c39cce8b6",
+     "vault/99_Index/graph.json": "44ab751aeba9837a5af6daf3484a1aee3d6e989a763eec10878858d194d56024",
+     "vault/99_Index/search-index.json": "42a3d99fd1cf08f5a93338f8e4deec805c52c92f6f3818b52fbd2c935b516bf8"
+    }
+   }
+  ],
+  "vault_append": [
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_arch": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_arquitectura_en": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_audit": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_backup": [
+   {
+    "escritos": {
+     "vault/vault-backups/.backup-registry.json": "cd2e759ccd3b145f677704ff9cab596fcb7a6ec6f759b4958c1b907ee2f6ac1f",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/.manifest.json": "c17cf10116138d9b9fccad8aa88caefc9e60eb1abdfd14bc79b2a831a61a7694",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/.change-log.json": "553cb5a2d9c65a37cdbfc950cf156fba8aa638f437cc71aa425bf5b61d141faf",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/.voice-counter": "4de75f76a1c415f8d29ad71432af4ba35e8b4b158c640258c31f87c6cefab6cb",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/change-log.md": "78faa489296350ca5622fd1918d41030113ad220a3c266f3326ef641321f4dd5",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/data-framework.json": "73afb1243f68c8d31ea9f5b34474f98d8fb8f613e7cec3e9c50d00ea8903028b",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/data-framework.md": "500f7c9786249977e9db9f19a3c57f38e52f833c4cfedf6f3411a93754560071",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/data-fundamentals.json": "745638f3c2d437846df3c3ea5869e3c39a6d0a5ce13c5a6e9cbe9513bcd9fe9e",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/index.md": "56f77a962acf7c3bad1e295c05d7cc4cbee65a05560121bce46b050e67a94593",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/norm-registry.json": "32ea793d3f0bbb989a76ddd35d0c76083ca10467f2ba2afb33da7051da5bf789",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/product-gates/clean_install/clean_install-result.json": "371d9f56d668568d2b6cd3421b66155efe37dc824bed8a1d8bbe5ca0733fa173",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/product-gates/index.md": "04b5421c8babc35513234c067f410116dcb127bf5fcc17fa7babf5e73d523370",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/product-gates/memory_e2e/memory_e2e-result.json": "37e1d63f70d80b4e807d9ef08ea42c384a2a4f32410c2f916670996e346b6ede",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/quality-index.json": "df9dbaf57098e28aa0ac98b3791568f8ea6a08b81c66085a0023133103857bb3",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/standard-version.json": "ad6aa02e6fb5f0f4b23102ab73d267c4e6bfa90fadf9f65ef422c246fc58460e",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/tag-registry.json": "dc85564bf26e1601f3e603b54f30eb9bdc4dd17e1006ce836df1682a2bdaf170",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/tool-contracts.json": "b3a1f987c1b7df43d50c69dc3ace76d157ecf61686f4affa5100485d4533e1f2",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/tool-contracts.md": "77b4552bdc29d9d76c1745d81c8e7c406aa27b9f938819b5af293aa22b5c27fa",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/tool-spec.json": "a2a037b6c9cb328af63197d603cd29897d2d55069408f5cc1dfbec608af84e1f",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/vault-commands.md": "15ee5929e8a6a3123437197e2dfb44c9e0a918eb2d8e044b735fc5ff7ac21baa",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/vault-hub.md": "d991f8c0956fc0bdd0d90ce048b0f37e093ef3f6165c9cc12f448acae4a5bc94",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/vault-ontology.json": "050a0a1f2f32ce01cadf32cc8e37f6f1dbb1c6b0976d223f48ca16c7b15b27ad",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/01_Projects/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/01_Projects/00-01_projects-primer.md": "0c03666db68f058fa9e39618a1a8e0602543d053595531bb0599bdef9856baeb",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/01_Projects/index.md": "3994b9e2b88158211a82ae1b256cdb35422258f98856fbac5089b5d62960bf45",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/01_Projects/mi-api/index.md": "d89f54fa5cb87a36fdd69ac59f05665aff1b2443f659f069794d3c57f68d4f6f",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/01_Projects/mi-api/project.md": "4dd11e2a0d1e2de5b63d1411d727b7f5d1d380869c210affc739d0b1c95f1a9e",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/02_Observability/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/02_Observability/00-02_observability-primer.md": "de4ec0c5ce9d4648c4adf6a7684eee8ddf9d5f9c19e1d2346d7ac8f8805ee0be",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/02_Observability/index.md": "a1c15eb9dcebe9e734b3a7a933c097bfcb5ab1923213c3eb850f9c6714525148",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/03_Decisions/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/03_Decisions/00-03_decisions-primer.md": "5f64a737e76bc75f4690c602e87141320310f4fb664dc28dd0c6b8cc88d8f9a1",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/03_Decisions/adr-001-mcp-transport.md": "95ce1fcdc6451f7ce5c28f310e7cafb61c6685b198d6f57ae320b848d7b3d1cd",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/03_Decisions/index.md": "342bd905d885cfac4b0876824f15aecc46c47660ec919f07aa9592bc0471becd",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/03_Decisions/mcp-transport-contract.md": "f3ff553efc289be9f7cf26cf5066f8c2f79a4ea3eee342c47b54c47655cf27dc",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/03_Decisions/mcp-transport-operations.md": "7841c2b5c8811112bceed2ac7cddbe96fc55bd751b50f21f3f30dc5142614447",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/03_Decisions/mcp-transport-provenance.md": "20edb5a2ec6d786fa62d98c6e7f19f0f8f82f7cb380456ea30dc58230f0438bc",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/04_Sessions/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/04_Sessions/00-04_sessions-primer.md": "09e1d4fa43148d75e1298afe721a9e9a058ccb1be2b1e3f5a75b9fe4bbf0cc38",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/04_Sessions/index.md": "839deab02733cd84e49f1660f1254cd6410c5f7aca6d5264ec0a37ffd1eb1646",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/05_Patterns/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/05_Patterns/00-05_patterns-primer.md": "1acc0950ec56e319df0e423dce043d97e577102653d843ee94b640c95239c098",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/05_Patterns/index.md": "ccb4b43b8674d0325b3a1ff6679ae7dc83d154168c3ab86905980e34771c92c9",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/06_Diagrams/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/06_Diagrams/00-06_diagrams-primer.md": "e17ac87b71f6714f9d61ce9a85c799abd71f67188f7df31c5dc9efd58b366ddd",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/06_Diagrams/entity/index.md": "4c10e84c17c3035c2b0cd097e97577bf2a8fc4e8e552b0b305103c4b71228893",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/06_Diagrams/entity/test-relations.json": "2102f60b07d8ef0a56d833db21e649f279fdb5b94f8c5408f16a6aafebb40fea",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/06_Diagrams/index.md": "a3284489e90bafa06e549dabcf6d2803c5cce5a4f1b846fe93768f8970ca05ff",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/07_Knowledge/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/07_Knowledge/00-07_knowledge-primer.md": "a35e636eaf60ecdafc3be1836ed11dd2e07f8a6775f3790670c1c022a531ba46",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/07_Knowledge/fixture-incomplete-00.md": "3e614c636c2f73b26d2f8d6f6421aabc2e7feeccd6cbdb954d03cbd775098d91",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/07_Knowledge/fixture-incomplete-01.md": "2eeb5fe9f4a63aef1f8061bedbebf46df483ee3049ffd1016c0ecba017b82f44",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/07_Knowledge/fixture-incomplete-02.md": "2945b6d72584b953b64884d6dcb35c1fd5d9f7a7736bf3e76f9650d165523c0b",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/07_Knowledge/fixture-incomplete-03.md": "f989b86d296344a045cd3df266b217dddd46822351d67262a9f3e7add2e4dd7a",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/07_Knowledge/fixture-incomplete-04.md": "743b5e8502a572844f686f1fea57f73959ece32439ee079a41a8a951c335c21f",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/07_Knowledge/fixture-incomplete-05.md": "df4bbde7732a4e7f6b68933b9ab75f6b8fcaf771e88e94ced734aa0da996d1ed",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/07_Knowledge/fixture-incomplete-06.md": "5af36a4222547ae8763c92f7f81354c9081364e2403b07d76fccf10b79aeb68a",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/07_Knowledge/fixture-incomplete-07.md": "c7f46d6826389ee972bf2b57f07f8953b56763ee303f13a9b3606e7f93bd8d88",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/07_Knowledge/fixture-incomplete-08.md": "859e253fe11db0c4dcdee7532d2117d5d37e53e0408ce536e3bf1694b9aaab2b",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/07_Knowledge/fixture-incomplete-09.md": "0e05960d02ccca19f37a35557f93eed17ddec5a7beee440826e6c7efd4393f84",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/07_Knowledge/fixture-raw-00.md": "9435a9b8206f9c85f65d7bcf33cf2804b18a1dd6d880efd57bc2faeb8aa0493e",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/07_Knowledge/fixture-raw-01.md": "08eb1ea411854cd8eb6ee290a1528247117fcf3d695867080d57490641e58823",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/07_Knowledge/fixture-raw-02.md": "b1cba6dccc3c30161f9f930e38f7815dc6abe0a7aefad9979c98518b37bb8388",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/07_Knowledge/fixture-raw-03.md": "da7c913d78b7fdc185e8f39e5b70739a7389fd80502d66abbfefd42b06138a4f",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/07_Knowledge/fixture-raw-04.md": "bf11714e98cc4fa59c2f30056d396557bbe4703a102d3f0cf81ba7caf12697da",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/07_Knowledge/fixture-raw-05.md": "9bf060c11d607c579e3eda80703ea1caa46e50f11cee769a59d48606c54d6eb3",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/07_Knowledge/fixture-raw-06.md": "c7718feaa304b638b57f81e2bd35332656d4e31372d941d6c81a89fb46aca1bb",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/07_Knowledge/fixture-raw-07.md": "11b86123c69772d83ef67d5dc81875e308f784012a3c1b8b058999739e41db13",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/07_Knowledge/fixture-raw-08.md": "e2601f1273ad388211a14e071ea8d19bc935eac4f966da3e270efa9c0a45a7f1",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/07_Knowledge/fixture-raw-09.md": "47c3b059e2b0cb0ab725dfd203d77fcc9f06167293b9be6fa4c79c84d62366a8",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/07_Knowledge/index.md": "dcf18fcbfe57e8401f6af1a5ede82448b398ebd287c82b54f0babb0bb0819d21",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/07_Knowledge/parser-evidence.md": "7da6ac16213f881ce4c13d994fd3df4827ae3c7e3d094e383742414e3e8fa6db",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/08_Runbooks/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/08_Runbooks/00-08_runbooks-primer.md": "5e5ca7216e0d3642e6b4350746d70c14df1dddea4c28a38281f1dbd43a95683c",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/08_Runbooks/index.md": "5806ba503ea004cf0dc03e8f1a5152f0d2c9463baaac083c5f1c5f58f4286a76",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/09_Infrastructure/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/09_Infrastructure/00-09_infrastructure-primer.md": "7ca40d67257e2ea0b6dadcf279e2fd89dbd04a444ae6694611e1d7fc7fc91477",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/09_Infrastructure/index.md": "82416eb6d971840f3b09eb61ab1fddec49af07b5953a4d974762e214e3904ca2",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/10_Migrated/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/10_Migrated/00-10_migrated-primer.md": "e97f0dbde5329f1903eeaf7a8b505ed6b2a0c8b0a0187971f1464a938be3ac2c",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/10_Migrated/index.md": "b09d06201f7ad19ca8af96920ffbbc267922c2b51eb4c216561186c03b78ab9e",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/11_Code/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/11_Code/00-11_code-primer.md": "0fe4f5c91169a9d407064f4af9803503c723327f608ba8cab3f9e1d1e8c3dbe5",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/11_Code/index.md": "261538ee26688d9ffc12a9d5b4972e9612422906617125154c30fed5887a8c96",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/12_Bibliography/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/12_Bibliography/00-12_bibliography-primer.md": "89a32a56165e2de9c8abd00cd321a12ee23687aed2426454e24e76c6ffa6ed17",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/12_Bibliography/index.md": "f74b3a8a6ae91c98bb76530340839bcecebe865658371a301d9cf8ae8303a343",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/13_Flows/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/13_Flows/00-13_flows-primer.md": "0979333ee30f66f33f3e5784e134c167605c969d963ebde0438ec24b4eedb5c1",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/13_Flows/index.md": "06106534d967b053c944dce4c2257eb2fb26955788426d1cde4ecc0597bf0cc2",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/14_Requirements/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/14_Requirements/00-14_requirements-primer.md": "0a2d752a6fe47fd7d6afb9ec46ab6fd8179c2786e8a8840b6bf0bff66c30165a",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/14_Requirements/index.md": "221ff79ca2445600d9ed7ea977e5d89d47d95d6e5b917a18c567f887f347e331",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/15_Tests/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/15_Tests/00-15_tests-primer.md": "034e776bdf8e2d43e838cf4a3ad1c5fddd7174bcf893bcb275bace1fb5e5b4bc",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/15_Tests/index.md": "265a670e9b8be95c08c49dd8f3ad1840efe6f32871b1b30087e096898210ab73",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/16_AI_Governance/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/16_AI_Governance/00-16_ai_governance-primer.md": "641acda9edac42394b2d1cbd1d5c456d9300d4e62c550a920ab2e669593a3689",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/16_AI_Governance/index.md": "cac2afc25ccbb83a4bb4f540c9182089df103333d08bef4a7df4f4fbedd401bd",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/17_Preferences/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/17_Preferences/00-17_preferences-primer.md": "247b8d0d22428670cb096471724da13dfb4f40f5719d265c1e20b3092cb4d554",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/17_Preferences/index.md": "90665e774e57441d359bd99f173b4ca697ba99df09a04d7b3cb668d467df035f",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/17_Preferences/model_profile.active": "2ec3b147cb211f369a6af24036e6a06256a8c021dc33b1ccd372ef020c95385e",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/18_Bugs/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/18_Bugs/index.md": "50ee4f6b6abc6492198bc1406feb8b8fb195d85b60c6f3e78d55ad124d19ba73",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/19_Audits/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/19_Audits/index.md": "ac1a92bdb19026567e5e0dab516d783a818bc5e6776ae806d0dcea60ad574b13",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/19_Audits/vocabulary/tag-ledger.json": "8d6815738d487046d2821465c045263c58bcc038f75c548997660ce06273d195",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/20_Quarantine/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/20_Quarantine/index.md": "b5cd5ca0c014d7d4b001cfd6b051ebcacf39b541dfeda5bb46820eb502b6f0ed",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/21_QA/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/21_QA/index.md": "35fb118fe98ad756072c1339bb77a8e6e5f8437a90b4f936c8b77bd6b2c8ac90",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/99_Index/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/99_Index/00-99_index-primer.md": "83e1470716dbb0e1bbe35a083d62cb77b1fdd9696b53e0fd6d5131ed59c6844b",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/99_Index/graph.json": "228c6a56ad68c56e0369003ac569f80eac47d67cac23054efbbfe70d2c2cde86",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/99_Index/hash-index.json": "3e4d3ba033d8f1db124aab716b5702be4c8549e38470e8b0ea7bd0b771c63687",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/99_Index/index.md": "11e4e87f9ccf2021fdcdf55ba9141beff24807b2a1a7c7c5c549733f3c076f6c",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/99_Index/search-index.json": "4905e792cd80b1603e2242a0d6ab5a438edc4fce290f4efcb47df4c6ac8ff29e",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/99_Index/tag-index.md": "e69727d13e415e291d9b963c126b4b884f9116327bc413ada5252ea5178ea1f0"
+    }
+   },
+   {
+    "escritos": {
+     "vault/vault-backups/.backup-registry.json": "2b0a0482dece9f5b0794b96166bff2ae31fd813ffb4bea2177e1d67a31dca4e7",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/.manifest.json": "4327afc41f25e7d02b13879c30151dbcfe4c4822f7ccd2dc92f41f0ffbb0a696",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/.change-log.json": "553cb5a2d9c65a37cdbfc950cf156fba8aa638f437cc71aa425bf5b61d141faf",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/.voice-counter": "4de75f76a1c415f8d29ad71432af4ba35e8b4b158c640258c31f87c6cefab6cb",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/change-log.md": "78faa489296350ca5622fd1918d41030113ad220a3c266f3326ef641321f4dd5",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/data-framework.json": "73afb1243f68c8d31ea9f5b34474f98d8fb8f613e7cec3e9c50d00ea8903028b",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/data-framework.md": "500f7c9786249977e9db9f19a3c57f38e52f833c4cfedf6f3411a93754560071",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/data-fundamentals.json": "745638f3c2d437846df3c3ea5869e3c39a6d0a5ce13c5a6e9cbe9513bcd9fe9e",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/index.md": "56f77a962acf7c3bad1e295c05d7cc4cbee65a05560121bce46b050e67a94593",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/norm-registry.json": "32ea793d3f0bbb989a76ddd35d0c76083ca10467f2ba2afb33da7051da5bf789",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/product-gates/clean_install/clean_install-result.json": "371d9f56d668568d2b6cd3421b66155efe37dc824bed8a1d8bbe5ca0733fa173",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/product-gates/index.md": "04b5421c8babc35513234c067f410116dcb127bf5fcc17fa7babf5e73d523370",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/product-gates/memory_e2e/memory_e2e-result.json": "37e1d63f70d80b4e807d9ef08ea42c384a2a4f32410c2f916670996e346b6ede",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/quality-index.json": "df9dbaf57098e28aa0ac98b3791568f8ea6a08b81c66085a0023133103857bb3",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/standard-version.json": "ad6aa02e6fb5f0f4b23102ab73d267c4e6bfa90fadf9f65ef422c246fc58460e",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/tag-registry.json": "dc85564bf26e1601f3e603b54f30eb9bdc4dd17e1006ce836df1682a2bdaf170",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/tool-contracts.json": "b3a1f987c1b7df43d50c69dc3ace76d157ecf61686f4affa5100485d4533e1f2",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/tool-contracts.md": "77b4552bdc29d9d76c1745d81c8e7c406aa27b9f938819b5af293aa22b5c27fa",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/tool-spec.json": "a2a037b6c9cb328af63197d603cd29897d2d55069408f5cc1dfbec608af84e1f",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/vault-commands.md": "15ee5929e8a6a3123437197e2dfb44c9e0a918eb2d8e044b735fc5ff7ac21baa",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/vault-hub.md": "d991f8c0956fc0bdd0d90ce048b0f37e093ef3f6165c9cc12f448acae4a5bc94",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/vault-ontology.json": "050a0a1f2f32ce01cadf32cc8e37f6f1dbb1c6b0976d223f48ca16c7b15b27ad",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/01_Projects/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/01_Projects/00-01_projects-primer.md": "0c03666db68f058fa9e39618a1a8e0602543d053595531bb0599bdef9856baeb",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/01_Projects/index.md": "3994b9e2b88158211a82ae1b256cdb35422258f98856fbac5089b5d62960bf45",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/01_Projects/mi-api/index.md": "d89f54fa5cb87a36fdd69ac59f05665aff1b2443f659f069794d3c57f68d4f6f",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/01_Projects/mi-api/project.md": "4dd11e2a0d1e2de5b63d1411d727b7f5d1d380869c210affc739d0b1c95f1a9e",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/02_Observability/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/02_Observability/00-02_observability-primer.md": "de4ec0c5ce9d4648c4adf6a7684eee8ddf9d5f9c19e1d2346d7ac8f8805ee0be",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/02_Observability/index.md": "a1c15eb9dcebe9e734b3a7a933c097bfcb5ab1923213c3eb850f9c6714525148",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/03_Decisions/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/03_Decisions/00-03_decisions-primer.md": "5f64a737e76bc75f4690c602e87141320310f4fb664dc28dd0c6b8cc88d8f9a1",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/03_Decisions/adr-001-mcp-transport.md": "95ce1fcdc6451f7ce5c28f310e7cafb61c6685b198d6f57ae320b848d7b3d1cd",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/03_Decisions/index.md": "342bd905d885cfac4b0876824f15aecc46c47660ec919f07aa9592bc0471becd",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/03_Decisions/mcp-transport-contract.md": "f3ff553efc289be9f7cf26cf5066f8c2f79a4ea3eee342c47b54c47655cf27dc",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/03_Decisions/mcp-transport-operations.md": "7841c2b5c8811112bceed2ac7cddbe96fc55bd751b50f21f3f30dc5142614447",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/03_Decisions/mcp-transport-provenance.md": "20edb5a2ec6d786fa62d98c6e7f19f0f8f82f7cb380456ea30dc58230f0438bc",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/04_Sessions/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/04_Sessions/00-04_sessions-primer.md": "09e1d4fa43148d75e1298afe721a9e9a058ccb1be2b1e3f5a75b9fe4bbf0cc38",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/04_Sessions/index.md": "839deab02733cd84e49f1660f1254cd6410c5f7aca6d5264ec0a37ffd1eb1646",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/05_Patterns/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/05_Patterns/00-05_patterns-primer.md": "1acc0950ec56e319df0e423dce043d97e577102653d843ee94b640c95239c098",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/05_Patterns/index.md": "ccb4b43b8674d0325b3a1ff6679ae7dc83d154168c3ab86905980e34771c92c9",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/06_Diagrams/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/06_Diagrams/00-06_diagrams-primer.md": "e17ac87b71f6714f9d61ce9a85c799abd71f67188f7df31c5dc9efd58b366ddd",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/06_Diagrams/entity/index.md": "4c10e84c17c3035c2b0cd097e97577bf2a8fc4e8e552b0b305103c4b71228893",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/06_Diagrams/entity/test-relations.json": "2102f60b07d8ef0a56d833db21e649f279fdb5b94f8c5408f16a6aafebb40fea",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/06_Diagrams/index.md": "a3284489e90bafa06e549dabcf6d2803c5cce5a4f1b846fe93768f8970ca05ff",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/07_Knowledge/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/07_Knowledge/00-07_knowledge-primer.md": "a35e636eaf60ecdafc3be1836ed11dd2e07f8a6775f3790670c1c022a531ba46",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/07_Knowledge/fixture-incomplete-00.md": "3e614c636c2f73b26d2f8d6f6421aabc2e7feeccd6cbdb954d03cbd775098d91",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/07_Knowledge/fixture-incomplete-01.md": "2eeb5fe9f4a63aef1f8061bedbebf46df483ee3049ffd1016c0ecba017b82f44",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/07_Knowledge/fixture-incomplete-02.md": "2945b6d72584b953b64884d6dcb35c1fd5d9f7a7736bf3e76f9650d165523c0b",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/07_Knowledge/fixture-incomplete-03.md": "f989b86d296344a045cd3df266b217dddd46822351d67262a9f3e7add2e4dd7a",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/07_Knowledge/fixture-incomplete-04.md": "743b5e8502a572844f686f1fea57f73959ece32439ee079a41a8a951c335c21f",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/07_Knowledge/fixture-incomplete-05.md": "df4bbde7732a4e7f6b68933b9ab75f6b8fcaf771e88e94ced734aa0da996d1ed",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/07_Knowledge/fixture-incomplete-06.md": "5af36a4222547ae8763c92f7f81354c9081364e2403b07d76fccf10b79aeb68a",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/07_Knowledge/fixture-incomplete-07.md": "c7f46d6826389ee972bf2b57f07f8953b56763ee303f13a9b3606e7f93bd8d88",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/07_Knowledge/fixture-incomplete-08.md": "859e253fe11db0c4dcdee7532d2117d5d37e53e0408ce536e3bf1694b9aaab2b",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/07_Knowledge/fixture-incomplete-09.md": "0e05960d02ccca19f37a35557f93eed17ddec5a7beee440826e6c7efd4393f84",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/07_Knowledge/fixture-raw-00.md": "9435a9b8206f9c85f65d7bcf33cf2804b18a1dd6d880efd57bc2faeb8aa0493e",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/07_Knowledge/fixture-raw-01.md": "08eb1ea411854cd8eb6ee290a1528247117fcf3d695867080d57490641e58823",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/07_Knowledge/fixture-raw-02.md": "b1cba6dccc3c30161f9f930e38f7815dc6abe0a7aefad9979c98518b37bb8388",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/07_Knowledge/fixture-raw-03.md": "da7c913d78b7fdc185e8f39e5b70739a7389fd80502d66abbfefd42b06138a4f",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/07_Knowledge/fixture-raw-04.md": "bf11714e98cc4fa59c2f30056d396557bbe4703a102d3f0cf81ba7caf12697da",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/07_Knowledge/fixture-raw-05.md": "9bf060c11d607c579e3eda80703ea1caa46e50f11cee769a59d48606c54d6eb3",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/07_Knowledge/fixture-raw-06.md": "c7718feaa304b638b57f81e2bd35332656d4e31372d941d6c81a89fb46aca1bb",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/07_Knowledge/fixture-raw-07.md": "11b86123c69772d83ef67d5dc81875e308f784012a3c1b8b058999739e41db13",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/07_Knowledge/fixture-raw-08.md": "e2601f1273ad388211a14e071ea8d19bc935eac4f966da3e270efa9c0a45a7f1",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/07_Knowledge/fixture-raw-09.md": "47c3b059e2b0cb0ab725dfd203d77fcc9f06167293b9be6fa4c79c84d62366a8",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/07_Knowledge/index.md": "dcf18fcbfe57e8401f6af1a5ede82448b398ebd287c82b54f0babb0bb0819d21",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/07_Knowledge/parser-evidence.md": "7da6ac16213f881ce4c13d994fd3df4827ae3c7e3d094e383742414e3e8fa6db",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/08_Runbooks/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/08_Runbooks/00-08_runbooks-primer.md": "5e5ca7216e0d3642e6b4350746d70c14df1dddea4c28a38281f1dbd43a95683c",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/08_Runbooks/index.md": "5806ba503ea004cf0dc03e8f1a5152f0d2c9463baaac083c5f1c5f58f4286a76",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/09_Infrastructure/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/09_Infrastructure/00-09_infrastructure-primer.md": "7ca40d67257e2ea0b6dadcf279e2fd89dbd04a444ae6694611e1d7fc7fc91477",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/09_Infrastructure/index.md": "82416eb6d971840f3b09eb61ab1fddec49af07b5953a4d974762e214e3904ca2",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/10_Migrated/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/10_Migrated/00-10_migrated-primer.md": "e97f0dbde5329f1903eeaf7a8b505ed6b2a0c8b0a0187971f1464a938be3ac2c",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/10_Migrated/index.md": "b09d06201f7ad19ca8af96920ffbbc267922c2b51eb4c216561186c03b78ab9e",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/11_Code/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/11_Code/00-11_code-primer.md": "0fe4f5c91169a9d407064f4af9803503c723327f608ba8cab3f9e1d1e8c3dbe5",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/11_Code/index.md": "261538ee26688d9ffc12a9d5b4972e9612422906617125154c30fed5887a8c96",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/12_Bibliography/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/12_Bibliography/00-12_bibliography-primer.md": "89a32a56165e2de9c8abd00cd321a12ee23687aed2426454e24e76c6ffa6ed17",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/12_Bibliography/index.md": "f74b3a8a6ae91c98bb76530340839bcecebe865658371a301d9cf8ae8303a343",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/13_Flows/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/13_Flows/00-13_flows-primer.md": "0979333ee30f66f33f3e5784e134c167605c969d963ebde0438ec24b4eedb5c1",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/13_Flows/index.md": "06106534d967b053c944dce4c2257eb2fb26955788426d1cde4ecc0597bf0cc2",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/14_Requirements/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/14_Requirements/00-14_requirements-primer.md": "0a2d752a6fe47fd7d6afb9ec46ab6fd8179c2786e8a8840b6bf0bff66c30165a",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/14_Requirements/index.md": "221ff79ca2445600d9ed7ea977e5d89d47d95d6e5b917a18c567f887f347e331",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/15_Tests/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/15_Tests/00-15_tests-primer.md": "034e776bdf8e2d43e838cf4a3ad1c5fddd7174bcf893bcb275bace1fb5e5b4bc",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/15_Tests/index.md": "265a670e9b8be95c08c49dd8f3ad1840efe6f32871b1b30087e096898210ab73",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/16_AI_Governance/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/16_AI_Governance/00-16_ai_governance-primer.md": "641acda9edac42394b2d1cbd1d5c456d9300d4e62c550a920ab2e669593a3689",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/16_AI_Governance/index.md": "cac2afc25ccbb83a4bb4f540c9182089df103333d08bef4a7df4f4fbedd401bd",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/17_Preferences/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/17_Preferences/00-17_preferences-primer.md": "247b8d0d22428670cb096471724da13dfb4f40f5719d265c1e20b3092cb4d554",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/17_Preferences/index.md": "90665e774e57441d359bd99f173b4ca697ba99df09a04d7b3cb668d467df035f",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/17_Preferences/model_profile.active": "2ec3b147cb211f369a6af24036e6a06256a8c021dc33b1ccd372ef020c95385e",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/18_Bugs/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/18_Bugs/index.md": "50ee4f6b6abc6492198bc1406feb8b8fb195d85b60c6f3e78d55ad124d19ba73",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/19_Audits/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/19_Audits/index.md": "ac1a92bdb19026567e5e0dab516d783a818bc5e6776ae806d0dcea60ad574b13",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/19_Audits/vocabulary/tag-ledger.json": "8d6815738d487046d2821465c045263c58bcc038f75c548997660ce06273d195",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/20_Quarantine/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/20_Quarantine/index.md": "b5cd5ca0c014d7d4b001cfd6b051ebcacf39b541dfeda5bb46820eb502b6f0ed",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/21_QA/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/21_QA/index.md": "35fb118fe98ad756072c1339bb77a8e6e5f8437a90b4f936c8b77bd6b2c8ac90",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/99_Index/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/99_Index/00-99_index-primer.md": "83e1470716dbb0e1bbe35a083d62cb77b1fdd9696b53e0fd6d5131ed59c6844b",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/99_Index/graph.json": "228c6a56ad68c56e0369003ac569f80eac47d67cac23054efbbfe70d2c2cde86",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/99_Index/hash-index.json": "3e4d3ba033d8f1db124aab716b5702be4c8549e38470e8b0ea7bd0b771c63687",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/99_Index/index.md": "11e4e87f9ccf2021fdcdf55ba9141beff24807b2a1a7c7c5c549733f3c076f6c",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/99_Index/search-index.json": "4905e792cd80b1603e2242a0d6ab5a438edc4fce290f4efcb47df4c6ac8ff29e",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/99_Index/tag-index.md": "e69727d13e415e291d9b963c126b4b884f9116327bc413ada5252ea5178ea1f0"
+    }
+   }
+  ],
+  "vault_backup_list": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_bibliography_save": [
+   {
+    "escritos": {
+     "vault/12_Bibliography/books/clean-code.md": "e5c69aaaedf2bf35b863ff891a08c1a8e4d79aa129cb48c83c23a62b4795c470",
+     "vault/12_Bibliography/books/index.md": "14b657443a46b8d224d57e3cfa5e3878fa22497cfb22fe465c18ced1026b2ec9",
+     "vault/12_Bibliography/index.md": "0a9d65e4d99090198a5a8f06d5acdda92e0838b6f71f8d20d4426283484c145c",
+     "vault/99_Index/graph.json": "dbde28882e8dc3c467f88c988c311dd6cbf224964a405e2cc38aa312d9827664",
+     "vault/99_Index/search-index.json": "8e0cf4dd1ca437e5187bee9fa54487d420ff7818ff32f87a87cbc631e2c6d26a"
+    }
+   }
+  ],
+  "vault_blame_audit": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_blueprint": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_bug_save": [
+   {
+    "escritos": {
+     "vault/18_Bugs/.bugs-index.json": "10f886c03830c7dc9d5aede3ab56e312c01c14f4dc0f215fe705ce821f414abb",
+     "vault/18_Bugs/index.md": "1a087607aba14811accb1b2cd5596f663aec96e3a806ecb1ee55ee2b46f518ed",
+     "vault/18_Bugs/open/index.md": "9aa382d430ae55cdbb1cdc4f0bfd76230cfec4a5a466c90b6c63a46fc0f3e623",
+     "vault/18_Bugs/open/mi-api-token-numerico-coercionado.md": "c2a41dcd04f29e240899d3d6bb1e469fa58e00a2a76ccb5dc122178c8b09f6fb",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "f529bb6d52ca706c680374777d1d3f2a6622342bdd908b7f42f19b52e98a8657",
+     "vault/99_Index/graph.json": "1400efc28030a927d92bccd5eb085055a95e795afc30147945579d415f813d5e",
+     "vault/99_Index/search-index.json": "3617a5e514c479f23b090b29441d1101c412d1db2d828826cb1ec1b28c26c380"
+    }
+   }
+  ],
+  "vault_change_log": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {
+     "vault/00_System/.change-log.json": "cf4b624af898bfcd36f523170c5f0937d17cd3ca7a0088481f45148cb05591ec",
+     "vault/00_System/change-log.md": "9a6325c8e5173f68d35cef9ce453073380ade7e554afc0512d4302c4254876ca"
+    }
+   }
+  ],
+  "vault_changelog_check": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_ciclos": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_clones": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_code_map": [
+   {
+    "escritos": {
+     "vault/11_Code/index.md": "b8d5e6d5648a0a3afe1f42e801fd2b8ad6fd21d632ee6e55a6abc2fa16cc9c82",
+     "vault/11_Code/mi-api/code-map.md": "b42f2276b5c000edf3d747d8d9df95f47b29624da0c5ec3efdd94b79ac5e28a2",
+     "vault/11_Code/mi-api/index.md": "11ae8ca03fa7456f35d73822182f3e8bbc2e508f2f02a17a859023ed3044abfb",
+     "vault/99_Index/graph.json": "8cd30dca939c9cb8bf5db87a93682e495c998d79a60533c0b64c7ad4407bb878",
+     "vault/99_Index/search-index.json": "9ab7d2df6ebfe300808de6c6bc19e4739318567ed8e46897cac36877e6fc37c6"
+    }
+   }
+  ],
+  "vault_code_module": [
+   {
+    "escritos": {
+     "vault/11_Code/.code-index.json": "1089624eb4807bf1b23b4b39922da0d7229f7d8ce4634c7895ff1bcf9468e4c5",
+     "vault/11_Code/index.md": "3efd2f7c16be783b4010fc85a229a1f700ae6ad8b3059bb1d5024eb5072bef77",
+     "vault/11_Code/mi-api/auth.md": "f72a1fc8c5dcdc4552715524b3b340a8f8de9662e2b62bba861438b3241591e5",
+     "vault/11_Code/mi-api/index.md": "aa75ff23624b12da48ca2008f7415b3deb819bcbccce02e3351d8c557ffa8d36",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "150494ababccb5a02eecfb1697b7a7ac96b6121e371a42ff9cf27377e22c9f24",
+     "vault/99_Index/graph.json": "d56bc642ed00138fc03b909f2337698d40cdd6ad31d47a3f78ba3bc9c49fcc48",
+     "vault/99_Index/search-index.json": "c0189db04da3f82bdc5d6edf00e76c64024e3c602493ec3e2e822786c8948373"
+    }
+   }
+  ],
+  "vault_code_query": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_code_relation": [
+   {
+    "escritos": {
+     "vault/11_Code/.code-index.json": "053c3c39e9d92acb7a287dc36bac3d39d659bf43f422777c748915370d5cb977",
+     "vault/11_Code/index.md": "b8d5e6d5648a0a3afe1f42e801fd2b8ad6fd21d632ee6e55a6abc2fa16cc9c82",
+     "vault/11_Code/mi-api/code-map.md": "4d595985715d1b8d09e2b2dbd341eea5cb52a579fcb82c324bdf2c6cf60b2ce2",
+     "vault/11_Code/mi-api/index.md": "11ae8ca03fa7456f35d73822182f3e8bbc2e508f2f02a17a859023ed3044abfb",
+     "vault/99_Index/graph.json": "8cd30dca939c9cb8bf5db87a93682e495c998d79a60533c0b64c7ad4407bb878",
+     "vault/99_Index/search-index.json": "72d31faf10bb68c8964612660a6932fa7a40ee7179e71f1064284f6bd3f06f9a"
+    }
+   }
+  ],
+  "vault_code_sync": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_code_tag": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {
+     "vault/00_System/code-tag-registry.json": "cfa6310774b8898ae856b10afc3ee37a2867645864131199f0e56a665bf476ec"
+    }
+   }
+  ],
+  "vault_context_pack": [
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_criterios": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_delete": [
+   {
+    "escritos": {
+     "vault/.history/07_Knowledge__old-<HOY>THH-MM-SS.md": "fc3e90e36f70fb3a7697168137fe3fcee6d12619cff93d7261189371a88ee830",
+     "vault/00_System/.change-log.json": "0493213e2d036f06224289f126652d64f9f6eb456de1cbcbb230c2517c993761",
+     "vault/00_System/change-log.md": "ec13d3717eecfb261b56cf09baee882c60ddcbdc8415abfb696ab43f11684ba5",
+     "vault/07_Knowledge/old.md": "<borrado>"
+    }
+   }
+  ],
+  "vault_delta": [
+   {
+    "escritos": {
+     "vault/99_Index/hash-index.json": "70d3acc06d4c41a9a074d88416076a7e130c41b85d7dacbc2770714a4c3d93b5"
+    }
+   },
+   {
+    "escritos": {
+     "vault/99_Index/hash-index.json": "70d3acc06d4c41a9a074d88416076a7e130c41b85d7dacbc2770714a4c3d93b5"
+    }
+   }
+  ],
+  "vault_diagram_export": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_diagram_save": [
+   {
+    "escritos": {
+     "vault/06_Diagrams/flow/index.md": "71c0bd6ff44a87c77b6df986995e8862fe0bddbf688d36fb4fd2cf5e6db47763",
+     "vault/06_Diagrams/flow/mi-api-user-flow.md": "f84e3fbeb65dc1135321f128c36b91439fb4e9e3e8a3516577b916e44529c168",
+     "vault/06_Diagrams/index.md": "6b82096df5d53e7bfd8bee5e307408bbce66ec744d8916cd1449abbf066f8770",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "4ef20728ef7dfa9cd5d593e65b54870c05ac097f1000ba0ffd57a51210f949e2",
+     "vault/99_Index/graph.json": "86e9b86250b13891edb4d172d850a437fb3613e478d8d7668e80f10952209c96",
+     "vault/99_Index/search-index.json": "b5da11d215ef78795e0dfa46fdab1a08431f393525e485dca558ebdd3e16db74"
+    }
+   }
+  ],
+  "vault_diff": [
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_doc_counts": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_doc_staleness": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_doc_sync": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_drift_detect": [
+   {
+    "escritos": {
+     "vault/00_System/.session-snapshot.json": "59d0e1cc532cfcf5c51d2f6230fb5c43ee6507d270cc76d7ea75cac02e721353"
+    }
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_env_matrix": [
+   {
+    "escritos": {
+     "vault/09_Infrastructure/env-matrix/index.md": "4b2f2d1f4564089583f5003e54cae788610560fdb75f4358e0dc8ae372aef318",
+     "vault/09_Infrastructure/env-matrix/mi-api-prod.md": "303ba78483c2a4e791bcb393cb9dfd7edd5e22e20a6fee3a27acb341b60dc199",
+     "vault/09_Infrastructure/index.md": "f9bcabe68ea94311e54c5ca44c72be75df1c4ce19c7cbf8946c8e062ae85c1ad",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "6b255c176f9cfaee40999e7f1ffa42c91a3473c7ffbf3e595011a969030398a8",
+     "vault/99_Index/graph.json": "afc942db5aa87d47a23d3b4c33c53520af77d15a1c7d401900a6da514b27d80a",
+     "vault/99_Index/search-index.json": "ce14eee63bcf45b2a56e1fa8a824a9ec39fe383dd9aa5d1c679766acf3e30eaa"
+    }
+   }
+  ],
+  "vault_env_save": [
+   {
+    "escritos": {
+     "vault/01_Projects/index.md": "a94f0cbbe7a8615317c07e928a3e0ae10e84486e14e687582afa167b7f93460b",
+     "vault/01_Projects/mi-api/envs.md": "ebfbaadd0d02e47c5d68acb5803002a8030c7d075ef0ea42044187cbc07e7e84",
+     "vault/01_Projects/mi-api/index.md": "0333915f4f8103931d38836edd4e96f488dcb787acd58b96edf69665df419d68",
+     "vault/99_Index/graph.json": "ff0c7fa0ae853b81144e5773457b6ceeff929f8a57dad60ece678251997caf52",
+     "vault/99_Index/search-index.json": "99caf9dbae1ce3960a4951b0144231ad65e19cff1aab3b86186ea33f6833529a"
+    }
+   }
+  ],
+  "vault_error_contract": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_esquema": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_excepcion_declarada": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_fix_all": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_fix_brackets": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {
+     "vault/02_Observability/errors/foo.md": "c0a5fc833077c9a3533a3a273ee8bf9a72097ac642d27cee45b10f75b63e1ffb",
+     "vault/02_Observability/errors/index.md": "c5de9a3ea4cdc0e744e1a733f88ea11aed5aeba6aa0680981ac509ea06a2a1aa",
+     "vault/02_Observability/index.md": "234550ee9228577c34d52991249652f3735bbecb18a40f152141539afe49b531",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "d2c824d2e2228f40040cec570230d67980be76b64578b9019beb8e4c9e9b2560",
+     "vault/99_Index/graph.json": "eb97889d05a1567cc7c9bf5a1ff58010cb5f57354ad85a897dac2cf8e06e1acf",
+     "vault/99_Index/search-index.json": "126e14914145666b05acf22ad116fd23a04fc657102c767c4b6425c97bb87e94",
+     "vault/vault-backups/.vault-fix-backup-<STAMP>/02_Observability/errors/foo.md": "f3d1cb016211f614845491ad374de6110e623ac5a995bf5d3e67f22f1b518b88"
+    }
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_flow_save": [
+   {
+    "escritos": {
+     "vault/13_Flows/index.md": "bb2bfe31352d1c81d80c1e19f5e4bc4c0401a02598a4a5ccd464a8971f293d92",
+     "vault/13_Flows/workflow/index.md": "14c3226d237eb106f9ae5f68cbcdb7df5ed8e9b7075180b47dbb549ccf21328f",
+     "vault/13_Flows/workflow/mi-api-user-registration.md": "1eec9e11bd3b400bcfd41dcb4f847f7ef2d25eab4c126008bd0459e631586b87",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "b41938d7de77a03d17a2710b65c01b7356c19ec1c6e95b4303e54ec8e3d927a7",
+     "vault/99_Index/graph.json": "74815384cbbb6e5b21dd8df2fedc33f745236f90a082d344a0340af51df46a13",
+     "vault/99_Index/search-index.json": "ce6a988f472beff6b3d48aae4a97b3bfca4ffbaae80dc0eed82468ce1ba5daea"
+    }
+   }
+  ],
+  "vault_folder_registry": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {
+     "vault/00_System/custom-folders.json": "6c780dce9b861f7f0a5cc00ea73658745cb4e73f6ef0bf21e3550f570e19e567"
+    }
+   },
+   {
+    "escritos": {
+     "vault/00_System/custom-folders.json": "3eaf8103af9e143780c8c5ed761afe6c16b1d621779ff1d5a5977cd9a34dd848"
+    }
+   }
+  ],
+  "vault_foreign_check": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_frontmatter_completar": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {
+     "vault/03_Decisions/adr-001-mcp-transport.md": "92f6f33cdc2c5d9f953e296d22b42b67fa3b5848fd81b46921414a3ebf869abe",
+     "vault/03_Decisions/mcp-transport-contract.md": "21c9b0ce69108d1376d968cc89035c85cee958846e97670a37c5796f5e446ce8",
+     "vault/03_Decisions/mcp-transport-operations.md": "cddfe08624ce286d02d468594be1d8ba7f89bd58225306632d70b5c09db7c252",
+     "vault/03_Decisions/mcp-transport-provenance.md": "04b149abec03cb65987b68403a716d83583117bdbace100c14b43fec60601ccb",
+     "vault/07_Knowledge/fixture-incomplete-00.md": "a6f1f21e08893aa9dc3ad5a3959f3e17dbd0a8f108390f992c4fcfc0fdc13cfc",
+     "vault/07_Knowledge/fixture-incomplete-01.md": "eccfa8baf219eaab80b289b0ed10ab4361b4c985090e901b40416f32961d191a",
+     "vault/07_Knowledge/fixture-incomplete-02.md": "7bc54df72c8dd1a965fa993a5b5a7e7177e581a196e0ffb1d9f18cded9623890",
+     "vault/07_Knowledge/fixture-incomplete-03.md": "29094102671c849fd7f7bdac6395224dbe4fe51fef83ce32a0aaf93a7c63b052",
+     "vault/07_Knowledge/fixture-incomplete-04.md": "de888f211e2da8a3f27347a2f516b8510f8bbcc0150abc3ce196d895f1556849",
+     "vault/07_Knowledge/fixture-incomplete-05.md": "6775f3d000d99c780214a05c7317e75621827e83897307ddaac96f6fd1a2eb0c",
+     "vault/07_Knowledge/fixture-incomplete-06.md": "184a800598a819177729c46e7253e250cabac1075372fb4d781db37e0e575979",
+     "vault/07_Knowledge/fixture-incomplete-07.md": "0079be83f4e61253c573396ccc38078f2f2019e7941e4d6d0c0f2ecaaa361f75",
+     "vault/07_Knowledge/fixture-incomplete-08.md": "0cfca2ecc47546cc0caf37b8d2eb4b613774b2af97b51ff8be1ae42d74b22954",
+     "vault/07_Knowledge/fixture-incomplete-09.md": "b5e46fab0158de8548090673cddb9fc0a1b93b23b8740ce6e2b06aaa8a466f84",
+     "vault/07_Knowledge/fixture-raw-00.md": "2c857591d0a18093917a46de8f9ea28aca841cb848505694601e58dbbdcfec6d",
+     "vault/07_Knowledge/fixture-raw-01.md": "c764b71c9213e4c305a3f32b74d7000abb35404bdf25fb3850ee0675aefd4edb",
+     "vault/07_Knowledge/fixture-raw-02.md": "b04ee7c1372bb5dcf1eeba95ebf6ce7d56b7b9d5dfc3d5f67677a806fcfd2078",
+     "vault/07_Knowledge/fixture-raw-03.md": "b603d107797bf1db38b66e7d63683209c6ffba05d8a27e571ab3e5246a8e8bc0",
+     "vault/07_Knowledge/fixture-raw-04.md": "e7c78c4f1c5bc5c78561a7f46e0a1538aea586a6eba2d63d2742fb93394c3835",
+     "vault/07_Knowledge/fixture-raw-05.md": "e804d1cbc76b9c68d544d918ae5def8ed69525113752e425fcb435656bde6038",
+     "vault/07_Knowledge/fixture-raw-06.md": "d33f8b65d87fc6c12d008c7b51867ae313d68870a1615eb29a6d8cc27651795b",
+     "vault/07_Knowledge/fixture-raw-07.md": "fd946f10393876f837508ac009b4f71d9845422a239cf1e89cf42aaaa677854e",
+     "vault/07_Knowledge/fixture-raw-08.md": "3caa4fa1df2c07884b146dbb76492ed3a851410335abead438ad7fafd01569e9",
+     "vault/07_Knowledge/fixture-raw-09.md": "0cde537f5ce842784c9cbd68794173f7ca2c612f7fe9372268556e9a3c451202",
+     "vault/07_Knowledge/index.md": "1880e77c490ee72dce94b9078d74168fa1f629b8b25dcb9d900b2eb8916607db",
+     "vault/07_Knowledge/parser-evidence.md": "cf59f8a7a9b11ae1ff53efa3ee80498d4c9aa89a173bd46f79a6828bbba3102f",
+     "vault/07_Knowledge/x.md": "de59cf98cc535b8d863905b57466da53801f3d364f7bbe8ebb389fca8876ab63",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "df0c166ff47016d96a220edee97d30a067c20605c07de9e68e8db697f802972b",
+     "vault/99_Index/graph.json": "17c0eb79924c242a411f63b51e030072f50ee23b1091625a8c25839a8d4cdb34",
+     "vault/99_Index/search-index.json": "36aeb55f88106103214951a7403a33d4e81c5153351c758457fd340b1780d0d8"
+    }
+   },
+   {
+    "escritos": {
+     "vault/07_Knowledge/index.md": "b2479b85489897f55c913d0f62d0194876df3a649edbda5b1f7e28056f47360b",
+     "vault/07_Knowledge/x.md": "de59cf98cc535b8d863905b57466da53801f3d364f7bbe8ebb389fca8876ab63",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "df0c166ff47016d96a220edee97d30a067c20605c07de9e68e8db697f802972b",
+     "vault/99_Index/graph.json": "17c0eb79924c242a411f63b51e030072f50ee23b1091625a8c25839a8d4cdb34",
+     "vault/99_Index/search-index.json": "952cc77c86b9daf8ce04e02f66f7b75b78729b3e2dfb986f4acebc72bf10477e"
+    }
+   }
+  ],
+  "vault_frontmatter_heal": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {
+     "vault/07_Knowledge/escalar-sin-escapar.md": "4099c77a120c24284e88247c5ade0d506a465ad1176d24aafdb64b1eb34c059f",
+     "vault/07_Knowledge/index.md": "da3609b60133f70c17413c5669a8bc7902f156f4755fbc94b0969baef683f047",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "189d6f953dc7ce144f1af81ebb2561abba8adf483fc42a5c8513f2cd65ac89da",
+     "vault/99_Index/graph.json": "557fcc9632e4b703147a849e671ac90a51fb7febd59538fa8774ce8b5f45929d",
+     "vault/99_Index/search-index.json": "c941943376e6bcec7d7dc5918f7c118aa50660501779bbc8b3c3fff422a114ae"
+    }
+   }
+  ],
+  "vault_fuente_unica": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_fundamentals": [
+   {
+    "escritos": {
+     "vault/00_System/data-fundamentals.json": "450c81059ed94088e0c0edd9256d76aa1ea4885380d5faf4285674800f0107e0"
+    }
+   }
+  ],
+  "vault_gate": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_graph": [
+   {
+    "escritos": {
+     "vault/99_Index/graph.json": "e70e5b6d93d28c881d9789fe5d89423374cd589f11c48c6b6ae33d7076035a38"
+    }
+   }
+  ],
+  "vault_graph_fix": [
+   {
+    "escritos": {
+     "vault/00_System/.graph-fixes/<HOY>.json": "c77495bdcd77fae82f94b78c9b49fae87a230f8437207d63c60b72fb8fe81840",
+     "vault/01_Projects/index.md": "3994b9e2b88158211a82ae1b256cdb35422258f98856fbac5089b5d62960bf45",
+     "vault/06_Diagrams/index.md": "a3284489e90bafa06e549dabcf6d2803c5cce5a4f1b846fe93768f8970ca05ff"
+    }
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_graph_inspect": [
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_graph_merge": [
+   {
+    "escritos": {
+     "vault/99_Index/graph-enriched.json": "104537d71d894882b249d4cf26c5e353a8bcc24e174ae6bd4460393c79d8c3ef"
+    }
+   }
+  ],
+  "vault_history_compact": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_impact": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_incident_save": [
+   {
+    "escritos": {
+     "vault/02_Observability/incidents/index.md": "7233fc5bae7b9dda5d5c5fe8117e02e0e584469fb45bb099749e2c041af9aac1",
+     "vault/02_Observability/incidents/mi-api-<HOY>-api-caida.md": "e67b349787d3424f0a629d455bb585fcd9e6459c584f8e76805fa7d57593d7b4",
+     "vault/02_Observability/index.md": "f0d09621d03b0b0e567e4b82ccbccc947ac778232abacf8241e08a053ada53c6",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "19fd5bf00acd3959b511327898b123bfc383daa4e4804acaa5f82609e60ccfb4",
+     "vault/99_Index/graph.json": "124bdb999e99d4334a64f0f509648660f4ccf6f5699b9ff96718cd1210061f04",
+     "vault/99_Index/search-index.json": "49f4df270d4365e6c5bc5390b35368f87ee2e91d4719e1f27a27e228f8a417ff"
+    }
+   }
+  ],
+  "vault_infra_map": [
+   {
+    "escritos": {
+     "vault/09_Infrastructure/index.md": "7d1be5d0c8924b35d68a6d78ede849372c32db539347ab9c69e34eaac402671a",
+     "vault/09_Infrastructure/infra-map.md": "5886d4fe9a19ee565d8495a76d99441bf5ed3590108ee636699baeb85b033de0",
+     "vault/99_Index/graph.json": "15e4daf185949f66058e6355f1747060557dd7d4486b8bc1434eb8ec35ab5a28",
+     "vault/99_Index/search-index.json": "95d073b1ec17dc9a5cdd3eac1960e9a515b225b879147c0e76efe22e8cb00ad0"
+    }
+   }
+  ],
+  "vault_infra_save": [
+   {
+    "escritos": {
+     "vault/09_Infrastructure/.infra-index.json": "c88eca043563ad68c0b0c01bd0339b5169e7e513fc748f0fed9ef8deb4be888c",
+     "vault/09_Infrastructure/index.md": "37a0b5f47277a11cbed69d43537644b6b63e721c1835452d864d13af2b046901",
+     "vault/09_Infrastructure/infra-map.md": "f37546c4accc08fb6ede6109276c8819bd61189d88f9c904bc1d1ad5aa5fe697",
+     "vault/09_Infrastructure/servers/index.md": "42f6dafc17237c808ffc7fa4b7f5036e2c49132565bc6500eb9f0d7d1219ba7a",
+     "vault/09_Infrastructure/servers/prod-cluster.md": "e1ec8223cae707cce0f6cf60801809c8c94056668e3da7a58531ceded1dc427d",
+     "vault/99_Index/graph.json": "7827023d7279128bbe005fd29cf4dec2a5224dec9084b4282fc8a246578888d0",
+     "vault/99_Index/search-index.json": "019b4befbc81629c08e190f338427e313a45d10cc9b375e118b7c85b1b0c4e89"
+    }
+   }
+  ],
+  "vault_ingest": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {
+     "vault/07_Knowledge/index.md": "5fd6cd595b8930280342e365afde03584def381f2cdc140d0f1516259ca55e23",
+     "vault/07_Knowledge/texto-del-ejemplo.md": "2d8d47aaaeaf867e63dac4e81bf30f613199dcf6605f5124006eea0f883e231b",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "bbc5022e4f3946506c9adb0402ad061626d235c03a0fa455dbbdf62232cf05da",
+     "vault/99_Index/graph.json": "1f5c3c84223c3e90b6373ca82c44872530ff2363631f07f48727574aa547b475",
+     "vault/99_Index/search-index.json": "454924ba3d151b407da2c92d701cba8cdf436d05be4e701b38ffbe6855f93663"
+    }
+   }
+  ],
+  "vault_init": [
+   {
+    "escritos": {
+     "vault/99_Index/graph.json": "e70e5b6d93d28c881d9789fe5d89423374cd589f11c48c6b6ae33d7076035a38",
+     "vault/99_Index/hash-index.json": "df27568ccd2c1d82cc6b3a20686a9bd83423c9ae5e04713a93e8c9c5eba1baf7",
+     "vault/99_Index/index.md": "56fd457840fa15103fb476af682e338caacbb863890015c4df4948c452ee4e76",
+     "vault/99_Index/search-index.json": "a9615dd7a425b5b90b7312dd01419c4c670077addcca2991e1f461bf897e370e"
+    }
+   },
+   {
+    "escritos": {
+     ".casa/mi-vault/00_System/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     ".casa/mi-vault/00_System/tag-registry.json": "a6b6427314003b581d63444da384b601807cabd79f2f90ecdcf7c6400848b26f",
+     ".casa/mi-vault/00_System/vault-commands.md": "15ee5929e8a6a3123437197e2dfb44c9e0a918eb2d8e044b735fc5ff7ac21baa",
+     ".casa/mi-vault/00_System/vault-hub.md": "26f9d4a56377c94ebd4e4c354ef10e8143314dd5a28be70802831cd7387fdaf4",
+     ".casa/mi-vault/00_System/vault-ontology.json": "050a0a1f2f32ce01cadf32cc8e37f6f1dbb1c6b0976d223f48ca16c7b15b27ad",
+     ".casa/mi-vault/01_Projects/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     ".casa/mi-vault/01_Projects/00-01_projects-primer.md": "0c03666db68f058fa9e39618a1a8e0602543d053595531bb0599bdef9856baeb",
+     ".casa/mi-vault/01_Projects/index.md": "fd0e4be9f548fce7fb70768b9542a3e9ef39c67f1fb982801478a0dd8289330d",
+     ".casa/mi-vault/02_Observability/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     ".casa/mi-vault/02_Observability/00-02_observability-primer.md": "de4ec0c5ce9d4648c4adf6a7684eee8ddf9d5f9c19e1d2346d7ac8f8805ee0be",
+     ".casa/mi-vault/02_Observability/index.md": "504d88c1a2190993ac24cc91e2dd4a953e7fae3ccce7349df7249ac2d722693a",
+     ".casa/mi-vault/03_Decisions/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     ".casa/mi-vault/03_Decisions/00-03_decisions-primer.md": "5f64a737e76bc75f4690c602e87141320310f4fb664dc28dd0c6b8cc88d8f9a1",
+     ".casa/mi-vault/03_Decisions/index.md": "349bad7de47587039200db417c3cf43b0178db0654b9f55b2da69214d1281f50",
+     ".casa/mi-vault/04_Sessions/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     ".casa/mi-vault/04_Sessions/00-04_sessions-primer.md": "09e1d4fa43148d75e1298afe721a9e9a058ccb1be2b1e3f5a75b9fe4bbf0cc38",
+     ".casa/mi-vault/04_Sessions/index.md": "75016bfaf5bad485862b09cd1f2deede0b33e116a29fe99608055e3141233204",
+     ".casa/mi-vault/05_Patterns/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     ".casa/mi-vault/05_Patterns/00-05_patterns-primer.md": "1acc0950ec56e319df0e423dce043d97e577102653d843ee94b640c95239c098",
+     ".casa/mi-vault/05_Patterns/index.md": "f5834e842aaaa4dbe4dceec390b4a32f2ccb56fe02cc84604771c9f04d6e56e0",
+     ".casa/mi-vault/06_Diagrams/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     ".casa/mi-vault/06_Diagrams/00-06_diagrams-primer.md": "e17ac87b71f6714f9d61ce9a85c799abd71f67188f7df31c5dc9efd58b366ddd",
+     ".casa/mi-vault/06_Diagrams/index.md": "7d2a407e07b4c86fe2553faf580f587b56f822c7fd171c23adfb1a86bdc99749",
+     ".casa/mi-vault/07_Knowledge/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     ".casa/mi-vault/07_Knowledge/00-07_knowledge-primer.md": "a35e636eaf60ecdafc3be1836ed11dd2e07f8a6775f3790670c1c022a531ba46",
+     ".casa/mi-vault/07_Knowledge/index.md": "7a29d258b1fca170584cc03efac71f72f1db6cf3b6d4c1f3364a6c2f211dd967",
+     ".casa/mi-vault/08_Runbooks/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     ".casa/mi-vault/08_Runbooks/00-08_runbooks-primer.md": "5e5ca7216e0d3642e6b4350746d70c14df1dddea4c28a38281f1dbd43a95683c",
+     ".casa/mi-vault/08_Runbooks/index.md": "258cb3f26d8403bdd2867f3eadaf742f5cd84f45a7c320070bf3ca99d17a29a0",
+     ".casa/mi-vault/09_Infrastructure/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     ".casa/mi-vault/09_Infrastructure/00-09_infrastructure-primer.md": "7ca40d67257e2ea0b6dadcf279e2fd89dbd04a444ae6694611e1d7fc7fc91477",
+     ".casa/mi-vault/09_Infrastructure/index.md": "ea1e101f14c56de8d99176703ad21bd23b505fd29f2116a34f516c8c0afdacd1",
+     ".casa/mi-vault/10_Migrated/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     ".casa/mi-vault/10_Migrated/00-10_migrated-primer.md": "e97f0dbde5329f1903eeaf7a8b505ed6b2a0c8b0a0187971f1464a938be3ac2c",
+     ".casa/mi-vault/10_Migrated/index.md": "3159c04ccfa7b768a36f5369b2ceedc8c71b0d4e4ad123dacc6f17f92927f769",
+     ".casa/mi-vault/11_Code/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     ".casa/mi-vault/11_Code/00-11_code-primer.md": "0fe4f5c91169a9d407064f4af9803503c723327f608ba8cab3f9e1d1e8c3dbe5",
+     ".casa/mi-vault/11_Code/index.md": "c704b3693d49b2d7944683ba281e4b56b4289a0dd8d80fec9071d95f51c99d76",
+     ".casa/mi-vault/12_Bibliography/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     ".casa/mi-vault/12_Bibliography/00-12_bibliography-primer.md": "89a32a56165e2de9c8abd00cd321a12ee23687aed2426454e24e76c6ffa6ed17",
+     ".casa/mi-vault/12_Bibliography/index.md": "b44bc951392118d53d3b919f1fe5a3ed6c1d160f657c252aabed9e1bd9bcaeac",
+     ".casa/mi-vault/13_Flows/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     ".casa/mi-vault/13_Flows/00-13_flows-primer.md": "0979333ee30f66f33f3e5784e134c167605c969d963ebde0438ec24b4eedb5c1",
+     ".casa/mi-vault/13_Flows/index.md": "83876e5f9201260e821f7b6922959f21651118954e327f1085cf83a6cc5cc57a",
+     ".casa/mi-vault/14_Requirements/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     ".casa/mi-vault/14_Requirements/00-14_requirements-primer.md": "0a2d752a6fe47fd7d6afb9ec46ab6fd8179c2786e8a8840b6bf0bff66c30165a",
+     ".casa/mi-vault/14_Requirements/index.md": "555b430c7fdb926ce84636ddfc337f8d9c7c3b80c23335a7d22590aac52a5fb7",
+     ".casa/mi-vault/15_Tests/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     ".casa/mi-vault/15_Tests/00-15_tests-primer.md": "034e776bdf8e2d43e838cf4a3ad1c5fddd7174bcf893bcb275bace1fb5e5b4bc",
+     ".casa/mi-vault/15_Tests/index.md": "802a0a728f8c20d3ac7464f45b2756fa66aec84a299864e67b1859bdf8513ac5",
+     ".casa/mi-vault/16_AI_Governance/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     ".casa/mi-vault/16_AI_Governance/00-16_ai_governance-primer.md": "641acda9edac42394b2d1cbd1d5c456d9300d4e62c550a920ab2e669593a3689",
+     ".casa/mi-vault/16_AI_Governance/index.md": "1f873edaecb71f390e348f76e1941a3436233cbece54dcc736ed6fba95510d14",
+     ".casa/mi-vault/17_Preferences/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     ".casa/mi-vault/17_Preferences/00-17_preferences-primer.md": "247b8d0d22428670cb096471724da13dfb4f40f5719d265c1e20b3092cb4d554",
+     ".casa/mi-vault/17_Preferences/index.md": "e929b2e5f2042c51a5d306d3cb87afce3491bc67771c398f2b39694ada8e101a",
+     ".casa/mi-vault/18_Bugs/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     ".casa/mi-vault/19_Audits/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     ".casa/mi-vault/19_Audits/vocabulary/tag-ledger.json": "b967b4880987b00871246593e98d8b06565b7a92543435c2bb8862d59f91922d",
+     ".casa/mi-vault/20_Quarantine/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     ".casa/mi-vault/21_QA/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     ".casa/mi-vault/99_Index/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     ".casa/mi-vault/99_Index/00-99_index-primer.md": "83e1470716dbb0e1bbe35a083d62cb77b1fdd9696b53e0fd6d5131ed59c6844b",
+     ".casa/mi-vault/99_Index/search-index.json": "ccaa0d63bc839009598050689a4536de99b5eda4aa90479a6b57ed7d3343100e",
+     "vault/99_Index/graph.json": "e70e5b6d93d28c881d9789fe5d89423374cd589f11c48c6b6ae33d7076035a38",
+     "vault/99_Index/hash-index.json": "df27568ccd2c1d82cc6b3a20686a9bd83423c9ae5e04713a93e8c9c5eba1baf7",
+     "vault/99_Index/index.md": "56fd457840fa15103fb476af682e338caacbb863890015c4df4948c452ee4e76",
+     "vault/99_Index/search-index.json": "a9615dd7a425b5b90b7312dd01419c4c670077addcca2991e1f461bf897e370e"
+    }
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_kernel": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_knowledge_get": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_knowledge_save": [
+   {
+    "escritos": {
+     "vault/07_Knowledge/concepts/clean-architecture.md": "be71e9f5023c38486207f54cb49191e4619afc3e3092d664ae842e10ad678936",
+     "vault/07_Knowledge/concepts/index.md": "f4f6f59d6cc2d06a3e46cfb604265de8c1eed5d9642ba6ec1d3d802b34f0babe",
+     "vault/07_Knowledge/index.md": "9e234851f5a09e2d7af4a6902c71e679dd932af4766561e5c9a21aa1598d5948",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "e901b2a2bdf1416117d70614b1884406c58aa0241f25e7e77333d07a46645690",
+     "vault/99_Index/graph.json": "a76566af76c207642c336c7faabee57c36dbedb3b975ba23cd4a6c87ef6f946b",
+     "vault/99_Index/search-index.json": "d6f140a66032a7504a8c8babf7977d279470422492bf5c6ffe1bb94912ae096c"
+    }
+   }
+  ],
+  "vault_list": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_log_error": [
+   {
+    "escritos": {
+     "vault/02_Observability/errors/<HOY>-nullpointerexception.md": "c182b43b66f623ff131d4502791883c777016be655139979d715872e8abec84b",
+     "vault/02_Observability/errors/index.md": "7fd4b0be0c6999cf7013ec726c78198d30295885de4de4dc3e2e248b33345f27",
+     "vault/02_Observability/index.md": "7c3d104e36d9ba20dc1c0ced6d08c989e212df244edb8bff4bd9be49818814c3",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "c01307513fd59bf64a1ef7155000312c29268a1aeed8d232a27985b401f82b2e",
+     "vault/99_Index/graph.json": "14f59250a37287b4c7ddcab45f6da3ec81a4ce187704ca6c30aab61a9dad9395",
+     "vault/99_Index/search-index.json": "51fd634bcb8d476cab351aeaa730fd3b40c154c6af4539728bb7fff04224c1cc"
+    }
+   }
+  ],
+  "vault_master_index": [
+   {
+    "escritos": {
+     "vault/99_Index/index.md": "56fd457840fa15103fb476af682e338caacbb863890015c4df4948c452ee4e76"
+    }
+   }
+  ],
+  "vault_merge": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_mermaid_check": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_metricas": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_migrate_docs": [
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_migrate_rollback": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_model_profile": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {
+     "vault/17_Preferences/model_profile.active": "98038b25280788a45a2f06c209513024c99adee81c6416b691b4b5872db7e027"
+    }
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_move": [
+   {
+    "escritos": {
+     "vault/00_System/.change-log.json": "8f6985989914e66f999f02efdedadb3f063aead6b0114f108779611c93182298",
+     "vault/00_System/.trash/foo-<STAMP>.md.bak": "7146d2ff3191cfad91444f26f3a4f3ab831bb918f0d8d86fff03e8ae64932a5f",
+     "vault/00_System/change-log.md": "182c26609882538cb793ca112c85650f9b28c87b3ccd710f2d067e105c86f1a0",
+     "vault/00_System/move-log.json": "d058835529a303cabd37d135a536ab08ec7fd2b4bad78dc2f433ce8cd49aad14",
+     "vault/01_Projects/foo.md": "<borrado>",
+     "vault/01_Projects/index.md": "b1d2e3f62ccb3342eccd67e77bb4012c54b14428eceebbce765482f8eb17a2ce",
+     "vault/01_Projects/old/index.md": "e19fedb3beefbeace3ded708ab6914b35a2db4e63441770ec0701c1c81d22ce5",
+     "vault/03_Decisions/foo.md": "7146d2ff3191cfad91444f26f3a4f3ab831bb918f0d8d86fff03e8ae64932a5f",
+     "vault/03_Decisions/index.md": "752551b6d8095686458c27a5bfc527469e4a01dcafc02886e3f9010fba108617",
+     "vault/99_Index/graph.json": "2152c6005524900106b06bc49be0e64ee46784c4b06654bc7f08c20499b01f40"
+    }
+   },
+   {
+    "escritos": {
+     "vault/00_System/.change-log.json": "b331d710001f2fe31de5f771e77eadee312fd844532782b81a4cda3f69244980",
+     "vault/00_System/change-log.md": "d91a7bbd5f5287bf01d75c3f1ac6f02a7069dfc6bf08829f889c31f37cf89990",
+     "vault/00_System/move-log.json": "edc8d4477fc2671b0bb071d5b939541b8ea1db8627610a5ff48c84fbcac0e33c",
+     "vault/01_Projects/index.md": "c43bcd714296b678636a859f91d5164736691225681bb82cb080e7d9a6320bdd",
+     "vault/01_Projects/new/index.md": "77959fd4a0c857fb6821059b796bfb6703b3111bb2901dcebd602ccd7087f938",
+     "vault/01_Projects/new/nota.md": "cfda4cdf0e033fee12e7b7175d5fd241893b5a0039b2fa0da2969e65f9eedca0",
+     "vault/01_Projects/old/nota.md": "<borrado>",
+     "vault/99_Index/graph.json": "ab845cb566fe2f30dd79e8376a166516855ae99fbf0dd1edfd277fb4ce640a6f"
+    }
+   }
+  ],
+  "vault_ncr_save": [
+   {
+    "escritos": {
+     "vault/02_Observability/index.md": "e66e52a4ff315e49899a7f59b8d577f8387204a6b637bf39701fd7bf20338eb3",
+     "vault/02_Observability/quality/index.md": "e58fba413d40df2ed31601a4b99fbdddf1d3ba564d9452cb83c5767c00bb6e04",
+     "vault/02_Observability/quality/mi-api-<MES>-missing-validation.md": "2cbfbeccb657a3b65a45c220a8fcaba5774f78c4f7dede800b2bbddfacf89b45",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "7d8703f205daa7ebaf5d0f644e0f3430d654c6a6d77131c7faa7b0bd90c65574",
+     "vault/99_Index/graph.json": "a4c3cf29693a65108b0e67ec6684f03122c37ba6ad8a1c5324aa17b53e4306b3",
+     "vault/99_Index/search-index.json": "f0062e1d23c9afeb9e9fb45575b017f432ef149ec09cfbb2cc0cd187985f820a"
+    }
+   }
+  ],
+  "vault_noop_audit": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_norms": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_norms_coherence": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_onboard": [
+   {
+    "escritos": {
+     "vault/01_Projects/index.md": "9a81857d31951b5554f245f81064f3bccad4b64a38dcd9c09fdccb7d6eada71b",
+     "vault/01_Projects/mi-api/index.md": "eda1b74cc1b9ee715dc837c0d7069998c9684d6fb96f9171287e86131c7cd0e8",
+     "vault/01_Projects/mi-api/overview.md": "1d5176ae42c5142d3ae92644218cc16ddcf330cdab2fd00b5af5ecad76c9d42e",
+     "vault/06_Diagrams/component/index.md": "3ee4e3b5ade840a80dd87c8fcfb5db0aadb89fbd5237bc16df0005a646824d26",
+     "vault/06_Diagrams/component/mi-api-architecture.md": "f677884230f660675e5085e3128aa8a859a80279bc19d5fd0a3e05f7147832ef",
+     "vault/06_Diagrams/index.md": "a6d8bb767c7d4758092c7340b2ec2a7e541e564243896d9d8f1c492e553b58e9",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "ec64877c7c8413b6b4f97d3f559da79c4e06e4ff8355dd154bfa7dfa89f163ba",
+     "vault/99_Index/graph.json": "55df4a71ab084eadf0c60004315e0710cb154a6a947945df45c64deaaf152f85",
+     "vault/99_Index/hash-index.json": "ed5b31dddfc616e39eb84cffdcccc4bc327c23d228040acd8ff5e024ee9be419",
+     "vault/99_Index/index.md": "b33a62b30431dc6534d20cc3f059d13fb9c3389b3ed202ab80391dab60f80e9b",
+     "vault/99_Index/search-index.json": "d15d817a870263c601783f35d8723b3f5a68eb8381f099687ddb34ff805cda18"
+    }
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_pattern_list": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_pattern_save": [
+   {
+    "escritos": {
+     "vault/05_Patterns/architecture/index.md": "602d6e546bd1e46e3d5c34c5217051dc07cbb243e4597deee553df50a87c75d4",
+     "vault/05_Patterns/architecture/mi-api-repository.md": "e69820bde69ba90bc6dd7b269b2cf2c791b09fe7d1a00fa6f4202d02c28642f0",
+     "vault/05_Patterns/index.json": "ebc5822f3735aaa8f5daec8cda0d385a732fc8b72091c77d07d50a73df39ff8e",
+     "vault/05_Patterns/index.md": "e4e0a103f20af3d7ee5d9086f30769f25edd05437930ba544763d5302df5b59b",
+     "vault/99_Index/graph.json": "bc35d9762ec20229ab4c2bb1fed60afa26fe5f109afc9775442eab440a90cbea",
+     "vault/99_Index/search-index.json": "e5c979c6b775f1016f3f7880dad07fb4fc1bb8383c0bbcfa6bd1f612502fa48b"
+    }
+   }
+  ],
+  "vault_preferences": [
+   {
+    "escritos": {
+     "vault/17_Preferences/constraints/index.md": "1201f71023a35c65e10c0e01bfb684830c37bb3c934be70055270c476e03c409",
+     "vault/17_Preferences/constraints/no-mover-tools.md": "2d1c7bd4beab25306cac871d25925fc1cdc9167233a27437beba55be4c907b8f",
+     "vault/17_Preferences/index.md": "526d1e795c75c7ea2d81eafa572fcc0fd10caf6e46234c4bc95549eec908c825",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "42c557aeef090aacad9e9dfdcea804001a5066af288032279dc6ec5a5bfff47a",
+     "vault/99_Index/graph.json": "506c84d9007cbffa38de687681fbae144326197517f4526e1e175bcdd5f09790",
+     "vault/99_Index/search-index.json": "3c2b2b12ac3932c9531bcc51e8532ba7ccb78722852d238eabc151e14409b953"
+    }
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_privacy_save": [
+   {
+    "escritos": {
+     "vault/09_Infrastructure/index.md": "7427021e97e5ca1bb33164483a574e4b5a75bb82e189299f1662eeff04a6cb17",
+     "vault/09_Infrastructure/privacy/index.md": "e0ec5998a158f54a31d5659ff987a7f90c117528c0140a61d70c2f7bf1c3296a",
+     "vault/09_Infrastructure/privacy/mi-api-emails-de-usuario.md": "70b2dae148eef4064f648647c6f0f2932291e2b64237ac03583900321a890205",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "eab62ca16edc96907c06066547a00a12f1f79ec290f8dfd9b2beda396d8e156f",
+     "vault/99_Index/graph.json": "cfacd71e8027098bd4b17253a2a4fa6a820dd4f175178c6a8da693d2f4b40f53",
+     "vault/99_Index/search-index.json": "a5cf15474956b6a2037b247ff8b623ac87f9bc18a0d2e6fb1ad9b33dbd30b744"
+    }
+   }
+  ],
+  "vault_procesos_git": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_produccion": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_project": [
+   {
+    "escritos": {
+     "vault/01_Projects/ans/index.md": "23859f1a6632b8ae4a8ce0062e345d803fe7bc3e49bcb11dfe2c1f4a20256a85",
+     "vault/01_Projects/ans/project.md": "d03e7b39e357fee54f32b3c5e77550fa9415063bfcc3a133318731534cbb45be",
+     "vault/01_Projects/index.md": "caa8146465149bbc3f88217cde33cf889760cee10f495c95a2eb611677d0b74e",
+     "vault/01_Projects/mi-api/index.md": "6b60ca4d11d7eec1a798caad0f75c9287a46fdca8a4ce8ccfb700b306d52d669",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "d063916c88aac600d8e9f15a9bc3b815077069b8f53519dea0b1b1f594346dd5",
+     "vault/99_Index/graph.json": "7dc05b51dc595169b6a088d187dd58d913d57155ae33b4397e7eb6bf11f1e7f3",
+     "vault/99_Index/search-index.json": "ed6db131500c3d09f0e92e086ac6e9b66ad59d8d5baaa6e21ce5ff640dd9d632"
+    }
+   },
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_project_overview": [
+   {
+    "escritos": {
+     "vault/01_Projects/index.md": "8ff518591a67c59a746093fb5263def9c54362b2fbcef4433162e603896e3f95",
+     "vault/01_Projects/mi-api/index.md": "c8fde9b317f61dc4f46c8f06c1ffbdd92eedb02ad09e13b84d73b03b1e9e05fa",
+     "vault/01_Projects/mi-api/overview.md": "f5f11c3095436fdc92befb977fe35f476cc1821259dba047e854de8a10e022e7",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "7463b7d1785c1b226909c653e80454dbce6394e3d96101980215533371869685",
+     "vault/99_Index/graph.json": "23f5b6ee8ae065251d47db876c62cc9dab5534bf4b1ae447d62be535f04a2d3e",
+     "vault/99_Index/search-index.json": "059de6d528632c990a6f0e728499ff7512aa4c2ffe371625a567e2d00292782b"
+    }
+   }
+  ],
+  "vault_project_status": [
+   {
+    "escritos": {
+     "vault/01_Projects/index.md": "e899816c79b35245422f7b3a255543b7304d8dc0c18c9d47fa4b366b998e84be",
+     "vault/01_Projects/mi-api/changelog.md": "12aabb7e3be45d0f9c254568fd1e8d820cb343e0f4c89ca7203384e5a6ca7496",
+     "vault/01_Projects/mi-api/index.md": "1722570f6e0ce3cc3a6346a2f1e828557890d2ead382fdd8064e77a57ced337a",
+     "vault/01_Projects/mi-api/status.md": "ea95e267469b98b9ef3fd456a7b57f56127fffe38cc3366bb0eb8e7466f978a5",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "28cefea5487decf522c75b2811fd0aec09d699b3940af6d70c4802df3af53849",
+     "vault/99_Index/graph.json": "a12ace6d6bae3b8fb024a1cbfbad49906b68ce9b2a522820646763a87ffe57b2",
+     "vault/99_Index/search-index.json": "a98ab9492b8381e6f51bb3707e1f8ac905cb1d630a5ffb54e1e9fea25704aac6"
+    }
+   }
+  ],
+  "vault_propagate": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_qa_save": [
+   {
+    "escritos": {
+     "vault/19_Audits/vocabulary/tag-ledger.json": "3ed800dbf5070c88ab48ac27a77013f616f276bfb7902b1a4462c8a257e1c176",
+     "vault/21_QA/.qa-index.json": "b85971f64c7f495527aca2906626572e2ddf62bc8346d00fc3ed4c962025f9b3",
+     "vault/21_QA/index.md": "4f3c77aedf259b6c8f0936c6462a1464a6b36792c6f8d8186e834eb82744acc9",
+     "vault/21_QA/test-plan/index.md": "2ded2415357003b6316bca91fd47402228a0b690f2580871b42c9e1805d265c7",
+     "vault/21_QA/test-plan/mi-api-plan-de-pruebas-v2.md": "7142c3b4fa5672538a1aab9e25075169f365756b3fa50ca4d0f722bf6f2ddb91",
+     "vault/99_Index/graph.json": "72435aa42c4f374fb90c7ea754474444a34e88c78b89949625460c80c373d1a6",
+     "vault/99_Index/search-index.json": "965fb0521c67bd31c35e71a3b8215f3b9962f69dd9403667bc9a0f458d631596"
+    }
+   }
+  ],
+  "vault_quality_check": [
+   {
+    "escritos": {
+     "vault/00_System/quality-index.json": "08dd7649f45b3113ab071425299f15d9bc21d6d7e222cfca2d28a80d905f39e0"
+    }
+   },
+   {
+    "escritos": {
+     "vault/00_System/quality-index.json": "08dd7649f45b3113ab071425299f15d9bc21d6d7e222cfca2d28a80d905f39e0"
+    }
+   }
+  ],
+  "vault_quality_dashboard": [
+   {
+    "escritos": {
+     "vault/02_Observability/index.md": "75888c6860069c5e00276a3c3a5289a8f52577f4b026ffd62cee35d8adc7e31d",
+     "vault/02_Observability/qa/index.md": "01659895b54ba2461e44900aa7b204ee620dd19e0a5de41e59b9510cb3095eb6",
+     "vault/02_Observability/qa/quality-dashboard.md": "6896da7805effd9bfdd0f39832a789d5cfc2c12f76656a4b0d913936cffca45a",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "a79b253d88f132f3dc4e09b6d9b779d3706ca4ba98434fc76e1da458bcce568b",
+     "vault/99_Index/graph.json": "94577907d809f0846d01fa69517f7804712421253b5485ab9f8961642eef5ed7",
+     "vault/99_Index/search-index.json": "6b92a2dc91e8acc90c6c71c60806a1c7b3d0a19c66b7f98416bb88bad94abe3d"
+    }
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_quarantine": [
+   {
+    "escritos": {
+     "vault/07_Knowledge/rara.md": "<borrado>",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "761050c4767580d48dbc675b2aa2753a4cdc0a29c4ad013296e7e6fc5e171ebc",
+     "vault/20_Quarantine/.quarantine-ledger.json": "3fc0afca0c9b44b7fd60cb4c199774575ebfb99a792074ae2eac0ba2c7ea6904",
+     "vault/20_Quarantine/index.md": "46037dffe9f7ad459d035e40250add50c9c34e803a34bcc44e2c221894c28c1d",
+     "vault/20_Quarantine/unclassified/index.md": "b899cf411a34c90107a4d614d97324c4e870bd7ba75801062623b996491f0c8a",
+     "vault/20_Quarantine/unclassified/rara.md": "333d261b0b9d2def7f6bbb2d240a90dd830b707d76ae264a5eb35745bea64aa3",
+     "vault/99_Index/graph.json": "e69deafad6c7df7246c61b09169cf9e644462c25651705758ed8069300106c7c",
+     "vault/99_Index/search-index.json": "9c204986465deeb5952b3a5fafc6100e1497fe5784199d05d1104e00c55f995e"
+    }
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_query_parse": [
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_read": [
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_recursos": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_reindex": [
+   {
+    "escritos": {
+     "vault/99_Index/hash-index.json": "df27568ccd2c1d82cc6b3a20686a9bd83423c9ae5e04713a93e8c9c5eba1baf7",
+     "vault/99_Index/index.md": "56fd457840fa15103fb476af682e338caacbb863890015c4df4948c452ee4e76",
+     "vault/99_Index/search-index.json": "a9615dd7a425b5b90b7312dd01419c4c670077addcca2991e1f461bf897e370e"
+    }
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_relation_add": [
+   {
+    "escritos": {
+     "vault/06_Diagrams/entity/index.md": "2f9ed112c25ce5f07664115cda0e598bdd7e17319541dfd2fb71c48210719b56",
+     "vault/06_Diagrams/entity/mi-api-erd.md": "48480062fd30d901fc5ace45d78ccbc0fcf6362ac1ba316aeb1894157cda6e9d",
+     "vault/06_Diagrams/entity/mi-api-relations.json": "946871c5bd7423a99bcd8739b642ffc4606bbadccc908bc9d79eeb829e855886",
+     "vault/06_Diagrams/index.md": "e4ee9fcb1d36c98360437247438da7e4725cfba1f83c85448eba00fee8c28684",
+     "vault/99_Index/graph.json": "fbb937f8d080989dfd1d13f08f5bf3d1f11298ecac03867f1af369df05fa47ed",
+     "vault/99_Index/search-index.json": "9e1ba03f9ae840089a2aeefb43118da94e3ec3b6b655e9132453731e50875355"
+    }
+   }
+  ],
+  "vault_release_save": [
+   {
+    "escritos": {
+     "vault/01_Projects/index.md": "ed675ed9f531f3ea195b70de185b53c99b2d4757ff183327409fc1c1d693a06c",
+     "vault/01_Projects/mi-api/changelog.md": "080183527a7f5df62390a2cf193acb5ad74b73a15a370994923c98335c463caf",
+     "vault/01_Projects/mi-api/index.md": "ab6b4606e0669c29ebce8d567949c854d00a7ee16cae5cba0531ff4156caf48e",
+     "vault/08_Runbooks/deploy/index.md": "af00b5caed2daef81f3b108f0b3dcf5638e35c7e51c57894f444fa292beac68f",
+     "vault/08_Runbooks/deploy/mi-api-release-120.md": "d51dc6c929a66606157c6caa4392b5487d9f501ad39ac30614ce3f1785ec20ff",
+     "vault/08_Runbooks/index.md": "bca7f0cbc4ed9f3d519fbb15922bf320ab23793b3f7c234813025c95e660ca7e",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "1022d767d07f3da291826890831b57d7b89a43a03f3b198bf0070ec50925ca5f",
+     "vault/99_Index/graph.json": "ff0dceca33994150a6e4233a9c56622ea8005a9d1c8c904b03e6d69732e47a56",
+     "vault/99_Index/search-index.json": "c9b14357459506262b7d1eb4bdf2c4e2a3c91a5be001ceb3848d5a93fb5cff7e"
+    }
+   }
+  ],
+  "vault_requirement_save": [
+   {
+    "escritos": {
+     "vault/00_System/.change-log.json": "996fa952583f8954a2f16cd83a9873e4399c72cd5632cc1d14acc8e0e546091d",
+     "vault/00_System/change-log.md": "9f6e3257d0141af93825d1d9b928d59a8312e65da8ec632884d1afbb94a3873d",
+     "vault/14_Requirements/.requirements-index.json": "6f65d57d6293a8d2f5533caaf6e45b096cab8502f9f232b90c2dbe9121d9001c",
+     "vault/14_Requirements/index.md": "46ee5bf9dab9d65d7d3e48c2d8619ce7ec27d0d9ef846e15f3e13193102d4af0",
+     "vault/14_Requirements/mi-api/index.md": "1c8870e87c2378fdfc1dea8cebcfc92424eb255926a4f45c61aa6997efb15da4",
+     "vault/14_Requirements/mi-api/req-001-auth.md": "00aadc5219ecbbc92156b6853b1d81d3e93105c2e07d935409d9eeca46726ad9",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "b1fb7e6d47e0c01fab99903b3f093ee075b6ceaf600b63157ad1b9ce2247083e",
+     "vault/99_Index/graph.json": "d422c10cfb7895fa09262053ce0ab339e95a6100043df1e94fc5d0a4f9afbc06",
+     "vault/99_Index/search-index.json": "d231b4dbdb828d3a584e71c6296abe1bfeac3b84fb980c908952f4f6a5744ab4"
+    }
+   }
+  ],
+  "vault_restore": [
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_risk_save": [
+   {
+    "escritos": {
+     "vault/02_Observability/index.md": "c21b3dc6a5f9e1fc1fcaba7fafb779e869b00d3b28502b359414a1509e3dc451",
+     "vault/02_Observability/risks/index.md": "252c5ddcb9d3659157663944838fb9a94262c55879cf2151ac9b87ea8d077dcb",
+     "vault/02_Observability/risks/mi-api-caida-de-la-base.md": "6d63e3eaaf73fabf4fabf459598851923a02f92c34ae4f19d11c565dd8c4d17e",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "58d2bdb81d082e286c04c8ed865f886fbc0cd92495bb6675354933cd561eb431",
+     "vault/99_Index/graph.json": "8ce0ecb1f5953b832745bf566c2a6d2ff6008f9e070dd5d0b6f87cf96dbaa165",
+     "vault/99_Index/search-index.json": "764cde857884f58e388438f760bf012399dc60e450287eb249ed7782a61b28bd"
+    }
+   }
+  ],
+  "vault_ronda": [
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_runbook_log": [
+   {
+    "escritos": {
+     "vault/08_Runbooks/deploy.md": "aff0bb863f9dbbffa8857f325243e8aa4c9306ef8a1e531cc2dbf14b9b7ce371",
+     "vault/08_Runbooks/index.md": "851e92725d7f95216569c24e7389e2c48b16e34eba310566e96614616304a47d",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "72ba2c97b99b55bc4a49a5639e5f4dcc53f7ec18d15eea990bb0237b250a13a9",
+     "vault/99_Index/graph.json": "23870f8e111d4b4d2f5c07c07f42970c170594431070eb9c4163d1907759cbaa",
+     "vault/99_Index/search-index.json": "20a6e2f94893167b158ab4ed878a7acccb977c4e246d258197c54b107e39ce93"
+    }
+   }
+  ],
+  "vault_runbook_save": [
+   {
+    "escritos": {
+     "vault/08_Runbooks/deploy/index.md": "738b7e0573740fd6c1f692735d117850eabbf33dd4b1423f8f2da518dddba1c2",
+     "vault/08_Runbooks/deploy/mi-api-deploy.md": "5b56a9baa5a50c387206ff123f91866a4ae43fc3d1159820bc173a848ab4c52a",
+     "vault/08_Runbooks/index.md": "dbcd377e7210ae249ff3e286673a91f69d751b1dc34395ff3f1a850b17f5f166",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "d271b7e842c87c0e19bbecfcaa3d62a3f97e63fd9d9948a9e3b4b91fdbf2b184",
+     "vault/99_Index/graph.json": "2de0aba5eadf04ee5202f4d1f1874c27c56ca38cfe3a5c9f9365872d097a647e",
+     "vault/99_Index/search-index.json": "2a2d8a154d67721e154146c6bd2ba7ec42b56286fc883bf6a5c369f74a7cff3d"
+    }
+   }
+  ],
+  "vault_sanacion": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_sdd_init": [
+   {
+    "escritos": {
+     "vault/docs/sdd/00-principles.md": "7464b56b179d79ecc120a12f3e69a1aee13bdd3745850f6a8d59a385f3806ab9",
+     "vault/docs/sdd/01-state-machines.md": "256f89d3be914a857abc10aa800199040e3386c1fa61c47a281bcb81aa5777a8",
+     "vault/docs/sdd/02-implementation.md": "d215c3cd97802ec719e63a3fa2d0a310979521f92a5ccec5fd4e07cba318e8d5",
+     "vault/docs/sdd/03-usage.md": "8e13ff9290f2299b99f7a511b1faa97ee3d50162d91e96674b17cd4769fd7580",
+     "vault/docs/sdd/04-antipatterns.md": "68e0be7d5b3d0e3d66c33b9ab384555ada359ccdcc2a18247cc7d4f0becebc46",
+     "vault/docs/sdd/05-reference-matrix.md": "d8bf589159af12b6694c39cbe05cb6e5f33402a7307eb772c1975aaaaf2f9e82",
+     "vault/docs/sdd/06-documentation-methodology.md": "3d95615cc8e634d4b128f91afd4d7be97db6c4c74b7b1b2b5396326e3d03fe20",
+     "vault/docs/sdd/07-process-antipatterns.md": "edc3d31888b3ff88666536697c24aea03aff17b8a9a550a1b78387c18e448d04",
+     "vault/docs/sdd/08-roadmap.md": "7385739b5b47334ee40b5e77e9d98be060f67ee760ee7a42263de02c01adb014",
+     "vault/docs/sdd/09-metrics.md": "d5994189c3b3cc23f6569f9493b0b05ef87adfdef6da18aa553d87e0d55323fa",
+     "vault/docs/sdd/10-appendices.md": "f4e18da27c0b0890dcbe64e40aad5795ea5d9135998f4d88bec016ed1e379f47",
+     "vault/docs/sdd/README.md": "9376949c7834f23c027744324feaaf24af8abde7397f70afd12c0865f889e604",
+     "vault/docs/sdd/gaps.md": "9afd1ddc56d64279f537877217f6df4b144ed489dbe7517c7c661e43e639bf3f",
+     "vault/docs/sdd/integrity-report.json": "1dbf2856292520045801ef05e84ad75f90d9cfb6d340553c23509612cd7e5af8"
+    }
+   },
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {
+     "vault/docs/sdd/00-principles.md": "7464b56b179d79ecc120a12f3e69a1aee13bdd3745850f6a8d59a385f3806ab9",
+     "vault/docs/sdd/01-state-machines.md": "256f89d3be914a857abc10aa800199040e3386c1fa61c47a281bcb81aa5777a8",
+     "vault/docs/sdd/02-implementation.md": "d215c3cd97802ec719e63a3fa2d0a310979521f92a5ccec5fd4e07cba318e8d5",
+     "vault/docs/sdd/03-usage.md": "8e13ff9290f2299b99f7a511b1faa97ee3d50162d91e96674b17cd4769fd7580",
+     "vault/docs/sdd/04-antipatterns.md": "68e0be7d5b3d0e3d66c33b9ab384555ada359ccdcc2a18247cc7d4f0becebc46",
+     "vault/docs/sdd/05-reference-matrix.md": "d8bf589159af12b6694c39cbe05cb6e5f33402a7307eb772c1975aaaaf2f9e82",
+     "vault/docs/sdd/06-documentation-methodology.md": "3d95615cc8e634d4b128f91afd4d7be97db6c4c74b7b1b2b5396326e3d03fe20",
+     "vault/docs/sdd/07-process-antipatterns.md": "edc3d31888b3ff88666536697c24aea03aff17b8a9a550a1b78387c18e448d04",
+     "vault/docs/sdd/08-roadmap.md": "7385739b5b47334ee40b5e77e9d98be060f67ee760ee7a42263de02c01adb014",
+     "vault/docs/sdd/09-metrics.md": "d5994189c3b3cc23f6569f9493b0b05ef87adfdef6da18aa553d87e0d55323fa",
+     "vault/docs/sdd/10-appendices.md": "f4e18da27c0b0890dcbe64e40aad5795ea5d9135998f4d88bec016ed1e379f47",
+     "vault/docs/sdd/README.md": "9376949c7834f23c027744324feaaf24af8abde7397f70afd12c0865f889e604",
+     "vault/docs/sdd/gaps.md": "9afd1ddc56d64279f537877217f6df4b144ed489dbe7517c7c661e43e639bf3f",
+     "vault/docs/sdd/integrity-report.json": "1dbf2856292520045801ef05e84ad75f90d9cfb6d340553c23509612cd7e5af8"
+    }
+   }
+  ],
+  "vault_search": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_section": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {
+     "vault/00_System/secciones.json": "eabdb3ec70e2b55f0748a7d182daf7e822a92cdf7ab1120ada430b2a9f213660"
+    }
+   }
+  ],
+  "vault_section_index": [
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_security_scan": [
+   {
+    "escritos": {
+     "vault/02_Observability/index.md": "f07cb56f421542e42ef3c868c18c109bb35ec29716c5912bb66e4cd770b5edda",
+     "vault/02_Observability/vulnerabilities/C002-c002-command-injection-<HOY>.md": "3d0ab668986ae54690f2ad8ed0f85242feee374a3b5159ce5c523f3364f9bf61",
+     "vault/02_Observability/vulnerabilities/S002-s002-secrets-<HOY>.md": "57cd2a515b01c05d7492c0ff1239598e63afcdac7b1ff5e4c217c90e3be041c5",
+     "vault/02_Observability/vulnerabilities/index.md": "a61b61a415f8e180f9803d2bb6258e9f315d916e76dc9639999fa657b654ab79",
+     "vault/02_Observability/vulnerabilities/security-scan-mi-api-<HOY>.md": "9d5d6a0daf165096a86f74084642605e6b5ecb13ce15fee25acfbec93a9e1a8d",
+     "vault/99_Index/graph.json": "96198523064c43b2b27e342cfaf8afca21ac5645bca0fa216b35b76152adff95",
+     "vault/99_Index/search-index.json": "bd7f35342830ac00b078191add54babfb0a01f22f5debf10b9d1de0811d29a27"
+    }
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_servicio": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_slo_save": [
+   {
+    "escritos": {
+     "vault/02_Observability/index.md": "6e6bff77ee75465b96f466b9cc74fa2e0258d56f164a49b87459b0fe16476cdf",
+     "vault/02_Observability/slos/index.md": "2c784a4d22665c68931b22685d8a6c642116d6e0e59ef67dd3c9714de143b73f",
+     "vault/02_Observability/slos/mi-api-api-availability.md": "b973e25789d3f549fe2cfa878f14de0614492a5d8fd436be94b9a783f75a9d46",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "1cc5cc389881cf7d57360f48b529cc0e5c4fc4c65086f8fd859befef6105bc09",
+     "vault/99_Index/graph.json": "cf3e25e3e9b849c79c7d1c2ba01a4aacc9fc1ab080f5b2abc6a206088e1411bd",
+     "vault/99_Index/search-index.json": "592406f8ab2241f80f85830325631aa486848bcd486b2aa4ee1dc28f84f2a72e"
+    }
+   }
+  ],
+  "vault_smoke": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_standard_upgrade": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_subgraph": [
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_supersede": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {
+     "vault/10_Migrated/GUIA.md": "c9885bf5da0b297fd9521d67fed6d3faa48d8c2a6cd3190a1c71d9065844c866",
+     "vault/10_Migrated/index.md": "ce05efa0517e63b73e9e2d4a6696494f2ffad23d2db21cc1272db9e54a2a7bc4",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "57c3579491e24edf53a76874b667b4e54887c3d4e276b015ffe89e22fed3b485",
+     "vault/99_Index/graph.json": "4d482c607351137262f938e5c4965140310a8952c8e892bb490f76639576b2fb",
+     "vault/99_Index/search-index.json": "3937cc13ba82bc9c289b263c273694503a1967c23b65f685b8d8739909c38e5c"
+    }
+   }
+  ],
+  "vault_tags": [
+   {
+    "escritos": {
+     "vault/00_System/tag-registry.json": "304be3544702a514ccb5701d13c0150eba280d040f759496935519214a4aeaf9",
+     "vault/99_Index/graph.json": "b8f42c2d65de5a005a593ec49406f78dafebddfa953f431bd65ee0eb3a7bf5ff",
+     "vault/99_Index/tag-index.md": "35e1d67a4a73fcd1e13724f4c5efe084c3ccca749b98e229d5f69ad56f9c8ea6"
+    }
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_test_save": [
+   {
+    "escritos": {
+     "vault/15_Tests/.tests-index.json": "51e033300266ccee6062ce4e1bdc5e40672bdb5f2a0c13133c0b41a888709224",
+     "vault/15_Tests/index.md": "35477fef42b32ccd7f6627f11cb71ad5f13e21012dadf7a0fd5d789939423515",
+     "vault/15_Tests/unit/index.md": "91074122dfe756a3fe58c0e88770bf535d89e18c45235e8b32a3f5a2cc882c8e",
+     "vault/15_Tests/unit/mi-api-login.md": "1ec7b99a5abc39fd5c7f4d9b6e4b5fb8a606bb8046e49f00faf8fc98f280b813",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "54729aa8e81809affda3931f9586b8e344d51404687628307363ee20399f3dcc",
+     "vault/99_Index/graph.json": "77b015e2f92403ee3dc32161a52bf9c8b5f501aaec2dedc43c4c753743179ba6",
+     "vault/99_Index/search-index.json": "93f755e8d08cd619bc98d33bf7ff600320679b7535c581c7293c3a685d8edb30"
+    }
+   }
+  ],
+  "vault_tests_higiene": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_timeline": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_token_counter": [
+   {
+    "escritos": {
+     "vault/00_System/token-usage/flows/self-test.json": "33fcf65568ece1ba976a3f538b50a8fd29bab21d64421d980e85538e72d1c3af"
+    }
+   }
+  ],
+  "vault_token_service": {
+   "omitida": "servicio HTTP: no retorna por diseño"
+  },
+  "vault_tokens": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_toolkit_audit": [
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_undo": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_validate": [
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_voice": [
+   {
+    "escritos": {}
+   },
+   {
+    "escritos": {}
+   }
+  ],
+  "vault_write": [
+   {
+    "escritos": {
+     "vault/00_System/.change-log.json": "f615a39341f4617bd38f3ae3ca277e7fbc908f7db9af017519ae8faf78f11e75",
+     "vault/00_System/change-log.md": "28811c485543eba8c33321517356c69444991c6bbe73bb2b30fef2aaf86a4f7a",
+     "vault/01_Projects/index.md": "530898f13d9d92a3563ff23116ff55061d8bd9df279824b0dd9d718b0f8c2513",
+     "vault/01_Projects/mi-api/index.md": "588bba3739a52ee928d45a23d72d9d0488fb58cd46aadb27b8cb486be41cbd44",
+     "vault/01_Projects/mi-api/overview.md": "0ed6e54c39eab6c6e7c59f983f453307db7c1aee903d64868d19501082b4f925",
+     "vault/19_Audits/vocabulary/tag-ledger.json": "318c406554acc5241e1831258c54ad43b1990b44d587843ce2239fc371c7c0f1",
+     "vault/99_Index/graph.json": "b25385076bb0a8a85c4b23ba81134f0249f1ef3f07dff5ffde08ea4d1c3435be",
+     "vault/99_Index/search-index.json": "a49e2f09540a35322a0e50c2b70d3bcc582919fd064168841124ce680b1176d4"
+    }
+   }
+  ]
+ },
+ "plan": {
+  "proyecto": [
+   "mi-api",
+   "Mi API"
+  ],
+  "tools": {
+   "vault_ai_decision": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_ai_decision.py",
+      "--project",
+      "mi-api",
+      "--title",
+      "Elegir PostgreSQL",
+      "--decision_type",
+      "architectural",
+      "--description",
+      "Motor de datos del servicio",
+      "--rationale",
+      "Garantias ACID"
+     ]
+    ]
+   },
+   "vault_append": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_append.py",
+      "--path",
+      "01_Projects/mi-api/changelog.md",
+      "--content",
+      "## v1.2\\n\\nFix deploy"
+     ]
+    ]
+   },
+   "vault_arch": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_arch.py",
+      "--check",
+      "--strict"
+     ],
+     [
+      "scripts/vault_arch.py",
+      "--map",
+      "vault_backup"
+     ],
+     [
+      "scripts/vault_arch.py",
+      "--blueprint"
+     ]
+    ]
+   },
+   "vault_arquitectura_en": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_arquitectura_en.py",
+      "--fecha",
+      "2026-05-03"
+     ],
+     [
+      "scripts/vault_arquitectura_en.py",
+      "--desde",
+      "v1.0",
+      "--hasta",
+      "v1.5",
+      "--project",
+      "demo"
+     ]
+    ]
+   },
+   "vault_audit": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_audit.py"
+     ],
+     [
+      "scripts/vault_audit.py",
+      "--project",
+      "mi-proyecto"
+     ]
+    ]
+   },
+   "vault_backup": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_backup.py"
+     ],
+     [
+      "scripts/vault_backup.py",
+      "--label",
+      "pre-migration"
+     ]
+    ]
+   },
+   "vault_backup_list": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_backup_list.py"
+     ],
+     [
+      "scripts/vault_backup_list.py",
+      "--limit",
+      "5"
+     ]
+    ]
+   },
+   "vault_bibliography_save": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_bibliography_save.py",
+      "--title",
+      "Clean Code",
+      "--url",
+      "https://example.com/clean-code",
+      "--summary",
+      "Guia de estilo de codigo",
+      "--source_type",
+      "book"
+     ]
+    ]
+   },
+   "vault_blame_audit": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_blame_audit.py",
+      "--check"
+     ],
+     [
+      "scripts/vault_blame_audit.py",
+      "--check",
+      "--strict"
+     ],
+     [
+      "scripts/vault_blame_audit.py",
+      "--freeze"
+     ]
+    ]
+   },
+   "vault_blueprint": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_blueprint.py",
+      "--blueprint"
+     ],
+     [
+      "scripts/vault_blueprint.py",
+      "--check",
+      "--strict"
+     ],
+     [
+      "scripts/vault_blueprint.py",
+      "--freeze"
+     ]
+    ]
+   },
+   "vault_bug_save": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_bug_save.py",
+      "--project",
+      "mi-api",
+      "--title",
+      "Token numérico coercionado",
+      "--symptom",
+      "El literal 0.5 llega al CSS como 0.5px",
+      "--severity",
+      "high",
+      "--agent",
+      "claude"
+     ]
+    ]
+   },
+   "vault_change_log": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_change_log.py",
+      "--query",
+      "--last",
+      "10"
+     ],
+     [
+      "scripts/vault_change_log.py",
+      "--action",
+      "updated",
+      "--path",
+      "01_Projects/mi-api/overview.md",
+      "--summary",
+      "Revision"
+     ]
+    ]
+   },
+   "vault_changelog_check": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_changelog_check.py",
+      "--check",
+      "--strict"
+     ],
+     [
+      "scripts/vault_changelog_check.py",
+      "--list"
+     ],
+     [
+      "scripts/vault_changelog_check.py",
+      "--fijar-hash",
+      "--dry-run"
+     ]
+    ]
+   },
+   "vault_ciclos": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_ciclos.py",
+      "--check"
+     ],
+     [
+      "scripts/vault_ciclos.py",
+      "--check",
+      "--strict"
+     ],
+     [
+      "scripts/vault_ciclos.py",
+      "--freeze"
+     ]
+    ]
+   },
+   "vault_clones": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_clones.py",
+      "--check"
+     ],
+     [
+      "scripts/vault_clones.py",
+      "--check",
+      "--strict"
+     ],
+     [
+      "scripts/vault_clones.py",
+      "--freeze"
+     ]
+    ]
+   },
+   "vault_code_map": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_code_map.py",
+      "--project",
+      "mi-api"
+     ]
+    ]
+   },
+   "vault_code_module": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_code_module.py",
+      "--project",
+      "mi-api",
+      "--file_path",
+      "src/auth.py",
+      "--description",
+      "Modulo de autenticacion",
+      "--language",
+      "python"
+     ]
+    ]
+   },
+   "vault_code_query": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_code_query.py",
+      "--project",
+      "mi-api",
+      "--list"
+     ],
+     [
+      "scripts/vault_code_query.py",
+      "--project",
+      "mi-api",
+      "--class",
+      "AuthService",
+      "--deps"
+     ]
+    ]
+   },
+   "vault_code_relation": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_code_relation.py",
+      "--project",
+      "mi-api",
+      "--from_file",
+      "auth.py",
+      "--to_file",
+      "user.py",
+      "--relation_type",
+      "imports"
+     ]
+    ]
+   },
+   "vault_code_sync": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_code_sync.py",
+      "--project",
+      "mi-api"
+     ],
+     [
+      "scripts/vault_code_sync.py",
+      "--project",
+      "mi-api",
+      "--dry-run"
+     ]
+    ]
+   },
+   "vault_code_tag": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_code_tag.py",
+      "--list"
+     ],
+     [
+      "scripts/vault_code_tag.py",
+      "--define",
+      "cr-ejemplo",
+      "--name",
+      "Ejemplo",
+      "--description",
+      "Etiqueta de prueba"
+     ]
+    ]
+   },
+   "vault_context_pack": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_context_pack.py",
+      "que decidimos sobre el transporte MCP",
+      "--budget",
+      "2000"
+     ]
+    ]
+   },
+   "vault_criterios": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_criterios.py",
+      "--check"
+     ],
+     [
+      "scripts/vault_criterios.py",
+      "--check",
+      "--strict"
+     ],
+     [
+      "scripts/vault_criterios.py",
+      "--freeze"
+     ]
+    ]
+   },
+   "vault_delete": {
+    "ficheros": {
+     "07_Knowledge/old.md": "---\ntitle: Nota del ejemplo\ntype: knowledge\nstatus: draft\ntags: [ejemplo]\n---\n\n# Nota del ejemplo\n\nCuerpo.\n"
+    },
+    "lineas": [
+     [
+      "scripts/vault_delete.py",
+      "--path",
+      "07_Knowledge/old.md",
+      "--reason",
+      "Duplicate of glossary/jwt.md"
+     ]
+    ]
+   },
+   "vault_delta": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_delta.py",
+      "--snapshot"
+     ],
+     [
+      "scripts/vault_delta.py"
+     ]
+    ]
+   },
+   "vault_diagram_export": {
+    "ficheros": {
+     "06_Diagrams/foo.md": "---\ntitle: Diagrama del ejemplo\ntype: diagram\nstatus: draft\ntags: [ejemplo]\n---\n\n```mermaid\ngraph TD\n  A --> B\n```\n"
+    },
+    "lineas": [
+     [
+      "scripts/vault_diagram_export.py",
+      "--path",
+      "06_Diagrams/foo.md",
+      "--zoom",
+      "2.0",
+      "--json"
+     ],
+     [
+      "scripts/vault_diagram_export.py",
+      "--project",
+      "mi-api",
+      "--output",
+      "export/",
+      "--json"
+     ]
+    ]
+   },
+   "vault_diagram_save": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_diagram_save.py",
+      "--project",
+      "mi-api",
+      "--title",
+      "User Flow",
+      "--diagram_type",
+      "mermaid",
+      "--category",
+      "flow",
+      "--content",
+      "graph TD\\n  A --> B"
+     ]
+    ]
+   },
+   "vault_diff": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_diff.py",
+      "--path",
+      "01_Projects/mi-api/overview.md"
+     ]
+    ]
+   },
+   "vault_doc_counts": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_doc_counts.py",
+      "--list"
+     ],
+     [
+      "scripts/vault_doc_counts.py",
+      "--check",
+      "--strict"
+     ],
+     [
+      "scripts/vault_doc_counts.py",
+      "--fix"
+     ]
+    ]
+   },
+   "vault_doc_staleness": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_doc_staleness.py",
+      "--check"
+     ],
+     [
+      "scripts/vault_doc_staleness.py",
+      "--check",
+      "--strict"
+     ],
+     [
+      "scripts/vault_doc_staleness.py",
+      "--regenerar"
+     ]
+    ]
+   },
+   "vault_doc_sync": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_doc_sync.py",
+      "--check",
+      "--strict"
+     ],
+     [
+      "scripts/vault_doc_sync.py",
+      "--fix"
+     ]
+    ]
+   },
+   "vault_drift_detect": {
+    "ficheros": {
+     "@trabajo/src/app.py": "def principal():\n    return 1\n"
+    },
+    "lineas": [
+     [
+      "scripts/vault_drift_detect.py",
+      "--path",
+      "src/",
+      "--project",
+      "mi-api",
+      "--mode",
+      "snapshot"
+     ],
+     [
+      "scripts/vault_drift_detect.py",
+      "--path",
+      "src/",
+      "--project",
+      "mi-api",
+      "--mode",
+      "status"
+     ]
+    ]
+   },
+   "vault_env_matrix": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_env_matrix.py",
+      "--project",
+      "mi-api",
+      "--env",
+      "prod"
+     ]
+    ]
+   },
+   "vault_env_save": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_env_save.py",
+      "--project",
+      "mi-api",
+      "--environment",
+      "prod",
+      "--vars",
+      "[{\"name\": \"DB_HOST\", \"default\": \"localhost\"}]"
+     ]
+    ]
+   },
+   "vault_error_contract": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_error_contract.py",
+      "--check"
+     ],
+     [
+      "scripts/vault_error_contract.py",
+      "--check",
+      "--strict"
+     ],
+     [
+      "scripts/vault_error_contract.py",
+      "--freeze"
+     ]
+    ]
+   },
+   "vault_esquema": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_esquema.py",
+      "--check",
+      "--strict"
+     ],
+     [
+      "scripts/vault_esquema.py",
+      "--sync"
+     ]
+    ]
+   },
+   "vault_excepcion_declarada": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_excepcion_declarada.py",
+      "--check"
+     ],
+     [
+      "scripts/vault_excepcion_declarada.py",
+      "--check",
+      "--strict"
+     ],
+     [
+      "scripts/vault_excepcion_declarada.py",
+      "--freeze"
+     ]
+    ]
+   },
+   "vault_fix_all": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_fix_all.py",
+      "--dry-run"
+     ],
+     [
+      "scripts/vault_fix_all.py"
+     ]
+    ]
+   },
+   "vault_fix_brackets": {
+    "ficheros": {
+     "02_Observability/errors/foo.md": "---\ntitle: Error del ejemplo\ntype: error\nstatus: draft\ntags: [ejemplo]\n---\n\n# Error del ejemplo\n\nVer [[]] y [[[[guia]]]].\n"
+    },
+    "lineas": [
+     [
+      "scripts/vault_fix_brackets.py"
+     ],
+     [
+      "scripts/vault_fix_brackets.py",
+      "--apply"
+     ],
+     [
+      "scripts/vault_fix_brackets.py",
+      "--path",
+      "02_Observability/errors/foo.md"
+     ]
+    ]
+   },
+   "vault_flow_save": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_flow_save.py",
+      "--project",
+      "mi-api",
+      "--name",
+      "User Registration",
+      "--type",
+      "workflow",
+      "--description",
+      "Full process",
+      "--mermaid",
+      "flowchart TD\\n  A --> B"
+     ]
+    ]
+   },
+   "vault_folder_registry": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_folder_registry.py",
+      "--json"
+     ],
+     [
+      "scripts/vault_folder_registry.py",
+      "--scan",
+      "--json"
+     ],
+     [
+      "scripts/vault_folder_registry.py",
+      "--add",
+      "11_Code/tests",
+      "--json"
+     ]
+    ]
+   },
+   "vault_foreign_check": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_foreign_check.py",
+      "--root",
+      "D:/vaults/notas"
+     ],
+     [
+      "scripts/vault_foreign_check.py",
+      "--root",
+      "D:/vaults/notas",
+      "--report",
+      "informe.json"
+     ],
+     [
+      "scripts/vault_foreign_check.py",
+      "--self-test"
+     ]
+    ]
+   },
+   "vault_frontmatter_completar": {
+    "ficheros": {
+     "07_Knowledge/x.md": "---\ntitle: Nota del ejemplo\ntype: knowledge\nstatus: draft\ntags: [ejemplo]\n---\n\n# Nota del ejemplo\n\nCuerpo.\n"
+    },
+    "lineas": [
+     [
+      "scripts/vault_frontmatter_completar.py"
+     ],
+     [
+      "scripts/vault_frontmatter_completar.py",
+      "--apply"
+     ],
+     [
+      "scripts/vault_frontmatter_completar.py",
+      "--path",
+      "07_Knowledge/x.md",
+      "--apply"
+     ]
+    ]
+   },
+   "vault_frontmatter_heal": {
+    "ficheros": {
+     "07_Knowledge/escalar-sin-escapar.md": "---\ntitle: Overview: demo\ntype: knowledge\nstatus: draft\ntags: [ejemplo]\n---\n\n# Overview\n\nCuerpo.\n"
+    },
+    "lineas": [
+     [
+      "scripts/vault_frontmatter_heal.py"
+     ],
+     [
+      "scripts/vault_frontmatter_heal.py",
+      "--apply"
+     ]
+    ]
+   },
+   "vault_fuente_unica": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_fuente_unica.py",
+      "--check"
+     ],
+     [
+      "scripts/vault_fuente_unica.py",
+      "--report"
+     ],
+     [
+      "scripts/vault_fuente_unica.py",
+      "--check",
+      "--strict"
+     ]
+    ]
+   },
+   "vault_fundamentals": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_fundamentals.py"
+     ]
+    ]
+   },
+   "vault_gate": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_gate.py",
+      "--list"
+     ],
+     [
+      "scripts/vault_gate.py",
+      "--check-doc"
+     ]
+    ]
+   },
+   "vault_graph": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_graph.py"
+     ]
+    ]
+   },
+   "vault_graph_fix": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_graph_fix.py",
+      "--apply",
+      "--threshold",
+      "0.7",
+      "--json"
+     ],
+     [
+      "scripts/vault_graph_fix.py",
+      "--only",
+      "brackets",
+      "--json"
+     ]
+    ]
+   },
+   "vault_graph_inspect": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_graph_inspect.py",
+      "--json"
+     ]
+    ]
+   },
+   "vault_graph_merge": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_graph_merge.py"
+     ]
+    ]
+   },
+   "vault_history_compact": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_history_compact.py",
+      "--apply"
+     ],
+     [
+      "scripts/vault_history_compact.py",
+      "--apply",
+      "--keep",
+      "5"
+     ]
+    ]
+   },
+   "vault_impact": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_impact.py",
+      "--changed",
+      "01_Projects/mi-api/overview.md",
+      "--max-hops",
+      "2"
+     ],
+     [
+      "scripts/vault_impact.py",
+      "--since",
+      "2026-01-01",
+      "--min-risk",
+      "high"
+     ]
+    ]
+   },
+   "vault_incident_save": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_incident_save.py",
+      "--project",
+      "mi-api",
+      "--title",
+      "API caida",
+      "--severity",
+      "P1"
+     ]
+    ]
+   },
+   "vault_infra_map": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_infra_map.py",
+      "--project",
+      "mi-api",
+      "--location",
+      "cloud-aws"
+     ]
+    ]
+   },
+   "vault_infra_save": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_infra_save.py",
+      "--name",
+      "prod-cluster",
+      "--type",
+      "server",
+      "--description",
+      "Cluster productivo",
+      "--config",
+      "{\"region\": \"us-east-1\"}"
+     ]
+    ]
+   },
+   "vault_ingest": {
+    "ficheros": {
+     "@trabajo/notas.md": "# Texto del ejemplo\n\nEste servicio expone la API publica del proyecto y valida cada peticion contra el esquema antes de tocar la base de datos.\nLos errores se devuelven con un codigo estable y un mensaje legible.\nEl despliegue se hace con la imagen etiquetada por el commit.\n"
+    },
+    "lineas": [
+     [
+      "scripts/vault_ingest.py",
+      "--file",
+      "notas.md",
+      "--section",
+      "07_Knowledge"
+     ],
+     [
+      "scripts/vault_ingest.py",
+      "--file",
+      "notas.md",
+      "--section",
+      "07_Knowledge",
+      "--commit"
+     ]
+    ]
+   },
+   "vault_init": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_init.py"
+     ],
+     [
+      "scripts/vault_init.py",
+      "--name",
+      "mi-vault"
+     ],
+     [
+      "scripts/vault_init.py",
+      "--list"
+     ]
+    ]
+   },
+   "vault_kernel": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_kernel.py",
+      "--check"
+     ],
+     [
+      "scripts/vault_kernel.py",
+      "--check",
+      "--strict"
+     ],
+     [
+      "scripts/vault_kernel.py",
+      "--trace",
+      "vault_context_pack"
+     ]
+    ]
+   },
+   "vault_knowledge_get": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_knowledge_get.py",
+      "--query",
+      "architecture"
+     ],
+     [
+      "scripts/vault_knowledge_get.py",
+      "--query",
+      "clean"
+     ]
+    ]
+   },
+   "vault_knowledge_save": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_knowledge_save.py",
+      "--category",
+      "concept",
+      "--title",
+      "Clean Architecture",
+      "--content",
+      "# Clean Architecture",
+      "--tags",
+      "architecture clean"
+     ]
+    ]
+   },
+   "vault_list": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_list.py"
+     ],
+     [
+      "scripts/vault_list.py",
+      "--folder",
+      "01_Projects"
+     ]
+    ]
+   },
+   "vault_log_error": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_log_error.py",
+      "--type",
+      "error",
+      "--title",
+      "NullPointerException",
+      "--description",
+      "...",
+      "--severity",
+      "high"
+     ]
+    ]
+   },
+   "vault_master_index": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_master_index.py"
+     ]
+    ]
+   },
+   "vault_merge": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_merge.py",
+      "--action",
+      "detect"
+     ],
+     [
+      "scripts/vault_merge.py",
+      "--source",
+      "/path/to/other-vault",
+      "--action",
+      "merge"
+     ]
+    ]
+   },
+   "vault_mermaid_check": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_mermaid_check.py",
+      "--json"
+     ],
+     [
+      "scripts/vault_mermaid_check.py",
+      "--path",
+      "06_Diagrams/foo.md",
+      "--json"
+     ],
+     [
+      "scripts/vault_mermaid_check.py",
+      "--fix",
+      "--dry-run",
+      "--json"
+     ],
+     [
+      "scripts/vault_mermaid_check.py",
+      "--fix",
+      "--json"
+     ]
+    ]
+   },
+   "vault_metricas": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_metricas.py",
+      "--check",
+      "--strict"
+     ],
+     [
+      "scripts/vault_metricas.py",
+      "--doc"
+     ]
+    ]
+   },
+   "vault_migrate_docs": {
+    "ficheros": {
+     "@trabajo/docs/guia.md": "# Texto del ejemplo\n\nEste servicio expone la API publica del proyecto y valida cada peticion contra el esquema antes de tocar la base de datos.\nLos errores se devuelven con un codigo estable y un mensaje legible.\nEl despliegue se hace con la imagen etiquetada por el commit.\n"
+    },
+    "lineas": [
+     [
+      "scripts/vault_migrate_docs.py",
+      "--source_path",
+      "./docs",
+      "--project",
+      "mi-api",
+      "--dry_run",
+      "true"
+     ]
+    ]
+   },
+   "vault_migrate_rollback": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_migrate_rollback.py",
+      "--report_path",
+      "19_Audits/migrations/2026-06-24-001.json"
+     ],
+     [
+      "scripts/vault_migrate_rollback.py",
+      "--report_path",
+      "19_Audits/migrations/2026-06-24-001.json",
+      "--confirm",
+      "true"
+     ]
+    ]
+   },
+   "vault_model_profile": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_model_profile.py",
+      "--list"
+     ],
+     [
+      "scripts/vault_model_profile.py",
+      "--set",
+      "claude"
+     ],
+     [
+      "scripts/vault_model_profile.py",
+      "--auto",
+      "claude-desktop"
+     ]
+    ]
+   },
+   "vault_move": {
+    "ficheros": {
+     "01_Projects/foo.md": "---\ntitle: Decision del ejemplo\ntype: decision\nstatus: draft\ntags: [ejemplo]\n---\n\n# Decision del ejemplo\n\nCuerpo.\n",
+     "01_Projects/old/nota.md": "---\ntitle: Proyecto del ejemplo\ntype: project\nstatus: draft\ntags: [ejemplo]\n---\n\n# Proyecto del ejemplo\n\nCuerpo.\n"
+    },
+    "lineas": [
+     [
+      "scripts/vault_move.py",
+      "--from",
+      "01_Projects/foo.md",
+      "--to",
+      "03_Decisions/foo.md",
+      "--json"
+     ],
+     [
+      "scripts/vault_move.py",
+      "--folder",
+      "01_Projects/old",
+      "--to-folder",
+      "01_Projects/new",
+      "--json"
+     ]
+    ]
+   },
+   "vault_ncr_save": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_ncr_save.py",
+      "--project",
+      "mi-api",
+      "--title",
+      "Missing validation",
+      "--severity",
+      "major",
+      "--detected_by",
+      "audit"
+     ]
+    ]
+   },
+   "vault_noop_audit": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_noop_audit.py",
+      "--check"
+     ],
+     [
+      "scripts/vault_noop_audit.py",
+      "--check",
+      "--strict"
+     ],
+     [
+      "scripts/vault_noop_audit.py",
+      "--freeze"
+     ]
+    ]
+   },
+   "vault_norms": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_norms.py",
+      "--list"
+     ],
+     [
+      "scripts/vault_norms.py",
+      "--show",
+      "AP-25"
+     ],
+     [
+      "scripts/vault_norms.py",
+      "--audit"
+     ]
+    ]
+   },
+   "vault_norms_coherence": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_norms_coherence.py",
+      "--check"
+     ],
+     [
+      "scripts/vault_norms_coherence.py",
+      "--check",
+      "--strict"
+     ],
+     [
+      "scripts/vault_norms_coherence.py",
+      "--freeze"
+     ]
+    ]
+   },
+   "vault_onboard": {
+    "ficheros": {
+     "@trabajo/../mi-api/README.md": "# Texto del ejemplo\n\nEste servicio expone la API publica del proyecto y valida cada peticion contra el esquema antes de tocar la base de datos.\nLos errores se devuelven con un codigo estable y un mensaje legible.\nEl despliegue se hace con la imagen etiquetada por el commit.\n"
+    },
+    "lineas": [
+     [
+      "scripts/vault_onboard.py",
+      "--project",
+      "mi-api",
+      "--path",
+      "../mi-api"
+     ],
+     [
+      "scripts/vault_onboard.py",
+      "--project",
+      "mi-api",
+      "--path",
+      "../mi-api",
+      "--dry-run"
+     ]
+    ]
+   },
+   "vault_pattern_list": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_pattern_list.py"
+     ],
+     [
+      "scripts/vault_pattern_list.py",
+      "--type",
+      "architecture"
+     ]
+    ]
+   },
+   "vault_pattern_save": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_pattern_save.py",
+      "--project",
+      "mi-api",
+      "--name",
+      "Repository",
+      "--type",
+      "architecture",
+      "--status",
+      "implementado",
+      "--description",
+      "Abstraccion de acceso a datos"
+     ]
+    ]
+   },
+   "vault_preferences": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_preferences.py",
+      "--set",
+      "--category",
+      "constraints",
+      "--title",
+      "No mover tools",
+      "--statement",
+      "No propagar scripts a otros repos",
+      "--strength",
+      "must"
+     ],
+     [
+      "scripts/vault_preferences.py",
+      "--context"
+     ]
+    ]
+   },
+   "vault_privacy_save": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_privacy_save.py",
+      "--project",
+      "mi-api",
+      "--title",
+      "Emails de usuario",
+      "--purpose",
+      "Notificaciones",
+      "--legal_basis",
+      "consent"
+     ]
+    ]
+   },
+   "vault_procesos_git": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_procesos_git.py",
+      "--check"
+     ],
+     [
+      "scripts/vault_procesos_git.py",
+      "--check",
+      "--strict"
+     ],
+     [
+      "scripts/vault_procesos_git.py",
+      "--contrato"
+     ]
+    ]
+   },
+   "vault_produccion": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_produccion.py",
+      "--check"
+     ],
+     [
+      "scripts/vault_produccion.py",
+      "--check",
+      "--strict"
+     ],
+     [
+      "scripts/vault_produccion.py",
+      "--guia"
+     ]
+    ]
+   },
+   "vault_project": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_project.py",
+      "--add",
+      "ans",
+      "--title",
+      "ANS",
+      "--alias",
+      "ans-api"
+     ],
+     [
+      "scripts/vault_project.py",
+      "--resolve",
+      "ANS API"
+     ],
+     [
+      "scripts/vault_project.py",
+      "--audit"
+     ]
+    ]
+   },
+   "vault_project_overview": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_project_overview.py",
+      "--project",
+      "mi-api",
+      "--description",
+      "REST API",
+      "--runtime",
+      "Node.js 20"
+     ]
+    ]
+   },
+   "vault_project_status": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_project_status.py",
+      "--project",
+      "mi-api",
+      "--status",
+      "en_desarrollo",
+      "--summary",
+      "Sprint 3 en curso"
+     ]
+    ]
+   },
+   "vault_propagate": {
+    "ficheros": {
+     "01_Projects/mi-api/overview.md": "---\ntitle: Nota del ejemplo\ntype: knowledge\nstatus: draft\ntags: [ejemplo]\n---\n\n# Nota del ejemplo\n\nCuerpo.\n"
+    },
+    "lineas": [
+     [
+      "scripts/vault_propagate.py",
+      "--changed",
+      "01_Projects/mi-api/overview.md",
+      "--queue-report"
+     ],
+     [
+      "scripts/vault_propagate.py",
+      "--changed",
+      "01_Projects/mi-api/overview.md",
+      "--action",
+      "notify"
+     ]
+    ]
+   },
+   "vault_qa_save": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_qa_save.py",
+      "--project",
+      "mi-api",
+      "--type",
+      "test-plan",
+      "--title",
+      "Plan de Pruebas v2",
+      "--description",
+      "Plan de pruebas de la API para la v2"
+     ]
+    ]
+   },
+   "vault_quality_check": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_quality_check.py"
+     ],
+     [
+      "scripts/vault_quality_check.py",
+      "--min-score",
+      "0.7"
+     ]
+    ]
+   },
+   "vault_quality_dashboard": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_quality_dashboard.py"
+     ],
+     [
+      "scripts/vault_quality_dashboard.py",
+      "--check"
+     ]
+    ]
+   },
+   "vault_quarantine": {
+    "ficheros": {
+     "07_Knowledge/rara.md": "---\ntitle: Nota del ejemplo\ntype: knowledge\nstatus: draft\ntags: [ejemplo]\n---\n\n# Nota del ejemplo\n\nCuerpo.\n"
+    },
+    "lineas": [
+     [
+      "scripts/vault_quarantine.py",
+      "--add",
+      "07_Knowledge/rara.md",
+      "--reason",
+      "Sin frontmatter y origen desconocido",
+      "--agent",
+      "claude"
+     ],
+     [
+      "scripts/vault_quarantine.py",
+      "--list"
+     ]
+    ]
+   },
+   "vault_query_parse": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_query_parse.py",
+      "que decidimos la semana pasada sobre MCP",
+      "--explain"
+     ]
+    ]
+   },
+   "vault_read": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_read.py",
+      "--path",
+      "01_Projects/mi-api/overview.md"
+     ]
+    ]
+   },
+   "vault_recursos": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_recursos.py",
+      "--check"
+     ],
+     [
+      "scripts/vault_recursos.py",
+      "--ranking"
+     ],
+     [
+      "scripts/vault_recursos.py",
+      "--check",
+      "--strict"
+     ]
+    ]
+   },
+   "vault_reindex": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_reindex.py"
+     ],
+     [
+      "scripts/vault_reindex.py",
+      "--graph",
+      "--check"
+     ]
+    ]
+   },
+   "vault_relation_add": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_relation_add.py",
+      "--project",
+      "mi-api",
+      "--from",
+      "User",
+      "--to",
+      "Order",
+      "--relation_type",
+      "has_many",
+      "--cardinality",
+      "1:N"
+     ]
+    ]
+   },
+   "vault_release_save": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_release_save.py",
+      "--project",
+      "mi-api",
+      "--version",
+      "1.2.0",
+      "--type",
+      "minor"
+     ]
+    ]
+   },
+   "vault_requirement_save": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_requirement_save.py",
+      "--project",
+      "mi-api",
+      "--title",
+      "Auth",
+      "--description",
+      "Login de usuario",
+      "--type",
+      "functional",
+      "--priority",
+      "must-have"
+     ]
+    ]
+   },
+   "vault_restore": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_restore.py",
+      "--backup_name",
+      "2026-06-24_120000",
+      "--confirm",
+      "true"
+     ]
+    ]
+   },
+   "vault_risk_save": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_risk_save.py",
+      "--project",
+      "mi-api",
+      "--title",
+      "Caida de la base",
+      "--likelihood",
+      "3",
+      "--impact",
+      "4"
+     ]
+    ]
+   },
+   "vault_ronda": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_ronda.py",
+      "--activa"
+     ]
+    ]
+   },
+   "vault_runbook_log": {
+    "ficheros": {
+     "08_Runbooks/deploy.md": "---\ntitle: Nota del ejemplo\ntype: knowledge\nstatus: draft\ntags: [ejemplo]\n---\n\n# Nota del ejemplo\n\nCuerpo.\n"
+    },
+    "lineas": [
+     [
+      "scripts/vault_runbook_log.py",
+      "--path",
+      "08_Runbooks/deploy.md",
+      "--outcome",
+      "success"
+     ]
+    ]
+   },
+   "vault_runbook_save": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_runbook_save.py",
+      "--project",
+      "mi-api",
+      "--title",
+      "Deploy",
+      "--trigger",
+      "manual",
+      "--category",
+      "deploy",
+      "--steps",
+      "[{\"step\": \"Build\"}, {\"step\": \"Publicar\"}]"
+     ]
+    ]
+   },
+   "vault_sanacion": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_sanacion.py"
+     ],
+     [
+      "scripts/vault_sanacion.py",
+      "--phase",
+      "8"
+     ]
+    ]
+   },
+   "vault_sdd_init": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_sdd_init.py",
+      "--bilingual"
+     ],
+     [
+      "scripts/vault_sdd_init.py",
+      "--check"
+     ],
+     [
+      "scripts/vault_sdd_init.py",
+      "--bilingual",
+      "--force"
+     ]
+    ]
+   },
+   "vault_search": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_search.py",
+      "--query",
+      "circuit breaker"
+     ],
+     [
+      "scripts/vault_search.py",
+      "--query",
+      "deploy",
+      "--folder",
+      "01_Projects"
+     ]
+    ]
+   },
+   "vault_section": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_section.py",
+      "--list",
+      "--json"
+     ],
+     [
+      "scripts/vault_section.py",
+      "--add",
+      "22_Scripts",
+      "--documentacion",
+      "referencia",
+      "--description",
+      "Scripts de despliegue",
+      "--json"
+     ]
+    ]
+   },
+   "vault_section_index": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_section_index.py",
+      "--folder",
+      "01_Projects"
+     ]
+    ]
+   },
+   "vault_security_scan": {
+    "ficheros": {
+     "@trabajo/src/app.js": "const password = \"hunter22\";\nspawn(cmd, { shell: true });\n"
+    },
+    "lineas": [
+     [
+      "scripts/vault_security_scan.py",
+      "--path",
+      "src/",
+      "--project",
+      "mi-api"
+     ],
+     [
+      "scripts/vault_security_scan.py",
+      "--path",
+      "src/",
+      "--project",
+      "mi-api",
+      "--categories",
+      "secrets",
+      "command_injection",
+      "--save_findings",
+      "false"
+     ]
+    ]
+   },
+   "vault_servicio": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_servicio.py",
+      "--list"
+     ],
+     [
+      "scripts/vault_servicio.py",
+      "--trace"
+     ],
+     [
+      "scripts/vault_servicio.py",
+      "--check",
+      "--strict"
+     ]
+    ]
+   },
+   "vault_slo_save": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_slo_save.py",
+      "--project",
+      "mi-api",
+      "--service",
+      "api",
+      "--slo_type",
+      "availability",
+      "--target",
+      "99.9"
+     ]
+    ]
+   },
+   "vault_smoke": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_smoke.py",
+      "--tool",
+      "vault_write"
+     ],
+     [
+      "scripts/vault_smoke.py",
+      "--tool",
+      "vault_search"
+     ]
+    ]
+   },
+   "vault_standard_upgrade": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_standard_upgrade.py",
+      "--check"
+     ],
+     [
+      "scripts/vault_standard_upgrade.py",
+      "--to",
+      "v34"
+     ],
+     [
+      "scripts/vault_standard_upgrade.py",
+      "--report"
+     ]
+    ]
+   },
+   "vault_subgraph": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_subgraph.py",
+      "--seeds",
+      "vault-hub",
+      "--hops",
+      "1"
+     ]
+    ]
+   },
+   "vault_supersede": {
+    "ficheros": {
+     "07_Knowledge/guia.md": "---\ntitle: Nota del ejemplo\ntype: knowledge\nstatus: draft\ntags: [ejemplo]\n---\n\n# Nota del ejemplo\n\nCuerpo.\n",
+     "10_Migrated/GUIA.md": "---\ntitle: Nota del ejemplo\ntype: knowledge\nstatus: draft\ntags: [ejemplo]\n---\n\n# Nota del ejemplo\n\nCuerpo.\n"
+    },
+    "lineas": [
+     [
+      "scripts/vault_supersede.py",
+      "--path",
+      "10_Migrated/GUIA.md",
+      "--by",
+      "guia"
+     ],
+     [
+      "scripts/vault_supersede.py",
+      "--path",
+      "10_Migrated/GUIA.md",
+      "--by",
+      "[[guia]]",
+      "--apply"
+     ]
+    ]
+   },
+   "vault_tags": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_tags.py"
+     ],
+     [
+      "scripts/vault_tags.py",
+      "--ledger"
+     ]
+    ]
+   },
+   "vault_test_save": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_test_save.py",
+      "--project",
+      "mi-api",
+      "--title",
+      "Login",
+      "--test_type",
+      "unit",
+      "--description",
+      "Verifica el login"
+     ]
+    ]
+   },
+   "vault_tests_higiene": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_tests_higiene.py",
+      "--check"
+     ],
+     [
+      "scripts/vault_tests_higiene.py",
+      "--check",
+      "--strict"
+     ],
+     [
+      "scripts/vault_tests_higiene.py",
+      "--freeze"
+     ]
+    ]
+   },
+   "vault_timeline": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_timeline.py"
+     ],
+     [
+      "scripts/vault_timeline.py",
+      "--project",
+      "mi-api",
+      "--limit",
+      "20"
+     ]
+    ]
+   },
+   "vault_token_counter": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_token_counter.py",
+      "self-test"
+     ]
+    ]
+   },
+   "vault_token_service": {
+    "omitida": "servicio HTTP: no retorna por diseño"
+   },
+   "vault_tokens": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_tokens.py",
+      "--summary"
+     ],
+     [
+      "scripts/vault_tokens.py",
+      "--since",
+      "2026-01-01",
+      "--top",
+      "10"
+     ]
+    ]
+   },
+   "vault_toolkit_audit": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_toolkit_audit.py",
+      "--tools",
+      "vault_voice"
+     ]
+    ]
+   },
+   "vault_undo": {
+    "ficheros": {
+     "01_Projects/ans/status.md": "---\ntitle: Nota del ejemplo\ntype: knowledge\nstatus: draft\ntags: [ejemplo]\n---\n\n# Nota del ejemplo\n\nCuerpo.\n"
+    },
+    "lineas": [
+     [
+      "scripts/vault_undo.py",
+      "--list",
+      "01_Projects/ans/status.md"
+     ],
+     [
+      "scripts/vault_undo.py",
+      "--restore",
+      "01_Projects/ans/status.md",
+      "--force"
+     ]
+    ]
+   },
+   "vault_validate": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_validate.py",
+      "--path",
+      "01_Projects/mi-api/overview.md"
+     ]
+    ]
+   },
+   "vault_voice": {
+    "ficheros": {},
+    "lineas": [
+     [
+      "scripts/vault_voice.py",
+      "--tool",
+      "vault_write"
+     ],
+     [
+      "scripts/vault_voice.py",
+      "--coverage"
+     ]
+    ]
+   },
+   "vault_write": {
+    "ficheros": {
+     "@trabajo/overview.md": "# Texto del ejemplo\n\nEste servicio expone la API publica del proyecto y valida cada peticion contra el esquema antes de tocar la base de datos.\nLos errores se devuelven con un codigo estable y un mensaje legible.\nEl despliegue se hace con la imagen etiquetada por el commit.\n"
+    },
+    "lineas": [
+     [
+      "scripts/vault_write.py",
+      "--folder",
+      "01_Projects/mi-api",
+      "--title",
+      "Overview",
+      "--content",
+      "@file:overview.md",
+      "--tags",
+      "api",
+      "backend",
+      "--agent",
+      "mi-agente"
+     ]
+    ]
+   }
+  }
+ },
+ "repeticiones": 2,
+ "volatiles": {}
+}

@@ -24,6 +24,13 @@ cada tablón, comprueba que sigue siendo el mismo barco. Cuatro componentes:
   ficheros que el ejemplo da por existentes. Se guarda exit, `ok`,
   `error_code`, las claves del envelope, las rutas del vault que cambió y el
   envelope normalizado.
+- **escritos** (2026-11-02) — la MISMA corrida del plan, vista por otro lado:
+  qué ficheros dejó la línea y con qué contenido, en digest. `cambiadas` dice
+  qué paths cambian de sha; no dice qué se escribió dentro, así que una tool
+  que escribiera el mismo path con otro cuerpo salía verde —el punto ciego
+  que AP-44 nombra y que el plan ponía como prerrequisito de A-3—. Se mide
+  sobre todo el destino de la corrida (el vault, la casa y el trabajo), no
+  solo el vault: `vault_init` construye su vault nuevo en la casa.
 
 **Por qué no reutiliza `vault_smoke.run_one` al comparar.** El comparador no
 puede depender del código que el refactor mueve: si `vault_smoke` cambia, la
@@ -63,6 +70,18 @@ después del golden, sin que el tablón tocara nada de su camino:
 | `vault_quality_check#0` | `scores.timeliness` de cada nota y la cifra de su aviso `timeliness: N days since update` | días contra el reloj, como `daysSinceUpdate` | qué notas avisan de vigencia, el resto de avisos y de puntuaciones |
 | `vault_ncr_save#0` | el mes (`AAAA-MM`) del nombre de la nota, en `datos.path` y en `cambiadas` | la tool pone el mes UTC en el nombre; el golden es de octubre y la noche del 2026-10-31 ya era noviembre en UTC | la carpeta, el resto del nombre y las demás rutas de `cambiadas` |
 | `vault_query_parse#0` | la fecha `since` de una expresión temporal relativa, allí donde aparece (`structured.temporal`, `evidence`, `plan`) | «la semana pasada» se resuelve contra el reloj UTC (hoy menos 14 días): 2026-10-17 en el golden, 2026-10-18 en el cierre de B-1 | la expresión, su `kind`, qué evidencias y pasos del plan llevan la fecha y todo lo demás |
+
+La vista `escritos` normaliza por su cuenta, y solo por su cuenta, lo que una
+tool genera al escribir: el `uuid` de una nota o de una entry de índice, el
+sello `AAAAMMDD-HHMMSS` de un fichero de trabajo, la hora local suelta tras
+`<HOY>`, el mes del nombre de un NCR, su número aleatorio y el `sha256` que
+un índice calcula sobre el fichero crudo. Es la misma regla que aplica
+`VOLATILES_DECLARADOS` a los envelopes, pero en la vista que mide el
+CONTENIDO y no el envelope: allí la tabla del `Normalizador` no se toca
+porque el golden de envelopes está congelado con 67 uuids crudos detrás de
+declarados. Dos huecos quedan escritos, no escondidos: el algoritmo del
+hash de un índice no queda protegido (las claves y el resto del índice, sí),
+y el estado que `git init` genera en la casa se excluye del árbol.
 
 Las tools que miden el propio repo (`vault_clones`, `vault_metricas`, …)
 **no** se declaran: cuando un tablón cambia lo que miden, su rojo es el delta
@@ -118,7 +137,15 @@ CONTRATOS_ESTATICOS = (
     "vault/meta_toolkit/tools-catalog.json",
     "vault-sandbox/00_System/tool-spec.json",
 )
-COMPONENTES = ("estatico", "superficie", "ayuda", "envelopes")
+COMPONENTES = ("estatico", "superficie", "ayuda", "envelopes", "escritos")
+
+# `escritos` (2026-11-01): el contenido normalizado de lo que cada línea deja
+# en su destino — el vault, la casa (VAULT_MASTER) y el trabajo. `cambiadas`
+# (envelopes) dice qué paths cambian de sha, no con qué contenido: escribir el
+# mismo path con otro contenido era verde —el punto ciego AP-44 que el plan
+# nombra como prerrequisito de A-3—. La vista no es "paths-only", que
+# duplicaría a `cambiadas` midiendo con su misma normalización: lo que compara
+# es el contenido, y por eso detecta regresar mientras el envelope siga igual.
 
 _TS = re.compile(r"\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?")
 
@@ -373,6 +400,34 @@ def _arbol(raiz: Path) -> Dict[str, str]:
     return salida
 
 
+def _escritos_de(antes: Dict[str, str], despues: Dict[str, str], destino: Path,
+                 norm: Normalizador) -> Dict[str, Any]:
+    """La vista `escritos` de una línea: ruta relativa al destino → contenido.
+
+    Toda la corrida va bajo `destino`; lo que queda FUERA del vault se compara
+    igual — `vault_init` construye su vault nuevo en la casa y ocultar el
+    árbol por solo-`vault` cegaría justo al ejemplo más escritor. La ruta va
+    prefijada (`vault/…`, `.casa/…`, `trabajo/…`), así que cada fichero declara
+    dónde lo dejó la tool. Un borrado solo se prueba desde `antes` y queda como
+    `<borrado>`; un fichero sin vía de texto viaja con su `sha256:` (el
+    contenido no se normaliza, así que es lo más caro de ver volátil).
+    """
+    salida: Dict[str, Any] = {}
+    for r in sorted(set(antes) | set(despues)):
+        if antes.get(r) == despues.get(r):
+            continue
+        if r not in despues:
+            salida[norm.texto(r)] = "<borrado>"
+            continue
+        try:
+            contenido = (destino / r).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            salida[norm.texto(r)] = f"sha256:{despues[r]}"
+            continue
+        salida[norm.texto(r)] = norm.texto(contenido)
+    return salida
+
+
 _FUERA_DE_CUSTODIA = {".git", "build", "node_modules", "__pycache__", ".pytest_cache"}
 
 
@@ -481,6 +536,7 @@ def _correr_linea(linea: List[str], ficheros: Dict[str, str], origen: Path) -> D
                     ruta.parent.mkdir(parents=True, exist_ok=True)
                     ruta.write_bytes(contenido.encode("utf-8"))
         antes = _arbol(vault)
+        antes_todo = _arbol(destino)
         env = _env_base({"VAULT_ROOT": str(vault), "VAULT_MASTER": str(destino / ".casa"),
                          "PYTHONDONTWRITEBYTECODE": "1"})
         argv = [sys.executable, str(REPO / linea[0])] + linea[1:]
@@ -493,13 +549,15 @@ def _correr_linea(linea: List[str], ficheros: Dict[str, str], origen: Path) -> D
             return {"exit": None, "problema": "timeout"}
         duracion = round(time.monotonic() - inicio, 2)
         despues = _arbol(vault)
+        despues_todo = _arbol(destino)
         norm = Normalizador(str(destino))
         # Se ordena antes de normalizar: el índice de una ruta volátil no se mueve.
         cambiadas = [norm.texto(r) for r in
                      sorted(r for r in set(antes) | set(despues) if antes.get(r) != despues.get(r))]
+        escritos = _escritos_de(antes_todo, despues_todo, destino, norm)
         datos = _json_de(proc.stdout)
         corrida: Dict[str, Any] = {"exit": proc.returncode, "cambiadas": cambiadas,
-                                   "_duracion_s": duracion}
+                                   "escritos": escritos, "_duracion_s": duracion}
         if isinstance(datos, dict):
             corrida.update({"ok": datos.get("ok"), "error_code": datos.get("error_code"),
                             "claves": sorted(datos), "datos": norm.valor(datos)})
@@ -520,8 +578,33 @@ def capturar_envelopes(plan: Dict[str, Any], origen: Path,
         if "omitida" in entrada:
             salida[nombre] = {"omitida": entrada["omitida"]}
             continue
-        salida[nombre] = [correr_linea(l, entrada["ficheros"], origen, custodia)
+        salida[nombre] = [{k: v for k, v in
+                           correr_linea(l, entrada["ficheros"], origen, custodia).items()
+                           if k != "escritos"}
                           for l in entrada["lineas"]]
+        if avisar:
+            print(f"[paridad] {i}/{total} {nombre}", file=sys.stderr, flush=True)
+    return salida
+
+
+def capturar_escritos(plan: Dict[str, Any], origen: Path,
+                      avisar: bool = True) -> Dict[str, Any]:
+    """La vista `escritos` de las mismas líneas del plan: qué contenido dejó.
+
+    Misma corrida, otro corte: de cada línea conserva solo `escritos` (el
+    `correr_linea` ya lo produce sin coste extra). Es el prerrequisito de A-3
+    y no toca la forma congelada de `golden/envelopes.json`.
+    """
+    salida: Dict[str, Any] = {}
+    total = len(plan["tools"])
+    custodia = CustodiaDelRepo()
+    for i, (nombre, entrada) in enumerate(sorted(plan["tools"].items()), 1):
+        if "omitida" in entrada:
+            salida[nombre] = {"omitida": entrada["omitida"]}
+            continue
+        salida[nombre] = [{"escritos": l.get("escritos", {})} for l in
+                          (correr_linea(l, entrada["ficheros"], origen, custodia)
+                           for l in entrada["lineas"])]
         if avisar:
             print(f"[paridad] {i}/{total} {nombre}", file=sys.stderr, flush=True)
     return salida
@@ -543,6 +626,22 @@ def _rutas_distintas(a: Any, b: Any, ruta: str = "") -> Iterable[str]:
                 yield from _rutas_distintas(x, y, f"{ruta}[{i}]")
     elif a != b:
         yield ruta
+
+
+def _sin_volatiles_escritos(escritos: Dict[str, Any],
+                             rutas: List[str]) -> Dict[str, Any]:
+    """Quita de la vista `escritos` las rutas declaradas volátiles.
+
+    No se usa `_quitar` —la navegación por tokens— porque la clave de un
+    fichero lleva puntos (`mi-api-deploy.md`) y el punto separaría la clave de
+    su extensión. Aquí la ruta ES la clave: se recorta el prefijo y se
+    compara entero, que es lo que se quiso decir.
+    """
+    fuera = set()
+    for ruta in rutas:
+        if ruta.startswith(".escritos."):
+            fuera.add(ruta[len(".escritos."):])
+    return {k: v for k, v in escritos.items() if k not in fuera}
 
 
 def _clave_corrida(nombre: str, i: int) -> str:
@@ -655,6 +754,96 @@ def _desde_sin_reloj(c: Dict[str, Any]) -> Dict[str, Any]:
     return c
 
 
+_UUID = re.compile(r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b")
+_SHA256 = re.compile(r"\b[0-9a-f]{64}\b")
+
+
+def _determinizar(s: str) -> str:
+    """Lo que la vista `escritos` perdona: identidad, sellos de reloj y hashes.
+
+    - `<UUID>`: la tool generó un identificador (un `id:` de frontmatter, un
+      `docId` de índice, un id de entry en `.change-log.json`). Se compara por
+      PRESENCIA y forma, no por valor: el valor es aleatorio por diseño del
+      producto.
+    - `<STAMP>`: el `AAAAMMDD-HHMMSS` compacto que la tool estampa en nombres de
+      fichero de trabajo (`00_System/.trash/foo-<STAMP>.md.bak`,
+      `vault-backups/.vault-fix-backup-<STAMP>/`).
+    - `<HOY>THH-MM-SS` y `<HOY>-HHMMSS`: reloj residual en el nombre que la
+      tabla del `Normalizador` no tapa (`.history/<nota>__old-<HOY>T03-12-26.md`,
+      `vault-backups/vault-<HOY>-031044/`).
+    - `<SHA256>`: el hash de un índice (`99_Index/hash-index.json`,
+      `vault-backups/.manifest.json`) se calcula sobre el fichero CRUDO, que
+      lleva lo de arriba dentro, así que el valor no es igualable de captura a
+      captura. Hueco declarado: el ALGORITMO del hash no queda protegido en
+      esta vista —las claves del índice y el resto del contenido, sí—.
+    - `<HORA>`: la hora local sin segundos que queda tras `<HOY>` (el historial
+      de ejecuciones de un runbook: `-- <HOY> 03:39`). El `Normalizador` solo
+      tapa la marca de tiempo COMPLETA (`_TS` exige los segundos).
+    - `NCR-AAAA-<N>`: el número de no conformidad es aleatorio por diseño
+      (`random.randint(100, 999)` en `vault_ncr_save.py`). En el golden de
+      envelopes ya está declarado volátil en `.datos.ncr_id`; aquí la misma
+      regla, porque el id aparece también en el cuerpo de la nota y en los
+      índices que la resumen.
+    - `<MES>`: el `AAAA-MM` del nombre de fichero (el NCR se titula con el mes
+      UTC). El `Normalizador` no lo tapa —no es fecha completa— y el golden de
+      envelopes lo declara con el mismo motivo (`_mes_sin_reloj`).
+    Aplicado igual a claves y a contenido, y solo en la vista `escritos`: la
+    tabla del Normalizador es del golden congelado de envelopes y ahí no se
+    toca (67 uuids crudos detrás de declarados, 2026-11-02).
+    """
+    s = _UUID.sub("<UUID>", s)
+    s = re.sub(r"(?<!\d)\d{8}-\d{6}(?!\d)", "<STAMP>", s)
+    s = re.sub(r"<HOY>T\d{2}-\d{2}-\d{2}", "<HOY>THH-MM-SS", s)
+    s = re.sub(r"(?<=<HOY>)-\d{6}\b", "-HHMMSS", s)
+    s = re.sub(r"(?<=<HOY> )\d{2}:\d{2}\b", "<HORA>", s)
+    s = re.sub(r"NCR-(\d{4})-\d{3}\b", r"NCR-\1-<N>", s)
+    s = _MES.sub("<MES>", s)
+    return _SHA256.sub("<SHA256>", s)
+
+
+def _escritos_de(antes: Dict[str, str], despues: Dict[str, str], destino: Path,
+                 norm: Normalizador) -> Dict[str, Any]:
+    """La vista `escritos` de una línea: ruta relativa al destino → DIGEST.
+
+    Toda la corrida va bajo `destino`; lo que queda FUERA del vault se compara
+    igual — `vault_init` construye su vault nuevo en la casa y ocultar el
+    árbol por solo-`vault` cegaría justo al ejemplo más escritor. La ruta va
+    prefijada (`vault/…`, `.casa/…`, `trabajo/…`), así que cada fichero declara
+    dónde lo dejó la tool. Un borrado solo se prueba desde `antes` y queda como
+    `<borrado>`; un fichero sin vía de texto viaja con el sha de sus bytes.
+
+    Lo que se guarda es el **sha256 del contenido ya normalizado**, no el
+    contenido. Detecta lo mismo —una tool que escribe el mismo path con otro
+    cuerpo es una rotura— y el golden baja de 10,4 MB a ~100 KB: el repo
+    versiona 22 MB y su mayor fichero son 1,3 MB, así que un golden de 10 MB
+    sería media tabla. Además el golden deja de llevar dentro el texto del
+    vault, que no es lo que se compara. Es la misma convención que la vista de
+    envelopes, que reporta rutas distintas y no valores.
+
+    `git` se excluye del árbol de la casa: es estado que `git init` genera
+    (objetivos, logs, index), no la nota que la tool escribe; comparar sus
+    internals sería ruido permanente del mecanismo, no señal de producto.
+    """
+    salida: Dict[str, Any] = {}
+    for r in sorted(set(antes) | set(despues)):
+        if ".git" in r.split("/"):
+            continue
+        if antes.get(r) == despues.get(r):
+            continue
+        if r not in despues:
+            salida[_determinizar(norm.texto(r))] = "<borrado>"
+            continue
+        try:
+            contenido = (destino / r).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            salida[_determinizar(norm.texto(r))] = f"sha256:{despues[r]}"
+            continue
+        normalizado = _determinizar(norm.texto(contenido))
+        salida[_determinizar(norm.texto(r))] = hashlib.sha256(
+            normalizado.encode("utf-8")).hexdigest()
+    return salida
+
+
 # Lo que la captura no puede ver variar (ver el docstring). `[*]` cubre cada
 # elemento de la lista; los textos se normalizan solo en el patrón declarado.
 VOLATILES_DECLARADOS: Dict[str, Dict[str, Any]] = {
@@ -750,6 +939,27 @@ def capturar(componentes: List[str], tools: Optional[Set[str]], repeticiones: in
                 "tools": len(plan["tools"]),
                 "lineas": sum(len(v.get("lineas", [])) for v in plan["tools"].values()),
                 "corridas_con_volatiles": len(volatiles)}
+        if "escritos" in componentes:
+            plan_e = plan_de_envelopes(tools)
+            corridas_e = []
+            for i in range(max(1, repeticiones)):
+                rep = base / f"rep-e{i}"
+                rep.mkdir()
+                corridas_e.append(capturar_escritos(plan_e, _origen(rep, plan_e["proyecto"])))
+            volatiles_e: Dict[str, List[str]] = {}
+            for otra in corridas_e[1:]:
+                for clave, rutas in volatiles_entre(corridas_e[0], otra).items():
+                    volatiles_e[clave] = sorted(set(volatiles_e.get(clave, [])) | set(rutas))
+            _escribir(GOLDEN / "escritos.json", {
+                "plan": plan_e, "repeticiones": len(corridas_e),
+                "volatiles": volatiles_e, "corridas": corridas_e[0]})
+            resumen["componentes"]["escritos"] = {
+                "tools": len(plan_e["tools"]),
+                "lineas": sum(len(v.get("lineas", [])) for v in plan_e["tools"].values()),
+                "ficheros_escritos": sum(len(l.get("escritos", {}))
+                                         for li in corridas_e[0].values() if isinstance(li, list)
+                                         for l in li),
+                "corridas_con_volatiles": len(volatiles_e)}
         if suite:
             texto = suite.read_text(encoding="utf-8", errors="replace").strip().splitlines()
             ultima = next((l for l in reversed(texto) if " passed" in l or " failed" in l), "")
@@ -814,6 +1024,37 @@ def comparar(componentes: List[str], tools: Optional[Set[str]]) -> Dict[str, Any
                     roturas[nombre] = f"líneas: {len(esperado)} → {len(actual or [])}"
             informe["envelopes"] = {"ok": not roturas, "tools": len(plan["tools"]),
                                     "roturas": roturas}
+        if "escritos" in componentes:
+            golden_e = _leer(GOLDEN / "escritos.json")
+            plan = golden_e["plan"]
+            if tools:
+                plan = {**plan, "tools": {k: v for k, v in plan["tools"].items() if k in tools}}
+            origen = _origen(base, plan["proyecto"])
+            actuales = capturar_escritos(plan, origen)
+            roturas: Dict[str, Any] = {}
+            for nombre, esperado in sorted(golden_e["corridas"].items()):
+                if nombre not in plan["tools"]:
+                    continue
+                actual = actuales.get(nombre)
+                if not isinstance(esperado, list):
+                    if esperado != actual:
+                        roturas[nombre] = {"antes": esperado, "ahora": actual}
+                    continue
+                for i, (e, a) in enumerate(zip(esperado, actual or [])):
+                    clave = _clave_corrida(nombre, i)
+                    rutas = golden_e["volatiles"].get(clave, [])
+                    # La vista guarda un digest por ruta, así que la rotura es
+                    # la ruta cuyo digest cambió —el mismo path con otro
+                    # cuerpo— y no una diferencia de estructura.
+                    ee = _sin_volatiles_escritos(e.get("escritos", {}), rutas)
+                    aa = _sin_volatiles_escritos(a.get("escritos", {}), rutas)
+                    distintas = sorted(k for k in set(ee) | set(aa) if ee.get(k) != aa.get(k))
+                    if distintas:
+                        roturas[_clave_corrida(nombre, i)] = distintas[:12]
+                if len(esperado) != len(actual or []):
+                    roturas[nombre] = f"líneas: {len(esperado)} → {len(actual or [])}"
+            informe["escritos"] = {"ok": not roturas, "tools": len(plan["tools"]),
+                                   "roturas": roturas}
     finally:
         shutil.rmtree(base, ignore_errors=True)
     return {"ok": all(v["ok"] for v in informe.values()), "componentes": informe}
