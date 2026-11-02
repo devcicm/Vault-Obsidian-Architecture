@@ -860,6 +860,10 @@ VOLATILES_DECLARADOS: Dict[str, Dict[str, Any]] = {
     "vault_change_log#0": {"rutas": [".datos.total", ".datos.entries[*].id"]},
     "vault_ncr_save#0": {"ajuste": _mes_sin_reloj},
     "vault_query_parse#0": {"ajuste": _desde_sin_reloj},
+    # El tiempo que tardó la auditoría no es un contrato: es el reloj de la
+    # máquina. La captura no puede verlo variar —las dos repeticiones tardaron
+    # lo mismo— y por eso se declara aquí y no en el `volatiles` del golden.
+    "vault_toolkit_audit#0": {"rutas": [".datos.segundos"]},
 }
 
 
@@ -1001,7 +1005,11 @@ def comparar(componentes: List[str], tools: Optional[Set[str]]) -> Dict[str, Any
             plan = golden["plan"]
             if tools:
                 plan = {**plan, "tools": {k: v for k, v in plan["tools"].items() if k in tools}}
-            origen = _origen(base, plan["proyecto"])
+            # Cada componente que corre el plan necesita SU origen: `_origen`
+            # copia el sandbox a `<base>/vault`, así que dos componentes con el
+            # mismo `base` chocan con el segundo `copytree` (FileExistsError).
+            # Con un solo componente no se veía; con `escritos` añadido, sí.
+            origen = _origen(base / "env", plan["proyecto"])
             actuales = capturar_envelopes(plan, origen)
             roturas: Dict[str, Any] = {}
             for nombre, esperado in sorted(golden["corridas"].items()):
@@ -1029,7 +1037,7 @@ def comparar(componentes: List[str], tools: Optional[Set[str]]) -> Dict[str, Any
             plan = golden_e["plan"]
             if tools:
                 plan = {**plan, "tools": {k: v for k, v in plan["tools"].items() if k in tools}}
-            origen = _origen(base, plan["proyecto"])
+            origen = _origen(base / "esc", plan["proyecto"])
             actuales = capturar_escritos(plan, origen)
             roturas: Dict[str, Any] = {}
             for nombre, esperado in sorted(golden_e["corridas"].items()):

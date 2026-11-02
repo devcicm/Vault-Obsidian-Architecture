@@ -48,12 +48,12 @@
   "vault_backup": [
    {
     "escritos": {
-     "vault/vault-backups/.backup-registry.json": "cd2e759ccd3b145f677704ff9cab596fcb7a6ec6f759b4958c1b907ee2f6ac1f",
-     "vault/vault-backups/vault-<HOY>-HHMMSS/.manifest.json": "c17cf10116138d9b9fccad8aa88caefc9e60eb1abdfd14bc79b2a831a61a7694",
-     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/.change-log.json": "553cb5a2d9c65a37cdbfc950cf156fba8aa638f437cc71aa425bf5b61d141faf",
+     "vault/vault-backups/.backup-registry.json": "bfde29c591ef3c7c1d076f0f081bea26058e5bdaf1c38b5505c49442e3c9641f",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/.manifest.json": "676b7b4895a48586f8d410cfdd0c6bd612ead1cd4ae24db2acf2340a8e47c582",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/.change-log.json": "ff4741a26da5ffb773361ccb479730f7f295491283b4b42c333db64a68ec8053",
      "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/.voice-counter": "4de75f76a1c415f8d29ad71432af4ba35e8b4b158c640258c31f87c6cefab6cb",
-     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/change-log.md": "78faa489296350ca5622fd1918d41030113ad220a3c266f3326ef641321f4dd5",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/.voice-counter": "c53d9534e7c47018b82fd6a3cb1e3560bde715ad322476c45768337bc09dae31",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/change-log.md": "1aeab0b01bad90a43f616a2352ad22b48be63ab179691d7286911bddaf5bcc2e",
      "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/data-framework.json": "73afb1243f68c8d31ea9f5b34474f98d8fb8f613e7cec3e9c50d00ea8903028b",
      "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/data-framework.md": "500f7c9786249977e9db9f19a3c57f38e52f833c4cfedf6f3411a93754560071",
      "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/data-fundamentals.json": "745638f3c2d437846df3c3ea5869e3c39a6d0a5ce13c5a6e9cbe9513bcd9fe9e",
@@ -63,11 +63,11 @@
      "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/product-gates/index.md": "04b5421c8babc35513234c067f410116dcb127bf5fcc17fa7babf5e73d523370",
      "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/product-gates/memory_e2e/memory_e2e-result.json": "37e1d63f70d80b4e807d9ef08ea42c384a2a4f32410c2f916670996e346b6ede",
      "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/quality-index.json": "df9dbaf57098e28aa0ac98b3791568f8ea6a08b81c66085a0023133103857bb3",
-     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/standard-version.json": "ad6aa02e6fb5f0f4b23102ab73d267c4e6bfa90fadf9f65ef422c246fc58460e",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/standard-version.json": "405f75a4f8213cfff80ac67f435179c850b9f504be75ec3bc007ea8da623187f",
      "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/tag-registry.json": "dc85564bf26e1601f3e603b54f30eb9bdc4dd17e1006ce836df1682a2bdaf170",
      "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/tool-contracts.json": "b3a1f987c1b7df43d50c69dc3ace76d157ecf61686f4affa5100485d4533e1f2",
      "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/tool-contracts.md": "77b4552bdc29d9d76c1745d81c8e7c406aa27b9f938819b5af293aa22b5c27fa",
-     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/tool-spec.json": "a2a037b6c9cb328af63197d603cd29897d2d55069408f5cc1dfbec608af84e1f",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/tool-spec.json": "a27a7b20d3c9ab6b8757e83a45fa2a2c11a15c868bd9583adf3ae8e75e032310",
      "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/vault-commands.md": "15ee5929e8a6a3123437197e2dfb44c9e0a918eb2d8e044b735fc5ff7ac21baa",
      "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/vault-hub.md": "d991f8c0956fc0bdd0d90ce048b0f37e093ef3f6165c9cc12f448acae4a5bc94",
      "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/vault-ontology.json": "050a0a1f2f32ce01cadf32cc8e37f6f1dbb1c6b0976d223f48ca16c7b15b27ad",
@@ -164,7 +164,7 @@
      "vault/vault-backups/vault-<HOY>-HHMMSS/99_Index/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
      "vault/vault-backups/vault-<HOY>-HHMMSS/99_Index/00-99_index-primer.md": "83e1470716dbb0e1bbe35a083d62cb77b1fdd9696b53e0fd6d5131ed59c6844b",
      "vault/vault-backups/vault-<HOY>-HHMMSS/99_Index/graph.json": "228c6a56ad68c56e0369003ac569f80eac47d67cac23054efbbfe70d2c2cde86",
-     "vault/vault-backups/vault-<HOY>-HHMMSS/99_Index/hash-index.json": "3e4d3ba033d8f1db124aab716b5702be4c8549e38470e8b0ea7bd0b771c63687",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/99_Index/hash-index.json": "63a7d21d6891f39774ff79b842c4d0d961839ef760b3c965bd89648c59e6ce09",
      "vault/vault-backups/vault-<HOY>-HHMMSS/99_Index/index.md": "11e4e87f9ccf2021fdcdf55ba9141beff24807b2a1a7c7c5c549733f3c076f6c",
      "vault/vault-backups/vault-<HOY>-HHMMSS/99_Index/search-index.json": "4905e792cd80b1603e2242a0d6ab5a438edc4fce290f4efcb47df4c6ac8ff29e",
      "vault/vault-backups/vault-<HOY>-HHMMSS/99_Index/tag-index.md": "e69727d13e415e291d9b963c126b4b884f9116327bc413ada5252ea5178ea1f0"
@@ -172,12 +172,12 @@
    },
    {
     "escritos": {
-     "vault/vault-backups/.backup-registry.json": "2b0a0482dece9f5b0794b96166bff2ae31fd813ffb4bea2177e1d67a31dca4e7",
-     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/.manifest.json": "4327afc41f25e7d02b13879c30151dbcfe4c4822f7ccd2dc92f41f0ffbb0a696",
-     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/.change-log.json": "553cb5a2d9c65a37cdbfc950cf156fba8aa638f437cc71aa425bf5b61d141faf",
+     "vault/vault-backups/.backup-registry.json": "fb5b74941aaa90a59836ea6c7b5bcfbb981b966f9308781cab30799db293df31",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/.manifest.json": "9bdee23cd4567f957fcd72e18cce59a8d1fe81eb30ddb515fa40573da4bd82b6",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/.change-log.json": "ff4741a26da5ffb773361ccb479730f7f295491283b4b42c333db64a68ec8053",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/.voice-counter": "4de75f76a1c415f8d29ad71432af4ba35e8b4b158c640258c31f87c6cefab6cb",
-     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/change-log.md": "78faa489296350ca5622fd1918d41030113ad220a3c266f3326ef641321f4dd5",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/.voice-counter": "c53d9534e7c47018b82fd6a3cb1e3560bde715ad322476c45768337bc09dae31",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/change-log.md": "1aeab0b01bad90a43f616a2352ad22b48be63ab179691d7286911bddaf5bcc2e",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/data-framework.json": "73afb1243f68c8d31ea9f5b34474f98d8fb8f613e7cec3e9c50d00ea8903028b",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/data-framework.md": "500f7c9786249977e9db9f19a3c57f38e52f833c4cfedf6f3411a93754560071",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/data-fundamentals.json": "745638f3c2d437846df3c3ea5869e3c39a6d0a5ce13c5a6e9cbe9513bcd9fe9e",
@@ -187,11 +187,11 @@
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/product-gates/index.md": "04b5421c8babc35513234c067f410116dcb127bf5fcc17fa7babf5e73d523370",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/product-gates/memory_e2e/memory_e2e-result.json": "37e1d63f70d80b4e807d9ef08ea42c384a2a4f32410c2f916670996e346b6ede",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/quality-index.json": "df9dbaf57098e28aa0ac98b3791568f8ea6a08b81c66085a0023133103857bb3",
-     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/standard-version.json": "ad6aa02e6fb5f0f4b23102ab73d267c4e6bfa90fadf9f65ef422c246fc58460e",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/standard-version.json": "405f75a4f8213cfff80ac67f435179c850b9f504be75ec3bc007ea8da623187f",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/tag-registry.json": "dc85564bf26e1601f3e603b54f30eb9bdc4dd17e1006ce836df1682a2bdaf170",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/tool-contracts.json": "b3a1f987c1b7df43d50c69dc3ace76d157ecf61686f4affa5100485d4533e1f2",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/tool-contracts.md": "77b4552bdc29d9d76c1745d81c8e7c406aa27b9f938819b5af293aa22b5c27fa",
-     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/tool-spec.json": "a2a037b6c9cb328af63197d603cd29897d2d55069408f5cc1dfbec608af84e1f",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/tool-spec.json": "a27a7b20d3c9ab6b8757e83a45fa2a2c11a15c868bd9583adf3ae8e75e032310",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/vault-commands.md": "15ee5929e8a6a3123437197e2dfb44c9e0a918eb2d8e044b735fc5ff7ac21baa",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/vault-hub.md": "d991f8c0956fc0bdd0d90ce048b0f37e093ef3f6165c9cc12f448acae4a5bc94",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/vault-ontology.json": "050a0a1f2f32ce01cadf32cc8e37f6f1dbb1c6b0976d223f48ca16c7b15b27ad",
@@ -288,7 +288,7 @@
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/99_Index/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/99_Index/00-99_index-primer.md": "83e1470716dbb0e1bbe35a083d62cb77b1fdd9696b53e0fd6d5131ed59c6844b",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/99_Index/graph.json": "228c6a56ad68c56e0369003ac569f80eac47d67cac23054efbbfe70d2c2cde86",
-     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/99_Index/hash-index.json": "3e4d3ba033d8f1db124aab716b5702be4c8549e38470e8b0ea7bd0b771c63687",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/99_Index/hash-index.json": "63a7d21d6891f39774ff79b842c4d0d961839ef760b3c965bd89648c59e6ce09",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/99_Index/index.md": "11e4e87f9ccf2021fdcdf55ba9141beff24807b2a1a7c7c5c549733f3c076f6c",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/99_Index/search-index.json": "4905e792cd80b1603e2242a0d6ab5a438edc4fce290f4efcb47df4c6ac8ff29e",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/99_Index/tag-index.md": "e69727d13e415e291d9b963c126b4b884f9116327bc413ada5252ea5178ea1f0"
@@ -355,8 +355,8 @@
    },
    {
     "escritos": {
-     "vault/00_System/.change-log.json": "cf4b624af898bfcd36f523170c5f0937d17cd3ca7a0088481f45148cb05591ec",
-     "vault/00_System/change-log.md": "9a6325c8e5173f68d35cef9ce453073380ade7e554afc0512d4302c4254876ca"
+     "vault/00_System/.change-log.json": "cf9c88d97b46daab6adb954ca4c99e36f89496f552920824236ea33392eab5e8",
+     "vault/00_System/change-log.md": "93317701d47c3c41aaf7687df0dcd9d9af5a8ff27bf80d12cc56c3658aad6dae"
     }
    }
   ],
@@ -475,8 +475,8 @@
    {
     "escritos": {
      "vault/.history/07_Knowledge__old-<HOY>THH-MM-SS.md": "fc3e90e36f70fb3a7697168137fe3fcee6d12619cff93d7261189371a88ee830",
-     "vault/00_System/.change-log.json": "0493213e2d036f06224289f126652d64f9f6eb456de1cbcbb230c2517c993761",
-     "vault/00_System/change-log.md": "ec13d3717eecfb261b56cf09baee882c60ddcbdc8415abfb696ab43f11684ba5",
+     "vault/00_System/.change-log.json": "2c44fdd22dbc58c988c2f6da1ee6ac208413fccb3f008484be4a999021ef4140",
+     "vault/00_System/change-log.md": "76943bf7c39ea7b73eac0b46bbb887e39a13c59e00a437d3cb9af166c131fcfc",
      "vault/07_Knowledge/old.md": "<borrado>"
     }
    }
@@ -484,12 +484,12 @@
   "vault_delta": [
    {
     "escritos": {
-     "vault/99_Index/hash-index.json": "70d3acc06d4c41a9a074d88416076a7e130c41b85d7dacbc2770714a4c3d93b5"
+     "vault/99_Index/hash-index.json": "4907acb06d3345e4988e5aa8cad090257cc23d6729edbb975afc0d8468133501"
     }
    },
    {
     "escritos": {
-     "vault/99_Index/hash-index.json": "70d3acc06d4c41a9a074d88416076a7e130c41b85d7dacbc2770714a4c3d93b5"
+     "vault/99_Index/hash-index.json": "4907acb06d3345e4988e5aa8cad090257cc23d6729edbb975afc0d8468133501"
     }
    }
   ],
@@ -752,7 +752,7 @@
   "vault_fundamentals": [
    {
     "escritos": {
-     "vault/00_System/data-fundamentals.json": "450c81059ed94088e0c0edd9256d76aa1ea4885380d5faf4285674800f0107e0"
+     "vault/00_System/data-fundamentals.json": "248b6af2f443458e9f157aedfce52ed8bb67343a3d2032d7086e2f3b628b3db6"
     }
    }
   ],
@@ -791,7 +791,7 @@
   "vault_graph_merge": [
    {
     "escritos": {
-     "vault/99_Index/graph-enriched.json": "104537d71d894882b249d4cf26c5e353a8bcc24e174ae6bd4460393c79d8c3ef"
+     "vault/99_Index/graph-enriched.json": "bd08b270dbd78585503a0ef60d86700c81367d75fabcdb8ce816e5d0247d03be"
     }
    }
   ],
@@ -864,7 +864,7 @@
    {
     "escritos": {
      "vault/99_Index/graph.json": "e70e5b6d93d28c881d9789fe5d89423374cd589f11c48c6b6ae33d7076035a38",
-     "vault/99_Index/hash-index.json": "df27568ccd2c1d82cc6b3a20686a9bd83423c9ae5e04713a93e8c9c5eba1baf7",
+     "vault/99_Index/hash-index.json": "fe43f9578685f8b7af21fa70186b111b25dab1a5637d99fe6cc0a21e24974e8d",
      "vault/99_Index/index.md": "56fd457840fa15103fb476af682e338caacbb863890015c4df4948c452ee4e76",
      "vault/99_Index/search-index.json": "a9615dd7a425b5b90b7312dd01419c4c670077addcca2991e1f461bf897e370e"
     }
@@ -936,7 +936,7 @@
      ".casa/mi-vault/99_Index/00-99_index-primer.md": "83e1470716dbb0e1bbe35a083d62cb77b1fdd9696b53e0fd6d5131ed59c6844b",
      ".casa/mi-vault/99_Index/search-index.json": "ccaa0d63bc839009598050689a4536de99b5eda4aa90479a6b57ed7d3343100e",
      "vault/99_Index/graph.json": "e70e5b6d93d28c881d9789fe5d89423374cd589f11c48c6b6ae33d7076035a38",
-     "vault/99_Index/hash-index.json": "df27568ccd2c1d82cc6b3a20686a9bd83423c9ae5e04713a93e8c9c5eba1baf7",
+     "vault/99_Index/hash-index.json": "fe43f9578685f8b7af21fa70186b111b25dab1a5637d99fe6cc0a21e24974e8d",
      "vault/99_Index/index.md": "56fd457840fa15103fb476af682e338caacbb863890015c4df4948c452ee4e76",
      "vault/99_Index/search-index.json": "a9615dd7a425b5b90b7312dd01419c4c670077addcca2991e1f461bf897e370e"
     }
@@ -1062,9 +1062,9 @@
   "vault_move": [
    {
     "escritos": {
-     "vault/00_System/.change-log.json": "8f6985989914e66f999f02efdedadb3f063aead6b0114f108779611c93182298",
+     "vault/00_System/.change-log.json": "a8de45c8235755a5e1231f5530dcdaad2f8ddc752eed3b25c0889e3a76566656",
      "vault/00_System/.trash/foo-<STAMP>.md.bak": "7146d2ff3191cfad91444f26f3a4f3ab831bb918f0d8d86fff03e8ae64932a5f",
-     "vault/00_System/change-log.md": "182c26609882538cb793ca112c85650f9b28c87b3ccd710f2d067e105c86f1a0",
+     "vault/00_System/change-log.md": "1207aeee5b5b273ef55275313bec8aaa55d166c81b864c018d3274e840b4967a",
      "vault/00_System/move-log.json": "d058835529a303cabd37d135a536ab08ec7fd2b4bad78dc2f433ce8cd49aad14",
      "vault/01_Projects/foo.md": "<borrado>",
      "vault/01_Projects/index.md": "b1d2e3f62ccb3342eccd67e77bb4012c54b14428eceebbce765482f8eb17a2ce",
@@ -1076,8 +1076,8 @@
    },
    {
     "escritos": {
-     "vault/00_System/.change-log.json": "b331d710001f2fe31de5f771e77eadee312fd844532782b81a4cda3f69244980",
-     "vault/00_System/change-log.md": "d91a7bbd5f5287bf01d75c3f1ac6f02a7069dfc6bf08829f889c31f37cf89990",
+     "vault/00_System/.change-log.json": "f8d93698f18b8d8c361f12dd3ae6d1641e9161296d7b3a1d324e82279a0086b9",
+     "vault/00_System/change-log.md": "b634084f672e00706f76f07d51dfbfc190c2a7a5b9765eac9d37cd4a88931867",
      "vault/00_System/move-log.json": "edc8d4477fc2671b0bb071d5b939541b8ea1db8627610a5ff48c84fbcac0e33c",
      "vault/01_Projects/index.md": "c43bcd714296b678636a859f91d5164736691225681bb82cb080e7d9a6320bdd",
      "vault/01_Projects/new/index.md": "77959fd4a0c857fb6821059b796bfb6703b3111bb2901dcebd602ccd7087f938",
@@ -1143,7 +1143,7 @@
      "vault/06_Diagrams/index.md": "a6d8bb767c7d4758092c7340b2ec2a7e541e564243896d9d8f1c492e553b58e9",
      "vault/19_Audits/vocabulary/tag-ledger.json": "ec64877c7c8413b6b4f97d3f559da79c4e06e4ff8355dd154bfa7dfa89f163ba",
      "vault/99_Index/graph.json": "55df4a71ab084eadf0c60004315e0710cb154a6a947945df45c64deaaf152f85",
-     "vault/99_Index/hash-index.json": "ed5b31dddfc616e39eb84cffdcccc4bc327c23d228040acd8ff5e024ee9be419",
+     "vault/99_Index/hash-index.json": "4dd2105e704c1b4f7cc97fdaa49ed2d554124f42f576cfc05b4f28fd5f05fdcb",
      "vault/99_Index/index.md": "b33a62b30431dc6534d20cc3f059d13fb9c3389b3ed202ab80391dab60f80e9b",
      "vault/99_Index/search-index.json": "d15d817a870263c601783f35d8723b3f5a68eb8381f099687ddb34ff805cda18"
     }
@@ -1354,7 +1354,7 @@
   "vault_reindex": [
    {
     "escritos": {
-     "vault/99_Index/hash-index.json": "df27568ccd2c1d82cc6b3a20686a9bd83423c9ae5e04713a93e8c9c5eba1baf7",
+     "vault/99_Index/hash-index.json": "fe43f9578685f8b7af21fa70186b111b25dab1a5637d99fe6cc0a21e24974e8d",
      "vault/99_Index/index.md": "56fd457840fa15103fb476af682e338caacbb863890015c4df4948c452ee4e76",
      "vault/99_Index/search-index.json": "a9615dd7a425b5b90b7312dd01419c4c670077addcca2991e1f461bf897e370e"
     }
@@ -1393,8 +1393,8 @@
   "vault_requirement_save": [
    {
     "escritos": {
-     "vault/00_System/.change-log.json": "996fa952583f8954a2f16cd83a9873e4399c72cd5632cc1d14acc8e0e546091d",
-     "vault/00_System/change-log.md": "9f6e3257d0141af93825d1d9b928d59a8312e65da8ec632884d1afbb94a3873d",
+     "vault/00_System/.change-log.json": "c5daf26950aeb20a90adb93ea1b43c30d7d023274e5ab6dbb5b949984020d1ed",
+     "vault/00_System/change-log.md": "c75d8256dcc0342ad2596b621d2836abd57ca9d62ef8660d041b5ce09574fa24",
      "vault/14_Requirements/.requirements-index.json": "6f65d57d6293a8d2f5533caaf6e45b096cab8502f9f232b90c2dbe9121d9001c",
      "vault/14_Requirements/index.md": "46ee5bf9dab9d65d7d3e48c2d8619ce7ec27d0d9ef846e15f3e13193102d4af0",
      "vault/14_Requirements/mi-api/index.md": "1c8870e87c2378fdfc1dea8cebcfc92424eb255926a4f45c61aa6997efb15da4",
@@ -1462,7 +1462,7 @@
    {
     "escritos": {
      "vault/docs/sdd/00-principles.md": "7464b56b179d79ecc120a12f3e69a1aee13bdd3745850f6a8d59a385f3806ab9",
-     "vault/docs/sdd/01-state-machines.md": "256f89d3be914a857abc10aa800199040e3386c1fa61c47a281bcb81aa5777a8",
+     "vault/docs/sdd/01-state-machines.md": "523c3f9c2a22aa9521ffc881034cb32fc08a9f54474f5caa991d3527b9c6a8ff",
      "vault/docs/sdd/02-implementation.md": "d215c3cd97802ec719e63a3fa2d0a310979521f92a5ccec5fd4e07cba318e8d5",
      "vault/docs/sdd/03-usage.md": "8e13ff9290f2299b99f7a511b1faa97ee3d50162d91e96674b17cd4769fd7580",
      "vault/docs/sdd/04-antipatterns.md": "68e0be7d5b3d0e3d66c33b9ab384555ada359ccdcc2a18247cc7d4f0becebc46",
@@ -1472,9 +1472,9 @@
      "vault/docs/sdd/08-roadmap.md": "7385739b5b47334ee40b5e77e9d98be060f67ee760ee7a42263de02c01adb014",
      "vault/docs/sdd/09-metrics.md": "d5994189c3b3cc23f6569f9493b0b05ef87adfdef6da18aa553d87e0d55323fa",
      "vault/docs/sdd/10-appendices.md": "f4e18da27c0b0890dcbe64e40aad5795ea5d9135998f4d88bec016ed1e379f47",
-     "vault/docs/sdd/README.md": "9376949c7834f23c027744324feaaf24af8abde7397f70afd12c0865f889e604",
-     "vault/docs/sdd/gaps.md": "9afd1ddc56d64279f537877217f6df4b144ed489dbe7517c7c661e43e639bf3f",
-     "vault/docs/sdd/integrity-report.json": "1dbf2856292520045801ef05e84ad75f90d9cfb6d340553c23509612cd7e5af8"
+     "vault/docs/sdd/README.md": "b61e1e35b4157197a995b632d98ee0b8e17a2f0b507d6e39f4519c013a602c0c",
+     "vault/docs/sdd/gaps.md": "13dce5e45d2f7b946753c7309ca451d1c5cd0bbb5dcaf050ab633c8439806c55",
+     "vault/docs/sdd/integrity-report.json": "ab958d3555cfcc24595eb31d2ccc588b6038700d23e8c2df70ee11a026d4d4bb"
     }
    },
    {
@@ -1483,7 +1483,7 @@
    {
     "escritos": {
      "vault/docs/sdd/00-principles.md": "7464b56b179d79ecc120a12f3e69a1aee13bdd3745850f6a8d59a385f3806ab9",
-     "vault/docs/sdd/01-state-machines.md": "256f89d3be914a857abc10aa800199040e3386c1fa61c47a281bcb81aa5777a8",
+     "vault/docs/sdd/01-state-machines.md": "523c3f9c2a22aa9521ffc881034cb32fc08a9f54474f5caa991d3527b9c6a8ff",
      "vault/docs/sdd/02-implementation.md": "d215c3cd97802ec719e63a3fa2d0a310979521f92a5ccec5fd4e07cba318e8d5",
      "vault/docs/sdd/03-usage.md": "8e13ff9290f2299b99f7a511b1faa97ee3d50162d91e96674b17cd4769fd7580",
      "vault/docs/sdd/04-antipatterns.md": "68e0be7d5b3d0e3d66c33b9ab384555ada359ccdcc2a18247cc7d4f0becebc46",
@@ -1493,9 +1493,9 @@
      "vault/docs/sdd/08-roadmap.md": "7385739b5b47334ee40b5e77e9d98be060f67ee760ee7a42263de02c01adb014",
      "vault/docs/sdd/09-metrics.md": "d5994189c3b3cc23f6569f9493b0b05ef87adfdef6da18aa553d87e0d55323fa",
      "vault/docs/sdd/10-appendices.md": "f4e18da27c0b0890dcbe64e40aad5795ea5d9135998f4d88bec016ed1e379f47",
-     "vault/docs/sdd/README.md": "9376949c7834f23c027744324feaaf24af8abde7397f70afd12c0865f889e604",
-     "vault/docs/sdd/gaps.md": "9afd1ddc56d64279f537877217f6df4b144ed489dbe7517c7c661e43e639bf3f",
-     "vault/docs/sdd/integrity-report.json": "1dbf2856292520045801ef05e84ad75f90d9cfb6d340553c23509612cd7e5af8"
+     "vault/docs/sdd/README.md": "b61e1e35b4157197a995b632d98ee0b8e17a2f0b507d6e39f4519c013a602c0c",
+     "vault/docs/sdd/gaps.md": "13dce5e45d2f7b946753c7309ca451d1c5cd0bbb5dcaf050ab633c8439806c55",
+     "vault/docs/sdd/integrity-report.json": "ab958d3555cfcc24595eb31d2ccc588b6038700d23e8c2df70ee11a026d4d4bb"
     }
    }
   ],
@@ -1690,8 +1690,8 @@
   "vault_write": [
    {
     "escritos": {
-     "vault/00_System/.change-log.json": "f615a39341f4617bd38f3ae3ca277e7fbc908f7db9af017519ae8faf78f11e75",
-     "vault/00_System/change-log.md": "28811c485543eba8c33321517356c69444991c6bbe73bb2b30fef2aaf86a4f7a",
+     "vault/00_System/.change-log.json": "31b5522888a4f3c4bd4a028a55463312b8b8cc3c9da44e652f94a9232175a365",
+     "vault/00_System/change-log.md": "1841fb67cdaba4f780952e8e4b0684e9e661ee88393b0e1094f82dd49b9bf578",
      "vault/01_Projects/index.md": "530898f13d9d92a3563ff23116ff55061d8bd9df279824b0dd9d718b0f8c2513",
      "vault/01_Projects/mi-api/index.md": "588bba3739a52ee928d45a23d72d9d0488fb58cd46aadb27b8cb486be41cbd44",
      "vault/01_Projects/mi-api/overview.md": "0ed6e54c39eab6c6e7c59f983f453307db7c1aee903d64868d19501082b4f925",
