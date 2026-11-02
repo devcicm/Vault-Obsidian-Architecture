@@ -76,10 +76,6 @@ NORMA = {
             "mismo proceso con el mismo criterio."
         ),
     },
-    # Sin `introduced_version` hasta el release que cierre la rama
-    # reestructura/teseo: la vigente es v41.25 y AP-55 rechaza una versión
-    # futura. El hueco está declarado como deuda
-    # `ap69_sin_version_publicada` y el bump lo salda escribiendo aquí
-    # la versión que lleve la entrada de changelog.
+    "introduced_version": "v41.26",
     "revisado_en": "2026-10-31",
 }

@@ -214,9 +214,10 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     },
     {
         "id": "ap69_sin_version_publicada",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "v41.26",
         "sostenida_por": [
-            cita_repo(rutas.TESTS, "test_ap69_sin_version_publicada.py::test_limite_declarado_ap69_sin_version_publicada"),
+            cita_repo(rutas.TESTS, "test_ap69_sin_version_publicada.py::test_ap69_tiene_version_publicada"),
         ],
         "desde": "v41.25",
         "capa": "5",
@@ -227,10 +228,11 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "de changelog que la anuncie."
         ),
         "por_que_no_ahora": (
-            "La rama no sube version mientras dura (decision del plan de la "
-            "reestructura). El release que la integre escribe la version en "
-            "`normas/AP-69/norma.py`, la nombra en su entrada de changelog y "
-            "salda esta deuda."
+            "No es una deuda viva: esta saldada en v41.26. El release de la rama "
+            "escribio `introduced_version: v41.26` en `normas/AP-69/norma.py` y la "
+            "nombro en su entrada de changelog. Lo que se guarda es el test que "
+            "fallaba mientras el hueco existia: ahora afirma que la version esta "
+            "publicada, y un AP-69 sin ella vuelve a ser una norma sin anuncio."
         ),
     },
     {
