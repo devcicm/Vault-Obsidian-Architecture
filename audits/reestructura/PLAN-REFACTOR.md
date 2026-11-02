@@ -69,6 +69,7 @@ El carril `merge` lo cerró sobre `52252b3`, con la paridad completa, las 28 pue
   - Además, el puerto que proponía el plan (`RegistroSecciones`) da los nombres de sección y no regenera índices. No encaja.
   - **Lo que falta medir:** el golden compara envelopes, no los ficheros que la tool deja en el vault. En A-3 una regresión sería invisible para `paridad.py`, que es el punto ciego que AP-44 nombra.
   - **Replan:** van detrás de C-2. Cuando cada tool construye su `VaultContext` en `main()`, ese `main()` es la raíz de composición. Allí se inyectan el regenerador de índices y la voz, con el valor por defecto que hoy da el import. Antes de A-3, `paridad.py` añade una instantánea de los ficheros escritos por corrida.
+  - **El instrumento ya está (2026-11-02, `96346d5`):** `paridad.py` tiene el componente `escritos`, que mide el digest de lo que cada línea deja escrito en todo su destino (vault, casa y trabajo). Su prueba de sensibilidad está hecha: alterando el contenido de una nota del sandbox —mismo path, otro cuerpo— `envelopes` sale verde y `escritos` sale rojo nombrando el fichero. A-3 y A-4 ya no tienen su obstáculo de medida: solo queda la raíz de composición de C-2 tanda 2.
 - **A-5 es decisión del propietario.**
   - El registro lo dice: «PENDIENTE DE RATIFICACIÓN DEL PROPIETARIO».
   - Las tres opciones son (A) componer desde el meta-toolkit, (B) un dueño con puerto declarado y (C) una excepción formal con plazo.
