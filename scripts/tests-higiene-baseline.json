@@ -160,7 +160,6 @@
     "lanzador_privado::test_ap42_pistas_de_audit.py::entorno::338668e8",
     "lanzador_privado::test_ap42_pistas_de_audit.py::test_la_pista_de_cada_seccion_arranca_y_pasa_argparse::7602fab2",
     "lanzador_privado::test_ap52_contrato_de_error.py::test_la_invocacion_vacia_se_rechaza_sin_traceback::2e866493",
-    "lanzador_privado::test_ap52_contrato_de_error.py::test_un_flag_desconocido_no_produce_traceback::85ecc9f5",
     "lanzador_privado::test_ap52_envelope_mutado.py::test_ap52_diagrama_ausente_sale_con_codigo::95024e1d",
     "lanzador_privado::test_ap56_sin_interpolacion_cruda.py::test_ap56_vault_log_error_no_admite_claves_por_project::7d0cad4e",
     "lanzador_privado::test_ap57_criterios.py::test_check_y_freeze_a_la_vez_es_un_error_declarado::46f00d11",
