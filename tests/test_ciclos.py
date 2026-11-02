@@ -33,35 +33,46 @@ def test_el_grafo_separa_lo_que_se_ve_de_lo_que_no():
     )
 
 
-def test_contar_las_diferidas_es_lo_que_destapa_el_ciclo():
+def test_contar_las_diferidas_es_lo_que_destapa_el_ciclo(monkeypatch):
     """El contraste que justifica la norma, ejecutado en vez de contado.
 
-    Con solo las aristas de nivel superior no hay componente conexo alguno;
-    añadiendo las diferidas aparece el del núcleo. Si algún día el primero
-    dejara de dar cero, esta norma habría cambiado de sentido y hay que releerla.
+    Con solo las aristas de nivel superior el grafo es acíclico; añadiendo
+    las diferidas aparece el componente. Se comprueba con un grafo
+    **sintético**: el repo llegó a cero ciclos el 2026-11-02 (A-3), y un test
+    que dependiera de que los hubiera castigaría el éxito. Lo que se mide
+    aquí es el mecanismo —que separar lo visible de lo diferido es lo que
+    destapa el ciclo—, y eso vale igual con un grafo de dos módulos.
+
+    Si el repo recupera ciclos, `test_la_baseline_no_creció` muerde; este
+    test no tiene que hacerlo.
     """
-    g = C._grafo()
+    monkeypatch.setattr(C, "_modulos", lambda: ["a", "b"])
+    # a importa b arriba; b importa a DENTRO de una función. Visible: acíclico.
+    g = {"top": {"a": {"b"}, "b": set()}, "diferido": {"b": {"a"}}}
     solo_visible = C._componentes({m: g["top"].get(m, set()) for m in g["top"]})
     completo = C._componentes(C._completo(g))
-    assert solo_visible == [], (
-        f"ya hay ciclos visibles a nivel de módulo: {solo_visible}. Eso es "
-        f"peor que AP-58, no mejor: Python los detecta al arrancar"
-    )
-    assert completo, "contar las diferidas dejó de destapar el ciclo del núcleo"
+    assert solo_visible == [], "sin las diferidas, el grafo sintético es acíclico"
+    assert completo, "contar las diferidas dejó de destapar el ciclo"
 
 
-def test_solo_entran_en_la_deuda_las_que_esquivan_un_ciclo():
-    """62 de las 92 se difieren por otros motivos y NO son deuda.
+def test_solo_entran_en_la_deuda_las_que_esquivan_un_ciclo(monkeypatch):
+    """Las diferidas que no esquivan un ciclo NO son deuda.
 
-    Congelarlas todas daba un número mayor y una señal peor: una baseline llena
-    de ruido es una baseline que nadie revisa.
+    Congelarlas todas daba un número mayor y una señal peor: una baseline
+    llena de ruido es una baseline que nadie revisa. Se usa un grafo
+    sintético por el mismo motivo que el test de arriba: el repo real llegó a
+    cero cíclicas y lo que se prueba es la clasificación, no la deuda viva.
     """
+    monkeypatch.setattr(C, "_modulos", lambda: ["a", "b", "c", "d"])
+    # a<->b se esquiva con un import diferido (cíclica); c->d no vuelve (benigna).
+    g = {
+        "top": {"a": {"b"}, "b": set(), "c": set(), "d": set()},
+        "diferido": {"b": {"a"}, "c": {"d"}},
+    }
+    monkeypatch.setattr(C, "_grafo", lambda: g)
     m = C.medir()
-    assert m["deferred_cyclic"], "la clasificación dejó de encontrar cíclicas"
-    assert m["deferred_benign"], (
-        "todas las diferidas salieron cíclicas: eso apunta a que `_alcanza` "
-        "está devolviendo True de más, no a que el repo empeorase"
-    )
+    assert m["deferred_cyclic"] == ["b->a"], m["deferred_cyclic"]
+    assert m["deferred_benign"] == ["c->d"], m["deferred_benign"]
     assert len(m["deferred_cyclic"]) + len(m["deferred_benign"]) == m["deferred_total"]
     # Ninguna arista puede estar en los dos lados.
     assert not set(m["deferred_cyclic"]) & set(m["deferred_benign"])
@@ -101,23 +112,37 @@ def test_la_baseline_esta_al_dia_si_encogio():
 def test_un_diferido_ciclico_nuevo_rompe_la_puerta(monkeypatch):
     """**El criterio que decide si el guard es real** (AP-44).
 
-    Se retira una arista de la baseline: la que sigue midiéndose pasa a ser
-    deuda nueva y el check tiene que ponerse en rojo.
+    Se simula una arista cíclica medida que no está en la baseline: el check
+    tiene que ponerse en rojo y nombrarla. Se inyecta la medida en vez de
+    usar la del repo: el repo llegó a cero cíclicas el 2026-11-02 (A-3), y un
+    guard cuyo test necesite deuda viva deja de probarse el día que la deuda
+    se salda —que es justo el día en que importa que siga mordiendo—.
     """
-    base = C._baseline()
-    medidos = C.medir()["deferred_cyclic"]
-    assert medidos, "sin deuda cíclica el mutante no probaría nada"
-    objetivo = medidos[0]
-    assert objetivo in base, "la baseline debe contener la arista que mide"
-    monkeypatch.setattr(C, "_baseline", lambda: [sitio for sitio in base if sitio != objetivo])
+    monkeypatch.setattr(C, "_baseline", lambda: [])
+    monkeypatch.setattr(C, "medir", lambda: {
+        "componentes": [["a", "b"]],
+        "deferred_cyclic": ["b->a"],
+        "deferred_benign": [],
+        "deferred_total": 1,
+        "top_level_edges": 1,
+        "modules": 2,
+    })
     r = C.check()
     assert r["ok"] is False
-    assert objetivo in r["new_cyclic_deferrals"]
+    assert "b->a" in r["new_cyclic_deferrals"]
 
 
 def test_freeze_se_niega_a_congelar_deuda_sin_precedente(monkeypatch, tmp_path):
     """Congelar en silencio es como una baseline deja de encoger."""
     monkeypatch.setattr(C, "_baseline", lambda: [])
+    monkeypatch.setattr(C, "medir", lambda: {
+        "componentes": [["a", "b"]],
+        "deferred_cyclic": ["b->a"],
+        "deferred_benign": [],
+        "deferred_total": 1,
+        "top_level_edges": 1,
+        "modules": 2,
+    })
     monkeypatch.setattr(C, "BASELINE", tmp_path / "no-debe-escribirse.json")
     r = C.freeze()
     assert r["ok"] is False

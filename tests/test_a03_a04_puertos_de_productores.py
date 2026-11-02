@@ -28,6 +28,26 @@ import pytest
 from apoyo import SCRIPTS, ROOT
 
 
+@pytest.fixture(autouse=True)
+def _registro_restaurado():
+    """Cada test empieza y termina con el registro como lo encontró.
+
+    El registro de productores vive por proceso, y los tests corren varios
+    por intérprete (más aún con `-n 4`): un test que lo vacía y no lo
+    devuelve deja sin gancho a todos los que vienen detrás —el lote, la
+    sanación, la voz—. Se guarda y se devuelve, igual que la raíz del vault.
+    """
+    from vault.kernel import productores
+
+    previo = productores.registrados()
+    try:
+        yield
+    finally:
+        productores.limpiar()
+        for nombre, producto in previo.items():
+            productores.registrar(nombre, producto)
+
+
 def _importa(modulo: str):
     """Importa un módulo del repo.
 
@@ -53,20 +73,27 @@ def _imports_de(modulo: str) -> set:
 
 
 def test_el_productor_se_ofrece_al_importarse():
-    """Importar el productor basta para que el kernel lo encuentre."""
+    """Importar el productor basta para que el kernel lo encuentre.
+
+    Se usa `importlib.reload` y no `import`: el cuerpo de un módulo se
+    ejecuta **una vez por proceso**, y en la suite completa otro test ya lo
+    habrá importado. Recargarlo es lo que hace el test fiel a su nombre —
+    «al importarse»— aunque el módulo ya estuviera cargado.
+    """
+    import importlib
+
     from vault.kernel import productores
 
     productores.limpiar()
     assert not productores.hay("voz"), "el registro arranca vacío"
-
-    _importa("vault.autoria.voz")
+    importlib.reload(importlib.import_module("vault.autoria.voz"))
     assert productores.hay("voz"), (
         "importar `vault.autoria.voz` tiene que ofrecer la voz al registro; "
         "si no, el gancho desaparece en silencio")
 
     productores.limpiar()
     assert not productores.hay("indices")
-    _importa("vault_section_index")
+    importlib.reload(importlib.import_module("vault_section_index"))
     assert productores.hay("indices"), (
         "importar `vault_section_index` tiene que ofrecer el regenerador")
 
@@ -123,11 +150,12 @@ def test_el_kernel_no_importa_a_sus_productores():
 
 def test_el_kernel_de_errores_no_importa_la_voz():
     """A-04: `vault_errors` no importa la voz del dominio."""
-    fuente = (SCRIPTS / "vault_errors.py").read_text(encoding="utf-8")
+    import vault_grafo_import as gi
+
+    fuente = gi.codigo_de(SCRIPTS / "vault_errors.py").read_text(encoding="utf-8")
     assert "from vault.autoria.voz import" not in fuente, (
         "`vault_errors` vuelve a importar `vault.autoria.voz`: el cruce "
         "`kernel -> autoria` ha vuelto")
-
 
 def test_la_voz_llega_al_envelope_por_el_puerto():
     """El camino real: una tool emite su envelope y el `vault_says` está."""
@@ -151,22 +179,27 @@ def test_sin_productor_el_gancho_falla_con_el_motivo_escrito():
     desaparecía y la nota se escribía sin índice y sin bitácora, sin que
     nada lo dijera. Ahora el gancho falla con un motivo en la traza.
 
-    Para que el caso sea real —nadie atiende el puerto— se vacía el registro
-    **después** de componer: el gancho no se auto-serviza (ofrecer el
-    productor es oficio de la raíz de composición), así que con el registro
-    vacío el gancho no encuentra a nadie y tiene que dejar escrito su
-    motivo. Vaciarlo antes no serviría: la composición lo volvería a llenar.
+    Para que el caso sea real —nadie atiende el puerto— se impide que el
+    runtime componga: se le sustituye `componer` por una función que no
+    ofrece nada. El gancho pide al puerto, el puerto no encuentra a nadie y
+    tiene que dejar escrito su motivo. Vaciar el registro no basta: el gancho
+    compone por demanda, que es lo que hace que el comportamiento de una
+    llamada de biblioteca siga siendo el de antes.
     """
     import shutil
     import tempfile
 
-    from vault.kernel.productores import limpiar
+    from vault.kernel import productores
+    from vault import runtime
+
+    vaciado = lambda *nombres: {}  # noqa: E731 - doble explícito y local
 
     vault_io = _importa("vault_io")
 
     destino = Path(tempfile.mkdtemp(prefix="a03-")) / "vault"
     shutil.copytree(ROOT / "vault-sandbox", destino)
     anterior = vault_io.get_vault_root()
+    original = runtime.componer
     vault_io.set_vault_root(destino)
     try:
         # La ruta se toma de la raíz **resuelta**, no de la que dio
@@ -179,17 +212,20 @@ def test_sin_productor_el_gancho_falla_con_el_motivo_escrito():
         # Frontmatter con `title`: el gancho solo dispara en las notas que lo
         # llevan (`_seccion_con_indice` mira el título, no solo la extensión).
         #
-        # El registro se vacía DESPUÉS de componer: nadie atiende.
-        limpiar()
+        # Nadie puede componer: el registro queda vacío y el runtime no lo
+        # llena.
+        productores.limpiar()
+        runtime.componer = vaciado
         vault_io.atomic_write_text(
             nota, "---\ntitle: Nota de prueba\n---\n\ncuerpo de la nota\n")
         # La traza se lee ANTES de restaurar la raíz: `log_trace` escribe
         # donde dice `get_vault_root()`, que aquí es el vault de prueba.
         texto = traza.read_text(encoding="utf-8") if traza.exists() else ""
     finally:
+        runtime.componer = original
         vault_io.set_vault_root(anterior)
         shutil.rmtree(destino.parent, ignore_errors=True)
-        limpiar()
+        productores.limpiar()
 
     assert "AUTO_INDEX_ERROR" in texto or "AUTO_TAG_LEDGER_ERROR" in texto, (
         "sin productor, el gancho tiene que dejar escrito su motivo; si no, "

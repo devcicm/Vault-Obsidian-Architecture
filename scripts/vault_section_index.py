@@ -23,7 +23,7 @@ from vault_lib import (
     utcnow,
 )
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 
 from vault_encoding import sanitize_content  # noqa: E402
 from vault_io import (

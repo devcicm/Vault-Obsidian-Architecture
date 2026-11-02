@@ -754,13 +754,21 @@ def _regenerador_de_indices():
     ausencia es un estado **observable** (`registro.hay("indices")`), y el
     runtime ofrece el productor al componer la tool.
 
-    El gancho **no** ofrece el productor por su cuenta: ofrecerlo es oficio
-    de la raíz de composición, y un gancho que se auto-servía repetiría el
-    acoplamiento que este cambio deshace —solo que por otro camino—.
+    Y si nada lo compuso —un llamador de biblioteca que no pasa por
+    `wrap_main`, como `heal_ap46` invocado en proceso—, se compone aquí: el
+    gancho tiene que hacer lo mismo que hacía el import de antes, que
+    funcionaba siempre. Componer no es acoplar: `vault.runtime` es la raíz de
+    composición, no el productor.
     """
     from vault.kernel.productores import buscar
 
-    return buscar("indices")
+    productor = buscar("indices")
+    if productor is None:
+        from vault.runtime import componer
+
+        componer("indices")
+        productor = buscar("indices")
+    return productor
 
 
 def _bitacora_de_tags():
@@ -771,7 +779,13 @@ def _bitacora_de_tags():
     """
     from vault.kernel.productores import buscar
 
-    return buscar("tags")
+    productor = buscar("tags")
+    if productor is None:
+        from vault.runtime import componer
+
+        componer("tags")
+        productor = buscar("tags")
+    return productor
 
 
 def _regenerar_seccion(section: str, rutas: List[Path],
@@ -784,16 +798,15 @@ def _regenerar_seccion(section: str, rutas: List[Path],
     try:
         regenerador = _regenerador_de_indices()
         if regenerador is None:
-            # Nadie se ha ofrecido. La raíz de composición es quien lo ofrece
-            # (el runtime), no este gancho: ofrecerlo aquí repetiría el
-            # acoplamiento que este cambio deshace, solo que por otro camino.
+            # Ni siquiera el runtime pudo componerlo: no hay gancho, y el
+            # motivo no se calla (AP-51).
             from vault_errors import emit_error  # lazy, como en _auto_section_index
 
             emit_error(
                 "_regenerar_seccion",
                 "AUTO_INDEX_ERROR",
                 "nadie atiende el puerto `indices`: el índice de la sección no "
-                "se regeneró. La raíz de composición debería ofrecerlo.",
+                "se regeneró. La raíz de composición no pudo ofrecerlo.",
             )
             return []
 

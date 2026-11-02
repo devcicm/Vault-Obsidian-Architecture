@@ -146,7 +146,14 @@ def test_el_enganche_vive_en_el_punto_por_el_que_pasan_todas_las_tools():
 
 
 def test_el_runtime_usa_el_servicio_de_voz_y_no_importa_la_fachada_meta():
-    """La última fuga meta no puede volver como un import diferido."""
+    """La última fuga meta no puede volver como un import diferido.
+
+    Desde A-04 (2026-11-02) el contrato es más fuerte que «importa el
+    servicio»: `vault_errors` **no importa** el servicio de voz —habla con el
+    puerto `Voz`— y el servicio se ofrece al registro. Lo que este test
+    conserva es la parte que no cambia: el runtime no puede colarse por la
+    fachada meta `vault_voice`, y el servicio de voz no la importa.
+    """
     fuente = SCRIPTS / "vault_errors.py"
     arbol = ast.parse(fuente.read_text(encoding="utf-8", errors="replace"))
     modulos = {
@@ -154,7 +161,13 @@ def test_el_runtime_usa_el_servicio_de_voz_y_no_importa_la_fachada_meta():
         for nodo in ast.walk(arbol)
         if isinstance(nodo, ast.ImportFrom) and nodo.module
     }
-    assert "vault.autoria.voz" in modulos
+    # A-04: ya no importa el servicio; lo pide por el registro de productores.
+    assert "vault.autoria.voz" not in modulos, (
+        "`vault_errors` vuelve a importar el servicio: es el cruce "
+        "`kernel -> autoria` que A-04 cerró")
+    assert "vault.kernel.productores" in modulos or "vault.runtime" in modulos, (
+        "`vault_errors` tiene que pedir la voz por el registro (o componerla en "
+        "la raíz de composición), no importarla")
     assert "vault_voice" not in modulos
 
     servicio = ROOT / "vault" / "autoria" / "voz.py"
@@ -165,6 +178,8 @@ def test_el_runtime_usa_el_servicio_de_voz_y_no_importa_la_fachada_meta():
         if isinstance(nodo, ast.ImportFrom) and nodo.module
     }
     assert "vault_voice" not in imports
+    # Y el servicio se ofrece al registro: es su parte del contrato nuevo.
+    assert 'registrar("voz"' in servicio.read_text(encoding="utf-8")
 
 
 def test_un_fallo_de_la_voz_no_puede_romper_una_tool(monkeypatch):
