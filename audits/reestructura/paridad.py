@@ -83,6 +83,17 @@ declarados. Dos huecos quedan escritos, no escondidos: el algoritmo del
 hash de un índice no queda protegido (las claves y el resto del índice, sí),
 y el estado que `git init` genera en la casa se excluye del árbol.
 
+**Y una cosa más que se excluye, con su motivo:** el estado de ejecución del
+sandbox (`.change-log.json`, `.voice-counter` y lo que se deriva de ellos —
+`change-log.md`, `hash-index.json`, el manifest y el registro de backups—).
+No está versionado y cambia con cada test o cada puerta, así que no es del
+producto: la vista `envelopes` ya lo declara volátil para `vault_change_log#0`
+por la misma causa. Aquí se excluye por patrón, porque las copias viven bajo
+el nombre del backup, que lleva la hora. **La exclusión no ciega:** la
+prueba de sensibilidad sigue saltando —alterar el contenido de una nota del
+sandbox pone la vista en rojo y nombra el fichero— porque lo que se excluye
+es el estado, no el contenido de las notas.
+
 Las tools que miden el propio repo (`vault_clones`, `vault_metricas`, …)
 **no** se declaran: cuando un tablón cambia lo que miden, su rojo es el delta
 del tablón y se anota con sus cifras en `CHANGELOG-REFACTOR.md`.
@@ -400,34 +411,6 @@ def _arbol(raiz: Path) -> Dict[str, str]:
     return salida
 
 
-def _escritos_de(antes: Dict[str, str], despues: Dict[str, str], destino: Path,
-                 norm: Normalizador) -> Dict[str, Any]:
-    """La vista `escritos` de una línea: ruta relativa al destino → contenido.
-
-    Toda la corrida va bajo `destino`; lo que queda FUERA del vault se compara
-    igual — `vault_init` construye su vault nuevo en la casa y ocultar el
-    árbol por solo-`vault` cegaría justo al ejemplo más escritor. La ruta va
-    prefijada (`vault/…`, `.casa/…`, `trabajo/…`), así que cada fichero declara
-    dónde lo dejó la tool. Un borrado solo se prueba desde `antes` y queda como
-    `<borrado>`; un fichero sin vía de texto viaja con su `sha256:` (el
-    contenido no se normaliza, así que es lo más caro de ver volátil).
-    """
-    salida: Dict[str, Any] = {}
-    for r in sorted(set(antes) | set(despues)):
-        if antes.get(r) == despues.get(r):
-            continue
-        if r not in despues:
-            salida[norm.texto(r)] = "<borrado>"
-            continue
-        try:
-            contenido = (destino / r).read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            salida[norm.texto(r)] = f"sha256:{despues[r]}"
-            continue
-        salida[norm.texto(r)] = norm.texto(contenido)
-    return salida
-
-
 _FUERA_DE_CUSTODIA = {".git", "build", "node_modules", "__pycache__", ".pytest_cache"}
 
 
@@ -642,6 +625,38 @@ def _sin_volatiles_escritos(escritos: Dict[str, Any],
         if ruta.startswith(".escritos."):
             fuera.add(ruta[len(".escritos."):])
     return {k: v for k, v in escritos.items() if k not in fuera}
+
+
+#: El estado de ejecución del sandbox: ficheros que NO están versionados y que
+#: crecen o cambian con cada test o cada puerta. La vista `escritos` mide el
+#: contenido, así que sin esto el estado del sandbox —que no es del producto—
+#: la haría fallar. `_arbol` ya deja fuera `.tool-trace.json` por lo mismo; aquí
+#: se listan los que además se COPIAN al vault de la corrida (el backup los
+#: lleva dentro) y los que se derivan de ellos.
+#:
+#: Se declara por patrón, no por ruta, porque las copias viven bajo el nombre
+#: del backup, que lleva la hora en el nombre (`vault-<HOY>-HHMMSS`).
+ESTADO_DE_EJECUCION = (
+    "00_System/.change-log.json",
+    "00_System/change-log.md",
+    "00_System/.voice-counter",
+    "99_Index/hash-index.json",
+    "vault-backups/.backup-registry.json",
+)
+
+
+def _es_estado_de_ejecucion(clave: str) -> bool:
+    """¿Es esta ruta estado de ejecución del sandbox (o una copia de él)?"""
+    if any(clave.endswith(sufijo) for sufijo in ESTADO_DE_EJECUCION):
+        return True
+    # La copia dentro de un backup: el prefijo lleva la hora del snapshot.
+    return "vault-backups/" in clave and (
+        clave.endswith("/.manifest.json")
+        or clave.endswith("/.change-log.json")
+        or clave.endswith("/change-log.md")
+        or clave.endswith("/.voice-counter")
+        or clave.endswith("/hash-index.json")
+    )
 
 
 def _clave_corrida(nombre: str, i: int) -> str:
@@ -1056,6 +1071,14 @@ def comparar(componentes: List[str], tools: Optional[Set[str]]) -> Dict[str, Any
                     # cuerpo— y no una diferencia de estructura.
                     ee = _sin_volatiles_escritos(e.get("escritos", {}), rutas)
                     aa = _sin_volatiles_escritos(a.get("escritos", {}), rutas)
+                    # El estado de ejecución del sandbox no es del producto: no
+                    # está versionado y cambia con cada test o cada puerta. Se
+                    # quita de la comparación con su motivo escrito abajo, y se
+                    # sigue viendo QUÉ rutas eran (la presencia se compara).
+                    estado = {k for k in set(ee) | set(aa)
+                              if _es_estado_de_ejecucion(k)}
+                    ee = {k: v for k, v in ee.items() if k not in estado}
+                    aa = {k: v for k, v in aa.items() if k not in estado}
                     distintas = sorted(k for k in set(ee) | set(aa) if ee.get(k) != aa.get(k))
                     if distintas:
                         roturas[_clave_corrida(nombre, i)] = distintas[:12]
