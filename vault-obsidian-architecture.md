@@ -8474,7 +8474,7 @@ temp/
 
 ---
 
-### v41.26 — 2026-11-02 `git: pending`
+### v41.26 — 2026-11-02 `git: dd86ee3`
 
 **La rama `reestructura/teseo` sube**: 63 commits que midieron el repo contra sí mismo antes de tocarlo. **La auditoría es lo que decide**: `audits/reestructura/AUDITORIA.md` clasifica cada hallazgo como PURE_REFACTOR, COMPATIBLE_EVOLUTION o NOT_APPLICABLE, y lo que no se puede decidir leyendo se midió —las tres capas de fachada quedan CANDIDATE con su consumidor medido, no retiradas—. **A-1** se descartó: los dos `tools-catalog.json` son proyecciones de un único `TOOLS_CATALOG`. **A-2** fundió un cuerpo duplicado. **A-5** cruzó el catálogo por un puerto declarado. **B-1** movió seis catálogos a `vault/kernel/normativa/`, fuera de la wheel. **C-1** cuenta también el `get_vault_root()` que se dispara al importar. **C-2 (tanda 1)** pasa el comportamiento de los tests a ejecución en proceso —13 ejemplos AP-42 y el barrido de flags de 30 tools— conservando el contrato CLI en un subproceso por tool: `test_comandos_publicados` de 86,0 s a 34,5 s y `test_ap52` de 69,0 s a 52,1 s. **AP-69** entra al catálogo: higiene de los tests, con `tests/apoyo.py` como casa del apoyo compartido. **El instrumento**: `paridad.py` gana la vista `escritos`, que mide el digest de lo que cada tool deja escrito; el golden comparaba envelopes y no el contenido, así que una tool que escribiera el mismo path con otro cuerpo salía verde, y la prueba de sensibilidad lo demuestra. Lo que queda abierto se declara con su nombre: A-3 y A-4 esperan la raíz de composición de `VaultContext` (C-2 tanda 2) y C-4 sigue pendiente.
 
