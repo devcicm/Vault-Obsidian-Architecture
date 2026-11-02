@@ -1050,6 +1050,22 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": None,
         },
     },
+    "PRODUCTORES_NO_DISPONIBLES": {
+        "category": "infrastructure",
+        "severity": "warning",
+        "message": "El runtime no se pudo componer: los productores (voz, índices, tags) no se ofrecieron.",
+        # 2026-11-02 (A-03/A-04): el kernel pide por puerto y el productor se
+        # ofrece al importarse. Si el runtime no está, el gancho se pierde —
+        # pero **se dice**: la nota se escribe sin índice ni bitácora, y el
+        # motivo queda en la traza en vez de desaparecer en silencio.
+        "recovery": {
+            "action": "run_tool",
+            "tool": "vault_reindex",
+            "args": ["--graph"],
+            "hint": "Ejecutar vault_reindex --graph: rehace los índices de sección, la búsqueda y el grafo desde el disco.",
+            "docs": None,
+        },
+    },
     "SPEC_PARSE_ERROR": {
         "category": "io",
         "severity": "error",

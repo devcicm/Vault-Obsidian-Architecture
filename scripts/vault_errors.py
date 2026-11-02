@@ -48,7 +48,6 @@ from vault_errors_catalog import (
     ERROR_CATALOG, completar_envelope, construir_error, get_error, mensaje_de, problemas_de_forma,
 )
 from vault_errors_trace import log_trace, log_token_usage
-from vault.autoria.voz import speak as _speak_estable
 from vault.kernel import proyectos as _proyectos
 from vault.kernel.errores import MAPA_DE_FALLOS as _MAPA_DE_FALLOS, traducir_fallo as _traducir_fallo
 
@@ -291,6 +290,24 @@ def emit_ok(tool: str, data: Dict[str, Any]) -> Dict[str, Any]:
     return result
 
 
+def _hablar_por_puerto(tool_name: str, data: Any,
+                       writes: Optional[Dict[str, int]]) -> Optional[Dict[str, Any]]:
+    """La voz por el puerto `Voz` (A-04), o `None` si nadie atiende.
+
+    El productor se busca en el registro, que es donde se ofrecen las
+    implementaciones al importarse. Si no hay ninguno, **no hay voz** —y eso
+    es un estado observable (`registro.hay("voz")`), no un fallo: el puerto
+    degrada a silencio por diseño, porque una tool no puede romperse por no
+    tener recordatorio.
+    """
+    from vault.kernel.productores import buscar
+
+    voz = buscar("voz")
+    if voz is None:
+        return None
+    return voz.speak(tool_name, data, writes)
+
+
 def _inject_voice(data: Any, tool_name: str, writes: Optional[Dict[str, int]]) -> None:
     """AP-43 — añade `vault_says` al resultado. Nunca puede romper la tool.
 
@@ -298,6 +315,13 @@ def _inject_voice(data: Any, tool_name: str, writes: Optional[Dict[str, int]]) -
     pasa la salida de las 97 tools: una capa de refuerzo que hubiera que
     invocar tool por tool sería exactamente el registro-que-nadie-consume que
     esta norma existe para evitar.
+
+    **A-04:** la voz llega por el puerto `Voz`, no por un import. Antes este
+    módulo importaba `vault.autoria.voz` en el import —el cruce
+    `kernel -> autoria`— y quien no quisiera voz cargaba la Autoría igual.
+    Ahora el kernel pide un puerto y el producto se ofrece al importarse: si
+    nadie se ha ofrecer, no hay `vault_says`, y esa ausencia es un estado
+    **observable** en vez de un fallo silencioso.
     """
     # AP-43: el refuerzo va en el punto de uso, en la salida de toda tool.
     if not isinstance(data, dict) or "vault_says" in data:
@@ -305,19 +329,14 @@ def _inject_voice(data: Any, tool_name: str, writes: Optional[Dict[str, int]]) -
     try:
         # Compatibilidad para instrumentación histórica: si la fachada ya está
         # cargada y un consumidor parcheó explícitamente su `speak`, se respeta
-        # ese seam. El camino normal llama al servicio de paquete directamente;
-        # no hay import de `vault_voice` desde el runtime.
+        # ese seam. El camino normal habla con el puerto; no hay import de
+        # `vault_voice` desde el runtime.
         legacy = sys.modules.get("vault_voice")
         speak_legacy = getattr(legacy, "speak", None) if legacy is not None else None
         if callable(speak_legacy):
             bloque = speak_legacy(tool_name, data, writes)
         else:
-            bloque = _speak_estable(
-                tool_name,
-                data,
-                writes,
-                voice_mode=_env("VAULT_VOICE"),
-            )
+            bloque = _hablar_por_puerto(tool_name, data, writes)
         if bloque:
             data["vault_says"] = bloque
     except Exception:
@@ -497,6 +516,29 @@ def _rechazar_argumentos(self, message):
     raise _ArgumentosRechazados(self.prog, self.format_usage(), message)
 
 
+def _ofrecer_voz() -> None:
+    """Ofrece los productores del runtime al registro (A-03 y A-04).
+
+    Degrada sin romper la tool: la voz es un refuerzo (AP-43) y una tool no
+    puede romperse por no tenerlo. Pero degradar **no** es callar (AP-51): si
+    el runtime no está, el motivo queda en la traza —que es donde el resto del
+    toolkit deja el suyo—. Los productores de índices y tags degradan igual,
+    pero su ausencia también **se dice**: el gancho escribe el motivo.
+    """
+    try:
+        from vault.runtime import componer
+
+        componer("voz", "indices", "tags")
+    except Exception as exc:
+        # AP-51: el motivo queda escrito. Sin runtime no hay productores y la
+        # tool sigue, pero el hueco consta.
+        emit_error(
+            "vault_errors",
+            "PRODUCTORES_NO_DISPONIBLES",
+            f"el runtime no se pudo componer: {exc}",
+        )
+
+
 def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
     """Envuelve main() con timeout, captura de excepciones, y trace log.
 
@@ -508,6 +550,14 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
     Returns: exit code (0 = éxito, 1 = error)
     """
     limit = timeout if timeout is not None else TOOL_TIMEOUT_SECONDS
+
+    # A-04: la voz se ofrece en la raíz de composición, no en el import del
+    # kernel. `vault_errors` importaba `vault.autoria.voz` —el cruce
+    # `kernel -> autoria`—, y quitarlo sin ofrecerlo desde aquí haría que
+    # `vault_says` desapareciera de todos los envelopes: un cambio de C(P)
+    # silencioso. El runtime es el sitio del cableado, y aquí es donde el
+    # proceso de la tool compone lo que la tool necesita.
+    _ofrecer_voz()
 
     rechazo = (_rechazo_por_raiz_inexistente(tool_name)
                or _rechazo_por_raiz_del_programa(tool_name)

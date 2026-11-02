@@ -201,3 +201,38 @@ def speak(
             for norma in normas
         ]
     return bloque
+
+
+class VozDelRegistro:
+    """La voz como productor del kernel (A-04).
+
+    `vault_errors` —el borde que ve todos los envelopes— la invoca en cada uno.
+    Hoy lo hace importando este módulo **en el import**, que es el cruce
+    `kernel -> autoria` que la auditoría nombró. Con el registro de producers,
+    el kernel pide un puerto `Voz` y este adaptador se ofrece al importarse: el
+    kernel no conoce esta clase, solo el contrato.
+
+    El «al importarse» es deliberado y no un descuido: es lo que hace que la
+    tool que sí quiere voz la tenga, y que quien no la quiera no cargue la
+    Autoría. El valor por defecto (`None`) es un estado observable, no una
+    ausencia silenciosa.
+    """
+
+    def speak(self, tool: str, payload: Optional[Dict[str, Any]] = None,
+              writes: Optional[Dict[str, int]] = None) -> Optional[Dict[str, Any]]:
+        return speak(tool, payload, writes)
+
+
+def _ofrecer() -> None:
+    """Se ofrece al registro. Lo hace el propio módulo de la voz.
+
+    Importar `vault.autoria.voz` es lo que ofrece al productor. Quien quiera
+    la voz sin importarla puede registrar la suya con
+    `vault.kernel.productores.registrar("voz", ...)`.
+    """
+    from vault.kernel.productores import registrar
+
+    registrar("voz", VozDelRegistro())
+
+
+_ofrecer()

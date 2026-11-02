@@ -19,6 +19,7 @@ from typing import Iterator, Sequence
 
 from .contexto import VaultContext
 from .fallos import FalloDeDominio
+from .productores import buscar as _buscar_producto
 
 _SCRIPTS = Path(__file__).resolve().parent.parent.parent / "scripts"
 
@@ -202,4 +203,11 @@ def contexto_real(raiz: str | Path | None = None) -> VaultContext:
         escritor=EscritorAtomico(),
         lector=LectorDisco(),
         reloj=RelojUTC(),
+        # Los productores opcionales se piden al registro, NO se importan: el
+        # kernel no depende de quién los implementa (A-03 y A-04). `None` es un
+        # estado legítimo y observable —`registro.hay("indices")`—: significa
+        # que nadie se ha ofrecido, no que el gancho se ha perdido en silencio.
+        indices=_buscar_producto("indices"),
+        voz=_buscar_producto("voz"),
+        tags=_buscar_producto("tags"),
     )

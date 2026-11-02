@@ -19,8 +19,19 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
-from .puertos import CatalogoNormas, Escritor, Lector, RegistroSecciones, Reloj
+from .puertos import (
+    BitacoraTags,
+    CatalogoNormas,
+    CatalogoTools,
+    Escritor,
+    Lector,
+    RegeneradorIndices,
+    RegistroSecciones,
+    Reloj,
+    Voz,
+)
 
 
 @dataclass(frozen=True)
@@ -38,6 +49,18 @@ class VaultContext:
     escritor: Escritor
     lector: Lector
     reloj: Reloj
+    #: Quién regenera el índice de sección tras una escritura. `None` si
+    #: nadie se ha ofrecido: un estado **observable**, no un fallo silencioso.
+    #: Es lo que el kernel pedía importando `vault_section_index` de forma
+    #: diferida (A-03): la diferencia es que la ausencia ahora se puede
+    #: comprobar y declarar.
+    indices: Optional[RegeneradorIndices] = None
+    #: La voz del estándar. `None` si nadie se ha ofrecido (A-04), que es el
+    #: valor por defecto que hoy da el import diferido de `vault.autoria.voz`.
+    voz: Optional[Voz] = None
+    #: Quién anota los tags de una nota en la bitácora de vocabulario. `None`
+    #: si nadie se ha ofrecido (A-03).
+    tags: Optional[BitacoraTags] = None
 
     def ruta(self, *partes: str) -> Path:
         """Una ruta dentro del vault, garantizada dentro del vault (AP-36).

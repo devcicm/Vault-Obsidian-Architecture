@@ -9082,6 +9082,20 @@
         "docs": "vault-obsidian-architecture.md §Guards anti-poison"
       }
     },
+    "PRODUCTORES_NO_DISPONIBLES": {
+      "category": "infrastructure",
+      "severity": "warning",
+      "message": "El runtime no se pudo componer: los productores (voz, índices, tags) no se ofrecieron.",
+      "recovery": {
+        "action": "run_tool",
+        "tool": "vault_reindex",
+        "args": [
+          "--graph"
+        ],
+        "hint": "Ejecutar vault_reindex --graph: rehace los índices de sección, la búsqueda y el grafo desde el disco.",
+        "docs": null
+      }
+    },
     "PROFILE_READ_ERROR": {
       "category": "io",
       "severity": "warning",

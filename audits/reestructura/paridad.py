@@ -641,6 +641,7 @@ ESTADO_DE_EJECUCION = (
     "00_System/change-log.md",
     "00_System/.voice-counter",
     "99_Index/hash-index.json",
+    "99_Index/search-index.json",
     "vault-backups/.backup-registry.json",
 )
 
@@ -656,6 +657,7 @@ def _es_estado_de_ejecucion(clave: str) -> bool:
         or clave.endswith("/change-log.md")
         or clave.endswith("/.voice-counter")
         or clave.endswith("/hash-index.json")
+        or clave.endswith("/search-index.json")
     )
 
 

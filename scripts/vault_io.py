@@ -598,10 +598,16 @@ def refrescar_indice_de_seccion(path: Path) -> Dict[str, Any]:
     section = _seccion_con_indice(path)
     if section is None:
         return {"ok": True, "section": None, "updated": False}
-    from vault_section_index import vault_section_index  # lazy, ídem
+    regenerador = _regenerador_de_indices()
 
     try:
-        vault_section_index(section)
+        if regenerador is None:
+            from vault_errors import emit_error  # lazy, como en _auto_section_index
+
+            return {**emit_error("refrescar_indice_de_seccion", "AUTO_INDEX_ERROR",
+                                  "nadie atiende el puerto `indices`"),
+                    "section": section, "updated": False}
+        regenerador.regenerar(section, [])
     except Exception as exc:  # el borrado ya ocurrió: se informa, no se deshace
         from vault_errors import emit_error  # lazy, como en _auto_section_index
 
@@ -735,6 +741,39 @@ def _auto_section_index(path: Path) -> None:
     _regenerar_seccion(section, [path])
 
 
+def _regenerador_de_indices():
+    """El productor que regenera el índice de sección (A-03).
+
+    Antes era `from vault_section_index import vault_section_index` diferido
+    dentro de cada función —el ciclo `vault_io -> vault_section_index` que la
+    baseline de AP-58 congela—. Ahora se pide por el puerto: el kernel no
+    conoce a su productor y quien lo implementa se ofrece al importarse.
+
+    **La diferencia que importa:** con el import diferido, el gancho
+    desaparecía en silencio si nadie importaba al productor. Con el puerto, la
+    ausencia es un estado **observable** (`registro.hay("indices")`), y el
+    runtime ofrece el productor al componer la tool.
+
+    El gancho **no** ofrece el productor por su cuenta: ofrecerlo es oficio
+    de la raíz de composición, y un gancho que se auto-servía repetiría el
+    acoplamiento que este cambio deshace —solo que por otro camino—.
+    """
+    from vault.kernel.productores import buscar
+
+    return buscar("indices")
+
+
+def _bitacora_de_tags():
+    """El productor que anota los tags en la bitácora de vocabulario (A-03).
+
+    Mismo mecanismo y mismo motivo que `_regenerador_de_indices`: el import
+    diferido de `vault_tags` era el ciclo `vault_io -> vault_tags`.
+    """
+    from vault.kernel.productores import buscar
+
+    return buscar("tags")
+
+
 def _regenerar_seccion(section: str, rutas: List[Path],
                        nombres: Optional[Dict[str, List[str]]] = None) -> List[str]:
     """Regenera el índice de `section` y pone `rutas` en la búsqueda. Nunca lanza.
@@ -743,26 +782,35 @@ def _regenerar_seccion(section: str, rutas: List[Path],
     `nombres` es el índice de nombres compartido de un lote.
     """
     try:
-        from vault_section_index import (
-            vault_section_index,
-        )  # lazy — avoids circular import
+        regenerador = _regenerador_de_indices()
+        if regenerador is None:
+            # Nadie se ha ofrecido. La raíz de composición es quien lo ofrece
+            # (el runtime), no este gancho: ofrecerlo aquí repetiría el
+            # acoplamiento que este cambio deshace, solo que por otro camino.
+            from vault_errors import emit_error  # lazy, como en _auto_section_index
+
+            emit_error(
+                "_regenerar_seccion",
+                "AUTO_INDEX_ERROR",
+                "nadie atiende el puerto `indices`: el índice de la sección no "
+                "se regeneró. La raíz de composición debería ofrecerlo.",
+            )
+            return []
 
         # Self-healing: si lo escrito ES un index.md (un agente lo generó a
         # mano, posiblemente con [[stem|alias]] en las celdas — formato
         # prohibido), regeneramos el índice canónico encima. Sin recursión:
         # el generador escribe via Path.write_text, no via atomic_write_text.
-        raiz = get_vault_root()
-        hecho = vault_section_index(section, nombres=nombres)
-        # AP-47: la nota entra en el índice de búsqueda en la misma escritura,
-        # escriba quien escriba. Mismo módulo, mismo gancho declarado.
-        from vault_section_index import refrescar_busqueda  # lazy, ídem
-
-        # Y también el index.md que el generador acaba de crear: es una nota en
-        # disco como cualquier otra. Solo van los que no existían antes de esta
-        # escritura (`creados`) — medido con C8 en una copia de /vcloud: 144 en
-        # disco frente a 143 indexadas tras un sanador. Una sola pasada.
-        creados = list(hecho.get("creados") or [])
-        refrescar_busqueda(*rutas, *(raiz / rel for rel in creados))
+        #
+        # Son DOS operaciones y por eso van dos llamadas: regenerar el
+        # `index.md` de la sección, y meter la nota en el índice de búsqueda
+        # (AP-47). Confundirlas cambia el contrato de quien las llama: quien
+        # rehace un índice de sección no tiene por qué meter nada en la
+        # búsqueda —`vault_move` rehace el índice de la sección al mover, y la
+        # búsqueda la actualiza la tool, que es quien sabe de dónde a dónde se
+        # movió la nota—.
+        creados = list(regenerador.regenerar(section, rutas, nombres) or [])
+        regenerador.refrescar_busqueda(rutas, creados)
         return creados
     except Exception as exc:
         # AP-51: el fallo queda en la traza con su motivo. Sin un segundo
@@ -874,12 +922,21 @@ def _auto_tag_ledger(path: Path, text: str) -> None:
     if rel.split("/")[0] in _SKIP_AUTO_INDEX:
         return
     try:
-        from vault_tags import (  # lazy — evita el ciclo con el kernel
-            registrar_tags_de_nota,
-            tags_de_frontmatter,
-        )
+        bitacora = _bitacora_de_tags()
+        if bitacora is None:
+            # Nadie se ha ofrecido: lo ofrece la raíz de composición (el
+            # runtime), no este gancho. El motivo se dice; el `except` de
+            # abajo lo recoge si el aviso tampoco se puede escribir.
+            from vault_errors import emit_error  # type: ignore
 
-        registrar_tags_de_nota(tags_de_frontmatter(text), rel)
+            emit_error(
+                "_auto_tag_ledger",
+                "AUTO_TAG_LEDGER_ERROR",
+                "nadie atiende el puerto `tags`: la bitácora de "
+                "vocabulario no se anotó.",
+            )
+            return
+        bitacora.anotar(text, rel)
     except Exception as exc:
         try:
             from vault_errors import emit_error  # type: ignore
@@ -1083,9 +1140,18 @@ def update_section_index(folder: str) -> None:
     swallowing them with bare except/pass. Safe to call from any tool.
     """
     try:
-        from vault_section_index import vault_section_index  # type: ignore
+        regenerador = _regenerador_de_indices()
+        if regenerador is None:
+            from vault_errors import emit_error  # type: ignore
 
-        vault_section_index(folder)
+            emit_error(
+                "update_section_index",
+                "UNEXPECTED_ERROR",
+                f"Failed to update index for {folder}: nadie atiende el puerto "
+                "`indices`",
+            )
+            return
+        regenerador.regenerar(folder, [])
     except Exception as exc:
         try:
             from vault_errors import emit_error  # type: ignore

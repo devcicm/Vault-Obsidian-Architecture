@@ -2,7 +2,7 @@
 
 > Documento derivado. Se genera con `python scripts/vault_arch.py --blueprint`; la fuente es `CONTEXTS` en `scripts/vault_arch.py`. No se edita a mano.
 
-**10 contextos**, **178 módulos** clasificados, **33 fronteras cruzadas** pendientes de publicar puerto.
+**10 contextos**, **178 módulos** clasificados, **32 fronteras cruzadas** pendientes de publicar puerto.
 
 ## Los límites
 
@@ -39,7 +39,6 @@ graph TD
     autoria -.->|cruce| gobernanza
     grafo -.->|cruce| autoria
     consulta -.->|cruce| autoria
-    kernel -.->|cruce| autoria
     ciclo_de_vida -.->|cruce| indices
     ciclo_de_vida -.->|cruce| autoria
     ciclo_de_vida -.->|cruce| grafo
@@ -64,12 +63,6 @@ graph TD
 - **Puertos publicados:** `atomic_write_text` → `vault_io:atomic_write_text`, `file_lock` → `vault_fs:file_lock`, `get_vault_root` → `vault_raiz:get_vault_root`, `wrap_main` → `vault_errors:wrap_main`
 - **No cruza:** depender de cualquier contexto de dominio
 - **Módulos (23):** `vault_audit_catalog`, `vault_baseline`, `vault_contrato_nota`, `vault_encoding`, `vault_entorno`, `vault_errors`, `vault_errors_catalog`, `vault_errors_trace`, `vault_escaneo_grafo`, `vault_fs`, `vault_fundamentals_catalog`, `vault_grafo_import`, `vault_io`, `vault_ledger`, `vault_lib`, `vault_mermaid_reglas`, `vault_norms_catalog`, `vault_raiz`, `vault_regex`, `vault_registry`, `vault_subproceso`, `vault_version`, `vault_vocabulario`
-
-Fronteras que hoy cruza (1), deuda declarada:
-
-| Módulo | Importa | Contexto destino |
-|---|---|---|
-| `vault_errors` | `vault/autoria` | Autoría |
 
 ## Autoría
 

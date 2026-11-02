@@ -1948,12 +1948,21 @@ for _par in (("autoria", "grafo"), ("consulta", "ciclo_de_vida"),
            "Adaptador de DI: cablear el dominio de otro contexto es su oficio. "
            "Se cuenta igual — no contarlo dejaría la capa de DI ciega.")
 
-# `vault_errors` es el único borde que ve todos los envelopes. Consume el
-# puerto de presentación de Autoría, no la tool meta que audita su cobertura.
-_cruce("kernel", "autoria", "permanente", "kernel",
-       "El inyector común de envelopes llama al puerto `hablar` para que el "
-       "recordatorio llegue a todas las tools. El servicio degrada a silencio "
-       "si falla y no importa la fachada meta `vault_voice`.")
+# CERRADO en reestructura/teseo (A-04, 2026-11-02 — puerto de voz). El único
+# sitio medido del par `kernel -> autoria` era `scripts/vault_errors.py:51`,
+# que importaba `from vault.autoria.voz import speak as _speak_estable` a
+# nivel de módulo. Ahora el kernel habla con el puerto `Voz`
+# (`vault.kernel.puertos`), el productor se ofrece al importarse —el registro
+# de productores, `vault/kernel/productores.py`— y la raíz de composición
+# (`vault.runtime`, componiendo en `wrap_main`) lo enchufa. La arista
+# desaparece del grafo: `vault_errors` ya no importa la Autoría.
+#
+# La entrada se RETIRA de `PRESUPUESTO_DE_CRUCES`, como en R22 y en A-05,
+# porque `presupuesto_de_cruces_huerfano()` no admite un par resuelto.
+# Lo que se conserva es el efecto observable: la voz sigue llegando al
+# envelope (lo fija `tests/test_a03_a04_puertos_de_productores.py`), y ahora
+# su AUSENCIA es un estado comprobable (`registro.hay("voz")`) en vez de un
+# gancho que desaparecía en silencio.
 
 # --- Gobernanza mirando el vault, y el meta-toolkit mirando Gobernanza -------
 _cruce("meta_toolkit", "gobernanza", "permanente", "meta_toolkit",

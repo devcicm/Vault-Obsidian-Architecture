@@ -712,5 +712,59 @@ Notas:
     return 0 if result.get("ok") else 1
 
 
+class _RegeneradorDeIndices:
+    """El productor del puerto `RegeneradorIndices` (A-03).
+
+    `vault_io` regenera el índice de sección tras cada escritura y hoy lo hace
+    importando este módulo de forma diferida —el ciclo
+    `vault_io -> vault_section_index` que la baseline de AP-58 congela—. Con el
+    registro de productores, el kernel pide el puerto y este adaptador se
+    ofrece al importarse: `vault_io` deja de conocer a su productor.
+
+    El gancho **no desaparece** cuando nadie importa este módulo: se pierde
+    en silencio, que es lo que hace el differido. Con el registro, la ausencia
+    es un estado observable —`registro.hay("indices")`— y por tanto declarable.
+    """
+
+    def regenerar(self, seccion: str, rutas: List[Path],
+                  nombres: Optional[Dict[str, List[str]]] = None) -> List[str]:
+        """Regenera el índice de `seccion`.
+
+        No toca el índice de búsqueda: son dos cosas distintas (ver el puerto
+        `RegeneradorIndices`). El gancho de escritura es quien llama a las
+        dos, y quien llama a esta rehace un `index.md`.
+        """
+        hechos = vault_section_index(seccion, nombres=nombres)
+        return list(hechos.get("creados") or [])
+
+    def refrescar_busqueda(self, rutas: List[Path], creados: Sequence[str] = ()) -> None:
+        """Mete las notas escritas en el índice de búsqueda (AP-47).
+
+        Aquí, y no en `vault_io`: antes el kernel importaba este módulo por
+        segunda vez para llamarlo, y ese era el último
+        `vault_io -> vault_section_index` que quedaba. La nota entra en la
+        búsqueda en la misma escritura, escriba quien escriba — el mismo
+        gancho, con su dueño en el sitio que lo compone.
+        """
+        if not rutas and not creados:
+            return
+        # Y también el index.md que el generador acaba de crear: es una nota en
+        # disco como cualquier otra. Solo van los que no existían antes de esta
+        # escritura (`creados`) — medido con C8 en una copia de /vcloud: 144 en
+        # disco frente a 143 indexadas tras un sanador. Una sola pasada.
+        raiz = get_vault_root()
+        refrescar_busqueda(*rutas, *(raiz / rel for rel in creados))
+
+
+def _ofrecer() -> None:
+    """Se ofrece al registro de productores del kernel."""
+    from vault.kernel.productores import registrar
+
+    registrar("indices", _RegeneradorDeIndices())
+
+
+_ofrecer()
+
+
 if __name__ == "__main__":
     sys.exit(wrap_main(main, "vault_section_index"))

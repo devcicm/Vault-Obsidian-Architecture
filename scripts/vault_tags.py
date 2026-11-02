@@ -879,5 +879,29 @@ Notas:
     return 0 if result["ok"] else 1
 
 
+class _BitacoraDeTags:
+    """El productor del puerto `BitacoraTags` (A-03).
+
+    `vault_io` anota los tags de cada nota escrita —el gancho que hace que
+    AP-39 se cumpla en los quince escritores y no solo en `vault_write`— y hoy
+    lo hace importando este módulo de forma diferida. Con el registro de
+    productores, el kernel pide el puerto y este adaptador se ofrece al
+    importarse: `vault_io` deja de conocer a su productor.
+    """
+
+    def anotar(self, texto: str, ruta_relativa: str) -> None:
+        registrar_tags_de_nota(tags_de_frontmatter(texto), ruta_relativa)
+
+
+def _ofrecer() -> None:
+    """Se ofrece al registro de productores del kernel."""
+    from vault.kernel.productores import registrar
+
+    registrar("tags", _BitacoraDeTags())
+
+
+_ofrecer()
+
+
 if __name__ == "__main__":
     sys.exit(wrap_main(main, "vault_tags"))

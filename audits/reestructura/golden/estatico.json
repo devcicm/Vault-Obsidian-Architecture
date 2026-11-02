@@ -1,6 +1,6 @@
 {
  "ficheros": {
-  "mcp/nodejs/tools-catalog.json": "f4cf41c2ef398eccc39ad36dd1bb8a1e20b66a8d5786152c3e63f97069b6e172",
+  "mcp/nodejs/tools-catalog.json": "d9ec5088d1b23fd6f460aa4955b92870a19dfc6ace9a46039b6849345829d220",
   "schemas/README.md": "52f1d4abec7bd253be55c64f3a8af2c61f346b92774ef0d3c036363fd4ba33e1",
   "schemas/vault-v18.schema.json": "7b308cb0140a7a15433134089a3d0f43be02001f19e749f989dd8d0d25f54eaf",
   "schemas/vault-v19.schema.json": "8e1a7e5fd369e4e4f7eb475d42aeb67e2741515c4d4fb202536b5563f6276cab",
@@ -27,7 +27,7 @@
   "schemas/vault-v40.schema.json": "bdc9df10c6393356b6d2d5927c5dca75f765e0d6186a58a44737233646a78a9b",
   "schemas/vault-v41.schema.json": "b8e28686fc13ae40c4c7bbf8e842a707a26cf567ff37d9e942223d8b11ebc2cf",
   "vault-sandbox/00_System/tool-spec.json": "500e3b43068ddeb9162afedf1045becf2fe8b536ca738a73a36a17e2a2c30a7f",
-  "vault/meta_toolkit/tools-catalog.json": "f4cf41c2ef398eccc39ad36dd1bb8a1e20b66a8d5786152c3e63f97069b6e172"
+  "vault/meta_toolkit/tools-catalog.json": "d9ec5088d1b23fd6f460aa4955b92870a19dfc6ace9a46039b6849345829d220"
  },
  "project_scripts": {
   "vault": "vault.product_cli:main",
