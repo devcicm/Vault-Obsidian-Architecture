@@ -640,6 +640,7 @@ ESTADO_DE_EJECUCION = (
     "00_System/.change-log.json",
     "00_System/change-log.md",
     "00_System/.voice-counter",
+    "00_System/quality-index.json",
     "99_Index/hash-index.json",
     "99_Index/search-index.json",
     "vault-backups/.backup-registry.json",
@@ -658,6 +659,7 @@ def _es_estado_de_ejecucion(clave: str) -> bool:
         or clave.endswith("/.voice-counter")
         or clave.endswith("/hash-index.json")
         or clave.endswith("/search-index.json")
+        or clave.endswith("/quality-index.json")
     )
 
 
@@ -715,6 +717,11 @@ def _timeliness_sin_reloj(c: Dict[str, Any]) -> Dict[str, Any]:
 
     Las claves de `notes` son rutas con puntos, que la sintaxis de rutas no
     puede nombrar; por eso es una función y no una entrada de `rutas`.
+
+    El `overall` de una nota con issues de vigencia *también* baja con el
+    reloj — cada día restó a su `timeliness` — y por eso se declara volátil
+    solo ahí: una nota que no está caducada conserva su `overall` literal y
+    una regresión de puntuación en ella sigue viéndose.
     """
     notas = (c.get("datos") or {}).get("notes")
     if isinstance(notas, dict):
@@ -726,6 +733,9 @@ def _timeliness_sin_reloj(c: Dict[str, Any]) -> Dict[str, Any]:
             if isinstance(nota.get("issues"), list):
                 nota["issues"] = [_DIAS.sub("timeliness: <N> days since update", i)
                                   if isinstance(i, str) else i for i in nota["issues"]]
+                if any(isinstance(i, str) and "timeliness:" in i for i in nota["issues"]) \
+                        and "overall" in nota:
+                    nota["overall"] = "<volatil:float>"
     return c
 
 
@@ -873,7 +883,8 @@ VOLATILES_DECLARADOS: Dict[str, Dict[str, Any]] = {
     **{f"vault_init#{i}": {"rutas": [".datos.steps[*].output.issues.stale[*].daysSinceUpdate"]}
        for i in (0, 1, 2)},
     "vault_metricas#0": {"rutas": [".datos.filas[*].dias_restantes"]},
-    "vault_quality_check#0": {"ajuste": _timeliness_sin_reloj},
+    **{f"vault_quality_check#{i}": {"ajuste": _timeliness_sin_reloj}
+       for i in (0, 1)},
     "vault_change_log#0": {"rutas": [".datos.total", ".datos.entries[*].id"]},
     "vault_ncr_save#0": {"ajuste": _mes_sin_reloj},
     "vault_query_parse#0": {"ajuste": _desde_sin_reloj},

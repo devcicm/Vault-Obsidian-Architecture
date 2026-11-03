@@ -2,7 +2,7 @@
  "corridas": {
   "vault_ai_decision": [
    {
-    "_duracion_s": 0.64,
+    "_duracion_s": 0.56,
     "cambiadas": [
      "16_AI_Governance/.decisions-log.json",
      "16_AI_Governance/decisions/index.md",
@@ -48,7 +48,7 @@
   ],
   "vault_append": [
    {
-    "_duracion_s": 0.45,
+    "_duracion_s": 0.46,
     "cambiadas": [],
     "claves": [
      "category",
@@ -89,7 +89,7 @@
   ],
   "vault_arch": [
    {
-    "_duracion_s": 7.73,
+    "_duracion_s": 6.8,
     "cambiadas": [],
     "claves": [
      "baseline_total",
@@ -439,7 +439,7 @@
      "domain_modules": 140,
      "duplicate_paths_baseline": 0,
      "duplicate_paths_total": 0,
-     "env_vars_declared": 26,
+     "env_vars_declared": 27,
      "forbidden_writes": [],
      "foreign_system_writes": [],
      "frozen_bindings_baseline": 0,
@@ -509,7 +509,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 7.56,
+    "_duracion_s": 6.77,
     "cambiadas": [],
     "claves": [
      "ok",
@@ -529,7 +529,7 @@
   ],
   "vault_arquitectura_en": [
    {
-    "_duracion_s": 0.25,
+    "_duracion_s": 0.23,
     "cambiadas": [],
     "claves": [
      "criterio",
@@ -652,7 +652,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.47,
+    "_duracion_s": 0.42,
     "cambiadas": [],
     "claves": [
      "category",
@@ -703,7 +703,7 @@
   ],
   "vault_audit": [
    {
-    "_duracion_s": 1.65,
+    "_duracion_s": 1.5,
     "cambiadas": [],
     "claves": [
      "degraded",
@@ -2509,27 +2509,27 @@
       "sameFolderVersions": [],
       "stale": [
        {
-        "daysSinceUpdate": 305,
+        "daysSinceUpdate": 306,
         "path": "03_Decisions/adr-001-mcp-transport.md",
         "title": "MCP transport"
        },
        {
-        "daysSinceUpdate": 305,
+        "daysSinceUpdate": 306,
         "path": "03_Decisions/mcp-transport-contract.md",
         "title": "MCP transport contract"
        },
        {
-        "daysSinceUpdate": 305,
+        "daysSinceUpdate": 306,
         "path": "03_Decisions/mcp-transport-operations.md",
         "title": "MCP transport operations"
        },
        {
-        "daysSinceUpdate": 305,
+        "daysSinceUpdate": 306,
         "path": "03_Decisions/mcp-transport-provenance.md",
         "title": "MCP transport provenance"
        },
        {
-        "daysSinceUpdate": 305,
+        "daysSinceUpdate": 306,
         "path": "07_Knowledge/parser-evidence.md",
         "title": "Parser evidence"
        }
@@ -2883,7 +2883,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.48,
+    "_duracion_s": 0.44,
     "cambiadas": [],
     "claves": [
      "category",
@@ -2934,128 +2934,128 @@
   ],
   "vault_backup": [
    {
-    "_duracion_s": 0.56,
+    "_duracion_s": 0.52,
     "cambiadas": [
      "vault-backups/.backup-registry.json",
-     "vault-backups/vault-<HOY>-230011/.manifest.json",
-     "vault-backups/vault-<HOY>-230011/00_System/.change-log.json",
-     "vault-backups/vault-<HOY>-230011/00_System/.gitkeep",
-     "vault-backups/vault-<HOY>-230011/00_System/.voice-counter",
-     "vault-backups/vault-<HOY>-230011/00_System/change-log.md",
-     "vault-backups/vault-<HOY>-230011/00_System/data-framework.json",
-     "vault-backups/vault-<HOY>-230011/00_System/data-framework.md",
-     "vault-backups/vault-<HOY>-230011/00_System/data-fundamentals.json",
-     "vault-backups/vault-<HOY>-230011/00_System/index.md",
-     "vault-backups/vault-<HOY>-230011/00_System/norm-registry.json",
-     "vault-backups/vault-<HOY>-230011/00_System/product-gates/clean_install/clean_install-result.json",
-     "vault-backups/vault-<HOY>-230011/00_System/product-gates/index.md",
-     "vault-backups/vault-<HOY>-230011/00_System/product-gates/memory_e2e/memory_e2e-result.json",
-     "vault-backups/vault-<HOY>-230011/00_System/quality-index.json",
-     "vault-backups/vault-<HOY>-230011/00_System/standard-version.json",
-     "vault-backups/vault-<HOY>-230011/00_System/tag-registry.json",
-     "vault-backups/vault-<HOY>-230011/00_System/tool-contracts.json",
-     "vault-backups/vault-<HOY>-230011/00_System/tool-contracts.md",
-     "vault-backups/vault-<HOY>-230011/00_System/tool-spec.json",
-     "vault-backups/vault-<HOY>-230011/00_System/vault-commands.md",
-     "vault-backups/vault-<HOY>-230011/00_System/vault-hub.md",
-     "vault-backups/vault-<HOY>-230011/00_System/vault-ontology.json",
-     "vault-backups/vault-<HOY>-230011/01_Projects/.gitkeep",
-     "vault-backups/vault-<HOY>-230011/01_Projects/00-01_projects-primer.md",
-     "vault-backups/vault-<HOY>-230011/01_Projects/index.md",
-     "vault-backups/vault-<HOY>-230011/01_Projects/mi-api/index.md",
-     "vault-backups/vault-<HOY>-230011/01_Projects/mi-api/project.md",
-     "vault-backups/vault-<HOY>-230011/02_Observability/.gitkeep",
-     "vault-backups/vault-<HOY>-230011/02_Observability/00-02_observability-primer.md",
-     "vault-backups/vault-<HOY>-230011/02_Observability/index.md",
-     "vault-backups/vault-<HOY>-230011/03_Decisions/.gitkeep",
-     "vault-backups/vault-<HOY>-230011/03_Decisions/00-03_decisions-primer.md",
-     "vault-backups/vault-<HOY>-230011/03_Decisions/adr-001-mcp-transport.md",
-     "vault-backups/vault-<HOY>-230011/03_Decisions/index.md",
-     "vault-backups/vault-<HOY>-230011/03_Decisions/mcp-transport-contract.md",
-     "vault-backups/vault-<HOY>-230011/03_Decisions/mcp-transport-operations.md",
-     "vault-backups/vault-<HOY>-230011/03_Decisions/mcp-transport-provenance.md",
-     "vault-backups/vault-<HOY>-230011/04_Sessions/.gitkeep",
-     "vault-backups/vault-<HOY>-230011/04_Sessions/00-04_sessions-primer.md",
-     "vault-backups/vault-<HOY>-230011/04_Sessions/index.md",
-     "vault-backups/vault-<HOY>-230011/05_Patterns/.gitkeep",
-     "vault-backups/vault-<HOY>-230011/05_Patterns/00-05_patterns-primer.md",
-     "vault-backups/vault-<HOY>-230011/05_Patterns/index.md",
-     "vault-backups/vault-<HOY>-230011/06_Diagrams/.gitkeep",
-     "vault-backups/vault-<HOY>-230011/06_Diagrams/00-06_diagrams-primer.md",
-     "vault-backups/vault-<HOY>-230011/06_Diagrams/entity/index.md",
-     "vault-backups/vault-<HOY>-230011/06_Diagrams/entity/test-relations.json",
-     "vault-backups/vault-<HOY>-230011/06_Diagrams/index.md",
-     "vault-backups/vault-<HOY>-230011/07_Knowledge/.gitkeep",
-     "vault-backups/vault-<HOY>-230011/07_Knowledge/00-07_knowledge-primer.md",
-     "vault-backups/vault-<HOY>-230011/07_Knowledge/fixture-incomplete-00.md",
-     "vault-backups/vault-<HOY>-230011/07_Knowledge/fixture-incomplete-01.md",
-     "vault-backups/vault-<HOY>-230011/07_Knowledge/fixture-incomplete-02.md",
-     "vault-backups/vault-<HOY>-230011/07_Knowledge/fixture-incomplete-03.md",
-     "vault-backups/vault-<HOY>-230011/07_Knowledge/fixture-incomplete-04.md",
-     "vault-backups/vault-<HOY>-230011/07_Knowledge/fixture-incomplete-05.md",
-     "vault-backups/vault-<HOY>-230011/07_Knowledge/fixture-incomplete-06.md",
-     "vault-backups/vault-<HOY>-230011/07_Knowledge/fixture-incomplete-07.md",
-     "vault-backups/vault-<HOY>-230011/07_Knowledge/fixture-incomplete-08.md",
-     "vault-backups/vault-<HOY>-230011/07_Knowledge/fixture-incomplete-09.md",
-     "vault-backups/vault-<HOY>-230011/07_Knowledge/fixture-raw-00.md",
-     "vault-backups/vault-<HOY>-230011/07_Knowledge/fixture-raw-01.md",
-     "vault-backups/vault-<HOY>-230011/07_Knowledge/fixture-raw-02.md",
-     "vault-backups/vault-<HOY>-230011/07_Knowledge/fixture-raw-03.md",
-     "vault-backups/vault-<HOY>-230011/07_Knowledge/fixture-raw-04.md",
-     "vault-backups/vault-<HOY>-230011/07_Knowledge/fixture-raw-05.md",
-     "vault-backups/vault-<HOY>-230011/07_Knowledge/fixture-raw-06.md",
-     "vault-backups/vault-<HOY>-230011/07_Knowledge/fixture-raw-07.md",
-     "vault-backups/vault-<HOY>-230011/07_Knowledge/fixture-raw-08.md",
-     "vault-backups/vault-<HOY>-230011/07_Knowledge/fixture-raw-09.md",
-     "vault-backups/vault-<HOY>-230011/07_Knowledge/index.md",
-     "vault-backups/vault-<HOY>-230011/07_Knowledge/parser-evidence.md",
-     "vault-backups/vault-<HOY>-230011/08_Runbooks/.gitkeep",
-     "vault-backups/vault-<HOY>-230011/08_Runbooks/00-08_runbooks-primer.md",
-     "vault-backups/vault-<HOY>-230011/08_Runbooks/index.md",
-     "vault-backups/vault-<HOY>-230011/09_Infrastructure/.gitkeep",
-     "vault-backups/vault-<HOY>-230011/09_Infrastructure/00-09_infrastructure-primer.md",
-     "vault-backups/vault-<HOY>-230011/09_Infrastructure/index.md",
-     "vault-backups/vault-<HOY>-230011/10_Migrated/.gitkeep",
-     "vault-backups/vault-<HOY>-230011/10_Migrated/00-10_migrated-primer.md",
-     "vault-backups/vault-<HOY>-230011/10_Migrated/index.md",
-     "vault-backups/vault-<HOY>-230011/11_Code/.gitkeep",
-     "vault-backups/vault-<HOY>-230011/11_Code/00-11_code-primer.md",
-     "vault-backups/vault-<HOY>-230011/11_Code/index.md",
-     "vault-backups/vault-<HOY>-230011/12_Bibliography/.gitkeep",
-     "vault-backups/vault-<HOY>-230011/12_Bibliography/00-12_bibliography-primer.md",
-     "vault-backups/vault-<HOY>-230011/12_Bibliography/index.md",
-     "vault-backups/vault-<HOY>-230011/13_Flows/.gitkeep",
-     "vault-backups/vault-<HOY>-230011/13_Flows/00-13_flows-primer.md",
-     "vault-backups/vault-<HOY>-230011/13_Flows/index.md",
-     "vault-backups/vault-<HOY>-230011/14_Requirements/.gitkeep",
-     "vault-backups/vault-<HOY>-230011/14_Requirements/00-14_requirements-primer.md",
-     "vault-backups/vault-<HOY>-230011/14_Requirements/index.md",
-     "vault-backups/vault-<HOY>-230011/15_Tests/.gitkeep",
-     "vault-backups/vault-<HOY>-230011/15_Tests/00-15_tests-primer.md",
-     "vault-backups/vault-<HOY>-230011/15_Tests/index.md",
-     "vault-backups/vault-<HOY>-230011/16_AI_Governance/.gitkeep",
-     "vault-backups/vault-<HOY>-230011/16_AI_Governance/00-16_ai_governance-primer.md",
-     "vault-backups/vault-<HOY>-230011/16_AI_Governance/index.md",
-     "vault-backups/vault-<HOY>-230011/17_Preferences/.gitkeep",
-     "vault-backups/vault-<HOY>-230011/17_Preferences/00-17_preferences-primer.md",
-     "vault-backups/vault-<HOY>-230011/17_Preferences/index.md",
-     "vault-backups/vault-<HOY>-230011/17_Preferences/model_profile.active",
-     "vault-backups/vault-<HOY>-230011/18_Bugs/.gitkeep",
-     "vault-backups/vault-<HOY>-230011/18_Bugs/index.md",
-     "vault-backups/vault-<HOY>-230011/19_Audits/.gitkeep",
-     "vault-backups/vault-<HOY>-230011/19_Audits/index.md",
-     "vault-backups/vault-<HOY>-230011/19_Audits/vocabulary/tag-ledger.json",
-     "vault-backups/vault-<HOY>-230011/20_Quarantine/.gitkeep",
-     "vault-backups/vault-<HOY>-230011/20_Quarantine/index.md",
-     "vault-backups/vault-<HOY>-230011/21_QA/.gitkeep",
-     "vault-backups/vault-<HOY>-230011/21_QA/index.md",
-     "vault-backups/vault-<HOY>-230011/99_Index/.gitkeep",
-     "vault-backups/vault-<HOY>-230011/99_Index/00-99_index-primer.md",
-     "vault-backups/vault-<HOY>-230011/99_Index/graph.json",
-     "vault-backups/vault-<HOY>-230011/99_Index/hash-index.json",
-     "vault-backups/vault-<HOY>-230011/99_Index/index.md",
-     "vault-backups/vault-<HOY>-230011/99_Index/search-index.json",
-     "vault-backups/vault-<HOY>-230011/99_Index/tag-index.md"
+     "vault-backups/vault-<HOY>-102802/.manifest.json",
+     "vault-backups/vault-<HOY>-102802/00_System/.change-log.json",
+     "vault-backups/vault-<HOY>-102802/00_System/.gitkeep",
+     "vault-backups/vault-<HOY>-102802/00_System/.voice-counter",
+     "vault-backups/vault-<HOY>-102802/00_System/change-log.md",
+     "vault-backups/vault-<HOY>-102802/00_System/data-framework.json",
+     "vault-backups/vault-<HOY>-102802/00_System/data-framework.md",
+     "vault-backups/vault-<HOY>-102802/00_System/data-fundamentals.json",
+     "vault-backups/vault-<HOY>-102802/00_System/index.md",
+     "vault-backups/vault-<HOY>-102802/00_System/norm-registry.json",
+     "vault-backups/vault-<HOY>-102802/00_System/product-gates/clean_install/clean_install-result.json",
+     "vault-backups/vault-<HOY>-102802/00_System/product-gates/index.md",
+     "vault-backups/vault-<HOY>-102802/00_System/product-gates/memory_e2e/memory_e2e-result.json",
+     "vault-backups/vault-<HOY>-102802/00_System/quality-index.json",
+     "vault-backups/vault-<HOY>-102802/00_System/standard-version.json",
+     "vault-backups/vault-<HOY>-102802/00_System/tag-registry.json",
+     "vault-backups/vault-<HOY>-102802/00_System/tool-contracts.json",
+     "vault-backups/vault-<HOY>-102802/00_System/tool-contracts.md",
+     "vault-backups/vault-<HOY>-102802/00_System/tool-spec.json",
+     "vault-backups/vault-<HOY>-102802/00_System/vault-commands.md",
+     "vault-backups/vault-<HOY>-102802/00_System/vault-hub.md",
+     "vault-backups/vault-<HOY>-102802/00_System/vault-ontology.json",
+     "vault-backups/vault-<HOY>-102802/01_Projects/.gitkeep",
+     "vault-backups/vault-<HOY>-102802/01_Projects/00-01_projects-primer.md",
+     "vault-backups/vault-<HOY>-102802/01_Projects/index.md",
+     "vault-backups/vault-<HOY>-102802/01_Projects/mi-api/index.md",
+     "vault-backups/vault-<HOY>-102802/01_Projects/mi-api/project.md",
+     "vault-backups/vault-<HOY>-102802/02_Observability/.gitkeep",
+     "vault-backups/vault-<HOY>-102802/02_Observability/00-02_observability-primer.md",
+     "vault-backups/vault-<HOY>-102802/02_Observability/index.md",
+     "vault-backups/vault-<HOY>-102802/03_Decisions/.gitkeep",
+     "vault-backups/vault-<HOY>-102802/03_Decisions/00-03_decisions-primer.md",
+     "vault-backups/vault-<HOY>-102802/03_Decisions/adr-001-mcp-transport.md",
+     "vault-backups/vault-<HOY>-102802/03_Decisions/index.md",
+     "vault-backups/vault-<HOY>-102802/03_Decisions/mcp-transport-contract.md",
+     "vault-backups/vault-<HOY>-102802/03_Decisions/mcp-transport-operations.md",
+     "vault-backups/vault-<HOY>-102802/03_Decisions/mcp-transport-provenance.md",
+     "vault-backups/vault-<HOY>-102802/04_Sessions/.gitkeep",
+     "vault-backups/vault-<HOY>-102802/04_Sessions/00-04_sessions-primer.md",
+     "vault-backups/vault-<HOY>-102802/04_Sessions/index.md",
+     "vault-backups/vault-<HOY>-102802/05_Patterns/.gitkeep",
+     "vault-backups/vault-<HOY>-102802/05_Patterns/00-05_patterns-primer.md",
+     "vault-backups/vault-<HOY>-102802/05_Patterns/index.md",
+     "vault-backups/vault-<HOY>-102802/06_Diagrams/.gitkeep",
+     "vault-backups/vault-<HOY>-102802/06_Diagrams/00-06_diagrams-primer.md",
+     "vault-backups/vault-<HOY>-102802/06_Diagrams/entity/index.md",
+     "vault-backups/vault-<HOY>-102802/06_Diagrams/entity/test-relations.json",
+     "vault-backups/vault-<HOY>-102802/06_Diagrams/index.md",
+     "vault-backups/vault-<HOY>-102802/07_Knowledge/.gitkeep",
+     "vault-backups/vault-<HOY>-102802/07_Knowledge/00-07_knowledge-primer.md",
+     "vault-backups/vault-<HOY>-102802/07_Knowledge/fixture-incomplete-00.md",
+     "vault-backups/vault-<HOY>-102802/07_Knowledge/fixture-incomplete-01.md",
+     "vault-backups/vault-<HOY>-102802/07_Knowledge/fixture-incomplete-02.md",
+     "vault-backups/vault-<HOY>-102802/07_Knowledge/fixture-incomplete-03.md",
+     "vault-backups/vault-<HOY>-102802/07_Knowledge/fixture-incomplete-04.md",
+     "vault-backups/vault-<HOY>-102802/07_Knowledge/fixture-incomplete-05.md",
+     "vault-backups/vault-<HOY>-102802/07_Knowledge/fixture-incomplete-06.md",
+     "vault-backups/vault-<HOY>-102802/07_Knowledge/fixture-incomplete-07.md",
+     "vault-backups/vault-<HOY>-102802/07_Knowledge/fixture-incomplete-08.md",
+     "vault-backups/vault-<HOY>-102802/07_Knowledge/fixture-incomplete-09.md",
+     "vault-backups/vault-<HOY>-102802/07_Knowledge/fixture-raw-00.md",
+     "vault-backups/vault-<HOY>-102802/07_Knowledge/fixture-raw-01.md",
+     "vault-backups/vault-<HOY>-102802/07_Knowledge/fixture-raw-02.md",
+     "vault-backups/vault-<HOY>-102802/07_Knowledge/fixture-raw-03.md",
+     "vault-backups/vault-<HOY>-102802/07_Knowledge/fixture-raw-04.md",
+     "vault-backups/vault-<HOY>-102802/07_Knowledge/fixture-raw-05.md",
+     "vault-backups/vault-<HOY>-102802/07_Knowledge/fixture-raw-06.md",
+     "vault-backups/vault-<HOY>-102802/07_Knowledge/fixture-raw-07.md",
+     "vault-backups/vault-<HOY>-102802/07_Knowledge/fixture-raw-08.md",
+     "vault-backups/vault-<HOY>-102802/07_Knowledge/fixture-raw-09.md",
+     "vault-backups/vault-<HOY>-102802/07_Knowledge/index.md",
+     "vault-backups/vault-<HOY>-102802/07_Knowledge/parser-evidence.md",
+     "vault-backups/vault-<HOY>-102802/08_Runbooks/.gitkeep",
+     "vault-backups/vault-<HOY>-102802/08_Runbooks/00-08_runbooks-primer.md",
+     "vault-backups/vault-<HOY>-102802/08_Runbooks/index.md",
+     "vault-backups/vault-<HOY>-102802/09_Infrastructure/.gitkeep",
+     "vault-backups/vault-<HOY>-102802/09_Infrastructure/00-09_infrastructure-primer.md",
+     "vault-backups/vault-<HOY>-102802/09_Infrastructure/index.md",
+     "vault-backups/vault-<HOY>-102802/10_Migrated/.gitkeep",
+     "vault-backups/vault-<HOY>-102802/10_Migrated/00-10_migrated-primer.md",
+     "vault-backups/vault-<HOY>-102802/10_Migrated/index.md",
+     "vault-backups/vault-<HOY>-102802/11_Code/.gitkeep",
+     "vault-backups/vault-<HOY>-102802/11_Code/00-11_code-primer.md",
+     "vault-backups/vault-<HOY>-102802/11_Code/index.md",
+     "vault-backups/vault-<HOY>-102802/12_Bibliography/.gitkeep",
+     "vault-backups/vault-<HOY>-102802/12_Bibliography/00-12_bibliography-primer.md",
+     "vault-backups/vault-<HOY>-102802/12_Bibliography/index.md",
+     "vault-backups/vault-<HOY>-102802/13_Flows/.gitkeep",
+     "vault-backups/vault-<HOY>-102802/13_Flows/00-13_flows-primer.md",
+     "vault-backups/vault-<HOY>-102802/13_Flows/index.md",
+     "vault-backups/vault-<HOY>-102802/14_Requirements/.gitkeep",
+     "vault-backups/vault-<HOY>-102802/14_Requirements/00-14_requirements-primer.md",
+     "vault-backups/vault-<HOY>-102802/14_Requirements/index.md",
+     "vault-backups/vault-<HOY>-102802/15_Tests/.gitkeep",
+     "vault-backups/vault-<HOY>-102802/15_Tests/00-15_tests-primer.md",
+     "vault-backups/vault-<HOY>-102802/15_Tests/index.md",
+     "vault-backups/vault-<HOY>-102802/16_AI_Governance/.gitkeep",
+     "vault-backups/vault-<HOY>-102802/16_AI_Governance/00-16_ai_governance-primer.md",
+     "vault-backups/vault-<HOY>-102802/16_AI_Governance/index.md",
+     "vault-backups/vault-<HOY>-102802/17_Preferences/.gitkeep",
+     "vault-backups/vault-<HOY>-102802/17_Preferences/00-17_preferences-primer.md",
+     "vault-backups/vault-<HOY>-102802/17_Preferences/index.md",
+     "vault-backups/vault-<HOY>-102802/17_Preferences/model_profile.active",
+     "vault-backups/vault-<HOY>-102802/18_Bugs/.gitkeep",
+     "vault-backups/vault-<HOY>-102802/18_Bugs/index.md",
+     "vault-backups/vault-<HOY>-102802/19_Audits/.gitkeep",
+     "vault-backups/vault-<HOY>-102802/19_Audits/index.md",
+     "vault-backups/vault-<HOY>-102802/19_Audits/vocabulary/tag-ledger.json",
+     "vault-backups/vault-<HOY>-102802/20_Quarantine/.gitkeep",
+     "vault-backups/vault-<HOY>-102802/20_Quarantine/index.md",
+     "vault-backups/vault-<HOY>-102802/21_QA/.gitkeep",
+     "vault-backups/vault-<HOY>-102802/21_QA/index.md",
+     "vault-backups/vault-<HOY>-102802/99_Index/.gitkeep",
+     "vault-backups/vault-<HOY>-102802/99_Index/00-99_index-primer.md",
+     "vault-backups/vault-<HOY>-102802/99_Index/graph.json",
+     "vault-backups/vault-<HOY>-102802/99_Index/hash-index.json",
+     "vault-backups/vault-<HOY>-102802/99_Index/index.md",
+     "vault-backups/vault-<HOY>-102802/99_Index/search-index.json",
+     "vault-backups/vault-<HOY>-102802/99_Index/tag-index.md"
     ],
     "claves": [
      "created",
@@ -3082,7 +3082,7 @@
         "files": 22,
         "folder": "00_System",
         "notes": 7,
-        "sizeKB": 2054.0
+        "sizeKB": 2056.0
        },
        {
         "files": 5,
@@ -3220,15 +3220,15 @@
       "totals": {
        "files": 119,
        "notes": 76,
-       "sizeKB": 2231.8
+       "sizeKB": 2233.8
       }
      },
      "merkle_algo": 2,
      "merkle_file_count": 117,
-     "merkle_root": "afe4901ad4286898db56e3acd257b38b7d9835ea3c412bb9ab43304b109a202a",
-     "name": "vault-<HOY>-230011",
+     "merkle_root": "74ea7a0ca7e230b0fde97d8c2fbe87ef1cc5b7c7fe33f8333824a88430562e54",
+     "name": "vault-<HOY>-102802",
      "ok": true,
-     "path": "vault-backups/vault-<HOY>-230011/",
+     "path": "vault-backups/vault-<HOY>-102802/",
      "timestamp": "<TS>",
      "tool": "vault_backup",
      "unchanged": 0,
@@ -3241,128 +3241,128 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.57,
+    "_duracion_s": 0.52,
     "cambiadas": [
      "vault-backups/.backup-registry.json",
-     "vault-backups/vault-<HOY>-230012-pre-migration/.manifest.json",
-     "vault-backups/vault-<HOY>-230012-pre-migration/00_System/.change-log.json",
-     "vault-backups/vault-<HOY>-230012-pre-migration/00_System/.gitkeep",
-     "vault-backups/vault-<HOY>-230012-pre-migration/00_System/.voice-counter",
-     "vault-backups/vault-<HOY>-230012-pre-migration/00_System/change-log.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/00_System/data-framework.json",
-     "vault-backups/vault-<HOY>-230012-pre-migration/00_System/data-framework.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/00_System/data-fundamentals.json",
-     "vault-backups/vault-<HOY>-230012-pre-migration/00_System/index.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/00_System/norm-registry.json",
-     "vault-backups/vault-<HOY>-230012-pre-migration/00_System/product-gates/clean_install/clean_install-result.json",
-     "vault-backups/vault-<HOY>-230012-pre-migration/00_System/product-gates/index.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/00_System/product-gates/memory_e2e/memory_e2e-result.json",
-     "vault-backups/vault-<HOY>-230012-pre-migration/00_System/quality-index.json",
-     "vault-backups/vault-<HOY>-230012-pre-migration/00_System/standard-version.json",
-     "vault-backups/vault-<HOY>-230012-pre-migration/00_System/tag-registry.json",
-     "vault-backups/vault-<HOY>-230012-pre-migration/00_System/tool-contracts.json",
-     "vault-backups/vault-<HOY>-230012-pre-migration/00_System/tool-contracts.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/00_System/tool-spec.json",
-     "vault-backups/vault-<HOY>-230012-pre-migration/00_System/vault-commands.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/00_System/vault-hub.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/00_System/vault-ontology.json",
-     "vault-backups/vault-<HOY>-230012-pre-migration/01_Projects/.gitkeep",
-     "vault-backups/vault-<HOY>-230012-pre-migration/01_Projects/00-01_projects-primer.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/01_Projects/index.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/01_Projects/mi-api/index.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/01_Projects/mi-api/project.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/02_Observability/.gitkeep",
-     "vault-backups/vault-<HOY>-230012-pre-migration/02_Observability/00-02_observability-primer.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/02_Observability/index.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/03_Decisions/.gitkeep",
-     "vault-backups/vault-<HOY>-230012-pre-migration/03_Decisions/00-03_decisions-primer.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/03_Decisions/adr-001-mcp-transport.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/03_Decisions/index.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/03_Decisions/mcp-transport-contract.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/03_Decisions/mcp-transport-operations.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/03_Decisions/mcp-transport-provenance.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/04_Sessions/.gitkeep",
-     "vault-backups/vault-<HOY>-230012-pre-migration/04_Sessions/00-04_sessions-primer.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/04_Sessions/index.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/05_Patterns/.gitkeep",
-     "vault-backups/vault-<HOY>-230012-pre-migration/05_Patterns/00-05_patterns-primer.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/05_Patterns/index.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/06_Diagrams/.gitkeep",
-     "vault-backups/vault-<HOY>-230012-pre-migration/06_Diagrams/00-06_diagrams-primer.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/06_Diagrams/entity/index.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/06_Diagrams/entity/test-relations.json",
-     "vault-backups/vault-<HOY>-230012-pre-migration/06_Diagrams/index.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/07_Knowledge/.gitkeep",
-     "vault-backups/vault-<HOY>-230012-pre-migration/07_Knowledge/00-07_knowledge-primer.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/07_Knowledge/fixture-incomplete-00.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/07_Knowledge/fixture-incomplete-01.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/07_Knowledge/fixture-incomplete-02.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/07_Knowledge/fixture-incomplete-03.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/07_Knowledge/fixture-incomplete-04.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/07_Knowledge/fixture-incomplete-05.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/07_Knowledge/fixture-incomplete-06.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/07_Knowledge/fixture-incomplete-07.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/07_Knowledge/fixture-incomplete-08.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/07_Knowledge/fixture-incomplete-09.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/07_Knowledge/fixture-raw-00.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/07_Knowledge/fixture-raw-01.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/07_Knowledge/fixture-raw-02.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/07_Knowledge/fixture-raw-03.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/07_Knowledge/fixture-raw-04.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/07_Knowledge/fixture-raw-05.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/07_Knowledge/fixture-raw-06.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/07_Knowledge/fixture-raw-07.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/07_Knowledge/fixture-raw-08.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/07_Knowledge/fixture-raw-09.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/07_Knowledge/index.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/07_Knowledge/parser-evidence.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/08_Runbooks/.gitkeep",
-     "vault-backups/vault-<HOY>-230012-pre-migration/08_Runbooks/00-08_runbooks-primer.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/08_Runbooks/index.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/09_Infrastructure/.gitkeep",
-     "vault-backups/vault-<HOY>-230012-pre-migration/09_Infrastructure/00-09_infrastructure-primer.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/09_Infrastructure/index.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/10_Migrated/.gitkeep",
-     "vault-backups/vault-<HOY>-230012-pre-migration/10_Migrated/00-10_migrated-primer.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/10_Migrated/index.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/11_Code/.gitkeep",
-     "vault-backups/vault-<HOY>-230012-pre-migration/11_Code/00-11_code-primer.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/11_Code/index.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/12_Bibliography/.gitkeep",
-     "vault-backups/vault-<HOY>-230012-pre-migration/12_Bibliography/00-12_bibliography-primer.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/12_Bibliography/index.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/13_Flows/.gitkeep",
-     "vault-backups/vault-<HOY>-230012-pre-migration/13_Flows/00-13_flows-primer.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/13_Flows/index.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/14_Requirements/.gitkeep",
-     "vault-backups/vault-<HOY>-230012-pre-migration/14_Requirements/00-14_requirements-primer.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/14_Requirements/index.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/15_Tests/.gitkeep",
-     "vault-backups/vault-<HOY>-230012-pre-migration/15_Tests/00-15_tests-primer.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/15_Tests/index.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/16_AI_Governance/.gitkeep",
-     "vault-backups/vault-<HOY>-230012-pre-migration/16_AI_Governance/00-16_ai_governance-primer.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/16_AI_Governance/index.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/17_Preferences/.gitkeep",
-     "vault-backups/vault-<HOY>-230012-pre-migration/17_Preferences/00-17_preferences-primer.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/17_Preferences/index.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/17_Preferences/model_profile.active",
-     "vault-backups/vault-<HOY>-230012-pre-migration/18_Bugs/.gitkeep",
-     "vault-backups/vault-<HOY>-230012-pre-migration/18_Bugs/index.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/19_Audits/.gitkeep",
-     "vault-backups/vault-<HOY>-230012-pre-migration/19_Audits/index.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/19_Audits/vocabulary/tag-ledger.json",
-     "vault-backups/vault-<HOY>-230012-pre-migration/20_Quarantine/.gitkeep",
-     "vault-backups/vault-<HOY>-230012-pre-migration/20_Quarantine/index.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/21_QA/.gitkeep",
-     "vault-backups/vault-<HOY>-230012-pre-migration/21_QA/index.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/99_Index/.gitkeep",
-     "vault-backups/vault-<HOY>-230012-pre-migration/99_Index/00-99_index-primer.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/99_Index/graph.json",
-     "vault-backups/vault-<HOY>-230012-pre-migration/99_Index/hash-index.json",
-     "vault-backups/vault-<HOY>-230012-pre-migration/99_Index/index.md",
-     "vault-backups/vault-<HOY>-230012-pre-migration/99_Index/search-index.json",
-     "vault-backups/vault-<HOY>-230012-pre-migration/99_Index/tag-index.md"
+     "vault-backups/vault-<HOY>-102804-pre-migration/.manifest.json",
+     "vault-backups/vault-<HOY>-102804-pre-migration/00_System/.change-log.json",
+     "vault-backups/vault-<HOY>-102804-pre-migration/00_System/.gitkeep",
+     "vault-backups/vault-<HOY>-102804-pre-migration/00_System/.voice-counter",
+     "vault-backups/vault-<HOY>-102804-pre-migration/00_System/change-log.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/00_System/data-framework.json",
+     "vault-backups/vault-<HOY>-102804-pre-migration/00_System/data-framework.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/00_System/data-fundamentals.json",
+     "vault-backups/vault-<HOY>-102804-pre-migration/00_System/index.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/00_System/norm-registry.json",
+     "vault-backups/vault-<HOY>-102804-pre-migration/00_System/product-gates/clean_install/clean_install-result.json",
+     "vault-backups/vault-<HOY>-102804-pre-migration/00_System/product-gates/index.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/00_System/product-gates/memory_e2e/memory_e2e-result.json",
+     "vault-backups/vault-<HOY>-102804-pre-migration/00_System/quality-index.json",
+     "vault-backups/vault-<HOY>-102804-pre-migration/00_System/standard-version.json",
+     "vault-backups/vault-<HOY>-102804-pre-migration/00_System/tag-registry.json",
+     "vault-backups/vault-<HOY>-102804-pre-migration/00_System/tool-contracts.json",
+     "vault-backups/vault-<HOY>-102804-pre-migration/00_System/tool-contracts.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/00_System/tool-spec.json",
+     "vault-backups/vault-<HOY>-102804-pre-migration/00_System/vault-commands.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/00_System/vault-hub.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/00_System/vault-ontology.json",
+     "vault-backups/vault-<HOY>-102804-pre-migration/01_Projects/.gitkeep",
+     "vault-backups/vault-<HOY>-102804-pre-migration/01_Projects/00-01_projects-primer.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/01_Projects/index.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/01_Projects/mi-api/index.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/01_Projects/mi-api/project.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/02_Observability/.gitkeep",
+     "vault-backups/vault-<HOY>-102804-pre-migration/02_Observability/00-02_observability-primer.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/02_Observability/index.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/03_Decisions/.gitkeep",
+     "vault-backups/vault-<HOY>-102804-pre-migration/03_Decisions/00-03_decisions-primer.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/03_Decisions/adr-001-mcp-transport.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/03_Decisions/index.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/03_Decisions/mcp-transport-contract.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/03_Decisions/mcp-transport-operations.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/03_Decisions/mcp-transport-provenance.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/04_Sessions/.gitkeep",
+     "vault-backups/vault-<HOY>-102804-pre-migration/04_Sessions/00-04_sessions-primer.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/04_Sessions/index.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/05_Patterns/.gitkeep",
+     "vault-backups/vault-<HOY>-102804-pre-migration/05_Patterns/00-05_patterns-primer.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/05_Patterns/index.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/06_Diagrams/.gitkeep",
+     "vault-backups/vault-<HOY>-102804-pre-migration/06_Diagrams/00-06_diagrams-primer.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/06_Diagrams/entity/index.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/06_Diagrams/entity/test-relations.json",
+     "vault-backups/vault-<HOY>-102804-pre-migration/06_Diagrams/index.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/07_Knowledge/.gitkeep",
+     "vault-backups/vault-<HOY>-102804-pre-migration/07_Knowledge/00-07_knowledge-primer.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/07_Knowledge/fixture-incomplete-00.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/07_Knowledge/fixture-incomplete-01.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/07_Knowledge/fixture-incomplete-02.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/07_Knowledge/fixture-incomplete-03.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/07_Knowledge/fixture-incomplete-04.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/07_Knowledge/fixture-incomplete-05.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/07_Knowledge/fixture-incomplete-06.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/07_Knowledge/fixture-incomplete-07.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/07_Knowledge/fixture-incomplete-08.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/07_Knowledge/fixture-incomplete-09.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/07_Knowledge/fixture-raw-00.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/07_Knowledge/fixture-raw-01.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/07_Knowledge/fixture-raw-02.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/07_Knowledge/fixture-raw-03.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/07_Knowledge/fixture-raw-04.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/07_Knowledge/fixture-raw-05.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/07_Knowledge/fixture-raw-06.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/07_Knowledge/fixture-raw-07.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/07_Knowledge/fixture-raw-08.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/07_Knowledge/fixture-raw-09.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/07_Knowledge/index.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/07_Knowledge/parser-evidence.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/08_Runbooks/.gitkeep",
+     "vault-backups/vault-<HOY>-102804-pre-migration/08_Runbooks/00-08_runbooks-primer.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/08_Runbooks/index.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/09_Infrastructure/.gitkeep",
+     "vault-backups/vault-<HOY>-102804-pre-migration/09_Infrastructure/00-09_infrastructure-primer.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/09_Infrastructure/index.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/10_Migrated/.gitkeep",
+     "vault-backups/vault-<HOY>-102804-pre-migration/10_Migrated/00-10_migrated-primer.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/10_Migrated/index.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/11_Code/.gitkeep",
+     "vault-backups/vault-<HOY>-102804-pre-migration/11_Code/00-11_code-primer.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/11_Code/index.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/12_Bibliography/.gitkeep",
+     "vault-backups/vault-<HOY>-102804-pre-migration/12_Bibliography/00-12_bibliography-primer.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/12_Bibliography/index.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/13_Flows/.gitkeep",
+     "vault-backups/vault-<HOY>-102804-pre-migration/13_Flows/00-13_flows-primer.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/13_Flows/index.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/14_Requirements/.gitkeep",
+     "vault-backups/vault-<HOY>-102804-pre-migration/14_Requirements/00-14_requirements-primer.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/14_Requirements/index.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/15_Tests/.gitkeep",
+     "vault-backups/vault-<HOY>-102804-pre-migration/15_Tests/00-15_tests-primer.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/15_Tests/index.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/16_AI_Governance/.gitkeep",
+     "vault-backups/vault-<HOY>-102804-pre-migration/16_AI_Governance/00-16_ai_governance-primer.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/16_AI_Governance/index.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/17_Preferences/.gitkeep",
+     "vault-backups/vault-<HOY>-102804-pre-migration/17_Preferences/00-17_preferences-primer.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/17_Preferences/index.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/17_Preferences/model_profile.active",
+     "vault-backups/vault-<HOY>-102804-pre-migration/18_Bugs/.gitkeep",
+     "vault-backups/vault-<HOY>-102804-pre-migration/18_Bugs/index.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/19_Audits/.gitkeep",
+     "vault-backups/vault-<HOY>-102804-pre-migration/19_Audits/index.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/19_Audits/vocabulary/tag-ledger.json",
+     "vault-backups/vault-<HOY>-102804-pre-migration/20_Quarantine/.gitkeep",
+     "vault-backups/vault-<HOY>-102804-pre-migration/20_Quarantine/index.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/21_QA/.gitkeep",
+     "vault-backups/vault-<HOY>-102804-pre-migration/21_QA/index.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/99_Index/.gitkeep",
+     "vault-backups/vault-<HOY>-102804-pre-migration/99_Index/00-99_index-primer.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/99_Index/graph.json",
+     "vault-backups/vault-<HOY>-102804-pre-migration/99_Index/hash-index.json",
+     "vault-backups/vault-<HOY>-102804-pre-migration/99_Index/index.md",
+     "vault-backups/vault-<HOY>-102804-pre-migration/99_Index/search-index.json",
+     "vault-backups/vault-<HOY>-102804-pre-migration/99_Index/tag-index.md"
     ],
     "claves": [
      "created",
@@ -3389,7 +3389,7 @@
         "files": 22,
         "folder": "00_System",
         "notes": 7,
-        "sizeKB": 2054.0
+        "sizeKB": 2056.0
        },
        {
         "files": 5,
@@ -3527,15 +3527,15 @@
       "totals": {
        "files": 119,
        "notes": 76,
-       "sizeKB": 2231.8
+       "sizeKB": 2233.8
       }
      },
      "merkle_algo": 2,
      "merkle_file_count": 117,
-     "merkle_root": "afe4901ad4286898db56e3acd257b38b7d9835ea3c412bb9ab43304b109a202a",
-     "name": "vault-<HOY>-230012-pre-migration",
+     "merkle_root": "74ea7a0ca7e230b0fde97d8c2fbe87ef1cc5b7c7fe33f8333824a88430562e54",
+     "name": "vault-<HOY>-102804-pre-migration",
      "ok": true,
-     "path": "vault-backups/vault-<HOY>-230012-pre-migration/",
+     "path": "vault-backups/vault-<HOY>-102804-pre-migration/",
      "timestamp": "<TS>",
      "tool": "vault_backup",
      "unchanged": 0,
@@ -3550,7 +3550,7 @@
   ],
   "vault_backup_list": [
    {
-    "_duracion_s": 0.43,
+    "_duracion_s": 0.4,
     "cambiadas": [],
     "claves": [
      "backups",
@@ -3574,7 +3574,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.45,
+    "_duracion_s": 0.41,
     "cambiadas": [],
     "claves": [
      "backups",
@@ -3600,7 +3600,7 @@
   ],
   "vault_bibliography_save": [
    {
-    "_duracion_s": 0.62,
+    "_duracion_s": 0.54,
     "cambiadas": [
      "12_Bibliography/books/clean-code.md",
      "12_Bibliography/books/index.md",
@@ -3642,7 +3642,7 @@
   ],
   "vault_blame_audit": [
    {
-    "_duracion_s": 2.31,
+    "_duracion_s": 2.06,
     "cambiadas": [],
     "claves": [
      "baseline_size",
@@ -3887,7 +3887,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 2.29,
+    "_duracion_s": 2.45,
     "cambiadas": [],
     "claves": [
      "baseline_size",
@@ -4132,7 +4132,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 2.75,
+    "_duracion_s": 1.95,
     "cambiadas": [],
     "claves": [
      "admitted_new",
@@ -4156,7 +4156,7 @@
   ],
   "vault_blueprint": [
    {
-    "_duracion_s": 2.25,
+    "_duracion_s": 2.03,
     "cambiadas": [],
     "claves": [
      "action",
@@ -4180,7 +4180,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 3.92,
+    "_duracion_s": 3.28,
     "cambiadas": [],
     "claves": [
      "action",
@@ -4255,7 +4255,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 1.23,
+    "_duracion_s": 1.1,
     "cambiadas": [],
     "claves": [
      "action",
@@ -4279,7 +4279,7 @@
   ],
   "vault_bug_save": [
    {
-    "_duracion_s": 0.65,
+    "_duracion_s": 0.58,
     "cambiadas": [
      "18_Bugs/.bugs-index.json",
      "18_Bugs/index.md",
@@ -4323,7 +4323,7 @@
   ],
   "vault_change_log": [
    {
-    "_duracion_s": 0.44,
+    "_duracion_s": 0.42,
     "cambiadas": [],
     "claves": [
      "entries",
@@ -4335,6 +4335,69 @@
     ],
     "datos": {
      "entries": [
+      {
+       "action": "updated",
+       "agent": "claude",
+       "id": "7614d0aa-826d-44f9-aae5-e129d9cf374d",
+       "new_path": null,
+       "path": "nota.md",
+       "reason": "vault_append: contenido añadido",
+       "timestamp": "<TS>"
+      },
+      {
+       "action": "updated",
+       "agent": "claude",
+       "id": "86f8f29f-75b1-44b7-9051-e2f2b58b3630",
+       "new_path": null,
+       "path": "nota.md",
+       "reason": "vault_append: contenido añadido",
+       "timestamp": "<TS>"
+      },
+      {
+       "action": "updated",
+       "agent": "claude",
+       "id": "a960edcd-5ae0-474b-b737-304a8314ad4d",
+       "new_path": null,
+       "path": "nota.md",
+       "reason": "vault_append: contenido añadido",
+       "timestamp": "<TS>"
+      },
+      {
+       "action": "updated",
+       "agent": "claude",
+       "id": "8d8e1557-91e7-45d6-a5ea-07b503a717b4",
+       "new_path": null,
+       "path": "nota.md",
+       "reason": "vault_append: contenido añadido",
+       "timestamp": "<TS>"
+      },
+      {
+       "action": "updated",
+       "agent": "claude",
+       "id": "44a68d7e-1b14-4768-824e-920b164d0bf0",
+       "new_path": null,
+       "path": "nota.md",
+       "reason": "vault_append: contenido añadido",
+       "timestamp": "<TS>"
+      },
+      {
+       "action": "updated",
+       "agent": "claude",
+       "id": "ce3007a8-d5ce-4733-8408-3d23e2906ccb",
+       "new_path": null,
+       "path": "nota.md",
+       "reason": "vault_append: contenido añadido",
+       "timestamp": "<TS>"
+      },
+      {
+       "action": "updated",
+       "agent": "claude",
+       "id": "22916847-3cfe-4920-add5-ce2803fbfaad",
+       "new_path": null,
+       "path": "nota.md",
+       "reason": "vault_append: contenido añadido",
+       "timestamp": "<TS>"
+      },
       {
        "action": "updated",
        "agent": "claude",
@@ -4361,76 +4424,13 @@
        "path": "nota.md",
        "reason": "vault_append: contenido añadido",
        "timestamp": "<TS>"
-      },
-      {
-       "action": "updated",
-       "agent": "claude",
-       "id": "b477f8cf-08c1-45e1-b3b7-6f25b58c0d21",
-       "new_path": null,
-       "path": "nota.md",
-       "reason": "vault_append: contenido añadido",
-       "timestamp": "<TS>"
-      },
-      {
-       "action": "updated",
-       "agent": "claude",
-       "id": "3b95aacd-06d8-4b74-bc02-deb179a46446",
-       "new_path": null,
-       "path": "nota.md",
-       "reason": "vault_append: contenido añadido",
-       "timestamp": "<TS>"
-      },
-      {
-       "action": "updated",
-       "agent": "claude",
-       "id": "1f780d99-6085-408e-b4df-01f4a3275102",
-       "new_path": null,
-       "path": "nota.md",
-       "reason": "vault_append: contenido añadido",
-       "timestamp": "<TS>"
-      },
-      {
-       "action": "updated",
-       "agent": "claude",
-       "id": "6a795ee0-a60e-481e-b8dc-264064b593c7",
-       "new_path": null,
-       "path": "nota.md",
-       "reason": "vault_append: contenido añadido",
-       "timestamp": "<TS>"
-      },
-      {
-       "action": "updated",
-       "agent": "claude",
-       "id": "cd04c6ab-9cac-4276-a038-402378af8476",
-       "new_path": null,
-       "path": "nota.md",
-       "reason": "vault_append: contenido añadido",
-       "timestamp": "<TS>"
-      },
-      {
-       "action": "updated",
-       "agent": "claude",
-       "id": "47db81c4-8709-4c31-977d-84b47c2cb6e7",
-       "new_path": null,
-       "path": "nota.md",
-       "reason": "vault_append: contenido añadido",
-       "timestamp": "<TS>"
-      },
-      {
-       "action": "updated",
-       "agent": "claude",
-       "id": "19a85471-346f-43f2-a66e-fe8a17b6a8e1",
-       "new_path": null,
-       "path": "nota.md",
-       "reason": "vault_append: contenido añadido",
-       "timestamp": "<TS>"
       }
      ],
      "ok": true,
      "returned": 10,
      "timestamp": "<TS>",
      "tool": "vault_change_log",
-     "total": 537
+     "total": 544
     },
     "error_code": null,
     "exit": 0,
@@ -4438,7 +4438,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.57,
+    "_duracion_s": 0.48,
     "cambiadas": [
      "00_System/.change-log.json",
      "00_System/change-log.md"
@@ -4456,7 +4456,7 @@
     ],
     "datos": {
      "action": "updated",
-     "id": "5452a61e-9a45-4559-8ba4-552ae15eeafa",
+     "id": "5e06e277-77f3-4adc-8d35-7851aa559067",
      "log_json": "00_System/.change-log.json",
      "log_md": "00_System/change-log.md",
      "ok": true,
@@ -4473,7 +4473,7 @@
   ],
   "vault_changelog_check": [
    {
-    "_duracion_s": 0.44,
+    "_duracion_s": 0.39,
     "cambiadas": [],
     "claves": [
      "aprobaciones",
@@ -4600,7 +4600,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 11.66,
+    "_duracion_s": 11.73,
     "cambiadas": [],
     "claves": [
      "entries",
@@ -4616,9 +4616,9 @@
        "approved_by": null,
        "aprobado_por": null,
        "commit_author": "Carlos Ivan CM",
-       "commit_date": "<HOY>",
+       "commit_date": "2026-11-02",
        "exists": true,
-       "fecha": "<HOY>",
+       "fecha": "2026-11-02",
        "hash": "dd86ee3",
        "version": "v41.26"
       },
@@ -5893,7 +5893,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.39,
+    "_duracion_s": 0.36,
     "cambiadas": [],
     "claves": [
      "action",
@@ -5921,7 +5921,7 @@
   ],
   "vault_ciclos": [
    {
-    "_duracion_s": 2.55,
+    "_duracion_s": 2.29,
     "cambiadas": [],
     "claves": [
      "action",
@@ -5979,7 +5979,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 2.5,
+    "_duracion_s": 2.27,
     "cambiadas": [],
     "claves": [
      "action",
@@ -6037,7 +6037,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 2.28,
+    "_duracion_s": 1.96,
     "cambiadas": [],
     "claves": [
      "action",
@@ -6061,7 +6061,7 @@
   ],
   "vault_clones": [
    {
-    "_duracion_s": 1.65,
+    "_duracion_s": 1.43,
     "cambiadas": [],
     "claves": [
      "action",
@@ -6122,7 +6122,7 @@
        "ruta": "scripts/vault_graph_merge.py"
       }
      ],
-     "functions_scanned": 2575,
+     "functions_scanned": 2578,
      "hint": "CN-05 — un cuerpo, un dueño. Un clon nuevo se salda uniendo los cuerpos en su dueño, no congelándolo. Si el duplicado no se puede fusionar —porque cruza una frontera de contexto o porque su duelo exige un módulo para un solo uso— se declara con su motivo escrito en `scripts/clones-baseline.json`: la cuenta solo puede bajar. Un sitio congelado sin motivo falla la puerta.",
      "modules_scanned": 325,
      "new_clones": [],
@@ -6141,7 +6141,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 1.8,
+    "_duracion_s": 1.44,
     "cambiadas": [],
     "claves": [
      "action",
@@ -6202,7 +6202,7 @@
        "ruta": "scripts/vault_graph_merge.py"
       }
      ],
-     "functions_scanned": 2575,
+     "functions_scanned": 2578,
      "hint": "CN-05 — un cuerpo, un dueño. Un clon nuevo se salda uniendo los cuerpos en su dueño, no congelándolo. Si el duplicado no se puede fusionar —porque cruza una frontera de contexto o porque su duelo exige un módulo para un solo uso— se declara con su motivo escrito en `scripts/clones-baseline.json`: la cuenta solo puede bajar. Un sitio congelado sin motivo falla la puerta.",
      "modules_scanned": 325,
      "new_clones": [],
@@ -6221,7 +6221,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 1.56,
+    "_duracion_s": 1.42,
     "cambiadas": [],
     "claves": [
      "action",
@@ -6247,7 +6247,7 @@
   ],
   "vault_code_map": [
    {
-    "_duracion_s": 0.67,
+    "_duracion_s": 0.49,
     "cambiadas": [
      "11_Code/index.md",
      "11_Code/mi-api/code-map.md",
@@ -6287,7 +6287,7 @@
   ],
   "vault_code_module": [
    {
-    "_duracion_s": 0.69,
+    "_duracion_s": 0.55,
     "cambiadas": [
      "11_Code/.code-index.json",
      "11_Code/index.md",
@@ -6337,7 +6337,7 @@
   ],
   "vault_code_query": [
    {
-    "_duracion_s": 0.61,
+    "_duracion_s": 0.41,
     "cambiadas": [],
     "claves": [
      "count",
@@ -6361,7 +6361,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.57,
+    "_duracion_s": 0.41,
     "cambiadas": [],
     "claves": [
      "category",
@@ -6400,7 +6400,7 @@
   ],
   "vault_code_relation": [
    {
-    "_duracion_s": 0.65,
+    "_duracion_s": 0.58,
     "cambiadas": [
      "11_Code/.code-index.json",
      "11_Code/index.md",
@@ -6453,7 +6453,7 @@
   ],
   "vault_code_sync": [
    {
-    "_duracion_s": 0.44,
+    "_duracion_s": 0.47,
     "cambiadas": [],
     "claves": [
      "complete",
@@ -6517,7 +6517,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.45,
+    "_duracion_s": 0.42,
     "cambiadas": [],
     "claves": [
      "complete",
@@ -6583,7 +6583,7 @@
   ],
   "vault_code_tag": [
    {
-    "_duracion_s": 0.45,
+    "_duracion_s": 0.4,
     "cambiadas": [],
     "claves": [
      "ok",
@@ -6605,7 +6605,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.46,
+    "_duracion_s": 0.42,
     "cambiadas": [
      "00_System/code-tag-registry.json"
     ],
@@ -6645,7 +6645,7 @@
   ],
   "vault_context_pack": [
    {
-    "_duracion_s": 0.61,
+    "_duracion_s": 0.5,
     "cambiadas": [],
     "claves": [
      "candidates_considered",
@@ -6665,7 +6665,7 @@
     "datos": {
      "candidates_considered": 6,
      "confidence": 0.75,
-     "context": "# Contexto para: que decidimos sobre el transporte MCP\n\n\n### MCP transport contract\n`03_Decisions/mcp-transport-contract.md` · status: approved · score 0.8142\n\n# MCP transport contract\n\nThe MCP transport decision keeps its contract portable and auditable. See [[mcp-transport-operations]].\n\n## Contexto\n\nLa decisión de transporte necesita un contrato que un tercero pueda leer sin instalar nada: el sandbox es el lugar donde ese contrato se prueba.\n\n## Decisión\n\nEl contrato del transporte se publica como nota enlazada desde la decisión, con sus tres secciones obligatorias, para que su forma sea comprobable.\n\n## Consecuencias\n\nEl contrato queda auditable y enlazado. A cambio, describe el transporte del sandbox y no el de una instalación real.\n\n## Opciones\n\n- Publicar el contrato como nota enlazada (lo que hace esta nota).\n- Dejarlo solo en prosa dentro de la decisión: el grafo lo perdería.\n\n---\n\n### MCP transport operations\n`03_Decisions/mcp-transport-operations.md` · status: approved · score 0.8142\n\n# MCP transport operations\n\nThe operating motive for the MCP transport is compatibility with the existing infrastructure. See [[mcp-transport-provenance]].\n\n## Contexto\n\nEl transporte tiene que poder operarse sobre la infraestructura que ya existe, sin obligar a quien instala a cambiar su entorno.\n\n## Decisión\n\nSe mantiene el transporte actual y se documenta su motivo operativo, encadenado con la procedencia de la decisión.\n\n## Consecuencias\n\nLas instalaciones nuevas no cambian de transporte. A cambio, el sandbox no ejerce el transporte: solo lo documenta.\n\n## Opciones\n\n- Mantener el transporte y documentar el motivo (lo que hace esta nota).\n- Sustituirlo por otro y migrar las instalaciones: no aplica al sandbox.\n\n---\n\n### MCP transport\n`03_Decisions/adr-001-mcp-transport.md` · status: approved · score 0.7499\n\n# MCP transport\n\nThe runtime keeps this decision as a deterministic graph seed. See [[mcp-transport-contract]].\n\n## Contexto\n\nEl sandbox canónico necesita una decisión estable que sea raíz del grafo: sin ella, las notas que enlazan con [[mcp-transport-contract]] no tienen origen y el recorrido determinista deja de ser reproducible.\n\n## Decisión\n\nEl transporte MCP queda documentado aquí como registro consultable, no como implementación: la nota fija la forma de la decisión y nada más.\n\n## Consecuencias\n\nEl grafo del sandbox tiene una raíz estable y la prueba de determinismo puede comparar entre corridas. A cambio, esta nota no describe ninguna instalación real y no vale como evidencia de producto.\n\n## Opciones\n\n- Documentar el transporte actual como semilla estable (lo que hace esta nota).\n- Sustituirlo por otro transporte: fuera del alcance del sandbox.\n\n---\n\n### MCP transport provenance\n`03_Decisions/mcp-transport-provenance.md` · status: approved · score 0.6299\n\n# MCP transport provenance\n\nThis note preserves the source and rationale of the MCP transport decision for the next agent session.\n\n## Contexto\n\nLa cadena de decisiones del sandbox tiene que poder leerse de punta a punta: un agente que empieza por el final necesita saber de dónde salió cada decisión.\n\n## Decisión\n\nLa procedencia se conserva como última nota de la cadena, con su contexto, su decisión y sus consecuencias, cerrada y con responsable.\n\n## Consecuencias\n\nLa cadena queda completa y auditable de principio a fin. A cambio, su valor es el de un grafo de pruebas, no el de un registro histórico de producto.\n\n## Opciones\n\n- Cerrar la cadena con una nota de procedencia (lo que hace esta nota).\n- Dejarla abierta: entonces la última decisión queda sin cerrar.\n\n---\n\n### Tag Index\n`99_Index/tag-index.md` · score 0.411\n\n# Tag Index\n\n_9 tags · 67 referencias · 22 notas sin tag_\n\n## `commands` (1)\n\n- [[vault-commands]]\n\n## `hub` (1)\n\n- [[vault-hub]]\n\n## `mcp` (4)\n\n- [[adr-001-mcp-transport]]\n- [[mcp-transport-contract]]\n- [[mcp-transport-operations]]\n- [[mcp-transport-provenance]]\n\n## `nav` (2)\n\n- [[vault-commands]]\n- [[vault-hub]]\n\n## `onboarding` (18)\n\n…\n\n---\n\n### Parser evidence\n`07_Knowledge/parser-evidence.md` · status: verified · score 0.2835\n\n# Parser evidence\n\n[[adr-001-mcp-transport]] preserves provenance for parser tests.",
+     "context": "# Contexto para: que decidimos sobre el transporte MCP\n\n\n### MCP transport contract\n`03_Decisions/mcp-transport-contract.md` · status: approved · score 0.8142\n\n# MCP transport contract\n\nThe MCP transport decision keeps its contract portable and auditable. See [[mcp-transport-operations]].\n\n## Contexto\n\nLa decisión de transporte necesita un contrato que un tercero pueda leer sin instalar nada: el sandbox es el lugar donde ese contrato se prueba.\n\n## Decisión\n\nEl contrato del transporte se publica como nota enlazada desde la decisión, con sus tres secciones obligatorias, para que su forma sea comprobable.\n\n## Consecuencias\n\nEl contrato queda auditable y enlazado. A cambio, describe el transporte del sandbox y no el de una instalación real.\n\n## Opciones\n\n- Publicar el contrato como nota enlazada (lo que hace esta nota).\n- Dejarlo solo en prosa dentro de la decisión: el grafo lo perdería.\n\n---\n\n### MCP transport operations\n`03_Decisions/mcp-transport-operations.md` · status: approved · score 0.8142\n\n# MCP transport operations\n\nThe operating motive for the MCP transport is compatibility with the existing infrastructure. See [[mcp-transport-provenance]].\n\n## Contexto\n\nEl transporte tiene que poder operarse sobre la infraestructura que ya existe, sin obligar a quien instala a cambiar su entorno.\n\n## Decisión\n\nSe mantiene el transporte actual y se documenta su motivo operativo, encadenado con la procedencia de la decisión.\n\n## Consecuencias\n\nLas instalaciones nuevas no cambian de transporte. A cambio, el sandbox no ejerce el transporte: solo lo documenta.\n\n## Opciones\n\n- Mantener el transporte y documentar el motivo (lo que hace esta nota).\n- Sustituirlo por otro y migrar las instalaciones: no aplica al sandbox.\n\n---\n\n### MCP transport\n`03_Decisions/adr-001-mcp-transport.md` · status: approved · score 0.7499\n\n# MCP transport\n\nThe runtime keeps this decision as a deterministic graph seed. See [[mcp-transport-contract]].\n\n## Contexto\n\nEl sandbox canónico necesita una decisión estable que sea raíz del grafo: sin ella, las notas que enlazan con [[mcp-transport-contract]] no tienen origen y el recorrido determinista deja de ser reproducible.\n\n## Decisión\n\nEl transporte MCP queda documentado aquí como registro consultable, no como implementación: la nota fija la forma de la decisión y nada más.\n\n## Consecuencias\n\nEl grafo del sandbox tiene una raíz estable y la prueba de determinismo puede comparar entre corridas. A cambio, esta nota no describe ninguna instalación real y no vale como evidencia de producto.\n\n## Opciones\n\n- Documentar el transporte actual como semilla estable (lo que hace esta nota).\n- Sustituirlo por otro transporte: fuera del alcance del sandbox.\n\n---\n\n### MCP transport provenance\n`03_Decisions/mcp-transport-provenance.md` · status: approved · score 0.6299\n\n# MCP transport provenance\n\nThis note preserves the source and rationale of the MCP transport decision for the next agent session.\n\n## Contexto\n\nLa cadena de decisiones del sandbox tiene que poder leerse de punta a punta: un agente que empieza por el final necesita saber de dónde salió cada decisión.\n\n## Decisión\n\nLa procedencia se conserva como última nota de la cadena, con su contexto, su decisión y sus consecuencias, cerrada y con responsable.\n\n## Consecuencias\n\nLa cadena queda completa y auditable de principio a fin. A cambio, su valor es el de un grafo de pruebas, no el de un registro histórico de producto.\n\n## Opciones\n\n- Cerrar la cadena con una nota de procedencia (lo que hace esta nota).\n- Dejarla abierta: entonces la última decisión queda sin cerrar.\n\n---\n\n### Tag Index\n`99_Index/tag-index.md` · score 0.4104\n\n# Tag Index\n\n_9 tags · 67 referencias · 22 notas sin tag_\n\n## `commands` (1)\n\n- [[vault-commands]]\n\n## `hub` (1)\n\n- [[vault-hub]]\n\n## `mcp` (4)\n\n- [[adr-001-mcp-transport]]\n- [[mcp-transport-contract]]\n- [[mcp-transport-operations]]\n- [[mcp-transport-provenance]]\n\n## `nav` (2)\n\n- [[vault-commands]]\n- [[vault-hub]]\n\n## `onboarding` (18)\n\n…\n\n---\n\n### Parser evidence\n`07_Knowledge/parser-evidence.md` · status: verified · score 0.2834\n\n# Parser evidence\n\n[[adr-001-mcp-transport]] preserves provenance for parser tests.",
      "excluded": [],
      "included": [
       {
@@ -6718,7 +6718,7 @@
       {
        "path": "99_Index/tag-index.md",
        "readable": true,
-       "score": 0.411,
+       "score": 0.4104,
        "status": "",
        "title": "Tag Index",
        "tokens": 181,
@@ -6732,7 +6732,7 @@
       {
        "path": "07_Knowledge/parser-evidence.md",
        "readable": true,
-       "score": 0.2835,
+       "score": 0.2834,
        "status": "verified",
        "title": "Parser evidence",
        "tokens": 66,
@@ -6783,7 +6783,7 @@
   ],
   "vault_criterios": [
    {
-    "_duracion_s": 5.98,
+    "_duracion_s": 5.36,
     "cambiadas": [],
     "claves": [
      "action",
@@ -6919,7 +6919,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 6.01,
+    "_duracion_s": 5.56,
     "cambiadas": [],
     "claves": [
      "action",
@@ -7055,7 +7055,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 6.24,
+    "_duracion_s": 5.38,
     "cambiadas": [],
     "claves": [
      "action",
@@ -7079,9 +7079,9 @@
   ],
   "vault_delete": [
    {
-    "_duracion_s": 0.71,
+    "_duracion_s": 0.68,
     "cambiadas": [
-     ".history/07_Knowledge__old-<HOY>T23-01-38.md",
+     ".history/07_Knowledge__old-<HOY>T10-29-21.md",
      "00_System/.change-log.json",
      "00_System/change-log.md",
      "07_Knowledge/old.md"
@@ -7109,7 +7109,7 @@
      "note": "07_Knowledge/old.md",
      "ok": true,
      "recoverable": {
-      "history": "07_Knowledge__old-<HOY>T23-01-38.md",
+      "history": "07_Knowledge__old-<HOY>T10-29-21.md",
       "restore": "vault_undo --restore \"07_Knowledge/old.md\""
      },
      "search_index": {
@@ -7126,7 +7126,7 @@
       "section": "07_Knowledge",
       "updated": true
      },
-     "sp01_status": "SP-01: entrada de change-log escrita antes de eliminar (id: 9db3859a...)",
+     "sp01_status": "SP-01: entrada de change-log escrita antes de eliminar (id: 587788e3...)",
      "timestamp": "<TS>",
      "tool": "vault_delete",
      "trashed": false
@@ -7139,7 +7139,7 @@
   ],
   "vault_delta": [
    {
-    "_duracion_s": 0.61,
+    "_duracion_s": 0.56,
     "cambiadas": [
      "99_Index/hash-index.json"
     ],
@@ -7175,7 +7175,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.57,
+    "_duracion_s": 0.54,
     "cambiadas": [
      "99_Index/hash-index.json"
     ],
@@ -7226,7 +7226,7 @@
   ],
   "vault_diagram_export": [
    {
-    "_duracion_s": 0.56,
+    "_duracion_s": 0.42,
     "cambiadas": [],
     "claves": [
      "config",
@@ -7259,7 +7259,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.44,
+    "_duracion_s": 0.43,
     "cambiadas": [],
     "claves": [
      "created",
@@ -7293,7 +7293,7 @@
   ],
   "vault_diagram_save": [
    {
-    "_duracion_s": 0.61,
+    "_duracion_s": 0.55,
     "cambiadas": [
      "06_Diagrams/flow/index.md",
      "06_Diagrams/flow/mi-api-user-flow.md",
@@ -7336,7 +7336,7 @@
   ],
   "vault_diff": [
    {
-    "_duracion_s": 0.45,
+    "_duracion_s": 0.4,
     "cambiadas": [],
     "claves": [
      "category",
@@ -7375,7 +7375,7 @@
   ],
   "vault_doc_counts": [
    {
-    "_duracion_s": 5.76,
+    "_duracion_s": 5.98,
     "cambiadas": [],
     "claves": [
      "ok",
@@ -7398,7 +7398,7 @@
       "sections": 23,
       "spec_kilolineas": 12,
       "status_vocab": 12,
-      "tests": 6779,
+      "tests": 6781,
       "tools_active": 129,
       "tools_js_native": 2,
       "tools_mcp_expuestas": 98,
@@ -7413,7 +7413,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 6.34,
+    "_duracion_s": 6.39,
     "cambiadas": [],
     "claves": [
      "claims_checked",
@@ -7466,7 +7466,7 @@
       "sections": 23,
       "spec_kilolineas": 12,
       "status_vocab": 12,
-      "tests": 6779,
+      "tests": 6781,
       "tools_active": 129,
       "tools_js_native": 2,
       "tools_mcp_expuestas": 98,
@@ -7481,7 +7481,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 6.51,
+    "_duracion_s": 6.16,
     "cambiadas": [],
     "claves": [
      "fixes",
@@ -7505,7 +7505,7 @@
   ],
   "vault_doc_staleness": [
    {
-    "_duracion_s": 0.2,
+    "_duracion_s": 0.19,
     "cambiadas": [],
     "claves": [
      "fix",
@@ -7585,7 +7585,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.21,
+    "_duracion_s": 0.2,
     "cambiadas": [],
     "claves": [
      "fix",
@@ -7635,7 +7635,7 @@
   ],
   "vault_doc_sync": [
    {
-    "_duracion_s": 6.64,
+    "_duracion_s": 5.88,
     "cambiadas": [],
     "claves": [
      "action",
@@ -7661,7 +7661,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.28,
+    "_duracion_s": 0.2,
     "cambiadas": [],
     "claves": [
      "action",
@@ -7683,7 +7683,7 @@
   ],
   "vault_drift_detect": [
    {
-    "_duracion_s": 0.56,
+    "_duracion_s": 0.5,
     "cambiadas": [
      "00_System/.session-snapshot.json"
     ],
@@ -7721,7 +7721,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.56,
+    "_duracion_s": 0.52,
     "cambiadas": [],
     "claves": [
      "category",
@@ -7764,7 +7764,7 @@
   ],
   "vault_env_matrix": [
    {
-    "_duracion_s": 0.75,
+    "_duracion_s": 0.61,
     "cambiadas": [
      "09_Infrastructure/env-matrix/index.md",
      "09_Infrastructure/env-matrix/mi-api-prod.md",
@@ -7817,7 +7817,7 @@
   ],
   "vault_env_save": [
    {
-    "_duracion_s": 0.66,
+    "_duracion_s": 0.69,
     "cambiadas": [
      "01_Projects/index.md",
      "01_Projects/mi-api/envs.md",
@@ -7859,7 +7859,7 @@
   ],
   "vault_error_contract": [
    {
-    "_duracion_s": 3.85,
+    "_duracion_s": 3.92,
     "cambiadas": [],
     "claves": [
      "baseline_size",
@@ -7893,7 +7893,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 3.86,
+    "_duracion_s": 3.6,
     "cambiadas": [],
     "claves": [
      "baseline_size",
@@ -7927,7 +7927,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 2.94,
+    "_duracion_s": 2.7,
     "cambiadas": [],
     "claves": [
      "admitted_new",
@@ -7951,7 +7951,7 @@
   ],
   "vault_esquema": [
    {
-    "_duracion_s": 0.36,
+    "_duracion_s": 0.35,
     "cambiadas": [],
     "claves": [
      "action",
@@ -8055,7 +8055,43 @@
   ],
   "vault_excepcion_declarada": [
    {
-    "_duracion_s": 1.74,
+    "_duracion_s": 1.69,
+    "cambiadas": [],
+    "claves": [
+     "action",
+     "baseline_size",
+     "hint",
+     "new_sites",
+     "norm",
+     "ok",
+     "resolved_since_baseline",
+     "risks_measured",
+     "sites",
+     "sites_total",
+     "tool"
+    ],
+    "datos": {
+     "action": "check",
+     "baseline_size": 0,
+     "hint": "Se salda delegando en el dueño que ya lo contuvo —vault_lib.parse_frontmatter— o nombrando la excepción que escapa y citando al dueño en un comentario. Verde aquí no prueba que la tool aguante cualquier dato: prueba que ningún handler nombra la excepción equivocada en un `try` donde la llamada de riesgo está a la vista.",
+     "new_sites": [],
+     "norm": "AP-61",
+     "ok": true,
+     "resolved_since_baseline": [],
+     "risks_measured": [
+      "RecursionError"
+     ],
+     "sites": [],
+     "sites_total": 0,
+     "tool": "vault_excepcion_declarada"
+    },
+    "error_code": null,
+    "exit": 0,
+    "ok": true,
+    "repo_escritas": []
+   },
+   {
+    "_duracion_s": 1.67,
     "cambiadas": [],
     "claves": [
      "action",
@@ -8095,42 +8131,6 @@
     "cambiadas": [],
     "claves": [
      "action",
-     "baseline_size",
-     "hint",
-     "new_sites",
-     "norm",
-     "ok",
-     "resolved_since_baseline",
-     "risks_measured",
-     "sites",
-     "sites_total",
-     "tool"
-    ],
-    "datos": {
-     "action": "check",
-     "baseline_size": 0,
-     "hint": "Se salda delegando en el dueño que ya lo contuvo —vault_lib.parse_frontmatter— o nombrando la excepción que escapa y citando al dueño en un comentario. Verde aquí no prueba que la tool aguante cualquier dato: prueba que ningún handler nombra la excepción equivocada en un `try` donde la llamada de riesgo está a la vista.",
-     "new_sites": [],
-     "norm": "AP-61",
-     "ok": true,
-     "resolved_since_baseline": [],
-     "risks_measured": [
-      "RecursionError"
-     ],
-     "sites": [],
-     "sites_total": 0,
-     "tool": "vault_excepcion_declarada"
-    },
-    "error_code": null,
-    "exit": 0,
-    "ok": true,
-    "repo_escritas": []
-   },
-   {
-    "_duracion_s": 1.76,
-    "cambiadas": [],
-    "claves": [
-     "action",
      "admitted_new",
      "frozen",
      "ok",
@@ -8151,7 +8151,7 @@
   ],
   "vault_fix_all": [
    {
-    "_duracion_s": 0.19,
+    "_duracion_s": 0.17,
     "cambiadas": [],
     "claves": [
      "dry_run",
@@ -8254,7 +8254,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 27.65,
+    "_duracion_s": 26.12,
     "cambiadas": [],
     "claves": [
      "failed",
@@ -8443,7 +8443,7 @@
   ],
   "vault_fix_brackets": [
    {
-    "_duracion_s": 0.22,
+    "_duracion_s": 0.21,
     "cambiadas": [],
     "claves": [
      "backup_dir",
@@ -8535,7 +8535,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.35,
+    "_duracion_s": 0.32,
     "cambiadas": [
      "02_Observability/errors/foo.md",
      "02_Observability/errors/index.md",
@@ -8543,7 +8543,7 @@
      "19_Audits/vocabulary/tag-ledger.json",
      "99_Index/graph.json",
      "99_Index/search-index.json",
-     "vault-backups/.vault-fix-backup-20261102-230310/02_Observability/errors/foo.md"
+     "vault-backups/.vault-fix-backup-20261103-103049/02_Observability/errors/foo.md"
     ],
     "claves": [
      "backup_dir",
@@ -8565,7 +8565,7 @@
      "vault_root"
     ],
     "datos": {
-     "backup_dir": "vault-backups/.vault-fix-backup-20261102-230310",
+     "backup_dir": "vault-backups/.vault-fix-backup-20261103-103049",
      "errors_count": 0,
      "files_modified": [
       "02_Observability/errors/foo.md"
@@ -8649,7 +8649,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.27,
+    "_duracion_s": 0.25,
     "cambiadas": [],
     "claves": [
      "backup_dir",
@@ -8743,7 +8743,7 @@
   ],
   "vault_flow_save": [
    {
-    "_duracion_s": 0.61,
+    "_duracion_s": 0.59,
     "cambiadas": [
      "13_Flows/index.md",
      "13_Flows/workflow/index.md",
@@ -8784,7 +8784,7 @@
   ],
   "vault_folder_registry": [
    {
-    "_duracion_s": 0.56,
+    "_duracion_s": 0.42,
     "cambiadas": [],
     "claves": [
      "folders",
@@ -8808,7 +8808,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.44,
+    "_duracion_s": 0.42,
     "cambiadas": [
      "00_System/custom-folders.json"
     ],
@@ -8847,7 +8847,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.43,
+    "_duracion_s": 0.41,
     "cambiadas": [
      "00_System/custom-folders.json"
     ],
@@ -8880,7 +8880,7 @@
   ],
   "vault_foreign_check": [
    {
-    "_duracion_s": 0.56,
+    "_duracion_s": 0.41,
     "cambiadas": [],
     "claves": [
      "category",
@@ -8912,7 +8912,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.44,
+    "_duracion_s": 0.41,
     "cambiadas": [],
     "claves": [
      "category",
@@ -8944,7 +8944,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.22,
+    "_duracion_s": 0.2,
     "cambiadas": [],
     "claves": [
      "action",
@@ -9018,7 +9018,7 @@
        "fields": {
         "id": {
          "origin": "uuid4",
-         "value": "407332db-39ce-4e05-837f-9ad27873466b"
+         "value": "2ac866bd-bb17-4ffe-935f-c153348f418d"
         }
        },
        "path": "03_Decisions/adr-001-mcp-transport.md",
@@ -9029,7 +9029,7 @@
        "fields": {
         "id": {
          "origin": "uuid4",
-         "value": "b378c859-d300-45c0-b721-cff9777ab710"
+         "value": "1b44b445-800e-44b4-8759-14db342d7fc3"
         }
        },
        "path": "03_Decisions/mcp-transport-contract.md",
@@ -9040,7 +9040,7 @@
        "fields": {
         "id": {
          "origin": "uuid4",
-         "value": "827cc905-40de-4f98-8a44-028669d42999"
+         "value": "308fe192-6623-4809-a95d-56bda2ec971b"
         }
        },
        "path": "03_Decisions/mcp-transport-operations.md",
@@ -9051,7 +9051,7 @@
        "fields": {
         "id": {
          "origin": "uuid4",
-         "value": "8041bc0b-cb77-4e9f-a8d3-30d2c9fe9cd4"
+         "value": "5c9b49d3-fffa-406f-8e4a-2ea980b0ed15"
         }
        },
        "path": "03_Decisions/mcp-transport-provenance.md",
@@ -9082,7 +9082,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "8dd8a735-ee13-47bd-a863-1e571a24e1c3"
+         "value": "dd068468-86ec-440e-a80a-5bea89e2e9bf"
         },
         "status": {
          "origin": "por_defecto",
@@ -9129,7 +9129,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "feeb29c9-df16-41ae-aedd-6f06a691889a"
+         "value": "96ae0d85-5e5b-4723-a926-6ab9d284a1ce"
         },
         "status": {
          "origin": "por_defecto",
@@ -9176,7 +9176,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "f2950a86-f00c-454f-a3cf-a7c111441c6b"
+         "value": "cf729224-804f-431a-8747-8de4c1c982f1"
         },
         "status": {
          "origin": "por_defecto",
@@ -9223,7 +9223,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "591e6b7b-5206-4eee-ab0a-18c7eaecf95c"
+         "value": "bbf46153-2a4f-4fcb-91f5-b9f0f8813d51"
         },
         "status": {
          "origin": "por_defecto",
@@ -9270,7 +9270,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "3f2a1b9f-389d-4f79-bd3d-3f3a3db7f3a8"
+         "value": "3bc1e434-edac-4639-b9f0-fbe8cb060fee"
         },
         "status": {
          "origin": "por_defecto",
@@ -9317,7 +9317,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "ddc2dd82-9949-4fe2-a82c-f9d103f21f84"
+         "value": "fc6bcb25-bc53-482f-b75a-acfd52971258"
         },
         "status": {
          "origin": "por_defecto",
@@ -9364,7 +9364,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "fc448fd5-6dd4-4d80-a25c-23afc0249a9a"
+         "value": "e61e5260-b066-440a-af4e-187f243332e2"
         },
         "status": {
          "origin": "por_defecto",
@@ -9411,7 +9411,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "8634d19d-a578-41d6-ae54-ba50d908d68a"
+         "value": "7f90ae96-d0c2-48a6-85d6-56ba42def191"
         },
         "status": {
          "origin": "por_defecto",
@@ -9458,7 +9458,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "c8fbb1c6-6e2b-4ba9-95e6-c27fb2a18eb7"
+         "value": "79a028c4-127b-40cb-be2e-688d63caeed9"
         },
         "status": {
          "origin": "por_defecto",
@@ -9505,7 +9505,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "24635643-14ce-4bb5-a6d2-d16c3f91c10e"
+         "value": "89dd67a3-1f7b-4754-a7d5-ab68e4cfa03e"
         },
         "status": {
          "origin": "por_defecto",
@@ -9552,7 +9552,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "3f2a2b69-f054-4187-877e-31e08dcd3b25"
+         "value": "a8c9718a-495e-452f-a565-b3dc9a23a616"
         },
         "status": {
          "origin": "por_defecto",
@@ -9603,7 +9603,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "6a0f9953-282d-4d55-a79f-0841d0a75caf"
+         "value": "ab0b791b-b45d-4481-8cf1-a00d0a706d3d"
         },
         "status": {
          "origin": "por_defecto",
@@ -9654,7 +9654,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "08a5cbd0-21a0-473a-a0b2-8d3dc9b91fae"
+         "value": "b0debe70-6793-47dc-8899-672e73f957c7"
         },
         "status": {
          "origin": "por_defecto",
@@ -9705,7 +9705,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "6c868e4d-7c0d-4913-bbf4-56a160ed979d"
+         "value": "eace510f-01b1-4f3b-811b-3730a09aae1e"
         },
         "status": {
          "origin": "por_defecto",
@@ -9756,7 +9756,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "bdad2380-ddd9-41c6-a83d-9279c48a21fc"
+         "value": "6c5a406e-3083-4144-84f2-0392f301c7bb"
         },
         "status": {
          "origin": "por_defecto",
@@ -9807,7 +9807,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "7e334ab3-4dfa-427b-b8eb-8c6af26fd384"
+         "value": "e378db7f-2784-4bbd-bad9-e653522a8163"
         },
         "status": {
          "origin": "por_defecto",
@@ -9858,7 +9858,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "6c5a3d77-4d6f-45b0-a2da-d89889ce65e9"
+         "value": "ebe7189a-bdf2-4983-80d3-4aa70b8a3067"
         },
         "status": {
          "origin": "por_defecto",
@@ -9909,7 +9909,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "1343ad9e-29f8-4575-9eb3-beb9c4a9411d"
+         "value": "3ed294a7-7c1f-4639-b316-e0631a1b2767"
         },
         "status": {
          "origin": "por_defecto",
@@ -9960,7 +9960,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "e2fce3f9-dfce-477d-9ed0-cce18de196db"
+         "value": "6cb98ebb-6aa4-48e7-891f-de77de983a25"
         },
         "status": {
          "origin": "por_defecto",
@@ -10011,7 +10011,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "90f79472-2d76-47ee-81d8-551e08b5322c"
+         "value": "64a16ca5-41f4-4ead-bb6a-08a74a1ba0b0"
         },
         "status": {
          "origin": "por_defecto",
@@ -10042,7 +10042,7 @@
        "fields": {
         "id": {
          "origin": "uuid4",
-         "value": "0ae414fa-7468-4acd-8cc5-20b623e0da3d"
+         "value": "7491825f-d45c-445f-8679-1208d35c63b9"
         }
        },
        "path": "07_Knowledge/parser-evidence.md",
@@ -10073,7 +10073,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "44b72de7-7e17-4b06-aa34-c82833702167"
+         "value": "51b222f7-577a-4004-8569-566bd1629176"
         },
         "updatedAt": {
          "origin": "mtime",
@@ -10099,7 +10099,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.77,
+    "_duracion_s": 0.57,
     "cambiadas": [
      "03_Decisions/adr-001-mcp-transport.md",
      "03_Decisions/mcp-transport-contract.md",
@@ -10155,7 +10155,7 @@
        "fields": {
         "id": {
          "origin": "uuid4",
-         "value": "70ba364c-b789-4a43-82ac-1fd143f83758"
+         "value": "f4b69685-0745-41b6-9c24-273e525fa1a9"
         }
        },
        "path": "03_Decisions/adr-001-mcp-transport.md",
@@ -10166,7 +10166,7 @@
        "fields": {
         "id": {
          "origin": "uuid4",
-         "value": "148e828a-38fb-4ffb-95e3-0475007ef883"
+         "value": "919b5016-e9cb-4554-9dd0-d589a1f62dd3"
         }
        },
        "path": "03_Decisions/mcp-transport-contract.md",
@@ -10177,7 +10177,7 @@
        "fields": {
         "id": {
          "origin": "uuid4",
-         "value": "c1cac29a-221f-473c-9944-6f81ec3bc33e"
+         "value": "6ce9dee6-3fd7-4e2b-9b9f-63f239d7384a"
         }
        },
        "path": "03_Decisions/mcp-transport-operations.md",
@@ -10188,7 +10188,7 @@
        "fields": {
         "id": {
          "origin": "uuid4",
-         "value": "9da9d063-3acd-4b9d-807c-78ae66a590ce"
+         "value": "9815a48e-7872-4a78-a6f6-f1daf98ec80e"
         }
        },
        "path": "03_Decisions/mcp-transport-provenance.md",
@@ -10219,7 +10219,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "acc5aa82-e86e-43b8-88a7-33a72e1ed02f"
+         "value": "7477717f-3f4f-4bee-a80a-386116e8ec7f"
         },
         "status": {
          "origin": "por_defecto",
@@ -10266,7 +10266,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "9ef275af-40dc-4139-933b-dc8beca78d8d"
+         "value": "7d000620-f8e8-497d-b2a6-d3c7cf7839d9"
         },
         "status": {
          "origin": "por_defecto",
@@ -10313,7 +10313,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "b52fec55-6652-40dc-bc1f-5b149fff92be"
+         "value": "386b90b3-8a1b-4691-9e5a-d513ab174ffc"
         },
         "status": {
          "origin": "por_defecto",
@@ -10360,7 +10360,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "c9582b90-075d-4d1a-a167-f52b0040b206"
+         "value": "19ae2deb-158b-4ac6-9866-83e73f89d1d0"
         },
         "status": {
          "origin": "por_defecto",
@@ -10407,7 +10407,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "f1138cc0-32ef-468f-9d44-67c285d06e6c"
+         "value": "6a1eaf49-8376-46f2-97dd-d77ddd080705"
         },
         "status": {
          "origin": "por_defecto",
@@ -10454,7 +10454,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "5768973f-6b4e-4d66-b13e-87614939fe92"
+         "value": "75604c81-cd71-470f-99f3-528d95bd1d06"
         },
         "status": {
          "origin": "por_defecto",
@@ -10501,7 +10501,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "d3b773cc-6b78-433d-8075-3f200620768f"
+         "value": "24f2f34c-fcef-44d5-88a9-4c4e0ea6410e"
         },
         "status": {
          "origin": "por_defecto",
@@ -10548,7 +10548,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "31ecc051-b893-49ca-ba41-a59fc3b54595"
+         "value": "4942ea38-9ca3-4790-ab1d-f19de1ecaca4"
         },
         "status": {
          "origin": "por_defecto",
@@ -10595,7 +10595,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "0eb2673e-48c6-44fe-9d0a-83287f5f0c9b"
+         "value": "6f9d0ff1-e14c-4ac7-90be-e37f0e5cdb92"
         },
         "status": {
          "origin": "por_defecto",
@@ -10642,7 +10642,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "97ba4a4c-4e76-4baa-b558-0faf1c9621d9"
+         "value": "5967d35d-4db3-4bad-9ad9-001c3bbe853c"
         },
         "status": {
          "origin": "por_defecto",
@@ -10689,7 +10689,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "e51a8960-297c-4fd7-bff8-b21c3053461d"
+         "value": "5043996e-8fdb-4ea4-b25a-7a20c2a87ce2"
         },
         "status": {
          "origin": "por_defecto",
@@ -10740,7 +10740,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "7f120748-0b3c-4b77-857c-970c2db133b6"
+         "value": "dd774510-634c-4300-b46c-4d462eb6d522"
         },
         "status": {
          "origin": "por_defecto",
@@ -10791,7 +10791,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "4fc9dff2-9b7d-45c5-85b0-ab25a989aeee"
+         "value": "d2c164bf-22b1-469b-b342-1d9bbffae388"
         },
         "status": {
          "origin": "por_defecto",
@@ -10842,7 +10842,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "cf2cb840-bff2-4ab4-a6bc-95fbee62967a"
+         "value": "2f33a7a1-f8d8-4fa1-87c4-9c2fe51c35cc"
         },
         "status": {
          "origin": "por_defecto",
@@ -10893,7 +10893,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "0bd555d8-8535-4615-b5d4-cd85538fc994"
+         "value": "68a27d49-b252-4d98-9d78-2a092658f475"
         },
         "status": {
          "origin": "por_defecto",
@@ -10944,7 +10944,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "7f7adf80-9f2c-4e05-94db-6fcd316502b3"
+         "value": "f0168ef8-fe29-4519-ba6b-441bd06544a2"
         },
         "status": {
          "origin": "por_defecto",
@@ -10995,7 +10995,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "212d57a9-0bd4-4d7b-b87a-f3a7530c3127"
+         "value": "bc95e29c-5148-40b6-9967-28efb8da381b"
         },
         "status": {
          "origin": "por_defecto",
@@ -11046,7 +11046,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "f644851c-bdbf-44f6-b636-ab786680769f"
+         "value": "048f42a2-b08e-4e11-b48c-5359c2b583ff"
         },
         "status": {
          "origin": "por_defecto",
@@ -11097,7 +11097,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "93b7418d-cb37-4e45-9c72-7625dfcdc9e4"
+         "value": "18ad43d6-dd06-414f-b04c-60578b75c025"
         },
         "status": {
          "origin": "por_defecto",
@@ -11148,7 +11148,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "bf58da8e-3244-456b-88cc-deb0f3e8c6c5"
+         "value": "8a8009e8-8268-4198-884d-6d3b3c67c6e7"
         },
         "status": {
          "origin": "por_defecto",
@@ -11179,7 +11179,7 @@
        "fields": {
         "id": {
          "origin": "uuid4",
-         "value": "0d38e408-1a2e-4426-a671-258b6179de10"
+         "value": "f396b9c4-1911-494e-9ff5-7682b46dde49"
         }
        },
        "path": "07_Knowledge/parser-evidence.md",
@@ -11210,7 +11210,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "f54199fa-b64d-48fb-a2ae-92c192e69b01"
+         "value": "aafa29b6-b614-459f-9d7b-c3f9dbe798db"
         },
         "updatedAt": {
          "origin": "mtime",
@@ -11236,7 +11236,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.44,
+    "_duracion_s": 0.38,
     "cambiadas": [
      "07_Knowledge/index.md",
      "07_Knowledge/x.md",
@@ -11284,7 +11284,7 @@
         },
         "id": {
          "origin": "uuid4",
-         "value": "b3ca318d-20a9-4125-9302-e144638a997b"
+         "value": "d6c654b0-5b4c-4628-8229-c10a85ff2e5f"
         },
         "updatedAt": {
          "origin": "mtime",
@@ -11312,7 +11312,7 @@
   ],
   "vault_frontmatter_heal": [
    {
-    "_duracion_s": 0.38,
+    "_duracion_s": 0.22,
     "cambiadas": [],
     "claves": [
      "action",
@@ -11356,7 +11356,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.37,
+    "_duracion_s": 0.31,
     "cambiadas": [
      "07_Knowledge/escalar-sin-escapar.md",
      "07_Knowledge/index.md",
@@ -11409,7 +11409,7 @@
   ],
   "vault_fuente_unica": [
    {
-    "_duracion_s": 0.23,
+    "_duracion_s": 0.25,
     "cambiadas": [],
     "claves": [
      "action",
@@ -11441,7 +11441,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.24,
+    "_duracion_s": 0.23,
     "cambiadas": [],
     "claves": [
      "action",
@@ -11497,7 +11497,7 @@
   ],
   "vault_fundamentals": [
    {
-    "_duracion_s": 0.46,
+    "_duracion_s": 0.43,
     "cambiadas": [
      "00_System/data-fundamentals.json"
     ],
@@ -11525,7 +11525,7 @@
   ],
   "vault_gate": [
    {
-    "_duracion_s": 0.22,
+    "_duracion_s": 0.19,
     "cambiadas": [],
     "claves": [
      "action",
@@ -11780,7 +11780,7 @@
   ],
   "vault_graph": [
    {
-    "_duracion_s": 0.49,
+    "_duracion_s": 0.46,
     "cambiadas": [
      "99_Index/graph.json"
     ],
@@ -11920,7 +11920,7 @@
   ],
   "vault_graph_fix": [
    {
-    "_duracion_s": 0.44,
+    "_duracion_s": 0.49,
     "cambiadas": [
      "00_System/.graph-fixes/<HOY>.json",
      "01_Projects/index.md",
@@ -11959,7 +11959,7 @@
        ],
        "new_content": "# 01_Projects -- Índice\n\n> **←** [[vault-hub|Hub]]  ·  [[vault-commands|Comandos]]  ·  [[99_Index/index|Índice maestro]]\n> **Propósito:** Estado, contexto y progreso de proyectos activos\n> Generado automáticamente · <TS> · 2 nota(s)\n\n## Subcarpetas\n\n| Carpeta | Índice | Propósito |\n|---|---|---|\n| `01_Projects/mi-api/` | [[index.md]] | Estado, contexto y progreso de proyectos activos |\n\n## Notas\n\n| Nota | Título | Resumen | Tipo | Actualizado |\n|---|---|---|---|---|\n| [[00-01_projects-primer]] | 01_Projects -- Guía rápida | Esta nota es un **scaffold generado por `vault_init`** para que el vault | primer | <TS> |\n| [[project]] | Mi API | Ficha del proyecto en el registro (AP-63). La ruta local del repositorio no va aquí: es de cada máquina y vive en `00_S… | project | <TS> |\n",
        "note": "01_Projects/index.md",
-       "source_sha": "b7beb5edae8d25f108b68a2137c18cf1f3c680501aa6bda9be81397887ec5357"
+       "source_sha": "559a96d4f8151b4f99abd4bd17ad9f46e3cde1ae40e670f8350f5cd0875559aa"
       },
       {
        "changed": true,
@@ -11996,7 +11996,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.33,
+    "_duracion_s": 0.27,
     "cambiadas": [],
     "claves": [
      "fixes",
@@ -12029,7 +12029,7 @@
   ],
   "vault_graph_inspect": [
    {
-    "_duracion_s": 0.28,
+    "_duracion_s": 0.26,
     "cambiadas": [],
     "claves": [
      "canonical_shadows",
@@ -12488,7 +12488,7 @@
   ],
   "vault_graph_merge": [
    {
-    "_duracion_s": 0.54,
+    "_duracion_s": 0.51,
     "cambiadas": [
      "99_Index/graph-enriched.json"
     ],
@@ -12588,7 +12588,7 @@
   ],
   "vault_history_compact": [
    {
-    "_duracion_s": 0.44,
+    "_duracion_s": 0.49,
     "cambiadas": [],
     "claves": [
      "action",
@@ -12618,7 +12618,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.43,
+    "_duracion_s": 0.49,
     "cambiadas": [],
     "claves": [
      "action",
@@ -12650,7 +12650,7 @@
   ],
   "vault_impact": [
    {
-    "_duracion_s": 0.47,
+    "_duracion_s": 0.43,
     "cambiadas": [],
     "claves": [
      "changed_notes",
@@ -12682,7 +12682,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.46,
+    "_duracion_s": 0.43,
     "cambiadas": [],
     "claves": [
      "changed_notes",
@@ -12716,7 +12716,7 @@
   ],
   "vault_incident_save": [
    {
-    "_duracion_s": 0.61,
+    "_duracion_s": 0.58,
     "cambiadas": [
      "02_Observability/incidents/index.md",
      "02_Observability/incidents/mi-api-<HOY>-api-caida.md",
@@ -12767,7 +12767,7 @@
   ],
   "vault_infra_map": [
    {
-    "_duracion_s": 0.62,
+    "_duracion_s": 0.53,
     "cambiadas": [
      "09_Infrastructure/index.md",
      "09_Infrastructure/infra-map.md",
@@ -12806,7 +12806,7 @@
   ],
   "vault_infra_save": [
    {
-    "_duracion_s": 0.69,
+    "_duracion_s": 0.67,
     "cambiadas": [
      "09_Infrastructure/.infra-index.json",
      "09_Infrastructure/index.md",
@@ -12848,7 +12848,7 @@
   ],
   "vault_ingest": [
    {
-    "_duracion_s": 0.51,
+    "_duracion_s": 0.49,
     "cambiadas": [],
     "claves": [
      "committed",
@@ -12919,7 +12919,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.89,
+    "_duracion_s": 0.79,
     "cambiadas": [
      "07_Knowledge/index.md",
      "07_Knowledge/texto-del-ejemplo.md",
@@ -13000,7 +13000,7 @@
   ],
   "vault_init": [
    {
-    "_duracion_s": 10.82,
+    "_duracion_s": 9.87,
     "cambiadas": [
      "99_Index/graph.json",
      "99_Index/hash-index.json",
@@ -14910,27 +14910,27 @@
          "sameFolderVersions": [],
          "stale": [
           {
-           "daysSinceUpdate": 305,
+           "daysSinceUpdate": 306,
            "path": "03_Decisions/adr-001-mcp-transport.md",
            "title": "MCP transport"
           },
           {
-           "daysSinceUpdate": 305,
+           "daysSinceUpdate": 306,
            "path": "03_Decisions/mcp-transport-contract.md",
            "title": "MCP transport contract"
           },
           {
-           "daysSinceUpdate": 305,
+           "daysSinceUpdate": 306,
            "path": "03_Decisions/mcp-transport-operations.md",
            "title": "MCP transport operations"
           },
           {
-           "daysSinceUpdate": 305,
+           "daysSinceUpdate": 306,
            "path": "03_Decisions/mcp-transport-provenance.md",
            "title": "MCP transport provenance"
           },
           {
-           "daysSinceUpdate": 305,
+           "daysSinceUpdate": 306,
            "path": "07_Knowledge/parser-evidence.md",
            "title": "Parser evidence"
           }
@@ -15295,7 +15295,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 12.4,
+    "_duracion_s": 11.55,
     "cambiadas": [
      "99_Index/graph.json",
      "99_Index/hash-index.json",
@@ -15321,7 +15321,7 @@
     "datos": {
      "created": 40,
      "git": {
-      "commit": "0714b5e",
+      "commit": "d558331",
       "ok": true,
       "repo": "<TMP>\\.casa\\mi-vault\\.git"
      },
@@ -17334,27 +17334,27 @@
          "sameFolderVersions": [],
          "stale": [
           {
-           "daysSinceUpdate": 305,
+           "daysSinceUpdate": 306,
            "path": "03_Decisions/adr-001-mcp-transport.md",
            "title": "MCP transport"
           },
           {
-           "daysSinceUpdate": 305,
+           "daysSinceUpdate": 306,
            "path": "03_Decisions/mcp-transport-contract.md",
            "title": "MCP transport contract"
           },
           {
-           "daysSinceUpdate": 305,
+           "daysSinceUpdate": 306,
            "path": "03_Decisions/mcp-transport-operations.md",
            "title": "MCP transport operations"
           },
           {
-           "daysSinceUpdate": 305,
+           "daysSinceUpdate": 306,
            "path": "03_Decisions/mcp-transport-provenance.md",
            "title": "MCP transport provenance"
           },
           {
-           "daysSinceUpdate": 305,
+           "daysSinceUpdate": 306,
            "path": "07_Knowledge/parser-evidence.md",
            "title": "Parser evidence"
           }
@@ -17745,7 +17745,7 @@
   ],
   "vault_kernel": [
    {
-    "_duracion_s": 2.92,
+    "_duracion_s": 2.81,
     "cambiadas": [],
     "claves": [
      "action",
@@ -17794,7 +17794,7 @@
       "vault_fs": 11,
       "vault_fundamentals_catalog": 5,
       "vault_grafo_import": 12,
-      "vault_io": 61,
+      "vault_io": 62,
       "vault_ledger": 2,
       "vault_lib": 26,
       "vault_mermaid_reglas": 6,
@@ -17875,8 +17875,8 @@
       {
        "finding": "kernel_inestable",
        "module": "vault_io",
-       "value": 61,
-       "why": "61 commits ≥ el escalón 18.66 del dominio (mediana 14): el núcleo debería moverse menos que lo que sostiene"
+       "value": 62,
+       "why": "62 commits ≥ el escalón 18.66 del dominio (mediana 14): el núcleo debería moverse menos que lo que sostiene"
       },
       {
        "finding": "kernel_inestable",
@@ -17933,7 +17933,7 @@
       "vault_fs": 12,
       "vault_fundamentals_catalog": 7,
       "vault_grafo_import": 12,
-      "vault_io": 62,
+      "vault_io": 63,
       "vault_ledger": 2,
       "vault_lib": 27,
       "vault_mermaid_reglas": 6,
@@ -17960,7 +17960,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 2.91,
+    "_duracion_s": 2.81,
     "cambiadas": [],
     "claves": [
      "action",
@@ -18009,7 +18009,7 @@
       "vault_fs": 11,
       "vault_fundamentals_catalog": 5,
       "vault_grafo_import": 12,
-      "vault_io": 61,
+      "vault_io": 62,
       "vault_ledger": 2,
       "vault_lib": 26,
       "vault_mermaid_reglas": 6,
@@ -18090,8 +18090,8 @@
       {
        "finding": "kernel_inestable",
        "module": "vault_io",
-       "value": 61,
-       "why": "61 commits ≥ el escalón 18.66 del dominio (mediana 14): el núcleo debería moverse menos que lo que sostiene"
+       "value": 62,
+       "why": "62 commits ≥ el escalón 18.66 del dominio (mediana 14): el núcleo debería moverse menos que lo que sostiene"
       },
       {
        "finding": "kernel_inestable",
@@ -18148,7 +18148,7 @@
       "vault_fs": 12,
       "vault_fundamentals_catalog": 7,
       "vault_grafo_import": 12,
-      "vault_io": 62,
+      "vault_io": 63,
       "vault_ledger": 2,
       "vault_lib": 27,
       "vault_mermaid_reglas": 6,
@@ -18175,7 +18175,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 2.32,
+    "_duracion_s": 2.33,
     "cambiadas": [],
     "claves": [
      "action",
@@ -18212,7 +18212,7 @@
   ],
   "vault_knowledge_get": [
    {
-    "_duracion_s": 0.43,
+    "_duracion_s": 0.41,
     "cambiadas": [],
     "claves": [
      "category",
@@ -18242,7 +18242,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.43,
+    "_duracion_s": 0.41,
     "cambiadas": [],
     "claves": [
      "category",
@@ -18274,7 +18274,7 @@
   ],
   "vault_knowledge_save": [
    {
-    "_duracion_s": 0.56,
+    "_duracion_s": 0.53,
     "cambiadas": [
      "07_Knowledge/concepts/clean-architecture.md",
      "07_Knowledge/concepts/index.md",
@@ -18501,7 +18501,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.44,
+    "_duracion_s": 0.42,
     "cambiadas": [],
     "claves": [
      "folder",
@@ -18575,7 +18575,7 @@
   ],
   "vault_log_error": [
    {
-    "_duracion_s": 0.59,
+    "_duracion_s": 0.57,
     "cambiadas": [
      "02_Observability/errors/<HOY>-nullpointerexception.md",
      "02_Observability/errors/index.md",
@@ -18620,7 +18620,7 @@
   ],
   "vault_master_index": [
    {
-    "_duracion_s": 1.45,
+    "_duracion_s": 1.57,
     "cambiadas": [
      "99_Index/index.md"
     ],
@@ -18656,7 +18656,7 @@
   ],
   "vault_merge": [
    {
-    "_duracion_s": 0.51,
+    "_duracion_s": 0.5,
     "cambiadas": [],
     "claves": [
      "action",
@@ -18717,7 +18717,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.45,
+    "_duracion_s": 0.42,
     "cambiadas": [],
     "claves": [
      "category",
@@ -18755,7 +18755,7 @@
   ],
   "vault_mermaid_check": [
    {
-    "_duracion_s": 0.48,
+    "_duracion_s": 0.44,
     "cambiadas": [],
     "claves": [
      "created",
@@ -18798,7 +18798,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.45,
+    "_duracion_s": 0.44,
     "cambiadas": [],
     "claves": [
      "category",
@@ -18835,7 +18835,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.49,
+    "_duracion_s": 0.45,
     "cambiadas": [],
     "claves": [
      "created",
@@ -18893,7 +18893,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.46,
+    "_duracion_s": 0.44,
     "cambiadas": [],
     "claves": [
      "created",
@@ -18953,7 +18953,7 @@
   ],
   "vault_metricas": [
    {
-    "_duracion_s": 1.67,
+    "_duracion_s": 1.61,
     "cambiadas": [],
     "claves": [
      "action",
@@ -19207,7 +19207,7 @@
      "filas": [
       {
        "commit": "0b6c042",
-       "dias_restantes": 59,
+       "dias_restantes": 58,
        "estado": "cumple",
        "fecha": "2026-10-23",
        "metrica": "contexto_agente_s",
@@ -19218,7 +19218,7 @@
       },
       {
        "commit": "35ba058",
-       "dias_restantes": 59,
+       "dias_restantes": 58,
        "estado": "cumple",
        "fecha": "2026-10-23",
        "metrica": "skip_path_escritura_s",
@@ -19228,7 +19228,7 @@
        "valor": 1.105
       },
       {
-       "dias_restantes": 73,
+       "dias_restantes": 72,
        "estado": "cumple",
        "metrica": "deuda_pendiente",
        "objetivo": 2,
@@ -19237,7 +19237,7 @@
        "valor": 1
       },
       {
-       "dias_restantes": 73,
+       "dias_restantes": 72,
        "estado": "cumple",
        "metrica": "normas_vencidas",
        "objetivo": 0,
@@ -19246,7 +19246,7 @@
        "valor": 0
       },
       {
-       "dias_restantes": 240,
+       "dias_restantes": 239,
        "estado": "en_plazo",
        "metrica": "deuda_viva_baselines",
        "objetivo": 92,
@@ -19255,7 +19255,7 @@
        "valor": 604
       },
       {
-       "dias_restantes": 73,
+       "dias_restantes": 72,
        "estado": "cumple",
        "metrica": "baselines_vencidas",
        "objetivo": 0,
@@ -19264,7 +19264,7 @@
        "valor": 0
       },
       {
-       "dias_restantes": 73,
+       "dias_restantes": 72,
        "estado": "cumple",
        "metrica": "baselines_por_encima_de_objetivo",
        "objetivo": 7,
@@ -19290,7 +19290,7 @@
       },
       {
        "commit": "90fb5b4",
-       "dias_restantes": 73,
+       "dias_restantes": 72,
        "estado": "cumple",
        "fecha": "2026-10-30",
        "metrica": "suite_fallos",
@@ -19301,7 +19301,7 @@
       },
       {
        "commit": "90fb5b4",
-       "dias_restantes": 73,
+       "dias_restantes": 72,
        "estado": "en_plazo",
        "fecha": "2026-10-30",
        "metrica": "suite_duracion_s",
@@ -19322,7 +19322,7 @@
       },
       {
        "commit": "2fb0465",
-       "dias_restantes": 73,
+       "dias_restantes": 72,
        "estado": "en_plazo",
        "fecha": "2026-10-16",
        "metrica": "puertas_duracion_s",
@@ -19339,7 +19339,7 @@
        "valor": null
       },
       {
-       "dias_restantes": 73,
+       "dias_restantes": 72,
        "estado": "cumple",
        "metrica": "promesas_descubiertas",
        "objetivo": 0,
@@ -19349,7 +19349,7 @@
       },
       {
        "commit": "efc8093",
-       "dias_restantes": 73,
+       "dias_restantes": 72,
        "estado": "cumple",
        "fecha": "2026-10-14",
        "metrica": "colisiones_de_sanadores",
@@ -19360,7 +19360,7 @@
       },
       {
        "commit": "26c2b04",
-       "dias_restantes": 73,
+       "dias_restantes": 72,
        "estado": "cumple",
        "fecha": "2026-10-15",
        "metrica": "smoke_fallos",
@@ -19371,7 +19371,7 @@
       },
       {
        "commit": "df0ff4d",
-       "dias_restantes": 73,
+       "dias_restantes": 72,
        "estado": "cumple",
        "fecha": "2026-10-14",
        "metrica": "banco_tareas_fallidas",
@@ -19382,7 +19382,7 @@
       },
       {
        "commit": "df0ff4d",
-       "dias_restantes": 73,
+       "dias_restantes": 72,
        "estado": "cumple",
        "fecha": "2026-10-14",
        "metrica": "recall_pack_ajeno",
@@ -19405,7 +19405,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.21,
+    "_duracion_s": 0.19,
     "cambiadas": [],
     "claves": [
      "action",
@@ -19429,7 +19429,7 @@
   ],
   "vault_migrate_docs": [
    {
-    "_duracion_s": 0.46,
+    "_duracion_s": 0.42,
     "cambiadas": [],
     "claves": [
      "classified",
@@ -19517,7 +19517,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.45,
+    "_duracion_s": 0.42,
     "cambiadas": [],
     "claves": [
      "category",
@@ -19556,7 +19556,7 @@
   ],
   "vault_model_profile": [
    {
-    "_duracion_s": 0.45,
+    "_duracion_s": 0.42,
     "cambiadas": [],
     "claves": [
      "active",
@@ -19614,7 +19614,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.45,
+    "_duracion_s": 0.41,
     "cambiadas": [
      "17_Preferences/model_profile.active"
     ],
@@ -19646,7 +19646,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.62,
+    "_duracion_s": 0.44,
     "cambiadas": [],
     "claves": [
      "budget",
@@ -19676,10 +19676,10 @@
   ],
   "vault_move": [
    {
-    "_duracion_s": 0.8,
+    "_duracion_s": 0.86,
     "cambiadas": [
      "00_System/.change-log.json",
-     "00_System/.trash/foo-20261102-230442.md.bak",
+     "00_System/.trash/foo-20261103-103214.md.bak",
      "00_System/change-log.md",
      "00_System/move-log.json",
      "01_Projects/foo.md",
@@ -19715,7 +19715,7 @@
     "datos": {
      "change_log": {
       "action": "moved",
-      "id": "3ce7328b-78b0-49f8-92a2-d5f2a1d301a0"
+      "id": "5b5dc32c-7205-4f95-af25-1a6df70915dc"
      },
      "created": 2,
      "degraded": [],
@@ -19762,7 +19762,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.84,
+    "_duracion_s": 0.83,
     "cambiadas": [
      "00_System/.change-log.json",
      "00_System/change-log.md",
@@ -19824,7 +19824,7 @@
   ],
   "vault_ncr_save": [
    {
-    "_duracion_s": 0.6,
+    "_duracion_s": 0.72,
     "cambiadas": [
      "02_Observability/index.md",
      "02_Observability/quality/index.md",
@@ -19854,7 +19854,7 @@
      "corrective_actions_count": 0,
      "created": 2,
      "iso_standard": "ISO 9001:2015 §10.2",
-     "ncr_id": "NCR-2026-324",
+     "ncr_id": "NCR-2026-666",
      "ncr_type": "process",
      "ok": true,
      "path": "02_Observability/quality/mi-api-2026-11-missing-validation.md",
@@ -19931,7 +19931,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.2,
+    "_duracion_s": 0.19,
     "cambiadas": [],
     "claves": [
      "frozen",
@@ -19953,7 +19953,7 @@
   ],
   "vault_norms": [
    {
-    "_duracion_s": 0.44,
+    "_duracion_s": 0.43,
     "cambiadas": [],
     "claves": [
      "norms",
@@ -20648,7 +20648,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.45,
+    "_duracion_s": 0.43,
     "cambiadas": [],
     "claves": [
      "norm",
@@ -20688,7 +20688,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 2.17,
+    "_duracion_s": 1.93,
     "cambiadas": [],
     "claves": [
      "by_norm",
@@ -20751,7 +20751,7 @@
   ],
   "vault_norms_coherence": [
    {
-    "_duracion_s": 6.45,
+    "_duracion_s": 5.97,
     "cambiadas": [],
     "claves": [
      "baseline_size",
@@ -20864,7 +20864,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 6.19,
+    "_duracion_s": 5.8,
     "cambiadas": [],
     "claves": [
      "baseline_size",
@@ -20977,7 +20977,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 6.07,
+    "_duracion_s": 5.68,
     "cambiadas": [],
     "claves": [
      "admitted_new",
@@ -20999,7 +20999,7 @@
   ],
   "vault_onboard": [
    {
-    "_duracion_s": 3.89,
+    "_duracion_s": 3.44,
     "cambiadas": [
      "01_Projects/index.md",
      "01_Projects/mi-api/index.md",
@@ -21135,7 +21135,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.55,
+    "_duracion_s": 0.5,
     "cambiadas": [],
     "claves": [
      "created",
@@ -21244,7 +21244,7 @@
   ],
   "vault_pattern_list": [
    {
-    "_duracion_s": 0.44,
+    "_duracion_s": 0.41,
     "cambiadas": [],
     "claves": [
      "category",
@@ -21280,7 +21280,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.43,
+    "_duracion_s": 0.41,
     "cambiadas": [],
     "claves": [
      "category",
@@ -21318,7 +21318,7 @@
   ],
   "vault_pattern_save": [
    {
-    "_duracion_s": 0.62,
+    "_duracion_s": 0.56,
     "cambiadas": [
      "05_Patterns/architecture/index.md",
      "05_Patterns/architecture/mi-api-repository.md",
@@ -21359,7 +21359,7 @@
   ],
   "vault_preferences": [
    {
-    "_duracion_s": 0.87,
+    "_duracion_s": 0.86,
     "cambiadas": [
      "17_Preferences/constraints/index.md",
      "17_Preferences/constraints/no-mover-tools.md",
@@ -21404,7 +21404,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.47,
+    "_duracion_s": 0.45,
     "cambiadas": [],
     "claves": [
      "chars",
@@ -21440,7 +21440,7 @@
   ],
   "vault_privacy_save": [
    {
-    "_duracion_s": 0.68,
+    "_duracion_s": 0.56,
     "cambiadas": [
      "09_Infrastructure/index.md",
      "09_Infrastructure/privacy/index.md",
@@ -21489,7 +21489,7 @@
   ],
   "vault_procesos_git": [
    {
-    "_duracion_s": 1.82,
+    "_duracion_s": 1.55,
     "cambiadas": [],
     "claves": [
      "action",
@@ -21563,7 +21563,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 1.76,
+    "_duracion_s": 1.69,
     "cambiadas": [],
     "claves": [
      "action",
@@ -21637,7 +21637,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.2,
+    "_duracion_s": 0.19,
     "cambiadas": [],
     "claves": [
      "action",
@@ -21692,7 +21692,7 @@
   ],
   "vault_produccion": [
    {
-    "_duracion_s": 0.28,
+    "_duracion_s": 0.27,
     "cambiadas": [],
     "claves": [
      "action",
@@ -22001,7 +22001,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.31,
+    "_duracion_s": 0.27,
     "cambiadas": [],
     "claves": [
      "action",
@@ -22310,7 +22310,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.28,
+    "_duracion_s": 0.27,
     "cambiadas": [],
     "claves": [
      "action",
@@ -22334,7 +22334,7 @@
   ],
   "vault_project": [
    {
-    "_duracion_s": 0.39,
+    "_duracion_s": 0.35,
     "cambiadas": [
      "01_Projects/ans/index.md",
      "01_Projects/ans/project.md",
@@ -22372,7 +22372,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.51,
+    "_duracion_s": 0.44,
     "cambiadas": [],
     "claves": [
      "category",
@@ -22423,7 +22423,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.32,
+    "_duracion_s": 0.24,
     "cambiadas": [],
     "claves": [
      "action",
@@ -22461,7 +22461,7 @@
   ],
   "vault_project_overview": [
    {
-    "_duracion_s": 0.8,
+    "_duracion_s": 0.55,
     "cambiadas": [
      "01_Projects/index.md",
      "01_Projects/mi-api/index.md",
@@ -22502,7 +22502,7 @@
   ],
   "vault_project_status": [
    {
-    "_duracion_s": 1.37,
+    "_duracion_s": 1.2,
     "cambiadas": [
      "01_Projects/index.md",
      "01_Projects/mi-api/changelog.md",
@@ -22540,7 +22540,7 @@
   ],
   "vault_propagate": [
    {
-    "_duracion_s": 0.45,
+    "_duracion_s": 0.43,
     "cambiadas": [],
     "claves": [
      "ok",
@@ -22564,7 +22564,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.45,
+    "_duracion_s": 0.46,
     "cambiadas": [],
     "claves": [
      "actions",
@@ -22600,7 +22600,7 @@
   ],
   "vault_qa_save": [
    {
-    "_duracion_s": 0.74,
+    "_duracion_s": 0.63,
     "cambiadas": [
      "19_Audits/vocabulary/tag-ledger.json",
      "21_QA/.qa-index.json",
@@ -22642,7 +22642,7 @@
   ],
   "vault_quality_check": [
    {
-    "_duracion_s": 0.76,
+    "_duracion_s": 0.7,
     "cambiadas": [
      "00_System/quality-index.json"
     ],
@@ -22801,7 +22801,7 @@
        "issues": [
         "integrity: missing structural fields ['id']",
         "completeness: missing fields ['id']",
-        "timeliness: 305 days since update (threshold: 30d)",
+        "timeliness: 306 days since update (threshold: 30d)",
         "non_repudiation: no change-log entry references this note"
        ],
        "overall": 0.747,
@@ -22812,7 +22812,7 @@
         "consistency": 1.0,
         "integrity": 0.667,
         "non_repudiation": 0.0,
-        "timeliness": 0.247,
+        "timeliness": 0.244,
         "uniqueness": 1.0,
         "validity": 1.0
        }
@@ -22822,7 +22822,7 @@
        "issues": [
         "integrity: missing structural fields ['id']",
         "completeness: missing fields ['id']",
-        "timeliness: 305 days since update (threshold: 30d)",
+        "timeliness: 306 days since update (threshold: 30d)",
         "non_repudiation: no change-log entry references this note"
        ],
        "overall": 0.747,
@@ -22833,7 +22833,7 @@
         "consistency": 1.0,
         "integrity": 0.667,
         "non_repudiation": 0.0,
-        "timeliness": 0.247,
+        "timeliness": 0.244,
         "uniqueness": 1.0,
         "validity": 1.0
        }
@@ -22843,7 +22843,7 @@
        "issues": [
         "integrity: missing structural fields ['id']",
         "completeness: missing fields ['id']",
-        "timeliness: 305 days since update (threshold: 30d)",
+        "timeliness: 306 days since update (threshold: 30d)",
         "non_repudiation: no change-log entry references this note"
        ],
        "overall": 0.747,
@@ -22854,7 +22854,7 @@
         "consistency": 1.0,
         "integrity": 0.667,
         "non_repudiation": 0.0,
-        "timeliness": 0.247,
+        "timeliness": 0.244,
         "uniqueness": 1.0,
         "validity": 1.0
        }
@@ -22864,7 +22864,7 @@
        "issues": [
         "integrity: missing structural fields ['id']",
         "completeness: missing fields ['id']",
-        "timeliness: 305 days since update (threshold: 30d)",
+        "timeliness: 306 days since update (threshold: 30d)",
         "non_repudiation: no change-log entry references this note"
        ],
        "overall": 0.747,
@@ -22875,7 +22875,7 @@
         "consistency": 1.0,
         "integrity": 0.667,
         "non_repudiation": 0.0,
-        "timeliness": 0.247,
+        "timeliness": 0.244,
         "uniqueness": 1.0,
         "validity": 1.0
        }
@@ -23429,10 +23429,10 @@
         "integrity: missing structural fields ['id']",
         "completeness: missing fields ['id']",
         "completeness: body has only 2 content line(s), expected ≥3",
-        "timeliness: 305 days since update (threshold: 30d)",
+        "timeliness: 306 days since update (threshold: 30d)",
         "non_repudiation: no change-log entry references this note"
        ],
-       "overall": 0.734,
+       "overall": 0.733,
        "scores": {
         "accuracy": 1.0,
         "authenticity": 1.0,
@@ -23440,7 +23440,7 @@
         "consistency": 1.0,
         "integrity": 0.667,
         "non_repudiation": 0.0,
-        "timeliness": 0.247,
+        "timeliness": 0.244,
         "uniqueness": 1.0,
         "validity": 1.0
        }
@@ -23645,7 +23645,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.72,
+    "_duracion_s": 0.7,
     "cambiadas": [
      "00_System/quality-index.json"
     ],
@@ -24162,7 +24162,7 @@
   ],
   "vault_quality_dashboard": [
    {
-    "_duracion_s": 0.82,
+    "_duracion_s": 0.77,
     "cambiadas": [
      "02_Observability/index.md",
      "02_Observability/qa/index.md",
@@ -24199,7 +24199,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.48,
+    "_duracion_s": 0.44,
     "cambiadas": [],
     "claves": [
      "check_only",
@@ -24223,7 +24223,7 @@
   ],
   "vault_quarantine": [
    {
-    "_duracion_s": 0.62,
+    "_duracion_s": 0.53,
     "cambiadas": [
      "07_Knowledge/rara.md",
      "19_Audits/vocabulary/tag-ledger.json",
@@ -24266,7 +24266,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.46,
+    "_duracion_s": 0.4,
     "cambiadas": [],
     "claves": [
      "count",
@@ -24292,7 +24292,7 @@
   ],
   "vault_query_parse": [
    {
-    "_duracion_s": 0.47,
+    "_duracion_s": 0.43,
     "cambiadas": [],
     "claves": [
      "confidence",
@@ -24324,7 +24324,7 @@
       },
       {
        "field": "temporal",
-       "value": "2026-10-19",
+       "value": "2026-10-20",
        "why": "expresión 'la semana pasada'"
       }
      ],
@@ -24348,7 +24348,7 @@
       },
       {
        "args": {
-        "since": "2026-10-19"
+        "since": "2026-10-20"
        },
        "filter": "updatedAt >= since",
        "purpose": "acotar a lo cambiado en la ventana temporal"
@@ -24370,7 +24370,7 @@
       "temporal": {
        "expression": "la semana pasada",
        "kind": "relative",
-       "since": "2026-10-19"
+       "since": "2026-10-20"
       },
       "terms": [
        "decidimos",
@@ -24388,7 +24388,7 @@
   ],
   "vault_read": [
    {
-    "_duracion_s": 0.48,
+    "_duracion_s": 0.46,
     "cambiadas": [],
     "claves": [
      "category",
@@ -24429,7 +24429,7 @@
   ],
   "vault_recursos": [
    {
-    "_duracion_s": 5.06,
+    "_duracion_s": 5.11,
     "cambiadas": [],
     "claves": [
      "action",
@@ -24492,7 +24492,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 4.24,
+    "_duracion_s": 4.04,
     "cambiadas": [],
     "claves": [
      "action",
@@ -24512,7 +24512,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 5.17,
+    "_duracion_s": 4.89,
     "cambiadas": [],
     "claves": [
      "action",
@@ -24577,7 +24577,7 @@
   ],
   "vault_reindex": [
    {
-    "_duracion_s": 2.77,
+    "_duracion_s": 2.55,
     "cambiadas": [
      "99_Index/hash-index.json",
      "99_Index/index.md",
@@ -24611,7 +24611,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.21,
+    "_duracion_s": 0.19,
     "cambiadas": [],
     "claves": [
      "graph_drift",
@@ -24647,7 +24647,7 @@
   ],
   "vault_relation_add": [
    {
-    "_duracion_s": 0.56,
+    "_duracion_s": 0.54,
     "cambiadas": [
      "06_Diagrams/entity/index.md",
      "06_Diagrams/entity/mi-api-erd.md",
@@ -24688,7 +24688,7 @@
   ],
   "vault_release_save": [
    {
-    "_duracion_s": 0.96,
+    "_duracion_s": 0.93,
     "cambiadas": [
      "01_Projects/index.md",
      "01_Projects/mi-api/changelog.md",
@@ -24746,7 +24746,7 @@
   ],
   "vault_requirement_save": [
    {
-    "_duracion_s": 0.78,
+    "_duracion_s": 0.69,
     "cambiadas": [
      "00_System/.change-log.json",
      "00_System/change-log.md",
@@ -24792,7 +24792,7 @@
   ],
   "vault_restore": [
    {
-    "_duracion_s": 0.44,
+    "_duracion_s": 0.42,
     "cambiadas": [],
     "claves": [
      "category",
@@ -24837,7 +24837,7 @@
   ],
   "vault_risk_save": [
    {
-    "_duracion_s": 0.61,
+    "_duracion_s": 0.56,
     "cambiadas": [
      "02_Observability/index.md",
      "02_Observability/risks/index.md",
@@ -24888,7 +24888,7 @@
   ],
   "vault_ronda": [
    {
-    "_duracion_s": 0.22,
+    "_duracion_s": 0.21,
     "cambiadas": [],
     "claves": [
      "action",
@@ -25005,7 +25005,7 @@
   ],
   "vault_sanacion": [
    {
-    "_duracion_s": 1.61,
+    "_duracion_s": 1.45,
     "cambiadas": [],
     "claves": [
      "next",
@@ -25203,7 +25203,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 1.46,
+    "_duracion_s": 1.41,
     "cambiadas": [],
     "claves": [
      "next",
@@ -25310,7 +25310,7 @@
   ],
   "vault_sdd_init": [
    {
-    "_duracion_s": 3.29,
+    "_duracion_s": 3.12,
     "cambiadas": [
      "docs/sdd/00-principles.md",
      "docs/sdd/01-state-machines.md",
@@ -25364,7 +25364,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.23,
+    "_duracion_s": 0.22,
     "cambiadas": [],
     "claves": [
      "constant_generators",
@@ -25401,7 +25401,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 3.65,
+    "_duracion_s": 3.13,
     "cambiadas": [
      "docs/sdd/00-principles.md",
      "docs/sdd/01-state-machines.md",
@@ -25457,7 +25457,7 @@
   ],
   "vault_search": [
    {
-    "_duracion_s": 0.49,
+    "_duracion_s": 0.42,
     "cambiadas": [],
     "claves": [
      "folder",
@@ -25491,7 +25491,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.47,
+    "_duracion_s": 0.43,
     "cambiadas": [],
     "claves": [
      "folder",
@@ -25527,7 +25527,7 @@
   ],
   "vault_section": [
    {
-    "_duracion_s": 0.43,
+    "_duracion_s": 0.42,
     "cambiadas": [],
     "claves": [
      "folders_without_section",
@@ -25586,7 +25586,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.45,
+    "_duracion_s": 0.43,
     "cambiadas": [
      "00_System/secciones.json"
     ],
@@ -25620,7 +25620,7 @@
   ],
   "vault_section_index": [
    {
-    "_duracion_s": 0.49,
+    "_duracion_s": 0.54,
     "cambiadas": [],
     "claves": [
      "creados",
@@ -25664,7 +25664,7 @@
   ],
   "vault_security_scan": [
    {
-    "_duracion_s": 0.93,
+    "_duracion_s": 0.77,
     "cambiadas": [
      "02_Observability/index.md",
      "02_Observability/vulnerabilities/C002-c002-command-injection-<HOY>.md",
@@ -25753,7 +25753,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.55,
+    "_duracion_s": 0.53,
     "cambiadas": [],
     "claves": [
      "byCategory",
@@ -25832,7 +25832,7 @@
   ],
   "vault_servicio": [
    {
-    "_duracion_s": 0.22,
+    "_duracion_s": 0.2,
     "cambiadas": [],
     "claves": [
      "capabilities",
@@ -25928,7 +25928,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.2,
+    "_duracion_s": 0.22,
     "cambiadas": [],
     "claves": [
      "ok",
@@ -26981,7 +26981,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 1.59,
+    "_duracion_s": 1.37,
     "cambiadas": [],
     "claves": [
      "axis_disagreements",
@@ -27055,7 +27055,7 @@
   ],
   "vault_slo_save": [
    {
-    "_duracion_s": 0.56,
+    "_duracion_s": 0.55,
     "cambiadas": [
      "02_Observability/index.md",
      "02_Observability/slos/index.md",
@@ -27111,7 +27111,7 @@
   ],
   "vault_smoke": [
    {
-    "_duracion_s": 0.84,
+    "_duracion_s": 0.81,
     "cambiadas": [],
     "claves": [
      "action",
@@ -27149,7 +27149,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.82,
+    "_duracion_s": 0.79,
     "cambiadas": [],
     "claves": [
      "action",
@@ -27189,7 +27189,7 @@
   ],
   "vault_standard_upgrade": [
    {
-    "_duracion_s": 0.49,
+    "_duracion_s": 0.44,
     "cambiadas": [],
     "claves": [
      "action",
@@ -27253,7 +27253,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.47,
+    "_duracion_s": 0.45,
     "cambiadas": [],
     "claves": [
      "action",
@@ -27317,7 +27317,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.5,
+    "_duracion_s": 0.43,
     "cambiadas": [],
     "claves": [
      "action",
@@ -27383,7 +27383,7 @@
   ],
   "vault_subgraph": [
    {
-    "_duracion_s": 0.45,
+    "_duracion_s": 0.43,
     "cambiadas": [],
     "claves": [
      "direction",
@@ -28547,7 +28547,7 @@
   ],
   "vault_supersede": [
    {
-    "_duracion_s": 0.27,
+    "_duracion_s": 0.22,
     "cambiadas": [],
     "claves": [
      "action",
@@ -28619,7 +28619,7 @@
   ],
   "vault_tags": [
    {
-    "_duracion_s": 0.85,
+    "_duracion_s": 0.87,
     "cambiadas": [
      "00_System/tag-registry.json",
      "99_Index/graph.json",
@@ -28663,7 +28663,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.48,
+    "_duracion_s": 0.41,
     "cambiadas": [],
     "claves": [
      "by_agent",
@@ -28737,7 +28737,7 @@
   ],
   "vault_test_save": [
    {
-    "_duracion_s": 0.64,
+    "_duracion_s": 0.57,
     "cambiadas": [
      "15_Tests/.tests-index.json",
      "15_Tests/index.md",
@@ -28779,7 +28779,7 @@
   ],
   "vault_tests_higiene": [
    {
-    "_duracion_s": 1.63,
+    "_duracion_s": 1.58,
     "cambiadas": [],
     "claves": [
      "action",
@@ -28896,7 +28896,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 1.62,
+    "_duracion_s": 1.53,
     "cambiadas": [],
     "claves": [
      "action",
@@ -29013,7 +29013,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 1.68,
+    "_duracion_s": 1.65,
     "cambiadas": [],
     "claves": [
      "action",
@@ -29039,7 +29039,7 @@
   ],
   "vault_timeline": [
    {
-    "_duracion_s": 0.45,
+    "_duracion_s": 0.44,
     "cambiadas": [],
     "claves": [
      "bySource",
@@ -29174,7 +29174,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.53,
+    "_duracion_s": 0.45,
     "cambiadas": [],
     "claves": [
      "bySource",
@@ -29224,7 +29224,7 @@
   ],
   "vault_token_counter": [
    {
-    "_duracion_s": 1.1,
+    "_duracion_s": 1.14,
     "cambiadas": [
      "00_System/token-usage/flows/self-test.json"
     ],
@@ -29321,7 +29321,7 @@
   },
   "vault_tokens": [
    {
-    "_duracion_s": 0.45,
+    "_duracion_s": 0.47,
     "cambiadas": [],
     "claves": [
      "action",
@@ -29345,7 +29345,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.49,
+    "_duracion_s": 0.43,
     "cambiadas": [],
     "claves": [
      "action",
@@ -29371,7 +29371,7 @@
   ],
   "vault_toolkit_audit": [
    {
-    "_duracion_s": 5.54,
+    "_duracion_s": 5.29,
     "cambiadas": [],
     "claves": [
      "alcance",
@@ -29459,7 +29459,7 @@
   ],
   "vault_undo": [
    {
-    "_duracion_s": 0.46,
+    "_duracion_s": 0.43,
     "cambiadas": [],
     "claves": [
      "category",
@@ -29525,7 +29525,7 @@
   ],
   "vault_validate": [
    {
-    "_duracion_s": 0.25,
+    "_duracion_s": 0.24,
     "cambiadas": [],
     "claves": [
      "category",
@@ -29578,7 +29578,7 @@
   ],
   "vault_voice": [
    {
-    "_duracion_s": 0.22,
+    "_duracion_s": 0.21,
     "cambiadas": [],
     "claves": [
      "count",
@@ -29792,7 +29792,7 @@
     "repo_escritas": []
    },
    {
-    "_duracion_s": 0.24,
+    "_duracion_s": 0.23,
     "cambiadas": [],
     "claves": [
      "action",
@@ -29828,7 +29828,7 @@
   ],
   "vault_write": [
    {
-    "_duracion_s": 0.74,
+    "_duracion_s": 0.75,
     "cambiadas": [
      "00_System/.change-log.json",
      "00_System/change-log.md",
@@ -29861,11 +29861,11 @@
     "datos": {
      "change_log": {
       "action": "created",
-      "id": "f15747d7-91ec-4a8b-b6fc-c1045163f0c5"
+      "id": "512463fa-de21-40cc-b756-233a63ffe3fb"
      },
      "created": true,
      "filename": "overview.md",
-     "id": "daac90aa-7ade-40b1-a7f1-6adb75ac3d4b",
+     "id": "caab8b42-d506-4593-bf5d-c9bdc05aed11",
      "message": "Note created successfully",
      "norm_refs": [
       "AP-11",
