@@ -323,7 +323,7 @@
     "lanzador_privado::test_release_bump.py::test_se_niega_a_regress::b782c5b9",
     "lanzador_privado::test_release_bump.py::test_se_niega_con_trabajo_sucio::065197f2",
     "lanzador_privado::test_release_bump.py::test_se_niega_sin_ancala_de_fila::6eca7f5f",
-    "lanzador_privado::test_release_bump.py::test_sube_los_siete_sitios::4c32dc98",
+    "lanzador_privado::test_release_bump.py::test_sube_los_siete_sitios::ca17fb32",
     "lanzador_privado::test_reparto.py::test_la_union_de_los_trozos_es_la_suite.colectar::905f6887",
     "lanzador_privado::test_reparto.py::test_la_union_de_los_trozos_es_la_suite::d6f1636e",
     "lanzador_privado::test_requirement_save_identidad.py::_run::8cfc2518",

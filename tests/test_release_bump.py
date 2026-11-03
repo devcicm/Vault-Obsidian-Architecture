@@ -94,7 +94,10 @@ def test_sube_los_siete_sitios(repo_bump, tmp_path):  # noqa: F811
     assert manifiesto.find(f"| {vieja} |") < manifiesto.find(f"| {nueva} |"), (
         "la fila nueva no quedó a continuación de la anterior")
 
-    assert f'version = "{nueva.lstrip("v")}"' in (
+    # Hoisted: la comilla de dentro no se mezcla con la de fuera, y el texto
+    # que se busca es el mismo en cualquier intérprete.
+    numero_nueva = nueva.lstrip("v")
+    assert f'version = "{numero_nueva}"' in (
         repo_bump / "pyproject.toml").read_text(encoding="utf-8")
     assert f"version-{nueva}-blue" in (
         repo_bump / "README.md").read_text(encoding="utf-8")

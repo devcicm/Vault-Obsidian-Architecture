@@ -136,3 +136,36 @@ def test_apoyo_correr_tool_lanza_la_tool_y_lee_su_envelope():
     r = correr_tool("vault_tests_higiene")
     assert r.codigo == 1
     assert r.envelope["error_code"] == "MISSING_REQUIRED_ARG"
+
+
+# ── La firma no depende del intérprete ───────────────────────────────────────
+
+
+def test_la_firma_no_depende_de_los_parentesis_del_destino():
+    """`for (a, b) in` y `for a, b in` son el mismo código.
+
+    3.9–3.11 escriben el paréntesis y 3.12+ no; si la firma los distinguiera,
+    la misma baseline valdría en un intérprete y en otro no — que es como se
+    puso la CI en rojo el 2026-11-02 sin mover una línea.
+    """
+    import ast
+
+    from vault.meta_toolkit.estandar.firma_sitio import _texto_canonico
+
+    con = ast.parse("for (a, b) in x:\n    pass").body[0]
+    sin = ast.parse("for a, b in x:\n    pass").body[0]
+    assert _texto_canonico(con) == _texto_canonico(sin)
+    assert "(a, b)" not in _texto_canonico(con)
+
+
+def test_la_firma_normaliza_la_comilla_del_fstring_anidado():
+    """El f-string con comilla dentro: 3.12 lo escribe con simple, 3.14 con doble."""
+    from vault.meta_toolkit.estandar.firma_sitio import _re_comillar_fstrings
+
+    de_312 = "f'{d['tool']}.py'"
+    assert _re_comillar_fstrings(de_312) == 'f"{d[\'tool\']}.py"'
+    # Y el que ya viene con doble no se toca.
+    de_314 = 'f"{d[\'tool\']}.py"'
+    assert _re_comillar_fstrings(de_314) == de_314
+    # Ni el simple, que no lleva comilla dentro.
+    assert _re_comillar_fstrings("f'v{n}'") == "f'v{n}'"

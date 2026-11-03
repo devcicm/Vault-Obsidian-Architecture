@@ -36,7 +36,10 @@ barato que descubrirlo dentro de un `--freeze`.
 
 import ast
 import hashlib
+import io
 import json
+import re
+import tokenize
 from pathlib import Path
 from typing import Dict, Iterable, List, Set, Tuple
 
@@ -70,6 +73,120 @@ def mapa_de_qualnames(arbol: ast.AST) -> Dict[int, str]:
     return mapa
 
 
+#: `ast.unparse` no es igual en todas las versiones, y una baseline que solo
+#: vale en el intérprete que la congeló es una baseline que falla el día que la
+#: CI corre otra — que es exactamente lo que pasó el 2026-11-02: la baseline se
+#: congeló en 3.14 y la CI (3.9–3.12) reportó dos sitios "nuevos" sin que una
+#: sola línea se hubiera movido.
+#:
+#: La diferencia medida es una: 3.9–3.11 escriben paréntesis en el DESTINO de
+#: un desempaquetado de tupla y 3.12+ no.
+#:
+#:     3.9    (salida, error) = p.communicate()
+#:     3.14   salida, error = p.communicate()
+#:     3.9    for (linea, bloque) in _todos_los_bloques():
+#:     3.14   for linea, bloque in _todos_los_bloques():
+#:
+#: Se normaliza a la forma SIN paréntesis, que es la de 3.12+. Solo en las dos
+#: posiciones donde unparse los pone —destino de una asignación y destino de un
+#: `for`, que incluye las comprensiones—: quitarlos en cualquier otro sitio
+#: cambiaría el sentido de una tupla pasada como argumento (`f((a, b))` no es
+#: `f(a, b)`).
+_PARENTESIS_DE_DESTINO = (
+    (re.compile(r"^(\s*)\((\w+(?:\s*,\s*\w+)+)\)(\s*=\s*)", re.MULTILINE), r"\1\2\3"),
+    (re.compile(r"(\bfor\s+)\((\w+(?:\s*,\s*\w+)+)\)(\s+in\s+)"), r"\1\2\3"),
+)
+
+
+def _re_comillar_fstrings(texto: str) -> str:
+    """Pone comilla doble al f-string que 3.12 escribe con simple por dentro.
+
+    PEP 701 cambió el tokenizado: desde 3.12 un f-string es
+    `FSTRING_START ... FSTRING_END`, y con él cambió lo que `unparse` emite
+    cuando el f-string lleva comillas dentro:
+
+        3.12   f'{recuperacion['tool']}.py'      ← comilla simple fuera
+        3.14   f"{recuperacion['tool']}.py"      ← comilla doble fuera
+
+    La regla es **simétrica**: solo se toca el f-string cuyo delimitador es `'`
+    y que lleva un `'` dentro (y ningún `"`). En 3.14 ese caso ya viene con
+    comilla doble y en 3.9–3.11 el tokenizador no expone los f-strings, así
+    que en las dos es un **no-op** — la baseline congelada sigue valiendo y
+    este arreglo no obliga a migrarla.
+    """
+    if not hasattr(tokenize, "FSTRING_START"):
+        # 3.9–3.11: sus f-strings no llegan como tokens y su `unparse` ya
+        # coincide con el de 3.14 (lo normaliza el paréntesis de destino).
+        return texto
+    try:
+        tokens = list(tokenize.generate_tokens(io.StringIO(texto).readline))
+    except (tokenize.TokenError, IndentationError):
+        return texto
+
+    cambios = []
+    abiertos = []  # [(indice_del_token, lleva_simple, lleva_doble)]
+    for i, tok in enumerate(tokens):
+        if tok.type == tokenize.FSTRING_START:
+            abiertos.append([i, False, False])
+            continue
+        if not abiertos:
+            continue
+        if tok.type == tokenize.FSTRING_END:
+            inicio, con_simple, con_doble = abiertos.pop()
+            arranque = tokens[inicio]
+            s = arranque.string
+            if not (s and s[0] in "fF"):
+                continue
+            # El delimitador que aparece DENTRO obliga a cambiar al otro: es
+            # lo que hace 3.14 y lo que 3.12 no hace. Si aparecen las dos, no
+            # se toca: cambiar cambiaría el sentido del texto.
+            if s.endswith("'") and con_simple and not con_doble and tok.string == "'":
+                cambios.append((arranque.start, arranque.end, s[0] + '"'))
+                cambios.append((tok.start, tok.end, '"'))
+            elif s.endswith('"') and con_doble and not con_simple and tok.string == '"':
+                cambios.append((arranque.start, arranque.end, s[0] + "'"))
+                cambios.append((tok.start, tok.end, "'"))
+            continue
+        if tok.type == tokenize.STRING:
+            if "'" in tok.string:
+                abiertos[-1][1] = True
+            if '"' in tok.string:
+                abiertos[-1][2] = True
+
+    if not cambios:
+        return texto
+    lineas = texto.splitlines(keepends=True)
+    inicios = [0]
+    for linea in lineas:
+        inicios.append(inicios[-1] + len(linea))
+
+    def absoluta(pos):
+        fila, columna = pos
+        return inicios[fila - 1] + columna
+
+    trozos = []
+    cursor = 0
+    for inicio, fin, nuevo in sorted(cambios):
+        a, b = absoluta(inicio), absoluta(fin)
+        trozos.append(texto[cursor:a])
+        trozos.append(nuevo)
+        cursor = b
+    trozos.append(texto[cursor:])
+    return "".join(trozos)
+
+
+def _texto_canonico(nodo: ast.AST) -> str:
+    """El código del nodo, normalizado para no depender del intérprete."""
+    try:
+        texto = ast.unparse(nodo)
+    except Exception:
+        texto = ast.dump(nodo, annotate_fields=True, include_attributes=False)
+    texto = _re_comillar_fstrings(texto)
+    for patron, reemplazo in _PARENTESIS_DE_DESTINO:
+        texto = patron.sub(reemplazo, texto)
+    return texto
+
+
 def _hash_normalizado(nodo: ast.AST) -> str:
     """Hash del nodo tal y como el intérprete lo ve, no como está escrito.
 
@@ -78,12 +195,12 @@ def _hash_normalizado(nodo: ast.AST) -> str:
     existen cuando se hashea. Si `unparse` no puede con el nodo —no debería,
     pero no se adivina— se cae a su volcado estructural, que es igual de
     determinista aunque más largo.
+
+    Y lo que `unparse` sí cambia entre versiones se normaliza antes de hashear
+    (`_texto_canonico`): una firma que solo vale en un intérprete no sirve para
+    una baseline versionada que corre en seis.
     """
-    try:
-        texto = ast.unparse(nodo)
-    except Exception:
-        texto = ast.dump(nodo, annotate_fields=True, include_attributes=False)
-    return hashlib.sha1(texto.encode("utf-8")).hexdigest()[:8]
+    return hashlib.sha1(_texto_canonico(nodo).encode("utf-8")).hexdigest()[:8]
 
 
 def firmar(modulo: str, qualname: str, nodo: ast.AST) -> str:
