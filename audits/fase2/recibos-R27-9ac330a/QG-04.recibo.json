@@ -1,0 +1,65 @@
+{
+  "gate": "QG-04",
+  "target_sha": "9ac330a658c2583bd21d44348a6a38ba6fa54b0c",
+  "verificador": "colector_qg",
+  "command": "python audits/fase2/colector_qg.py --sha 9ac330a658c2583bd21d44348a6a38ba6fa54b0c --ejecutar",
+  "exit_code": 0,
+  "status": "PASS",
+  "started_at": "2026-11-03T22:42:07Z",
+  "finished_at": "2026-11-03T22:42:12Z",
+  "run_id": "local-QG-04-9ac330a",
+  "artifact": "<recibos-base>\\QG-04.subchecks.json",
+  "artifact_sha256": "d1b1b604b4809702d2770c02a8ec5c084dcb70305a8e4230516e752f8791f94d",
+  "checks": {
+    "saneamiento": "ejecutado",
+    "pip_audit": "ejecutado",
+    "contencion": "ejecutado",
+    "operaciones_destructivas": "ejecutado"
+  },
+  "subchecks": {
+    "saneamiento": {
+      "subcheck": "saneamiento",
+      "verificador": "saneamiento",
+      "estado": "ejecutado",
+      "detalle": null,
+      "exit_code": 0,
+      "artifact": "<recibos-base>\\QG-04.saneamiento.salida.txt",
+      "artifact_sha256": "48b0f546a865080b9b8011b581c635f87c248d2baf6d0c07b1cf9dbfcc8e31a2",
+      "started_at": "2026-11-03T22:42:07Z",
+      "finished_at": "2026-11-03T22:42:08Z"
+    },
+    "pip_audit": {
+      "subcheck": "pip_audit",
+      "verificador": "pip_audit",
+      "estado": "ejecutado",
+      "detalle": null,
+      "exit_code": 0,
+      "artifact": "<recibos-base>\\QG-04.pip_audit.salida.txt",
+      "artifact_sha256": "a6781c39a9da343160834317d7344e8ecaf19c7c11fbbe3b6fdc7848abbb7e45",
+      "started_at": "2026-11-03T22:42:08Z",
+      "finished_at": "2026-11-03T22:42:10Z"
+    },
+    "contencion": {
+      "subcheck": "contencion",
+      "verificador": "contencion",
+      "estado": "ejecutado",
+      "detalle": null,
+      "exit_code": 0,
+      "artifact": "<recibos-base>\\QG-04.contencion.salida.txt",
+      "artifact_sha256": "5c7e2e9013d681cec16d5aeb9dcf4c0a980e45dcb307643eec596075e7641ee3",
+      "started_at": "2026-11-03T22:42:10Z",
+      "finished_at": "2026-11-03T22:42:10Z"
+    },
+    "operaciones_destructivas": {
+      "subcheck": "operaciones_destructivas",
+      "verificador": "operaciones_destructivas",
+      "estado": "ejecutado",
+      "detalle": null,
+      "exit_code": 0,
+      "artifact": "<recibos-base>\\QG-04.operaciones_destructivas.salida.txt",
+      "artifact_sha256": "f60638b7771584fb92c5b1e361e64819049ed08c88b9ef1df9d0fa39866f2788",
+      "started_at": "2026-11-03T22:42:10Z",
+      "finished_at": "2026-11-03T22:42:12Z"
+    }
+  }
+}

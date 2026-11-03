@@ -1,0 +1,68 @@
+{
+  "gate": "QG-00",
+  "target_sha": "9ac330a658c2583bd21d44348a6a38ba6fa54b0c",
+  "verificador": "colector_qg",
+  "command": "python audits/fase2/colector_qg.py --sha 9ac330a658c2583bd21d44348a6a38ba6fa54b0c --ejecutar",
+  "exit_code": 0,
+  "status": "PASS",
+  "started_at": "2026-11-03T22:35:08Z",
+  "finished_at": "2026-11-03T22:35:15Z",
+  "run_id": "local-QG-00-9ac330a",
+  "artifact": "<recibos-base>\\QG-00.subchecks.json",
+  "artifact_sha256": "b707b9ba066b5d0a640f534a9ae55dd12a676790b48ba30c55792beee3faad51",
+  "checks": {
+    "identidad_git": "ejecutado",
+    "arbol_limpio": "ejecutado",
+    "saneamiento": "ejecutado",
+    "reconciliador_archify": "ejecutado"
+  },
+  "subchecks": {
+    "identidad_git": {
+      "subcheck": "identidad_git",
+      "verificador": "identidad_git",
+      "estado": "ejecutado",
+      "detalle": null,
+      "exit_code": null,
+      "artifact": "<recibos-base>\\QG-00.identidad_git.json",
+      "artifact_sha256": "85108b65934ad56167cd94514d29a7ecc7b2684100e253a3a43bdc90fafdbe51",
+      "started_at": "2026-11-03T22:35:08Z",
+      "finished_at": "2026-11-03T22:35:08Z",
+      "datos": {
+        "head": "9ac330a658c2583bd21d44348a6a38ba6fa54b0c"
+      }
+    },
+    "arbol_limpio": {
+      "subcheck": "arbol_limpio",
+      "verificador": "arbol_limpio",
+      "estado": "ejecutado",
+      "detalle": null,
+      "exit_code": null,
+      "artifact": "<recibos-base>\\QG-00.arbol_limpio.json",
+      "artifact_sha256": "99cda91a1c023100018b3e4472f06a61ed8eda814b9960b23b24a0b60b220504",
+      "started_at": "2026-11-03T22:35:08Z",
+      "finished_at": "2026-11-03T22:35:08Z"
+    },
+    "saneamiento": {
+      "subcheck": "saneamiento",
+      "verificador": "saneamiento",
+      "estado": "ejecutado",
+      "detalle": null,
+      "exit_code": 0,
+      "artifact": "<recibos-base>\\QG-00.saneamiento.salida.txt",
+      "artifact_sha256": "48b0f546a865080b9b8011b581c635f87c248d2baf6d0c07b1cf9dbfcc8e31a2",
+      "started_at": "2026-11-03T22:35:08Z",
+      "finished_at": "2026-11-03T22:35:09Z"
+    },
+    "reconciliador_archify": {
+      "subcheck": "reconciliador_archify",
+      "verificador": "reconciliador_archify",
+      "estado": "ejecutado",
+      "detalle": null,
+      "exit_code": 0,
+      "artifact": "<recibos-base>\\QG-00.reconciliador_archify.salida.txt",
+      "artifact_sha256": "acd147dadf29985714ff7a55ebb9f4a1e482838e7d83c825813df1a34ec70593",
+      "started_at": "2026-11-03T22:35:09Z",
+      "finished_at": "2026-11-03T22:35:15Z"
+    }
+  }
+}

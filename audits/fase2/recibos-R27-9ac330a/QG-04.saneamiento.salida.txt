@@ -1,0 +1,8 @@
+subcheck=saneamiento
+verificador=saneamiento
+argv=<python> <repo>\audits\fase2\comprobar_saneamiento.py
+exit_code=0
+--- stdout ---
+saneamiento conforme: sin rutas identificables, sin NUL, sin UTF-16, sin credenciales
+
+--- stderr ---

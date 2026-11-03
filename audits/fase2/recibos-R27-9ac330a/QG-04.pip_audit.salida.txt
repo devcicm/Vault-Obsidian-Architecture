@@ -1,0 +1,8 @@
+subcheck=pip_audit
+verificador=pip_audit
+argv=<vaultqa>\venv_audit\Scripts\python.exe -m pip_audit --progress-spinner off
+exit_code=0
+--- stdout ---
+
+--- stderr ---
+No known vulnerabilities found

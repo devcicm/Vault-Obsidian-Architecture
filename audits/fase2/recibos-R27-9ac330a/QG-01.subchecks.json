@@ -1,0 +1,24 @@
+{
+  "vault_arch": {
+    "subcheck": "vault_arch",
+    "verificador": "vault_arch",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": 0,
+    "artifact": "<recibos-base>\\QG-01.vault_arch.salida.txt",
+    "artifact_sha256": "dc7acc974696f52ca39b0985f8ad4c376ba1b2a53824b50aea0cf115a1da07f1",
+    "started_at": "2026-11-03T22:35:15Z",
+    "finished_at": "2026-11-03T22:35:22Z"
+  },
+  "reconciliador_archify": {
+    "subcheck": "reconciliador_archify",
+    "verificador": "reconciliador_archify",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": 0,
+    "artifact": "<recibos-base>\\QG-01.reconciliador_archify.salida.txt",
+    "artifact_sha256": "acd147dadf29985714ff7a55ebb9f4a1e482838e7d83c825813df1a34ec70593",
+    "started_at": "2026-11-03T22:35:22Z",
+    "finished_at": "2026-11-03T22:35:28Z"
+  }
+}

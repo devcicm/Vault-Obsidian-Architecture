@@ -1,0 +1,63 @@
+{
+  "gate": "QG-06",
+  "target_sha": "9ac330a658c2583bd21d44348a6a38ba6fa54b0c",
+  "verificador": "colector_qg",
+  "command": "python audits/fase2/colector_qg.py --sha 9ac330a658c2583bd21d44348a6a38ba6fa54b0c --ejecutar",
+  "exit_code": 0,
+  "status": "PASS",
+  "started_at": "2026-11-03T22:43:08Z",
+  "finished_at": "2026-11-03T22:43:18Z",
+  "run_id": "local-QG-06-9ac330a",
+  "artifact": "<recibos-base>\\QG-06.subchecks.json",
+  "artifact_sha256": "a40d5b6fce32fadc554e4204856b6b11c8e074ea5a8e3033dc1551e87a7c9974",
+  "checks": {
+    "construccion": "ejecutado",
+    "wheel_contenido": "ejecutado",
+    "instalacion_limpia": "ejecutado"
+  },
+  "subchecks": {
+    "construccion": {
+      "subcheck": "construccion",
+      "verificador": "construccion",
+      "estado": "ejecutado",
+      "detalle": null,
+      "exit_code": 0,
+      "artifact": "<recibos-base>\\QG-06.construccion.salida.txt",
+      "artifact_sha256": "c185f42c84aeb00154e6066cef2c373f7a405d9e038d815c4a9f5d92fca8e82e",
+      "started_at": "2026-11-03T22:43:08Z",
+      "finished_at": "2026-11-03T22:43:18Z"
+    },
+    "wheel_contenido": {
+      "subcheck": "wheel_contenido",
+      "verificador": "wheel_contenido",
+      "estado": "ejecutado",
+      "detalle": null,
+      "exit_code": null,
+      "artifact": "<recibos-base>\\QG-06.wheel_contenido.json",
+      "artifact_sha256": "36845f4e8ef17db4a74a6f94c0eb1389a31f6f8e669b26e0213a5c6b12ccaf6d",
+      "started_at": "2026-11-03T22:43:18Z",
+      "finished_at": "2026-11-03T22:43:18Z",
+      "datos": {
+        "artefactos": [
+          {
+            "wheel": "vault_obsidian_architecture-41.26-py3-none-any.whl",
+            "sha256": "b9b0e3e95953a1b4d69e0109d22e71d901ffef7fa61f047b6d928719b55ae96e",
+            "ficheros": 722,
+            "material_ajeno": []
+          }
+        ]
+      }
+    },
+    "instalacion_limpia": {
+      "subcheck": "instalacion_limpia",
+      "verificador": "recorrido_e2e",
+      "estado": "ejecutado",
+      "detalle": null,
+      "exit_code": null,
+      "artifact": "<tmp>\\e2e.json",
+      "artifact_sha256": "787862da98879363fe10e66dccbb376d9c2c9a5b7b1c40957126f77b0c4622dc",
+      "started_at": "2026-11-03T22:43:18Z",
+      "finished_at": "2026-11-03T22:43:18Z"
+    }
+  }
+}

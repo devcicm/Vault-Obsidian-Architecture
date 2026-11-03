@@ -1,0 +1,67 @@
+{
+  "puertas_26": {
+    "subcheck": "puertas_26",
+    "verificador": "vault_gate",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": 0,
+    "artifact": "<recibos-base>\\QG-02.puertas_26.salida.txt",
+    "artifact_sha256": "46f02cf635aa4803d12ac88aab374956b100e75024658373e32dc9c5d02359fb",
+    "started_at": "2026-11-03T22:35:28Z",
+    "finished_at": "2026-11-03T22:41:53Z"
+  },
+  "auditoria_completa": {
+    "subcheck": "auditoria_completa",
+    "verificador": "vault_norms_audit",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": 0,
+    "artifact": "<recibos-base>\\QG-02.auditoria_completa.salida.txt",
+    "artifact_sha256": "45fe5fefe48dec06320f4c27b552294f9b839f589d800afd4de194550e6e80df",
+    "started_at": "2026-11-03T22:41:53Z",
+    "finished_at": "2026-11-03T22:41:55Z"
+  },
+  "sin_violaciones": {
+    "subcheck": "sin_violaciones",
+    "verificador": "sin_violaciones",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": null,
+    "artifact": "<recibos-base>\\QG-02.auditoria_completa.salida.txt",
+    "artifact_sha256": "45fe5fefe48dec06320f4c27b552294f9b839f589d800afd4de194550e6e80df",
+    "started_at": "2026-11-03T22:41:55Z",
+    "finished_at": "2026-11-03T22:41:55Z",
+    "datos": {
+      "total_violations": 0
+    }
+  },
+  "certificacion_compuesta": {
+    "subcheck": "certificacion_compuesta",
+    "verificador": "certificacion_compuesta",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": null,
+    "artifact": "<recibos-base>\\QG-02.certificacion_compuesta.json",
+    "artifact_sha256": "e8c52892365938c303b82d9f22314ee74ac7a9b66be5e9d3fc914c59b171989c",
+    "started_at": "2026-11-03T22:41:55Z",
+    "finished_at": "2026-11-03T22:42:07Z",
+    "datos": {
+      "veredicto": {
+        "estado": "PASS",
+        "motivos": [],
+        "residuos_declarados": [],
+        "nota": "los residuos listados quedan declarados con su decision formal y su custodia; el PASS no es silencioso y el manifiesto de release debe llevarlos como riesgo aceptado"
+      },
+      "runtime": {
+        "total_violations": 0,
+        "completo": true,
+        "violations": []
+      },
+      "sandbox": {
+        "total_violations": 0,
+        "completo": true,
+        "violations": []
+      }
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "paridad_cli_mcp": {
+    "subcheck": "paridad_cli_mcp",
+    "verificador": "paridad_cli_mcp",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": 0,
+    "artifact": "<recibos-base>\\QG-05.paridad_cli_mcp.salida.txt",
+    "artifact_sha256": "57b0ce8728781a4d507d1b4f8bdf9b4be3c49b2f75fde015536464a924a59ee0",
+    "started_at": "2026-11-03T22:42:12Z",
+    "finished_at": "2026-11-03T22:43:07Z"
+  },
+  "ap40_contrato": {
+    "subcheck": "ap40_contrato",
+    "verificador": "ap40_contrato",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": 0,
+    "artifact": "<recibos-base>\\QG-05.ap40_contrato.salida.txt",
+    "artifact_sha256": "ef5ef68b14b973ad8baaabde15ac58d27ac73d1b923a54241c1378120ae547e0",
+    "started_at": "2026-11-03T22:43:07Z",
+    "finished_at": "2026-11-03T22:43:08Z"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "gate": "QG-05",
+  "target_sha": "9ac330a658c2583bd21d44348a6a38ba6fa54b0c",
+  "verificador": "colector_qg",
+  "command": "python audits/fase2/colector_qg.py --sha 9ac330a658c2583bd21d44348a6a38ba6fa54b0c --ejecutar",
+  "exit_code": 0,
+  "status": "PASS",
+  "started_at": "2026-11-03T22:42:12Z",
+  "finished_at": "2026-11-03T22:43:08Z",
+  "run_id": "local-QG-05-9ac330a",
+  "artifact": "<recibos-base>\\QG-05.subchecks.json",
+  "artifact_sha256": "741599fb7ac0621ea64bc13f2029184ed1d830b408016fae19c9132d36fa9411",
+  "checks": {
+    "paridad_cli_mcp": "ejecutado",
+    "ap40_contrato": "ejecutado"
+  },
+  "subchecks": {
+    "paridad_cli_mcp": {
+      "subcheck": "paridad_cli_mcp",
+      "verificador": "paridad_cli_mcp",
+      "estado": "ejecutado",
+      "detalle": null,
+      "exit_code": 0,
+      "artifact": "<recibos-base>\\QG-05.paridad_cli_mcp.salida.txt",
+      "artifact_sha256": "57b0ce8728781a4d507d1b4f8bdf9b4be3c49b2f75fde015536464a924a59ee0",
+      "started_at": "2026-11-03T22:42:12Z",
+      "finished_at": "2026-11-03T22:43:07Z"
+    },
+    "ap40_contrato": {
+      "subcheck": "ap40_contrato",
+      "verificador": "ap40_contrato",
+      "estado": "ejecutado",
+      "detalle": null,
+      "exit_code": 0,
+      "artifact": "<recibos-base>\\QG-05.ap40_contrato.salida.txt",
+      "artifact_sha256": "ef5ef68b14b973ad8baaabde15ac58d27ac73d1b923a54241c1378120ae547e0",
+      "started_at": "2026-11-03T22:43:07Z",
+      "finished_at": "2026-11-03T22:43:08Z"
+    }
+  }
+}

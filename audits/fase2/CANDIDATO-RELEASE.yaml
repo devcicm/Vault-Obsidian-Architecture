@@ -1,15 +1,15 @@
-# Manifiesto del candidato de release — ronda R26 (v41.25)
+# Manifiesto del candidato de release - ronda R27 (v41.26)
 #
-# Candidato: e101004 (arbol 665ef844). Supersede al R25 (533e424), que NO se borra:
-# su manifiesto completo queda en `candidato_v41_25_r25`; el de v41.23 sigue en
-# `candidato_v41_23`. Motivo: R25 no tenia CI y despues se regeneraron los mapas
-# `.archify/` y se saneo la documentacion; un PASS de un SHA no se traslada.
+# Candidato: 9ac330a (arbol dd5529b6da95c2145c16e08b3013930f74eabd7f). Supersede al R26 (e101004), que NO se borra:
+# su manifiesto completo queda en `candidato_v41_25_r26`; el de v41.23 sigue en
+# `candidato_v41_23`. Motivo: R27 cierra el bloque de la reestructura (A-3, A-4, B-1,
+# B-3, C-1, C-2) y el fix de portabilidad de la firma de sitio; un PASS de un SHA no
+# se traslada.
 #
-# ESTADO: AUTORIZADO por el propietario (acta 2026-10-29). QG-00..07 PASS (recibos-R26-e101004/); la CI de
-# este SHA (run 40843103452) termino en success tras relanzar un job flaky
-# (windows-latest, py3.9, shard 2, tests/test_naturalezas.py), declarado en el README
-# de los recibos. `release_authorized` lo firmo el propietario con el acta
-# audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-10-29.md (la DEC-06 era de v41.23).
+# ESTADO: AUTORIZADO por el propietario (acta 2026-11-03, DEC-07). QG-00..07 PASS
+# (recibos-R27-9ac330a/); la CI de este SHA (run 41718868947) termino en success, 27/27
+# jobs. `release_authorized` lo firmo el propietario con el acta
+# audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-11-03.md.
 #
 # CONVENCION ANTI-CIRCULARIDAD: el SHA del commit que fija este manifiesto se
 # lee de git en tiempo de validacion; la relacion con product_sha es de
@@ -18,11 +18,11 @@
 # Validacion: tests/test_manifiesto_candidato.py.
 
 release_candidate:
-  product_sha: e10100476b3a8bdc2298d7e9acfc9d8f4c494a7a
-  product_tree_sha: 665ef844002122e7730fe32ecacdc2e4f000ada5
-  version: 41.25
+  product_sha: 9ac330a658c2583bd21d44348a6a38ba6fa54b0c
+  product_tree_sha: dd5529b6da95c2145c16e08b3013930f74eabd7f
+  version: 41.26
   rama: main
-  ronda: R26
+  ronda: R27
   alcance: "Windows (medido) y Linux por CI, Python 3.9-3.12 por CI; la suite y el E2E de esta ronda corrieron en Windows con Python 3.14 (macOS fuera de alcance)"
   documentation:
     product_ancestor_of_head: true
@@ -31,53 +31,47 @@ release_candidate:
       commit que publico por primera vez este manifiesto (R15). Es la
       publicacion inicial, no una relacion de paternidad con el HEAD.
     note: >-
-      el SHA del commit que fija este manifiesto se lee de git en tiempo de
-      validacion (HEAD de la rama); su relacion con product_sha es de
+      el SHA del commit que fija este manifiesto se lee de git en tiempo de validacion (HEAD de la rama); su relacion con product_sha es de
       ASCENDENCIA, y ese es el unico contrato que se comprueba.
 
 artifacts:
   wheel:
-    artifact_filename: vault_obsidian_architecture-41.25-py3-none-any.whl
-    digest: aa565ccfdc6f0d4402d60e3a3e687af87211676bb61779346859d2c42172405c
+    artifact_filename: vault_obsidian_architecture-41.26-py3-none-any.whl
+    digest: b9b0e3e95953a1b4d69e0109d22e71d901ffef7fa61f047b6d928719b55ae96e
     evidence_note: >-
-      construida por el subcheck `construccion` del colector (QG-06), 711
-      miembros, material_ajeno vacio. El ZIP no es reproducible byte a byte: la
-      construccion del E2E dio d5840b56ecbb598c08e579a3c5ff7bc0df8c04ace23927ff5ba38a64e5b09cb7
-      con el mismo contenido. La que se publica la construye release.yml y
-      lleva su propio SHA256SUMS.txt.
+      construida por el subcheck `construccion` del colector (QG-06) en el worktree
+      del candidato. El ZIP no es reproducible byte a byte: el recorrido E2E del
+      mismo candidato dio otra suma, con el mismo contenido. La que se publica la
+      construye release.yml y lleva su propio SHA256SUMS.txt.
   sdist:
-    artifact_filename: vault_obsidian_architecture-41.25.tar.gz
-    digest: f989670fbb20257aab26d193c393b17ca0e00495e6a5dd27b876f6087c4af74b
+    artifact_filename: vault_obsidian_architecture-41.26.tar.gz
+    digest: aededccb98966ec2a14db2c77b2cc9c3c45c6d80542ebcfbc49f87a3aa1942ff
+    evidence_note: >-
+      construido por el mismo subcheck `construccion` (QG-06).
 
 verification:
-  recibos: audits/fase2/recibos-R26-e101004/
+  recibos: audits/fase2/recibos-R27-9ac330a/
   suite:
-    junit_digest: e1e000d4fa04be7821aecf4c81ab2d8c71bd3df0ed65b6b5d778e9a694f60c55
+    junit_digest: 4591885a1510b9f59d26d2c77c21c65c9d44dbf77ce4a525c1b6ef1c083f4911
     junit_evidence_note: >-
-      JUnit del candidato: 6485 passed / 16 skipped / 0 failed / 0 errors sobre
-      6501 casos (Windows 10, Python 3.14, -n 4, arbol limpio en e101004). Con
-      -n auto el worker gw1 se cae en test_noop_audit.py (causa sin determinar).
-      Recibo de procedencia con SHA, exit 0 y sha256 en
-      recibos-R26-e101004/junit.xml.procedencia.json.
+      JUnit del candidato: 6789 tests, 6773 passed, 16 skipped, 0 failed, 0 errores (Windows 10, Python 3.14, -n 4, arbol limpio en 9ac330a).
+      Recibo de procedencia con SHA, exit 0 y sha256 en recibos-R27-9ac330a/junit.xml.procedencia.json.
   gates:
-    manifest_digest: f2f1e72e573b7c44eb7a97301a6c55180640f112d4c88d284f39d4ca8f5c3242
-    gates_evidence_note: "salida de `vault_gate --strict` dentro de QG-02: todas verdes."
+    manifest_digest: c1c154180e99a426072abf8e16aec53fa8238c6c30d28b2088c9ad9f18a0cb10
+    gates_evidence_note: "salida de `vault_gate --strict` dentro de QG-02: 28/28 en verde."
   e2e:
-    manifest_digest: 268b7fb8cc04f8f2b977378e437373fffc985708af2a1d360ca1d7158cb6b8d9
+    manifest_digest: 787862da98879363fe10e66dccbb376d9c2c9a5b7b1c40957126f77b0c4622dc
     e2e_evidence_note: >-
-      27/27 pasos desde la wheel instalada en venv limpio, en Windows: CLI, MCP,
-      persistencia, clean/restore con hash y locks, reinstalacion.
+      27/27 pasos desde la wheel instalada en venv limpio, en Windows.
   ci:
-    run_id: 40843103452
-    run_sha: e10100476b3a8bdc2298d7e9acfc9d8f4c494a7a
+    run_id: 41718868947
+    run_sha: 9ac330a658c2583bd21d44348a6a38ba6fa54b0c
     status: COMPLETED
     conclusion: success
     required_jobs: 27
     successful_jobs: 27
     note: >-
-      run sobre e101004 en main. Un job (windows-latest, py3.9, shard 2,
-      tests/test_naturalezas.py) fallo en el primer intento y paso al relanzarlo;
-      causa hallada despues: dos tests de tests/test_gobierno_derivado.py escribian en el docs/GOBIERNO.md real y otro worker de xdist lo leia a medias; corregido apuntando esos tests a una copia (GOBIERNO_DOC en vault_servicio).
+      run sobre 9ac330a en main, 27/27 jobs.
 
 governance:
   qg_statuses:
@@ -90,21 +84,110 @@ governance:
     QG-06: PASS
     QG-07: PASS
   qg_status_note: >-
-    colector_qg --ejecutar sobre e101004 con el arbol limpio (segunda corrida:
-    la primera dejo QG-03 y QG-05 en NOT_RUN por falta de procedencia de la suite
-    y de runtime de paridad). QG-07 PASS por la CI en success. QG-02 con el
-    directorio ajeno `vault-backups` apartado y devuelto.
+    colector_qg --ejecutar sobre 9ac330a con el arbol limpio: cada subcheck con su
+    verificador, exit code y artefacto (recibos-R27-9ac330a/). La politica devuelve
+    liberable: true. La paridad CLI/MCP (QG-05) se midio sobre un runtime recien
+    creado con `vault init`, como en R26: un runtime con corridas previas hace que
+    el verificador acuse al MCP de escribir fuera del runtime autorizado.
   qa_verdict_ref: PENDIENTE
-  qa_verdict_ref_note: >-
-    sin dictamen QA independiente sobre este SHA.
-  owner_decision_ref: audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-10-29.md
+  qa_verdict_ref_note: "sin dictamen QA independiente sobre este SHA."
+  owner_decision_ref: audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-11-03.md
   owner_decision_ref_note: >-
-    acta nueva del propietario (2026-10-29) para v41.25; la DEC-06 de v41.23 no
-    se extendio. Autoriza condicionada a las condiciones de QA, medidas alli. El
-    tag v41.25 va sobre e3cc185, descendiente del candidato, con su propia CI en
-    success (run 40896422816).
+    acta del propietario del 2026-11-03: DEC-07 autoriza la publicacion de v41.26
+    condicionada a QG-00..07 en PASS y a la CI del candidato en success; DEC-08
+    ratifica dos divergencias del reconciliador (los pares `gobernanza ->
+    meta_toolkit` y `kernel -> autonomia`, retirados por el propio refactor).
   release_authorized: true
   publication_status: AUTHORIZED
+candidato_v41_25_r26:
+  release_candidate:
+    product_sha: e10100476b3a8bdc2298d7e9acfc9d8f4c494a7a
+    product_tree_sha: 665ef844002122e7730fe32ecacdc2e4f000ada5
+    version: 41.25
+    rama: main
+    ronda: R26
+    alcance: "Windows (medido) y Linux por CI, Python 3.9-3.12 por CI; la suite y el E2E de esta ronda corrieron en Windows con Python 3.14 (macOS fuera de alcance)"
+    documentation:
+      product_ancestor_of_head: true
+      doc_parent_sha: e0fc775551217ee0a778ca3dece0da3f0a63ba38
+      doc_parent_sha_note: >-
+        commit que publico por primera vez este manifiesto (R15). Es la
+        publicacion inicial, no una relacion de paternidad con el HEAD.
+      note: >-
+        el SHA del commit que fija este manifiesto se lee de git en tiempo de
+        validacion (HEAD de la rama); su relacion con product_sha es de
+        ASCENDENCIA, y ese es el unico contrato que se comprueba.
+
+  artifacts:
+    wheel:
+      artifact_filename: vault_obsidian_architecture-41.25-py3-none-any.whl
+      digest: aa565ccfdc6f0d4402d60e3a3e687af87211676bb61779346859d2c42172405c
+      evidence_note: >-
+        construida por el subcheck `construccion` del colector (QG-06), 711
+        miembros, material_ajeno vacio. El ZIP no es reproducible byte a byte: la
+        construccion del E2E dio d5840b56ecbb598c08e579a3c5ff7bc0df8c04ace23927ff5ba38a64e5b09cb7
+        con el mismo contenido. La que se publica la construye release.yml y
+        lleva su propio SHA256SUMS.txt.
+    sdist:
+      artifact_filename: vault_obsidian_architecture-41.25.tar.gz
+      digest: f989670fbb20257aab26d193c393b17ca0e00495e6a5dd27b876f6087c4af74b
+
+  verification:
+    recibos: audits/fase2/recibos-R26-e101004/
+    suite:
+      junit_digest: e1e000d4fa04be7821aecf4c81ab2d8c71bd3df0ed65b6b5d778e9a694f60c55
+      junit_evidence_note: >-
+        JUnit del candidato: 6485 passed / 16 skipped / 0 failed / 0 errors sobre
+        6501 casos (Windows 10, Python 3.14, -n 4, arbol limpio en e101004). Con
+        -n auto el worker gw1 se cae en test_noop_audit.py (causa sin determinar).
+        Recibo de procedencia con SHA, exit 0 y sha256 en
+        recibos-R26-e101004/junit.xml.procedencia.json.
+    gates:
+      manifest_digest: f2f1e72e573b7c44eb7a97301a6c55180640f112d4c88d284f39d4ca8f5c3242
+      gates_evidence_note: "salida de `vault_gate --strict` dentro de QG-02: todas verdes."
+    e2e:
+      manifest_digest: 268b7fb8cc04f8f2b977378e437373fffc985708af2a1d360ca1d7158cb6b8d9
+      e2e_evidence_note: >-
+        27/27 pasos desde la wheel instalada en venv limpio, en Windows: CLI, MCP,
+        persistencia, clean/restore con hash y locks, reinstalacion.
+    ci:
+      run_id: 40843103452
+      run_sha: e10100476b3a8bdc2298d7e9acfc9d8f4c494a7a
+      status: COMPLETED
+      conclusion: success
+      required_jobs: 27
+      successful_jobs: 27
+      note: >-
+        run sobre e101004 en main. Un job (windows-latest, py3.9, shard 2,
+        tests/test_naturalezas.py) fallo en el primer intento y paso al relanzarlo;
+        causa hallada despues: dos tests de tests/test_gobierno_derivado.py escribian en el docs/GOBIERNO.md real y otro worker de xdist lo leia a medias; corregido apuntando esos tests a una copia (GOBIERNO_DOC en vault_servicio).
+
+  governance:
+    qg_statuses:
+      QG-00: PASS
+      QG-01: PASS
+      QG-02: PASS
+      QG-03: PASS
+      QG-04: PASS
+      QG-05: PASS
+      QG-06: PASS
+      QG-07: PASS
+    qg_status_note: >-
+      colector_qg --ejecutar sobre e101004 con el arbol limpio (segunda corrida:
+      la primera dejo QG-03 y QG-05 en NOT_RUN por falta de procedencia de la suite
+      y de runtime de paridad). QG-07 PASS por la CI en success. QG-02 con el
+      directorio ajeno `vault-backups` apartado y devuelto.
+    qa_verdict_ref: PENDIENTE
+    qa_verdict_ref_note: >-
+      sin dictamen QA independiente sobre este SHA.
+    owner_decision_ref: audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-10-29.md
+    owner_decision_ref_note: >-
+      acta nueva del propietario (2026-10-29) para v41.25; la DEC-06 de v41.23 no
+      se extendio. Autoriza condicionada a las condiciones de QA, medidas alli. El
+      tag v41.25 va sobre e3cc185, descendiente del candidato, con su propia CI en
+      success (run 40896422816).
+    release_authorized: true
+    publication_status: AUTHORIZED
 
 candidato_v41_25_r25:
   # Manifiesto completo de la ronda R25 (533e424), conservado tal cual. Lo supersede R26
