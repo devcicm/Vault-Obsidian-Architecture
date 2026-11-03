@@ -658,6 +658,41 @@
       "commit": "90fb5b4",
       "fecha": "2026-10-30",
       "fuente": "pytest sobre suite_n4_b.log"
+    },
+    {
+      "metrica": "puertas_duracion_s",
+      "valor": 402.46,
+      "commit": "ad66a3d",
+      "fecha": "2026-11-03",
+      "fuente": "vault_gate sobre 28 puertas"
+    },
+    {
+      "metrica": "suite_fallos",
+      "valor": 0,
+      "commit": "ad66a3d",
+      "fecha": "2026-11-03",
+      "fuente": "pytest sobre pytest_suite_v41_26.log"
+    },
+    {
+      "metrica": "suite_tests",
+      "valor": 6773,
+      "commit": "ad66a3d",
+      "fecha": "2026-11-03",
+      "fuente": "pytest sobre pytest_suite_v41_26.log"
+    },
+    {
+      "metrica": "suite_duracion_s",
+      "valor": 1142.91,
+      "commit": "ad66a3d",
+      "fecha": "2026-11-03",
+      "fuente": "pytest sobre pytest_suite_v41_26.log"
+    },
+    {
+      "metrica": "puertas_rapidas_duracion_s",
+      "valor": 71.12,
+      "commit": "ad66a3d",
+      "fecha": "2026-11-03",
+      "fuente": "vault_gate sobre 26 puertas"
     }
   ]
 }

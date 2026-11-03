@@ -133,3 +133,8 @@
 | 2026-10-30 | `90fb5b4` | `suite_fallos` | 0 | pytest sobre suite_n4_b.log |
 | 2026-10-30 | `90fb5b4` | `suite_tests` | 6519 | pytest sobre suite_n4_b.log |
 | 2026-10-30 | `90fb5b4` | `suite_duracion_s` | 1485.58 | pytest sobre suite_n4_b.log |
+| 2026-11-03 | `ad66a3d` | `puertas_duracion_s` | 402.46 | vault_gate sobre 28 puertas |
+| 2026-11-03 | `ad66a3d` | `suite_fallos` | 0 | pytest sobre pytest_suite_v41_26.log |
+| 2026-11-03 | `ad66a3d` | `suite_tests` | 6773 | pytest sobre pytest_suite_v41_26.log |
+| 2026-11-03 | `ad66a3d` | `suite_duracion_s` | 1142.91 | pytest sobre pytest_suite_v41_26.log |
+| 2026-11-03 | `ad66a3d` | `puertas_rapidas_duracion_s` | 71.12 | vault_gate sobre 26 puertas |
