@@ -62,6 +62,10 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+# La configuración se lee del registro único, no con un default por punto
+# de uso. Ver `vault_entorno.py`.
+from vault_entorno import leer as _env
+
 from vault.kernel import rutas
 from vault.kernel.escritura import escritura_atomica
 
@@ -644,7 +648,7 @@ def main() -> int:
     seriales = [n for n in tools_pedidas
                 if capacidad_de.get(n) == "gobernanza_del_estandar"]
     paralelas = [n for n in tools_pedidas if n not in set(seriales)]
-    trabajadores = max(1, int(os.environ.get("VAULT_CONCURRENCY", "4")))
+    trabajadores = max(1, int(_env("VAULT_CONCURRENCY")))
 
     def _una(nombre: str) -> Dict[str, Any]:
         return auditar(nombre, mc.TOOLS_CATALOG.get(nombre, {}),

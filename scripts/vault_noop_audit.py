@@ -64,6 +64,10 @@ from typing import Any, Dict, List, Optional, Tuple
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+# La configuración se lee del registro único, no con un default por punto
+# de uso. Ver `vault_entorno.py`.
+from vault_entorno import leer as _env
+
 import vault_baseline
 from vault_errors import emit_error, wrap_main
 
@@ -505,7 +509,7 @@ def ejecutado(herramientas: Optional[Dict[str, Dict]] = None) -> Dict:
         # C-2 tanda 2a: cada tool corre contra su propia copia del sandbox, así
         # que el banco puede ir en paralelo. Las de gobernanza ya quedaron
         # fuera arriba (`fuera_del_vault`): son las que escriben en el repo.
-        trabajadores = max(1, int(os.environ.get("VAULT_CONCURRENCY", "4")))
+        trabajadores = max(1, int(_env("VAULT_CONCURRENCY")))
         if trabajadores > 1 and len(candidatas) > 1:
             from concurrent.futures import ThreadPoolExecutor
 
