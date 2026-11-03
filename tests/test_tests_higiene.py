@@ -159,13 +159,26 @@ def test_la_firma_no_depende_de_los_parentesis_del_destino():
 
 
 def test_la_firma_normaliza_la_comilla_del_fstring_anidado():
-    """El f-string con comilla dentro: 3.12 lo escribe con simple, 3.14 con doble."""
+    """El f-string con comilla dentro: 3.12 lo escribe con simple, 3.14 con doble.
+
+    En 3.9–3.11 el tokenizador no expone los f-strings (`FSTRING_START` no
+    existe) y su `unparse` ya coincide con el de 3.14, así que la normalización
+    es un **no-op** — y el test tiene que decir eso, no exigir un cambio que en
+    esa versión no hace falta.
+    """
+    import tokenize
+
     from vault.meta_toolkit.estandar.firma_sitio import _re_comillar_fstrings
 
     de_312 = "f'{d['tool']}.py'"
-    assert _re_comillar_fstrings(de_312) == 'f"{d[\'tool\']}.py"'
-    # Y el que ya viene con doble no se toca.
     de_314 = 'f"{d[\'tool\']}.py"'
-    assert _re_comillar_fstrings(de_314) == de_314
-    # Ni el simple, que no lleva comilla dentro.
+    if hasattr(tokenize, "FSTRING_START"):
+        assert _re_comillar_fstrings(de_312) == de_314
+        # Y el que ya viene con doble no se toca.
+        assert _re_comillar_fstrings(de_314) == de_314
+    else:
+        # Sin tokens de f-string, el `unparse` de esta versión ya emite la
+        # forma canónica: normalizar aquí cambiaría la firma sin motivo.
+        assert _re_comillar_fstrings(de_314) == de_314
+    # El simple, que no lleva comilla dentro, no se toca en ninguna versión.
     assert _re_comillar_fstrings("f'v{n}'") == "f'v{n}'"

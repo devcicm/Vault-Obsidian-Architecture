@@ -223,12 +223,20 @@ def test_ninguna_regex_escala_peor_que_lineal():
             continue
         peor = 0.0
         for cebo in _CEBOS:
-            inicio = time.perf_counter()
-            try:
-                compilada.search(cebo)
-            except Exception:  # noqa: BLE001 — idem
-                pass
-            peor = max(peor, (time.perf_counter() - inicio) * 1000)
+            # Mejor de tres: en un runner cargado, una sola pasada mide el
+            # planificador más que la regex. El mínimo de varias es lo que
+            # mide «cuánto tarda esto», no «cuánta cola había»; el umbral no
+            # se toca.
+            mejor = None
+            for _ in range(3):
+                inicio = time.perf_counter()
+                try:
+                    compilada.search(cebo)
+                except Exception:  # noqa: BLE001 — idem
+                    pass
+                transcurrido = (time.perf_counter() - inicio) * 1000
+                mejor = transcurrido if mejor is None else min(mejor, transcurrido)
+            peor = max(peor, mejor or 0.0)
         if peor > _UMBRAL_MS:
             lentas.append(f"{ubicacion}: {peor:.0f} ms — {patron[:50]!r}")
     assert not lentas, (

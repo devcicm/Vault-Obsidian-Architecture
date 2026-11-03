@@ -635,10 +635,35 @@ def main() -> int:
 
     pulso = time.time()
     origen = _origen_con_proyecto()
-    resultados = [auditar(nombre, mc.TOOLS_CATALOG.get(nombre, {}),
-                          gid_map.get(nombre, 0), cap_map.get(nombre, ""),
-                          origen=origen)
-                  for nombre in tools_pedidas]
+    # C-2 tanda 2a: las tools de runtime auditan contra SU propia copia del
+    # sandbox (`vault_smoke.run_one` copia por corrida), así que pueden correr
+    # en paralelo sin pisarse. Las de gobernanza del estándar escriben en el
+    # REPO (baselines, docs derivadas) y siguen en serie: parallelizarlas
+    # sería una carrera sobre ficheros compartidos.
+    capacidad_de = cap_map
+    seriales = [n for n in tools_pedidas
+                if capacidad_de.get(n) == "gobernanza_del_estandar"]
+    paralelas = [n for n in tools_pedidas if n not in set(seriales)]
+    trabajadores = max(1, int(os.environ.get("VAULT_CONCURRENCY", "4")))
+
+    def _una(nombre: str) -> Dict[str, Any]:
+        return auditar(nombre, mc.TOOLS_CATALOG.get(nombre, {}),
+                       gid_map.get(nombre, 0), cap_map.get(nombre, ""),
+                       origen=origen)
+
+    hechos: Dict[str, Dict[str, Any]] = {}
+    if paralelas and trabajadores > 1:
+        from concurrent.futures import ThreadPoolExecutor
+
+        with ThreadPoolExecutor(max_workers=trabajadores) as pool:
+            for nombre, resultado in zip(paralelas, pool.map(_una, paralelas)):
+                hechos[nombre] = resultado
+    else:
+        for nombre in paralelas:
+            hechos[nombre] = _una(nombre)
+    for nombre in seriales:
+        hechos[nombre] = _una(nombre)
+    resultados = [hechos[nombre] for nombre in tools_pedidas]
     segundos = round(time.time() - pulso, 1)
 
     for resultado in resultados:

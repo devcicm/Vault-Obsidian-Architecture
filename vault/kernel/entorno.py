@@ -141,6 +141,15 @@ VARIABLES: Dict[str, Variable] = {
             "por separado con el mismo número.",
             _entero,
         ),
+        Variable(
+            "VAULT_CONCURRENCY", "entero", 4, "meta_toolkit",
+            "Cuántas tools audita a la vez el banco de `vault_toolkit_audit` y "
+            "el de `vault_noop_audit` (C-2 tanda 2a). Cada corrida usa su "
+            "propia copia del sandbox, así que el paralelismo no comparte "
+            "estado; las tools de gobernanza, que escriben en el repo, siguen "
+            "en serie. Con `1` el banco vuelve a ser el de antes.",
+            _entero,
+        ),
         # v41.24 — presupuesto de latencia de las primitivas calientes del
         # kernel (opción A). El nominal es el objetivo de regresión; el
         # máximo, el techo duro. Las tools gruesas quedan excluidas con

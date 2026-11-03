@@ -72,6 +72,13 @@
       "purpose": "Segundos antes de que una tool se declare colgada. Lo leen `vault_errors` y el servidor MCP, que hasta ahora lo declaraban por separado con el mismo número."
     },
     {
+      "name": "VAULT_CONCURRENCY",
+      "type": "entero",
+      "default": 4,
+      "context": "meta_toolkit",
+      "purpose": "Cuántas tools audita a la vez el banco de `vault_toolkit_audit` y el de `vault_noop_audit` (C-2 tanda 2a). Cada corrida usa su propia copia del sandbox, así que el paralelismo no comparte estado; las tools de gobernanza, que escriben en el repo, siguen en serie. Con `1` el banco vuelve a ser el de antes."
+    },
+    {
       "name": "VAULT_LATENCY_NOMINAL_MS",
       "type": "entero",
       "default": 2,

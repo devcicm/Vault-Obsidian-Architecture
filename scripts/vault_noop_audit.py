@@ -57,6 +57,7 @@ thread-local, y la tool solo expande `**write_report()` en su return. Un
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -402,6 +403,69 @@ def _del_estandar() -> set:
             if fila["capability"] == "gobernanza_del_estandar"}
 
 
+def _clasificar_tool(name: str, origen: Optional[Path]) -> Dict[str, Any]:
+    """La clasificación de UNA tool del banco, aislada para poder paralelizar.
+
+    Devuelve `{"clase": …, …}` con una de estas formas:
+    `sin_invocacion`, `medida`, `noop_declarado`, `sin_escritura` u `ofensor`.
+    Cada corrida usa su propia copia del sandbox (`vault_smoke.run_one`), así
+    que no hay estado compartido entre tools.
+    """
+    import vault_smoke
+
+    lineas = vault_smoke.invocations(name)
+    if not lineas:
+        r = vault_smoke.run_one(name, arbol=True)
+        return {"clase": "sin_invocacion", "tool": name,
+                "motivo": r.get("skipped") or r.get("problem")}
+
+    escribio = False
+    callo = None
+    respuestas = []
+    respuestas_escritura: List[Dict] = []
+    for argv in lineas:
+        r = vault_smoke.run_one(name, arbol=True, argv=argv,
+                                preparar=_preparar(name), origen=origen)
+        datos = r.get("datos")
+        if not r.get("cambiadas"):
+            respuestas.append({"argv": argv[2:], "tool_ok": r.get("tool_ok"),
+                               "error_code": r.get("error_code"),
+                               "problem": r.get("problem"), "datos": datos})
+            continue
+        escribio = True
+        respuestas_escritura.append({"argv": argv[2:], "datos": datos,
+                                     "cambiadas": r.get("cambiadas")})
+        if not set(r["returned"]) & WORK_INDICATORS and callo is None:
+            callo = {"tool": name, "argv": argv[2:], "cambiadas": r["cambiadas"],
+                     "returned": r["returned"]}
+    if callo:
+        return {"clase": "ofensor", "ofensor": callo}
+    if escribio:
+        # Idempotencia FALSA: escribió y a la vez declaró `written: 0`.
+        for respuesta in respuestas_escritura:
+            datos = respuesta.get("datos")
+            if not isinstance(datos, dict):
+                continue
+            exigidos = (IDEMPOTENTES_DECLARADAS.get(name) or {}).get("no_op") or {}
+            if exigidos and all(datos.get(k) == v for k, v in exigidos.items()):
+                return {"clase": "ofensor",
+                        "ofensor": {"tool": name, "argv": respuesta["argv"],
+                                    "cambiadas": respuesta["cambiadas"],
+                                    "declarado": {k: datos.get(k) for k in exigidos}}}
+        return {"clase": "medida", "tool": name}
+    # Sin escritura: o es un no-op DECLARADO con su indicador, o es un
+    # silencio (rojo).
+    if name in IDEMPOTENTES_DECLARADAS:
+        declarado, indicadores = _no_op_declarado(name, respuestas)
+        if declarado:
+            return {"clase": "noop_declarado", "tool": name,
+                    "indicadores": indicadores}
+        respuestas = respuestas + [{
+            "problem": "declarada idempotente y NO publicó el indicador de "
+                       "no-op exigido por su registro"}]
+    return {"clase": "sin_escritura", "tool": name, "respuestas": respuestas}
+
+
 def ejecutado(herramientas: Optional[Dict[str, Dict]] = None) -> Dict:
     """AP-37 sobre el envelope emitido, ejecutando cada línea del ejemplo.
 
@@ -430,70 +494,40 @@ def ejecutado(herramientas: Optional[Dict[str, Dict]] = None) -> Dict:
     base = Path(tempfile.mkdtemp(prefix="vault-noop-"))
     try:
         origen = _sandbox_con_proyecto(base) if PROYECTO_DEL_EJEMPLO else None
+        candidatas = []
         for name, entry in sorted(herramientas.items()):
             if not entry.get("side_effects"):
                 continue
             if name in del_estandar:
                 fuera_del_vault.append(name)
                 continue
-            lineas = vault_smoke.invocations(name)
-            if not lineas:
-                r = vault_smoke.run_one(name, arbol=True)
-                sin_invocacion.append({"tool": name,
-                                       "motivo": r.get("skipped") or r.get("problem")})
-                continue
-            escribio = False
-            callo = None
-            respuestas = []
-            respuestas_escritura: List[Dict] = []
-            for argv in lineas:
-                r = vault_smoke.run_one(name, arbol=True, argv=argv,
-                                        preparar=_preparar(name), origen=origen)
-                datos = r.get("datos")
-                if not r.get("cambiadas"):
-                    respuestas.append({"argv": argv[2:], "tool_ok": r.get("tool_ok"),
-                                       "error_code": r.get("error_code"),
-                                       "problem": r.get("problem"), "datos": datos})
-                    continue
-                escribio = True
-                respuestas_escritura.append({"argv": argv[2:], "datos": datos,
-                                             "cambiadas": r.get("cambiadas")})
-                if not set(r["returned"]) & WORK_INDICATORS and callo is None:
-                    callo = {"tool": name, "argv": argv[2:], "cambiadas": r["cambiadas"],
-                             "returned": r["returned"]}
-            if callo:
-                ofensores.append(callo)
-                continue
-            if escribio:
-                # Idempotencia FALSA: escribió y a la vez declaró `written: 0`.
-                falsa = None
-                for respuesta in respuestas_escritura:
-                    datos = respuesta.get("datos")
-                    if not isinstance(datos, dict):
-                        continue
-                    exigidos = (IDEMPOTENTES_DECLARADAS.get(name) or {}).get("no_op") or {}
-                    if exigidos and all(datos.get(k) == v for k, v in exigidos.items()):
-                        falsa = {"tool": name, "argv": respuesta["argv"],
-                                 "cambiadas": respuesta["cambiadas"],
-                                 "declarado": {k: datos.get(k) for k in exigidos}}
-                        break
-                if falsa:
-                    ofensores.append(falsa)
-                else:
-                    medidas.append(name)
-                continue
-            # Sin escritura: o es un no-op DECLARADO con su indicador, o es un
-            # silencio (rojo).
-            if name in IDEMPOTENTES_DECLARADAS:
-                declarado, indicadores = _no_op_declarado(name, respuestas)
-                if declarado:
-                    noop_declarado[name] = indicadores
-                    continue
-                respuestas = respuestas + [{
-                    "problem": "declarada idempotente y NO publicó el indicador de "
-                               "no-op exigido por su registro"}]
-            sin_escritura.append(name)
-            lineas_sin_escritura[name] = respuestas
+            candidatas.append(name)
+        # C-2 tanda 2a: cada tool corre contra su propia copia del sandbox, así
+        # que el banco puede ir en paralelo. Las de gobernanza ya quedaron
+        # fuera arriba (`fuera_del_vault`): son las que escriben en el repo.
+        trabajadores = max(1, int(os.environ.get("VAULT_CONCURRENCY", "4")))
+        if trabajadores > 1 and len(candidatas) > 1:
+            from concurrent.futures import ThreadPoolExecutor
+
+            with ThreadPoolExecutor(max_workers=trabajadores) as pool:
+                clasificados = list(pool.map(
+                    lambda n: _clasificar_tool(n, origen), candidatas))
+        else:
+            clasificados = [_clasificar_tool(n, origen) for n in candidatas]
+        for resultado in clasificados:
+            clase = resultado["clase"]
+            if clase == "sin_invocacion":
+                sin_invocacion.append({"tool": resultado["tool"],
+                                       "motivo": resultado["motivo"]})
+            elif clase == "medida":
+                medidas.append(resultado["tool"])
+            elif clase == "noop_declarado":
+                noop_declarado[resultado["tool"]] = resultado["indicadores"]
+            elif clase == "sin_escritura":
+                sin_escritura.append(resultado["tool"])
+                lineas_sin_escritura[resultado["tool"]] = resultado["respuestas"]
+            else:
+                ofensores.append(resultado["ofensor"])
     finally:
         import shutil
 
