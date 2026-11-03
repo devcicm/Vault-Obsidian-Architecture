@@ -21,9 +21,6 @@ tiene que estar.
 
 from __future__ import annotations
 
-import contextlib
-import importlib
-import io
 import json
 import os
 import subprocess
@@ -115,31 +112,18 @@ def correr_en_proceso(nombre: str, *argv: Any, vault: Optional[Path] = None) -> 
     constantes y se restaura la anterior al salir — el patrón que ya usan
     `test_alcance_medido_v4030` y `test_ap07`, con el autouse
     `_raiz_de_vault_limpia` del conftest respaldando al conjunto.
-    """
-    import vault_io
 
-    salida, errores = io.StringIO(), io.StringIO()
-    anterior = None
-    if vault is not None:
-        anterior = vault_io.get_vault_root()
-        vault_io.set_vault_root(vault)
-    try:
-        modulo = importlib.import_module(nombre)
-        codigo = 0
-        argv_previo = sys.argv
-        sys.argv = [f"{nombre}.py", *map(str, argv)]
-        try:
-            with contextlib.redirect_stdout(salida), contextlib.redirect_stderr(errores):
-                try:
-                    modulo.main()
-                except SystemExit as fin:
-                    codigo = 0 if fin.code is None else int(fin.code or 0)
-        finally:
-            sys.argv = argv_previo
-    finally:
-        if anterior is not None:
-            vault_io.set_vault_root(anterior)
-    return Corrida(codigo, salida.getvalue(), errores.getvalue())
+    **El mecanismo es del producto, no de la suite** (`vault.ejecutor`, C-2
+    tanda 2): el ejecutor devuelve el intérprete al estado en que lo encontró
+    —argv, directorio, raíz y variables—, corre la tool en su propio hilo (el
+    ledger de escrituras es thread-local) y devuelve su envelope. Aquí solo se
+    traduce su resultado al `Corrida` que la suite ya consume. Dos
+    implementaciones del mismo mecanismo divergen; esta es la única.
+    """
+    from vault.ejecutor import ejecutar
+
+    corrida = ejecutar(None, [f"{nombre}.py", *map(str, argv)], raiz=vault)
+    return Corrida(corrida.codigo, corrida.texto, corrida.error)
 
 
 def nota(frontmatter: Mapping[str, Any], cuerpo: str = "") -> str:
