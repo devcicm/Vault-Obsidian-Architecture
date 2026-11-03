@@ -57,3 +57,18 @@ def test_los_recibos_se_suben_aunque_algo_falle():
     subida = next(p for p in _jobs()["qg-receipts"]["steps"]
                   if str(p.get("uses", "")).startswith("actions/upload-artifact"))
     assert subida.get("if") == "always()"
+
+
+def test_el_colector_puede_consultar_la_ci_del_candidato():
+    """QG-07 ES la CI del candidato, y el colector la consulta con `gh`.
+
+    Sin token, `gh` responde «set the GH_TOKEN environment variable» y QG-07
+    sale BLOCKED: el job no acredita nada y el de publicación no corre. Medido
+    el 2026-11-03 en la primera corrida real del job (v41.26), que es justo lo
+    que este test fija.
+    """
+    job = _jobs()["qg-receipts"]
+    permisos = job.get("permissions") or {}
+    assert permisos.get("actions") == "read", permisos
+    colector = next(p for p in job["steps"] if "colector_qg.py" in (p.get("run") or ""))
+    assert (colector.get("env") or {}).get("GH_TOKEN") == "${{ github.token }}"

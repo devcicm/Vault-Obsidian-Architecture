@@ -26,6 +26,13 @@ jobs:
     # que produce vive en $RUNNER_TEMP/qg, fuera del árbol: QG-00 lo quiere limpio.
     name: Recibos QG del candidato
     runs-on: ubuntu-latest
+    # QG-07 es la CI del mismo SHA, y el colector la consulta con `gh`: sin
+    # token el job no puede acreditar nada y QG-07 sale BLOCKED. Medido el
+    # 2026-11-03 en la primera corrida real del job (v41.26): QG-00..06
+    # PASS y QG-07 BLOCKED por `gh: set the GH_TOKEN environment variable`.
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -93,6 +100,9 @@ jobs:
       - name: Colector QG
         working-directory: ${{ steps.candidato.outputs.dir }}
         shell: bash
+        env:
+          # El token del job, para que QG-07 pueda consultar la CI del candidato.
+          GH_TOKEN: ${{ github.token }}
         run: |
           python audits/fase2/colector_qg.py --sha "${{ steps.candidato.outputs.sha }}" \
             --ejecutar --recibos "$RUNNER_TEMP/qg/recibos" \
