@@ -53,17 +53,19 @@ divergencias:
   ratificado_en: "2026-10-28"
   acto: "audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-10-28.md#DEC-02"
 - id: DIV-02
-  divergencia: "ficha divergente: ['gobernanza', 'meta_toolkit']"
-  causa: "ficha desactualizada: el adeudado NO cambio (59d0465 + 667a6a5)"
+  divergencia: "par solo en el snapshot: ['gobernanza', 'meta_toolkit']"
+  divergencia_original: "ficha divergente: ['gobernanza', 'meta_toolkit']"
+  causa: "el par gobernanza -> meta_toolkit se RETIRO del presupuesto de cruces: el catalogo llega a Gobernanza por el puerto declarado CatalogoTools (A-5, commit b883083), y un par resuelto no admite entrada. El snapshot f049b1bd es anterior y aun lo lista; la forma de la divergencia cambio con la retirada (ya no es una ficha divergente, es un par que solo el snapshot tiene)"
   evidencia:
   - "audits/architecture/divergencias-archify.yaml#DIV-02"
   - "commits/59d0465"
   - "commits/667a6a5"
+  - "commits/b883083"
   accion_requerida: "ratificacion del propietario"
   ratificado: true
   ratificado_por: "propietario (devcicm)"
-  ratificado_en: "2026-10-28"
-  acto: "audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-10-28.md#DEC-02"
+  ratificado_en: "2026-11-03"
+  acto: "audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-11-03.md#DEC-08"
 - id: DIV-03
   divergencia: "acceso no conciliado: vault_norms_engine -> vault_mcp_catalog.check_params"
   causa: "movimiento legitimo del sitio del cruce (commit 667a6a5)"
@@ -152,3 +154,15 @@ divergencias:
   ratificado_por: "propietario (devcicm)"
   ratificado_en: "2026-10-28"
   acto: "audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-10-28.md#DEC-02"
+- id: DIV-11
+  divergencia: "par solo en el snapshot: ['kernel', 'autoria']"
+  divergencia_original: "ninguna: el par existia en el snapshot y en el registro"
+  causa: "el par kernel -> autoria se RETIRO del presupuesto de cruces: los productores se ofrecen al importarse y el kernel pide por puerto (A-3 y A-4, commit 49df951). El sitio medido era scripts/vault_errors.py:51, que importaba la voz de la Autoria; ahora la voz llega por el puerto Voz y la ausencia de un productor deja su motivo en la traza. Un par resuelto no admite entrada en el presupuesto, y el snapshot f049b1bd es anterior y aun lo lista"
+  evidencia:
+  - "commits/49df951"
+  - "audits/reestructura/CHANGELOG-REFACTOR.md"
+  accion_requerida: "ratificacion del propietario"
+  ratificado: true
+  ratificado_por: "propietario (devcicm)"
+  ratificado_en: "2026-11-03"
+  acto: "audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-11-03.md#DEC-08"
