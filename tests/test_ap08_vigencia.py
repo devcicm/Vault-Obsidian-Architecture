@@ -15,6 +15,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from apoyo import correr_en_proceso  # noqa: E402
+
 from vault_base import copiar_vault
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -22,12 +24,8 @@ SCRIPTS = ROOT / "scripts"
 
 
 def _tool(raiz: Path, script: str, *argv: str):
-    env = dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
-               PYTHONIOENCODING="utf-8", VAULT_AGENT="pytest")
-    p = subprocess.run(
-        [sys.executable, str(SCRIPTS / f"{script}.py"), *argv],
-        env=env, capture_output=True, text=True, encoding="utf-8",
-        errors="replace", cwd=str(raiz.parent), timeout=300)
+    p = correr_en_proceso(script, *argv, vault=raiz, agente="pytest",
+                          cwd=raiz.parent)
     salida = p.stdout.strip()
     assert salida, p.stderr[-1000:]
     return p.returncode, json.loads(salida[salida.index("{"):])

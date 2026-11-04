@@ -8,10 +8,10 @@ regenerarlo.
 """
 
 import json
-import os
-import subprocess
 import sys
 from pathlib import Path
+
+from apoyo import correr_en_proceso  # noqa: E402
 
 import pytest
 
@@ -22,13 +22,8 @@ import vault_doc_staleness as staleness  # noqa: E402  (conftest pone scripts/ e
 
 
 def _ejecutar(raiz: Path, script: str, *argv: str):
-    return subprocess.run(
-        [sys.executable, str(SCRIPTS / script), *argv],
-        env=dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
-                 PYTHONIOENCODING="utf-8", VAULT_AGENT="system"),
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
-        cwd=str(ROOT), timeout=600,
-    )
+    return correr_en_proceso(script, *argv, vault=raiz, agente="system",
+                             cwd=ROOT)
 
 
 def _vault_sin_contrato(tmp_path) -> Path:

@@ -18,6 +18,8 @@ import ast
 import sys
 from pathlib import Path
 
+from apoyo import correr_en_proceso  # noqa: E402
+
 import pytest
 import yaml
 
@@ -202,18 +204,12 @@ def test_el_slo_escribe_una_unidad_hostil_y_se_relee(unidad):
     Se lee con `yaml.safe_load` y se compara el objeto, no el texto: medir con
     la misma normalizacion que escribio es AP-44.
     """
-    import os
-    import subprocess
     import tempfile
 
     with tempfile.TemporaryDirectory() as tmp:
-        entorno = dict(os.environ, VAULT_ROOT=tmp, PYTHONIOENCODING="utf-8")
         def corre(script, *argv):
-            return subprocess.run(
-                [sys.executable, str(REPO_ROOT / "scripts" / f"{script}.py"),
-                 *argv],
-                env=entorno, capture_output=True, text=True,
-                encoding="utf-8", cwd=str(REPO_ROOT))
+            return correr_en_proceso(script, *argv, vault=Path(tmp),
+                                     cwd=REPO_ROOT)
 
         corre("vault_init")
         corre("vault_project", "--add", "demo")  # AP-63: el proyecto se da de alta
