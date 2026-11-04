@@ -10,9 +10,9 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | Ruta | Qué es |
 |---|---|
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~12.000 líneas). Fuente normativa. |
-| `scripts/*.py` | ~170 scripts, 129 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
+| `scripts/*.py` | ~171 scripts, 129 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (6806 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (6810 tests). Toda norma con guard debe tener test. |
 | `normas/` | Normas como paquete (`normas/<código>/`: `norma.py`, `porque.md`, `guard.py`, `heal.py`, `test_*.py`). Las carga `vault_norms_catalog` en su sitio del catálogo; la forma la vigila `--check-framework`. Desde m186 toda norma vive aquí (cuántas, `NORMAS_EN_PAQUETE`). `guard.py`/`heal.py` son derivados —apuntan a la función dueña; los sanadores salen de `vault_norms_catalog.SANADORES`— y se regeneran con `vault_norms_engine.escribir_caras_derivadas`, no a mano. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
@@ -159,6 +159,10 @@ python -m pytest tests/ -q -n 4 -m "not slow" --tb=short
 # La casa de los vaults: donde viven, con su propio git
 python scripts/vault_init.py --name mi-vault   # crea ~/.vault-master/mi-vault/ (Windows: %USERPROFILE%\.vault-master\mi-vault\)
 python scripts/vault_init.py --list            # los vaults de la casa
+# Todo vault nuevo nace versionado (casa o ruta personalizada): cada operación
+# que escribe deja un commit en su repo, y volver a como estaba es volver a uno.
+python scripts/vault_undo.py --commits         # las operaciones del vault
+python scripts/vault_undo.py --to <sha> --force # el vault vuelve a ese commit
 # La casa se cambia con VAULT_MASTER (lo publica `vault_entorno`).
 # Un vault personalizado puede declararse en el repositorio original con un
 # `.vault-path` en su raíz (lo escribe la persona; las tools solo lo leen) o

@@ -6,9 +6,9 @@
   "status": "pass",
   "visualReview": "not-requested",
   "provenance": "current",
-  "deliveryReceiptId": "748e90d0-4f9b-49c4-a3c0-1f4dfff7444b",
+  "deliveryReceiptId": "2d4233a7-c582-4bbd-b6fb-241b97c0734f",
   "artifact": {
-    "path": ".\\.archify\\mapa-contextos.html",
+    "path": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.html",
     "sha256": "df889fb13ccd6ea9a18d980ec402001fa056259db746ed6906e6cdcff0e0d7d8",
     "bytes": 861118
   },

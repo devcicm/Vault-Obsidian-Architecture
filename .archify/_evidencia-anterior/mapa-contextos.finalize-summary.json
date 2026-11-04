@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "finalize",
+  "status": "fail",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "B:\\Vault-Obsidian-Architecture\\.archify\\candidata-contextos.json",
+    "sha256": "ebb4f9e01af26ad4615d4b709f36cb5d3b4d1643c5dc9c70feaf94aacceca898",
+    "bytes": 11652
+  },
+  "artifact": {
+    "path": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.html",
+    "sha256": "df889fb13ccd6ea9a18d980ec402001fa056259db746ed6906e6cdcff0e0d7d8",
+    "bytes": 861118
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "fail"
+  },
+  "failedStage": "browser-check",
+  "diagnostics": [
+    {
+      "code": "viewer/evidence-path-conflict",
+      "severity": "error",
+      "message": "browser-check will not replace the existing unowned evidence path \"B:\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.browser-check.json\".",
+      "subject": {
+        "artifact": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.html",
+        "evidencePath": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.browser-check.json"
+      },
+      "evidence": {
+        "reason": {
+          "code": "ownership-sidecar-path-mismatch"
+        }
+      },
+      "supportedFixes": [
+        "move the conflicting file aside, or choose a separate --out-dir, then rerun browser-check"
+      ]
+    }
+  ],
+  "diagnosticSummary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.finalize.json",
+    "summaryReceipt": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.finalize-summary.json",
+    "browserCheckReceipt": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-11-04T20:24:27.729Z",
+    "source": "network",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 2012,
+  "browserCheck": {
+    "requested": true,
+    "ran": false
+  }
+}

@@ -5,14 +5,14 @@
   "status": "pass",
   "type": "workflow",
   "quality": "showcase",
-  "startedAt": "2026-10-29T08:42:58.000Z",
+  "startedAt": "2026-11-04T20:24:51.361Z",
   "specification": {
-    "path": ".\\.archify\\candidata-onboarding.json",
-    "sha256": "76e94c96f73126aa76fe3f2fa9243f41370371a94e36ab255ce350cc11f6ea77",
-    "bytes": 10177
+    "path": "B:\\Vault-Obsidian-Architecture\\.archify\\candidata-onboarding.json",
+    "sha256": "ad4d1b2e4e2755b9a0822a7abf1e1a468daaf8c8b95e9f06d3411e94f8ff41f8",
+    "bytes": 9791
   },
   "artifact": {
-    "path": ".\\.archify\\mapa-onboarding.html",
+    "path": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-onboarding.html",
     "sha256": "b24fe7ae2900b82f1e1ea625a9e8b8cb76af760a9e188f1bd52bd3f43db81b3c",
     "bytes": 833320
   },
@@ -24,15 +24,15 @@
       "execution": "embedded-in-deliver",
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
-        "<archify>/bin/archify.mjs",
+        "C:\\Users\\Carlos Ivan\\.claude\\skills\\archify\\bin\\archify.mjs",
         "deliver",
         "workflow",
-        ".\\.archify\\candidata-onboarding.json",
-        ".\\.archify\\mapa-onboarding.html",
+        "B:\\Vault-Obsidian-Architecture\\.archify\\candidata-onboarding.json",
+        "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-onboarding.html",
         "--quality",
         "showcase",
         "--repo-root",
-        ".",
+        "B:\\Vault-Obsidian-Architecture",
         "--json"
       ],
       "receipt": {
@@ -40,8 +40,8 @@
         "ok": true,
         "command": "validate",
         "specification": {
-          "sha256": "76e94c96f73126aa76fe3f2fa9243f41370371a94e36ab255ce350cc11f6ea77",
-          "bytes": 10177
+          "sha256": "ad4d1b2e4e2755b9a0822a7abf1e1a468daaf8c8b95e9f06d3411e94f8ff41f8",
+          "bytes": 9791
         },
         "validation": {
           "checksPassed": 9,
@@ -56,31 +56,31 @@
     "deliver": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 1051,
+      "durationMs": 811,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
-        "<archify>/bin/archify.mjs",
+        "C:\\Users\\Carlos Ivan\\.claude\\skills\\archify\\bin\\archify.mjs",
         "deliver",
         "workflow",
-        ".\\.archify\\candidata-onboarding.json",
-        ".\\.archify\\mapa-onboarding.html",
+        "B:\\Vault-Obsidian-Architecture\\.archify\\candidata-onboarding.json",
+        "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-onboarding.html",
         "--quality",
         "showcase",
         "--repo-root",
-        ".",
+        "B:\\Vault-Obsidian-Architecture",
         "--json"
       ],
       "receipt": {
         "schemaVersion": 1,
-        "receiptId": "0c0e002f-22c4-486a-83b8-3dc0e936c86d",
+        "receiptId": "7f9b624a-8b90-4ed9-a24f-2f4d6dc374d6",
         "ok": true,
         "command": "deliver",
         "type": "workflow",
-        "input": ".\\.archify\\candidata-onboarding.json",
-        "output": ".\\.archify\\mapa-onboarding.html",
+        "input": "B:\\Vault-Obsidian-Architecture\\.archify\\candidata-onboarding.json",
+        "output": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-onboarding.html",
         "specification": {
-          "sha256": "76e94c96f73126aa76fe3f2fa9243f41370371a94e36ab255ce350cc11f6ea77",
-          "bytes": 10177
+          "sha256": "ad4d1b2e4e2755b9a0822a7abf1e1a468daaf8c8b95e9f06d3411e94f8ff41f8",
+          "bytes": 9791
         },
         "artifact": {
           "sha256": "b24fe7ae2900b82f1e1ea625a9e8b8cb76af760a9e188f1bd52bd3f43db81b3c",
@@ -116,17 +116,17 @@
     "check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 342,
+      "durationMs": 261,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
-        "<archify>/bin/archify.mjs",
+        "C:\\Users\\Carlos Ivan\\.claude\\skills\\archify\\bin\\archify.mjs",
         "check",
-        ".\\.archify\\mapa-onboarding.html",
+        "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-onboarding.html",
         "--require-provenance"
       ],
       "receipt": {
         "ok": true,
-        "file": ".\\.archify\\mapa-onboarding.html",
+        "file": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-onboarding.html",
         "artifact": {
           "sha256": "b24fe7ae2900b82f1e1ea625a9e8b8cb76af760a9e188f1bd52bd3f43db81b3c",
           "bytes": 833320
@@ -259,18 +259,18 @@
           "issues": []
         },
         "provenance": "current",
-        "deliveryReceiptId": "0c0e002f-22c4-486a-83b8-3dc0e936c86d"
+        "deliveryReceiptId": "7f9b624a-8b90-4ed9-a24f-2f4d6dc374d6"
       }
     },
     "browser-check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 2430,
+      "durationMs": 1892,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
-        "<archify>/bin/archify.mjs",
+        "C:\\Users\\Carlos Ivan\\.claude\\skills\\archify\\bin\\archify.mjs",
         "browser-check",
-        ".\\.archify\\mapa-onboarding.html",
+        "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-onboarding.html",
         "--json",
         "--require-provenance"
       ],
@@ -283,9 +283,9 @@
         "status": "pass",
         "visualReview": "not-requested",
         "provenance": "current",
-        "deliveryReceiptId": "0c0e002f-22c4-486a-83b8-3dc0e936c86d",
+        "deliveryReceiptId": "7f9b624a-8b90-4ed9-a24f-2f4d6dc374d6",
         "artifact": {
-          "path": ".\\.archify\\mapa-onboarding.html",
+          "path": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-onboarding.html",
           "sha256": "b24fe7ae2900b82f1e1ea625a9e8b8cb76af760a9e188f1bd52bd3f43db81b3c",
           "bytes": 833320
         },
@@ -1388,19 +1388,19 @@
   },
   "diagnostics": [],
   "evidence": {
-    "receipt": ".\\.archify\\mapa-onboarding.finalize.json",
-    "summaryReceipt": ".\\.archify\\mapa-onboarding.finalize-summary.json",
-    "browserCheckReceipt": ".\\.archify\\mapa-onboarding.browser-check.json"
+    "receipt": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-onboarding.finalize.json",
+    "summaryReceipt": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-onboarding.finalize-summary.json",
+    "browserCheckReceipt": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-onboarding.browser-check.json"
   },
   "visualReview": "not-requested",
-  "finishedAt": "2026-10-29T08:43:02.927Z",
-  "durationMs": 4927,
+  "finishedAt": "2026-11-04T20:24:54.695Z",
+  "durationMs": 3333,
   "update": {
     "status": "current",
     "installedVersion": "3.2.0",
     "availableVersion": "3.2.0",
     "releaseNotes": null,
-    "checkedAt": "2026-10-29T08:41:02.574Z",
+    "checkedAt": "2026-11-04T20:24:27.729Z",
     "source": "cache",
     "noticeRequired": false,
     "noticeText": null

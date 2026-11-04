@@ -4,7 +4,7 @@ Vault Obsidian Architecture es un estándar abierto con un toolkit para dar a ag
 
 [![Version](https://img.shields.io/badge/version-v41.26-blue)](./vault-obsidian-architecture.md)
 [![Tools](https://img.shields.io/badge/tools-129_active-green)](./scripts/)
-[![Scripts](https://img.shields.io/badge/scripts-170_total-lightblue)](./scripts/)
+[![Scripts](https://img.shields.io/badge/scripts-171_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
 
@@ -705,7 +705,7 @@ Contiene:
 ## Scripts — estructura del repositorio
 
 ```
-scripts/                    ← 170 archivos Python (129 tools activas + internas y de apoyo); las archivadas viven aparte en scripts/_archived/
+scripts/                    ← 171 archivos Python (129 tools activas + internas y de apoyo); las archivadas viven aparte en scripts/_archived/
 ├── vault_io.py             — I/O base: _detect_vault_root, assert_within_vault, atomic_write_text/json, file_lock
 ├── vault_errors.py         — wrap_main (timeout 60s), emit_ok, trace log
 ├── vault_write.py          — tool principal de escritura (guards AP-20, AP-21, norm_refs auto-embed)

@@ -2,7 +2,7 @@
 
 Scripts Python del estándar **Vault Obsidian Architecture** (versión vigente: `vault_version.CURRENT_VERSION`). Implementan las 129 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **170 archivos Python** — 129 tools activas (125 con script + 2 JS-native backup/restore base64) + tools internas + meta/spec + bibliotecas; las 8 archivadas viven aparte en `_archived/`. Cuáles están disponibles, cuáles tienen ejemplo verificado y cuáles no deben usarse: [`../docs/DISPONIBILIDAD-DE-TOOLS.md`](../docs/DISPONIBILIDAD-DE-TOOLS.md)
+- **171 archivos Python** — 129 tools activas (125 con script + 2 JS-native backup/restore base64) + tools internas + meta/spec + bibliotecas; las 8 archivadas viven aparte en `_archived/`. Cuáles están disponibles, cuáles tienen ejemplo verificado y cuáles no deben usarse: [`../docs/DISPONIBILIDAD-DE-TOOLS.md`](../docs/DISPONIBILIDAD-DE-TOOLS.md)
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
@@ -792,6 +792,14 @@ python vault_migrate_docs.py --source_path "../docs" --project mi-api --dry_run 
 python vault_migrate_docs.py --source_path "../docs" --project mi-api --dry_run false
 ```
 
+**Qué garantiza (v41.26).** El proyecto de origen se **lee**: ni un byte cambia
+(la migración nunca escribe fuera del vault). Las copias quedan **todas dentro
+de `10_Migrated/`** (`direct/`, `indirect/`, `excluded/`); la sección que
+detecta el clasificador es una **sugerencia** del informe, y decidir dónde vive
+cada documento es de quien migra. Y **no se pisa lo que ya existe**: si la copia
+está, se deja como estaba, su versión anterior queda en `.history/` y el
+conflicto se declara en el informe (`## Conflictos (NO se sobrescribió nada)`).
+
 ---
 
 ### `vault_migrate_rollback.py`
@@ -996,6 +1004,11 @@ Restaura el vault desde un backup específico.
 ```bash
 python vault_restore.py --backup_name "vault-2026-05-09-143022-pre-migration" --confirm true
 ```
+
+**No trunca (v41.26).** Antes de sustituir el contenido, el estado actual se
+copia en un snapshot `…-antes-de-restaurar`, y el envelope lo publica
+(`safety_snapshot`): lo que había hecho desde el backup se puede recuperar.
+Sin `--confirm true` se niega (`CONFIRMACION_REQUERIDA`).
 
 Desde v40.0 el fichero es un **adaptador de transporte**: qué se borra, qué nunca se borra
 (`vault-backups/`, `vault-sandbox/`) y de dónde se lee el snapshot viven en
@@ -1332,6 +1345,14 @@ python vault_standard_upgrade.py --to latest
 ### `vault_undo.py`
 Recupera notas desde `.history/`. Lista versiones disponibles y restaura sin sobreescribir la nota actual (por defecto crea una copia `-restored-`). Con `--force` sobreescribe y escribe change-log (SP-01).
 
+**Dos alcances (v41.26).** Por **nota** (`--list`/`--restore`, el de siempre) y por
+**operación** (`--commits`/`--to`, el nuevo): cada operación que escribe deja un
+commit en el repo del vault, y `--to <sha>` devuelve el vault a como estaba
+antes de ella. El deshacer de vault **no usa verbos destructivos de git**: lee el
+commit (`git archive`) y aplica el contenido por el write path, versionando cada
+nota antes; lo que sobra se declara, y solo se borra con `--force` (por la vía de
+`vault_delete`, con su motivo y su registro).
+
 ```bash
 # Listar versiones disponibles
 python vault_undo.py --list "01_Projects/ans/status.md"
@@ -1346,6 +1367,11 @@ python vault_undo.py --restore "01_Projects/ans/status.md" \
 # Sobrecribir la nota actual (SP-01: genera change-log)
 python vault_undo.py --restore "01_Projects/ans/status.md" --force
 
+# Las operaciones del vault (una por commit) y volver a una
+python vault_undo.py --commits
+python vault_undo.py --to 3f2a9c1 --dry-run      # ver el commit y su historia
+python vault_undo.py --to 3f2a9c1 --force          # volver: lo que sobra, fuera
+
 # Simular sin escribir
 python vault_undo.py --restore "01_Projects/ans/status.md" --dry-run
 ```
@@ -1354,8 +1380,11 @@ python vault_undo.py --restore "01_Projects/ans/status.md" --dry-run
 |---|---|
 | `--list` | Listar versiones disponibles para esta nota |
 | `--restore` | Restaurar una versión desde `.history/` |
+| `--commits` | Listar las operaciones del vault (los commits) |
+| `--to` | Volver el vault al estado de un commit |
 | `--version` | Filename exacto en `.history/` (default: la más reciente) |
-| `--force` | Sobrescribir la nota actual en lugar de crear copia |
+| `--force` | Sobrescribir la nota actual / borrar lo que sobra del commit |
+| `--limite` | Cuántas operaciones listar con `--commits` (default: 20) |
 | `--dry-run` | Solo reportar lo que haría, sin escribir |
 | `--agent` | Nombre del agente para change-log (default: `claude`) |
 

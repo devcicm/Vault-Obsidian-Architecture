@@ -314,15 +314,27 @@ stateDiagram-v2
 
 ---
 
-### Versionado — tres planos independientes
+### Versionado — cuatro planos independientes
 
-Confundirlos es una fuente clásica de error. Son tres relojes distintos:
+Confundirlos es una fuente clásica de error. Son cuatro relojes distintos:
 
 | Plano | Qué versiona | Artefacto | Tool | Formato |
 |---|---|---|---|---|
 | **Estándar** | las reglas y el contrato de tools | `00_System/standard-version.json` | `vault_version`, `vault_standard_upgrade` | `vN.M` |
 | **Nota** | el contenido de un documento | `.history/{ruta__plana}-{timestamp}.md` | `vault_write` (automático), `vault_diff` | timestamp ISO 8601 |
 | **Backup** | el estado completo del vault | manifiesto con raíz Merkle | `vault_backup`, `vault_backup_list`, `vault_restore` | timestamp + hash |
+| **Operación** | lo que hizo cada operación, incluidas las que tocan varias notas | `.git/` del vault, un commit por operación | `vault_undo --commits`, `vault_undo --to` | commit con tool y agente |
+
+**Por qué el cuarto plano (v41.26).** Los tres primeros no cubren una operación
+que toca varias notas: `.history/` es por nota, el backup es de todo el vault y
+el change-log es el registro, no el contenido. El repo que nace con cada vault
+—la casa y, desde v41.26, también una ruta personalizada— sí: `wrap_main`
+versiona al cerrar cada operación que escribió algo, con un mensaje que nombra
+la tool y el agente, y `vault_undo --to <commit>` devuelve el vault a como
+estaba. El deshacer **no usa verbos destructivos de git**: el commit se lee
+(`git archive`) y el contenido se aplica por el write path, versionando cada
+nota antes; lo que sobra se declara y solo se borra con `--force` (AP-68
+prohíbe `checkout`/`reset`/`clean` a las tools).
 
 **Criterio de versión del estándar:** se incrementa cuando **cambia el comportamiento** — una norma nueva, un contrato de tool modificado, un guard añadido. Un cambio que solo reescribe texto no merece versión. El formato es siempre `vN.M`, sin excepciones.
 
@@ -339,6 +351,7 @@ código fuente (@vault: tag)
          ├─ createdAt/updatedAt ← cuándo                     (F6 Actualidad, ISO 8601)
          ├─ norm_refs:        ← bajo qué normas             (gobernanza)
          ├─ .history/         ← todas sus versiones previas (CIA-A)
+         ├─ .git/             ← una entrada por operación    (deshacer de vault)
          ├─ .change-log.json  ← qué se creó/movió/borró     (F8 No repudio, SP-01)
          ├─ .tool-trace.json  ← qué tool tocó qué y cuándo  (auditabilidad)
          └─ vault-backups/    ← manifiesto Merkle verificable

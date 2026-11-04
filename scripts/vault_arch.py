@@ -296,6 +296,13 @@ CONTEXTS: dict[str, dict] = {
             # vault, así que `vault_onboard` y `vault_write` no tenían por qué
             # cruzar una frontera para validar una cadena que ya tenían.
             "vault_mermaid_reglas",
+            # v41.26 — la capa de git del vault: lee y versiona operaciones.
+            # Kernel porque su consumidor es `wrap_main` (que envuelve a todas
+            # las tools) y porque no escribe en el vault: lee commits (`git
+            # archive`, un verbo de lectura) y delega el commit en
+            # `procesos_git`. La fachada `vault_vcs` es la que ven el grafo y
+            # el gate del núcleo; el dueño está en `vault/kernel/vcs.py`.
+            "vault_vcs",
         ],
     },
     "autoria": {

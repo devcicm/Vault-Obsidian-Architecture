@@ -1,17 +1,17 @@
 {
   "schemaVersion": 1,
-  "receiptId": "54a27fd3-adca-47d8-b4a3-62ac3512f4ea",
+  "receiptId": "08335983-4394-40c9-949c-95cdcf43f6f4",
   "status": "current",
   "command": "deliver",
   "type": "architecture",
-  "input": ".\\.archify\\candidata-contextos.json",
-  "output": ".\\.archify\\mapa-contextos.html",
+  "input": "B:\\Vault-Obsidian-Architecture\\.archify\\candidata-contextos.json",
+  "output": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.html",
   "specification": {
-    "sha256": "ebb4f9e01af26ad4615d4b709f36cb5d3b4d1643c5dc9c70feaf94aacceca898",
-    "bytes": 11652
+    "sha256": "f428af3ebb92b53ac8135478c44cd0ec33bedcbca920c060b12aacd64e4d17bc",
+    "bytes": 10433
   },
   "artifact": {
-    "sha256": "df889fb13ccd6ea9a18d980ec402001fa056259db746ed6906e6cdcff0e0d7d8",
+    "sha256": "a37d06f3c4ce83af287142251d2ff292217c26cb9ed59f24dc35d365b31c4c64",
     "bytes": 861118
   }
 }

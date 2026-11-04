@@ -266,16 +266,16 @@ def _operaciones_del_vault(limite: int = 20) -> dict:
     `vault.kernel.vcs`): este listado es el "qué se ha hecho aquí" con fecha y
     autor, y de ahí se elige el punto al que volver.
     """
-    from vault.kernel import vcs
+    from vault_vcs import commits as operaciones_del_vault, hay_repo
     from vault_raiz import get_vault_root
 
     raiz = get_vault_root()
-    if not vcs.hay_repo(raiz):
+    if not hay_repo(raiz):
         return {"ok": False, "tool": "vault_undo", "action": "commits",
                 "error_code": "NO_HAY_REPO",
                 "message": "este vault no tiene repositorio git: no hay "
                            "operaciones versionadas"}
-    operaciones = vcs.commits(raiz, limite)
+    operaciones = operaciones_del_vault(raiz, limite)
     return {"ok": True, "tool": "vault_undo", "action": "commits",
             "operations": operaciones, "total": len(operaciones),
             "message": f"{len(operaciones)} operacion(es) versionada(s)"}
@@ -292,26 +292,28 @@ def _volver_a(sha: str, dry_run: bool, agent: str, forzar: bool = False) -> dict
     **No trunca:** lo que existe ahora y no estaba en ese commit se DECLARA
     siempre; solo con `--force` desaparece.
     """
-    from vault.kernel import vcs
+    from vault_vcs import (commits as operaciones_del_vault,
+                                  contenido_del_commit, es_hash,
+                                  ficheros_del_repo, hay_repo)
     from vault_raiz import get_vault_root
 
     raiz = get_vault_root()
-    if not vcs.hay_repo(raiz):
+    if not hay_repo(raiz):
         return {"ok": False, "tool": "vault_undo", "action": "to",
                 "error_code": "NO_HAY_REPO",
                 "message": "este vault no tiene repositorio git"}
-    if not vcs.es_hash(sha):
+    if not es_hash(sha):
         return {"ok": False, "tool": "vault_undo", "action": "to",
                 "error_code": "INVALID_ARGS",
                 "message": f"'{sha}' no tiene forma de hash de git"}
     if dry_run:
-        operaciones = vcs.commits(raiz, 200)
+        operaciones = operaciones_del_vault(raiz, 200)
         return {"ok": True, "tool": "vault_undo", "action": "to", "dry_run": True,
                 "sha": sha,
                 "existe": any(o["sha"].startswith(sha) for o in operaciones),
                 "operations": operaciones[:20]}
 
-    contenido = vcs.contenido_del_commit(raiz, sha)
+    contenido = contenido_del_commit(raiz, sha)
     if contenido is None:
         return {"ok": False, "tool": "vault_undo", "action": "to",
                 "error_code": "COMMIT_ILEGIBLE",
@@ -321,7 +323,7 @@ def _volver_a(sha: str, dry_run: bool, agent: str, forzar: bool = False) -> dict
 
     # Lo que hay ahora y no estaba entonces: se declara (y con --force se
     # borra por la vía de `vault_delete`: con motivo y con registro).
-    estado = vcs.ficheros_del_repo(raiz)
+    estado = ficheros_del_repo(raiz)
     fuera = sorted(
         (set(estado["versionados"]) - set(contenido))
         | (set(estado["sin_rastrear"]) - set(contenido))

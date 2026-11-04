@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "receiptId": "2a4716dc-666d-4b20-89af-4b3315722723",
+  "receiptId": "7f9b624a-8b90-4ed9-a24f-2f4d6dc374d6",
   "status": "current",
   "command": "deliver",
   "type": "workflow",
-  "input": ".\\.archify\\candidata-onboarding.json",
-  "output": ".\\.archify\\mapa-onboarding.html",
+  "input": "B:\\Vault-Obsidian-Architecture\\.archify\\candidata-onboarding.json",
+  "output": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-onboarding.html",
   "specification": {
     "sha256": "ad4d1b2e4e2755b9a0822a7abf1e1a468daaf8c8b95e9f06d3411e94f8ff41f8",
     "bytes": 9791

@@ -6,9 +6,9 @@
   "status": "pass",
   "visualReview": "not-requested",
   "provenance": "current",
-  "deliveryReceiptId": "65c02544-5c39-49b5-82bf-fa96b5865a2c",
+  "deliveryReceiptId": "d3b6793a-266d-4cff-a39d-3439d455e625",
   "artifact": {
-    "path": ".\\.archify\\mapa-cruces.html",
+    "path": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-cruces.html",
     "sha256": "66490456a69db201be54a037a85615f8b4d5c2fa840b296bc588259e5785bbb7",
     "bytes": 853870
   },

@@ -1,19 +1,19 @@
 {
   "schemaVersion": 1,
-  "ok": true,
+  "ok": false,
   "command": "finalize",
-  "status": "pass",
+  "status": "fail",
   "type": "architecture",
   "quality": "showcase",
-  "startedAt": "2026-10-29T08:42:43.147Z",
+  "startedAt": "2026-11-04T20:25:56.945Z",
   "specification": {
-    "path": ".\\.archify\\candidata-contextos.json",
-    "sha256": "3581ae6737a0acda5eb8da9604ee71d32cd815fa04fda43d4caa4de94dbb364a",
-    "bytes": 12210
+    "path": "B:\\Vault-Obsidian-Architecture\\.archify\\candidata-contextos.json",
+    "sha256": "20c5f571b7802745064819729534694637391a3d1d6b107a54bac84f376651e2",
+    "bytes": 10433
   },
   "artifact": {
-    "path": ".\\.archify\\mapa-contextos.html",
-    "sha256": "df889fb13ccd6ea9a18d980ec402001fa056259db746ed6906e6cdcff0e0d7d8",
+    "path": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.html",
+    "sha256": "1abd687dc66381ce995059e25967dd155f1b42b4f580158fc94870d423d0c850",
     "bytes": 861118
   },
   "stages": {
@@ -24,15 +24,15 @@
       "execution": "embedded-in-deliver",
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
-        "<archify>/bin/archify.mjs",
+        "C:\\Users\\Carlos Ivan\\.claude\\skills\\archify\\bin\\archify.mjs",
         "deliver",
         "architecture",
-        ".\\.archify\\candidata-contextos.json",
-        ".\\.archify\\mapa-contextos.html",
+        "B:\\Vault-Obsidian-Architecture\\.archify\\candidata-contextos.json",
+        "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.html",
         "--quality",
         "showcase",
         "--repo-root",
-        ".",
+        "B:\\Vault-Obsidian-Architecture",
         "--json"
       ],
       "receipt": {
@@ -40,8 +40,8 @@
         "ok": true,
         "command": "validate",
         "specification": {
-          "sha256": "3581ae6737a0acda5eb8da9604ee71d32cd815fa04fda43d4caa4de94dbb364a",
-          "bytes": 12210
+          "sha256": "20c5f571b7802745064819729534694637391a3d1d6b107a54bac84f376651e2",
+          "bytes": 10433
         },
         "validation": {
           "checksPassed": 9,
@@ -56,34 +56,34 @@
     "deliver": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 1791,
+      "durationMs": 1165,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
-        "<archify>/bin/archify.mjs",
+        "C:\\Users\\Carlos Ivan\\.claude\\skills\\archify\\bin\\archify.mjs",
         "deliver",
         "architecture",
-        ".\\.archify\\candidata-contextos.json",
-        ".\\.archify\\mapa-contextos.html",
+        "B:\\Vault-Obsidian-Architecture\\.archify\\candidata-contextos.json",
+        "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.html",
         "--quality",
         "showcase",
         "--repo-root",
-        ".",
+        "B:\\Vault-Obsidian-Architecture",
         "--json"
       ],
       "receipt": {
         "schemaVersion": 1,
-        "receiptId": "748e90d0-4f9b-49c4-a3c0-1f4dfff7444b",
+        "receiptId": "7f3c0081-81ca-46f5-a766-e62dfaae6f31",
         "ok": true,
         "command": "deliver",
         "type": "architecture",
-        "input": ".\\.archify\\candidata-contextos.json",
-        "output": ".\\.archify\\mapa-contextos.html",
+        "input": "B:\\Vault-Obsidian-Architecture\\.archify\\candidata-contextos.json",
+        "output": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.html",
         "specification": {
-          "sha256": "3581ae6737a0acda5eb8da9604ee71d32cd815fa04fda43d4caa4de94dbb364a",
-          "bytes": 12210
+          "sha256": "20c5f571b7802745064819729534694637391a3d1d6b107a54bac84f376651e2",
+          "bytes": 10433
         },
         "artifact": {
-          "sha256": "df889fb13ccd6ea9a18d980ec402001fa056259db746ed6906e6cdcff0e0d7d8",
+          "sha256": "1abd687dc66381ce995059e25967dd155f1b42b4f580158fc94870d423d0c850",
           "bytes": 861118
         },
         "validation": {
@@ -116,19 +116,19 @@
     "check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 499,
+      "durationMs": 284,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
-        "<archify>/bin/archify.mjs",
+        "C:\\Users\\Carlos Ivan\\.claude\\skills\\archify\\bin\\archify.mjs",
         "check",
-        ".\\.archify\\mapa-contextos.html",
+        "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.html",
         "--require-provenance"
       ],
       "receipt": {
         "ok": true,
-        "file": ".\\.archify\\mapa-contextos.html",
+        "file": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.html",
         "artifact": {
-          "sha256": "df889fb13ccd6ea9a18d980ec402001fa056259db746ed6906e6cdcff0e0d7d8",
+          "sha256": "1abd687dc66381ce995059e25967dd155f1b42b4f580158fc94870d423d0c850",
           "bytes": 861118
         },
         "checks": [
@@ -1120,34 +1120,34 @@
           "issues": []
         },
         "provenance": "current",
-        "deliveryReceiptId": "748e90d0-4f9b-49c4-a3c0-1f4dfff7444b"
+        "deliveryReceiptId": "7f3c0081-81ca-46f5-a766-e62dfaae6f31"
       }
     },
     "browser-check": {
-      "status": "pass",
-      "exitCode": 0,
-      "durationMs": 3039,
+      "status": "fail",
+      "exitCode": 1,
+      "durationMs": 32,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
-        "<archify>/bin/archify.mjs",
+        "C:\\Users\\Carlos Ivan\\.claude\\skills\\archify\\bin\\archify.mjs",
         "browser-check",
-        ".\\.archify\\mapa-contextos.html",
+        "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.html",
         "--json",
         "--require-provenance"
       ],
       "execution": "in-process",
       "receipt": {
         "schemaVersion": 1,
-        "ok": true,
+        "ok": false,
         "command": "browser-check",
         "evidenceKind": "automated-browser",
-        "status": "pass",
+        "status": "fail",
         "visualReview": "not-requested",
         "provenance": "current",
-        "deliveryReceiptId": "748e90d0-4f9b-49c4-a3c0-1f4dfff7444b",
+        "deliveryReceiptId": "7f3c0081-81ca-46f5-a766-e62dfaae6f31",
         "artifact": {
-          "path": ".\\.archify\\mapa-contextos.html",
-          "sha256": "df889fb13ccd6ea9a18d980ec402001fa056259db746ed6906e6cdcff0e0d7d8",
+          "path": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.html",
+          "sha256": "1abd687dc66381ce995059e25967dd155f1b42b4f580158fc94870d423d0c850",
           "bytes": 861118
         },
         "state": {
@@ -1155,673 +1155,45 @@
           "motion": "still"
         },
         "chrome": {
-          "status": "available",
-          "executable": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+          "status": "not-checked",
+          "executable": null
         },
-        "diagnostics": [],
+        "diagnostics": [
+          {
+            "code": "viewer/evidence-path-conflict",
+            "severity": "error",
+            "message": "browser-check will not replace the existing unowned evidence path \"B:\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.browser-check.json\".",
+            "subject": {
+              "artifact": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.html",
+              "evidencePath": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.browser-check.json"
+            },
+            "evidence": {
+              "reason": {
+                "code": "ownership-artifact-mismatch"
+              }
+            },
+            "supportedFixes": [
+              "move the conflicting file aside, or choose a separate --out-dir, then rerun browser-check"
+            ]
+          }
+        ],
         "containment": {
-          "status": "pass",
+          "status": "fail",
           "policy": "fit-or-reader-declared-readable-vertical-scroll",
-          "viewports": [
-            {
-              "width": 1440,
-              "height": 900,
-              "theme": "light",
-              "innerWidth": 1440,
-              "innerHeight": 900,
-              "scrollWidth": 1440,
-              "scrollHeight": 900,
-              "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
-              "readerLayout": "adaptive",
-              "readerOverflow": null,
-              "readerFit": "intrinsic-height",
-              "ok": true,
-              "readerWidth": 1374,
-              "diagramWidth": 1344,
-              "pageComposition": {
-                "bodyPaddingPx": 12,
-                "headerPx": 78,
-                "diagramChromePx": 78,
-                "svgPx": 728,
-                "cardsPx": 0,
-                "viewBoxHeight": 728
-              },
-              "viewBoxWidth": 1344,
-              "minimumProjectedNodeTextPx": 6,
-              "minimumProjectedNonEdgeTextPx": 6,
-              "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "23 módulos · 4 puertos · prohibe depender de dominios",
-              "minimumProjectedNodeTextDetail": "context",
-              "minimumProjectedNodeTextOwner": {
-                "kind": "node",
-                "id": "k"
-              },
-              "minimumRequiredNodeTextPx": 6,
-              "readabilityOk": true,
-              "hasLegend": true,
-              "hasNavigationDock": true,
-              "legendDockIntersectionArea": 0,
-              "dockStageIntersectionArea": 0,
-              "dockStageGap": 10,
-              "requiredDockStageGap": 10,
-              "viewerChromeStageOk": true,
-              "viewerChromeReserve": 54,
-              "viewerChromeActive": true,
-              "viewerChromeOk": true,
-              "resolvedTheme": "light"
-            },
-            {
-              "width": 1600,
-              "height": 1000,
-              "theme": "light",
-              "innerWidth": 1600,
-              "innerHeight": 1000,
-              "scrollWidth": 1600,
-              "scrollHeight": 1000,
-              "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
-              "readerLayout": "adaptive",
-              "readerOverflow": null,
-              "readerFit": "intrinsic-height",
-              "ok": true,
-              "readerWidth": 1423,
-              "diagramWidth": 1393,
-              "pageComposition": {
-                "bodyPaddingPx": 64,
-                "headerPx": 86,
-                "diagramChromePx": 84,
-                "svgPx": 755,
-                "cardsPx": 0,
-                "viewBoxHeight": 728
-              },
-              "viewBoxWidth": 1344,
-              "minimumProjectedNodeTextPx": 6,
-              "minimumProjectedNonEdgeTextPx": 6,
-              "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "23 módulos · 4 puertos · prohibe depender de dominios",
-              "minimumProjectedNodeTextDetail": "context",
-              "minimumProjectedNodeTextOwner": {
-                "kind": "node",
-                "id": "k"
-              },
-              "minimumRequiredNodeTextPx": 6,
-              "readabilityOk": true,
-              "hasLegend": true,
-              "hasNavigationDock": true,
-              "legendDockIntersectionArea": 0,
-              "dockStageIntersectionArea": 0,
-              "dockStageGap": 10,
-              "requiredDockStageGap": 10,
-              "viewerChromeStageOk": true,
-              "viewerChromeReserve": 54,
-              "viewerChromeActive": true,
-              "viewerChromeOk": true,
-              "resolvedTheme": "light"
-            },
-            {
-              "width": 1920,
-              "height": 1080,
-              "theme": "light",
-              "innerWidth": 1920,
-              "innerHeight": 1080,
-              "scrollWidth": 1920,
-              "scrollHeight": 1080,
-              "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
-              "readerLayout": "adaptive",
-              "readerOverflow": null,
-              "readerFit": "intrinsic-height",
-              "ok": true,
-              "readerWidth": 1570,
-              "diagramWidth": 1540,
-              "pageComposition": {
-                "bodyPaddingPx": 64,
-                "headerPx": 86,
-                "diagramChromePx": 84,
-                "svgPx": 834,
-                "cardsPx": 0,
-                "viewBoxHeight": 728
-              },
-              "viewBoxWidth": 1344,
-              "minimumProjectedNodeTextPx": 6,
-              "minimumProjectedNonEdgeTextPx": 6,
-              "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "23 módulos · 4 puertos · prohibe depender de dominios",
-              "minimumProjectedNodeTextDetail": "context",
-              "minimumProjectedNodeTextOwner": {
-                "kind": "node",
-                "id": "k"
-              },
-              "minimumRequiredNodeTextPx": 6,
-              "readabilityOk": true,
-              "hasLegend": true,
-              "hasNavigationDock": true,
-              "legendDockIntersectionArea": 0,
-              "dockStageIntersectionArea": 0,
-              "dockStageGap": 10,
-              "requiredDockStageGap": 10,
-              "viewerChromeStageOk": true,
-              "viewerChromeReserve": 54,
-              "viewerChromeActive": true,
-              "viewerChromeOk": true,
-              "resolvedTheme": "light"
-            },
-            {
-              "width": 2048,
-              "height": 1320,
-              "theme": "light",
-              "innerWidth": 2048,
-              "innerHeight": 1320,
-              "scrollWidth": 2048,
-              "scrollHeight": 1320,
-              "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
-              "readerLayout": "adaptive",
-              "readerOverflow": null,
-              "readerFit": "intrinsic-height",
-              "ok": true,
-              "readerWidth": 1920,
-              "diagramWidth": 1870,
-              "pageComposition": {
-                "bodyPaddingPx": 64,
-                "headerPx": 94,
-                "diagramChromePx": 94,
-                "svgPx": 1013,
-                "cardsPx": 0,
-                "viewBoxHeight": 728
-              },
-              "viewBoxWidth": 1344,
-              "minimumProjectedNodeTextPx": 6,
-              "minimumProjectedNonEdgeTextPx": 6,
-              "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "23 módulos · 4 puertos · prohibe depender de dominios",
-              "minimumProjectedNodeTextDetail": "context",
-              "minimumProjectedNodeTextOwner": {
-                "kind": "node",
-                "id": "k"
-              },
-              "minimumRequiredNodeTextPx": 6,
-              "readabilityOk": true,
-              "hasLegend": true,
-              "hasNavigationDock": true,
-              "legendDockIntersectionArea": 0,
-              "dockStageIntersectionArea": 0,
-              "dockStageGap": 10,
-              "requiredDockStageGap": 10,
-              "viewerChromeStageOk": true,
-              "viewerChromeReserve": 44,
-              "viewerChromeActive": true,
-              "viewerChromeOk": true,
-              "resolvedTheme": "light"
-            }
-          ]
+          "viewports": []
         },
         "themeStates": {
-          "status": "pass",
-          "viewports": [
-            {
-              "width": 1440,
-              "height": 900,
-              "requestedTheme": "light",
-              "resolvedTheme": "light",
-              "ok": true
-            },
-            {
-              "width": 1600,
-              "height": 1000,
-              "requestedTheme": "light",
-              "resolvedTheme": "light",
-              "ok": true
-            },
-            {
-              "width": 1920,
-              "height": 1080,
-              "requestedTheme": "light",
-              "resolvedTheme": "light",
-              "ok": true
-            },
-            {
-              "width": 2048,
-              "height": 1320,
-              "requestedTheme": "light",
-              "resolvedTheme": "light",
-              "ok": true
-            },
-            {
-              "width": 1440,
-              "height": 900,
-              "requestedTheme": "dark",
-              "resolvedTheme": "dark",
-              "ok": true
-            },
-            {
-              "width": 2048,
-              "height": 1320,
-              "requestedTheme": "dark",
-              "resolvedTheme": "dark",
-              "ok": true
-            }
-          ]
+          "status": "fail",
+          "viewports": []
         },
         "readability": {
-          "status": "pass",
+          "status": "fail",
           "minimumProjectedNodeTextPx": 6,
-          "viewports": [
-            {
-              "width": 1440,
-              "height": 900,
-              "theme": "light",
-              "innerWidth": 1440,
-              "innerHeight": 900,
-              "scrollWidth": 1440,
-              "scrollHeight": 900,
-              "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
-              "readerLayout": "adaptive",
-              "readerOverflow": null,
-              "readerFit": "intrinsic-height",
-              "ok": true,
-              "readerWidth": 1374,
-              "diagramWidth": 1344,
-              "pageComposition": {
-                "bodyPaddingPx": 12,
-                "headerPx": 78,
-                "diagramChromePx": 78,
-                "svgPx": 728,
-                "cardsPx": 0,
-                "viewBoxHeight": 728
-              },
-              "viewBoxWidth": 1344,
-              "minimumProjectedNodeTextPx": 6,
-              "minimumProjectedNonEdgeTextPx": 6,
-              "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "23 módulos · 4 puertos · prohibe depender de dominios",
-              "minimumProjectedNodeTextDetail": "context",
-              "minimumProjectedNodeTextOwner": {
-                "kind": "node",
-                "id": "k"
-              },
-              "minimumRequiredNodeTextPx": 6,
-              "readabilityOk": true,
-              "hasLegend": true,
-              "hasNavigationDock": true,
-              "legendDockIntersectionArea": 0,
-              "dockStageIntersectionArea": 0,
-              "dockStageGap": 10,
-              "requiredDockStageGap": 10,
-              "viewerChromeStageOk": true,
-              "viewerChromeReserve": 54,
-              "viewerChromeActive": true,
-              "viewerChromeOk": true,
-              "resolvedTheme": "light"
-            },
-            {
-              "width": 1600,
-              "height": 1000,
-              "theme": "light",
-              "innerWidth": 1600,
-              "innerHeight": 1000,
-              "scrollWidth": 1600,
-              "scrollHeight": 1000,
-              "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
-              "readerLayout": "adaptive",
-              "readerOverflow": null,
-              "readerFit": "intrinsic-height",
-              "ok": true,
-              "readerWidth": 1423,
-              "diagramWidth": 1393,
-              "pageComposition": {
-                "bodyPaddingPx": 64,
-                "headerPx": 86,
-                "diagramChromePx": 84,
-                "svgPx": 755,
-                "cardsPx": 0,
-                "viewBoxHeight": 728
-              },
-              "viewBoxWidth": 1344,
-              "minimumProjectedNodeTextPx": 6,
-              "minimumProjectedNonEdgeTextPx": 6,
-              "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "23 módulos · 4 puertos · prohibe depender de dominios",
-              "minimumProjectedNodeTextDetail": "context",
-              "minimumProjectedNodeTextOwner": {
-                "kind": "node",
-                "id": "k"
-              },
-              "minimumRequiredNodeTextPx": 6,
-              "readabilityOk": true,
-              "hasLegend": true,
-              "hasNavigationDock": true,
-              "legendDockIntersectionArea": 0,
-              "dockStageIntersectionArea": 0,
-              "dockStageGap": 10,
-              "requiredDockStageGap": 10,
-              "viewerChromeStageOk": true,
-              "viewerChromeReserve": 54,
-              "viewerChromeActive": true,
-              "viewerChromeOk": true,
-              "resolvedTheme": "light"
-            },
-            {
-              "width": 1920,
-              "height": 1080,
-              "theme": "light",
-              "innerWidth": 1920,
-              "innerHeight": 1080,
-              "scrollWidth": 1920,
-              "scrollHeight": 1080,
-              "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
-              "readerLayout": "adaptive",
-              "readerOverflow": null,
-              "readerFit": "intrinsic-height",
-              "ok": true,
-              "readerWidth": 1570,
-              "diagramWidth": 1540,
-              "pageComposition": {
-                "bodyPaddingPx": 64,
-                "headerPx": 86,
-                "diagramChromePx": 84,
-                "svgPx": 834,
-                "cardsPx": 0,
-                "viewBoxHeight": 728
-              },
-              "viewBoxWidth": 1344,
-              "minimumProjectedNodeTextPx": 6,
-              "minimumProjectedNonEdgeTextPx": 6,
-              "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "23 módulos · 4 puertos · prohibe depender de dominios",
-              "minimumProjectedNodeTextDetail": "context",
-              "minimumProjectedNodeTextOwner": {
-                "kind": "node",
-                "id": "k"
-              },
-              "minimumRequiredNodeTextPx": 6,
-              "readabilityOk": true,
-              "hasLegend": true,
-              "hasNavigationDock": true,
-              "legendDockIntersectionArea": 0,
-              "dockStageIntersectionArea": 0,
-              "dockStageGap": 10,
-              "requiredDockStageGap": 10,
-              "viewerChromeStageOk": true,
-              "viewerChromeReserve": 54,
-              "viewerChromeActive": true,
-              "viewerChromeOk": true,
-              "resolvedTheme": "light"
-            },
-            {
-              "width": 2048,
-              "height": 1320,
-              "theme": "light",
-              "innerWidth": 2048,
-              "innerHeight": 1320,
-              "scrollWidth": 2048,
-              "scrollHeight": 1320,
-              "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
-              "readerLayout": "adaptive",
-              "readerOverflow": null,
-              "readerFit": "intrinsic-height",
-              "ok": true,
-              "readerWidth": 1920,
-              "diagramWidth": 1870,
-              "pageComposition": {
-                "bodyPaddingPx": 64,
-                "headerPx": 94,
-                "diagramChromePx": 94,
-                "svgPx": 1013,
-                "cardsPx": 0,
-                "viewBoxHeight": 728
-              },
-              "viewBoxWidth": 1344,
-              "minimumProjectedNodeTextPx": 6,
-              "minimumProjectedNonEdgeTextPx": 6,
-              "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "23 módulos · 4 puertos · prohibe depender de dominios",
-              "minimumProjectedNodeTextDetail": "context",
-              "minimumProjectedNodeTextOwner": {
-                "kind": "node",
-                "id": "k"
-              },
-              "minimumRequiredNodeTextPx": 6,
-              "readabilityOk": true,
-              "hasLegend": true,
-              "hasNavigationDock": true,
-              "legendDockIntersectionArea": 0,
-              "dockStageIntersectionArea": 0,
-              "dockStageGap": 10,
-              "requiredDockStageGap": 10,
-              "viewerChromeStageOk": true,
-              "viewerChromeReserve": 44,
-              "viewerChromeActive": true,
-              "viewerChromeOk": true,
-              "resolvedTheme": "light"
-            }
-          ]
+          "viewports": []
         },
         "viewerChrome": {
-          "status": "pass",
-          "viewports": [
-            {
-              "width": 1440,
-              "height": 900,
-              "theme": "light",
-              "innerWidth": 1440,
-              "innerHeight": 900,
-              "scrollWidth": 1440,
-              "scrollHeight": 900,
-              "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
-              "readerLayout": "adaptive",
-              "readerOverflow": null,
-              "readerFit": "intrinsic-height",
-              "ok": true,
-              "readerWidth": 1374,
-              "diagramWidth": 1344,
-              "pageComposition": {
-                "bodyPaddingPx": 12,
-                "headerPx": 78,
-                "diagramChromePx": 78,
-                "svgPx": 728,
-                "cardsPx": 0,
-                "viewBoxHeight": 728
-              },
-              "viewBoxWidth": 1344,
-              "minimumProjectedNodeTextPx": 6,
-              "minimumProjectedNonEdgeTextPx": 6,
-              "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "23 módulos · 4 puertos · prohibe depender de dominios",
-              "minimumProjectedNodeTextDetail": "context",
-              "minimumProjectedNodeTextOwner": {
-                "kind": "node",
-                "id": "k"
-              },
-              "minimumRequiredNodeTextPx": 6,
-              "readabilityOk": true,
-              "hasLegend": true,
-              "hasNavigationDock": true,
-              "legendDockIntersectionArea": 0,
-              "dockStageIntersectionArea": 0,
-              "dockStageGap": 10,
-              "requiredDockStageGap": 10,
-              "viewerChromeStageOk": true,
-              "viewerChromeReserve": 54,
-              "viewerChromeActive": true,
-              "viewerChromeOk": true,
-              "resolvedTheme": "light"
-            },
-            {
-              "width": 1600,
-              "height": 1000,
-              "theme": "light",
-              "innerWidth": 1600,
-              "innerHeight": 1000,
-              "scrollWidth": 1600,
-              "scrollHeight": 1000,
-              "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
-              "readerLayout": "adaptive",
-              "readerOverflow": null,
-              "readerFit": "intrinsic-height",
-              "ok": true,
-              "readerWidth": 1423,
-              "diagramWidth": 1393,
-              "pageComposition": {
-                "bodyPaddingPx": 64,
-                "headerPx": 86,
-                "diagramChromePx": 84,
-                "svgPx": 755,
-                "cardsPx": 0,
-                "viewBoxHeight": 728
-              },
-              "viewBoxWidth": 1344,
-              "minimumProjectedNodeTextPx": 6,
-              "minimumProjectedNonEdgeTextPx": 6,
-              "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "23 módulos · 4 puertos · prohibe depender de dominios",
-              "minimumProjectedNodeTextDetail": "context",
-              "minimumProjectedNodeTextOwner": {
-                "kind": "node",
-                "id": "k"
-              },
-              "minimumRequiredNodeTextPx": 6,
-              "readabilityOk": true,
-              "hasLegend": true,
-              "hasNavigationDock": true,
-              "legendDockIntersectionArea": 0,
-              "dockStageIntersectionArea": 0,
-              "dockStageGap": 10,
-              "requiredDockStageGap": 10,
-              "viewerChromeStageOk": true,
-              "viewerChromeReserve": 54,
-              "viewerChromeActive": true,
-              "viewerChromeOk": true,
-              "resolvedTheme": "light"
-            },
-            {
-              "width": 1920,
-              "height": 1080,
-              "theme": "light",
-              "innerWidth": 1920,
-              "innerHeight": 1080,
-              "scrollWidth": 1920,
-              "scrollHeight": 1080,
-              "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
-              "readerLayout": "adaptive",
-              "readerOverflow": null,
-              "readerFit": "intrinsic-height",
-              "ok": true,
-              "readerWidth": 1570,
-              "diagramWidth": 1540,
-              "pageComposition": {
-                "bodyPaddingPx": 64,
-                "headerPx": 86,
-                "diagramChromePx": 84,
-                "svgPx": 834,
-                "cardsPx": 0,
-                "viewBoxHeight": 728
-              },
-              "viewBoxWidth": 1344,
-              "minimumProjectedNodeTextPx": 6,
-              "minimumProjectedNonEdgeTextPx": 6,
-              "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "23 módulos · 4 puertos · prohibe depender de dominios",
-              "minimumProjectedNodeTextDetail": "context",
-              "minimumProjectedNodeTextOwner": {
-                "kind": "node",
-                "id": "k"
-              },
-              "minimumRequiredNodeTextPx": 6,
-              "readabilityOk": true,
-              "hasLegend": true,
-              "hasNavigationDock": true,
-              "legendDockIntersectionArea": 0,
-              "dockStageIntersectionArea": 0,
-              "dockStageGap": 10,
-              "requiredDockStageGap": 10,
-              "viewerChromeStageOk": true,
-              "viewerChromeReserve": 54,
-              "viewerChromeActive": true,
-              "viewerChromeOk": true,
-              "resolvedTheme": "light"
-            },
-            {
-              "width": 2048,
-              "height": 1320,
-              "theme": "light",
-              "innerWidth": 2048,
-              "innerHeight": 1320,
-              "scrollWidth": 2048,
-              "scrollHeight": 1320,
-              "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
-              "readerLayout": "adaptive",
-              "readerOverflow": null,
-              "readerFit": "intrinsic-height",
-              "ok": true,
-              "readerWidth": 1920,
-              "diagramWidth": 1870,
-              "pageComposition": {
-                "bodyPaddingPx": 64,
-                "headerPx": 94,
-                "diagramChromePx": 94,
-                "svgPx": 1013,
-                "cardsPx": 0,
-                "viewBoxHeight": 728
-              },
-              "viewBoxWidth": 1344,
-              "minimumProjectedNodeTextPx": 6,
-              "minimumProjectedNonEdgeTextPx": 6,
-              "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "23 módulos · 4 puertos · prohibe depender de dominios",
-              "minimumProjectedNodeTextDetail": "context",
-              "minimumProjectedNodeTextOwner": {
-                "kind": "node",
-                "id": "k"
-              },
-              "minimumRequiredNodeTextPx": 6,
-              "readabilityOk": true,
-              "hasLegend": true,
-              "hasNavigationDock": true,
-              "legendDockIntersectionArea": 0,
-              "dockStageIntersectionArea": 0,
-              "dockStageGap": 10,
-              "requiredDockStageGap": 10,
-              "viewerChromeStageOk": true,
-              "viewerChromeReserve": 44,
-              "viewerChromeActive": true,
-              "viewerChromeOk": true,
-              "resolvedTheme": "light"
-            }
-          ]
+          "status": "fail",
+          "viewports": []
         },
         "captures": {
           "status": "not-requested",
@@ -1831,29 +1203,49 @@
         "sidecars": {
           "receipt": "mapa-contextos.browser-check.json",
           "files": []
-        }
+        },
+        "error": "browser-check will not replace the existing unowned evidence path \"B:\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.browser-check.json\"."
       }
     }
   },
   "browserCheck": {
     "requested": true,
-    "ran": true
+    "ran": false
   },
-  "diagnostics": [],
+  "diagnostics": [
+    {
+      "code": "viewer/evidence-path-conflict",
+      "severity": "error",
+      "message": "browser-check will not replace the existing unowned evidence path \"B:\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.browser-check.json\".",
+      "subject": {
+        "artifact": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.html",
+        "evidencePath": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.browser-check.json"
+      },
+      "evidence": {
+        "reason": {
+          "code": "ownership-artifact-mismatch"
+        }
+      },
+      "supportedFixes": [
+        "move the conflicting file aside, or choose a separate --out-dir, then rerun browser-check"
+      ]
+    }
+  ],
   "evidence": {
-    "receipt": ".\\.archify\\mapa-contextos.finalize.json",
-    "summaryReceipt": ".\\.archify\\mapa-contextos.finalize-summary.json",
-    "browserCheckReceipt": ".\\.archify\\mapa-contextos.browser-check.json"
+    "receipt": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.finalize.json",
+    "summaryReceipt": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.finalize-summary.json",
+    "browserCheckReceipt": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-contextos.browser-check.json"
   },
   "visualReview": "not-requested",
-  "finishedAt": "2026-10-29T08:42:49.537Z",
-  "durationMs": 6390,
+  "failedStage": "browser-check",
+  "finishedAt": "2026-11-04T20:25:58.728Z",
+  "durationMs": 1782,
   "update": {
     "status": "current",
     "installedVersion": "3.2.0",
     "availableVersion": "3.2.0",
     "releaseNotes": null,
-    "checkedAt": "2026-10-29T08:41:02.574Z",
+    "checkedAt": "2026-11-04T20:24:27.729Z",
     "source": "cache",
     "noticeRequired": false,
     "noticeText": null

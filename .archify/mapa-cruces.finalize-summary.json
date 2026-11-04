@@ -1,368 +1,70 @@
 {
   "schemaVersion": 1,
-  "ok": true,
+  "ok": false,
   "command": "finalize",
-  "status": "pass",
+  "status": "fail",
   "type": "architecture",
   "quality": "showcase",
   "specification": {
-    "path": ".\\.archify\\candidata-cruces.json",
-    "sha256": "aa3352353261d749d41d0271a5fece41a522f27cfa0fc49b2bc3e91a64a2c3d7",
-    "bytes": 10761
+    "path": "B:\\Vault-Obsidian-Architecture\\.archify\\candidata-cruces.json",
+    "sha256": "8d5a8168ebe677da1608704d90651202ca913020a99e54e8fc9b18b4c2b88535",
+    "bytes": 9286
   },
   "artifact": {
-    "path": ".\\.archify\\mapa-cruces.html",
-    "sha256": "66490456a69db201be54a037a85615f8b4d5c2fa840b296bc588259e5785bbb7",
+    "path": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-cruces.html",
+    "sha256": "1b8d49a294be090e0efd3b7ff94623a0d2f035507828034065d2fd5080606e86",
     "bytes": 853870
   },
   "gates": {
     "validate": "pass",
     "deliver": "pass",
     "check": "pass",
-    "browser-check": "pass"
+    "browser-check": "fail"
   },
-  "diagnostics": [],
+  "failedStage": "browser-check",
+  "diagnostics": [
+    {
+      "code": "viewer/evidence-path-conflict",
+      "severity": "error",
+      "message": "browser-check will not replace the existing unowned evidence path \"B:\\Vault-Obsidian-Architecture\\.archify\\mapa-cruces.browser-check.json\".",
+      "subject": {
+        "artifact": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-cruces.html",
+        "evidencePath": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-cruces.browser-check.json"
+      },
+      "evidence": {
+        "reason": {
+          "code": "ownership-artifact-mismatch"
+        }
+      },
+      "supportedFixes": [
+        "move the conflicting file aside, or choose a separate --out-dir, then rerun browser-check"
+      ]
+    }
+  ],
   "diagnosticSummary": {
-    "total": 0,
-    "shown": 0,
+    "total": 1,
+    "shown": 1,
     "truncated": false
   },
   "evidence": {
-    "receipt": ".\\.archify\\mapa-cruces.finalize.json",
-    "summaryReceipt": ".\\.archify\\mapa-cruces.finalize-summary.json",
-    "browserCheckReceipt": ".\\.archify\\mapa-cruces.browser-check.json"
+    "receipt": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-cruces.finalize.json",
+    "summaryReceipt": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-cruces.finalize-summary.json",
+    "browserCheckReceipt": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-cruces.browser-check.json"
   },
   "update": {
     "status": "current",
     "installedVersion": "3.2.0",
     "availableVersion": "3.2.0",
     "releaseNotes": null,
-    "checkedAt": "2026-10-29T08:41:02.574Z",
+    "checkedAt": "2026-11-04T20:24:27.729Z",
     "source": "cache",
     "noticeRequired": false,
     "noticeText": null
   },
   "visualReview": "not-requested",
-  "durationMs": 5597,
+  "durationMs": 1785,
   "browserCheck": {
     "requested": true,
-    "ran": true
-  },
-  "visualReviewRecommendation": {
-    "action": "inspect-route-readability",
-    "signals": {
-      "resolvedCrossovers": 21,
-      "routesOverSuggestedBends": 13
-    },
-    "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
-    "affectedRoutes": {
-      "crossings": [
-        {
-          "left": {
-            "id": "x-a-idx",
-            "from": "a",
-            "to": "idx",
-            "label": "5 cruces (tags)",
-            "collectionIndex": 3,
-            "artifactIndex": 4
-          },
-          "right": {
-            "id": "x-cv-idx",
-            "from": "cv",
-            "to": "idx",
-            "label": "7 cruces",
-            "collectionIndex": 4,
-            "artifactIndex": 5
-          },
-          "point": [
-            628,
-            456
-          ],
-          "sharedNode": "idx"
-        },
-        {
-          "left": {
-            "id": "x-a-idx",
-            "from": "a",
-            "to": "idx",
-            "label": "5 cruces (tags)",
-            "collectionIndex": 3,
-            "artifactIndex": 4
-          },
-          "right": {
-            "id": "x-cv-g",
-            "from": "cv",
-            "to": "g",
-            "label": "1 cruce · propagate→impact",
-            "collectionIndex": 16,
-            "artifactIndex": 17
-          },
-          "point": [
-            490,
-            431
-          ]
-        },
-        {
-          "left": {
-            "id": "x-a-idx",
-            "from": "a",
-            "to": "idx",
-            "label": "5 cruces (tags)",
-            "collectionIndex": 3,
-            "artifactIndex": 4
-          },
-          "right": {
-            "id": "x-q-g",
-            "from": "q",
-            "to": "g",
-            "label": "3 cruces (subgrafo)",
-            "collectionIndex": 19,
-            "artifactIndex": 20
-          },
-          "point": [
-            474,
-            312
-          ]
-        },
-        {
-          "left": {
-            "id": "x-gov-idx",
-            "from": "gov",
-            "to": "idx",
-            "label": "5 cruces (runtime + repos)",
-            "collectionIndex": 6,
-            "artifactIndex": 7
-          },
-          "right": {
-            "id": "x-g-gov",
-            "from": "g",
-            "to": "gov",
-            "label": "1 cruce (repos grafo)",
-            "collectionIndex": 8,
-            "artifactIndex": 9
-          },
-          "point": [
-            1021,
-            206
-          ],
-          "sharedNode": "gov"
-        },
-        {
-          "left": {
-            "id": "x-gov-idx",
-            "from": "gov",
-            "to": "idx",
-            "label": "5 cruces (runtime + repos)",
-            "collectionIndex": 6,
-            "artifactIndex": 7
-          },
-          "right": {
-            "id": "x-a-gov",
-            "from": "a",
-            "to": "gov",
-            "label": "1 cruce (change_log)",
-            "collectionIndex": 11,
-            "artifactIndex": 12
-          },
-          "point": [
-            955.8,
-            259.3333333333321
-          ],
-          "sharedNode": "gov"
-        },
-        {
-          "left": {
-            "id": "x-gov-idx",
-            "from": "gov",
-            "to": "idx",
-            "label": "5 cruces (runtime + repos)",
-            "collectionIndex": 6,
-            "artifactIndex": 7
-          },
-          "right": {
-            "id": "x-cv-gov",
-            "from": "cv",
-            "to": "gov",
-            "label": "3 cruces (sanar + propagar)",
-            "collectionIndex": 15,
-            "artifactIndex": 16
-          },
-          "point": [
-            955.7999999999998,
-            286
-          ],
-          "sharedNode": "gov"
-        },
-        {
-          "left": {
-            "id": "x-gov-idx",
-            "from": "gov",
-            "to": "idx",
-            "label": "5 cruces (runtime + repos)",
-            "collectionIndex": 6,
-            "artifactIndex": 7
-          },
-          "right": {
-            "id": "x-a-mt",
-            "from": "a",
-            "to": "mt",
-            "label": "1 cruce (vault_voice)",
-            "collectionIndex": 20,
-            "artifactIndex": 21
-          },
-          "point": [
-            955.8,
-            416
-          ]
-        },
-        {
-          "left": {
-            "id": "x-idx-g",
-            "from": "idx",
-            "to": "g",
-            "label": "1 cruce (repos indices)",
-            "collectionIndex": 9,
-            "artifactIndex": 10
-          },
-          "right": {
-            "id": "x-a-gov",
-            "from": "a",
-            "to": "gov",
-            "label": "1 cruce (change_log)",
-            "collectionIndex": 11,
-            "artifactIndex": 12
-          },
-          "point": [
-            742,
-            299
-          ]
-        }
-      ],
-      "detours": [
-        {
-          "relationship": {
-            "id": "x-k-a",
-            "from": "k",
-            "to": "a",
-            "label": "1 cruce (vault_errors → autoria)",
-            "collectionIndex": 0,
-            "artifactIndex": 1
-          },
-          "bends": 3,
-          "stretch": 1.194
-        },
-        {
-          "relationship": {
-            "id": "x-a-idx",
-            "from": "a",
-            "to": "idx",
-            "label": "5 cruces (tags)",
-            "collectionIndex": 3,
-            "artifactIndex": 4
-          },
-          "bends": 3,
-          "stretch": 1
-        },
-        {
-          "relationship": {
-            "id": "x-cv-idx",
-            "from": "cv",
-            "to": "idx",
-            "label": "7 cruces",
-            "collectionIndex": 4,
-            "artifactIndex": 5
-          },
-          "bends": 3,
-          "stretch": 1.276
-        },
-        {
-          "relationship": {
-            "id": "x-gov-idx",
-            "from": "gov",
-            "to": "idx",
-            "label": "5 cruces (runtime + repos)",
-            "collectionIndex": 6,
-            "artifactIndex": 7
-          },
-          "bends": 3,
-          "stretch": 1.158
-        },
-        {
-          "relationship": {
-            "id": "x-g-gov",
-            "from": "g",
-            "to": "gov",
-            "label": "1 cruce (repos grafo)",
-            "collectionIndex": 8,
-            "artifactIndex": 9
-          },
-          "bends": 3,
-          "stretch": 1.189
-        },
-        {
-          "relationship": {
-            "id": "x-a-gov",
-            "from": "a",
-            "to": "gov",
-            "label": "1 cruce (change_log)",
-            "collectionIndex": 11,
-            "artifactIndex": 12
-          },
-          "bends": 4,
-          "stretch": 1.192
-        },
-        {
-          "relationship": {
-            "id": "x-mt-cv",
-            "from": "mt",
-            "to": "cv",
-            "label": "1 cruce (spec_memory)",
-            "collectionIndex": 12,
-            "artifactIndex": 13
-          },
-          "bends": 3,
-          "stretch": 1.06
-        },
-        {
-          "relationship": {
-            "id": "x-mt-q",
-            "from": "mt",
-            "to": "q",
-            "label": "1 cruce (vault_mcp)",
-            "collectionIndex": 13,
-            "artifactIndex": 14
-          },
-          "bends": 5,
-          "stretch": 1.193
-        }
-      ],
-      "truncated": true
-    },
-    "hints": [
-      "g has 3 relationships facing its left side, which fits 2 ports: make that side at least 60px, or move some of those neighbours so they face another side of g.",
-      "a has 5 relationships facing its right side, which fits 3 ports: make that side at least 88px, or move some of those neighbours so they face another side of a.",
-      "cv has 4 relationships facing its right side, which fits 3 ports: make that side at least 74px, or move some of those neighbours so they face another side of cv.",
-      "q has 4 relationships facing its right side, which fits 3 ports: make that side at least 74px, or move some of those neighbours so they face another side of q.",
-      "gov has 4 relationships facing its left side, which fits 3 ports: make that side at least 74px, or move some of those neighbours so they face another side of gov.",
-      "mt has 6 relationships facing its left side, which fits 3 ports: make that side at least 102px, or move some of those neighbours so they face another side of mt.",
-      "a → idx and cv → idx cross next to idx: move node a or cv so the two reach idx from different sides (for example one level with it, one directly above or below it).",
-      "a → idx crosses cv → g: move the node of whichever is a branch, return, or second entrance to the other side of the main path, so that relationship runs through an empty corridor."
-    ],
-    "repair": "Trace these relationships at the desktop viewport. For Architecture, use references/architecture-layout-repair.md: reflow a blocked main path or tangled connected scene, and repair an isolated defect locally only when the surrounding composition is accepted. Preserve all semantic content and user-fixed geometry. Rerun finalize once after the edit."
-  },
-  "layoutReviewRecommendation": {
-    "action": "inspect-leading-space",
-    "evidence": {
-      "measured": true,
-      "emptyTopPx": 172,
-      "emptyTopRatio": 0.208,
-      "occupiedTop": 172,
-      "viewBoxTop": 0,
-      "canvasHeight": 828,
-      "typicalNodeHeight": 62,
-      "reviewSuggested": true
-    },
-    "reason": "Measured content, including routes and labels, leaves a large empty area above the diagram. This is a composition suggestion, not a failed gate.",
-    "repair": "Check whether that leading space is intentional. If not, reposition the connected scene nearer the canvas origin while retaining room for its actual boundaries, labels and return routes. Preserve all meaning and user-fixed geometry, then rerun finalize. No screenshot is required."
+    "ran": false
   }
 }

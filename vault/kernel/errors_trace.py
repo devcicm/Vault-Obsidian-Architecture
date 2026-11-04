@@ -272,3 +272,46 @@ def log_token_usage(tool: str, input_text: str, output_text: str) -> None:
         )
     except Exception:
         pass  # AP-37: fail-safe — never crash caller on token log write failure
+
+
+def versionar_operacion(tool_name: str, writes: Dict[str, Any]) -> None:
+    """Versiona en git lo que la operación acaba de escribir (v41.26).
+
+    La memoria del agente se versiona como lo que es: cada operación que
+    escribe deja un commit en el repo del vault, y volver a como estaba es
+    volver a un commit (`vault_undo --to`).
+
+    Vive aquí —y no en `vault_errors`— porque esto ES el registro de la
+    operación: este módulo ya escribe la traza de cada llamada, y el commit es
+    la misma idea en el historial del vault. Además, `vault_errors` es el
+    módulo con más consumidores del núcleo: una dependencia más ahí la
+    arrastraban todas las tools (AP-59 lo midió: fan-out 6 contra el umbral 6).
+
+    Es un no-op donde no tiene que ser nada: un vault sin repo (el sandbox del
+    repo, los vaults de los tests) no se toca, y una operación que no escribió
+    nada no deja commit. Un fallo al versionar no tumba la tool: la operación
+    ya está hecha; lo que se pierde es el commit, y eso se dice en la traza.
+    """
+    try:
+        if not isinstance(writes, dict) or not writes.get("written"):
+            return
+        from vault_vcs import commit_de_operacion, hay_repo
+
+        raiz = get_vault_root()
+        if not hay_repo(raiz):
+            return
+        agente = "sin-agente"
+        try:
+            from vault_entorno import leer as _leer_entorno
+
+            agente = str(_leer_entorno("VAULT_AGENT"))
+        except (KeyError, ValueError):
+            pass
+        commit_de_operacion(
+            raiz,
+            f"vault: {tool_name} por {agente} — "
+            f"{writes.get('created', 0)} creadas, "
+            f"{writes.get('updated', 0)} actualizadas",
+        )
+    except (OSError, ValueError):
+        pass  # versionar no puede tumbar la tool: la operación ya está hecha
