@@ -62,33 +62,32 @@ def hay_repo(raiz: Path) -> bool:
     return (Path(raiz) / ".git").exists()
 
 
-def _git(raiz: Path, *args: str):
-    return procesos_git.ejecutar_git(Path(raiz), list(args), capture_output=True)
+def _git(raiz: Path, *args: str, env: Optional[Dict[str, str]] = None):
+    extra = {"env": env} if env is not None else {}
+    return procesos_git.ejecutar_git(Path(raiz), list(args),
+                                     capture_output=True, **extra)
 
 
-def _identidad(raiz: Path) -> None:
-    """Identidad local del repo del vault, si no la hay.
+def identidad_de_commit() -> Dict[str, str]:
+    """La identidad del commit, por ENTORNO y no por `config`.
 
-    Sin `user.name`, `git commit` falla. La del repo es local: la de la
-    máquina no se toca (v41.15 decía lo mismo del bootstrap: "el commit lo
-    hace quien tiene identidad"; aquí la identidad la pone el propio vault,
-    porque una tool no puede tener la de la persona).
-
-    Desde v41.26 la pone el bootstrap también: un runner de CI no tiene
-    identidad global y el vault se quedaba sin su primer commit (medido en la
-    CI del 2026-11-04: doce jobs en rojo por un `git log` vacío).
+    `git config user.name X` es un uso mutador de un verbo ambiguo y la puerta
+    de AP-68 lo veta (con razón: escribe configuración). Y el commit necesita
+    identidad: un runner de CI no tiene `user.name` global y el vault se
+    quedaba sin commits (medido en la CI del 2026-11-04). Las variables
+    `GIT_AUTHOR_*`/`GIT_COMMITTER_*` dan identidad a ESE commit sin tocar la
+    configuración de la máquina ni la del repo.
     """
-    for clave, valor in (("user.name", IDENTIDAD_LOCAL[0]),
-                         ("user.email", IDENTIDAD_LOCAL[1])):
-        r = _git(raiz, "config", "--get", clave)
-        if (r.stdout or "").strip():
-            continue
-        _git(raiz, "config", "--local", clave, valor)
+    import os
 
-
-def asegurar_identidad(raiz: Path) -> None:
-    """La puerta pública de `_identidad` para el bootstrap de `vault_init`."""
-    _identidad(raiz)
+    nombre, correo = IDENTIDAD_LOCAL
+    return {
+        **os.environ,
+        "GIT_AUTHOR_NAME": nombre,
+        "GIT_AUTHOR_EMAIL": correo,
+        "GIT_COMMITTER_NAME": nombre,
+        "GIT_COMMITTER_EMAIL": correo,
+    }
 
 
 def commit_de_operacion(raiz: Path, mensaje: str) -> Dict[str, Any]:
@@ -105,12 +104,12 @@ def commit_de_operacion(raiz: Path, mensaje: str) -> Dict[str, Any]:
     if not hay_repo(raiz):
         return {"committed": False, "motivo": "el vault no tiene repositorio git"}
 
-    _identidad(raiz)
-    add = _git(raiz, "add", "-A")
+    entorno = identidad_de_commit()
+    add = _git(raiz, "add", "-A", env=entorno)
     if add.returncode != 0:
         return {"committed": False,
                 "motivo": (add.stderr or "").strip()[:300] or "git add no pudo"}
-    commit = _git(raiz, "commit", "-m", mensaje)
+    commit = _git(raiz, "commit", "-m", mensaje, env=entorno)
     salida = (commit.stdout or "") + (commit.stderr or "")
     if commit.returncode != 0:
         # Sin cambios que commitear es el caso normal de una tool de lectura.
@@ -180,4 +179,4 @@ def ficheros_del_repo(raiz: Path) -> Dict[str, List[str]]:
 
 __all__ = ["IGNORADOS_EN_GIT", "IDENTIDAD_LOCAL", "hay_repo", "es_hash",
            "commit_de_operacion", "commits", "contenido_del_commit",
-           "ficheros_del_repo"]
+           "ficheros_del_repo", "identidad_de_commit"]

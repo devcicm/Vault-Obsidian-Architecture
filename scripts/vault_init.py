@@ -1037,8 +1037,10 @@ def _inicializar_git(destino: Path) -> Dict[str, Any]:
     versionar en ninguna parte— pierde su historia en cuanto alguien clona el
     proyecto. Con repo propio, la memoria tiene su historia.
 
-    Si git no esta configurado (sin user.name), el repo queda inicializado y
-    el commit se avisa: el commit lo hace quien tiene identidad.
+    Si git no esta configurado (sin user.name), el repo se inicializa igual y
+    el commit se hace con la identidad del **vault** (`vault.kernel.vcs`,
+    por entorno): un runner de CI no tiene identidad global, y un vault sin
+    su primer commit no tiene historia que deshacer.
 
     Desde AP-68 las tres órdenes pasan por `vault.kernel.procesos_git`, el
     dueño único de git en el toolkit: `init`, `add` y `commit` son los tres
@@ -1048,9 +1050,10 @@ def _inicializar_git(destino: Path) -> Dict[str, Any]:
     antes de llegar aquí. Un cuarto verbo mutador en el repo no entra por
     esta puerta: lo veta el dueño y lo publica `vault_procesos_git`.
     """
-    def _git(*args: str):
+    def _git(*args: str, env=None):
+        extra = {"env": env} if env is not None else {}
         return procesos_git.ejecutar_git(destino, list(args),
-                                         capture_output=True)
+                                         capture_output=True, **extra)
 
     if not (destino / ".git").exists():
         r = _git("init", "-b", "main")
@@ -1077,12 +1080,13 @@ def _inicializar_git(destino: Path) -> Dict[str, Any]:
                 "motivo": "repo inicializado, sin staging: "
                           + (r_add.stderr or r_add.stdout).strip()[:300],
                 "repo": str(destino / ".git")}
-    # La identidad del repo es la del vault, no la de la máquina: un runner de
-    # CI no tiene identidad global y el vault se quedaba sin su primer commit.
-    from vault.kernel.vcs import asegurar_identidad
+    # La identidad del commit va por entorno (no por `git config`, que es un
+    # mutador no autorizado): un runner de CI no tiene identidad global y el
+    # vault se quedaba sin su primer commit.
+    from vault.kernel.vcs import identidad_de_commit
 
-    asegurar_identidad(destino)
-    r = _git("commit", "-q", "-m", "vault: bootstrap del vault")
+    entorno = identidad_de_commit()
+    r = _git("commit", "-q", "-m", "vault: bootstrap del vault", env=entorno)
     if r.returncode != 0:
         return {"ok": False,
                 "motivo": "repo inicializado, sin commit: "
