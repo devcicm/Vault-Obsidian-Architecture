@@ -1,0 +1,67 @@
+{
+  "puertas_26": {
+    "subcheck": "puertas_26",
+    "verificador": "vault_gate",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": 0,
+    "artifact": "<runner>/_temp/qg/recibos/QG-02.puertas_26.salida.txt",
+    "artifact_sha256": "01fbdc2c7e394b6a32018d7e3b00abc27af2ee6c50cf67c0057bd455a59342db",
+    "started_at": "2026-11-04T00:23:51Z",
+    "finished_at": "2026-11-04T00:30:07Z"
+  },
+  "auditoria_completa": {
+    "subcheck": "auditoria_completa",
+    "verificador": "vault_norms_audit",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": 0,
+    "artifact": "<runner>/_temp/qg/recibos/QG-02.auditoria_completa.salida.txt",
+    "artifact_sha256": "3389b620011fae46db4ca68ea09dea77a543797a9f5f38ae03e0070056a0457c",
+    "started_at": "2026-11-04T00:30:07Z",
+    "finished_at": "2026-11-04T00:30:09Z"
+  },
+  "sin_violaciones": {
+    "subcheck": "sin_violaciones",
+    "verificador": "sin_violaciones",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": null,
+    "artifact": "<runner>/_temp/qg/recibos/QG-02.auditoria_completa.salida.txt",
+    "artifact_sha256": "3389b620011fae46db4ca68ea09dea77a543797a9f5f38ae03e0070056a0457c",
+    "started_at": "2026-11-04T00:30:09Z",
+    "finished_at": "2026-11-04T00:30:09Z",
+    "datos": {
+      "total_violations": 0
+    }
+  },
+  "certificacion_compuesta": {
+    "subcheck": "certificacion_compuesta",
+    "verificador": "certificacion_compuesta",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": null,
+    "artifact": "<runner>/_temp/qg/recibos/QG-02.certificacion_compuesta.json",
+    "artifact_sha256": "567f8fbde613001b182d40a7695674d9f393ca7453c49c40c4f58267a4252971",
+    "started_at": "2026-11-04T00:30:09Z",
+    "finished_at": "2026-11-04T00:30:18Z",
+    "datos": {
+      "veredicto": {
+        "estado": "PASS",
+        "motivos": [],
+        "residuos_declarados": [],
+        "nota": "los residuos listados quedan declarados con su decision formal y su custodia; el PASS no es silencioso y el manifiesto de release debe llevarlos como riesgo aceptado"
+      },
+      "runtime": {
+        "total_violations": 0,
+        "completo": true,
+        "violations": []
+      },
+      "sandbox": {
+        "total_violations": 0,
+        "completo": true,
+        "violations": []
+      }
+    }
+  }
+}

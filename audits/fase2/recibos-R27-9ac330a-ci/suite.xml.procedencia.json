@@ -1,0 +1,7 @@
+{
+  "sha": "9ac330a658c2583bd21d44348a6a38ba6fa54b0c",
+  "exit": 0,
+  "junit_sha256": "376d23112a3b563f21a991da316f677a7f6af21f805abd113fa0b4be103a08cb",
+  "comando": "python -m pytest tests/ -q -n 4 --tb=short -p no:cacheprovider --junitxml=suite.xml",
+  "nota": "corrida de la CI (qg-receipts) sobre el worktree del product_sha"
+}

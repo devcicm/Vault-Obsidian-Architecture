@@ -1,0 +1,8 @@
+subcheck=saneamiento
+verificador=saneamiento
+argv=<toolcache>/Python/3.12.15/x64/bin/python <runner>/_temp/candidato/audits/fase2/comprobar_saneamiento.py
+exit_code=0
+--- stdout ---
+saneamiento conforme: sin rutas identificables, sin NUL, sin UTF-16, sin credenciales
+
+--- stderr ---

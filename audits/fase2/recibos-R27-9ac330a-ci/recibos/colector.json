@@ -1,0 +1,178 @@
+{
+  "ok": true,
+  "detalle": null,
+  "estado": {
+    "sha_objetivo": "9ac330a658c2583bd21d44348a6a38ba6fa54b0c",
+    "gates": {
+      "QG-00": "PASS",
+      "QG-01": "PASS",
+      "QG-02": "PASS",
+      "QG-03": "PASS",
+      "QG-04": "PASS",
+      "QG-05": "PASS",
+      "QG-06": "PASS",
+      "QG-07": "PASS"
+    },
+    "evidencias": {
+      "QG-00": {
+        "sha": "9ac330a658c2583bd21d44348a6a38ba6fa54b0c",
+        "estado": "ejecutado",
+        "detalle": null
+      },
+      "QG-01": {
+        "sha": "9ac330a658c2583bd21d44348a6a38ba6fa54b0c",
+        "estado": "ejecutado",
+        "detalle": null
+      },
+      "QG-02": {
+        "sha": "9ac330a658c2583bd21d44348a6a38ba6fa54b0c",
+        "estado": "ejecutado",
+        "detalle": null
+      },
+      "QG-03": {
+        "sha": "9ac330a658c2583bd21d44348a6a38ba6fa54b0c",
+        "estado": "ejecutado",
+        "detalle": null
+      },
+      "QG-04": {
+        "sha": "9ac330a658c2583bd21d44348a6a38ba6fa54b0c",
+        "estado": "ejecutado",
+        "detalle": null
+      },
+      "QG-05": {
+        "sha": "9ac330a658c2583bd21d44348a6a38ba6fa54b0c",
+        "estado": "ejecutado",
+        "detalle": null
+      },
+      "QG-06": {
+        "sha": "9ac330a658c2583bd21d44348a6a38ba6fa54b0c",
+        "estado": "ejecutado",
+        "detalle": null
+      }
+    },
+    "control_ejecucion": {
+      "completo": true,
+      "degradados": [],
+      "no_verificados": [],
+      "violaciones": 0,
+      "checks": [
+        {
+          "control": "AP-40",
+          "estado": "ejecutado",
+          "detalle": null,
+          "hallazgos": 0
+        },
+        {
+          "control": "AP-42",
+          "estado": "ejecutado",
+          "detalle": null,
+          "hallazgos": 0
+        },
+        {
+          "control": "AP-43",
+          "estado": "ejecutado",
+          "detalle": null,
+          "hallazgos": 0
+        }
+      ]
+    },
+    "ci": {
+      "conclusion": "success",
+      "run_id": 41718868947,
+      "jobs": [
+        "Lint Python",
+        "Product gates (wheel) (ubuntu-latest, 3.10)",
+        "Product gates (wheel) (ubuntu-latest, 3.11)",
+        "Product gates (wheel) (ubuntu-latest, 3.12)",
+        "Product gates (wheel) (ubuntu-latest, 3.9)",
+        "Product gates (wheel) (windows-latest, 3.10)",
+        "Product gates (wheel) (windows-latest, 3.11)",
+        "Product gates (wheel) (windows-latest, 3.12)",
+        "Product gates (wheel) (windows-latest, 3.9)",
+        "Puertas del estándar (ubuntu-latest)",
+        "Puertas del estándar (windows-latest)",
+        "Validate Vault Spec (ubuntu-latest, 3.10, 1)",
+        "Validate Vault Spec (ubuntu-latest, 3.10, 2)",
+        "Validate Vault Spec (ubuntu-latest, 3.11, 1)",
+        "Validate Vault Spec (ubuntu-latest, 3.11, 2)",
+        "Validate Vault Spec (ubuntu-latest, 3.12, 1)",
+        "Validate Vault Spec (ubuntu-latest, 3.12, 2)",
+        "Validate Vault Spec (ubuntu-latest, 3.9, 1)",
+        "Validate Vault Spec (ubuntu-latest, 3.9, 2)",
+        "Validate Vault Spec (windows-latest, 3.10, 1)",
+        "Validate Vault Spec (windows-latest, 3.10, 2)",
+        "Validate Vault Spec (windows-latest, 3.11, 1)",
+        "Validate Vault Spec (windows-latest, 3.11, 2)",
+        "Validate Vault Spec (windows-latest, 3.12, 1)",
+        "Validate Vault Spec (windows-latest, 3.12, 2)",
+        "Validate Vault Spec (windows-latest, 3.9, 1)",
+        "Validate Vault Spec (windows-latest, 3.9, 2)"
+      ],
+      "total_count": 27
+    },
+    "arbol": {
+      "ok": true,
+      "detalle": null
+    }
+  },
+  "suite": {
+    "estado": "ejecutado",
+    "detalle": null,
+    "tests": 6789,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 19,
+    "sha256": "376d23112a3b563f21a991da316f677a7f6af21f805abd113fa0b4be103a08cb"
+  },
+  "ci": {
+    "conclusion": "success",
+    "run_id": 41718868947,
+    "jobs": [
+      "Lint Python",
+      "Product gates (wheel) (ubuntu-latest, 3.10)",
+      "Product gates (wheel) (ubuntu-latest, 3.11)",
+      "Product gates (wheel) (ubuntu-latest, 3.12)",
+      "Product gates (wheel) (ubuntu-latest, 3.9)",
+      "Product gates (wheel) (windows-latest, 3.10)",
+      "Product gates (wheel) (windows-latest, 3.11)",
+      "Product gates (wheel) (windows-latest, 3.12)",
+      "Product gates (wheel) (windows-latest, 3.9)",
+      "Puertas del estándar (ubuntu-latest)",
+      "Puertas del estándar (windows-latest)",
+      "Validate Vault Spec (ubuntu-latest, 3.10, 1)",
+      "Validate Vault Spec (ubuntu-latest, 3.10, 2)",
+      "Validate Vault Spec (ubuntu-latest, 3.11, 1)",
+      "Validate Vault Spec (ubuntu-latest, 3.11, 2)",
+      "Validate Vault Spec (ubuntu-latest, 3.12, 1)",
+      "Validate Vault Spec (ubuntu-latest, 3.12, 2)",
+      "Validate Vault Spec (ubuntu-latest, 3.9, 1)",
+      "Validate Vault Spec (ubuntu-latest, 3.9, 2)",
+      "Validate Vault Spec (windows-latest, 3.10, 1)",
+      "Validate Vault Spec (windows-latest, 3.10, 2)",
+      "Validate Vault Spec (windows-latest, 3.11, 1)",
+      "Validate Vault Spec (windows-latest, 3.11, 2)",
+      "Validate Vault Spec (windows-latest, 3.12, 1)",
+      "Validate Vault Spec (windows-latest, 3.12, 2)",
+      "Validate Vault Spec (windows-latest, 3.9, 1)",
+      "Validate Vault Spec (windows-latest, 3.9, 2)"
+    ],
+    "total_count": 27
+  },
+  "politica": {
+    "sha_objetivo": "9ac330a658c2583bd21d44348a6a38ba6fa54b0c",
+    "gates": {
+      "QG-00": "PASS",
+      "QG-01": "PASS",
+      "QG-02": "PASS",
+      "QG-03": "PASS",
+      "QG-04": "PASS",
+      "QG-05": "PASS",
+      "QG-06": "PASS",
+      "QG-07": "PASS"
+    },
+    "motivos": {},
+    "qg07": "PASS",
+    "liberable": true,
+    "resumen": "QG-07 PASS: listo para decision del propietario"
+  }
+}

@@ -194,7 +194,8 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     },
     {
         "id": "colector_qg_sin_primera_corrida",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "v41.26",
         "sostenida_por": [
             cita_repo(rutas.TESTS, "test_colector_qg_sin_puerta.py::test_limite_declarado_colector_qg_sin_primera_corrida"),
         ],
@@ -210,6 +211,16 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "Solo una corrida real de la CI dice que el job funciona, y la CI corre "
             "al subir un tag `v*`: sin push no hay corrida. Se salda el dia que se "
             "versione un recibo de procedencia cuya `nota` cite `qg-receipts`."
+        ),
+        "como_se_saldo": (
+            "Subido el tag `v41.26`, el job corrio de verdad: QG-00..QG-07 PASS "
+            "y `liberable: true` (run 41744360675). Sus recibos estan versionados "
+            "en `audits/fase2/recibos-R27-9ac330a-ci/`, y el de procedencia de la "
+            "suite dice, textualmente, «corrida de la CI (qg-receipts) sobre el "
+            "worktree del product_sha». La primera corrida del job encontro un "
+            "defecto de cableado —QG-07 salio BLOCKED porque el job no tenia "
+            "`GH_TOKEN` para consultar la CI con `gh`—, que se corrigio en "
+            "`dba11cd` con un test que lo fija, y el tag se movio a ese commit."
         ),
     },
     {

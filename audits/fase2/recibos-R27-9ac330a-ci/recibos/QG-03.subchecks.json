@@ -1,0 +1,24 @@
+{
+  "suite_junit": {
+    "subcheck": "suite_junit",
+    "verificador": "pytest_junit",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": null,
+    "artifact": "<runner>/_temp/qg/suite.xml",
+    "artifact_sha256": "376d23112a3b563f21a991da316f677a7f6af21f805abd113fa0b4be103a08cb",
+    "started_at": "2026-11-04T00:30:18Z",
+    "finished_at": "2026-11-04T00:30:18Z"
+  },
+  "recorrido_e2e": {
+    "subcheck": "recorrido_e2e",
+    "verificador": "recorrido_e2e",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": null,
+    "artifact": "<runner>/_temp/qg/e2e.json",
+    "artifact_sha256": "3035e46d4430c5d5c6e2a92c291fb197b5fe3d855743f6b37d71e3653fa4634a",
+    "started_at": "2026-11-04T00:30:18Z",
+    "finished_at": "2026-11-04T00:30:18Z"
+  }
+}

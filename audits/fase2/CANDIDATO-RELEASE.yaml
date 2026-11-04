@@ -51,6 +51,14 @@ artifacts:
 
 verification:
   recibos: audits/fase2/recibos-R27-9ac330a/
+  recibos_ci: audits/fase2/recibos-R27-9ac330a-ci/
+  recibos_ci_note: >-
+    Los recibos que produjo la maquina en la CI, en el job `qg-receipts` del
+    workflow Release (run 41744360675, tag v41.26): QG-00..QG-07 PASS y
+    `liberable: true`. Su recibo de procedencia de la suite dice «corrida de la
+    CI (qg-receipts) sobre el worktree del product_sha». La corrida local (arriba)
+    y la de la CI miden el mismo candidato en sistemas distintos: Windows con
+    Python 3.14 y Linux con Python 3.12.
   suite:
     junit_digest: 4591885a1510b9f59d26d2c77c21c65c9d44dbf77ce4a525c1b6ef1c083f4911
     junit_evidence_note: >-

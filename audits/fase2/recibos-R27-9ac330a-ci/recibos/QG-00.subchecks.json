@@ -1,0 +1,49 @@
+{
+  "identidad_git": {
+    "subcheck": "identidad_git",
+    "verificador": "identidad_git",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": null,
+    "artifact": "<runner>/_temp/qg/recibos/QG-00.identidad_git.json",
+    "artifact_sha256": "6803b5b31de5e0e26250e4af9cc5e66ebcc4250f41f0c1c505cf452740482c97",
+    "started_at": "2026-11-04T00:23:24Z",
+    "finished_at": "2026-11-04T00:23:24Z",
+    "datos": {
+      "head": "9ac330a658c2583bd21d44348a6a38ba6fa54b0c"
+    }
+  },
+  "arbol_limpio": {
+    "subcheck": "arbol_limpio",
+    "verificador": "arbol_limpio",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": null,
+    "artifact": "<runner>/_temp/qg/recibos/QG-00.arbol_limpio.json",
+    "artifact_sha256": "b3d04404c3153bdcfb9e7f9b936718703a1974942ef1eb99e67553e12a8f1ba1",
+    "started_at": "2026-11-04T00:23:24Z",
+    "finished_at": "2026-11-04T00:23:24Z"
+  },
+  "saneamiento": {
+    "subcheck": "saneamiento",
+    "verificador": "saneamiento",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": 0,
+    "artifact": "<runner>/_temp/qg/recibos/QG-00.saneamiento.salida.txt",
+    "artifact_sha256": "ce7d88196e633b7122c6593d813890d96f89697d15a9b674fe81e27ca753a542",
+    "started_at": "2026-11-04T00:23:24Z",
+    "finished_at": "2026-11-04T00:23:25Z"
+  },
+  "reconciliador_archify": {
+    "subcheck": "reconciliador_archify",
+    "verificador": "reconciliador_archify",
+    "estado": "ejecutado",
+    "detalle": null,
+    "exit_code": 0,
+    "artifact": "<runner>/_temp/qg/recibos/QG-00.reconciliador_archify.salida.txt",
+    "artifact_sha256": "827ce14812dce1794ce041c094d42338f280f21af51752bc1bf178eabc7b712d",
+    "started_at": "2026-11-04T00:23:25Z",
+    "finished_at": "2026-11-04T00:23:33Z"
+  }
+}
