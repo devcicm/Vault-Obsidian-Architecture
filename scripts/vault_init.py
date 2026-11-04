@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import sys
 from pathlib import Path
@@ -37,7 +38,7 @@ from typing import Any, Dict, List
 
 from vault_errors import presupuesto_de_vault, emit_error, wrap_main
 from vault_standard_upgrade import version_conocida
-from vault_io import atomic_write_text, set_vault_root, write_report
+from vault_io import atomic_write_text, get_vault_root, set_vault_root, write_report
 from vault_lib import utcnow
 from vault_version import CURRENT_VERSION
 from vault.kernel import procesos_git
@@ -78,6 +79,25 @@ from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 def _raiz() -> Path:
     """La raiz del vault, resuelta al usarse."""
     return _repo().raiz
+
+
+def _entorno_de_hijos() -> Dict[str, str]:
+    """El entorno que se le pasa a cada paso: la raíz resuelta, por variable.
+
+    Los pasos del init (`vault_standard_upgrade`, `vault_master_index`,
+    `vault_reindex`, `vault_audit`) son subprocesos, y un subproceso no ve el
+    `set_vault_root()` del padre: hereda el entorno. Sin `VAULT_ROOT`, el hijo
+    autodetecta desde donde está y escribe en otro vault — medido el
+    2026-11-04 lanzando `--name` desde el repo, los pasos fueron al sandbox y
+    el vault nuevo nació sin versión sellada, sin grafo y sin hash-index. Es
+    el mismo criterio que `vault.ejecutor` (que fija también la variable) y que
+    `vault_noop_audit`/`vault_smoke` al lanzar los suyos.
+    """
+    return {
+        **os.environ,
+        "VAULT_ROOT": str(get_vault_root()),
+        "PYTHONIOENCODING": "utf-8",
+    }
 
 
 def _repo(root=None) -> RepositorioCicloDeVida:
@@ -255,7 +275,8 @@ def _vault_init_sin_clean(
         import vault_subproceso
 
         proc = vault_subproceso.ejecutar(
-            [sys.executable, str(master_script)], capture_output=True
+            [sys.executable, str(master_script)], capture_output=True,
+            env=_entorno_de_hijos(),
         )
         result["steps"].append(
             {"step": "navigation", "ok": proc.returncode == 0}
@@ -308,6 +329,7 @@ def _vault_init_sin_clean(
                 "vault_init",
             ],
             capture_output=True,
+            env=_entorno_de_hijos(),
         )
         try:
             upgrade_data = json.loads(proc.stdout)
@@ -323,6 +345,7 @@ def _vault_init_sin_clean(
         proc = vault_subproceso.ejecutar(
             [sys.executable, str(master_script)],
             capture_output=True,
+            env=_entorno_de_hijos(),
         )
         try:
             master_data = json.loads(proc.stdout)
@@ -342,6 +365,7 @@ def _vault_init_sin_clean(
         proc = vault_subproceso.ejecutar(
             [sys.executable, str(reindex_script), "--graph"],
             capture_output=True,
+            env=_entorno_de_hijos(),
         )
         try:
             reindex_data = json.loads(proc.stdout)
@@ -391,6 +415,7 @@ def _vault_init_sin_clean(
             proc = vault_subproceso.ejecutar(
                 [sys.executable, str(audit_script)],
                 capture_output=True,
+                env=_entorno_de_hijos(),
             )
             try:
                 audit_data = json.loads(proc.stdout)

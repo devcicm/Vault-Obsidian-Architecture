@@ -94,6 +94,39 @@ def test_la_variable_de_la_casa_esta_en_el_registro_del_entorno():
     assert entorno.VARIABLES["VAULT_MASTER"].contexto == "kernel"
 
 
+def test_los_pasos_del_init_de_la_casa_reciben_la_raiz(tmp_path, monkeypatch):
+    """Los pasos del init son subprocesos: la raíz les llega por entorno.
+
+    `vault_init --name` fija la raíz EN PROCESO (`set_vault_root`) y sus pasos
+    (`vault_standard_upgrade`, `vault_master_index`, `vault_reindex`,
+    `vault_audit`) corren como subprocesos. Sin `VAULT_ROOT` en el entorno el
+    hijo autodetecta desde donde está y escribe en OTRO vault: medido el
+    2026-11-04 lanzando el init desde el repo, el vault nuevo nacía sin
+    `standard-version.json`, sin grafo y sin hash-index —sus pasos habían ido
+    al sandbox— y el audit del init reportaba las notas del sandbox con
+    `healthScore` 0 en vez de las del vault recién creado.
+    """
+    from apoyo import correr_tool, entorno
+
+    monkeypatch.setenv("VAULT_MASTER", str(tmp_path / "casa"))
+    # Como la persona: sin VAULT_ROOT. El hijo no puede heredar lo que no hay.
+    env = entorno(None, quitar=("VAULT_ROOT", "VAULT_STRICT_ROOT"))
+
+    proc = correr_tool("vault_init", "--name", "prueba", env=env)
+    assert proc.returncode == 0, (proc.stdout or "")[-600:] + (proc.stderr or "")[-600:]
+
+    vault = tmp_path / "casa" / "prueba"
+    for rel in ("00_System/standard-version.json", "99_Index/graph.json",
+                "99_Index/hash-index.json", "00_System/vault-hub.md"):
+        assert (vault / rel).is_file(), f"el paso que escribe {rel} se fue a otro vault"
+
+    lineas = [l for l in (proc.stdout or "").strip().splitlines() if l.strip()]
+    sobre = json.loads(lineas[-1])
+    assert sobre["ok"] is True, sobre
+    # El audit del paso 5 midió ESTE vault, no el que el hijo autodetectara.
+    assert sobre["healthScore"] > 0, "el audit del init miró otro vault"
+
+
 def test_la_herramienta_de_entorno_publica_la_casa(capsys):
     """Lo que se publica no se escribe a mano: sale del registro (AP-47)."""
     from vault.kernel.entorno import main
