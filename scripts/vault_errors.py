@@ -539,6 +539,56 @@ def _ofrecer_voz() -> None:
         )
 
 
+def _versionar_la_operacion(tool_name: str, writes: Dict[str, Any]) -> None:
+    """Versiona en git lo que la operación acaba de escribir.
+
+    La memoria del agente se versiona como lo que es: cada operación que
+    escribe deja un commit en el repo del vault, y volver a como estaba es
+    volver a un commit (`vault_undo --to`).
+
+    El dueño es `vault.kernel.vcs`, que habla con git por la puerta de
+    `vault.kernel.procesos_git` (AP-68: un solo sitio ejecuta git). Aquí solo
+    se le dice qué operación fue.
+
+    Es un no-op donde no tiene que ser nada: un vault sin repo (el sandbox del
+    repo, los vaults de los tests) no se toca, y una operación que no escribió
+    nada no deja commit. Un fallo al versionar no tumba la tool: la operación
+    ya está hecha y su resultado es el que el consumidor espera; lo que se
+    pierde es el commit, y eso se dice en la traza.
+    """
+    try:
+        if not isinstance(writes, dict):
+            return
+        if not writes.get("written"):
+            return
+        from vault.kernel import vcs
+
+        raiz = get_vault_root()
+        if not vcs.hay_repo(raiz):
+            return
+        # El agente se lee del REGISTRO del entorno (AP-49), no de
+        # `os.environ`: una variable que nadie declaró no se lee a mano.
+        try:
+            agente = str(_env("VAULT_AGENT"))
+        except (KeyError, ValueError):  # noqa: BLE001 - sin agente declarado
+            agente = "sin-agente"
+        mensaje = (f"vault: {tool_name} por {agente} — "
+                   f"{writes.get('created', 0)} creadas, "
+                   f"{writes.get('updated', 0)} actualizadas")
+        vcs.commit_de_operacion(raiz, mensaje)
+    except (OSError, ValueError) as exc:
+        # Las que de verdad puede lanzar `commit_de_operacion`: un fallo de
+        # IO o el verbo rechazado por la puerta de git (`GitProhibido` es
+        # ValueError). Un fallo al versionar no tumba la tool: la operación ya
+        # está hecha y su resultado es el que el consumidor espera; lo que se
+        # pierde es el commit, y eso se dice en la traza.
+        try:
+            sys.stderr.write(f"[{tool_name}] no se pudo versionar la operacion: "
+                             f"{type(exc).__name__}: {exc}\n")
+        except OSError:
+            pass
+
+
 def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
     """Envuelve main() con timeout, captura de excepciones, y trace log.
 
@@ -699,6 +749,8 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
     output = _inject_tool_envelope(captured_text, tool_name, writes)
     if output:
         _write_output(output, _real_stdout)
+
+    _versionar_la_operacion(tool_name, writes)
 
     if _env("VAULT_COUNT_TOKENS"):
         input_text = " ".join(sys.argv)

@@ -142,8 +142,12 @@ class TestPrimers:
             if primers:
                 secciones_con_primer.add(entry.name)
 
+        # Las carpetas ocultas no son secciones: el vault tiene su repo (`.git`)
+        # desde que todo vault nuevo nace versionado, igual que `.history`.
         faltantes = (
-            {e.name for e in v.iterdir() if e.is_dir() and e.name not in self.SECTION_NO_PRIMER}
+            {e.name for e in v.iterdir()
+             if e.is_dir() and not e.name.startswith(".")
+             and e.name not in self.SECTION_NO_PRIMER}
             - secciones_con_primer
         )
         assert not faltantes, f"Secciones sin primer: {faltantes}"

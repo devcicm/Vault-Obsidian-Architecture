@@ -63,7 +63,7 @@ from vault.kernel.subproceso import CODIFICACION, ERRORES
 VERBOS_LECTURA = frozenset({
     "blame", "cat-file", "diff", "ls-files", "log", "rev-list", "rev-parse",
     "show", "status", "archive", "symbolic-ref", "shortlog", "whatchanged",
-    "describe",
+    "describe", "ls-tree",
 })
 
 #: Verbos cuyo sentido depende de lo que venga detrás: `branch -a` lee y
@@ -77,10 +77,20 @@ VERBOS_AMBIGUOS = frozenset({"branch", "tag", "config", "stash", "reflog"})
 #: —el commit lo hace quien tiene identidad— y no empuja a ningún remote.
 #: Un mutador nuevo entra aquí con su motivo escrito, en un diff revisado,
 #: nunca por un parámetro que llega de fuera.
+#:
+#: v41.26 — la capa de git del vault (dueño: `vault.kernel.vcs`) versiona cada
+#: operación que escribe: `add` + `commit` al cerrarse la operación, y
+#: `checkout` cuando el deshacer devuelve el vault a un commit. El motivo de
+#: cada verbo nombra a SUS dueños, porque un verbo puede tener más de uno y
+#: cada uno tiene que poder justificarse por separado.
 MUTADORES_AUTORIZADOS: dict[str, str] = {
     "init": "bootstrap del repo del vault nuevo: vault_init._inicializar_git",
-    "add": "staging del bootstrap del vault nuevo: vault_init._inicializar_git",
-    "commit": "commit del bootstrap del vault nuevo: vault_init._inicializar_git",
+    "add": "staging del bootstrap del vault nuevo: vault_init._inicializar_git; "
+           "y staging de la operacion que escribe: vault.kernel.vcs",
+    "commit": "commit del bootstrap del vault nuevo: vault_init._inicializar_git; "
+              "y commit de cada operacion que escribe el vault, que es lo que "
+              "da al vault su historia y el 'volver como estaba': "
+              "vault.kernel.vcs",
 }
 
 

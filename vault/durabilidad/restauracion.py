@@ -90,6 +90,18 @@ class ServicioRestauracion:
         notas = self._notas_del_manifiesto(ruta)
 
         raiz = self._ctx.raiz
+
+        # **Nada se trunca**: antes de sustituir el contenido, el estado actual
+        # se copia. Antes solo se avisaba ("ejecuta vault_backup primero") y
+        # el aviso no impedía perder trabajo: una restauración sobre un vault
+        # con notas nuevas las borraba sin más (medido el 2026-11-04 sobre un
+        # vault de prueba: la nota posterior al backup desapareció). El dueño
+        # de la copia es `ServicioSnapshot`, el mismo que usa `vault_backup`,
+        # y es idempotente por la huella Merkle.
+        from .snapshot import ServicioSnapshot
+
+        seguro = ServicioSnapshot(self._ctx).crear("antes-de-restaurar")
+
         for item in raiz.iterdir():
             if item.name.startswith(".") or item.name in NO_BORRAR:
                 continue
@@ -114,6 +126,8 @@ class ServicioRestauracion:
             "restored_from": nombre,
             "noteCount": notas,
             "files_restored": restaurados,
+            "safety_snapshot": seguro.get("name"),
+            "safety_snapshot_path": seguro.get("path"),
             "message": f"Vault restored from {nombre} ({notas} notes)",
         }
 

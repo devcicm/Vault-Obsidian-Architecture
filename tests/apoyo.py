@@ -153,6 +153,20 @@ def correr_en_proceso(nombre: str, *argv: Any, vault: Optional[Path] = None,
     return Corrida(corrida.codigo, corrida.texto, corrida.error)
 
 
+def git_en(vault: Path, *args: str) -> str:
+    """La salida de `git` en ese repo: el lanzador, aquí y no en cada test.
+
+    La capa de git del vault (v41.26) hace que `git log` sea parte del
+    contrato observable —cada operación que escribe deja un commit— y los
+    tests tienen que poder mirarlo. Un `subprocess.run(["git", ...])` en cada
+    test es exactamente lo que AP-69 veta: el lanzador privado.
+    """
+    p = subprocess.run(["git", "-C", str(vault), *args],
+                       capture_output=True, text=True, encoding="utf-8",
+                       errors="replace", timeout=120)
+    return (p.stdout or "").strip()
+
+
 def nota(frontmatter: Mapping[str, Any], cuerpo: str = "") -> str:
     """El texto de una nota: frontmatter serializado por YAML y cuerpo sin sangría.
 

@@ -441,13 +441,19 @@ def vault_migrate_docs(
 
         dest_name = f"{slugify(Path(staged['originalName']).stem)}.md"
 
-        # `dest_folder` ya viene relativo a la RAÍZ del vault ("03_Decisions",
-        # "10_Migrated/indirect"): componerlo bajo MIGRATED_DIR duplicaba el
-        # segmento y el fichero acababa en `10_Migrated/10_Migrated/indirect/`.
-        # Peor, los destinos que no son de 10_Migrated (03_Decisions,
-        # 07_Knowledge/apis) quedaban enterrados dentro de la carpeta de
-        # migración, que es justo de donde la distribución tiene que sacarlos.
-        dest_path = _raiz() / dest_folder / dest_name
+        # La carpeta de migración es `10_Migrated/` y ahí se queda todo lo que
+        # migra. Antes, un documento clasificado como "direct" salía a la
+        # sección que el heurístico adivinaba (`07_Knowledge/apis/`,
+        # `09_Infrastructure/services/`): la migración repartía copias por el
+        # vault y el mismo documento acababa en dos sitios (medido el
+        # 2026-11-04 sobre el vault de GESTION: 7 duplicados y 15 stubs que
+        # hubo que limpiar a mano). Ahora la sección detectada es una
+        # SUGERENCIA del informe y quien decide dónde vive el documento es el
+        # agente (fase 3 del modo agentico de onboarding).
+        carpeta_destino = _migrated_dir() / dest_folder.replace("10_Migrated/", "")
+        sugerencia = dest_folder if not dest_folder.startswith("10_Migrated/") else None
+
+        dest_path = carpeta_destino / dest_name
 
         assert_within_vault(dest_path, _raiz())
 
@@ -464,25 +470,45 @@ def vault_migrate_docs(
             {
                 "originalName": staged["originalName"],
                 "stagedName": staged["stagedName"],
-                "destFolder": dest_folder,
+                "destFolder": str(carpeta_destino.relative_to(_raiz())).replace("\\", "/"),
                 "destPath": str(dest_path_rels),
                 "relevance": relevance,
+                "sugerencia_de_seccion": sugerencia,
             }
         )
-
         # Solo se reescribe la línea `distributedTo:`; el resto del documento
         # viaja intacto. La versión anterior cortaba por `split("\n", 8)` y se
         # quedaba con `[:7]`: escribía siete líneas de frontmatter SIN el `---`
         # de cierre y tiraba el cuerpo entero. De ahí que la nota migrada fuese
         # la única `missingFrontmatter` del vault — el bloque nunca cerraba.
         staged_content = "\n".join(
-            f"distributedTo: '{dest_folder}/{dest_name}'"
+            f"distributedTo: '{str(carpeta_destino.relative_to(_raiz())).replace(chr(92), '/')}/{dest_name}'"
             if line.startswith("distributedTo:")
             else line
             for line in staged["content"].split("\n")
         )
 
-        atomic_write_text(dest_path, staged_content)
+        # **No se pisa lo que ya estaba.** Si el destino existe, la copia
+        # anterior se guarda en `.history/` (el dueño es
+        # `vault_undo._guardar_version_actual`, el mismo que usa `vault_write`
+        # y `vault_merge`) y el conflicto se declara en el informe: la
+        # migración NO sobrescribe el trabajo de nadie. Antes, una segunda
+        # migración sobre el mismo proyecto tapaba la copia —incluida la
+        # edición manual del propietario— sin dejar rastro (medido el
+        # 2026-11-04).
+        version_previa = None
+        if dest_path.exists():
+            from vault_io import guardar_version_actual
+
+            version_previa = guardar_version_actual(dest_path)
+        else:
+            atomic_write_text(dest_path, staged_content)
+
+        # El conflicto se declara en el informe: lo que había antes no se
+        # perdió, quedó versionado en `.history/`.
+        if version_previa:
+            distributed[-1]["version_previa"] = version_previa
+            distributed[-1]["no_sobrescrito"] = True
 
         # Releer del disco y comprobar que el frontmatter parsea: el generador
         # no puede certificarse con su propio criterio (AP-44). Este defecto
@@ -513,8 +539,8 @@ _{staged["preview"][:200]}..._
 
 """
 
-        # El stub queda junto al destino real, no bajo `10_Migrated/` otra vez.
-        stub_path = _raiz() / dest_folder / f"_stub-{dest_name}"
+        # El stub queda junto a su copia, dentro de la carpeta de migración.
+        stub_path = carpeta_destino / f"_stub-{dest_name}"
 
         atomic_write_text(stub_path, stub_content)
 
@@ -571,10 +597,27 @@ _{staged["preview"][:200]}..._
         report_lines.append("|---|---|---|")
 
         for d in distributed:
+            sugerencia = d.get("sugerencia_de_seccion")
+            destino_celda = f"[[{safe_wikilink(d['destPath'])}]]"
+            if sugerencia:
+                destino_celda += f" (sugerencia: `{sugerencia}`)"
             report_lines.append(
-                f"| `{d['originalName']}` | [[{safe_wikilink(d['destPath'])}]] | {d['relevance']} |"
+                f"| `{d['originalName']}` | {destino_celda} | {d['relevance']} |"
             )
 
+        report_lines.append("")
+
+    # Los conflictos: lo que ya estaba y quedó versionado en `.history/`.
+    conflictos = [d for d in distributed if d.get("version_previa")]
+    if conflictos:
+        report_lines.append("## Conflictos (NO se sobrescribió nada)\n")
+        for d in conflictos:
+            report_lines.append(
+                f"- `{d['originalName']}` → `{d['destPath']}` ya existía y **se dejó "
+                f"como estaba**; su versión anterior quedó en "
+                f"`.history/{d['version_previa']}` y el original en "
+                f"`{d.get('originalPath', 'el proyecto de origen')}` no se tocó."
+            )
         report_lines.append("")
 
     if stubs_created:

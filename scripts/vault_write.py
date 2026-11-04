@@ -55,6 +55,7 @@ from vault_io import (
     normalize_stem,
     file_lock,
     guarda_secretos,  # dueño único del escaneo de secretos (AP-57)
+    guardar_version_actual,  # dueño único de versionar antes de sobrescribir
 )
 from vault_encoding import (
     sanitize_content,
@@ -1371,9 +1372,9 @@ def vault_write(
             # heredada (`_nota_heredada`) tiene otro stem, y su versión quedaba
             # donde ni `vault_undo` ni `vault_diff` la buscan. Y dos escrituras
             # en el mismo segundo ya no se pisan (v41.3, `vault.kernel.historia`).
-            history_path = historia.nombre_libre(_history_dir(), rel_path)
-            _history_dir().mkdir(parents=True, exist_ok=True)
-            atomic_write_text(history_path, existing_content)
+            # El dueño de "versionar antes de sobrescribir" es `vault_io`
+            # (v41.26): lo usan también `vault_undo` y `vault_merge`.
+            guardar_version_actual(vault_path)
 
         atomic_write_text(vault_path, final_content)
 

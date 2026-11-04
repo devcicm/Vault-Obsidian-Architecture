@@ -91,16 +91,12 @@ _LOCK_TIMEOUT = 10.0
 def _guardar_version_actual(note_path: Path) -> str:
     """Copia la versión actual a .history/ antes de taparla (CIA-A).
 
-    Mismo nombre que leen `get_history_versions` y escribe `vault_write`, así
-    que la versión tapada pasa a ser la más reciente y otro `--force` la
-    devuelve. Devuelve el nombre del fichero guardado.
+    El cuerpo vive en `vault_io.guardar_version_actual` (el dueño único):
+    aquí solo se conserva el nombre que ya usaban `vault_merge` y esta tool.
     """
-    # Dos versiones en el mismo segundo: la segunda no pisa a la primera.
-    destino = historia.nombre_libre(_history_dir(),
-                                    note_path.relative_to(_raiz()).as_posix())
-    _history_dir().mkdir(parents=True, exist_ok=True)
-    atomic_write_text(destino, note_path.read_text(encoding="utf-8", errors="replace"))
-    return destino.name
+    from vault_io import guardar_version_actual
+
+    return guardar_version_actual(note_path)
 
 
 def _restore_change_log(note_path: str, version_filename: str, agent: str,
@@ -263,6 +259,120 @@ def vault_undo_list(path: str) -> Dict[str, Any]:
     }
 
 
+def _operaciones_del_vault(limite: int = 20) -> dict:
+    """Las operaciones del vault, de la más reciente a la más antigua.
+
+    Cada operación que escribe deja un commit en el repo del vault (la capa de
+    `vault.kernel.vcs`): este listado es el "qué se ha hecho aquí" con fecha y
+    autor, y de ahí se elige el punto al que volver.
+    """
+    from vault.kernel import vcs
+    from vault_raiz import get_vault_root
+
+    raiz = get_vault_root()
+    if not vcs.hay_repo(raiz):
+        return {"ok": False, "tool": "vault_undo", "action": "commits",
+                "error_code": "NO_HAY_REPO",
+                "message": "este vault no tiene repositorio git: no hay "
+                           "operaciones versionadas"}
+    operaciones = vcs.commits(raiz, limite)
+    return {"ok": True, "tool": "vault_undo", "action": "commits",
+            "operations": operaciones, "total": len(operaciones),
+            "message": f"{len(operaciones)} operacion(es) versionada(s)"}
+
+
+def _volver_a(sha: str, dry_run: bool, agent: str, forzar: bool = False) -> dict:
+    """Vuelve el vault al estado de un commit (el deshacer de vault).
+
+    **Sin verbos destructivos de git**: el commit se LEE (`git archive` es
+    lectura) y el contenido se aplica por el write path —cada nota que vuelve
+    a su estado anterior se versiona antes—, y lo que sobra se borra por la
+    vía de `vault_delete` (con su motivo y su registro), no con un `checkout`.
+
+    **No trunca:** lo que existe ahora y no estaba en ese commit se DECLARA
+    siempre; solo con `--force` desaparece.
+    """
+    from vault.kernel import vcs
+    from vault_raiz import get_vault_root
+
+    raiz = get_vault_root()
+    if not vcs.hay_repo(raiz):
+        return {"ok": False, "tool": "vault_undo", "action": "to",
+                "error_code": "NO_HAY_REPO",
+                "message": "este vault no tiene repositorio git"}
+    if not vcs.es_hash(sha):
+        return {"ok": False, "tool": "vault_undo", "action": "to",
+                "error_code": "INVALID_ARGS",
+                "message": f"'{sha}' no tiene forma de hash de git"}
+    if dry_run:
+        operaciones = vcs.commits(raiz, 200)
+        return {"ok": True, "tool": "vault_undo", "action": "to", "dry_run": True,
+                "sha": sha,
+                "existe": any(o["sha"].startswith(sha) for o in operaciones),
+                "operations": operaciones[:20]}
+
+    contenido = vcs.contenido_del_commit(raiz, sha)
+    if contenido is None:
+        return {"ok": False, "tool": "vault_undo", "action": "to",
+                "error_code": "COMMIT_ILEGIBLE",
+                "message": f"no se pudo leer el árbol de {sha}"}
+
+    from vault_io import atomic_write_text, guardar_version_actual
+
+    # Lo que hay ahora y no estaba entonces: se declara (y con --force se
+    # borra por la vía de `vault_delete`: con motivo y con registro).
+    estado = vcs.ficheros_del_repo(raiz)
+    fuera = sorted(
+        (set(estado["versionados"]) - set(contenido))
+        | (set(estado["sin_rastrear"]) - set(contenido))
+    )
+
+    restaurados = []
+    for relativo, texto in sorted(contenido.items()):
+        destino = raiz / relativo
+        if not destino.exists() or not destino.is_file():
+            continue
+        actual = destino.read_text(encoding="utf-8", errors="replace")
+        if actual == texto:
+            continue
+        guardar_version_actual(destino)
+        atomic_write_text(destino, texto)
+        restaurados.append(relativo)
+
+    borrados = []
+    if forzar:
+        from vault_delete import vault_delete
+
+        for relativo in fuera:
+            destino = raiz / relativo
+            if not destino.is_file():
+                continue
+            r = vault_delete(path=relativo.replace("\\", "/"),
+                             reason=f"deshacer de vault: el commit {sha} no lo tenia",
+                             agent=agent)
+            if r.get("ok"):
+                borrados.append(relativo)
+
+    resultado = {"ok": True, "tool": "vault_undo", "action": "to", "sha": sha,
+                 "restaurados": restaurados,
+                 "quedan_fuera_del_commit": fuera,
+                 "borrados": borrados, "forzado": bool(forzar)}
+    # El propio deshacer queda registrado (SP-01): una vuelta atrás que no
+    # se ve en el change-log es una vuelta atrás que nadie puede auditar.
+    try:
+        from vault_change_log import vault_change_log_add
+
+        vault_change_log_add(
+            action="updated",
+            path="(vault completo)",
+            reason=f"deshacer de vault: el vault vuelve al commit {sha}",
+            agent=agent,
+        )
+    except (OSError, ValueError):  # noqa: BLE001 - el registro no puede impedir el deshacer
+        pass
+    return resultado
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Vault Undo — recover notes from .history/",
@@ -296,6 +406,10 @@ Notas:
                        help="Listar versiones disponibles en .history/ para esta nota")
     group.add_argument("--restore", dest="restore_path", metavar="PATH",
                        help="Restaurar una version desde .history/")
+    group.add_argument("--commits", dest="commits", action="store_true",
+                       help="Listar las operaciones del vault (los commits)")
+    group.add_argument("--to", dest="to_commit", metavar="SHA",
+                       help="Volver el vault al estado de un commit")
 
     parser.add_argument("--version", dest="version",
                         help="Filename exacto en .history/ (default: la mas reciente)")
@@ -303,12 +417,18 @@ Notas:
                         help="Sobrescribir la nota actual en lugar de crear copia")
     parser.add_argument("--dry-run", action="store_true",
                         help="Solo reportar lo que haria, sin escribir nada")
+    parser.add_argument("--limite", type=int, default=20,
+                        help="Cuantas operaciones listar con --commits (default: 20)")
     parser.add_argument("--agent", default=agente_por_defecto(),
                         help="Nombre del agente para change-log (default: VAULT_AGENT o claude)")
 
     args = parser.parse_args()
 
-    if args.list_path:
+    if args.commits:
+        result = _operaciones_del_vault(args.limite)
+    elif args.to_commit:
+        result = _volver_a(args.to_commit, args.dry_run, args.agent, args.force)
+    elif args.list_path:
         result = vault_undo_list(args.list_path)
     else:
         result = vault_undo(

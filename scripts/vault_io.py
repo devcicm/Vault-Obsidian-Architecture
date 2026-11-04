@@ -558,6 +558,38 @@ def atomic_write_text(
 _SECCIONES_CON_INDICE_PROPIO = frozenset({"00_System", "99_Index"})
 
 
+def guardar_version_actual(nota: Path) -> str:
+    """Copia la versión actual de una nota a `.history/` antes de taparla.
+
+    **El dueño único de "versionar antes de sobrescribir"**: lo usan
+    `vault_write` (que la crea), `vault_undo` (que la restaura) y
+    `vault_merge` (que la fusiona). Estaba en tres sitios con tres cuerpos
+    (CN-05), y el cuarto —la migración— lo importaba desde otro contexto con
+    un símbolo privado, que es justo lo que la puerta de puertos veta
+    (AP-58).
+
+    Vive aquí porque es lo que sabe escribir sin romper: `atomic_write_text`
+    (la escritura atómica) y `vault.kernel.historia` (el nombre de la
+    versión). El nombre sale del FICHERO, no del título (CN-01): una nota
+    heredada (`_nota_heredada`) tiene otro stem, y su versión quedaba donde
+    ni `vault_undo` ni `vault_diff` la buscan.
+
+    Devuelve el nombre del fichero guardado.
+    """
+    from vault.kernel import historia
+
+    nota = Path(nota)
+    raiz = _raiz.get_vault_root()
+    try:
+        relativo = nota.relative_to(raiz).as_posix()
+    except ValueError:
+        relativo = nota.name
+    destino = historia.nombre_libre(raiz / ".history", relativo)
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    atomic_write_text(destino, nota.read_text(encoding="utf-8", errors="replace"))
+    return destino.name
+
+
 def _skip_auto_index() -> frozenset:
     from vault_registry import NON_SECTION_ROOT_FOLDERS  # lazy: registro sin deps
 

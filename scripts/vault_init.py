@@ -993,6 +993,21 @@ Notas:
         destino.mkdir(parents=True, exist_ok=True)
         set_vault_root(destino)
 
+    # ¿Es un vault NUEVO? Antes de inicializar: si la raíz no existe o está
+    # vacía, la vamos a crear y nace con su repo de git (la casa y una ruta
+    # personalizada, igual). Si ya tenía contenido, es un vault existente y su
+    # versionado es de quien lo posee: aquí no se toca.
+    raiz_previa = None
+    try:
+        raiz_previa = _raiz()
+    except Exception:  # noqa: BLE001 - la raíz puede no existir todavía
+        raiz_previa = None
+    era_nuevo = (
+        raiz_previa is None
+        or not raiz_previa.exists()
+        or not any(raiz_previa.iterdir())
+    )
+
     result = vault_init(
         target_version=args.target,
         run_audit=not args.no_audit,
@@ -1000,8 +1015,15 @@ Notas:
         confirm=args.confirm,
         dry_run=args.dry_run,
     )
-    if args.name and result.get("ok") and not args.no_git:
-        result["git"] = _inicializar_git(destino)
+    if result.get("ok") and not args.no_git and era_nuevo:
+        # El vault de la casa y el de una ruta personalizada nacen los dos con
+        # su repositorio: la memoria del agente se versiona como lo que es,
+        # y da el "volver como estaba" (v41.15; antes solo la casa lo tenia:
+        # medido el 2026-11-04, un vault en ruta personalizada se quedaba sin
+        # repo y sin historia).
+        objetivo = destino if args.name else (raiz_previa or _raiz())
+        if not (objetivo / ".git").exists():
+            result["git"] = _inicializar_git(objetivo)
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0 if result.get("ok") else 1
 
@@ -1034,6 +1056,18 @@ def _inicializar_git(destino: Path) -> Dict[str, Any]:
         r = _git("init", "-b", "main")
         if r.returncode != 0:
             return {"ok": False, "motivo": (r.stderr or "").strip()[:300]}
+        # El repo del vault versiona SU memoria: ni las versiones por nota
+        # (`.history/`, que ya están en el historial) ni las copias de
+        # seguridad (`vault-backups/`) ni la traza de tools (que cambia en
+        # cada llamada) van dentro. Sin esto, el historial del vault lleva
+        # dos veces el vault (medido el 2026-11-04: 99 de 345 ficheros
+        # versionados eran versiones de `.history/`).
+        from vault.kernel.vcs import IGNORADOS_EN_GIT
+
+        ignore = destino / ".gitignore"
+        if not ignore.exists():
+            ignore.write_text(
+                "\n".join(IGNORADOS_EN_GIT) + "\n", encoding="utf-8")
     r_add = _git("add", "-A")
     if r_add.returncode != 0:
         # Antes el `add` se lanzaba sin mirar su salida: un fallo de staging

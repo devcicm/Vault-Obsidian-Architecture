@@ -565,6 +565,29 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": None,
         },
     },
+    "COMMIT_ILEGIBLE": {
+        "category": "io",
+        "severity": "error",
+        "message": "No se pudo leer el árbol del commit pedido.",
+        "recovery": {
+            "action": "manual",
+            "hint": "El commit existe pero su árbol no se pudo extraer: comprobar el repo del vault "
+                    "(`git fsck`) y elegir otro commit con `vault_undo --commits`.",
+            "docs": None,
+        },
+    },
+    "NO_HAY_REPO": {
+        "category": "not_found",
+        "severity": "error",
+        "message": "El vault no tiene repositorio git: no hay operaciones versionadas.",
+        "recovery": {
+            "action": "manual",
+            "hint": "El vault se versiona solo si nació con repo (`vault_init` lo crea para cualquier "
+                    "ruta) o si alguien hizo `git init` en su raíz. Sin repo no hay historial de "
+                    "operaciones que deshacer.",
+            "docs": None,
+        },
+    },
     "JSON_WRITE_ERROR": {
         "category": "io",
         "severity": "error",
