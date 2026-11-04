@@ -47,6 +47,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -78,6 +79,38 @@ SMOKE_TIMEOUT = _env("VAULT_SMOKE_TIMEOUT")
 SIN_SMOKE = {
     "vault_token_service": "servicio HTTP: no retorna por diseño",
 }
+
+#: Lo que la copia del sandbox ignora. Los locks son de `file_lock` (se borran
+#: en milisegundos) y los `.tmp.*` son de los escritores atómicos: un temporal
+#: que aparece y se renombra mientras se copia aborta la copia (WinError 2 en
+#: Windows, FileNotFoundError en Linux). Es el mismo motivo en los dos casos:
+#: el sandbox lo puede estar escribiendo otro proceso mientras se copia.
+IGNORADOS_AL_COPIAR = (".locks", ".tmp.*")
+
+#: Intentos de copia por fichero antes de rendirse. La ventana en que un
+#: fichero está bloqueado dura milisegundos (es el renombrado de un escritor
+#: atómico), así que reintentar la resuelve; medir el fallo es de otra cosa.
+REINTENTOS_DE_COPIA = 5
+
+
+def _copiar_con_reintento(src, dst, **kwargs):
+    """Copia un fichero reintentando si está bloqueado por otro proceso.
+
+    En Windows, un fichero que otro proceso está reescribiendo da Permission
+    denied al abrirlo: no es un defecto del fichero ni de la copia, es una
+    ventana. Medido el 2026-11-04 en la CI del candidato (v41.26): el smoke
+    copiaba el sandbox mientras otro worker de xdist regeneraba
+    `15_Tests/index.md`, y la copia abortaba con `[Errno 13]`.
+    """
+    ultimo = None
+    for intento in range(REINTENTOS_DE_COPIA):
+        try:
+            return shutil.copy2(src, dst, **kwargs)
+        except PermissionError as exc:
+            ultimo = exc
+            if intento + 1 < REINTENTOS_DE_COPIA:
+                time.sleep(0.05 * (intento + 1))
+    raise ultimo
 
 
 #: Categorías cuyo `fix_input` juzga el argv: `validation` (un valor fuera de
@@ -245,8 +278,15 @@ def run_one(tool: str, arbol: bool = False, argv: Optional[List[str]] = None,
             # crean esos ficheros temporales y los renombran; copiar el
             # árbol entre los dos pasos aborta con WinError 2, veces que en
             # `-n auto` cayó no sobre la tool sino sobre el test que copia.
+            #
+            # Y el fichero DESTINO puede estar bloqueado en la ventana en que
+            # otro proceso lo reescribe: en Windows eso es Permission denied
+            # (medido el 2026-11-04 en la CI: `15_Tests/index.md`, reescrito
+            # por otro worker de xdist mientras esta copia lo leía). La
+            # ventana dura milisegundos, así que se reintenta.
             shutil.copytree(origen, vault,
-                            ignore=shutil.ignore_patterns(".locks", ".tmp.*"))
+                            ignore=shutil.ignore_patterns(*IGNORADOS_AL_COPIAR),
+                            copy_function=_copiar_con_reintento)
         else:
             vault.mkdir(parents=True)
         cwd = (preparar(vault, destino) if preparar else None) or SCRIPTS_DIR

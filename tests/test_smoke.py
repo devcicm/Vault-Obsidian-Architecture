@@ -245,3 +245,34 @@ def test_los_ejemplos_que_la_tool_rechazaba_pasan_el_smoke(tool):
     """
     r = smoke.smoke([tool])
     assert r["ok"], r["failures"]
+
+
+def test_la_copia_del_sandbox_reintenta_un_fichero_bloqueado(tmp_path, monkeypatch):
+    """En Windows, un fichero que otro proceso reescribe da Permission denied.
+
+    Medido el 2026-11-04 en la CI del candidato (v41.26): el smoke copiaba el
+    sandbox mientras otro worker de xdist regeneraba `15_Tests/index.md`, y la
+    copia abortaba con `[Errno 13]`. La ventana dura milisegundos: reintentar
+    la resuelve, y rendirse a la primera no mide nada.
+    """
+    import shutil
+
+    real = shutil.copy2
+    intentos = {"n": 0}
+
+    def copia_que_falla_una_vez(src, dst, **kwargs):
+        intentos["n"] += 1
+        if intentos["n"] == 1:
+            raise PermissionError(13, "fichero bloqueado")
+        return real(src, dst, **kwargs)
+
+    monkeypatch.setattr(shutil, "copy2", copia_que_falla_una_vez)
+    origen = tmp_path / "origen"
+    origen.mkdir()
+    (origen / "nota.md").write_text("contenido", encoding="utf-8")
+    destino = tmp_path / "destino"
+
+    shutil.copytree(origen, destino, copy_function=smoke._copiar_con_reintento)
+
+    assert (destino / "nota.md").read_text(encoding="utf-8") == "contenido"
+    assert intentos["n"] >= 2, "la copia no reintentó"

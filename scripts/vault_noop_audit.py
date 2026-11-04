@@ -69,6 +69,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from vault_entorno import leer as _env
 
 import vault_baseline
+import vault_smoke
 from vault_errors import emit_error, wrap_main
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -172,14 +173,10 @@ def offenders() -> List[Dict]:
 #: `vault_project --add`, como `tests/test_ejemplos_de_escritores.py`.
 PROYECTO_DEL_EJEMPLO: Optional[Tuple[str, str]] = ("mi-api", "Mi API")
 
-#: Lo que la copia del sandbox ignora. Los locks son de `file_lock` (se borran
-#: en milisegundos) y los `.tmp.*` son de los escritores atómicos: un temporal
-#: que aparece y se renombra mientras se copia aborta la copia con WinError 2
-#: (Windows) o FileNotFoundError (Linux). Es el mismo motivo por el que
-#: `vault_smoke.run_one` los excluye, y lo que hacia fallar el banco en la CI
-#: del 2026-11-04: la copia del sandbox del banco tropezo con el temporal del
-#: `.tool-trace.json` que otro worker de la suite escribia en ese momento.
-IGNORADOS_AL_COPIAR = (".locks", ".tmp.*")
+#: La copia del sandbox la gobierna su dueño, `vault_smoke`: los locks, los
+#: temporales de los escritores atómicos y la ventana en que un fichero está
+#: bloqueado. Aquí no se reescribe el criterio (AP-57): se usa el del dueño.
+IGNORADOS_AL_COPIAR = vault_smoke.IGNORADOS_AL_COPIAR
 
 #: Lo que cada ejemplo da por existente, por tool. La clave es relativa al
 #: vault, o al directorio desde el que se ejecuta el ejemplo si empieza por
@@ -373,11 +370,10 @@ def _sandbox_con_proyecto(destino: Path) -> Path:
     import shutil
     import subprocess
 
-    import vault_smoke
-
     vault = destino / "vault"
     shutil.copytree(vault_smoke.SANDBOX, vault,
-                    ignore=shutil.ignore_patterns(*IGNORADOS_AL_COPIAR))
+                    ignore=shutil.ignore_patterns(*IGNORADOS_AL_COPIAR),
+                    copy_function=vault_smoke._copiar_con_reintento)
     slug, titulo = PROYECTO_DEL_EJEMPLO
     if not (vault / "01_Projects" / slug).exists():
         env = {**os.environ, "VAULT_ROOT": str(vault), "VAULT_STRICT_ROOT": "1",
