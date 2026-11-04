@@ -1077,6 +1077,11 @@ def _inicializar_git(destino: Path) -> Dict[str, Any]:
                 "motivo": "repo inicializado, sin staging: "
                           + (r_add.stderr or r_add.stdout).strip()[:300],
                 "repo": str(destino / ".git")}
+    # La identidad del repo es la del vault, no la de la máquina: un runner de
+    # CI no tiene identidad global y el vault se quedaba sin su primer commit.
+    from vault.kernel.vcs import asegurar_identidad
+
+    asegurar_identidad(destino)
     r = _git("commit", "-q", "-m", "vault: bootstrap del vault")
     if r.returncode != 0:
         return {"ok": False,

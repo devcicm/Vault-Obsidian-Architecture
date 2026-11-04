@@ -73,6 +73,10 @@ def _identidad(raiz: Path) -> None:
     máquina no se toca (v41.15 decía lo mismo del bootstrap: "el commit lo
     hace quien tiene identidad"; aquí la identidad la pone el propio vault,
     porque una tool no puede tener la de la persona).
+
+    Desde v41.26 la pone el bootstrap también: un runner de CI no tiene
+    identidad global y el vault se quedaba sin su primer commit (medido en la
+    CI del 2026-11-04: doce jobs en rojo por un `git log` vacío).
     """
     for clave, valor in (("user.name", IDENTIDAD_LOCAL[0]),
                          ("user.email", IDENTIDAD_LOCAL[1])):
@@ -80,6 +84,11 @@ def _identidad(raiz: Path) -> None:
         if (r.stdout or "").strip():
             continue
         _git(raiz, "config", "--local", clave, valor)
+
+
+def asegurar_identidad(raiz: Path) -> None:
+    """La puerta pública de `_identidad` para el bootstrap de `vault_init`."""
+    _identidad(raiz)
 
 
 def commit_de_operacion(raiz: Path, mensaje: str) -> Dict[str, Any]:
