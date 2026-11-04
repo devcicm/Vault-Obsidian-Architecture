@@ -173,6 +173,35 @@ def test_las_firmas_viejas_de_vault_audit_siguen_valiendo(tmp_path):
     assert "a" in stems
 
 
+def test_un_vault_bajo_una_carpeta_con_punto_no_parece_vacio(tmp_path):
+    """La casa de vaults se llama `~/.vault-master`: su ruta absoluta tiene punto.
+
+    El filtro de carpetas ocultas miraba las partes de la ruta ABSOLUTA, así
+    que en un vault de la casa toda nota quedaba fuera del filtro y el audit
+    veía cero notas en cada sección: penalizaba con AP-03 (diez puntos) a todo
+    vault de consumidor. Medido el 2026-11-04 sobre el vault de `GESTION`; el
+    sandbox del repo no lo exhibit porque su ruta no tiene partes con punto.
+
+    El criterio es el del consumidor: se filtra lo que hay DENTRO del vault.
+    """
+    import vault_audit
+
+    vault = tmp_path / ".vault-master" / "gestion"
+    (vault / "07_Knowledge").mkdir(parents=True)
+    (vault / "07_Knowledge" / "nota.md").write_text(
+        "---\ntitle: Nota\nstatus: active\n---\n\ncuerpo\n", encoding="utf-8")
+    (vault / "07_Knowledge" / "index.md").write_text("# indice\n", encoding="utf-8")
+
+    anterior = vault_io.get_vault_root()
+    try:
+        vault_io.set_vault_root(vault)
+        vacios = vault_audit._detect_empty_indexes()
+    finally:
+        vault_io.set_vault_root(anterior)
+
+    assert "07_Knowledge" not in [v["folder"] for v in vacios], vacios
+
+
 # --------------------------------------------------------------------------
 # ③ Los ciclos del dominio
 # --------------------------------------------------------------------------

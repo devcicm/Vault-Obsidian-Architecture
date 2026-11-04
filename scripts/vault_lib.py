@@ -709,6 +709,28 @@ def format_timestamp(ts: str) -> str:
 # ============================================================
 
 
+def partes_ocultas(ruta: Path, raiz: Path) -> list:
+    """Las partes ocultas de `ruta` **dentro del vault**, no las de su ruta absoluta.
+
+    El filtro de "carpetas ocultas" (`.history`, `.locks`, `.tmp.*`) es sobre
+    lo que hay DENTRO del vault. Medido el 2026-11-04: el criterio usaba las
+    partes de la ruta ABSOLUTA, así que un vault que vive bajo una carpeta con
+    punto —la casa de vaults, `~/.vault-master/gestion`— perdía todas sus
+    notas: `vault_audit` veía cero notas en cada sección y penalizaba al
+    vault entero con AP-03, y `vault_delta` no encontraba ningún hash para
+    detectar drift. El sandbox del repo no lo exhibit porque su ruta no tiene
+    partes con punto: el defecto solo se ve fuera (la regla 7, en la práctica).
+
+    `ruta` puede no estar bajo `raiz` —una ruta de otro sitio—: en ese caso
+    se mide tal cual, que es lo que se haría con la ruta relativa.
+    """
+    try:
+        relativa = ruta.relative_to(raiz)
+    except ValueError:
+        relativa = ruta
+    return [parte for parte in relativa.parts if parte.startswith(".")]
+
+
 def get_vault_path(name: str) -> Path:
     """Get common vault paths by name.
 

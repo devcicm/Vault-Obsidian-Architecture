@@ -206,6 +206,7 @@ from vault_lib import (
     destino_mas_corto,
     indice_de_nombres,
     inventario_de_nombres,
+    partes_ocultas,
     read_frontmatter,
     resolver_sustitucion,
     resolver_wikilink,
@@ -1553,7 +1554,8 @@ def _detect_empty_indexes(
     empty = []
 
     try:
-        for section_dir in sorted(_raiz().iterdir()):
+        raiz = _raiz()
+        for section_dir in sorted(raiz.iterdir()):
             if not section_dir.is_dir():
                 continue
 
@@ -1592,7 +1594,7 @@ def _detect_empty_indexes(
                 for p in (_barrido_md() if barrido is None else barrido)
                 if section_dir in p.parents
                 and p.name.lower() not in ("index.md", "readme.md")
-                and not any(part.startswith(".") for part in p.parts)
+                and not partes_ocultas(p, raiz)
             ]
 
             if len(real_notes) == 0:

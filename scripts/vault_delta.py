@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 from vault_errors import emit_error, wrap_main, proyecto_registrado
-from vault_lib import campos_de_texto, utcnow
+from vault_lib import campos_de_texto, partes_ocultas, utcnow
 from vault_io import atomic_write_json, write_report
 from vault_registry import ORDERED_SECTIONS, secciones_del_vault
 
@@ -113,12 +113,13 @@ def _read_cia_integrity(path: Path) -> str:
 
 def _collect_current_hashes(project: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
     hashes: Dict[str, Dict[str, Any]] = {}
-    for note_path in _raiz().rglob("*.md"):
+    raiz = _raiz()
+    for note_path in raiz.rglob("*.md"):
         if not _is_vault_note(note_path):
             continue
-        if any(part.startswith(".") for part in note_path.parts):
+        if partes_ocultas(note_path, raiz):
             continue
-        rel = str(note_path.relative_to(_raiz())).replace("\\", "/")
+        rel = str(note_path.relative_to(raiz)).replace("\\", "/")
         if project and project not in rel:
             continue
         try:
