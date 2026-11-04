@@ -24,7 +24,7 @@
       "execution": "embedded-in-deliver",
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
-        "C:\\Users\\Carlos Ivan\\.claude\\skills\\archify\\bin\\archify.mjs",
+        "<REPO>",
         "deliver",
         "workflow",
         "B:\\Vault-Obsidian-Architecture\\.archify\\candidata-onboarding.json",
@@ -59,7 +59,7 @@
       "durationMs": 811,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
-        "C:\\Users\\Carlos Ivan\\.claude\\skills\\archify\\bin\\archify.mjs",
+        "<REPO>",
         "deliver",
         "workflow",
         "B:\\Vault-Obsidian-Architecture\\.archify\\candidata-onboarding.json",
@@ -119,7 +119,7 @@
       "durationMs": 261,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
-        "C:\\Users\\Carlos Ivan\\.claude\\skills\\archify\\bin\\archify.mjs",
+        "<REPO>",
         "check",
         "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-onboarding.html",
         "--require-provenance"
@@ -268,7 +268,7 @@
       "durationMs": 1892,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
-        "C:\\Users\\Carlos Ivan\\.claude\\skills\\archify\\bin\\archify.mjs",
+        "<REPO>",
         "browser-check",
         "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-onboarding.html",
         "--json",
