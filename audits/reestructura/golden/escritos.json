@@ -8,8 +8,8 @@
      "vault/16_AI_Governance/decisions/mi-api-elegir-postgresql.md": "5d8bb8e0b81df78d3e1bb43e7e9424b0c871c369e98a23023b2fd79ae07a195c",
      "vault/16_AI_Governance/index.md": "b15c1662b7564dc5e0ee744667e8efd3efabcabb387a3882786cb8fa54afa244",
      "vault/19_Audits/vocabulary/tag-ledger.json": "63aaf504bcc9bb789ac5f9d2f88aafa28f47608108051dc775ef9a4c39cce8b6",
-     "vault/99_Index/graph.json": "44ab751aeba9837a5af6daf3484a1aee3d6e989a763eec10878858d194d56024",
-     "vault/99_Index/search-index.json": "42a3d99fd1cf08f5a93338f8e4deec805c52c92f6f3818b52fbd2c935b516bf8"
+     "vault/99_Index/graph.json": "eb4687f713afbf1cc7d965f5facb7bcb2249627feadc209db0c3c0ca981acf79",
+     "vault/99_Index/search-index.json": "af4916ae8d9ddf9ee29c77069c59a8f741080fa68dca9e5c2b7841032bdb3a95"
     }
    }
   ],
@@ -48,25 +48,22 @@
   "vault_backup": [
    {
     "escritos": {
-     "vault/vault-backups/.backup-registry.json": "bfde29c591ef3c7c1d076f0f081bea26058e5bdaf1c38b5505c49442e3c9641f",
-     "vault/vault-backups/vault-<HOY>-HHMMSS/.manifest.json": "676b7b4895a48586f8d410cfdd0c6bd612ead1cd4ae24db2acf2340a8e47c582",
-     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/.change-log.json": "ff4741a26da5ffb773361ccb479730f7f295491283b4b42c333db64a68ec8053",
+     "vault/vault-backups/.backup-registry.json": "5c39558b0d9b2ed9f5667d1206c9658dd807fb007bfcbf70399846d052c909c8",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/.manifest.json": "74a2a0c45fe58a3f75836430454dd9c5efa64694757bfc58963118509ad6ae6a",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/.change-log.json": "1afa7469d4f85be92c617345ff8a8d7a94308de915d33b98071827adc715cd40",
      "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/.voice-counter": "c53d9534e7c47018b82fd6a3cb1e3560bde715ad322476c45768337bc09dae31",
-     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/change-log.md": "1aeab0b01bad90a43f616a2352ad22b48be63ab179691d7286911bddaf5bcc2e",
-     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/data-framework.json": "73afb1243f68c8d31ea9f5b34474f98d8fb8f613e7cec3e9c50d00ea8903028b",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/.voice-counter": "d6061bbee6cf13bd73765faaea7cdd0af1323e4b125342ac346047f7c4bda1fc",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/change-log.md": "f74a98e836d6ffa79c77125bffcaa34a6a8514fcf212ae0167e7c7c97e257e24",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/data-framework.json": "9573b27169b4016f90dd103302e6834a8e5f1c649aadaf876b222b6fa838aacb",
      "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/data-framework.md": "500f7c9786249977e9db9f19a3c57f38e52f833c4cfedf6f3411a93754560071",
-     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/data-fundamentals.json": "745638f3c2d437846df3c3ea5869e3c39a6d0a5ce13c5a6e9cbe9513bcd9fe9e",
-     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/index.md": "56f77a962acf7c3bad1e295c05d7cc4cbee65a05560121bce46b050e67a94593",
-     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/norm-registry.json": "32ea793d3f0bbb989a76ddd35d0c76083ca10467f2ba2afb33da7051da5bf789",
-     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/product-gates/clean_install/clean_install-result.json": "371d9f56d668568d2b6cd3421b66155efe37dc824bed8a1d8bbe5ca0733fa173",
-     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/product-gates/index.md": "04b5421c8babc35513234c067f410116dcb127bf5fcc17fa7babf5e73d523370",
-     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/product-gates/memory_e2e/memory_e2e-result.json": "37e1d63f70d80b4e807d9ef08ea42c384a2a4f32410c2f916670996e346b6ede",
-     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/quality-index.json": "df9dbaf57098e28aa0ac98b3791568f8ea6a08b81c66085a0023133103857bb3",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/data-fundamentals.json": "248b6af2f443458e9f157aedfce52ed8bb67343a3d2032d7086e2f3b628b3db6",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/index.md": "9b99c5ff30893118ede1b8bae14080dad2fef0550bcd7b85b85e3a987b553d14",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/norm-registry.json": "ec708fc23bf607fe46eee6034dbbcae6969c28d8afc51ab6735b93fbed79a2d6",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/quality-index.json": "5566702b3a042e3eaf661d3c21ed7305209c816d7fa720e47cf5e9e559c8508d",
      "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/standard-version.json": "405f75a4f8213cfff80ac67f435179c850b9f504be75ec3bc007ea8da623187f",
      "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/tag-registry.json": "dc85564bf26e1601f3e603b54f30eb9bdc4dd17e1006ce836df1682a2bdaf170",
-     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/tool-contracts.json": "b3a1f987c1b7df43d50c69dc3ace76d157ecf61686f4affa5100485d4533e1f2",
-     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/tool-contracts.md": "77b4552bdc29d9d76c1745d81c8e7c406aa27b9f938819b5af293aa22b5c27fa",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/tool-contracts.json": "824f603786532e0f0d53dfd0494cc046ddbcb328a428d8454b457d25587aa8c0",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/tool-contracts.md": "183dbaa6657b1df06f1e1422a27e1885caf3a204c84fcbef5726dc7b56f5b4a2",
      "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/tool-spec.json": "a27a7b20d3c9ab6b8757e83a45fa2a2c11a15c868bd9583adf3ae8e75e032310",
      "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/vault-commands.md": "15ee5929e8a6a3123437197e2dfb44c9e0a918eb2d8e044b735fc5ff7ac21baa",
      "vault/vault-backups/vault-<HOY>-HHMMSS/00_System/vault-hub.md": "d991f8c0956fc0bdd0d90ce048b0f37e093ef3f6165c9cc12f448acae4a5bc94",
@@ -163,34 +160,31 @@
      "vault/vault-backups/vault-<HOY>-HHMMSS/21_QA/index.md": "35fb118fe98ad756072c1339bb77a8e6e5f8437a90b4f936c8b77bd6b2c8ac90",
      "vault/vault-backups/vault-<HOY>-HHMMSS/99_Index/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
      "vault/vault-backups/vault-<HOY>-HHMMSS/99_Index/00-99_index-primer.md": "83e1470716dbb0e1bbe35a083d62cb77b1fdd9696b53e0fd6d5131ed59c6844b",
-     "vault/vault-backups/vault-<HOY>-HHMMSS/99_Index/graph.json": "228c6a56ad68c56e0369003ac569f80eac47d67cac23054efbbfe70d2c2cde86",
-     "vault/vault-backups/vault-<HOY>-HHMMSS/99_Index/hash-index.json": "63a7d21d6891f39774ff79b842c4d0d961839ef760b3c965bd89648c59e6ce09",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/99_Index/graph.json": "49b8c35bb534d8ddbcee8a750596044934e11608bce8a0d53d58ec9f144b1e50",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/99_Index/hash-index.json": "45e88084b7a0dcc34f7c3cfb8150bbd154e30535233f99d06aa68e0a0ab018f4",
      "vault/vault-backups/vault-<HOY>-HHMMSS/99_Index/index.md": "11e4e87f9ccf2021fdcdf55ba9141beff24807b2a1a7c7c5c549733f3c076f6c",
-     "vault/vault-backups/vault-<HOY>-HHMMSS/99_Index/search-index.json": "4905e792cd80b1603e2242a0d6ab5a438edc4fce290f4efcb47df4c6ac8ff29e",
+     "vault/vault-backups/vault-<HOY>-HHMMSS/99_Index/search-index.json": "f3a14158130c2e46823ab9ac5b88a0c7293f7a5b4d780c9e8e340da3a3a31b54",
      "vault/vault-backups/vault-<HOY>-HHMMSS/99_Index/tag-index.md": "e69727d13e415e291d9b963c126b4b884f9116327bc413ada5252ea5178ea1f0"
     }
    },
    {
     "escritos": {
-     "vault/vault-backups/.backup-registry.json": "fb5b74941aaa90a59836ea6c7b5bcfbb981b966f9308781cab30799db293df31",
-     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/.manifest.json": "9bdee23cd4567f957fcd72e18cce59a8d1fe81eb30ddb515fa40573da4bd82b6",
-     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/.change-log.json": "ff4741a26da5ffb773361ccb479730f7f295491283b4b42c333db64a68ec8053",
+     "vault/vault-backups/.backup-registry.json": "2b102056fd1012c76a3f1bccfec1971539d1ebb440bab8bad8644a81f1696f36",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/.manifest.json": "a9ab2c4d570b94e6dd3f4650ebdfadcc8b8184520e05bc294a0d311f347ea5b2",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/.change-log.json": "1afa7469d4f85be92c617345ff8a8d7a94308de915d33b98071827adc715cd40",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/.voice-counter": "c53d9534e7c47018b82fd6a3cb1e3560bde715ad322476c45768337bc09dae31",
-     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/change-log.md": "1aeab0b01bad90a43f616a2352ad22b48be63ab179691d7286911bddaf5bcc2e",
-     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/data-framework.json": "73afb1243f68c8d31ea9f5b34474f98d8fb8f613e7cec3e9c50d00ea8903028b",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/.voice-counter": "d6061bbee6cf13bd73765faaea7cdd0af1323e4b125342ac346047f7c4bda1fc",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/change-log.md": "f74a98e836d6ffa79c77125bffcaa34a6a8514fcf212ae0167e7c7c97e257e24",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/data-framework.json": "9573b27169b4016f90dd103302e6834a8e5f1c649aadaf876b222b6fa838aacb",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/data-framework.md": "500f7c9786249977e9db9f19a3c57f38e52f833c4cfedf6f3411a93754560071",
-     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/data-fundamentals.json": "745638f3c2d437846df3c3ea5869e3c39a6d0a5ce13c5a6e9cbe9513bcd9fe9e",
-     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/index.md": "56f77a962acf7c3bad1e295c05d7cc4cbee65a05560121bce46b050e67a94593",
-     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/norm-registry.json": "32ea793d3f0bbb989a76ddd35d0c76083ca10467f2ba2afb33da7051da5bf789",
-     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/product-gates/clean_install/clean_install-result.json": "371d9f56d668568d2b6cd3421b66155efe37dc824bed8a1d8bbe5ca0733fa173",
-     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/product-gates/index.md": "04b5421c8babc35513234c067f410116dcb127bf5fcc17fa7babf5e73d523370",
-     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/product-gates/memory_e2e/memory_e2e-result.json": "37e1d63f70d80b4e807d9ef08ea42c384a2a4f32410c2f916670996e346b6ede",
-     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/quality-index.json": "df9dbaf57098e28aa0ac98b3791568f8ea6a08b81c66085a0023133103857bb3",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/data-fundamentals.json": "248b6af2f443458e9f157aedfce52ed8bb67343a3d2032d7086e2f3b628b3db6",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/index.md": "9b99c5ff30893118ede1b8bae14080dad2fef0550bcd7b85b85e3a987b553d14",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/norm-registry.json": "ec708fc23bf607fe46eee6034dbbcae6969c28d8afc51ab6735b93fbed79a2d6",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/quality-index.json": "5566702b3a042e3eaf661d3c21ed7305209c816d7fa720e47cf5e9e559c8508d",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/standard-version.json": "405f75a4f8213cfff80ac67f435179c850b9f504be75ec3bc007ea8da623187f",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/tag-registry.json": "dc85564bf26e1601f3e603b54f30eb9bdc4dd17e1006ce836df1682a2bdaf170",
-     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/tool-contracts.json": "b3a1f987c1b7df43d50c69dc3ace76d157ecf61686f4affa5100485d4533e1f2",
-     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/tool-contracts.md": "77b4552bdc29d9d76c1745d81c8e7c406aa27b9f938819b5af293aa22b5c27fa",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/tool-contracts.json": "824f603786532e0f0d53dfd0494cc046ddbcb328a428d8454b457d25587aa8c0",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/tool-contracts.md": "183dbaa6657b1df06f1e1422a27e1885caf3a204c84fcbef5726dc7b56f5b4a2",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/tool-spec.json": "a27a7b20d3c9ab6b8757e83a45fa2a2c11a15c868bd9583adf3ae8e75e032310",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/vault-commands.md": "15ee5929e8a6a3123437197e2dfb44c9e0a918eb2d8e044b735fc5ff7ac21baa",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/00_System/vault-hub.md": "d991f8c0956fc0bdd0d90ce048b0f37e093ef3f6165c9cc12f448acae4a5bc94",
@@ -287,10 +281,10 @@
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/21_QA/index.md": "35fb118fe98ad756072c1339bb77a8e6e5f8437a90b4f936c8b77bd6b2c8ac90",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/99_Index/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/99_Index/00-99_index-primer.md": "83e1470716dbb0e1bbe35a083d62cb77b1fdd9696b53e0fd6d5131ed59c6844b",
-     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/99_Index/graph.json": "228c6a56ad68c56e0369003ac569f80eac47d67cac23054efbbfe70d2c2cde86",
-     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/99_Index/hash-index.json": "63a7d21d6891f39774ff79b842c4d0d961839ef760b3c965bd89648c59e6ce09",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/99_Index/graph.json": "49b8c35bb534d8ddbcee8a750596044934e11608bce8a0d53d58ec9f144b1e50",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/99_Index/hash-index.json": "45e88084b7a0dcc34f7c3cfb8150bbd154e30535233f99d06aa68e0a0ab018f4",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/99_Index/index.md": "11e4e87f9ccf2021fdcdf55ba9141beff24807b2a1a7c7c5c549733f3c076f6c",
-     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/99_Index/search-index.json": "4905e792cd80b1603e2242a0d6ab5a438edc4fce290f4efcb47df4c6ac8ff29e",
+     "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/99_Index/search-index.json": "f3a14158130c2e46823ab9ac5b88a0c7293f7a5b4d780c9e8e340da3a3a31b54",
      "vault/vault-backups/vault-<HOY>-HHMMSS-pre-migration/99_Index/tag-index.md": "e69727d13e415e291d9b963c126b4b884f9116327bc413ada5252ea5178ea1f0"
     }
    }
@@ -309,8 +303,8 @@
      "vault/12_Bibliography/books/clean-code.md": "e5c69aaaedf2bf35b863ff891a08c1a8e4d79aa129cb48c83c23a62b4795c470",
      "vault/12_Bibliography/books/index.md": "14b657443a46b8d224d57e3cfa5e3878fa22497cfb22fe465c18ced1026b2ec9",
      "vault/12_Bibliography/index.md": "0a9d65e4d99090198a5a8f06d5acdda92e0838b6f71f8d20d4426283484c145c",
-     "vault/99_Index/graph.json": "dbde28882e8dc3c467f88c988c311dd6cbf224964a405e2cc38aa312d9827664",
-     "vault/99_Index/search-index.json": "8e0cf4dd1ca437e5187bee9fa54487d420ff7818ff32f87a87cbc631e2c6d26a"
+     "vault/99_Index/graph.json": "7cb6105f7cea0b86b2421da35bb496cf377036e08e5c3fe70fc404629d8ef185",
+     "vault/99_Index/search-index.json": "d9fbf32571ac840d3a61a9741c7247e38912a7b176c0a4d0d43e3d13f993c0bd"
     }
    }
   ],
@@ -344,8 +338,8 @@
      "vault/18_Bugs/open/index.md": "9aa382d430ae55cdbb1cdc4f0bfd76230cfec4a5a466c90b6c63a46fc0f3e623",
      "vault/18_Bugs/open/mi-api-token-numerico-coercionado.md": "c2a41dcd04f29e240899d3d6bb1e469fa58e00a2a76ccb5dc122178c8b09f6fb",
      "vault/19_Audits/vocabulary/tag-ledger.json": "f529bb6d52ca706c680374777d1d3f2a6622342bdd908b7f42f19b52e98a8657",
-     "vault/99_Index/graph.json": "1400efc28030a927d92bccd5eb085055a95e795afc30147945579d415f813d5e",
-     "vault/99_Index/search-index.json": "3617a5e514c479f23b090b29441d1101c412d1db2d828826cb1ec1b28c26c380"
+     "vault/99_Index/graph.json": "b82a3903f1813f951c7320d25097b636f845348546612d9ada0e4f45726eefa3",
+     "vault/99_Index/search-index.json": "fc88ae64bc53f06bc60df506d8a7b86f4db93ab554b469d692e4b59db9c8e8f5"
     }
    }
   ],
@@ -355,8 +349,8 @@
    },
    {
     "escritos": {
-     "vault/00_System/.change-log.json": "cf9c88d97b46daab6adb954ca4c99e36f89496f552920824236ea33392eab5e8",
-     "vault/00_System/change-log.md": "93317701d47c3c41aaf7687df0dcd9d9af5a8ff27bf80d12cc56c3658aad6dae"
+     "vault/00_System/.change-log.json": "791c50df23a2a991ad4a4364c6b91d199cdec0a285e603e76ade07aa9ced172d",
+     "vault/00_System/change-log.md": "0fac98ec01fce01b834d55d0b21c7bbcd719e51abc3c8ebfe229f78e853508af"
     }
    }
   ],
@@ -399,8 +393,8 @@
      "vault/11_Code/index.md": "b8d5e6d5648a0a3afe1f42e801fd2b8ad6fd21d632ee6e55a6abc2fa16cc9c82",
      "vault/11_Code/mi-api/code-map.md": "b42f2276b5c000edf3d747d8d9df95f47b29624da0c5ec3efdd94b79ac5e28a2",
      "vault/11_Code/mi-api/index.md": "11ae8ca03fa7456f35d73822182f3e8bbc2e508f2f02a17a859023ed3044abfb",
-     "vault/99_Index/graph.json": "8cd30dca939c9cb8bf5db87a93682e495c998d79a60533c0b64c7ad4407bb878",
-     "vault/99_Index/search-index.json": "9ab7d2df6ebfe300808de6c6bc19e4739318567ed8e46897cac36877e6fc37c6"
+     "vault/99_Index/graph.json": "e4d858cb965e79d839a5ff95999489107afe8bae43ad05e79936f2fd33749db1",
+     "vault/99_Index/search-index.json": "476013b2d86dd84c15f3ee99b0c35ce5086eea4a9468cce364cbf8a1f1a72b6d"
     }
    }
   ],
@@ -412,8 +406,8 @@
      "vault/11_Code/mi-api/auth.md": "f72a1fc8c5dcdc4552715524b3b340a8f8de9662e2b62bba861438b3241591e5",
      "vault/11_Code/mi-api/index.md": "aa75ff23624b12da48ca2008f7415b3deb819bcbccce02e3351d8c557ffa8d36",
      "vault/19_Audits/vocabulary/tag-ledger.json": "150494ababccb5a02eecfb1697b7a7ac96b6121e371a42ff9cf27377e22c9f24",
-     "vault/99_Index/graph.json": "d56bc642ed00138fc03b909f2337698d40cdd6ad31d47a3f78ba3bc9c49fcc48",
-     "vault/99_Index/search-index.json": "c0189db04da3f82bdc5d6edf00e76c64024e3c602493ec3e2e822786c8948373"
+     "vault/99_Index/graph.json": "93c7974f88497916792a564b617736dd124a73d3e275b327fc6afc71dc8ee3c4",
+     "vault/99_Index/search-index.json": "85745406e65af7359bf98bcf6b6f65acc7e48ec3c1edf281daed7cf8f349fff7"
     }
    }
   ],
@@ -432,8 +426,8 @@
      "vault/11_Code/index.md": "b8d5e6d5648a0a3afe1f42e801fd2b8ad6fd21d632ee6e55a6abc2fa16cc9c82",
      "vault/11_Code/mi-api/code-map.md": "4d595985715d1b8d09e2b2dbd341eea5cb52a579fcb82c324bdf2c6cf60b2ce2",
      "vault/11_Code/mi-api/index.md": "11ae8ca03fa7456f35d73822182f3e8bbc2e508f2f02a17a859023ed3044abfb",
-     "vault/99_Index/graph.json": "8cd30dca939c9cb8bf5db87a93682e495c998d79a60533c0b64c7ad4407bb878",
-     "vault/99_Index/search-index.json": "72d31faf10bb68c8964612660a6932fa7a40ee7179e71f1064284f6bd3f06f9a"
+     "vault/99_Index/graph.json": "e4d858cb965e79d839a5ff95999489107afe8bae43ad05e79936f2fd33749db1",
+     "vault/99_Index/search-index.json": "700fe8f6ee6886c9ce0efeaf230999f896bad1a8583a9c6409f796138b3468bd"
     }
    }
   ],
@@ -475,8 +469,8 @@
    {
     "escritos": {
      "vault/.history/07_Knowledge__old-<HOY>THH-MM-SS.md": "fc3e90e36f70fb3a7697168137fe3fcee6d12619cff93d7261189371a88ee830",
-     "vault/00_System/.change-log.json": "2c44fdd22dbc58c988c2f6da1ee6ac208413fccb3f008484be4a999021ef4140",
-     "vault/00_System/change-log.md": "76943bf7c39ea7b73eac0b46bbb887e39a13c59e00a437d3cb9af166c131fcfc",
+     "vault/00_System/.change-log.json": "24da2bcb87ecb527a36a83a2538e113b6086cab59b207584066805a5f0a148f0",
+     "vault/00_System/change-log.md": "e7829b03998a28ac5b43b20db6d90a83c84807daf10538dddf2ebb03ec0e4d76",
      "vault/07_Knowledge/old.md": "<borrado>"
     }
    }
@@ -484,12 +478,12 @@
   "vault_delta": [
    {
     "escritos": {
-     "vault/99_Index/hash-index.json": "4907acb06d3345e4988e5aa8cad090257cc23d6729edbb975afc0d8468133501"
+     "vault/99_Index/hash-index.json": "29d3a1ee57d41615787d64e27e56d6ec92730bb791028d9b090972109fb4bd28"
     }
    },
    {
     "escritos": {
-     "vault/99_Index/hash-index.json": "4907acb06d3345e4988e5aa8cad090257cc23d6729edbb975afc0d8468133501"
+     "vault/99_Index/hash-index.json": "29d3a1ee57d41615787d64e27e56d6ec92730bb791028d9b090972109fb4bd28"
     }
    }
   ],
@@ -508,8 +502,8 @@
      "vault/06_Diagrams/flow/mi-api-user-flow.md": "f84e3fbeb65dc1135321f128c36b91439fb4e9e3e8a3516577b916e44529c168",
      "vault/06_Diagrams/index.md": "6b82096df5d53e7bfd8bee5e307408bbce66ec744d8916cd1449abbf066f8770",
      "vault/19_Audits/vocabulary/tag-ledger.json": "4ef20728ef7dfa9cd5d593e65b54870c05ac097f1000ba0ffd57a51210f949e2",
-     "vault/99_Index/graph.json": "86e9b86250b13891edb4d172d850a437fb3613e478d8d7668e80f10952209c96",
-     "vault/99_Index/search-index.json": "b5da11d215ef78795e0dfa46fdab1a08431f393525e485dca558ebdd3e16db74"
+     "vault/99_Index/graph.json": "0709e8bb27089cc2f4027dacc845bb699457b3c7127d61ad51c49c2ec8a0b55b",
+     "vault/99_Index/search-index.json": "491357fbfe4c49c1e1ac2c789ab8dcacfd6ddbe84f2c2e1a29c96eab16a131ba"
     }
    }
   ],
@@ -565,8 +559,8 @@
      "vault/09_Infrastructure/env-matrix/mi-api-prod.md": "303ba78483c2a4e791bcb393cb9dfd7edd5e22e20a6fee3a27acb341b60dc199",
      "vault/09_Infrastructure/index.md": "f9bcabe68ea94311e54c5ca44c72be75df1c4ce19c7cbf8946c8e062ae85c1ad",
      "vault/19_Audits/vocabulary/tag-ledger.json": "6b255c176f9cfaee40999e7f1ffa42c91a3473c7ffbf3e595011a969030398a8",
-     "vault/99_Index/graph.json": "afc942db5aa87d47a23d3b4c33c53520af77d15a1c7d401900a6da514b27d80a",
-     "vault/99_Index/search-index.json": "ce14eee63bcf45b2a56e1fa8a824a9ec39fe383dd9aa5d1c679766acf3e30eaa"
+     "vault/99_Index/graph.json": "6cf3f6bd6635b1e44b261ff4f1ef4a98114d10cd474f5364314ee650b96fb84e",
+     "vault/99_Index/search-index.json": "cd665b4e8982136a29c2a64df9bd080760f7fa37d7cc7c75d8916529485c6bea"
     }
    }
   ],
@@ -576,8 +570,8 @@
      "vault/01_Projects/index.md": "a94f0cbbe7a8615317c07e928a3e0ae10e84486e14e687582afa167b7f93460b",
      "vault/01_Projects/mi-api/envs.md": "ebfbaadd0d02e47c5d68acb5803002a8030c7d075ef0ea42044187cbc07e7e84",
      "vault/01_Projects/mi-api/index.md": "0333915f4f8103931d38836edd4e96f488dcb787acd58b96edf69665df419d68",
-     "vault/99_Index/graph.json": "ff0c7fa0ae853b81144e5773457b6ceeff929f8a57dad60ece678251997caf52",
-     "vault/99_Index/search-index.json": "99caf9dbae1ce3960a4951b0144231ad65e19cff1aab3b86186ea33f6833529a"
+     "vault/99_Index/graph.json": "aa0a6d7bc95e4bb345a4c4c4efcfa36ba80b3e447ba67f5fd251b01e2244652f",
+     "vault/99_Index/search-index.json": "3a954e481247efe93d9f028deaa082aa078d182c9a6149b5799fe7b95389fd61"
     }
    }
   ],
@@ -629,8 +623,8 @@
      "vault/02_Observability/errors/index.md": "c5de9a3ea4cdc0e744e1a733f88ea11aed5aeba6aa0680981ac509ea06a2a1aa",
      "vault/02_Observability/index.md": "234550ee9228577c34d52991249652f3735bbecb18a40f152141539afe49b531",
      "vault/19_Audits/vocabulary/tag-ledger.json": "d2c824d2e2228f40040cec570230d67980be76b64578b9019beb8e4c9e9b2560",
-     "vault/99_Index/graph.json": "eb97889d05a1567cc7c9bf5a1ff58010cb5f57354ad85a897dac2cf8e06e1acf",
-     "vault/99_Index/search-index.json": "126e14914145666b05acf22ad116fd23a04fc657102c767c4b6425c97bb87e94",
+     "vault/99_Index/graph.json": "79a86d56b1ff0c9176aa12c054bc7980c9fa7422e464baf3cc6b2a5a849e54af",
+     "vault/99_Index/search-index.json": "cf83a659b7690a910c7da11d7d86d8bf16e9afdd5a00e91bb77bc2d9c80205d4",
      "vault/vault-backups/.vault-fix-backup-<STAMP>/02_Observability/errors/foo.md": "f3d1cb016211f614845491ad374de6110e623ac5a995bf5d3e67f22f1b518b88"
     }
    },
@@ -645,8 +639,8 @@
      "vault/13_Flows/workflow/index.md": "14c3226d237eb106f9ae5f68cbcdb7df5ed8e9b7075180b47dbb549ccf21328f",
      "vault/13_Flows/workflow/mi-api-user-registration.md": "1eec9e11bd3b400bcfd41dcb4f847f7ef2d25eab4c126008bd0459e631586b87",
      "vault/19_Audits/vocabulary/tag-ledger.json": "b41938d7de77a03d17a2710b65c01b7356c19ec1c6e95b4303e54ec8e3d927a7",
-     "vault/99_Index/graph.json": "74815384cbbb6e5b21dd8df2fedc33f745236f90a082d344a0340af51df46a13",
-     "vault/99_Index/search-index.json": "ce6a988f472beff6b3d48aae4a97b3bfca4ffbaae80dc0eed82468ce1ba5daea"
+     "vault/99_Index/graph.json": "f5e936fbb6f6c92b019b20b7c240effddd1e2e90bf66c1a9aebd32b542034c9c",
+     "vault/99_Index/search-index.json": "917a803924b2a899219d24c4f02aab614d0c63a8a4dd0cde2ba827c8684da4b7"
     }
    }
   ],
@@ -656,7 +650,7 @@
    },
    {
     "escritos": {
-     "vault/00_System/custom-folders.json": "6c780dce9b861f7f0a5cc00ea73658745cb4e73f6ef0bf21e3550f570e19e567"
+     "vault/00_System/custom-folders.json": "5e807a47c6e3b7b806cb2d386c40c0c73d9d855101bf9b686b46f59d421fbdd1"
     }
    },
    {
@@ -710,8 +704,8 @@
      "vault/07_Knowledge/parser-evidence.md": "cf59f8a7a9b11ae1ff53efa3ee80498d4c9aa89a173bd46f79a6828bbba3102f",
      "vault/07_Knowledge/x.md": "de59cf98cc535b8d863905b57466da53801f3d364f7bbe8ebb389fca8876ab63",
      "vault/19_Audits/vocabulary/tag-ledger.json": "df0c166ff47016d96a220edee97d30a067c20605c07de9e68e8db697f802972b",
-     "vault/99_Index/graph.json": "17c0eb79924c242a411f63b51e030072f50ee23b1091625a8c25839a8d4cdb34",
-     "vault/99_Index/search-index.json": "36aeb55f88106103214951a7403a33d4e81c5153351c758457fd340b1780d0d8"
+     "vault/99_Index/graph.json": "3c65c7796f0615ad7f2d8070aeb6ca72c1e1cc9d684f54a8d97b713b80f47697",
+     "vault/99_Index/search-index.json": "cf3ccb6834ffd964130b3a73a5de55d15710593b46a059c8e527b85be6d7f6ec"
     }
    },
    {
@@ -719,8 +713,8 @@
      "vault/07_Knowledge/index.md": "b2479b85489897f55c913d0f62d0194876df3a649edbda5b1f7e28056f47360b",
      "vault/07_Knowledge/x.md": "de59cf98cc535b8d863905b57466da53801f3d364f7bbe8ebb389fca8876ab63",
      "vault/19_Audits/vocabulary/tag-ledger.json": "df0c166ff47016d96a220edee97d30a067c20605c07de9e68e8db697f802972b",
-     "vault/99_Index/graph.json": "17c0eb79924c242a411f63b51e030072f50ee23b1091625a8c25839a8d4cdb34",
-     "vault/99_Index/search-index.json": "952cc77c86b9daf8ce04e02f66f7b75b78729b3e2dfb986f4acebc72bf10477e"
+     "vault/99_Index/graph.json": "3c65c7796f0615ad7f2d8070aeb6ca72c1e1cc9d684f54a8d97b713b80f47697",
+     "vault/99_Index/search-index.json": "b22a1f33f176fb53484c9a1cf7d0c1563744c00a3cccc7a99ee64fc9f409cb2c"
     }
    }
   ],
@@ -733,8 +727,8 @@
      "vault/07_Knowledge/escalar-sin-escapar.md": "4099c77a120c24284e88247c5ade0d506a465ad1176d24aafdb64b1eb34c059f",
      "vault/07_Knowledge/index.md": "da3609b60133f70c17413c5669a8bc7902f156f4755fbc94b0969baef683f047",
      "vault/19_Audits/vocabulary/tag-ledger.json": "189d6f953dc7ce144f1af81ebb2561abba8adf483fc42a5c8513f2cd65ac89da",
-     "vault/99_Index/graph.json": "557fcc9632e4b703147a849e671ac90a51fb7febd59538fa8774ce8b5f45929d",
-     "vault/99_Index/search-index.json": "c941943376e6bcec7d7dc5918f7c118aa50660501779bbc8b3c3fff422a114ae"
+     "vault/99_Index/graph.json": "e4753dbf5b7950e893d6d062b746dae782125e078be4bb932e2b05a2ea9cf90f",
+     "vault/99_Index/search-index.json": "d7704ead7e211ba4d0069ddf0a6dd5be0fad7e28c7ac3eca50cd00dd0453beba"
     }
    }
   ],
@@ -767,7 +761,7 @@
   "vault_graph": [
    {
     "escritos": {
-     "vault/99_Index/graph.json": "e70e5b6d93d28c881d9789fe5d89423374cd589f11c48c6b6ae33d7076035a38"
+     "vault/99_Index/graph.json": "dd5900f90d26b976bb29aca8e02245d2638a083352efbfac824c0c0e94b3d26f"
     }
    }
   ],
@@ -791,7 +785,7 @@
   "vault_graph_merge": [
    {
     "escritos": {
-     "vault/99_Index/graph-enriched.json": "bd08b270dbd78585503a0ef60d86700c81367d75fabcdb8ce816e5d0247d03be"
+     "vault/99_Index/graph-enriched.json": "bcb2ae8e5b4c5547d63434efcfea8b9a2127f73003c3ca10c8136b53d7c8f542"
     }
    }
   ],
@@ -818,8 +812,8 @@
      "vault/02_Observability/incidents/mi-api-<HOY>-api-caida.md": "e67b349787d3424f0a629d455bb585fcd9e6459c584f8e76805fa7d57593d7b4",
      "vault/02_Observability/index.md": "f0d09621d03b0b0e567e4b82ccbccc947ac778232abacf8241e08a053ada53c6",
      "vault/19_Audits/vocabulary/tag-ledger.json": "19fd5bf00acd3959b511327898b123bfc383daa4e4804acaa5f82609e60ccfb4",
-     "vault/99_Index/graph.json": "124bdb999e99d4334a64f0f509648660f4ccf6f5699b9ff96718cd1210061f04",
-     "vault/99_Index/search-index.json": "49f4df270d4365e6c5bc5390b35368f87ee2e91d4719e1f27a27e228f8a417ff"
+     "vault/99_Index/graph.json": "55182345e475633959a56dc87e8717cf273c95dae6903250c67304b01ad17980",
+     "vault/99_Index/search-index.json": "834ee2062746e547a87ff76da67432ec4c35c714b086da6996c87035c7bc73f8"
     }
    }
   ],
@@ -828,8 +822,8 @@
     "escritos": {
      "vault/09_Infrastructure/index.md": "7d1be5d0c8924b35d68a6d78ede849372c32db539347ab9c69e34eaac402671a",
      "vault/09_Infrastructure/infra-map.md": "5886d4fe9a19ee565d8495a76d99441bf5ed3590108ee636699baeb85b033de0",
-     "vault/99_Index/graph.json": "15e4daf185949f66058e6355f1747060557dd7d4486b8bc1434eb8ec35ab5a28",
-     "vault/99_Index/search-index.json": "95d073b1ec17dc9a5cdd3eac1960e9a515b225b879147c0e76efe22e8cb00ad0"
+     "vault/99_Index/graph.json": "3364d3655dfc3563725725199043de080141d1186082a60a20fbc1d88df07996",
+     "vault/99_Index/search-index.json": "0b45e8ee1cbdfb3bbfa19230f7ad3612bea4a2a36eaa79a31dce1c9b4abc5c4d"
     }
    }
   ],
@@ -841,8 +835,8 @@
      "vault/09_Infrastructure/infra-map.md": "f37546c4accc08fb6ede6109276c8819bd61189d88f9c904bc1d1ad5aa5fe697",
      "vault/09_Infrastructure/servers/index.md": "42f6dafc17237c808ffc7fa4b7f5036e2c49132565bc6500eb9f0d7d1219ba7a",
      "vault/09_Infrastructure/servers/prod-cluster.md": "e1ec8223cae707cce0f6cf60801809c8c94056668e3da7a58531ceded1dc427d",
-     "vault/99_Index/graph.json": "7827023d7279128bbe005fd29cf4dec2a5224dec9084b4282fc8a246578888d0",
-     "vault/99_Index/search-index.json": "019b4befbc81629c08e190f338427e313a45d10cc9b375e118b7c85b1b0c4e89"
+     "vault/99_Index/graph.json": "98c1ab6223b5e3f9d62747825f07bc3bab323ea5592ac3b5c49102928538e425",
+     "vault/99_Index/search-index.json": "9d18e0917cf101f2171af9fa943376e244b3383867edcc69668bdf333668ab46"
     }
    }
   ],
@@ -855,18 +849,18 @@
      "vault/07_Knowledge/index.md": "5fd6cd595b8930280342e365afde03584def381f2cdc140d0f1516259ca55e23",
      "vault/07_Knowledge/texto-del-ejemplo.md": "2d8d47aaaeaf867e63dac4e81bf30f613199dcf6605f5124006eea0f883e231b",
      "vault/19_Audits/vocabulary/tag-ledger.json": "bbc5022e4f3946506c9adb0402ad061626d235c03a0fa455dbbdf62232cf05da",
-     "vault/99_Index/graph.json": "1f5c3c84223c3e90b6373ca82c44872530ff2363631f07f48727574aa547b475",
-     "vault/99_Index/search-index.json": "454924ba3d151b407da2c92d701cba8cdf436d05be4e701b38ffbe6855f93663"
+     "vault/99_Index/graph.json": "7785e391aeb9095362f7e55796100a255877eba00aa52cf6662a2811041ffcf6",
+     "vault/99_Index/search-index.json": "1722c0e9f1455218c2836b679801ca1b698500c9c8b8dc53a2c2ecaafc6faf52"
     }
    }
   ],
   "vault_init": [
    {
     "escritos": {
-     "vault/99_Index/graph.json": "e70e5b6d93d28c881d9789fe5d89423374cd589f11c48c6b6ae33d7076035a38",
-     "vault/99_Index/hash-index.json": "fe43f9578685f8b7af21fa70186b111b25dab1a5637d99fe6cc0a21e24974e8d",
+     "vault/99_Index/graph.json": "dd5900f90d26b976bb29aca8e02245d2638a083352efbfac824c0c0e94b3d26f",
+     "vault/99_Index/hash-index.json": "e9921046eafed44d58600ffacabfe7d6b58aede1d0290de5d20fb80443a643c7",
      "vault/99_Index/index.md": "56fd457840fa15103fb476af682e338caacbb863890015c4df4948c452ee4e76",
-     "vault/99_Index/search-index.json": "a9615dd7a425b5b90b7312dd01419c4c670077addcca2991e1f461bf897e370e"
+     "vault/99_Index/search-index.json": "72c71726799c2708ccf7b44f65281bddedb773c3112cacd2958ce153fb090f2f"
     }
    },
    {
@@ -935,10 +929,10 @@
      ".casa/mi-vault/99_Index/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
      ".casa/mi-vault/99_Index/00-99_index-primer.md": "83e1470716dbb0e1bbe35a083d62cb77b1fdd9696b53e0fd6d5131ed59c6844b",
      ".casa/mi-vault/99_Index/search-index.json": "ccaa0d63bc839009598050689a4536de99b5eda4aa90479a6b57ed7d3343100e",
-     "vault/99_Index/graph.json": "e70e5b6d93d28c881d9789fe5d89423374cd589f11c48c6b6ae33d7076035a38",
-     "vault/99_Index/hash-index.json": "fe43f9578685f8b7af21fa70186b111b25dab1a5637d99fe6cc0a21e24974e8d",
+     "vault/99_Index/graph.json": "dd5900f90d26b976bb29aca8e02245d2638a083352efbfac824c0c0e94b3d26f",
+     "vault/99_Index/hash-index.json": "e9921046eafed44d58600ffacabfe7d6b58aede1d0290de5d20fb80443a643c7",
      "vault/99_Index/index.md": "56fd457840fa15103fb476af682e338caacbb863890015c4df4948c452ee4e76",
-     "vault/99_Index/search-index.json": "a9615dd7a425b5b90b7312dd01419c4c670077addcca2991e1f461bf897e370e"
+     "vault/99_Index/search-index.json": "72c71726799c2708ccf7b44f65281bddedb773c3112cacd2958ce153fb090f2f"
     }
    },
    {
@@ -971,8 +965,8 @@
      "vault/07_Knowledge/concepts/index.md": "f4f6f59d6cc2d06a3e46cfb604265de8c1eed5d9642ba6ec1d3d802b34f0babe",
      "vault/07_Knowledge/index.md": "9e234851f5a09e2d7af4a6902c71e679dd932af4766561e5c9a21aa1598d5948",
      "vault/19_Audits/vocabulary/tag-ledger.json": "e901b2a2bdf1416117d70614b1884406c58aa0241f25e7e77333d07a46645690",
-     "vault/99_Index/graph.json": "a76566af76c207642c336c7faabee57c36dbedb3b975ba23cd4a6c87ef6f946b",
-     "vault/99_Index/search-index.json": "d6f140a66032a7504a8c8babf7977d279470422492bf5c6ffe1bb94912ae096c"
+     "vault/99_Index/graph.json": "31d19ae6c18e3314b6450ee8980c9227490672bc337b0b9f246d92383baad8c1",
+     "vault/99_Index/search-index.json": "8a8d73db43b83548c98c8d3eb8de6d924f158a214b65fae9cc3c5fa83aa607fb"
     }
    }
   ],
@@ -991,8 +985,8 @@
      "vault/02_Observability/errors/index.md": "7fd4b0be0c6999cf7013ec726c78198d30295885de4de4dc3e2e248b33345f27",
      "vault/02_Observability/index.md": "7c3d104e36d9ba20dc1c0ced6d08c989e212df244edb8bff4bd9be49818814c3",
      "vault/19_Audits/vocabulary/tag-ledger.json": "c01307513fd59bf64a1ef7155000312c29268a1aeed8d232a27985b401f82b2e",
-     "vault/99_Index/graph.json": "14f59250a37287b4c7ddcab45f6da3ec81a4ce187704ca6c30aab61a9dad9395",
-     "vault/99_Index/search-index.json": "51fd634bcb8d476cab351aeaa730fd3b40c154c6af4539728bb7fff04224c1cc"
+     "vault/99_Index/graph.json": "90f0cdf196b46301ef282bc4f34dca92262aca7b718cfc5e5d025090d841bcb5",
+     "vault/99_Index/search-index.json": "8a09cad915c8f556ad30c21df4387b76d005a71e44c8f5fb4c1323e4ba707145"
     }
    }
   ],
@@ -1062,28 +1056,28 @@
   "vault_move": [
    {
     "escritos": {
-     "vault/00_System/.change-log.json": "a8de45c8235755a5e1231f5530dcdaad2f8ddc752eed3b25c0889e3a76566656",
+     "vault/00_System/.change-log.json": "4fe81c7c94595b0ff5f8940f7a3d19a44873d119c62178f633ad863ae73ed262",
      "vault/00_System/.trash/foo-<STAMP>.md.bak": "7146d2ff3191cfad91444f26f3a4f3ab831bb918f0d8d86fff03e8ae64932a5f",
-     "vault/00_System/change-log.md": "1207aeee5b5b273ef55275313bec8aaa55d166c81b864c018d3274e840b4967a",
-     "vault/00_System/move-log.json": "d058835529a303cabd37d135a536ab08ec7fd2b4bad78dc2f433ce8cd49aad14",
+     "vault/00_System/change-log.md": "55f730199eafc18f7a30f5be8a5e14aac1ebf78d256c8e9fb7aaeeafa824bef8",
+     "vault/00_System/move-log.json": "ed6ae753060fa14ade375af4d442849f93791ca10652a354b165cab2580b7b4f",
      "vault/01_Projects/foo.md": "<borrado>",
      "vault/01_Projects/index.md": "b1d2e3f62ccb3342eccd67e77bb4012c54b14428eceebbce765482f8eb17a2ce",
      "vault/01_Projects/old/index.md": "e19fedb3beefbeace3ded708ab6914b35a2db4e63441770ec0701c1c81d22ce5",
      "vault/03_Decisions/foo.md": "7146d2ff3191cfad91444f26f3a4f3ab831bb918f0d8d86fff03e8ae64932a5f",
      "vault/03_Decisions/index.md": "752551b6d8095686458c27a5bfc527469e4a01dcafc02886e3f9010fba108617",
-     "vault/99_Index/graph.json": "2152c6005524900106b06bc49be0e64ee46784c4b06654bc7f08c20499b01f40"
+     "vault/99_Index/graph.json": "c951eb083db49f08c2885b18b8768f9a18e4bfaeb56cc7c116bc351064c49da4"
     }
    },
    {
     "escritos": {
-     "vault/00_System/.change-log.json": "f8d93698f18b8d8c361f12dd3ae6d1641e9161296d7b3a1d324e82279a0086b9",
-     "vault/00_System/change-log.md": "b634084f672e00706f76f07d51dfbfc190c2a7a5b9765eac9d37cd4a88931867",
-     "vault/00_System/move-log.json": "edc8d4477fc2671b0bb071d5b939541b8ea1db8627610a5ff48c84fbcac0e33c",
+     "vault/00_System/.change-log.json": "3be12a3f3389ccb0ad18c5d440b1fe5bcb1147b38c7199dbba0b785201971f60",
+     "vault/00_System/change-log.md": "7eadc6ebf01b1dd021bbc5ed68b20f92352cdf6ce271ce8acc28c3cafa8ce999",
+     "vault/00_System/move-log.json": "3b461e33d7286ad29888664a58f431a89c115bfb6540fd62c619fec176963172",
      "vault/01_Projects/index.md": "c43bcd714296b678636a859f91d5164736691225681bb82cb080e7d9a6320bdd",
      "vault/01_Projects/new/index.md": "77959fd4a0c857fb6821059b796bfb6703b3111bb2901dcebd602ccd7087f938",
      "vault/01_Projects/new/nota.md": "cfda4cdf0e033fee12e7b7175d5fd241893b5a0039b2fa0da2969e65f9eedca0",
      "vault/01_Projects/old/nota.md": "<borrado>",
-     "vault/99_Index/graph.json": "ab845cb566fe2f30dd79e8376a166516855ae99fbf0dd1edfd277fb4ce640a6f"
+     "vault/99_Index/graph.json": "fe3933ca4e231a781d430f6366945c4f7f9627a363bbca5eed9894cb7f99a0b6"
     }
    }
   ],
@@ -1094,8 +1088,8 @@
      "vault/02_Observability/quality/index.md": "e58fba413d40df2ed31601a4b99fbdddf1d3ba564d9452cb83c5767c00bb6e04",
      "vault/02_Observability/quality/mi-api-<MES>-missing-validation.md": "2cbfbeccb657a3b65a45c220a8fcaba5774f78c4f7dede800b2bbddfacf89b45",
      "vault/19_Audits/vocabulary/tag-ledger.json": "7d8703f205daa7ebaf5d0f644e0f3430d654c6a6d77131c7faa7b0bd90c65574",
-     "vault/99_Index/graph.json": "a4c3cf29693a65108b0e67ec6684f03122c37ba6ad8a1c5324aa17b53e4306b3",
-     "vault/99_Index/search-index.json": "f0062e1d23c9afeb9e9fb45575b017f432ef149ec09cfbb2cc0cd187985f820a"
+     "vault/99_Index/graph.json": "1ee74b0f7e605d69d46133a914d709d5b93b9cafae8cae4fc66c6342cb4c5c42",
+     "vault/99_Index/search-index.json": "6c4ae680e18e28ac382cd53018474916f297172fdc1a24dbe5f2711e2876edd4"
     }
    }
   ],
@@ -1142,10 +1136,10 @@
      "vault/06_Diagrams/component/mi-api-architecture.md": "f677884230f660675e5085e3128aa8a859a80279bc19d5fd0a3e05f7147832ef",
      "vault/06_Diagrams/index.md": "a6d8bb767c7d4758092c7340b2ec2a7e541e564243896d9d8f1c492e553b58e9",
      "vault/19_Audits/vocabulary/tag-ledger.json": "ec64877c7c8413b6b4f97d3f559da79c4e06e4ff8355dd154bfa7dfa89f163ba",
-     "vault/99_Index/graph.json": "55df4a71ab084eadf0c60004315e0710cb154a6a947945df45c64deaaf152f85",
-     "vault/99_Index/hash-index.json": "4dd2105e704c1b4f7cc97fdaa49ed2d554124f42f576cfc05b4f28fd5f05fdcb",
+     "vault/99_Index/graph.json": "ba3513cef615c7a88bee2136010cd192c1d0f4ccd652622e7ee20780b4cf60e2",
+     "vault/99_Index/hash-index.json": "8182a3f9f22b955291342bb8f48ecaee6c0000298e9ef9f63787c41561a3e28d",
      "vault/99_Index/index.md": "b33a62b30431dc6534d20cc3f059d13fb9c3389b3ed202ab80391dab60f80e9b",
-     "vault/99_Index/search-index.json": "d15d817a870263c601783f35d8723b3f5a68eb8381f099687ddb34ff805cda18"
+     "vault/99_Index/search-index.json": "c9eb68c53aeec317ac1b01635f8726b502415241256af2f274f181d43de7f41f"
     }
    },
    {
@@ -1167,8 +1161,8 @@
      "vault/05_Patterns/architecture/mi-api-repository.md": "e69820bde69ba90bc6dd7b269b2cf2c791b09fe7d1a00fa6f4202d02c28642f0",
      "vault/05_Patterns/index.json": "ebc5822f3735aaa8f5daec8cda0d385a732fc8b72091c77d07d50a73df39ff8e",
      "vault/05_Patterns/index.md": "e4e0a103f20af3d7ee5d9086f30769f25edd05437930ba544763d5302df5b59b",
-     "vault/99_Index/graph.json": "bc35d9762ec20229ab4c2bb1fed60afa26fe5f109afc9775442eab440a90cbea",
-     "vault/99_Index/search-index.json": "e5c979c6b775f1016f3f7880dad07fb4fc1bb8383c0bbcfa6bd1f612502fa48b"
+     "vault/99_Index/graph.json": "b3a738ef998a15ef802993e0334fdcc34550377c5f2c5416d433f33a9b88f581",
+     "vault/99_Index/search-index.json": "5a68493ab3ebf8a90696a4b797ec4846d771b494b968ee911d40a1608a876777"
     }
    }
   ],
@@ -1179,8 +1173,8 @@
      "vault/17_Preferences/constraints/no-mover-tools.md": "2d1c7bd4beab25306cac871d25925fc1cdc9167233a27437beba55be4c907b8f",
      "vault/17_Preferences/index.md": "526d1e795c75c7ea2d81eafa572fcc0fd10caf6e46234c4bc95549eec908c825",
      "vault/19_Audits/vocabulary/tag-ledger.json": "42c557aeef090aacad9e9dfdcea804001a5066af288032279dc6ec5a5bfff47a",
-     "vault/99_Index/graph.json": "506c84d9007cbffa38de687681fbae144326197517f4526e1e175bcdd5f09790",
-     "vault/99_Index/search-index.json": "3c2b2b12ac3932c9531bcc51e8532ba7ccb78722852d238eabc151e14409b953"
+     "vault/99_Index/graph.json": "096d93df8f5589669e2324c97cd7ad9a8da85b7905511cc5616f66b8f7d28e3b",
+     "vault/99_Index/search-index.json": "2c426aab6d9f5f75fa71433d05868b61cbf0e5f2d5eb8905cf5b220f42611d0e"
     }
    },
    {
@@ -1194,8 +1188,8 @@
      "vault/09_Infrastructure/privacy/index.md": "e0ec5998a158f54a31d5659ff987a7f90c117528c0140a61d70c2f7bf1c3296a",
      "vault/09_Infrastructure/privacy/mi-api-emails-de-usuario.md": "70b2dae148eef4064f648647c6f0f2932291e2b64237ac03583900321a890205",
      "vault/19_Audits/vocabulary/tag-ledger.json": "eab62ca16edc96907c06066547a00a12f1f79ec290f8dfd9b2beda396d8e156f",
-     "vault/99_Index/graph.json": "cfacd71e8027098bd4b17253a2a4fa6a820dd4f175178c6a8da693d2f4b40f53",
-     "vault/99_Index/search-index.json": "a5cf15474956b6a2037b247ff8b623ac87f9bc18a0d2e6fb1ad9b33dbd30b744"
+     "vault/99_Index/graph.json": "be801041af29acb8fa1db632faee4c5496c73353c168538e1b094fd7f86a0e9e",
+     "vault/99_Index/search-index.json": "d7d14c72f1d67c5427b41b3fa544e76e3ed3fafb9dd83d69e0b91470c064622a"
     }
    }
   ],
@@ -1229,8 +1223,8 @@
      "vault/01_Projects/index.md": "caa8146465149bbc3f88217cde33cf889760cee10f495c95a2eb611677d0b74e",
      "vault/01_Projects/mi-api/index.md": "6b60ca4d11d7eec1a798caad0f75c9287a46fdca8a4ce8ccfb700b306d52d669",
      "vault/19_Audits/vocabulary/tag-ledger.json": "d063916c88aac600d8e9f15a9bc3b815077069b8f53519dea0b1b1f594346dd5",
-     "vault/99_Index/graph.json": "7dc05b51dc595169b6a088d187dd58d913d57155ae33b4397e7eb6bf11f1e7f3",
-     "vault/99_Index/search-index.json": "ed6db131500c3d09f0e92e086ac6e9b66ad59d8d5baaa6e21ce5ff640dd9d632"
+     "vault/99_Index/graph.json": "ffe6e3c9cd5d9258d45d5d3ccdea278ef09f5b8e47abec45a9b57a4793d07113",
+     "vault/99_Index/search-index.json": "077bd9f5dbd66a506c00902ddf19c8b4aec4cd1708dcf7c46fff61bcc3c2c9ca"
     }
    },
    {
@@ -1247,8 +1241,8 @@
      "vault/01_Projects/mi-api/index.md": "c8fde9b317f61dc4f46c8f06c1ffbdd92eedb02ad09e13b84d73b03b1e9e05fa",
      "vault/01_Projects/mi-api/overview.md": "f5f11c3095436fdc92befb977fe35f476cc1821259dba047e854de8a10e022e7",
      "vault/19_Audits/vocabulary/tag-ledger.json": "7463b7d1785c1b226909c653e80454dbce6394e3d96101980215533371869685",
-     "vault/99_Index/graph.json": "23f5b6ee8ae065251d47db876c62cc9dab5534bf4b1ae447d62be535f04a2d3e",
-     "vault/99_Index/search-index.json": "059de6d528632c990a6f0e728499ff7512aa4c2ffe371625a567e2d00292782b"
+     "vault/99_Index/graph.json": "1aece0fdaeef18701cdec8897e1392f2c01949ccd65e356380f2ae4056036ca5",
+     "vault/99_Index/search-index.json": "8e9da78c4137e9bb9e22b253b07a89778b08a3b7dc46e7d9fdc206e4e866608a"
     }
    }
   ],
@@ -1260,8 +1254,8 @@
      "vault/01_Projects/mi-api/index.md": "1722570f6e0ce3cc3a6346a2f1e828557890d2ead382fdd8064e77a57ced337a",
      "vault/01_Projects/mi-api/status.md": "ea95e267469b98b9ef3fd456a7b57f56127fffe38cc3366bb0eb8e7466f978a5",
      "vault/19_Audits/vocabulary/tag-ledger.json": "28cefea5487decf522c75b2811fd0aec09d699b3940af6d70c4802df3af53849",
-     "vault/99_Index/graph.json": "a12ace6d6bae3b8fb024a1cbfbad49906b68ce9b2a522820646763a87ffe57b2",
-     "vault/99_Index/search-index.json": "a98ab9492b8381e6f51bb3707e1f8ac905cb1d630a5ffb54e1e9fea25704aac6"
+     "vault/99_Index/graph.json": "812c557d30d3d2dc40e975790dfa666049a24b7692eae0ba1844ba641f2d2986",
+     "vault/99_Index/search-index.json": "544733402ae79bd3fb9317ad612b4a96c43f4b40353ab0392f999633f518a623"
     }
    }
   ],
@@ -1281,20 +1275,20 @@
      "vault/21_QA/index.md": "4f3c77aedf259b6c8f0936c6462a1464a6b36792c6f8d8186e834eb82744acc9",
      "vault/21_QA/test-plan/index.md": "2ded2415357003b6316bca91fd47402228a0b690f2580871b42c9e1805d265c7",
      "vault/21_QA/test-plan/mi-api-plan-de-pruebas-v2.md": "7142c3b4fa5672538a1aab9e25075169f365756b3fa50ca4d0f722bf6f2ddb91",
-     "vault/99_Index/graph.json": "72435aa42c4f374fb90c7ea754474444a34e88c78b89949625460c80c373d1a6",
-     "vault/99_Index/search-index.json": "965fb0521c67bd31c35e71a3b8215f3b9962f69dd9403667bc9a0f458d631596"
+     "vault/99_Index/graph.json": "2d13e7b2a7989a916268fe76d12951ee9a595a8da14c28e033284549f1f7d178",
+     "vault/99_Index/search-index.json": "1a07c9e51c634efa82a0d63bcaa019a4239905c7907ea57dce987cc9bfd80916"
     }
    }
   ],
   "vault_quality_check": [
    {
     "escritos": {
-     "vault/00_System/quality-index.json": "08dd7649f45b3113ab071425299f15d9bc21d6d7e222cfca2d28a80d905f39e0"
+     "vault/00_System/quality-index.json": "d4f936ebebd79e1a995657dcf9628f750e13e198b2fd1462413bba5e32915c1b"
     }
    },
    {
     "escritos": {
-     "vault/00_System/quality-index.json": "08dd7649f45b3113ab071425299f15d9bc21d6d7e222cfca2d28a80d905f39e0"
+     "vault/00_System/quality-index.json": "d4f936ebebd79e1a995657dcf9628f750e13e198b2fd1462413bba5e32915c1b"
     }
    }
   ],
@@ -1305,8 +1299,8 @@
      "vault/02_Observability/qa/index.md": "01659895b54ba2461e44900aa7b204ee620dd19e0a5de41e59b9510cb3095eb6",
      "vault/02_Observability/qa/quality-dashboard.md": "6896da7805effd9bfdd0f39832a789d5cfc2c12f76656a4b0d913936cffca45a",
      "vault/19_Audits/vocabulary/tag-ledger.json": "a79b253d88f132f3dc4e09b6d9b779d3706ca4ba98434fc76e1da458bcce568b",
-     "vault/99_Index/graph.json": "94577907d809f0846d01fa69517f7804712421253b5485ab9f8961642eef5ed7",
-     "vault/99_Index/search-index.json": "6b92a2dc91e8acc90c6c71c60806a1c7b3d0a19c66b7f98416bb88bad94abe3d"
+     "vault/99_Index/graph.json": "efbbdef8345c974dfa14603cb169d6c97b38619fd11f62691153fb2f8962570b",
+     "vault/99_Index/search-index.json": "e87b249631744d2d785e4d85d08a2d1c182cc01c845a09e68d3d6800fc3ea26d"
     }
    },
    {
@@ -1322,8 +1316,8 @@
      "vault/20_Quarantine/index.md": "46037dffe9f7ad459d035e40250add50c9c34e803a34bcc44e2c221894c28c1d",
      "vault/20_Quarantine/unclassified/index.md": "b899cf411a34c90107a4d614d97324c4e870bd7ba75801062623b996491f0c8a",
      "vault/20_Quarantine/unclassified/rara.md": "333d261b0b9d2def7f6bbb2d240a90dd830b707d76ae264a5eb35745bea64aa3",
-     "vault/99_Index/graph.json": "e69deafad6c7df7246c61b09169cf9e644462c25651705758ed8069300106c7c",
-     "vault/99_Index/search-index.json": "9c204986465deeb5952b3a5fafc6100e1497fe5784199d05d1104e00c55f995e"
+     "vault/99_Index/graph.json": "241683355e1ec90a226040046a0eef873bea15759a7a39930daedac31e7f0b88",
+     "vault/99_Index/search-index.json": "17f9c35b9d3c4a7bf783442824d35c0f65b2cd92fa445d13e7aeace65b653ba8"
     }
    },
    {
@@ -1354,9 +1348,9 @@
   "vault_reindex": [
    {
     "escritos": {
-     "vault/99_Index/hash-index.json": "fe43f9578685f8b7af21fa70186b111b25dab1a5637d99fe6cc0a21e24974e8d",
+     "vault/99_Index/hash-index.json": "e9921046eafed44d58600ffacabfe7d6b58aede1d0290de5d20fb80443a643c7",
      "vault/99_Index/index.md": "56fd457840fa15103fb476af682e338caacbb863890015c4df4948c452ee4e76",
-     "vault/99_Index/search-index.json": "a9615dd7a425b5b90b7312dd01419c4c670077addcca2991e1f461bf897e370e"
+     "vault/99_Index/search-index.json": "72c71726799c2708ccf7b44f65281bddedb773c3112cacd2958ce153fb090f2f"
     }
    },
    {
@@ -1370,8 +1364,8 @@
      "vault/06_Diagrams/entity/mi-api-erd.md": "48480062fd30d901fc5ace45d78ccbc0fcf6362ac1ba316aeb1894157cda6e9d",
      "vault/06_Diagrams/entity/mi-api-relations.json": "946871c5bd7423a99bcd8739b642ffc4606bbadccc908bc9d79eeb829e855886",
      "vault/06_Diagrams/index.md": "e4ee9fcb1d36c98360437247438da7e4725cfba1f83c85448eba00fee8c28684",
-     "vault/99_Index/graph.json": "fbb937f8d080989dfd1d13f08f5bf3d1f11298ecac03867f1af369df05fa47ed",
-     "vault/99_Index/search-index.json": "9e1ba03f9ae840089a2aeefb43118da94e3ec3b6b655e9132453731e50875355"
+     "vault/99_Index/graph.json": "e11fb148d7004169ecd5b71177060808dec895905817c484fba691fc1e2dcbc8",
+     "vault/99_Index/search-index.json": "95a988ee9cb9c0ec1d43687420314828980ef7482fd54e5849c486ad9562b798"
     }
    }
   ],
@@ -1385,23 +1379,23 @@
      "vault/08_Runbooks/deploy/mi-api-release-120.md": "d51dc6c929a66606157c6caa4392b5487d9f501ad39ac30614ce3f1785ec20ff",
      "vault/08_Runbooks/index.md": "bca7f0cbc4ed9f3d519fbb15922bf320ab23793b3f7c234813025c95e660ca7e",
      "vault/19_Audits/vocabulary/tag-ledger.json": "1022d767d07f3da291826890831b57d7b89a43a03f3b198bf0070ec50925ca5f",
-     "vault/99_Index/graph.json": "ff0dceca33994150a6e4233a9c56622ea8005a9d1c8c904b03e6d69732e47a56",
-     "vault/99_Index/search-index.json": "c9b14357459506262b7d1eb4bdf2c4e2a3c91a5be001ceb3848d5a93fb5cff7e"
+     "vault/99_Index/graph.json": "a4220622164ae5ef3b188f3e637b9fb70282fbe62d816990d4cc1f717846d153",
+     "vault/99_Index/search-index.json": "4b2f534ce3d9bd445cc5bfd2d87836ec4a572aa2ae8bca4ce7d8a69667991b65"
     }
    }
   ],
   "vault_requirement_save": [
    {
     "escritos": {
-     "vault/00_System/.change-log.json": "c5daf26950aeb20a90adb93ea1b43c30d7d023274e5ab6dbb5b949984020d1ed",
-     "vault/00_System/change-log.md": "c75d8256dcc0342ad2596b621d2836abd57ca9d62ef8660d041b5ce09574fa24",
+     "vault/00_System/.change-log.json": "ab55d1bcf716d440e918e016b7edee0f0e677effad30cb854c00565710df605e",
+     "vault/00_System/change-log.md": "a9c9593e594069eefbf556a9f08bb37544dbe7438fc9b675cba86079c2d8b488",
      "vault/14_Requirements/.requirements-index.json": "6f65d57d6293a8d2f5533caaf6e45b096cab8502f9f232b90c2dbe9121d9001c",
      "vault/14_Requirements/index.md": "46ee5bf9dab9d65d7d3e48c2d8619ce7ec27d0d9ef846e15f3e13193102d4af0",
      "vault/14_Requirements/mi-api/index.md": "1c8870e87c2378fdfc1dea8cebcfc92424eb255926a4f45c61aa6997efb15da4",
      "vault/14_Requirements/mi-api/req-001-auth.md": "00aadc5219ecbbc92156b6853b1d81d3e93105c2e07d935409d9eeca46726ad9",
      "vault/19_Audits/vocabulary/tag-ledger.json": "b1fb7e6d47e0c01fab99903b3f093ee075b6ceaf600b63157ad1b9ce2247083e",
-     "vault/99_Index/graph.json": "d422c10cfb7895fa09262053ce0ab339e95a6100043df1e94fc5d0a4f9afbc06",
-     "vault/99_Index/search-index.json": "d231b4dbdb828d3a584e71c6296abe1bfeac3b84fb980c908952f4f6a5744ab4"
+     "vault/99_Index/graph.json": "abe7dbef2700678312f8bd6025789e07dd813e5f2ba4a1f3933615ce3960bf0a",
+     "vault/99_Index/search-index.json": "b46dd090ee51b3880db60db1d40acf4ac4e39b6d65bbf307fd2d7e93652d5f0b"
     }
    }
   ],
@@ -1417,8 +1411,8 @@
      "vault/02_Observability/risks/index.md": "252c5ddcb9d3659157663944838fb9a94262c55879cf2151ac9b87ea8d077dcb",
      "vault/02_Observability/risks/mi-api-caida-de-la-base.md": "6d63e3eaaf73fabf4fabf459598851923a02f92c34ae4f19d11c565dd8c4d17e",
      "vault/19_Audits/vocabulary/tag-ledger.json": "58d2bdb81d082e286c04c8ed865f886fbc0cd92495bb6675354933cd561eb431",
-     "vault/99_Index/graph.json": "8ce0ecb1f5953b832745bf566c2a6d2ff6008f9e070dd5d0b6f87cf96dbaa165",
-     "vault/99_Index/search-index.json": "764cde857884f58e388438f760bf012399dc60e450287eb249ed7782a61b28bd"
+     "vault/99_Index/graph.json": "83cbdaad1d8ffd5e3af71d9ab0681febeec280e0451017c697d26f56eeb2f2f5",
+     "vault/99_Index/search-index.json": "ff47cdf234488adb176a16aba40683adf1e3dd2892a5cb084d9ac830b3744dee"
     }
    }
   ],
@@ -1433,8 +1427,8 @@
      "vault/08_Runbooks/deploy.md": "aff0bb863f9dbbffa8857f325243e8aa4c9306ef8a1e531cc2dbf14b9b7ce371",
      "vault/08_Runbooks/index.md": "851e92725d7f95216569c24e7389e2c48b16e34eba310566e96614616304a47d",
      "vault/19_Audits/vocabulary/tag-ledger.json": "72ba2c97b99b55bc4a49a5639e5f4dcc53f7ec18d15eea990bb0237b250a13a9",
-     "vault/99_Index/graph.json": "23870f8e111d4b4d2f5c07c07f42970c170594431070eb9c4163d1907759cbaa",
-     "vault/99_Index/search-index.json": "20a6e2f94893167b158ab4ed878a7acccb977c4e246d258197c54b107e39ce93"
+     "vault/99_Index/graph.json": "aedfae4f79da95f864b0b10cf2183ad376e430b345b4309bcb2a1bad61d2da8c",
+     "vault/99_Index/search-index.json": "12cad51f5eb0527547615000f0b6b7c0652fa787c1e590af3c0073fd8a255448"
     }
    }
   ],
@@ -1445,8 +1439,8 @@
      "vault/08_Runbooks/deploy/mi-api-deploy.md": "5b56a9baa5a50c387206ff123f91866a4ae43fc3d1159820bc173a848ab4c52a",
      "vault/08_Runbooks/index.md": "dbcd377e7210ae249ff3e286673a91f69d751b1dc34395ff3f1a850b17f5f166",
      "vault/19_Audits/vocabulary/tag-ledger.json": "d271b7e842c87c0e19bbecfcaa3d62a3f97e63fd9d9948a9e3b4b91fdbf2b184",
-     "vault/99_Index/graph.json": "2de0aba5eadf04ee5202f4d1f1874c27c56ca38cfe3a5c9f9365872d097a647e",
-     "vault/99_Index/search-index.json": "2a2d8a154d67721e154146c6bd2ba7ec42b56286fc883bf6a5c369f74a7cff3d"
+     "vault/99_Index/graph.json": "ab2483cd06288a18e29af66bc951e01694507f3c03d38a69726ae5a6458d31fd",
+     "vault/99_Index/search-index.json": "6ed99983f842295b3ce8b31f08a35e4873c00e77187f71c497312fb87ff407f3"
     }
    }
   ],
@@ -1530,8 +1524,8 @@
      "vault/02_Observability/vulnerabilities/S002-s002-secrets-<HOY>.md": "57cd2a515b01c05d7492c0ff1239598e63afcdac7b1ff5e4c217c90e3be041c5",
      "vault/02_Observability/vulnerabilities/index.md": "a61b61a415f8e180f9803d2bb6258e9f315d916e76dc9639999fa657b654ab79",
      "vault/02_Observability/vulnerabilities/security-scan-mi-api-<HOY>.md": "9d5d6a0daf165096a86f74084642605e6b5ecb13ce15fee25acfbec93a9e1a8d",
-     "vault/99_Index/graph.json": "96198523064c43b2b27e342cfaf8afca21ac5645bca0fa216b35b76152adff95",
-     "vault/99_Index/search-index.json": "bd7f35342830ac00b078191add54babfb0a01f22f5debf10b9d1de0811d29a27"
+     "vault/99_Index/graph.json": "f9539602ee7025ebbfdb558c7f994e60de680d95f115a072c37bca5d2c2b0ab8",
+     "vault/99_Index/search-index.json": "7482eef1ccf15684b4ffbf6f8fa03a421d60c9128341c4eaffe6f3dc4962d6fa"
     }
    },
    {
@@ -1556,8 +1550,8 @@
      "vault/02_Observability/slos/index.md": "2c784a4d22665c68931b22685d8a6c642116d6e0e59ef67dd3c9714de143b73f",
      "vault/02_Observability/slos/mi-api-api-availability.md": "b973e25789d3f549fe2cfa878f14de0614492a5d8fd436be94b9a783f75a9d46",
      "vault/19_Audits/vocabulary/tag-ledger.json": "1cc5cc389881cf7d57360f48b529cc0e5c4fc4c65086f8fd859befef6105bc09",
-     "vault/99_Index/graph.json": "cf3e25e3e9b849c79c7d1c2ba01a4aacc9fc1ab080f5b2abc6a206088e1411bd",
-     "vault/99_Index/search-index.json": "592406f8ab2241f80f85830325631aa486848bcd486b2aa4ee1dc28f84f2a72e"
+     "vault/99_Index/graph.json": "238df24414f8aaa4b6149231065f4c8e570d0893191d7472cd6b86d5329e28d0",
+     "vault/99_Index/search-index.json": "0530f10800713ed147ecaa9b0c91c7f9d72f501d02d671e86e8dce616f9cbbfc"
     }
    }
   ],
@@ -1594,8 +1588,8 @@
      "vault/10_Migrated/GUIA.md": "c9885bf5da0b297fd9521d67fed6d3faa48d8c2a6cd3190a1c71d9065844c866",
      "vault/10_Migrated/index.md": "ce05efa0517e63b73e9e2d4a6696494f2ffad23d2db21cc1272db9e54a2a7bc4",
      "vault/19_Audits/vocabulary/tag-ledger.json": "57c3579491e24edf53a76874b667b4e54887c3d4e276b015ffe89e22fed3b485",
-     "vault/99_Index/graph.json": "4d482c607351137262f938e5c4965140310a8952c8e892bb490f76639576b2fb",
-     "vault/99_Index/search-index.json": "3937cc13ba82bc9c289b263c273694503a1967c23b65f685b8d8739909c38e5c"
+     "vault/99_Index/graph.json": "654e4344fe24b8068950da883e3ac0d8dc2d6588cfbd2ca85795e2b508e67f82",
+     "vault/99_Index/search-index.json": "6eeba6e65ab2a9fcce7d95ecc25ea195d03a827694c2f71506d7fdd6c72cb33a"
     }
    }
   ],
@@ -1603,7 +1597,7 @@
    {
     "escritos": {
      "vault/00_System/tag-registry.json": "304be3544702a514ccb5701d13c0150eba280d040f759496935519214a4aeaf9",
-     "vault/99_Index/graph.json": "b8f42c2d65de5a005a593ec49406f78dafebddfa953f431bd65ee0eb3a7bf5ff",
+     "vault/99_Index/graph.json": "6dfa9810220f68e1a25b4ef9d269fc26a2756fe7c42f2a6d15880b2259b6bd5d",
      "vault/99_Index/tag-index.md": "35e1d67a4a73fcd1e13724f4c5efe084c3ccca749b98e229d5f69ad56f9c8ea6"
     }
    },
@@ -1619,8 +1613,8 @@
      "vault/15_Tests/unit/index.md": "91074122dfe756a3fe58c0e88770bf535d89e18c45235e8b32a3f5a2cc882c8e",
      "vault/15_Tests/unit/mi-api-login.md": "1ec7b99a5abc39fd5c7f4d9b6e4b5fb8a606bb8046e49f00faf8fc98f280b813",
      "vault/19_Audits/vocabulary/tag-ledger.json": "54729aa8e81809affda3931f9586b8e344d51404687628307363ee20399f3dcc",
-     "vault/99_Index/graph.json": "77b015e2f92403ee3dc32161a52bf9c8b5f501aaec2dedc43c4c753743179ba6",
-     "vault/99_Index/search-index.json": "93f755e8d08cd619bc98d33bf7ff600320679b7535c581c7293c3a685d8edb30"
+     "vault/99_Index/graph.json": "6769cf88902f41918c5a7f34492678aa9e14ed6354d68a70aa96c2e572570d0d",
+     "vault/99_Index/search-index.json": "1c18341c1ce137448c3530718a0e2e7f25a72409481cf90a0829e24f0d2a02d9"
     }
    }
   ],
@@ -1690,14 +1684,14 @@
   "vault_write": [
    {
     "escritos": {
-     "vault/00_System/.change-log.json": "31b5522888a4f3c4bd4a028a55463312b8b8cc3c9da44e652f94a9232175a365",
-     "vault/00_System/change-log.md": "1841fb67cdaba4f780952e8e4b0684e9e661ee88393b0e1094f82dd49b9bf578",
+     "vault/00_System/.change-log.json": "d47ca68e7b78437a7766d9c130d04506656a231bde1f80fb642801b3339f99ef",
+     "vault/00_System/change-log.md": "667b6933e3a6b1e9741cfd36ede5d36f06bef94cd037a4e3ce748cfdb76a2c41",
      "vault/01_Projects/index.md": "530898f13d9d92a3563ff23116ff55061d8bd9df279824b0dd9d718b0f8c2513",
      "vault/01_Projects/mi-api/index.md": "588bba3739a52ee928d45a23d72d9d0488fb58cd46aadb27b8cb486be41cbd44",
      "vault/01_Projects/mi-api/overview.md": "0ed6e54c39eab6c6e7c59f983f453307db7c1aee903d64868d19501082b4f925",
      "vault/19_Audits/vocabulary/tag-ledger.json": "318c406554acc5241e1831258c54ad43b1990b44d587843ce2239fc371c7c0f1",
-     "vault/99_Index/graph.json": "b25385076bb0a8a85c4b23ba81134f0249f1ef3f07dff5ffde08ea4d1c3435be",
-     "vault/99_Index/search-index.json": "a49e2f09540a35322a0e50c2b70d3bcc582919fd064168841124ce680b1176d4"
+     "vault/99_Index/graph.json": "65667bdecdd3a2c2f9f53c2ca7d31851edb90f444e5aea9f81db3aa61f9e0eea",
+     "vault/99_Index/search-index.json": "56a1d1805d1b96842889ff6072c00104e8935277132cd0306fe6d6ea52d7418b"
     }
    }
   ]
