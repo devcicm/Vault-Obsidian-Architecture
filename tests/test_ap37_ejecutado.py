@@ -135,6 +135,27 @@ def test_el_banco_da_al_escaner_codigo_con_un_hallazgo():
     assert r["medidas"] == ["vault_security_scan"], r
 
 
+def test_la_copia_del_sandbox_tolera_un_temporal_que_desaparece(tmp_path):
+    """El temporal de un escritor atómico aparece y se renombra.
+
+    Copiar el sandbox mientras otro proceso escribe en él abortaba la copia
+    (FileNotFoundError en Linux, WinError 2 en Windows). Lo destapó la CI del
+    2026-11-04: la copia del banco tropezo con el `.tmp.*` del
+    `.tool-trace.json` que otro worker escribía en ese momento.
+    """
+    import vault_smoke
+
+    temporal = vault_smoke.SANDBOX / "00_System" / ".tmp.prueba_del_banco"
+    temporal.write_text("temporal", encoding="utf-8")
+    try:
+        destino = tmp_path / "copia"
+        destino.mkdir()
+        copia = vault_noop_audit._sandbox_con_proyecto(destino)
+        assert not (copia / "00_System" / ".tmp.prueba_del_banco").exists()
+    finally:
+        temporal.unlink(missing_ok=True)
+
+
 def test_una_tool_que_no_escribe_sin_motivo_declarado_no_sale_verde(banco, monkeypatch):
     """2026-10-17: 13 tools con side effects no escribieron en el banco, cada
     una por un motivo distinto y medido (dry-run, sin backup, solo lectura…).

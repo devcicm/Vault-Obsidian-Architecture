@@ -634,8 +634,12 @@ def colisiones_de_sanadores(
         temporal = Path(tempfile.mkdtemp(prefix="vault-c8-"))
         try:
             raiz = temporal / "vault"
-            # `.locks/` no se copia, por lo mismo que en vault_smoke.
-            shutil.copytree(fuente, raiz, ignore=shutil.ignore_patterns(".locks"))
+            # `.locks/` no se copia, por lo mismo que en vault_smoke; ni los
+            # `.tmp.*` de los escritores atómicos: un temporal que aparece y
+            # se renombra mientras se copia aborta la copia (FileNotFoundError
+            # en Linux, WinError 2 en Windows).
+            shutil.copytree(fuente, raiz,
+                            ignore=shutil.ignore_patterns(".locks", ".tmp.*"))
             antes, huella = auditar(raiz), _huella(raiz)
             rc = ejecutar(tool, raiz)
             if rc:
