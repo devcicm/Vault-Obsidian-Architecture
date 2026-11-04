@@ -17,13 +17,13 @@ Medido 2026-10-18 al preguntarse si el sello afecta a la funcionalidad:
 """
 
 import json
-import os
 import shutil
-import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+
+from apoyo import correr_en_proceso  # noqa: E402
 
 TESTS = Path(__file__).resolve().parent
 REPO_ROOT = TESTS.parent
@@ -56,12 +56,8 @@ def _vault_base() -> Path:
         # La raíz tiene que EXISTIR antes de init: con VAULT_STRICT_ROOT=1 el
         # detector se niega a adivinar sobre un path que no está en disco.
         raiz.mkdir(parents=True)
-        subprocess.run(
-            [sys.executable, str(REPO_ROOT / "scripts" / "vault_init.py"), "--no-audit"],
-            env={**os.environ, "VAULT_ROOT": str(raiz), "VAULT_STRICT_ROOT": "1"},
-            cwd=str(REPO_ROOT), capture_output=True, text=True,
-            encoding="utf-8", errors="replace", timeout=300, check=True,
-        )
+        init = correr_en_proceso("vault_init", "--no-audit", vault=raiz)
+        assert init.codigo == 0, init.stdout[-500:] + init.stderr[-500:]
         _BASE["raiz"] = raiz
     return _BASE["raiz"]
 
@@ -89,12 +85,7 @@ def _estado_de(raiz: Path) -> Path:
 
 
 def _correr(raiz: Path, *flags):
-    env = {**os.environ, "VAULT_ROOT": str(raiz), "VAULT_STRICT_ROOT": "1"}
-    proc = subprocess.run(
-        [sys.executable, str(REPO_ROOT / "scripts" / "vault_standard_upgrade.py"), *flags],
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
-        cwd=str(REPO_ROOT), timeout=300, env=env,
-    )
+    proc = correr_en_proceso("vault_standard_upgrade", *flags, vault=raiz)
     return json.loads(proc.stdout)
 
 

@@ -11,12 +11,12 @@ un `graph.json` regenerado después.
 import json
 import os
 import shutil
-import subprocess
-import sys
 import time
 from pathlib import Path
 
 import pytest
+
+from apoyo import correr_en_proceso  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
@@ -24,13 +24,7 @@ CUERPO = "uno dos tres cuatro cinco seis\nsiete ocho nueve diez once\ndoce trece
 
 
 def _ejecutar(raiz: Path, script: str, *argv: str) -> dict:
-    proceso = subprocess.run(
-        [sys.executable, str(SCRIPTS / script), *argv],
-        env=dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
-                 PYTHONIOENCODING="utf-8", VAULT_AGENT="pytest"),
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
-        cwd=str(SCRIPTS),
-    )
+    proceso = correr_en_proceso(script, *argv, vault=raiz, agente="pytest")
     salida = proceso.stdout.strip()
     assert salida, proceso.stderr
     return json.loads(salida[salida.index("{"):])

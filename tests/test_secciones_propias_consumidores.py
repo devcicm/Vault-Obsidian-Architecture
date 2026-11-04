@@ -16,6 +16,7 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from apoyo import correr_en_proceso  # noqa: E402
 import vault_registry as reg  # noqa: E402
 from vault.indices.enumeracion import notas_en_disco  # noqa: E402
 from vault.kernel import construir  # noqa: E402
@@ -77,8 +78,6 @@ def test_un_registro_roto_es_un_fallo_del_dominio_no_un_vacio(tmp_path):
 
 # ── El contrato de nota: una sección propia es contenido, no `sin_seccion` ──
 
-import os  # noqa: E402
-import subprocess  # noqa: E402
 
 import vault_contrato_nota as contrato  # noqa: E402
 
@@ -103,14 +102,8 @@ def test_a_una_nota_de_seccion_propia_se_le_pide_el_contrato_de_contenido(tmp_pa
 
 
 def _validar(raiz: Path, rel: str) -> dict:
-    proceso = subprocess.run(
-        [sys.executable, str(ROOT / "scripts" / "vault_validate.py"),
-         "--path", rel, "--check", "frontmatter"],
-        env=dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
-                 PYTHONIOENCODING="utf-8"),
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
-        cwd=str(ROOT / "scripts"),
-    )
+    proceso = correr_en_proceso("vault_validate", "--path", rel, "--check",
+                                "frontmatter", vault=raiz)
     salida = proceso.stdout.strip()
     assert salida, proceso.stderr
     return json.loads(salida[salida.index("{"):])
@@ -168,15 +161,9 @@ _CUERPO = ("## Contexto\n\nPrimera línea real sobre el despliegue del servicio.
 
 
 def _escribir(raiz: Path, folder: str, *extra: str) -> dict:
-    proceso = subprocess.run(
-        [sys.executable, str(ROOT / "scripts" / "vault_write.py"),
-         "--folder", folder, "--title", "Despliegue", "--content", _CUERPO,
-         "--tags", "demo", *extra],
-        env=dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
-                 VAULT_AGENT="system", PYTHONIOENCODING="utf-8"),
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
-        cwd=str(ROOT / "scripts"),
-    )
+    proceso = correr_en_proceso("vault_write", "--folder", folder, "--title",
+                                "Despliegue", "--content", _CUERPO, "--tags",
+                                "demo", *extra, vault=raiz, agente="system")
     salida = proceso.stdout.strip()
     assert salida, proceso.stderr
     return json.loads(salida[salida.index("{"):])
@@ -345,14 +332,8 @@ def test_el_grafo_enriquecido_con_el_registro_roto_falla(tmp_path):
 # (`REQUIRED_FOLDERS` debe existir) sí es del estándar y no cambia.
 
 def _validar_todo(raiz: Path, *extra: str) -> dict:
-    proceso = subprocess.run(
-        [sys.executable, str(ROOT / "scripts" / "vault_validate.py"),
-         "--check", "frontmatter", *extra],
-        env=dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
-                 PYTHONIOENCODING="utf-8"),
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
-        cwd=str(ROOT / "scripts"),
-    )
+    proceso = correr_en_proceso("vault_validate", "--check", "frontmatter",
+                                *extra, vault=raiz)
     salida = proceso.stdout.strip()
     assert salida, proceso.stderr
     return json.loads(salida[salida.index("{"):])
@@ -560,14 +541,8 @@ _FUENTE = ("# Copia nocturna\n\nEl script de copia se lanza desde cron cada noch
 
 
 def _ingerir(raiz: Path, section: str) -> dict:
-    proceso = subprocess.run(
-        [sys.executable, str(ROOT / "scripts" / "vault_ingest.py"),
-         "--text", _FUENTE, "--section", section, "--commit"],
-        env=dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
-                 VAULT_AGENT="system", PYTHONIOENCODING="utf-8"),
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
-        cwd=str(ROOT / "scripts"),
-    )
+    proceso = correr_en_proceso("vault_ingest", "--text", _FUENTE, "--section",
+                                section, "--commit", vault=raiz, agente="system")
     salida = proceso.stdout.strip()
     assert salida, proceso.stderr
     return json.loads(salida[salida.index("{"):])
@@ -609,13 +584,7 @@ def test_la_ingesta_con_el_registro_roto_no_escribe(tmp_path):
 # nada y `vault_context_pack` buscaba en el sitio equivocado.
 
 def _consultar(raiz: Path, tool: str, pregunta: str) -> dict:
-    proceso = subprocess.run(
-        [sys.executable, str(ROOT / "scripts" / f"{tool}.py"), "--query", pregunta],
-        env=dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
-                 PYTHONIOENCODING="utf-8"),
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
-        cwd=str(ROOT / "scripts"),
-    )
+    proceso = correr_en_proceso(tool, "--query", pregunta, vault=raiz)
     salida = proceso.stdout.strip()
     assert salida, proceso.stderr
     return json.loads(salida[salida.index("{"):])
@@ -649,14 +618,8 @@ def test_el_contexto_filtra_por_la_seccion_propia_nombrada(tmp_path):
         p = raiz / rel
         p.write_text(p.read_text(encoding="utf-8") + "\nrsync sincroniza el NAS.\n",
                      encoding="utf-8")
-    reindex = subprocess.run(
-        [sys.executable, str(ROOT / "scripts" / "vault_reindex.py")],
-        env=dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
-                 PYTHONIOENCODING="utf-8"),
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
-        cwd=str(ROOT / "scripts"),
-    )
-    assert reindex.returncode == 0, reindex.stdout + reindex.stderr
+    reindex = correr_en_proceso("vault_reindex", vault=raiz)
+    assert reindex.codigo == 0, reindex.stdout + reindex.stderr
     r = _consultar(raiz, "vault_context_pack", "rsync en 22_Scripts")
     assert r["ok"] is True, r
     rutas = [n["path"] for n in r["included"]]
@@ -671,13 +634,7 @@ def test_el_contexto_filtra_por_la_seccion_propia_nombrada(tmp_path):
 # declarado. Las descripciones salían de `ORDERED_SECTIONS` sin más.
 
 def _listar(raiz: Path) -> dict:
-    proceso = subprocess.run(
-        [sys.executable, str(ROOT / "scripts" / "vault_list.py")],
-        env=dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
-                 PYTHONIOENCODING="utf-8"),
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
-        cwd=str(ROOT / "scripts"),
-    )
+    proceso = correr_en_proceso("vault_list", vault=raiz)
     salida = proceso.stdout.strip()
     assert salida, proceso.stderr
     return json.loads(salida[salida.index("{"):])

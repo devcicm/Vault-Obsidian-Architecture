@@ -21,6 +21,8 @@ from pathlib import Path
 
 import pytest
 
+from apoyo import correr_en_proceso  # noqa: E402
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
@@ -201,9 +203,10 @@ def test_lote_b_un_alias_ejecutado_como_script_corre_el_main_del_dueno(tmp_path)
     # credencial y `test_publicacion_limpia` la cazaría con razón.
     clave = "AKIA" + "ABCDEFGHIJKLMNOP"
     nota.write_text(f"api_key = '{clave}'\n", encoding="utf-8")
-    r = subprocess.run([sys.executable, str(ROOT / "scripts" / "vault_secret_scan.py"),
-                        str(nota)], capture_output=True, text=True, encoding="utf-8")
-    assert "potential secret" in r.stdout, (r.returncode, r.stdout, r.stderr)
+    r = correr_en_proceso("vault_secret_scan", str(nota))
+    assert "potential secret" in r.stdout, (r.codigo, r.stdout, r.stderr)
+    # El contrato CLI se queda por subproceso: el script publicado tiene que
+    # rechazar el flag que no existe (uno por tool, no por caso).
     r = subprocess.run([sys.executable, str(ROOT / "scripts" / "vault_secret_scan.py"),
                         str(nota), "--json"], capture_output=True, text=True, encoding="utf-8")
     assert r.returncode == 2, "argparse del dueño no corrió"

@@ -13,13 +13,12 @@ sin trabajo, sino trabajo inventado dentro de un `ok`.
 """
 
 import json
-import os
 import shutil
-import subprocess
-import sys
 from pathlib import Path
 
 import pytest
+
+from apoyo import correr_en_proceso  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = REPO_ROOT / "scripts"
@@ -49,15 +48,7 @@ import vault_grafo_import as gi  # noqa: E402
 
 
 def _ejecutar(raiz: Path, script: str, *argv: str):
-    return subprocess.run(
-        [sys.executable, str(SCRIPTS / f"{script}.py"), *argv],
-        env=dict(os.environ, VAULT_ROOT=str(raiz), PYTHONIOENCODING="utf-8"),
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        cwd=str(REPO_ROOT),
-    )
+    return correr_en_proceso(script, *argv, vault=raiz)
 
 
 @pytest.fixture(scope="module")

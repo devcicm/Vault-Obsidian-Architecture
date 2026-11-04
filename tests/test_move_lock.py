@@ -12,8 +12,6 @@ escritor, el move no lo pisa y lo dice.
 """
 
 import json
-import os
-import subprocess
 import sys
 from pathlib import Path
 
@@ -23,18 +21,13 @@ ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
 sys.path.insert(0, str(ROOT))
 
+from apoyo import correr_en_proceso  # noqa: E402
 from vault.kernel.errores import problemas_de_forma  # noqa: E402
 from vault.kernel import bloqueo  # noqa: E402
 
 
 def _mover(raiz: Path, *argv: str) -> dict:
-    proceso = subprocess.run(
-        [sys.executable, str(SCRIPTS / "vault_move.py"), *argv, "--json"],
-        env=dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
-                 PYTHONIOENCODING="utf-8"),
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
-        cwd=str(SCRIPTS), timeout=180,
-    )
+    proceso = correr_en_proceso("vault_move", *argv, "--json", vault=raiz)
     salida = proceso.stdout.strip()
     assert salida, proceso.stderr
     return json.loads(salida[salida.index("{"):])

@@ -12,13 +12,12 @@ preguntarle antes de escribir.
 """
 
 import json
-import os
 import shutil
-import subprocess
-import sys
 from pathlib import Path
 
 import pytest
+
+from apoyo import correr_en_proceso  # noqa: E402
 
 from vault.kernel.indices_structural import es_nombre_reservado
 
@@ -37,20 +36,7 @@ CONTENIDO = (
 
 
 def _ejecutar(raiz: Path, script: str, *argv: str):
-    return subprocess.run(
-        [sys.executable, str(SCRIPTS / f"{script}.py"), *argv],
-        env=dict(
-            os.environ,
-            VAULT_ROOT=str(raiz),
-            PYTHONIOENCODING="utf-8",
-            VAULT_AGENT="system",
-        ),
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        cwd=str(ROOT),
-    )
+    return correr_en_proceso(script, *argv, vault=raiz, agente="system")
 
 
 def _envelope(proceso) -> dict:

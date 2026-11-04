@@ -129,3 +129,20 @@ def test_una_tool_que_no_existe_se_dice():
     with pytest.raises(ModuleNotFoundError) as exc:
         ejecutar(None, ["no_existe_esta_tool.py"])
     assert "no_existe_esta_tool" in str(exc.value)
+
+
+def test_la_raiz_llega_a_los_hijos_que_lanza_la_tool(tmp_path):
+    """Los pasos de `vault_init` son subprocesos: heredan la raíz del entorno.
+
+    Sin `VAULT_ROOT` en el entorno, el hijo autodetecta la raíz y escribe en
+    otro vault: el que se inicializa en proceso salía sin índice maestro, sin
+    grafo, sin hash-index y sin la versión del estándar. Medido el 2026-11-04
+    al migrar `test_indice_no_se_regenera_dos_veces.py`.
+    """
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    r = ejecutar(None, ["vault_init.py", "--no-audit"], raiz=vault)
+    assert r.ok, r.texto[-400:] + r.error[-400:]
+    for relativo in ("99_Index/index.md", "99_Index/graph.json",
+                     "99_Index/hash-index.json", "00_System/standard-version.json"):
+        assert (vault / relativo).is_file(), relativo

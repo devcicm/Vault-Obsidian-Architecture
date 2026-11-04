@@ -446,7 +446,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `scripts/excepcion-declarada-baseline.json` | AP-61 — la excepción declarada no es la que escapa | 0 | ≤ 0 para 2027-06-30 · cada 180 d · gobernanza → **cumple** | 0 → 0 (plana, Δ+0) |
 | `scripts/recursos-baseline.json` | AP-62 — el consumidor cruza para leer un recurso y paga el fan-out | 2 | ≤ 0 para 2027-03-31 · cada 90 d · meta_toolkit — vault_recursos → **en_plazo** | 2 → 2 (plana, Δ+0) |
 | `scripts/rutas-baseline.json` | v41.21 — el layout del repo escrito como literal fuera de su dueño vault/kernel/rutas.py; solo encoge | 15 | ≤ 15 para 2027-06-30 · cada 90 d · meta_toolkit — vault.kernel.rutas → **cumple** | 177 → 175 → 16 → 15 → 15 (encoge, Δ-162) |
-| `scripts/tests-higiene-baseline.json` | AP-69 — el test que construye a mano lo que tests/apoyo.py o el conftest ya dan | 519 | ≤ 432 para 2027-03-31 · cada 30 d · meta_toolkit — vault_tests_higiene → **en_plazo** | 864 → 522 → 520 → 519 → 519 (encoge, Δ-345) |
+| `scripts/tests-higiene-baseline.json` | AP-69 — el test que construye a mano lo que tests/apoyo.py o el conftest ya dan | 505 | ≤ 432 para 2027-03-31 · cada 30 d · meta_toolkit — vault_tests_higiene → **en_plazo** | 864 → 522 → 520 → 519 → 519 → 505 (encoge, Δ-359) |
 | `scripts/clones-baseline.json` | CN-05 — cuerpos duplicados que no se pueden fusionar sin cruzar una frontera | 0 | ≤ 2 para 2027-03-31 · cada 90 d · meta_toolkit ? vault_clones → **cumple** | 4 → 3 → 1 → 0 (encoge, Δ-4) |
 
 Todas encogen y ninguna crece sin decirlo: los tres audits con baseline indexan

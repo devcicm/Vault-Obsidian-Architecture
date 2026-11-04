@@ -50,6 +50,16 @@ class Corrida:
     stderr: str
 
     @property
+    def returncode(self) -> int:
+        """Alias de `codigo`: el nombre que tenía `CompletedProcess`.
+
+        Los tests que pasaron de subproceso a ejecución en proceso leen
+        `proceso.returncode`, y el alias evita tocar cada línea: lo que cambia
+        es QUIÉN corre la tool, no el nombre del campo.
+        """
+        return self.codigo
+
+    @property
     def envelope(self) -> Dict[str, Any]:
         """El JSON que la tool imprimió, desde la primera `{`.
 
@@ -93,7 +103,9 @@ def correr_tool(nombre: str, *argv: Any, vault: Optional[Path] = None,
     return Corrida(p.returncode, p.stdout, p.stderr)
 
 
-def correr_en_proceso(nombre: str, *argv: Any, vault: Optional[Path] = None) -> Corrida:
+def correr_en_proceso(nombre: str, *argv: Any, vault: Optional[Path] = None,
+                       agente: Optional[str] = None,
+                       cwd: Optional[Path] = None) -> Corrida:
     """Ejecuta `scripts/<nombre>.py` en ESTE intérprete: repone argv en `sys.argv` y corre `main()`.
 
     Mismo contrato que `correr_tool` —código, stdout, stderr y el envelope— sin
@@ -113,16 +125,31 @@ def correr_en_proceso(nombre: str, *argv: Any, vault: Optional[Path] = None) -> 
     `test_alcance_medido_v4030` y `test_ap07`, con el autouse
     `_raiz_de_vault_limpia` del conftest respaldando al conjunto.
 
+    `agente` es el `VAULT_AGENT` con el que la tool firma (AP-16) y `cwd` el
+    directorio desde el que corre; por defecto, el directorio del script, que
+    es donde la documentación dice que se ejecutan las tools.
+
     **El mecanismo es del producto, no de la suite** (`vault.ejecutor`, C-2
     tanda 2): el ejecutor devuelve el intérprete al estado en que lo encontró
     —argv, directorio, raíz y variables—, corre la tool en su propio hilo (el
     ledger de escrituras es thread-local) y devuelve su envelope. Aquí solo se
     traduce su resultado al `Corrida` que la suite ya consume. Dos
     implementaciones del mismo mecanismo divergen; esta es la única.
+
+    **El envoltorio es el de la CLI** (`wrap_main`): por subproceso la tool
+    corre por su bloque `__main__`, que la envuelve en `wrap_main` —el timeout,
+    el canónico de AP-52, la voz y el ledger—. En proceso, sin ese envoltorio,
+    la tool imprimiría su JSON crudo y el envelope sería otro: no es la misma
+    tool, es otra. Con el envoltorio, la salida es byte a byte la de la CLI.
     """
     from vault.ejecutor import ejecutar
+    from vault_errors import wrap_main
 
-    corrida = ejecutar(None, [f"{nombre}.py", *map(str, argv)], raiz=vault)
+    # El nombre puede llegar con o sin extensión: hay llamadores que pasan
+    # «vault_init.py» (el script) y otros que pasan «vault_init» (el módulo).
+    script = nombre if nombre.endswith(".py") else f"{nombre}.py"
+    corrida = ejecutar(None, [script, *map(str, argv)], raiz=vault,
+                       agente=agente, cwd=cwd, envoltorio=wrap_main)
     return Corrida(corrida.codigo, corrida.texto, corrida.error)
 
 

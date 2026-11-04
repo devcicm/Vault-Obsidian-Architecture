@@ -77,6 +77,16 @@ _CANDADO = threading.Lock()
 #: del proceso que la lanzó.
 _VARIABLES = ("VAULT_AGENT", "VAULT_MASTER", "VAULT_VOICE")
 
+#: Las que la raíz necesita también en el ENTORNO, no solo como override en
+#: proceso. Una tool que lanza un hijo —los pasos de `vault_init` son
+#: `vault_standard_upgrade`, `vault_master_index` y `vault_reindex`, los tres
+#: subprocesos— hereda el entorno del padre, y sin `VAULT_ROOT` el hijo
+#: autodetecta la raíz y escribe en otro vault. Medido el 2026-11-04 al
+#: migrar `test_indice_no_se_regenera_dos_veces.py` a ejecución en proceso: el
+#: vault salía sin índice maestro, sin grafo, sin hash-index y sin la versión
+#: del estándar, porque sus pasos se escribieron en el vault del sandbox.
+_VARIABLES_DE_RAIZ = ("VAULT_ROOT", "VAULT_STRICT_ROOT")
+
 #: El nombre por el que se importa una tool en cada layout. En el checkout es
 #: el nombre de `scripts/`; instalada, la proyección `_impl` del puente
 #: (ADR-0002).
@@ -151,6 +161,30 @@ def _directorio_de(modulo: Any) -> Optional[Path]:
     return Path(fichero).resolve().parent if fichero else None
 
 
+def _invocable(modulo: Any) -> Callable[[], Any]:
+    """La entrada de la tool: su `main()` o su bloque `__main__`.
+
+    Las tools con alias (ADR-0002) no tienen `main()`: su CLI vive en el
+    bloque `__main__` del dueño, y el facade la corre con
+    `runpy.run_module("vault.gobernanza.secret_scan", run_name="__main__")`.
+    `vault_secret_scan` es una de ellas: sin esta forma, el ejecutor la
+    invocaría con un `AttributeError` y no imprimiría nada.
+
+    Se ejecuta con la misma forma que usa el facade, para que la salida sea la
+    misma que por línea de comandos.
+    """
+    main = getattr(modulo, "main", None)
+    if callable(main):
+        return main
+
+    def _por_runpy() -> Any:
+        import runpy
+
+        return runpy.run_module(modulo.__name__, run_name="__main__", alter_sys=True)
+
+    return _por_runpy
+
+
 def ejecutar(
     contexto: Optional[VaultContext],
     argv: Sequence[str],
@@ -196,13 +230,14 @@ def ejecutar(
 
     anterior_argv = sys.argv
     anterior_cwd = os.getcwd()
-    anterior_entorno = {v: os.environ.get(v) for v in _VARIABLES}
+    anterior_entorno = {v: os.environ.get(v) for v in _VARIABLES + _VARIABLES_DE_RAIZ}
     anterior_raiz = get_vault_root()
     habia_override = vault_root_origin() == "explicit_override"
     anterior_stdout, anterior_stderr = sys.stdout, sys.stderr
     salida, errores = io.StringIO(), io.StringIO()
     codigo = 0
     motivo: Optional[str] = None
+    raiz_de_la_llamada: Optional[Path] = None
 
     with _CANDADO:
         try:
@@ -215,9 +250,15 @@ def ejecutar(
             if voz is not None:
                 os.environ["VAULT_VOICE"] = voz
             if contexto is not None:
-                set_vault_root(contexto.raiz)
+                raiz_de_la_llamada = Path(contexto.raiz)
             elif raiz is not None:
-                set_vault_root(raiz)
+                raiz_de_la_llamada = Path(raiz)
+            if raiz_de_la_llamada is not None:
+                set_vault_root(raiz_de_la_llamada)
+                # Y en el entorno: los hijos que lance la tool (los pasos de
+                # `vault_init` lo son) heredan la raíz, no la autodetección.
+                os.environ["VAULT_ROOT"] = str(raiz_de_la_llamada)
+                os.environ["VAULT_STRICT_ROOT"] = "1"
 
             sys.stdout = salida
             sys.stderr = errores
@@ -274,9 +315,9 @@ def _correr(modulo: Any, nombre: str,
         try:
             write_ledger_reset()
             if envoltorio is not None:
-                codigo["valor"] = int(envoltorio(modulo.main, nombre) or 0)
+                codigo["valor"] = int(envoltorio(_invocable(modulo), nombre) or 0)
             else:
-                resultado = modulo.main()
+                resultado = _invocable(modulo)()
                 codigo["valor"] = 0 if resultado is None else int(resultado or 0)
         except SystemExit as fin:
             codigo["valor"] = fin.code if isinstance(fin.code, int) else (
