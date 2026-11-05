@@ -9,10 +9,30 @@ por qué. Nada se borra sin dejar su rastro: lo que está aquí se puede restaur
 | Documento | Instrumento | Qué mide |
 |---|---|---|
 | [`DARK-DATA-2026-11-05.md`](DARK-DATA-2026-11-05.md) | `generar_dark_data.py` | El barrido de **todo** el repo versionado: qué está vivo, qué está declarado por un contrato, qué es derivado y qué está muerto (y los "casi", con su riesgo). |
+| [`DEFECTOS-PRODUCTO-2026-11-05.md`](DEFECTOS-PRODUCTO-2026-11-05.md) | `generar_defectos_producto.py` | Los defectos que sufre **quien consume** (credencial que se commitea, cifras publicadas que no son ciertas, remediaciones con nombre propio), los candidatos con su coste y los gaps negativos: lo que ninguna puerta mide. |
 | [`../reestructura/CORAZON-V41.26.md`](../reestructura/CORAZON-V41.26.md) | `../reestructura/generar_corazon.py` | El corazón de v41.26 por fan-in (el umbral del propio estándar), las tres capas, la tabla de fachadas → dueño y la huella viva de cada generación de refactor. |
 
-Se regeneran con `python audits/analisis-por-pendiente/generar_dark_data.py` y
-`python audits/reestructura/generar_corazon.py`.
+Se regeneran con `python audits/analisis-por-pendiente/generar_dark_data.py`,
+`python audits/analisis-por-pendiente/generar_defectos_producto.py --vault <vault real>`
+y `python audits/reestructura/generar_corazon.py`. El segundo mide el versionado
+de un vault ajeno **en solo lectura** (`git ls-files` y su `.gitignore`).
+
+### Correcciones al instrumento (v41.26)
+
+Un documento generado vale lo que vale su instrumento, y el de dark data se
+equivocó dos veces en el primer "casi" —el de los adaptadores—:
+
+1. **Decía «sin generador en el repo»** cuando el generador existía
+   (`scripts/vault_distribution_sync.py`). El detector pedía `write_text` o
+   `escribir` en el texto y el dueño escribe con `write_bytes`. El instrumento
+   se midió con su propia normalización (AP-44) y no vio lo que buscaba.
+2. **Se contaba a sí mismo** al citar la frase de la plantilla en un comentario.
+   Ahora la señal es sintáctica: una asignación cuyo valor es la plantilla.
+
+Lo que sí faltaba —y se cerró— es que **nadie ejecutaba** ese generador: los
+adaptadores se regeneraban a mano. Es un paso de `vault_fix_all` desde v41.26, y
+`vault_distribution_sync --check` es la puerta.
+
 
 ## 1. `stash-product-readiness-b306719.patch`
 

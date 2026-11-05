@@ -41,16 +41,30 @@ from typing import Any, Dict, List, Optional
 from vault.kernel import procesos_git
 from vault.kernel.procesos_git import es_hash
 
-#: Lo que NO se versiona dentro del vault: las versiones por nota (`.history/`
-#: ya está en el historial de git), las copias de seguridad (`.history/` y
-#: `vault-backups/` son el pasado, no el presente) y la traza de tools, que
-#: cambia en cada llamada y ensuciaría el árbol.
+#: Lo que NO se versiona dentro del vault, por **ruido**: las versiones por
+#: nota (`.history/` ya está en el historial de git), las copias de seguridad
+#: (`.history/` y `vault-backups/` son el pasado, no el presente) y las trazas,
+#: que cambian en cada llamada y ensuciarían el árbol.
 IGNORADOS_EN_GIT = (
     ".history/",
     "vault-backups/",
     "00_System/.tool-trace.json",
+    "00_System/.mcp-trace-log.json",
+    "00_System/.trash/",
     ".locks/",
 )
+
+#: Lo que NO se versiona por **riesgo**: la credencial que escribe el servicio
+#: de tokens vive dentro del vault (SP-04, para que solo la lea quien puede
+#: leer el vault) y un `git add -A` la publicaría. Se separa del ruido porque
+#: el día que una tool escriba un secreto nuevo, esta lista es la que hay que
+#: mirar — y su test la cruza con el dueño que produce cada ruta.
+IGNORADOS_POR_RIESGO = (
+    "00_System/token-usage/",
+)
+
+#: La lista completa, en el orden en que se escribe el `.gitignore`.
+IGNORADOS = IGNORADOS_EN_GIT + IGNORADOS_POR_RIESGO
 
 #: La identidad local del repo del vault. Es **local** (`git config --local`):
 #: no toca la configuración global de la máquina, que es de la persona.
@@ -90,6 +104,52 @@ def identidad_de_commit() -> Dict[str, str]:
     }
 
 
+def asegurar_ignorados(raiz: Path) -> Dict[str, Any]:
+    """Garantiza que el `.gitignore` del vault tenga lo que no se versiona.
+
+    Idempotente y **aditivo**: si la persona ya escribió un `.gitignore`, su
+    texto se conserva y solo se añaden las líneas que falten. No reescribe nada
+    cuando no falta ninguna.
+
+    Existe porque el `.gitignore` nació dentro del bootstrap de `vault_init`,
+    que solo corre al **crear** el repo: un vault que ya tenía repositorio no
+    lo recibía nunca y seguía versionando `.history/`, `.trash/` y la
+    credencial. Medido el 2026-11-05 en un vault real: 99 de 345 ficheros
+    rastreados eran versiones de `.history/`. Por eso la garantía vive aquí,
+    en el dueño del versionado, que sí corre en cada operación.
+    """
+    raiz = Path(raiz)
+    destino = raiz / ".gitignore"
+    original = ""
+    if destino.is_file():
+        original = destino.read_text(encoding="utf-8", errors="replace")
+    presentes = {linea.strip() for linea in original.splitlines()}
+    faltan = [ruta for ruta in IGNORADOS if ruta not in presentes]
+    if not faltan:
+        return {"escrito": False, "anadidos": []}
+
+    texto = original
+    if texto and not texto.endswith("\n"):
+        texto += "\n"
+    texto += "\n".join(faltan) + "\n"
+    destino.write_text(texto, encoding="utf-8")
+    return {"escrito": True, "anadidos": faltan}
+
+
+def _rastreados_ignorados(raiz: Path) -> List[str]:
+    """Ficheros que el índice sigue versionando pese a estar ignorados.
+
+    `git rm --cached` los sacaría, pero es un verbo mutador que AP-68 no
+    autoriza aquí: retirar contenido del índice es una decisión del dueño, no
+    un efecto colateral de una operación. Se publican para que la deuda vieja
+    sea visible en vez de silenciosa (AP-51).
+    """
+    r = _git(raiz, "ls-files", "-ci", "--exclude-standard")
+    if r.returncode != 0:
+        return []
+    return [l for l in (r.stdout or "").splitlines() if l.strip()][:5]
+
+
 def commit_de_operacion(raiz: Path, mensaje: str) -> Dict[str, Any]:
     """Versiona en git lo que esta operación dejó escrito.
 
@@ -104,6 +164,7 @@ def commit_de_operacion(raiz: Path, mensaje: str) -> Dict[str, Any]:
     if not hay_repo(raiz):
         return {"committed": False, "motivo": "el vault no tiene repositorio git"}
 
+    ignore = asegurar_ignorados(raiz)
     entorno = identidad_de_commit()
     add = _git(raiz, "add", "-A", env=entorno)
     if add.returncode != 0:
@@ -118,9 +179,19 @@ def commit_de_operacion(raiz: Path, mensaje: str) -> Dict[str, Any]:
                     "motivo": "no habia cambios que versionar"}
         return {"committed": False, "motivo": salida.strip()[:300]}
     sha = _git(raiz, "rev-parse", "HEAD")
-    return {"committed": True,
-            "sha": (sha.stdout or "").strip(),
-            "message": mensaje}
+    resultado: Dict[str, Any] = {
+        "committed": True,
+        "sha": (sha.stdout or "").strip(),
+        "message": mensaje,
+    }
+    # Aditivo y solo cuando hay algo que decir: un vault sano no cambia su
+    # envelope, uno reparado o con deuda vieja la publica.
+    if ignore.get("escrito"):
+        resultado["ignore_reparado"] = ignore["anadidos"]
+    viejos = _rastreados_ignorados(raiz)
+    if viejos:
+        resultado["rastreados_ignorados"] = viejos
+    return resultado
 
 
 def commits(raiz: Path, limite: int = 20) -> List[Dict[str, Any]]:
@@ -177,6 +248,7 @@ def ficheros_del_repo(raiz: Path) -> Dict[str, List[str]]:
     return {"versionados": versionados, "sin_rastrear": sin_rastrear}
 
 
-__all__ = ["IGNORADOS_EN_GIT", "IDENTIDAD_LOCAL", "hay_repo", "es_hash",
+__all__ = ["IGNORADOS", "IGNORADOS_EN_GIT", "IGNORADOS_POR_RIESGO",
+           "IDENTIDAD_LOCAL", "asegurar_ignorados", "hay_repo", "es_hash",
            "commit_de_operacion", "commits", "contenido_del_commit",
            "ficheros_del_repo", "identidad_de_commit"]

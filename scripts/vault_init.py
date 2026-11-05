@@ -1061,16 +1061,14 @@ def _inicializar_git(destino: Path) -> Dict[str, Any]:
             return {"ok": False, "motivo": (r.stderr or "").strip()[:300]}
         # El repo del vault versiona SU memoria: ni las versiones por nota
         # (`.history/`, que ya están en el historial) ni las copias de
-        # seguridad (`vault-backups/`) ni la traza de tools (que cambia en
-        # cada llamada) van dentro. Sin esto, el historial del vault lleva
-        # dos veces el vault (medido el 2026-11-04: 99 de 345 ficheros
-        # versionados eran versiones de `.history/`).
-        from vault.kernel.vcs import IGNORADOS_EN_GIT
+        # seguridad (`vault-backups/`) ni las trazas ni la credencial del
+        # servicio de tokens van dentro. Una sola lista, la del dueño del
+        # versionado (`asegurar_ignorados`), que también repara un vault con
+        # repo anterior y sin `.gitignore` (medido el 2026-11-04: 99 de 345
+        # ficheros versionados eran versiones de `.history/`).
+        from vault.kernel.vcs import asegurar_ignorados
 
-        ignore = destino / ".gitignore"
-        if not ignore.exists():
-            ignore.write_text(
-                "\n".join(IGNORADOS_EN_GIT) + "\n", encoding="utf-8")
+        asegurar_ignorados(destino)
     r_add = _git("add", "-A")
     if r_add.returncode != 0:
         # Antes el `add` se lanzaba sin mirar su salida: un fallo de staging

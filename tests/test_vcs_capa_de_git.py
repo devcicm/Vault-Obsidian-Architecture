@@ -70,6 +70,88 @@ def test_el_vault_ignora_las_versiones_las_copias_y_la_traza(vault_con_repo):
     assert "00_System/.tool-trace.json" in ignore
 
 
+def test_el_ignore_cubre_lo_que_los_duenos_escriben(vault_con_repo):
+    """La lista se cruza con el dueño de cada ruta, no se enumera a mano.
+
+    Enumerar las rutas de ayer no falla cuando aparece una nueva: este test
+    pregunta a los dueños. La credencial sale de la constante que nombra su
+    carpeta, y el borrado de la carpeta que `vault_delete` usa.
+    """
+    from vault.consulta import repositorio
+    from vault.kernel.vcs import IGNORADOS, IGNORADOS_POR_RIESGO
+
+    ignore = (vault_con_repo / ".gitignore").read_text(encoding="utf-8")
+    for ruta in IGNORADOS:
+        assert ruta in ignore, ruta
+
+    # La credencial: la carpeta la nombra su dueño, no este test.
+    assert any(ruta.endswith(f"{repositorio.SUBCARPETA_USO_TOKENS}/")
+               for ruta in IGNORADOS_POR_RIESGO), repositorio.SUBCARPETA_USO_TOKENS
+    # El borrado: `.trash/` es lo que `vault_delete` deja atrás.
+    assert any(".trash/" in ruta for ruta in IGNORADOS)
+
+
+def test_un_vault_con_repo_previo_recibe_el_gitignore(tmp_path):
+    """El caso que rompió: el repo existía y el `.gitignore` no llegaba.
+
+    `vault_init` escribía el ignore dentro de la rama que CREA el repo, así que
+    un vault que ya tenía `.git` nunca lo recibía. Medido el 2026-11-05 en un
+    vault real: 110 ficheros volátiles rastreados (99 de `.history/`).
+    """
+    raiz = tmp_path / "vault-con-repo-previo"
+    raiz.mkdir()
+    git_en(raiz, "init", "-b", "main")
+
+    r = correr_tool("vault_init", "--no-audit", vault=raiz)
+    assert r.codigo == 0, r.stdout + r.stderr
+
+    ignore = (raiz / ".gitignore").read_text(encoding="utf-8")
+    assert "00_System/token-usage/" in ignore
+    assert ".history/" in ignore
+
+
+def test_una_operacion_repara_un_gitignore_que_falta(vault_con_repo):
+    """El dueño del versionado repara, no solo el bootstrap.
+
+    Un vault que ya tiene repo no vuelve a pasar por `vault_init`: la garantía
+    tiene que vivir en `commit_de_operacion`, que sí corre en cada escritura.
+    """
+    (vault_con_repo / ".gitignore").unlink()
+    cuerpo = vault_con_repo / "cuerpo.md"
+    cuerpo.write_text(CUERPO, encoding="utf-8")
+    r = correr_tool("vault_write", "--folder", "07_Knowledge",
+                    "--title", "Nota que repara", "--content", f"@file:{cuerpo}",
+                    "--tags", "prueba", vault=vault_con_repo)
+    assert r.codigo == 0, r.stdout + r.stderr
+
+    ignore = (vault_con_repo / ".gitignore").read_text(encoding="utf-8")
+    assert "00_System/token-usage/" in ignore
+    assert "00_System/.trash/" in ignore
+
+    # Y queda en la traza: el envelope no lo publica, el registro sí (AP-51).
+    traza = vault_con_repo / "00_System" / ".tool-trace.json"
+    entradas = [e for e in json.loads(traza.read_text(encoding="utf-8"))
+                if e.get("event") == "git_del_vault"]
+    assert entradas, "la reparación no dejó rastro en la traza"
+    assert "00_System/token-usage/" in entradas[-1]["ignore_reparado"]
+
+
+def test_el_gitignore_no_pisa_lo_que_la_persona_escribio(vault_con_repo):
+    """Aditivo: lo que ya estaba se conserva, línea a línea."""
+    mío = "# mío\nmi-carpeta/\n*.local\n"
+    (vault_con_repo / ".gitignore").write_text(mío, encoding="utf-8")
+
+    from vault.kernel.vcs import asegurar_ignorados
+
+    resultado = asegurar_ignorados(vault_con_repo)
+    assert resultado["escrito"] is True
+    texto = (vault_con_repo / ".gitignore").read_text(encoding="utf-8")
+    assert texto.startswith(mío)
+    assert ".history/" in texto
+    # Y la segunda pasada no escribe.
+    assert asegurar_ignorados(vault_con_repo)["escrito"] is False
+
+
 def test_una_operacion_que_escribe_deja_un_commit(vault_con_repo, tmp_path):
     """El commit dice qué tool hizo el trabajo: una operación sin nombre no
     se puede deshacer a ciegas."""

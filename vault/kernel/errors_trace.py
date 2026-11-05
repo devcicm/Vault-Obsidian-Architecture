@@ -307,11 +307,24 @@ def versionar_operacion(tool_name: str, writes: Dict[str, Any]) -> None:
             agente = str(_leer_entorno("VAULT_AGENT"))
         except (KeyError, ValueError):
             pass
-        commit_de_operacion(
+        resultado = commit_de_operacion(
             raiz,
             f"vault: {tool_name} por {agente} — "
             f"{writes.get('created', 0)} creadas, "
             f"{writes.get('updated', 0)} actualizadas",
         )
+        # Lo que el envelope no publica, la traza lo deja escrito: un vault
+        # reparado y uno que sigue versionando ficheros ignorados son hechos
+        # del repo, no del envelope de la tool que pasó por allí (AP-51).
+        if resultado.get("ignore_reparado") or resultado.get("rastreados_ignorados"):
+            log_trace({
+                "tool": tool_name,
+                "event": "git_del_vault",
+                "ignore_reparado": resultado.get("ignore_reparado", []),
+                "rastreados_ignorados": resultado.get("rastreados_ignorados", []),
+                "nota": ("los ya rastreados no se retiran solos: sacarlos del "
+                         "índice es una decisión del dueño, no un efecto "
+                         "colateral de una operación"),
+            })
     except (OSError, ValueError):
         pass  # versionar no puede tumbar la tool: la operación ya está hecha
