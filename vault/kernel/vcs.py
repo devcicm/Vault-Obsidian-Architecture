@@ -41,24 +41,42 @@ from typing import Any, Dict, List, Optional
 from vault.kernel import procesos_git
 from vault.kernel.procesos_git import es_hash
 
-#: Lo que NO se versiona dentro del vault, por **ruido**: las versiones por
-#: nota (`.history/` ya está en el historial de git), las copias de seguridad
-#: (`.history/` y `vault-backups/` son el pasado, no el presente) y las trazas,
-#: que cambian en cada llamada y ensuciarían el árbol.
+#: **El repo del vault versiona notas: markdown y nada más.** Lo decide el
+#: dueño del versionado, no cada vault.
+#:
+#: La regla es una lista de patrones con la semántica de `.gitignore` —gana el
+#: último que casa—, y el orden importa:
+#:
+#: 1. `*` deja fuera todo (json de estado, trazas, `.bak`, contadores).
+#: 2. `!*/` deja recorrer las carpetas: sin esto git no baja a buscar notas.
+#: 3. `!*.md` devuelve las notas.
+#: 4. `!.gitignore` versiona la política para que viaje con el vault.
+#: 5. Las carpetas de abajo van **después** de las negaciones porque contienen
+#:    `.md` que no son notas: `.history/` son copias de versión (su nombre
+#:    acaba en `.md`), `vault-backups/` son copias del vault entero y
+#:    `.trash/` es lo borrado. Sin estas cuatro líneas, `!*.md` las metería.
+#:
+#: Lo que esto deja fuera del repo, además del ruido: los JSON de estado del
+#: sistema (`graph.json`, `hash-index.json`, `tool-spec.json`,
+#: `standard-version.json`…) y los `.gitkeep` de las carpetas vacías. Son
+#: derivados o andamiaje: se regeneran, no son memoria. La memoria son las
+#: notas.
 IGNORADOS_EN_GIT = (
+    "*",
+    "!*/",
+    "!*.md",
+    "!.gitignore",
     ".history/",
     "vault-backups/",
-    "00_System/.tool-trace.json",
-    "00_System/.mcp-trace-log.json",
-    "00_System/.trash/",
     ".locks/",
+    "00_System/.trash/",
 )
 
-#: Lo que NO se versiona por **riesgo**: la credencial que escribe el servicio
-#: de tokens vive dentro del vault (SP-04, para que solo la lea quien puede
-#: leer el vault) y un `git add -A` la publicaría. Se separa del ruido porque
-#: el día que una tool escriba un secreto nuevo, esta lista es la que hay que
-#: mirar — y su test la cruza con el dueño que produce cada ruta.
+#: Lo que además no se versiona por **riesgo**: la credencial que escribe el
+#: servicio de tokens vive dentro del vault (SP-04, para que solo la lea quien
+#: puede leer el vault). Con la política de arriba ya queda fuera por no ser
+#: `.md`, pero se nombra para que el día que la política cambie —o que una tool
+#: escriba un secreto con extensión de nota— su test lo diga.
 IGNORADOS_POR_RIESGO = (
     "00_System/token-usage/",
 )

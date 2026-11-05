@@ -21,13 +21,13 @@ El criterio es el de **quien consume** (regla 7): no «¿está declarado?», sin
 
 - **Evidencia**: `vault/consulta/repositorio.py:93` devuelve `00_System/token-usage/token-service.token`; `vault/kernel/vcs.py:48` no ignora esa carpeta y `commit_de_operacion` hace `git add -A` (`vcs.py:108`).
 - **Efecto en el consumidor**: La primera operación que escriba en el vault después de arrancar el servicio deja la credencial en `git log`. En un vault con remoto, se publica.
-- **Arreglo**: Ignorar `00_System/token-usage/` en `IGNORADOS_EN_GIT` y añadir un test que cruce las rutas de credenciales con la lista. Ver C-01/C-02.
+- **Arreglo**: La política pasa a **solo notas `.md`**: `IGNORADOS_EN_GIT` deja fuera todo lo que no sea markdown y `IGNORADOS_POR_RIESGO` nombra la credencial para que el test la cruce con su dueño. Ver C-01/C-02.
 
 ### D-02 — Lo borrado y la traza del MCP se quedan en el repositorio: `00_System/.trash/` y `.mcp-trace-log.json` no se ignoran, aunque `.tool-trace.json` sí.
 
 - **Evidencia**: `vault/kernel/vcs.py:48-53`; `vault_delete --force` mueve a `.trash/` y el commit siguiente lo rastrea. La traza del MCP la escribe `mcp/nodejs/vault-mcp-server.mjs` y cambia en cada llamada.
 - **Efecto en el consumidor**: `vault_delete` no borra de verdad —la nota recuperable queda en la historia— y cada commit del vault arrastra un diff de traza que no interesa a nadie.
-- **Arreglo**: Ignorar `00_System/.trash/` (es contenido retirado, no contenido del vault). Ver C-02.
+- **Arreglo**: Re-ignorar `.history/`, `vault-backups/`, `.locks/` y `00_System/.trash/` **después** de `!*.md`: contienen `.md` que no son notas y la negación los devolvería. Ver C-02.
 
 ### D-03 — Un vault anterior a la capa de git se queda con repo y **sin `.gitignore`**: el versionado rastrea todo lo volátil.
 
@@ -68,24 +68,24 @@ El criterio es el de **quien consume** (regla 7): no «¿está declarado?», sin
 ## 2. La medición del vault (lo que acaba dentro de git)
 
 - Vault: `~/.vault-master/gestion`
-- Repo: sí · commits: **3** · ficheros rastreados: **345**
-- `.gitignore`: **no existe**
+- Repo: sí · commits: **4** · ficheros rastreados: **265**
+- `.gitignore`: **sí** (107 bytes)
 
 | Ruta volátil | Clase | ¿Ignorada por el dueño? | Rastreados |
 |---|---|---|---:|
-| `.history/` | versiones por nota | sí | 99 |
+| `.history/` | versiones por nota | sí | 0 |
 | `vault-backups/` | copias de seguridad | sí | 0 |
 | `.locks/` | locks de escritura | sí | 0 |
-| `00_System/.tool-trace.json` | traza de operaciones | sí | 1 |
-| `00_System/.mcp-trace-log.json` | traza del servidor MCP | sí | 1 |
-| `00_System/.trash/` | contenido borrado | sí | 9 |
-| `00_System/token-usage/` | credencial del servicio de tokens | **no** | 0 |
+| `00_System/.tool-trace.json` | traza de operaciones | sí | 0 |
+| `00_System/.mcp-trace-log.json` | traza del servidor MCP | sí | 0 |
+| `00_System/.trash/` | contenido borrado | sí | 0 |
+| `00_System/token-usage/` | credencial del servicio de tokens | sí | 0 |
 
-**Total de ficheros volátiles rastreados: 110**.
+**Total de ficheros volátiles rastreados: 0**.
 
-Lo que el dueño del versionado ignora hoy: `.history/`, `vault-backups/`, `00_System/.tool-trace.json`, `00_System/.mcp-trace-log.json`, `00_System/.trash/`, `.locks/`.
+Lo que el dueño del versionado ignora hoy: `*`, `!*/`, `!*.md`, `!.gitignore`, `.history/`, `vault-backups/`, `.locks/`, `00_System/.trash/`, `00_System/token-usage/`.
 
-Volátiles **sin cubrir** por el dueño: `00_System/token-usage/`.
+Volátiles **sin cubrir** por el dueño: ninguno.
 
 ## 3. Afirmaciones de producto contrastadas con su registro
 
@@ -137,9 +137,7 @@ Salta los módulos que ni nombran `*.md` ni filtran notas por sufijo: un módulo
 
 ### 4.5 Por qué el defecto del versionado pasó la CI
 
-El test `tests/test_vcs_capa_de_git.py` fija `.history/`, `vault-backups/`, `00_System/.tool-trace.json`, `00_System/.trash/`, `00_System/token-usage/` y **no** fija `.locks/`, `00_System/.mcp-trace-log.json`.
-
-Dos huecos de prueba, y ninguno es cosmético: enumerar la lista vigente no falla cuando la lista se queda corta, y el caso «vault que ya tenía repo» **sí** se prueba.
+El test `tests/test_vcs_capa_de_git.py` fija los patrones de la política (`*`, `!*.md`, `!.gitignore`, `.history/`, `vault-backups/`, `00_System/.trash/`, `00_System/token-usage/`) y **sí** comprueba el resultado en el índice (`git ls-files`), que es el criterio del consumidor. El caso «vault que ya tenía repo» **sí** se prueba: la garantía vive en `commit_de_operacion`, que corre en cada escritura.
 
 ## 5. Huellas estáticas
 
@@ -175,9 +173,10 @@ Una deuda que se salda no se borra: pasa a `saldada` con la evidencia de que est
 |---|---|---|
 | D-01 | saldado | `IGNORADOS_POR_RIESGO` cubre la credencial |
 | D-02 | saldado | `.trash/` cubierto y `.mcp-trace-log.json` cubierto |
-| D-03 | mecanismo saldado | `commit_de_operacion` repara el ignore en cada escritura y `vault_init` usa el mismo dueño. Los ficheros ya rastreados se dejan en la traza (`rastreados_ignorados`) y retirarlos del índice es una decisión del dueño, no un efecto colateral. |
+| Notas | sí | la política deja versionar `*.md` y el propio `.gitignore` |
+| D-03 | saldado | `commit_de_operacion` repara el ignore en cada escritura y `vault_init` usa el mismo dueño. Los ficheros ya rastreados se dejan en la traza (`rastreados_ignorados`) y retirarlos del índice es una decisión del dueño, no un efecto colateral. |
 
-El vault medido sigue con **110** ficheros volátiles en el índice: la próxima operación que escriba le añade el `.gitignore` y deja de sumar, pero los que ya están no se retiran solos.
+El vault medido ya no rastrea volátiles: tiene su `.gitignore` y su índice solo lleva notas. El `HEAD` de vuelta de esa limpieza está en el registro del vault.
 
 ## 8. Lo que se midió y está limpio
 

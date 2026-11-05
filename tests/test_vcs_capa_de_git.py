@@ -57,17 +57,59 @@ def test_un_vault_en_ruta_personalizada_nace_con_su_repo(vault_con_repo):
 
 
 def test_el_vault_ignora_las_versiones_las_copias_y_la_traza(vault_con_repo):
-    """El historial del vault lleva el vault, no tres veces el vault.
+    """El historial del vault lleva las notas, no el estado del sistema.
 
-    `.history/` ya está en el historial de git (son las versiones de cada
-    nota), `vault-backups/` son copias de lo pasado y la traza cambia en cada
-    llamada: dentro del repo, el árbol quedaba sucio siempre y el historial
-    llevaba 99 de 345 ficheros que eran versiones.
+    La política es «solo `.md`» y el orden de los patrones importa: `.history/`
+    está lleno de copias que **acaban en `.md`**, así que tiene que re-ignorarse
+    después de `!*.md`.
     """
     ignore = (vault_con_repo / ".gitignore").read_text(encoding="utf-8")
-    assert ".history/" in ignore
-    assert "vault-backups/" in ignore
-    assert "00_System/.tool-trace.json" in ignore
+    lineas = [linea.strip() for linea in ignore.splitlines()]
+    assert "*" in lineas
+    assert "!*.md" in lineas
+    assert "!.gitignore" in lineas
+    # Las carpetas que contienen `.md` que no son notas van detrás.
+    assert lineas.index(".history/") > lineas.index("!*.md")
+    assert lineas.index("vault-backups/") > lineas.index("!*.md")
+    assert lineas.index("00_System/.trash/") > lineas.index("!*.md")
+
+
+def test_el_repo_del_vault_solo_versiona_notas(vault_con_repo):
+    """La regla del dueño, medida en el índice: solo `.md` y el `.gitignore`.
+
+    Un vault es memoria documental: su repo versiona notas. El estado del
+    sistema (`graph.json`, `hash-index.json`, `tool-spec.json`, trazas,
+    contadores) se regenera y no es memoria; los `.gitkeep` son andamiaje.
+    """
+    cuerpo = vault_con_repo / "cuerpo.md"
+    cuerpo.write_text(CUERPO, encoding="utf-8")
+    r = correr_tool("vault_write", "--folder", "07_Knowledge",
+                    "--title", "Nota versionada", "--content", f"@file:{cuerpo}",
+                    "--tags", "prueba", vault=vault_con_repo)
+    assert r.codigo == 0, r.stdout + r.stderr
+
+    versionados = [l for l in _git(vault_con_repo, "ls-files").splitlines()
+                   if l.strip()]
+    intrusos = [f for f in versionados
+                if not f.endswith(".md") and f != ".gitignore"]
+    assert not intrusos, f"el repo versiona algo que no es una nota: {intrusos}"
+    assert any(f.endswith("nota-versionada.md") for f in versionados), versionados
+
+    # Una copia de versión existe en disco y no se versiona: se fabrica una y
+    # se comprueba tras el commit de la segunda escritura.
+    historia = vault_con_repo / ".history"
+    historia.mkdir(exist_ok=True)
+    copia = historia / "07_knowledge__nota-versionada__2026-01-01T00-00-00.md"
+    copia.write_text("# version vieja\n", encoding="utf-8")
+    r = correr_tool("vault_write", "--folder", "07_Knowledge",
+                    "--title", "Otra nota", "--content", f"@file:{cuerpo}",
+                    "--tags", "prueba", vault=vault_con_repo)
+    assert r.codigo == 0, r.stdout + r.stderr
+
+    versionados = [l for l in _git(vault_con_repo, "ls-files").splitlines()
+                   if l.strip()]
+    assert copia.is_file(), "la copia de versión se perdió del disco"
+    assert not any(f.startswith(".history/") for f in versionados)
 
 
 def test_el_ignore_cubre_lo_que_los_duenos_escriben(vault_con_repo):

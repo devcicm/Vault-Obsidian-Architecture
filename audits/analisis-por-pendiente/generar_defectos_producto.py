@@ -32,6 +32,7 @@ no se pregunta «¿está declarado?» sino «¿qué pasa cuando esto se usa?»:
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import json
 import re
 import subprocess
@@ -76,13 +77,28 @@ def _ignorados() -> List[str]:
     return list(IGNORADOS_EN_GIT)
 
 
-def _cubre(ignorado: str, ruta: str) -> bool:
-    """Un ignore de carpeta cubre lo que hay debajo; uno de fichero, exacto."""
-    ignorado = ignorado.replace("\\", "/")
+def _ignorado(patrones: List[str], ruta: str) -> bool:
+    """¿La política deja fuera `ruta`? Gana el último patrón que casa.
+
+    Misma semántica que `.gitignore`, que es lo que el consumidor va a obtener.
+    Sin esto, una política de una línea (`*`) se leería como «no cubre nada».
+    """
     ruta = ruta.replace("\\", "/")
-    if ignorado.endswith("/"):
-        return ruta == ignorado.rstrip("/") or ruta.startswith(ignorado)
-    return ruta == ignorado
+    estado = False
+    for patron in patrones:
+        niega = patron.startswith("!")
+        limpio = patron[1:] if niega else patron
+        casa = fnmatch.fnmatch(ruta, limpio)
+        if limpio.endswith("/"):
+            casa = casa or ruta == limpio[:-1] or ruta.startswith(limpio)
+        if casa:
+            estado = not niega
+    return estado
+
+
+def _cubre(ignorados: List[str], ruta: str) -> bool:
+    """Compatibilidad con el nombre anterior: la ruta queda dentro del ignore."""
+    return _ignorado(ignorados, ruta)
 
 
 def _publicable(ruta: Path) -> str:
@@ -127,9 +143,18 @@ def git_del_vault(vault: Path) -> Dict[str, Any]:
 
 
 def medir_versionado(vault: Optional[Path]) -> Dict[str, Any]:
-    ignorados = _ignorados()
-    cubiertos = {v["ruta"]: any(_cubre(i, v["ruta"]) for i in ignorados)
-                 for v in VOLATILES}
+    from vault.kernel.vcs import IGNORADOS_POR_RIESGO
+
+    ignorados = _ignorados() + list(IGNORADOS_POR_RIESGO)
+    # Para una carpeta se mide un fichero de dentro: `!*/` deja recorrer el
+    # árbol, así que preguntar por el nodo del directorio diría «no ignorado»
+    # aunque su contenido sí lo esté. El `.md` es el caso difícil a propósito.
+    cubiertos = {
+        v["ruta"]: _cubre(ignorados,
+                          v["ruta"] + "ejemplo.md" if v["ruta"].endswith("/")
+                          else v["ruta"])
+        for v in VOLATILES
+    }
     datos: Dict[str, Any] = {
         "ignorados_declarados": ignorados,
         "volatiles": VOLATILES,
@@ -286,10 +311,13 @@ def medir_estado_del_arreglo() -> Dict[str, Any]:
             break
     init = (REPO / "scripts" / "vault_init.py").read_text(
         encoding="utf-8", errors="replace")
+    politica = list(IGNORADOS_EN_GIT) + list(IGNORADOS_POR_RIESGO)
     return {
-        "token_ignorado": any("token" in r for r in IGNORADOS_POR_RIESGO),
-        "trash_ignorado": any(".trash/" in r for r in IGNORADOS_EN_GIT),
-        "mcp_ignorado": any(".mcp-trace-log.json" in r for r in IGNORADOS),
+        "token_ignorado": _ignorado(politica, "00_System/token-usage/token-service.token"),
+        "trash_ignorado": _ignorado(politica, "00_System/.trash/x.md.bak"),
+        "mcp_ignorado": _ignorado(politica, "00_System/.mcp-trace-log.json"),
+        "notas_versionadas": (_ignorado(politica, "07_Knowledge/nota.md") is False
+                              and _ignorado(politica, ".gitignore") is False),
         "repara_en_commit": repara,
         "repara_en_init": "asegurar_ignorados" in init,
     }
@@ -303,18 +331,21 @@ def medir_cobertura_del_ignore() -> Dict[str, Any]:
     caso «ya tenía repo» no se prueba, el guard del `.gitignore` puede vivir
     dentro de la rama que ese caso nunca ejecuta.
     """
+    from vault.kernel.vcs import IGNORADOS
+
     p = REPO / "tests" / "test_vcs_capa_de_git.py"
     if not p.is_file():
         return {"test": None}
     texto = p.read_text(encoding="utf-8", errors="replace")
-    afirmados = [v["ruta"] for v in VOLATILES if f'"{v["ruta"]}"' in texto]
+    fijados = [patron for patron in IGNORADOS if f'"{patron}"' in texto]
     return {
         "test": "tests/test_vcs_capa_de_git.py",
-        "afirmados": afirmados,
-        "sin_afirmar": [v["ruta"] for v in VOLATILES if v["ruta"] not in afirmados],
+        "fijados": fijados,
+        "sin_fijar": [patron for patron in IGNORADOS if patron not in fijados],
         "prueba_repo_previo": ("repo_previo" in texto
                                or "ya tenía repo" in texto
                                or "ya existente" in texto),
+        "prueba_funcional": "ls-files" in texto and "intrusos" in texto,
     }
 
 
@@ -346,9 +377,10 @@ DEFECTOS = [
         "efecto": "La primera operación que escriba en el vault después de "
                   "arrancar el servicio deja la credencial en `git log`. En un "
                   "vault con remoto, se publica.",
-        "arreglo": "Ignorar `00_System/token-usage/` en `IGNORADOS_EN_GIT` y "
-                   "añadir un test que cruce las rutas de credenciales con la "
-                   "lista. Ver C-01/C-02.",
+        "arreglo": "La política pasa a **solo notas `.md`**: `IGNORADOS_EN_GIT` "
+                   "deja fuera todo lo que no sea markdown y `IGNORADOS_POR_RIESGO` "
+                   "nombra la credencial para que el test la cruce con su dueño. "
+                   "Ver C-01/C-02.",
     },
     {
         "id": "D-02",
@@ -363,8 +395,9 @@ DEFECTOS = [
         "efecto": "`vault_delete` no borra de verdad —la nota recuperable queda "
                   "en la historia— y cada commit del vault arrastra un diff de "
                   "traza que no interesa a nadie.",
-        "arreglo": "Ignorar `00_System/.trash/` (es contenido retirado, no "
-                   "contenido del vault). Ver C-02.",
+        "arreglo": "Re-ignorar `.history/`, `vault-backups/`, `.locks/` y "
+                   "`00_System/.trash/` **después** de `!*.md`: contienen `.md` "
+                   "que no son notas y la negación los devolvería. Ver C-02.",
     },
     {
         "id": "D-03",
@@ -659,20 +692,20 @@ def markdown() -> str:
     an("### 4.5 Por qué el defecto del versionado pasó la CI")
     an()
     if cobertura_ignore.get("test"):
-        an(f"El test `{cobertura_ignore['test']}` fija "
-           + (", ".join(f"`{r}`" for r in cobertura_ignore["afirmados"])
-              or "ninguna ruta")
-           + " y **no** fija "
-           + (", ".join(f"`{r}`" for r in cobertura_ignore["sin_afirmar"])
-              or "ninguna")
-           + ".")
-        an()
-        an("Dos huecos de prueba, y ninguno es cosmético: enumerar la lista "
-           "vigente no falla cuando la lista se queda corta, y el caso «vault "
-           "que ya tenía repo» "
-           + ("**sí** se prueba." if cobertura_ignore["prueba_repo_previo"]
-              else "**no** se prueba — que es exactamente la rama donde vive el "
-                   "guard del `.gitignore`."))
+        an(f"El test `{cobertura_ignore['test']}` fija los patrones de la "
+           "política ("
+           + (", ".join(f"`{r}`" for r in cobertura_ignore["fijados"])
+              or "ninguno")
+           + ") y "
+           + ("**sí** comprueba el resultado en el índice (`git ls-files`), que "
+              "es el criterio del consumidor."
+              if cobertura_ignore.get("prueba_funcional")
+              else "**no** comprueba el índice.")
+           + " El caso «vault que ya tenía repo» "
+           + ("**sí** se prueba: la garantía vive en `commit_de_operacion`, que "
+              "corre en cada escritura."
+              if cobertura_ignore["prueba_repo_previo"]
+              else "**no** se prueba — la rama donde vive el guard."))
     an()
 
     # 5. Huellas estáticas
@@ -725,8 +758,14 @@ def markdown() -> str:
        + ("cubierto" if estado["trash_ignorado"] else "sin cubrir")
        + " y `.mcp-trace-log.json` "
        + ("cubierto" if estado["mcp_ignorado"] else "sin cubrir") + " |")
+    an(f"| Notas | "
+       f"{'sí' if estado.get('notas_versionadas') else 'no'} | "
+       "la política deja versionar `*.md` y el propio `.gitignore` |")
+    medido = versionado.get("medicion_vault") or {}
+    d03_datos = bool(medido.get("es_repo") and medido.get("tiene_gitignore")
+                     and medido.get("volatiles_total", 1) == 0)
     an(f"| D-03 | "
-       f"{'mecanismo saldado' if (estado['repara_en_commit'] and estado['repara_en_init']) else 'abierto'} | "
+       f"{'saldado' if d03_datos else 'mecanismo saldado' if (estado['repara_en_commit'] and estado['repara_en_init']) else 'abierto'} | "
        "`commit_de_operacion` "
        + ("repara el ignore en cada escritura" if estado["repara_en_commit"]
           else "**no** repara")
@@ -739,9 +778,15 @@ def markdown() -> str:
     if "medicion_vault" in versionado:
         v = versionado["medicion_vault"]
         pendiente = v.get("volatiles_total", 0) if v.get("es_repo") else 0
-        an(f"El vault medido sigue con **{pendiente}** ficheros volátiles en el "
-           "índice: la próxima operación que escriba le añade el `.gitignore` y "
-           "deja de sumar, pero los que ya están no se retiran solos.")
+        if pendiente == 0 and v.get("tiene_gitignore"):
+            an("El vault medido ya no rastrea volátiles: tiene su `.gitignore` y "
+               "su índice solo lleva notas. El `HEAD` de vuelta de esa limpieza "
+               "está en el registro del vault.")
+        else:
+            an(f"El vault medido sigue con **{pendiente}** ficheros volátiles en "
+               "el índice: la próxima operación que escriba le añade el "
+               "`.gitignore` y deja de sumar, pero los que ya están no se "
+               "retiran solos.")
         an()
 
     # 7. Zonas limpias
