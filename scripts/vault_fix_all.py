@@ -89,17 +89,32 @@ def _carpeta(nombre: str) -> str:
 PASOS: List[Dict[str, Any]] = [
     {
         "nombre": "tools_catalog",
-        "insumos": (_carpeta(rutas.SCRIPTS), "vault/", _carpeta(rutas.CLI),
-                    _carpeta(rutas.MCP), "vault_toolkit/"),
+        "insumos": (_carpeta(rutas.SCRIPTS), _carpeta(rutas.VAULT),
+                    _carpeta(rutas.CLI), _carpeta(rutas.MCP),
+                    _carpeta(rutas.VAULT_TOOLKIT)),
         "salidas": (rutas.cita_repo(rutas.MCP, "nodejs/tools-catalog.json"),
-                    "vault/meta_toolkit/tools-catalog.json"),
+                    rutas.cita_repo(rutas.VAULT, "meta_toolkit/tools-catalog.json")),
         "script": "vault_mcp_catalog.py",
         "args": ["--sync"],
         "por_que": "regenera tools-catalog.json desde el catálogo Python",
     },
     {
+        # v41.26: los adaptadores de `vault_toolkit/operations/` son derivados
+        # de la metadata canónica y el fixer no los regeneraba, así que una
+        # tool nueva podía quedar sin su adaptador hasta que la suite lo
+        # dijera. Va detrás de tools_catalog porque lee el catálogo.
+        "nombre": "operations",
+        "insumos": (_carpeta(rutas.SCRIPTS), _carpeta(rutas.VAULT_TOOLKIT),
+                    _carpeta(rutas.VAULT) + "meta_toolkit/"),
+        "salidas": (_carpeta(rutas.VAULT_TOOLKIT),),
+        "script": "vault_distribution_sync.py",
+        "args": [],
+        "por_que": "materializa los adaptadores de vault_toolkit/operations/ "
+                   "desde los registros canónicos (y retira los obsoletos)",
+    },
+    {
         "nombre": "env_table",
-        "insumos": (_carpeta(rutas.SCRIPTS), "vault/", _carpeta(rutas.MCP)),
+        "insumos": (_carpeta(rutas.SCRIPTS), _carpeta(rutas.VAULT), _carpeta(rutas.MCP)),
         "salidas": (rutas.cita_repo(rutas.MCP, "nodejs/env-table.json"),),
         "script": "vault_arch.py",
         "args": ["--sync-env"],
@@ -107,7 +122,7 @@ PASOS: List[Dict[str, Any]] = [
     },
     {
         "nombre": "field_compat",
-        "insumos": (_carpeta(rutas.SCRIPTS), "vault/", rutas.cita_repo(rutas.SANDBOX, "00_System/")),
+        "insumos": (_carpeta(rutas.SCRIPTS), _carpeta(rutas.VAULT), rutas.cita_repo(rutas.SANDBOX, "00_System/")),
         "salidas": (rutas.cita_repo(rutas.SCRIPTS, "field-compat-baseline.json"),),
         "script": "vault_spec_catalog_check.py",
         "args": ["--freeze-fields"],
@@ -115,7 +130,7 @@ PASOS: List[Dict[str, Any]] = [
     },
     {
         "nombre": "esquemas",
-        "insumos": (_carpeta(rutas.SCRIPTS), "vault/", _carpeta(rutas.SCHEMAS)),
+        "insumos": (_carpeta(rutas.SCRIPTS), _carpeta(rutas.VAULT), _carpeta(rutas.SCHEMAS)),
         "salidas": (_carpeta(rutas.SCHEMAS),),
         "script": "vault_esquema.py",
         "args": ["--sync"],
@@ -123,7 +138,7 @@ PASOS: List[Dict[str, Any]] = [
     },
     {
         "nombre": "metricas",
-        "insumos": (_carpeta(rutas.SCRIPTS), "vault/", rutas.cita_repo(rutas.DOCS, "METRICAS.md")),
+        "insumos": (_carpeta(rutas.SCRIPTS), _carpeta(rutas.VAULT), rutas.cita_repo(rutas.DOCS, "METRICAS.md")),
         "salidas": (rutas.cita_repo(rutas.DOCS, "METRICAS.md"),),
         "script": "vault_metricas.py",
         "args": ["--doc"],
@@ -131,7 +146,10 @@ PASOS: List[Dict[str, Any]] = [
     },
     {
         "nombre": "arquitectura",
-        "insumos": (_carpeta(rutas.SCRIPTS), "vault/", _carpeta(rutas.CLI), _carpeta(rutas.MCP), "vault_toolkit/", rutas.cita_repo(rutas.DOCS, "ARQUITECTURA.md")),
+        "insumos": (_carpeta(rutas.SCRIPTS), _carpeta(rutas.VAULT),
+                    _carpeta(rutas.CLI), _carpeta(rutas.MCP),
+                    _carpeta(rutas.VAULT_TOOLKIT),
+                    rutas.cita_repo(rutas.DOCS, "ARQUITECTURA.md")),
         "salidas": (rutas.cita_repo(rutas.DOCS, "ARQUITECTURA.md"),),
         "script": "vault_arch.py",
         "args": ["--blueprint"],
@@ -170,7 +188,7 @@ PASOS: List[Dict[str, Any]] = [
         # con `--contrato` en vault_procesos_git: cinco tests en rojo por un
         # artefacto que el fixer decía cerrar).
         "nombre": "caras_de_norma",
-        "insumos": (_carpeta(rutas.SCRIPTS), "vault/", _carpeta(rutas.CLI), _carpeta(rutas.NORMAS)),
+        "insumos": (_carpeta(rutas.SCRIPTS), _carpeta(rutas.VAULT), _carpeta(rutas.CLI), _carpeta(rutas.NORMAS)),
         "salidas": (_carpeta(rutas.NORMAS),),
         "modulo": "vault_norms_engine",
         "funcion": "escribir_caras_derivadas",

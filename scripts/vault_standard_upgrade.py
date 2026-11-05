@@ -437,7 +437,8 @@ MIGRATIONS: Dict[str, Dict[str, Any]] = {
         "update_identity": _live_identity(),
         "notes": [
             "vault_arch.py (NUEVO): registro CONTEXTS + guard de fronteras por AST + blueprint",
-            "vault/ (NUEVO paquete): VaultContext inmutable, puertos Protocol y un repositorio por contexto",
+            f"{cita_repo(rutas.VAULT, '')} (NUEVO paquete): VaultContext inmutable, "
+            "puertos Protocol y un repositorio por contexto",
             "AP-49 (NUEVA): vinculo resuelto en tiempo de import — 82 vinculos congelados en 62 modulos, saldados a 0",
             f"{cita_repo(rutas.DOCS, 'ARQUITECTURA.md')} (NUEVO): derivado de `vault_arch --blueprint`, no escrito a mano",
             "La prohibicion del Meta-toolkit deja de ser prosa: se mide por AST (forbidden_writes)",

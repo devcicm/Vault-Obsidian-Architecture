@@ -29,7 +29,7 @@ def clasificar_recurso(ruta: str) -> str:
         return "standard_maintenance"
     if partes and partes[0] in {rutas.DOCS, ".github"}:
         return "repo_only"
-    if partes and partes[0] in {"vault", rutas.CLI, "vault_toolkit"}:
+    if partes and partes[0] in {rutas.VAULT, rutas.CLI, rutas.VAULT_TOOLKIT}:
         return "toolkit"
     return "repo_only"
 

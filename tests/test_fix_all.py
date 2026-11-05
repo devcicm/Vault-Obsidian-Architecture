@@ -125,6 +125,9 @@ def test_los_pasos_en_el_orden_canonico():
     «siete» de este test caducó en cuanto entró `esquemas` (AP-47)."""
     assert [p["nombre"] for p in vfa.PASOS] == [
         "tools_catalog",
+        # v41.26: los adaptadores de operations/ se materializan desde los
+        # registros canónicos que este paso acaba de sincronizar.
+        "operations",
         "env_table",
         "field_compat",
         "esquemas",

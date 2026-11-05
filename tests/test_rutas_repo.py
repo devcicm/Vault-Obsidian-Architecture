@@ -82,6 +82,50 @@ def test_el_dueno_existe_y_valida_los_nombres():
         pass
 
 
+def test_toda_carpeta_del_checkout_esta_declarada():
+    """Una carpeta nueva en la raíz no entra sin dueño.
+
+    v41.26 encontró cuatro —`vault`, `vault_toolkit`, `audits`, `agent`— que
+    existían desde hacía versiones y el layout no nombraba: el barrido de
+    dark data las midió como «carpetas con código sin declarar». Este test
+    cierra el hueco por el lado que faltaba: no «¿están las que conozco?»
+    sino «¿soy capaz de nombrar todas las que hay?».
+    """
+    from vault.kernel import rutas
+
+    # Lo oculto es infraestructura del checkout (git, CI, editor) y lo demás
+    # son artefactos de construcción: no son layout del repo.
+    fuera_del_layout = {"__pycache__", "node_modules", "build", "dist"}
+    en_disco = {
+        p.name for p in RAIZ.iterdir()
+        if p.is_dir()
+        and not p.name.startswith(".")
+        and not p.name.endswith(".egg-info")
+        and p.name not in fuera_del_layout
+    }
+    sin_declarar = sorted(en_disco - set(rutas.CARPETAS_DEL_REPO))
+    assert not sin_declarar, (
+        f"carpetas del repo que el layout no declara: {sin_declarar}. Se "
+        "declaran en vault/kernel/rutas.py en el mismo diff que las crea."
+    )
+
+
+def test_nombres_es_subconjunto_de_las_carpetas_y_agent_se_resuelve():
+    """`NOMBRES` es lo vigilado; `CARPETAS_DEL_REPO`, lo declarado.
+
+    `agent` está declarada y no vigilada a propósito —46 de sus 47 literales
+    nombran un actor, no una ruta—, y esa asimetría solo se sostiene si el
+    dueño sigue resolviéndola: si `ruta_repo` no la aceptara, «declarada»
+    sería una palabra sin efecto.
+    """
+    from vault.kernel import rutas
+
+    assert rutas.NOMBRES <= rutas.CARPETAS_DEL_REPO
+    assert rutas.AGENT in rutas.CARPETAS_DEL_REPO
+    assert rutas.ruta_repo(rutas.AGENT) == RAIZ / rutas.AGENT
+    assert rutas.ruta_repo(rutas.VAULT_TOOLKIT) == RAIZ / rutas.VAULT_TOOLKIT
+
+
 def test_ningun_literal_de_layout_nuevo_fuera_del_dueno():
     """La baseline congela lo que ya estaba; lo que entra después se migra."""
     actuales = sitios_actuales()

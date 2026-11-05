@@ -51,6 +51,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 import vault_baseline
 import vault_grafo_import
+from vault.kernel import rutas
 from vault_errors import emit_error, wrap_main
 
 BASELINE = Path(__file__).parent / "ciclos-baseline.json"
@@ -180,7 +181,8 @@ def medir() -> Dict[str, Any]:
 #: por un cambio de alcance — que es la lección que dejó v40.26. La medida vive
 #: aquí, con su alcance declarado y sin tocar la del núcleo.
 CICLOS_DEL_DOMINIO_ESPERADOS: Dict[str, str] = {
-    "vault/kernel/adaptadores.py <-> vault/kernel/contexto.py": (
+    f"{rutas.cita_repo(rutas.VAULT, 'kernel/adaptadores.py')} <-> "
+    f"{rutas.cita_repo(rutas.VAULT, 'kernel/contexto.py')}": (
         "La raíz de composición y el contexto que construye. `contexto.py` "
         "difiere su import de `adaptadores` dentro de una función y lo dice en "
         "un comentario; `adaptadores` importa `VaultContext` en cabecera. Es el "

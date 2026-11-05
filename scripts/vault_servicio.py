@@ -359,7 +359,7 @@ def _fuentes_de_la_wheel(fuera: set, alias: Dict[str, List[str]]) -> List[tuple]
                and not _en_subpaquete_fuera(paq)
                and p.stem not in alias.get(paq, ())]
     fuentes += [(".".join(p.relative_to(_RAIZ).parent.parts), p)
-                for p in sorted((_RAIZ / "vault_toolkit").rglob("*.py"))]
+                for p in sorted(rutas.ruta_repo(rutas.VAULT_TOOLKIT).rglob("*.py"))]
     return fuentes
 
 

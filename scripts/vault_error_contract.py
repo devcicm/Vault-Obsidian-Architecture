@@ -331,7 +331,7 @@ def codigos_fuera_del_catalogo(raiz: Path = None) -> List[Dict]:
             fuera.append({"module": ruta.relative_to(raiz).as_posix(),
                           "line": linea, "code": codigo})
 
-    for zona in ("scripts", "vault", "vault_toolkit", "cli"):
+    for zona in (rutas.SCRIPTS, rutas.VAULT, rutas.VAULT_TOOLKIT, rutas.CLI):
         for ruta in sorted((raiz / zona).rglob("*.py")):
             if "__pycache__" in ruta.parts:
                 continue

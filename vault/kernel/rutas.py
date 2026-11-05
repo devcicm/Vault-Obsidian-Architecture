@@ -48,21 +48,43 @@ SCHEMAS = "schemas"
 TESTS = "tests"
 EMPAQUETADO = "empaquetado"
 SANDBOX = "vault-sandbox"
+VAULT = "vault"
+VAULT_TOOLKIT = "vault_toolkit"
+AUDITS = "audits"
+AGENT = "agent"
 
+#: Los nombres que el guard de literales vigila: si uno aparece citado en
+#: código que no es este módulo, es deuda. v41.26 sumó `vault`, `vault_toolkit`
+#: y `audits` —existían desde antes y no estaban declaradas, así que su código
+#: quedaba fuera del guard (medido en `audits/analisis-por-pendiente/`)—.
 NOMBRES = frozenset({
     SCRIPTS, CLI, DOCS, MCP, NORMAS, SCHEMAS, TESTS, EMPAQUETADO, SANDBOX,
+    VAULT, VAULT_TOOLKIT, AUDITS,
 })
 
+#: **Todo** el layout del repo: lo vigilado más lo que existe sin dar señal
+#: al guard. `agent/` está aquí y no en `NOMBRES` con una medida detrás: de
+#: las 47 apariciones del literal `"agent"` en `scripts/`, `vault/` y `cli/`,
+#: 46 nombran un actor del dominio y una sola es una ruta
+#: (`agent/skills/ no encontrado, omitido`). Meterlo en el patrón habría
+#: congelado 46 falsos positivos y ahogado la señal que el guard existe para
+#: dar — el criterio es «el nombre citado apunta al directorio», no «la
+#: carpeta existe». `ruta_repo("agent")` sí lo resuelve: declarado no es lo
+#: mismo que vigilado.
+CARPETAS_DEL_REPO = NOMBRES | {AGENT}
+
 #: Las carpetas del repo donde vive **código**, para los barridos que
-#: miden el código. `vault/` no está en `NOMBRES` —el guard de rutas no lo
-#: reconoce como layout— pero es una carpeta del repo como las otras, y
-#: los barridos la necesitan. Los dos conjuntos se usan enteros: quien
-#: barre los dos, no uno y medio.
-CARPETAS_DE_CODIGO = (SCRIPTS, CLI, "vault", TESTS)
+#: miden el código. Es un subconjunto de `CARPETAS_DEL_REPO`: deja fuera las
+#: carpetas de gobernanza (`audits`, `docs`) y la capa de despacho del
+#: producto (`vault_toolkit`), cuyos adaptadores son generados y los barre
+#: su propio guard. Los dos conjuntos se usan enteros: quien barre los dos,
+#: no uno y medio.
+CARPETAS_DE_CODIGO = (SCRIPTS, CLI, VAULT, TESTS)
 
 #: Las mismas, más el servidor MCP: el guard de git mira también el `.mjs`,
 #: que no es Python pero sí es código de este repo.
-CARPETAS_DE_CODIGO_Y_MCP = (SCRIPTS, CLI, "vault", MCP)
+CARPETAS_DE_CODIGO_Y_MCP = (SCRIPTS, CLI, VAULT, MCP)
+
 
 #: Patrón de las combinaciones `padre/hijo` que los módulos escriben a mano:
 #: `docs/sdd`, `vault-sandbox/00_System`, `scripts/README.md`… El guard las
@@ -86,13 +108,16 @@ def ruta_repo(nombre: str) -> Path:
     `ruta_repo("scripts")` en cualquier módulo vale lo que valía
     `RAIZ / "scripts"` — con la diferencia de que el nombre ahora se valida
     contra la lista cerrada y se resuelve una vez.
+
+    Acepta todo `CARPETAS_DEL_REPO`, no solo `NOMBRES`: resolver una carpeta
+    declarada y vigilar sus literales son dos cosas distintas (ver `AGENT`).
     """
-    if nombre not in NOMBRES:
+    if nombre not in CARPETAS_DEL_REPO:
         raise ValueError(
             f"{nombre!r} no es un directorio del layout del repo; los que hay "
-            f"son {sorted(NOMBRES)}. Si el layout estrenó uno, se declara en "
-            "NOMBRES en el mismo diff que lo usa (AP-68 lo llama 'el diff que "
-            "lo revisa'; aquí vale el mismo criterio)."
+            f"son {sorted(CARPETAS_DEL_REPO)}. Si el layout estrenó uno, se "
+            "declara en CARPETAS_DEL_REPO en el mismo diff que lo usa (AP-68 "
+            "lo llama 'el diff que lo revisa'; aquí vale el mismo criterio)."
         )
     return raiz_repo() / nombre
 
@@ -110,11 +135,11 @@ def cita_repo(directorio: str, relativo: str) -> str:
     un test lo pide al dueño, y si el layout cambiara, la cita cambiaría con
     él en vez de quedarse apuntando a un sitio que ya no existe.
     """
-    if directorio not in NOMBRES:
+    if directorio not in CARPETAS_DEL_REPO:
         raise ValueError(
             f"{directorio!r} no es un directorio del layout del repo; los que hay "
-            f"son {sorted(NOMBRES)}. Si el layout estiró uno, se declara en "
-            "NOMBRES en el mismo diff que lo usa.")
+            f"son {sorted(CARPETAS_DEL_REPO)}. Si el layout estiró uno, se declara "
+            "en CARPETAS_DEL_REPO en el mismo diff que lo usa.")
     return f"{directorio}/{relativo}"
 
 

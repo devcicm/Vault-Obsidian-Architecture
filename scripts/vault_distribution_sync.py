@@ -13,13 +13,14 @@ from vault_mcp_catalog import TOOLS_CATALOG
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from vault.kernel import rutas
+
 # v40.34: del dueño y no de `vault_servicio`, que es grupo 35 y no viaja en la
 # wheel de producto. `vault_servicio` solo lo reexporta.
 from vault.meta_toolkit.naturalezas import NATURALEZAS
 from vault.meta_toolkit.distribucion import clasificar_tools
 
-ROOT = Path(__file__).resolve().parent.parent
-OPERATIONS = ROOT / "vault_toolkit" / "operations"
+OPERATIONS = rutas.ruta_repo(rutas.VAULT_TOOLKIT) / "operations"
 
 _TEMPLATE = '''"""Adaptador generado para la operación canónica ``{name}``."""
 

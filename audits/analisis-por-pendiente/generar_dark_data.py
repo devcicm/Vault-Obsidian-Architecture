@@ -24,8 +24,8 @@ Uso:
 from __future__ import annotations
 
 import argparse
+import ast
 import json
-import re
 import subprocess
 import sys
 from collections import Counter, defaultdict
@@ -200,16 +200,34 @@ def casi_muertos(d: Dict[str, Any]) -> List[Dict[str, Any]]:
 
     # 1. Los adaptadores: derivados, pero su generador puede no estar en el repo.
     adaptadores = [r for r in d["clasificacion"].get("derivado", [])
-                   if r.startswith("vault_toolkit/operations/")]
-    # Un generador es quien ESCRIBE la plantilla; los propios adaptadores la
-    # citan en su docstring, así que buscarlos por el texto delataría el
-    # falso positivo. Se busca a quien la escribe.
+                   if r.startswith("vault_toolkit/operations/")
+                   and not r.endswith("/__init__.py")]
+    # Un generador es quien **sostiene** la plantilla para escribirla, no quien
+    # la menciona. La primera versión buscaba el texto y pedía
+    # `write_text`/`escribir`: no vio `vault_distribution_sync.write_bytes`,
+    # así que publicó «sin generador» sobre un repo que ya lo tenía, y después
+    # se contó a sí misma al citar la frase en un comentario (AP-44: el
+    # instrumento medido con su propia normalización). La señal es sintáctica:
+    # una asignación cuyo valor es la plantilla.
+    def _sostiene_la_plantilla(texto: str) -> bool:
+        try:
+            arbol = ast.parse(texto)
+        except SyntaxError:
+            return False
+        for nodo in ast.walk(arbol):
+            if isinstance(nodo, (ast.Assign, ast.AnnAssign)):
+                valor = nodo.value
+                if (isinstance(valor, ast.Constant)
+                        and isinstance(valor.value, str)
+                        and "Adaptador generado" in valor.value):
+                    return True
+        return False
+
     generadores = [
         rel for rel, texto in textos()
-        if "Adaptador generado" in texto
-        and rel not in {"scripts/vault_mcp_catalog.py"}
+        if rel not in {"scripts/vault_mcp_catalog.py"}
         and not rel.startswith("vault_toolkit/operations/")
-        and ("write_text" in texto or "escribir" in texto.lower())
+        and _sostiene_la_plantilla(texto)
     ]
     casi.append({
         "que": f"{len(adaptadores)} adaptadores en `vault_toolkit/operations/`",
@@ -228,7 +246,12 @@ def casi_muertos(d: Dict[str, Any]) -> List[Dict[str, Any]]:
     sys.path.insert(0, str(REPO / "vault" / "kernel"))
     import rutas as rutas_modulo  # noqa: E402
     barridas = set(rutas_modulo.CARPETAS_DE_CODIGO) | set(rutas_modulo.CARPETAS_DE_CODIGO_Y_MCP)
-    declaradas = set(rutas_modulo.NOMBRES)
+    # v41.26: «declarada» es `CARPETAS_DEL_REPO`, no `NOMBRES`. Son dos
+    # conjuntos a propósito: `NOMBRES` es lo que el guard de literales vigila
+    # y `AGENT` está declarada sin dar señal (46 de sus 47 literales nombran
+    # un actor, no una ruta). Medir con `NOMBRES` habría seguido publicando
+    # una carpeta sin declarar que sí lo está.
+    declaradas = set(rutas_modulo.CARPETAS_DEL_REPO)
     ciegas = [r for r in d["clasificacion"].get("vivo", []) + d["clasificacion"].get("declarado", [])
               if r.endswith(".py")
               and r.split("/")[0] not in barridas
@@ -237,22 +260,32 @@ def casi_muertos(d: Dict[str, Any]) -> List[Dict[str, Any]]:
     casi.append({
         "que": f"{len(ciegas)} ficheros .py en carpetas que ni el layout declara "
                "ni las puertas barren",
-        "por_que_no_es_muerto": "existen y se usan, pero el layout no los "
-                                 "reconoce como código",
-        "riesgo": "su calidad no la mide ninguna puerta y el guard de rutas no "
-                  "los ve",
+        "por_que_no_es_muerto": (
+            "existen y se usan, pero el layout no los reconoce como código"
+            if ciegas else
+            "ninguno: toda carpeta con `.py` está declarada por el layout"),
+        "riesgo": (
+            "su calidad no la mide ninguna puerta y el guard de rutas no los ve"
+            if ciegas else
+            "cerrado en v41.26: `vault/kernel/rutas.py` declara las carpetas y "
+            "`test_rutas_repo` falla si aparece una sin declarar"),
         "medida": ", ".join(sorted({r.split('/')[0] for r in ciegas})) or "—",
     })
 
     # 3. Las carpetas de codigo que el layout no declara.
     sin_declarar = [n for n in ("vault", "vault_toolkit", "audits", "agent")
-                    if n not in rutas_modulo.NOMBRES]
+                    if n not in rutas_modulo.CARPETAS_DEL_REPO]
     casi.append({
         "que": f"{len(sin_declarar)} carpetas con código sin declarar en el layout",
-        "por_que_no_es_muerto": "el dueño del layout las barre por otra vía "
-                                 "(`CARPETAS_DE_CODIGO`)",
-        "riesgo": "dos verdades sobre qué es código aquí; el guard de rutas no "
-                  "las reconoce",
+        "por_que_no_es_muerto": (
+            "el dueño del layout las barre por otra vía (`CARPETAS_DE_CODIGO`)"
+            if sin_declarar else
+            "ninguna: `CARPETAS_DEL_REPO` nombra todas las del checkout"),
+        "riesgo": (
+            "dos verdades sobre qué es código aquí; el guard de rutas no las "
+            "reconoce" if sin_declarar else
+            "cerrado en v41.26: el layout tiene un dueño único y un test que "
+            "falla cuando una carpeta nueva no se declara"),
         "medida": ", ".join(sin_declarar),
     })
     return casi

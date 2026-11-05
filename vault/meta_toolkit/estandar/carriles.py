@@ -86,7 +86,7 @@ CARRILES: Dict[str, Dict[str, Any]] = {
             {"que": "SBOM e inventario de licencias",
              "argv": (rutas.cita_repo(rutas.EMPAQUETADO, "sbom.py"), "--inventario")},
             {"que": "recibos del colector QG sobre el product_sha",
-             "argv": ("audits/fase2/colector_qg.py", "--sha", "<product_sha>",
+             "argv": (rutas.cita_repo(rutas.AUDITS, "fase2/colector_qg.py"), "--sha", "<product_sha>",
                       "--ejecutar", "--recibos", "qg-recibos", "--json",
                       "qg-informe.json"),
              # Cableado en el job `qg-receipts` de release.yml (B-04); hasta que

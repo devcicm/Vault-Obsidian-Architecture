@@ -505,8 +505,9 @@ PREGUNTAS: List[Dict[str, Any]] = [
         ),
         "ejerce": _vault_run_resuelve_el_producto,
         "quien": (
-            "vault/meta_toolkit/tools-catalog.json + empaquetado/fuera-de-la-wheel.json + "
-            "`vault run` en tests/clean_install_gate.py"
+            cita_repo(rutas.VAULT, "meta_toolkit/tools-catalog.json") + " + "
+            + cita_repo(rutas.EMPAQUETADO, "fuera-de-la-wheel.json") + " + "
+            "`vault run` en " + cita_repo(rutas.TESTS, "clean_install_gate.py")
         ),
         "estado": "cubierta",
         # superseded_by: _vault_run_resuelve_el_producto (v40.34). El hueco A2 se

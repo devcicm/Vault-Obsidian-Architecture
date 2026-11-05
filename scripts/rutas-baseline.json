@@ -3,6 +3,10 @@
  "por_que": "Literales del layout del repo (scripts/, docs/, normas/, vault-sandbox/...) escritos a mano fuera de su dueño (vault/kernel/rutas.py, AP-62). Clave fichero:literal — sin línea, porque la prosa se mueve. Solo encoge: un sitio nuevo se migra al dueño con ruta_repo(), no se congela.",
  "sitios": [
   "cli/scheduler.py:docs",
+  "scripts/vault_arch.py:vault/autoria/voz:speak",
+  "scripts/vault_arch.py:vault/gobernanza/auditoria_runtime:auditar_runtime",
+  "scripts/vault_arch.py:vault/gobernanza/secret_scan:has_blocking_findings",
+  "scripts/vault_arch.py:vault/gobernanza/secret_scan:vault_write_hook",
   "scripts/vault_doc_counts.py:tests",
   "scripts/vault_errors.py:docs",
   "scripts/vault_init.py:mcp",
@@ -13,17 +17,18 @@
   "vault/grafo/graph_fix.py:vault-sandbox",
   "vault/grafo/graph_inspect.py:vault-sandbox",
   "vault/kernel/baseline.py:normas",
+  "vault/kernel/errores.py:audits/fase2/R04-diseno-td0008.md",
   "vault/kernel/errores.py:docs",
   "vault/kernel/normativa/audit_catalog.py:docs/sdd",
   "vault/meta_toolkit/catalogo_producto.py:cli",
   "vault/meta_toolkit/resolucion_producto.py:mcp"
  ],
  "objetivo": {
-  "tamano": 15,
+  "tamano": 20,
   "fecha_limite": "2027-06-30",
   "cadencia_dias": 90,
   "dueno": "meta_toolkit — vault.kernel.rutas",
-  "por_que": "Medido el 2026-10-23: 177 literales del layout escritos a mano fuera de su dueño. Medido el 2026-10-28: 175 congelados, y la consolidación los bajó a 16 —159 migrados al dueño con `ruta_repo()` y `cita_repo()`—. Los 16 que quedan son falsos positivos por clase (claves de contrato, secciones de un vault, canales, unidades de métrica) y cada uno lleva su motivo escrito en `motivos`: no son rutas del repo, y un sitio sin motivo es una excepción sin dueño. El objetivo baja a 16, que es el suelo: de aquí solo puede bajar si uno de ellos deja de ser lo que dice su motivo."
+  "por_que": "Medido el 2026-10-23: 177 literales del layout escritos a mano fuera de su dueño. Medido el 2026-10-28: 175 congelados, y la consolidación los bajó a 16 —159 migrados al dueño con `ruta_repo()` y `cita_repo()`—. v41.26 declaró `vault`, `vault_toolkit` y `audits` en `NOMBRES`: 30 sitios que ya estaban pasaron a ser visibles, 25 se migraron al dueño y 5 quedan con motivo escrito — cuatro son valores del recurso `CONTEXTS`, que no pueden llamar al dueño sin volverse acoplados (AP-62), y uno vive en una hoja del núcleo que no puede importarlo. Los que siguen no son rutas del repo —claves de contrato, secciones, canales, unidades— y cada uno lleva su motivo: un sitio sin motivo es uno que nadie vuelve a mirar."
  },
  "motivos": {
   "cli/scheduler.py:docs": "Sección de un **vault** (`00_System`, `99_Index`, `docs`…), no el directorio del repo: el planificador decide qué escrituras disparan la cascada de índices dentro de un vault. Migrarlo al dueño del layout ataría el vocabulario de un vault al layout de este repo.",
@@ -40,7 +45,12 @@
   "vault/kernel/baseline.py:normas": "Nombre de una **clave** de baseline (`\"normas\"` entre las claves conocidas), no una ruta: el formato de los ficheros de baseline.",
   "vault/kernel/errores.py:docs": "Clave del contrato de error (`error_code` → `docs`), no una ruta: la misma clave de `ERROR_CATALOG`, repetida en cada entrada.",
   "vault/meta_toolkit/catalogo_producto.py:cli": "Nombre del **canal** por el que se ejecuta una tool (`cli`, `mcp`, `ninguna`), no el directorio de la CLI: es el eje de acceso, no el layout.",
-  "vault/meta_toolkit/resolucion_producto.py:mcp": "Nombre del **canal** por el que se ejecuta una tool (`mcp`), no el directorio del servidor MCP: es el eje de acceso, no el layout."
+  "vault/meta_toolkit/resolucion_producto.py:mcp": "Nombre del **canal** por el que se ejecuta una tool (`mcp`), no el directorio del servidor MCP: es el eje de acceso, no el layout.",
+  "vault/kernel/errores.py:audits/fase2/R04-diseno-td0008.md": "Referencia documental del contrato de error (campo `docs`): apunta al informe de diseño de la cuarentena, no a un fichero que el código abra. `errores.py` es hoja del núcleo —solo `typing`— y no puede importar al dueño del layout sin dejar de serlo (AP-62).",
+  "scripts/vault_arch.py:vault/autoria/voz:speak": "Valor del registro `CONTEXTS`, que un consumidor lee como **recurso**: `vault_recursos` exige que una constante de datos no nombre imports (`test_un_dato_constante_es_recurso_y_una_clase_no`), y derivarla con `cita_repo()` la vuelve `acoplado`. Los dos guards se contradicen aquí y manda AP-62: el consumidor paga el fan-out del productor. El sitio se queda como literal y el día que `vault_recursos` no cuente los imports hoja, se migra.",
+  "scripts/vault_arch.py:vault/gobernanza/auditoria_runtime:auditar_runtime": "Valor del registro `CONTEXTS`, que un consumidor lee como **recurso**: `vault_recursos` exige que una constante de datos no nombre imports (`test_un_dato_constante_es_recurso_y_una_clase_no`), y derivarla con `cita_repo()` la vuelve `acoplado`. Los dos guards se contradicen aquí y manda AP-62: el consumidor paga el fan-out del productor. El sitio se queda como literal y el día que `vault_recursos` no cuente los imports hoja, se migra.",
+  "scripts/vault_arch.py:vault/gobernanza/secret_scan:vault_write_hook": "Valor del registro `CONTEXTS`, que un consumidor lee como **recurso**: `vault_recursos` exige que una constante de datos no nombre imports (`test_un_dato_constante_es_recurso_y_una_clase_no`), y derivarla con `cita_repo()` la vuelve `acoplado`. Los dos guards se contradicen aquí y manda AP-62: el consumidor paga el fan-out del productor. El sitio se queda como literal y el día que `vault_recursos` no cuente los imports hoja, se migra.",
+  "scripts/vault_arch.py:vault/gobernanza/secret_scan:has_blocking_findings": "Valor del registro `CONTEXTS`, que un consumidor lee como **recurso**: `vault_recursos` exige que una constante de datos no nombre imports (`test_un_dato_constante_es_recurso_y_una_clase_no`), y derivarla con `cita_repo()` la vuelve `acoplado`. Los dos guards se contradicen aquí y manda AP-62: el consumidor paga el fan-out del productor. El sitio se queda como literal y el día que `vault_recursos` no cuente los imports hoja, se migra."
  },
  "description": "Literales del layout del repo (scripts/, docs/, normas/, vault-sandbox/…) escritos a mano fuera de su dueño (vault/kernel/rutas.py, AP-62). Clave fichero:literal — sin línea, porque la prosa se mueve. Solo encoge: un sitio nuevo se migra al dueño con ruta_repo(), no se congela. Los que quedan llevan su motivo escrito: no son rutas del repo, sino claves de contrato, nombres de sección de un vault, canales y unidades de métrica que coinciden con un nombre del layout por casualidad."
 }

@@ -742,7 +742,7 @@ LIMITES = [
 #: conocimiento viva en **un** fichero en lugar de repartirse por el dominio; lo
 #: que cuesta es que ese fichero hay que leerlo entero al revisarlo. Una
 #: exención anónima habría hecho lo mismo sin dejar constancia.
-RAIZ_COMPOSICION = "vault/kernel/adaptadores.py"
+RAIZ_COMPOSICION = rutas.cita_repo(rutas.VAULT, "kernel/adaptadores.py")
 
 #: Vínculos de nivel de módulo que TIENEN que quedar congelados, declarados uno
 #: a uno. AP-49 penaliza derivar del vault al importar porque la constante deja
@@ -1768,7 +1768,7 @@ GANCHOS_DEL_KERNEL: dict[tuple[str, str], str] = {
         "`*_save` cruzaría Autoría → Índices catorce veces y seguiría sin "
         "cubrir al decimoquinto (AP-43)."
     ),
-    ("vault_io", "vault/grafo"): (
+    ("vault_io", rutas.cita_repo(rutas.VAULT, "grafo")): (
         "`_auto_grafo`: la nota escrita entra en `graph.json` en la misma "
         "escritura, escriba quien escriba (AP-47); antes `vault_subgraph` no "
         "la veía hasta la siguiente reconstrucción. Va al dominio y no a "
@@ -1846,7 +1846,7 @@ PRESUPUESTO_DE_GANCHOS: dict[tuple[str, str], dict] = {
             "revisión mira si el ledger pasó a construirse por barrido."
         ),
     },
-    ("vault_io", "vault/grafo"): {
+    ("vault_io", rutas.cita_repo(rutas.VAULT, "grafo")): {
         "objetivo": "permanente",
         "revisado": "2026-10-02",
         "cadencia_dias": 180,

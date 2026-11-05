@@ -120,7 +120,7 @@ DUEÑOS = {c["dueño"] for c in CRITERIOS_CON_DUENO}
 FUNCIONES_CON_DUENO: List[Dict[str, Any]] = [
     {
         "simbolo": "yaml_scalar",
-        "dueño": "vault/kernel/frontmatter_parsing.py",
+        "dueño": rutas.cita_repo(rutas.VAULT, "kernel/frontmatter_parsing.py"),
         "por_que": (
             "El escape de un valor de frontmatter se decide con el parser que "
             "lo lee. Tres criterios de escapado convivían en el mismo vault "
@@ -129,7 +129,8 @@ FUNCIONES_CON_DUENO: List[Dict[str, Any]] = [
     },
     {
         "simbolo": "vinetas_de_lista",
-        "dueño": "vault/kernel/normativa/norms_catalog.py",
+        "dueño": rutas.cita_repo(
+            rutas.VAULT, "kernel/normativa/norms_catalog.py"),
         "por_que": (
             "AP-20 se decidía con la misma regex copiada en tres sitios, y las "
             "tres compartían el defecto: una viñeta vacía se tragaba la línea "
@@ -138,7 +139,7 @@ FUNCIONES_CON_DUENO: List[Dict[str, Any]] = [
     },
     {
         "simbolo": "rutas_de_lock",
-        "dueño": "vault/kernel/bloqueo.py",
+        "dueño": rutas.cita_repo(rutas.VAULT, "kernel/bloqueo.py"),
         "por_que": (
             "`vault_fs.file_lock` y el lock de `vault_knowledge_save` nombraban "
             "el directorio del lock cada uno a su manera, tomaban dos distintos "
@@ -147,7 +148,7 @@ FUNCIONES_CON_DUENO: List[Dict[str, Any]] = [
     },
     {
         "simbolo": "crear_carpeta_de_locks",
-        "dueño": "vault/kernel/bloqueo.py",
+        "dueño": rutas.cita_repo(rutas.VAULT, "kernel/bloqueo.py"),
         "por_que": (
             "El hueco de un `.locks/` en borrado pendiente (Windows) hubo que "
             "arreglarlo dos veces, una por cada tomador del mismo lock (ad5b10b)."
@@ -155,7 +156,7 @@ FUNCIONES_CON_DUENO: List[Dict[str, Any]] = [
     },
     {
         "simbolo": "retirar_carpeta_si_vacia",
-        "dueño": "vault/kernel/bloqueo.py",
+        "dueño": rutas.cita_repo(rutas.VAULT, "kernel/bloqueo.py"),
         "por_que": (
             "Retirar `.locks/` al soltar es lo que abre el hueco que "
             "`crear_carpeta_de_locks` tolera: los dos lados viven juntos."
@@ -163,7 +164,7 @@ FUNCIONES_CON_DUENO: List[Dict[str, Any]] = [
     },
     {
         "simbolo": "es_adr",
-        "dueño": "vault/kernel/contenido.py",
+        "dueño": rutas.cita_repo(rutas.VAULT, "kernel/contenido.py"),
         "por_que": (
             "Qué nota es un ADR se decidía por la subcadena `adr` en la ruta en "
             "el scan y por `type` en la auditoría: `07_Knowledge/padre.md` era "
@@ -172,7 +173,7 @@ FUNCIONES_CON_DUENO: List[Dict[str, Any]] = [
     },
     {
         "simbolo": "secciones_adr_faltantes",
-        "dueño": "vault/kernel/contenido.py",
+        "dueño": rutas.cita_repo(rutas.VAULT, "kernel/contenido.py"),
         "por_que": (
             "Cuatro listas de secciones de AP-07 que no coincidían; la del scan "
             "exigía «contexto» y «context» a la vez, y un ADR completo en "
@@ -182,7 +183,8 @@ FUNCIONES_CON_DUENO: List[Dict[str, Any]] = [
 ]
 
 #: Dónde se buscan definiciones: el código que viaja o que se ejecuta.
-_ZONAS_DE_DEFINICION = (rutas.SCRIPTS, "vault", "vault_toolkit", rutas.CLI)
+_ZONAS_DE_DEFINICION = (
+    rutas.SCRIPTS, rutas.VAULT, rutas.VAULT_TOOLKIT, rutas.CLI)
 
 
 # ── Fronteras de lenguaje (v40.19) ───────────────────────────────────────────
@@ -569,7 +571,8 @@ def medir_definiciones(raiz: Path = None) -> List[Dict[str, str]]:
 PARTICION_CON_DUENO = {
     "criterio": "particion_de_frontmatter",
     "senal": 'split("---")',
-    "dueño": "vault/kernel/frontmatter_parsing.py:separar_frontmatter",
+    "dueño": rutas.cita_repo(
+        rutas.VAULT, "kernel/frontmatter_parsing.py:separar_frontmatter"),
 }
 
 
@@ -622,7 +625,8 @@ def medir_particiones(raiz: Path = None) -> List[Dict[str, str]]:
 MONTAJE_CON_DUENO = {
     "criterio": "montaje_de_frontmatter",
     "senal": '"---" como pieza de ensamblado + línea `clave: …` en la misma función',
-    "dueño": "vault/kernel/frontmatter_escritura.py:Frontmatter",
+    "dueño": rutas.cita_repo(
+        rutas.VAULT, "kernel/frontmatter_escritura.py:Frontmatter"),
 }
 
 #: Una clave de frontmatter empieza en minúscula (`title`, `createdAt`,
@@ -722,7 +726,8 @@ def medir_montajes(raiz: Path = None) -> List[Dict[str, str]]:
 LECTURA_CON_DUENO = {
     "criterio": "lectura_de_frontmatter",
     "senal": 'bucle por las líneas del bloque que corta en ":"',
-    "dueño": "vault/kernel/frontmatter_parsing.py:cargar_bloque_tolerante",
+    "dueño": rutas.cita_repo(
+        rutas.VAULT, "kernel/frontmatter_parsing.py:cargar_bloque_tolerante"),
 }
 
 
