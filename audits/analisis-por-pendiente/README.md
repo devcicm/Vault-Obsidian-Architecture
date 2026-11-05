@@ -4,6 +4,16 @@ Lo que se aparta de la rama viva porque **no está en uso**, con la evidencia de
 por qué. Nada se borra sin dejar su rastro: lo que está aquí se puede restaurar
 (o volver a integrar) cuando alguien lo revise.
 
+## Documentos generados (no se editan a mano)
+
+| Documento | Instrumento | Qué mide |
+|---|---|---|
+| [`DARK-DATA-2026-11-05.md`](DARK-DATA-2026-11-05.md) | `generar_dark_data.py` | El barrido de **todo** el repo versionado: qué está vivo, qué está declarado por un contrato, qué es derivado y qué está muerto (y los "casi", con su riesgo). |
+| [`../reestructura/CORAZON-V41.26.md`](../reestructura/CORAZON-V41.26.md) | `../reestructura/generar_corazon.py` | El corazón de v41.26 por fan-in (el umbral del propio estándar), las tres capas, la tabla de fachadas → dueño y la huella viva de cada generación de refactor. |
+
+Se regeneran con `python audits/analisis-por-pendiente/generar_dark_data.py` y
+`python audits/reestructura/generar_corazon.py`.
+
 ## 1. `stash-product-readiness-b306719.patch`
 
 El contenido de la rama remota `archivo/stash-product-readiness-b306719`, que
