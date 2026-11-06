@@ -55,6 +55,17 @@ def _numero(version: str) -> tuple:
     return tuple(int(x) for x in version.lstrip("v").split("."))
 
 
+def _exigir(condicion: bool, mensaje: str) -> None:
+    """Validación del release que sobrevive a `python -O`.
+
+    Un `assert` desaparece con `-O` y el release se publicaría sin comprobar
+    sus cuatro sitios de versión, en silencio. Se conserva `AssertionError`
+    para no cambiar lo que ve quien llama.
+    """
+    if not condicion:
+        raise AssertionError(mensaje)
+
+
 def _vieja_efectiva(raiz: Path) -> str:
     """La versión corriente del repo OBJETIVO, leída de su version.py.
 
@@ -288,7 +299,7 @@ def main() -> int:
     p = raiz / "vault" / "kernel" / "version.py"
     s = p.read_text(encoding="utf-8")
     anciano = f'CURRENT_VERSION = "{vieja}"'
-    assert anciano in s, "version.py no casa con CURRENT_VERSION importada"
+    _exigir(anciano in s, "version.py no casa con CURRENT_VERSION importada")
     _escribir(p, s.replace(anciano,
                            f'CURRENT_VERSION = "{nueva}"', 1))
 
@@ -296,19 +307,19 @@ def main() -> int:
     num_nueva, num_vieja = nueva.lstrip("v"), vieja.lstrip("v")
     p = raiz / "pyproject.toml"
     s = p.read_text(encoding="utf-8")
-    assert f'version = "{num_vieja}"' in s, "pyproject sin la versión vieja"
+    _exigir(f'version = "{num_vieja}"' in s, "pyproject sin la versión vieja")
     _escribir(p, s.replace(f'version = "{num_vieja}"',
                            f'version = "{num_nueva}"', 1))
 
     p = raiz / "README.md"
     s = p.read_text(encoding="utf-8")
-    assert f"version-{vieja}-blue" in s, "badge sin la versión vieja"
+    _exigir(f"version-{vieja}-blue" in s, "badge sin la versión vieja")
     _escribir(p, s.replace(f"version-{vieja}-blue",
                            f"version-{nueva}-blue", 1))
 
     p = raiz / "cli" / "README.md"
     s = p.read_text(encoding="utf-8")
-    assert f"**{vieja} · " in s, "banner de cli/README sin la versión vieja"
+    _exigir(f"**{vieja} · " in s, "banner de cli/README sin la versión vieja")
     _escribir(p, s.replace(f"**{vieja} · ", f"**{nueva} · ", 1))
 
     # 3. el manifiesto: banner, fila y changelog

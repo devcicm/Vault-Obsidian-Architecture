@@ -2949,7 +2949,8 @@ def vault_audit(
                 "priority": "medium",
                 "category": "missing_agent",
                 "description": f"{len(missing_agent)} notas sin campo 'agent' en frontmatter. Primeras: {agent_paths}",
-                "command": "Agregar agent: deepseek (o el agente correspondiente) al frontmatter de cada nota faltante",
+                "command": "Agregar el campo `agent` al frontmatter de cada nota "
+                           "faltante (VAULT_AGENT o el agente que corresponda)",
                 "norm": "AP-16",
             }
         )

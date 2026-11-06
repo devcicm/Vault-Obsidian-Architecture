@@ -481,7 +481,10 @@ def grafo() -> Dict[str, Dict[str, Set[str]]]:
         # Un alias de la deuda #12 no tiene imports propios: sus aristas son las
         # de su dueño. Leer `p` lo dejaba con fan-out 0 (AP-44).
         arbol = _arbol(codigo_de(p), MODULOS_LOCALES)
-        assert arbol is not None  # MODULOS_LOCALES levanta, nunca devuelve None
+        if arbol is None:
+            # `MODULOS_LOCALES` levanta; si alguna vez devolviera None, un
+            # `assert` lo taparía con `-O` y el fan-out saldría vacío.
+            raise AssertionError(f"sin AST para {p.name} tras resolver el alias")
         cabecera, diferidos = _nombres_del_arbol(arbol, MODULOS_LOCALES)
         top[p.stem] = {n for n in cabecera if n in mods and n != p.stem}
         dif[p.stem] = {n for n in diferidos if n in mods and n != p.stem}

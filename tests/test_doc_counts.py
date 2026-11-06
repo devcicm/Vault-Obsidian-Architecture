@@ -354,3 +354,22 @@ def test_herramientas_en_sentido_generico_no_casa(tmp_path, monkeypatch):
 
     r = vdc.scan(docs=["FAKE.md"], include_slow=False)
     assert r["mismatches"] == []
+
+
+def test_el_documento_de_producto_esta_vigilado():
+    """La cifra que un consumidor lee para decidir si instala no vive fuera
+    del guard (D-05)."""
+    assert "docs/product/overview.md" in vdc.WATCHED_DOCS
+
+
+def test_las_dos_formas_de_la_cifra_mcp_se_miden():
+    """«expone N de las» y «expone N tools» son la misma afirmación.
+
+    El documento de producto usa la forma corta; con el patrón anterior la
+    cifra quedaba fuera y envejeció once versiones.
+    """
+    hecho = next(f for f in vdc.COUNTED_FACTS
+                 if f["id"] == "tools_mcp_expuestas")
+    assert any(re.search(p, "expone 116 tools") for p in hecho["patterns"])
+    js = next(f for f in vdc.COUNTED_FACTS if f["id"] == "tools_js_native")
+    assert any(re.search(p, "JS-native para 9 tools") for p in js["patterns"])

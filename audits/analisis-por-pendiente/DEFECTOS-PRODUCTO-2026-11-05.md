@@ -15,7 +15,6 @@ El criterio es el de **quien consume** (regla 7): no «¿está declarado?», sin
 | D-05 | media | `docs/product/overview.md` publica cifras que ya no son ciertas, y el guard de cifras no las ve. |
 | D-06 | media | En Windows, `os.chmod(0o600)` sobre el token no protege nada: solo toca el bit de solo-lectura. |
 | D-07 | baja | Siete `assert` en código de producto desaparecen con `python -O`, incluidos los de `vault_release`. |
-| D-08 | baja | El catálogo declara AP-04 con `enforcement: audit` y ninguna tool la mide; el plano la cuenta como descubierta. |
 
 ### D-01 — El token del servicio de tokens se commitea: vive en el vault y no está en la lista de ignorados.
 
@@ -59,11 +58,7 @@ El criterio es el de **quien consume** (regla 7): no «¿está declarado?», sin
 - **Efecto en el consumidor**: Un release lanzado con `-O` se publica sin validar sus cuatro sitios de versión, en silencio.
 - **Arreglo**: Cambiar los `assert` de rutas de producto por `if … raise`.
 
-### D-08 — El catálogo declara AP-04 con `enforcement: audit` y ninguna tool la mide; el plano la cuenta como descubierta.
-
-- **Evidencia**: `NORM_CATALOG` (AP-04: `tools_enforcing=[]`, `tools_detecting=[]`, sin `cobertura_parcial`); `vault_blueprint.py:438` la lista como «sin detector».
-- **Efecto en el consumidor**: Dos registros dicen cosas distintas de la misma norma. Quien lea el catálogo cree que hay un audit; no lo hay.
-- **Arreglo**: Implementar la señal decidible o declararla `cobertura_descubierta` en el catálogo. Ver C-07.
+**Retirado al medir:** D-08 decía que AP-04 declaraba `enforcement: audit` sin tool ni cobertura. Falso: el catálogo **sí** declara el hueco en `cobertura_descubierta`; este instrumento solo leía `cobertura_parcial`. Era el instrumento, no el catálogo.
 
 ## 2. La medición del vault (lo que acaba dentro de git)
 
@@ -91,12 +86,10 @@ Volátiles **sin cubrir** por el dueño: ninguno.
 
 | Afirmación | Dice el documento | Dice el registro | ¿Coincide? |
 |---|---:|---:|---|
-| tools expuestas por MCP | 116 | 98 | **no** |
-| tools JS-native | 9 | 2 | **no** |
-| versión del estándar | v40.34 | v41.26 | **no** |
-| toolkit publicado como «próxima» | 41.0 | v41.26 | **no** |
+| tools expuestas por MCP | 98 | 98 | sí |
+| tools JS-native | 2 | 2 | sí |
 
-El patrón de AP-47 para esa cifra es `expone\s+(\d+)\s+de las`; sobre la frase del documento casa: **no**.
+El patrón de AP-47 para esa cifra es `expone\s+(\d+)\s+de las` o `expone\s+(\d+)\s+tools`; sobre la frase del documento casa: sí.
 
 ## 4. Gaps negativos (lo que ninguna puerta mide)
 
@@ -114,7 +107,13 @@ Están declaradas: el catálogo no las da por cubiertas, así que son deuda hone
 
 ### 4.2 Normas con enforcement medible y sin tool
 
-- **AP-04** (audit, high) — Features aspiracionales documentadas como implementadas: sin `cobertura_parcial` declarada.
+Ninguna: la única que no tiene tool lo declara por escrito. Un hueco declarado no es deuda nueva — es lo que el catálogo existe para no esconder.
+
+### 4.2b Huecos declarados como descubiertos
+
+No los mide nadie **y lo dicen**. Se listan porque son el mapa de lo que el estándar no sabe ver todavía.
+
+- **AP-04** (audit) — Features aspiracionales documentadas como implementadas: Ninguna tool la detecta. `vault_drift_detect` compara hashes y git; distinguir «lo describe en presente» de «ya está deployado» exige leer el cuerpo de la nota contra el estado real, que hoy no hace nadie. Probado en v41.3 al reformular AP-…
 
 ### 4.3 Carpetas con `.py` que ningún barrido de código recorre
 
@@ -144,13 +143,11 @@ El test `tests/test_vcs_capa_de_git.py` fija los patrones de la política (`*`, 
 | Clase | Sitios |
 |---|---:|
 | `chmod` con permiso `0600`/`0700` | 1 en 1 ficheros |
-| `assert` en código de producto | 7 en 4 ficheros |
+| `assert` en código de producto | 0 en 0 ficheros |
 | `utcnow()`/`utcfromtimestamp` (deprecados desde 3.12) | 115 en 56 ficheros |
-| Remediación con un modelo hardcodeado | 1 en 1 ficheros |
+| Remediación con un modelo hardcodeado | 0 en 0 ficheros |
 
 - **chmod**: `scripts/vault_token_service.py`.
-- **assert**: `scripts/vault_grafo_import.py`, `scripts/vault_release.py`, `vault/product_cli.py`, `vault/gobernanza/controles.py`.
-- **modelo hardcodeado**: `scripts/vault_audit.py`.
 
 ## 6. Candidatos
 
@@ -162,7 +159,6 @@ El test `tests/test_vcs_capa_de_git.py` fija los patrones de la política (`*`, 
 | C-04 | Quitar el nombre propio de la remediación de AP-16 y derivarlo de `VAULT_AGENT`. | Dos líneas. | El producto deja de recomendar el modelo del autor. |
 | C-05 | Cubrir `docs/product/` con `vault_doc_counts` (patrón `expone N tools`) o archivarlo. | Un patrón y, si se archiva, mover un fichero. | Las cifras del documento de producto se regeneran o dejan de publicarse. |
 | C-06 | Credencial con ACL real en Windows o fuera del vault. | Depende de la vía; la más barata es `%LOCALAPPDATA%`. | La promesa de SP-04 pasa a ser cierta en las dos plataformas. |
-| C-07 | AP-04: implementar la señal o declararla descubierta en el catálogo. | Catálogo + test; implementarla es una heurística de prosa. | Un solo registro sobre lo que se mide, que es lo que AP-55 persigue. |
 | C-08 | Barrer `vault_toolkit/` en clones y criterios, ahora que los adaptadores son generados. | Excluir `operations/` (generado, idéntico por construcción) y medir `loading.py` y el `__init__`. | La capa de despacho del producto entra en el barrido sin llenar la baseline. |
 
 ## 7. Estado tras el arreglo
@@ -174,6 +170,10 @@ Una deuda que se salda no se borra: pasa a `saldada` con la evidencia de que est
 | D-01 | saldado | `IGNORADOS_POR_RIESGO` cubre la credencial |
 | D-02 | saldado | `.trash/` cubierto y `.mcp-trace-log.json` cubierto |
 | Notas | sí | la política deja versionar `*.md` y el propio `.gitignore` |
+| D-04 | saldado | la remediación de AP-16 no nombra un modelo concreto |
+| D-05 | saldado | `docs/product/overview.md` entra en `WATCHED_DOCS` y sus cifras se contrastan con el registro |
+| D-06 | saldado | la credencial se restringe con ACL real en Windows (`icacls`) y con `chmod 0600` en POSIX |
+| D-07 | saldado | 0 `assert` en código de producto |
 | D-03 | saldado | `commit_de_operacion` repara el ignore en cada escritura y `vault_init` usa el mismo dueño. Los ficheros ya rastreados se dejan en la traza (`rastreados_ignorados`) y retirarlos del índice es una decisión del dueño, no un efecto colateral. |
 
 El vault medido ya no rastrea volátiles: tiene su `.gitignore` y su índice solo lleva notas. El `HEAD` de vuelta de esa limpieza está en el registro del vault.

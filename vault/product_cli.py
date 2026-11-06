@@ -334,7 +334,11 @@ def cmd_run(args: argparse.Namespace) -> int:
         _emit(error, stream=sys.stderr)
         return EXIT_PREFLIGHT_FAILED
 
-    assert result.estado == INSTALLED and result.module is not None
+    if not (result.estado == INSTALLED and result.module is not None):
+        # El preflight de arriba ya devolvió; esto es el invariante que sostiene
+        # el resto. Con `-O` el `assert` desaparecía y el fallo salía después
+        # como un `AttributeError` sin nombre.
+        raise AssertionError("el resolutor no devolvió una operación instalada")
     # AP-57/42: qué tool necesita `--json` tiene dueño —el catálogo lo
     # publica como `json_flag`— y el servidor MCP lo cumple. `vault run` es
     # el mismo contrato por otra vía: es la CLI que la guía manda a leer

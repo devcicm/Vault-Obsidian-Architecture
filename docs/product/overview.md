@@ -65,11 +65,11 @@ recuperarlos después, y una persona puede revisar su contenido y procedencia.
 
 | Perspectiva | Promesa |
 |-------------|---------|
-| **Técnica** | Servidor MCP monolítico, cero dependencias npm, expone 116 tools con guard chain de validación (secret scan, bracket balance, Mermaid syntax, content gate). |
+| **Técnica** | Servidor MCP monolítico, cero dependencias npm, expone 98 tools con guard chain de validación (secret scan, bracket balance, Mermaid syntax, content gate). |
 | **De producto** | Agentes LLM en tiempo real con validación semántica profunda. |
 | **Simple** | Cualquier IA compatible usa las tools sin configuración. |
 
-**Scope IN:** `tools/call`, `tools/list`; JS-native para 9 tools; validación semántica; multi-vault discovery; resources `vault://`.
+**Scope IN:** `tools/call`, `tools/list`; JS-native para 2 tools; validación semántica; multi-vault discovery; resources `vault://`.
 
 **Scope OUT:** Scheduling de olas; verify-integrity; batch execution.
 
@@ -78,8 +78,8 @@ recuperarlos después, y una persona puede revisar su contenido y procedencia.
 ## Versionado independiente
 
 ```
-Estándar: v40.34 (solo contratos documentales)
-Toolkit:  41.0 (próxima release con installed operations)
+Estándar: el vigente — `vault_version.CURRENT_VERSION` (ver el manifiesto)
+Toolkit:  el publicado en la misma release (installed operations)
 CLI:       v1.0
 MCP:       v1.0
 ```

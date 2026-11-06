@@ -33,7 +33,10 @@ __all__ = [
 
 def _check(control: str, estado: str, detalle: str | None,
            hallazgos: int = 0) -> Dict[str, Any]:
-    assert estado in ESTADOS, estado
+    if not (estado in ESTADOS):
+        # Un `assert` desaparecía con `python -O` y el control se publicaba con
+        # un estado que no existe, indistinguible de uno legítimo (AP-51).
+        raise AssertionError(f"estado de control desconocido: {estado!r}")
     return {"control": control, "estado": estado, "detalle": detalle,
             "hallazgos": int(hallazgos)}
 

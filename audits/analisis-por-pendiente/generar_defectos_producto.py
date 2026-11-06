@@ -230,18 +230,26 @@ def patrones_de_doc_counts() -> Dict[str, Any]:
 def medir_catalogo() -> Dict[str, Any]:
     from vault_norms_catalog import NORM_CATALOG
 
+    con_hueco_declarado = [n for n in NORM_CATALOG
+                           if str(n.get("cobertura_descubierta") or "").strip()]
+    declaradas = {n["code"] for n in con_hueco_declarado}
     sin_tool = [{"code": n["code"], "enforcement": n["enforcement"],
                  "severity": n["severity"], "name": n["name"],
                  "cobertura": n.get("cobertura_parcial")}
                 for n in NORM_CATALOG
                 if n["enforcement"] in ("guard", "audit", "guard+audit")
-                and not (n.get("tools_enforcing") or n.get("tools_detecting"))]
+                and not (n.get("tools_enforcing") or n.get("tools_detecting"))
+                and n["code"] not in declaradas]
+    descubiertas = [{"code": n["code"], "enforcement": n["enforcement"],
+                     "name": n["name"],
+                     "cobertura": n["cobertura_descubierta"]}
+                    for n in con_hueco_declarado]
     parciales = [{"code": n["code"], "enforcement": n["enforcement"],
                   "name": n["name"], "cobertura": n["cobertura_parcial"]}
                  for n in NORM_CATALOG
                  if str(n.get("cobertura_parcial") or "").strip()]
     return {"normas": len(NORM_CATALOG), "sin_tool": sin_tool,
-            "parciales": parciales}
+            "parciales": parciales, "descubiertas": descubiertas}
 
 
 # ── 4. Huellas estáticas de defecto ─────────────────────────────────────────
@@ -312,7 +320,16 @@ def medir_estado_del_arreglo() -> Dict[str, Any]:
     init = (REPO / "scripts" / "vault_init.py").read_text(
         encoding="utf-8", errors="replace")
     politica = list(IGNORADOS_EN_GIT) + list(IGNORADOS_POR_RIESGO)
+    audit = (REPO / "scripts" / "vault_audit.py").read_text(
+        encoding="utf-8", errors="replace")
+    token = (REPO / "scripts" / "vault_token_service.py").read_text(
+        encoding="utf-8", errors="replace")
+    import vault_doc_counts as _vdc
     return {
+        "agente_generico": "deepseek" not in audit,
+        "doc_producto_vigilado": any("product/overview.md" in d
+                                     for d in _vdc.WATCHED_DOCS),
+        "acl_windows": "_restringir_a_la_persona" in token,
         "token_ignorado": _ignorado(politica, "00_System/token-usage/token-service.token"),
         "trash_ignorado": _ignorado(politica, "00_System/.trash/x.md.bak"),
         "mcp_ignorado": _ignorado(politica, "00_System/.mcp-trace-log.json"),
@@ -475,19 +492,6 @@ DEFECTOS = [
                   "cuatro sitios de versión, en silencio.",
         "arreglo": "Cambiar los `assert` de rutas de producto por `if … raise`.",
     },
-    {
-        "id": "D-08",
-        "sev": "baja",
-        "que": "El catálogo declara AP-04 con `enforcement: audit` y ninguna "
-               "tool la mide; el plano la cuenta como descubierta.",
-        "evidencia": "`NORM_CATALOG` (AP-04: `tools_enforcing=[]`, "
-                     "`tools_detecting=[]`, sin `cobertura_parcial`); "
-                     "`vault_blueprint.py:438` la lista como «sin detector».",
-        "efecto": "Dos registros dicen cosas distintas de la misma norma. Quien "
-                  "lea el catálogo cree que hay un audit; no lo hay.",
-        "arreglo": "Implementar la señal decidible o declararla "
-                   "`cobertura_descubierta` en el catálogo. Ver C-07.",
-    },
 ]
 
 
@@ -521,11 +525,6 @@ CANDIDATOS = [
      "coste": "Depende de la vía; la más barata es `%LOCALAPPDATA%`.",
      "beneficio": "La promesa de SP-04 pasa a ser cierta en las dos "
                   "plataformas."},
-    {"id": "C-07", "que": "AP-04: implementar la señal o declararla "
-                          "descubierta en el catálogo.",
-     "coste": "Catálogo + test; implementarla es una heurística de prosa.",
-     "beneficio": "Un solo registro sobre lo que se mide, que es lo que AP-55 "
-                  "persigue."},
     {"id": "C-08", "que": "Barrer `vault_toolkit/` en clones y criterios, ahora "
                           "que los adaptadores son generados.",
      "coste": "Excluir `operations/` (generado, idéntico por construcción) y "
@@ -577,6 +576,11 @@ def markdown() -> str:
         an(f"- **Efecto en el consumidor**: {d['efecto']}")
         an(f"- **Arreglo**: {d['arreglo']}")
         an()
+    an("**Retirado al medir:** D-08 decía que AP-04 declaraba "
+       "`enforcement: audit` sin tool ni cobertura. Falso: el catálogo **sí** "
+       "declara el hueco en `cobertura_descubierta`; este instrumento solo "
+       "leía `cobertura_parcial`. Era el instrumento, no el catálogo.")
+    an()
 
     # 2. La medición del vault
     an("## 2. La medición del vault (lo que acaba dentro de git)")
@@ -645,14 +649,29 @@ def markdown() -> str:
         recorte = texto[:220] + ("…" if len(texto) > 220 else "")
         an(f"- **{n['code']}** ({n['enforcement']}) — {n['name']}: {recorte}")
     an()
+    an("### 4.2 Normas con enforcement medible y sin tool")
+    an()
     if catalogo["sin_tool"]:
-        an("### 4.2 Normas con enforcement medible y sin tool")
-        an()
         for n in catalogo["sin_tool"]:
-            cobertura = ("sin `cobertura_parcial` declarada"
+            cobertura = ("sin cobertura declarada"
                          if not n["cobertura"] else "con cobertura declarada")
             an(f"- **{n['code']}** ({n['enforcement']}, {n['severity']}) — "
                f"{n['name']}: {cobertura}.")
+    else:
+        an("Ninguna: la única que no tiene tool lo declara por escrito. Un "
+           "hueco declarado no es deuda nueva — es lo que el catálogo existe "
+           "para no esconder.")
+    an()
+    if catalogo["descubiertas"]:
+        an("### 4.2b Huecos declarados como descubiertos")
+        an()
+        an("No los mide nadie **y lo dicen**. Se listan porque son el mapa de "
+           "lo que el estándar no sabe ver todavía.")
+        an()
+        for n in catalogo["descubiertas"]:
+            texto = " ".join(str(n["cobertura"]).split())
+            an(f"- **{n['code']}** ({n['enforcement']}) — {n['name']}: "
+               + texto[:240] + ("…" if len(texto) > 240 else ""))
         an()
     an("### 4.3 Carpetas con `.py` que ningún barrido de código recorre")
     an()
@@ -764,6 +783,16 @@ def markdown() -> str:
     medido = versionado.get("medicion_vault") or {}
     d03_datos = bool(medido.get("es_repo") and medido.get("tiene_gitignore")
                      and medido.get("volatiles_total", 1) == 0)
+    an(f"| D-04 | {'saldado' if estado['agente_generico'] else 'abierto'} | "
+       "la remediación de AP-16 no nombra un modelo concreto |")
+    an(f"| D-05 | {'saldado' if estado['doc_producto_vigilado'] else 'abierto'} | "
+       "`docs/product/overview.md` entra en `WATCHED_DOCS` y sus cifras se "
+       "contrastan con el registro |")
+    an(f"| D-06 | {'saldado' if estado['acl_windows'] else 'abierto'} | "
+       "la credencial se restringe con ACL real en Windows (`icacls`) y con "
+       "`chmod 0600` en POSIX |")
+    an(f"| D-07 | {'saldado' if estaticos['asserts']['veces'] == 0 else 'abierto'} | "
+       f"{estaticos['asserts']['veces']} `assert` en código de producto |")
     an(f"| D-03 | "
        f"{'saldado' if d03_datos else 'mecanismo saldado' if (estado['repara_en_commit'] and estado['repara_en_init']) else 'abierto'} | "
        "`commit_de_operacion` "

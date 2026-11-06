@@ -269,3 +269,36 @@ def test_el_bump_pasa_con_contraste_vigente(repo_bump, tmp_path):  # noqa
         timeout=180, cwd=str(repo_bump))
     env = _salida(r)
     assert env.get("ok") and env.get("escrito"), env
+
+
+def test_las_validaciones_de_producto_no_son_asserts():
+    """Un `assert` desaparece con `-O` y el release se publicaría sin validar.
+
+    Se mide en el AST, que es donde vive la propiedad: si no hay `assert`,
+    optimizar no puede quitarlo. El intérprete optimizado ejecutando de verdad
+    lo cubre la suite de la CI, que no corre con `-O` — esto sí se puede medir
+    desde cualquier versión y sin lanzar un hijo.
+    """
+    import ast
+    import inspect
+
+    import vault.product_cli
+    import vault.gobernanza.controles as controles
+    import vault_grafo_import
+    import vault_release
+
+    # `inspect.getsource` sigue al módulo importado: en `scripts/` no hay
+    # rutas escritas a mano y el alias se mide por su dueño (m250).
+    for modulo, etiqueta in (
+        (vault_release, "vault_release"),
+        (vault_grafo_import, "vault_grafo_import"),
+        (vault.product_cli, "vault/product_cli"),
+        (controles, "vault/gobernanza/controles"),
+    ):
+        arbol = ast.parse(inspect.getsource(modulo))
+        asserts = [n.lineno for n in ast.walk(arbol)
+                   if isinstance(n, ast.Assert)]
+        assert not asserts, f"{etiqueta} aún usa assert en {asserts}"
+
+    with pytest.raises(AssertionError):
+        vault_release._exigir(False, "mensaje")

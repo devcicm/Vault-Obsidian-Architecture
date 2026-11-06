@@ -302,17 +302,23 @@ COUNTED_FACTS: List[Dict] = [
         "description": "Tools del catálogo con backend nativo en el servidor MCP",
         "value": count_tools_js_native,
         # «~10 tools rápidas en JavaScript puro» con dos en `NATIVE_JS_TOOLS` (A-19).
-        "patterns": [r"(\d+) JS-native", r"~?(\d+) tools rápidas en JavaScript"],
+        # v41.27: `docs/product/overview.md` dice «JS-native para 9 tools» y el
+        # patrón solo miraba la forma «9 JS-native»; la cifra llevaba versiones
+        # sin que nadie la comparara.
+        "patterns": [r"(\d+) JS-native", r"JS-native para\s+(\d+)",
+                     r"~?(\d+) tools rápidas en JavaScript"],
     },
     {
         # B-04: `scripts/README.md` dice «expone 98 de las 129 tools activas
         # […] (las otras 31 se ejecutan por CLI o en el checkout)». El total
         # tenía patrón y las dos partes no, así que la frase podía dejar de
         # sumar sin que nadie lo viera. Estrechos a propósito, como el resto.
+        # v41.27: la forma corta «expone 116 tools» de `docs/product/` no
+        # casaba con «de las» y quedaba fuera del guard; ahora se mide también.
         "id": "tools_mcp_expuestas",
         "description": "Tools del catálogo que el servidor MCP sirve en tools/list",
         "value": count_tools_mcp_expuestas,
-        "patterns": [r"expone\s+(\d+)\s+de las"],
+        "patterns": [r"expone\s+(\d+)\s+de las", r"expone\s+(\d+)\s+tools"],
     },
     {
         "id": "tools_mcp_no_expuestas",
@@ -478,6 +484,7 @@ WATCHED_DOCS = [
     cita_repo(rutas.DOCS, "SKILLS.md"),
     cita_repo(rutas.MCP, "PLAN.md"),
     cita_repo(rutas.SCRIPTS, "README.md"),
+    cita_repo(rutas.DOCS, "product/overview.md"),
     "vault-obsidian-architecture.md",
 ]
 

@@ -416,3 +416,20 @@ def test_sp04_cubre_el_servicio_de_tokens():
     norma = next(n for n in vault_norms_catalog.NORM_CATALOG if n["code"] == "SP-04")
     assert "vault_token_service" in norma["description"]
     assert "vault_token_service" in norma["tools_enforcing"]
+
+
+def test_la_credencial_queda_solo_para_su_dueno(tmp_path):
+    """`chmod` no toca las ACL en Windows: la restricción tiene que ser real.
+
+    En POSIX el resultado se mide (0600); en Windows se comprueba que no falla
+    y que la credencial sigue legible por quien la creó.
+    """
+    import vault_token_service as vts
+
+    fichero = tmp_path / "token-service.token"
+    fichero.write_text("secreto", encoding="utf-8")
+    resultado = vts._restringir_a_la_persona(fichero)
+    assert resultado["aplicado"] is True, resultado
+    assert fichero.read_text(encoding="utf-8") == "secreto"
+    if os.name != "nt":
+        assert (fichero.stat().st_mode & 0o777) == 0o600

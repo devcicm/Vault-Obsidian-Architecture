@@ -2,11 +2,13 @@
 """Local token usage service for vault documentation flows."""
 
 import argparse
+import getpass
 import hmac
 import json
 import os
 import re
 import secrets
+import subprocess
 import sys
 import threading
 import time
@@ -444,10 +446,13 @@ def serve(host: str, port: int) -> int:
     _port_file().write_text(str(server.server_address[1]), encoding="utf-8")
     if generado:
         _token_file().write_text(server.token, encoding="utf-8")
-        try:
-            os.chmod(_token_file(), 0o600)
-        except OSError:
-            pass
+        restriccion = _restringir_a_la_persona(_token_file())
+        if not restriccion.get("aplicado"):
+            # Al stderr: stdout es el protocolo. Se dice lo que no se pudo
+            # hacer en vez de declarar una protección que no existe (AP-51).
+            print("[vault_token_service] aviso: no se pudieron restringir los "
+                  f"permisos del token: {restriccion.get('motivo')}",
+                  file=sys.stderr, flush=True)
     t_ficheros = time.monotonic()
     # Los tiempos de arranque van al stderr: NUNCA al stdout (que es el
     # protocolo) y NUNCA con el token. Si el servicio tarda en abrir el
@@ -471,6 +476,39 @@ def serve(host: str, port: int) -> int:
             except OSError:
                 pass
     return 0
+
+
+def _restringir_a_la_persona(ruta: Path) -> Dict[str, Any]:
+    """Deja la credencial legible solo por quien la generó, en cada plataforma.
+
+    En POSIX, `chmod 0600` quita grupo y otros. En Windows `os.chmod` **solo
+    alterna el bit de solo-lectura y no toca las ACL**, así que la promesa de
+    dejar la credencial «solo para quien puede leer el vault» era declarativa:
+    aquí se quita la herencia y se concede solo al usuario actual con
+    `icacls`. Best-effort —un fallo no tumba el servicio— pero el resultado se
+    publica en el arranque en vez de fingir que protegió.
+    """
+    try:
+        if os.name == "nt":
+            # `getpass.getuser()` y no `os.environ["USERNAME"]`: toda variable
+            # de entorno que el estándar lea se declara antes en el registro
+            # (AP-49), y el nombre de la persona no es una variable del estándar.
+            usuario = getpass.getuser()
+            if not usuario:
+                return {"aplicado": False, "motivo": "sin USERNAME"}
+            r = subprocess.run(
+                ["icacls", str(ruta), "/inheritance:r",
+                 "/grant:r", f"{usuario}:F"],
+                capture_output=True, text=True, encoding="utf-8",
+                errors="replace", timeout=10)
+            if r.returncode != 0:
+                return {"aplicado": False,
+                        "motivo": (r.stderr or r.stdout).strip()[:200]}
+            return {"aplicado": True, "como": "icacls: solo el usuario actual"}
+        os.chmod(ruta, 0o600)
+        return {"aplicado": True, "como": "chmod 0600"}
+    except (OSError, subprocess.SubprocessError) as exc:
+        return {"aplicado": False, "motivo": str(exc)[:200]}
 
 
 def main() -> int:

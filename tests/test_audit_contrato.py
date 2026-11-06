@@ -7,11 +7,9 @@ que lee el audit, la daba por sanada. `missingContract` es la lectura del dueño
 (`vault_contrato_nota`), con el mismo parser que `vault_validate` (AP-44).
 """
 
-from pathlib import Path
+import inspect
 
 import pytest
-
-REPO_ROOT = Path(__file__).resolve().parent.parent
 
 import vault_audit  # noqa: E402
 import vault_io  # noqa: E402
@@ -40,6 +38,18 @@ def test_una_nota_con_type_y_sin_id_falta_al_contrato(vault):
 
     entrada = _contrato(vault)["07_Knowledge/jwt.md"]
     assert "id" in entrada["missing"]
+
+
+def test_la_remediacion_de_ap16_no_nombra_un_modelo():
+    """El consejo que recibe un consumidor no lleva el modelo del autor (D-04).
+
+    Es una afirmación textual —vive en la cadena que se publica en
+    `nextActions`—, así que se mide donde vive.
+    """
+    # Fuente del módulo importado, no ruta escrita a mano (m250).
+    fuente = inspect.getsource(vault_audit)
+    assert "agent: deepseek" not in fuente
+    assert "VAULT_AGENT" in fuente
 
 
 def test_una_nota_de_sistema_no_debe_lo_que_su_clase_no_exige(vault):
