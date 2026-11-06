@@ -68,6 +68,8 @@ def test_el_vault_ignora_las_versiones_las_copias_y_la_traza(vault_con_repo):
     assert "*" in lineas
     assert "!*.md" in lineas
     assert "!.gitignore" in lineas
+    # La única excepción no-`.md`: la bitácora de autoría (dato, no derivado).
+    assert "!00_System/.change-log.json" in lineas
     # Las carpetas que contienen `.md` que no son notas van detrás.
     assert lineas.index(".history/") > lineas.index("!*.md")
     assert lineas.index("vault-backups/") > lineas.index("!*.md")
@@ -75,11 +77,15 @@ def test_el_vault_ignora_las_versiones_las_copias_y_la_traza(vault_con_repo):
 
 
 def test_el_repo_del_vault_solo_versiona_notas(vault_con_repo):
-    """La regla del dueño, medida en el índice: solo `.md` y el `.gitignore`.
+    """La regla del dueño, medida en el índice: notas, la política y la
+    bitácora de autoría.
 
     Un vault es memoria documental: su repo versiona notas. El estado del
     sistema (`graph.json`, `hash-index.json`, `tool-spec.json`, trazas,
     contadores) se regenera y no es memoria; los `.gitkeep` son andamiaje.
+    La única excepción es `00_System/.change-log.json`: F8 (no-repudio) lo
+    exige por nota y `vault_impact` lo lee como dato — con la política de
+    `solo .md` se perdería del repo y no hay de dónde regenerarla.
     """
     cuerpo = vault_con_repo / "cuerpo.md"
     cuerpo.write_text(CUERPO, encoding="utf-8")
@@ -91,9 +97,12 @@ def test_el_repo_del_vault_solo_versiona_notas(vault_con_repo):
     versionados = [l for l in _git(vault_con_repo, "ls-files").splitlines()
                    if l.strip()]
     intrusos = [f for f in versionados
-                if not f.endswith(".md") and f != ".gitignore"]
+                if not f.endswith(".md") and f != ".gitignore"
+                and f != "00_System/.change-log.json"]
     assert not intrusos, f"el repo versiona algo que no es una nota: {intrusos}"
     assert any(f.endswith("nota-versionada.md") for f in versionados), versionados
+    assert "00_System/.change-log.json" in versionados, (
+        "la bitácora de autoría es dato del vault y tiene que viajar con él")
 
     # Una copia de versión existe en disco y no se versiona: se fabrica una y
     # se comprueba tras el commit de la segunda escritura.
@@ -270,3 +279,79 @@ def test_un_vault_sin_repo_no_se_toca(tmp_path):
     sobre = json.loads(r.stdout.strip().splitlines()[-1])
     assert sobre["ok"] is False
     assert sobre["error_code"] == "NO_HAY_REPO"
+
+
+def test_reparar_indice_saca_lo_ignorado_del_index_y_nada_del_disco(vault_con_repo):
+    """El caso que disparó C-03: un vault anterior a la capa de git.
+
+    El self-healing añade el `.gitignore`, pero eso no saca nada del índice:
+    lo volátil sigue versionado hacia atrás. La reparación es una decisión
+    explícita: `--reparar-indice` retira del índice lo que la política
+    ignora (`git rm --cached`, el árbol de trabajo no se toca) y lo deja en
+    un commit propio con su cifra.
+    """
+    from vault.kernel.vcs import reparar_indice
+
+    historia = vault_con_repo / ".history"
+    historia.mkdir()
+    copia = historia / "07_knowledge__nota__2026-01-01T00-00-00.md"
+    copia.write_text("# version vieja\n", encoding="utf-8")
+    estado = vault_con_repo / "00_System" / "estado-volatil.json"
+    estado.write_text("{}", encoding="utf-8")
+    # Estado de esa generación de vaults: el repositorio ya rastrearía lo volátil.
+    _git(vault_con_repo, "add", "-f", str(copia.relative_to(vault_con_repo)),
+         str(estado.relative_to(vault_con_repo)))
+    _git(vault_con_repo, "commit", "-m", "estado previo: lo volatil esta rastreado")
+    antes = [l for l in _git(vault_con_repo, "ls-files").splitlines() if l.strip()]
+    assert any(f.startswith(".history/") for f in antes), antes
+    assert "00_System/estado-volatil.json" in antes, antes
+
+    resultado = reparar_indice(vault_con_repo)
+    assert resultado["reparado"] is True, resultado
+    assert any(f.startswith(".history/") for f in resultado["destrackeados"])
+    assert "00_System/estado-volatil.json" in resultado["destrackeados"]
+    assert resultado["committed"] is True and resultado.get("sha"), resultado
+    assert "2 ficheros destrackeados" in resultado["mensaje"], resultado
+
+    # El árbol no se toca: los ficheros ignorados siguen en el disco.
+    assert copia.is_file(), "la reparación borró la copia de versión"
+    assert estado.is_file(), "la reparación borró el estado del sistema"
+
+    # El índice ya cumple la política y el commit de la reparación es visible.
+    despues = [l for l in _git(vault_con_repo, "ls-files").splitlines()
+               if l.strip()]
+    intrusos = [f for f in despues
+                if not f.endswith(".md") and f != ".gitignore"]
+    assert not intrusos, despues
+    mensajes = _git(vault_con_repo, "log", "--format=%s")
+    assert "reparacion del indice: 2 ficheros destrackeados" in mensajes
+
+
+def test_reparar_indice_es_idempotente_y_declara_cero(vault_con_repo):
+    """En un vault que cumple la política: `cero`, y ni un commit de más."""
+    from vault.kernel.vcs import reparar_indice
+
+    antes = len(_git(vault_con_repo, "log", "--format=%H").splitlines())
+    r = reparar_indice(vault_con_repo)
+    assert r.get("cero") is True, r
+    assert r["destrackeados"] == [] and "committed" not in r, r
+    despues = len(_git(vault_con_repo, "log", "--format=%H").splitlines())
+    assert despues == antes, "la reparación idempotente escribió un commit"
+
+
+def test_git_rm_sin_cached_sigue_prohibido(vault_con_repo):
+    """La autorización del `rm` es solo la forma que no toca el árbol.
+
+    La puerta de AP-68 ahora conoce el verbo, pero solo con `--cached`: un
+    `git rm` a secas borra del disco y no es una reparación del índice, es
+    borrar notas — decisión de la persona.
+    """
+    from vault.kernel.procesos_git import GitProhibido, ejecutar_git
+
+    with pytest.raises(GitProhibido):
+        ejecutar_git(vault_con_repo, ["rm", "x.md"])
+    # La forma autorizada pasa la puerta (el fallo de git por un fichero
+    # inexistente, si lo hubiera, es de git, no de la puerta).
+    p = ejecutar_git(vault_con_repo, ["rm", "--cached", "-q", "--", "x.md"])
+    assert p.returncode != 0  # git dice que no está en el índice; sin GitProhibido
+

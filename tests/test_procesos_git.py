@@ -67,13 +67,19 @@ def test_ap68_04_rechaza_un_argv_que_no_sea_lista():
 
 
 def test_ap68_05_el_bootstrap_esta_autorizado_con_motivo():
-    """init/add/commit son los tres verbos mutadores que el toolkit admite, y
-    cada uno dice por qué existe. Es lo que hace que un cuarto mutador sea una
-    decisión revisada en diff y no un argumento que llega de fuera."""
-    assert set(pg.MUTADORES_AUTORIZADOS) == {"init", "add", "commit"}
+    """init/add/commit son los tres verbos mutadores del flujo del vault y
+    el `rm` de reparación es el cuarto, autorizado a v41.27 con su motivo y
+    amarrado a la forma que no toca el árbol. Es lo que hace que un quinto
+    mutador sea una decisión revisada en diff y no un argumento que llega
+    de fuera."""
+    assert set(pg.MUTADORES_AUTORIZADOS) == {"init", "add", "commit", "rm"}
     for verbo, motivo in pg.MUTADORES_AUTORIZADOS.items():
         assert motivo.strip(), verbo
-        assert "vault_init" in motivo, verbo
+        assert "vault_init" in motivo or "vault.kernel.vcs" in motivo, verbo
+    # La autorización del rm no toca el disco: solo la forma --cached pasa
+    # la puerta (lo mide test_git_rm_sin_cached_sigue_prohibido).
+    assert "--cached" in pg.MUTADORES_AUTORIZADOS["rm"], (
+        "el motivo del rm tiene que amarrar la forma permitida por escrito")
 
 
 def test_ap68_06_el_dueno_pone_el_lexico_git_por_sus_cuentas():

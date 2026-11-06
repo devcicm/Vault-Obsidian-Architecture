@@ -779,7 +779,12 @@ def markdown() -> str:
        + ("cubierto" if estado["mcp_ignorado"] else "sin cubrir") + " |")
     an(f"| Notas | "
        f"{'sí' if estado.get('notas_versionadas') else 'no'} | "
-       "la política deja versionar `*.md` y el propio `.gitignore` |")
+       "la política deja versionar `*.md` y el propio `.gitignore`, con "
+       "UNA excepción no-`.md`: `00_System/.change-log.json` — dato, no "
+       "derivado (F8 no-repudio y `vault_impact` lo leen; ninguna nota lo "
+       "produce). C-03 saldado: `vault_undo --reparar-indice` trae el "
+       "índice de vaults anteriores a la política (`rm --cached`, el árbol "
+       "no se toca), autorizado en AP-68 con su motivo |")
     medido = versionado.get("medicion_vault") or {}
     d03_datos = bool(medido.get("es_repo") and medido.get("tiene_gitignore")
                      and medido.get("volatiles_total", 1) == 0)

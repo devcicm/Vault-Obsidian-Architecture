@@ -91,6 +91,11 @@ MUTADORES_AUTORIZADOS: dict[str, str] = {
               "y commit de cada operacion que escribe el vault, que es lo que "
               "da al vault su historia y el 'volver como estaba': "
               "vault.kernel.vcs",
+    "rm": "reparacion de los indices de vaults anteriores a la capa de git: "
+          "vault.kernel.vcs.reparar_indice retira del indice (rm --cached) "
+          "los ficheros que la politica ignora, SIN tocar el arbol de "
+          "trabajo. Un rm sin --cached no pasa por la puerta: toca el arbol "
+          "y es decision de la persona, no del producto (AP-68).",
 }
 
 
@@ -227,6 +232,15 @@ def ejecutar_git(repositorio: Any, args: list[str], *, binario: bool = False,
     elif verbo in MUTADORES_AUTORIZADOS:
         # mutador autorizado: el motivo está escrito junto a su nombre, y el
         # diff que lo añade es la revisión que lo autoriza.
+        if verbo == "rm" and "--cached" not in resto:
+            # `git rm` sin `--cached` borra del árbol de trabajo: no es la
+            # reparación del índice, es borrar notas. Solo se autoriza la
+            # forma que deja los ficheros en el disco.
+            raise GitProhibido(
+                "git rm sin --cached borra del arbol de trabajo: el unico "
+                "uso autorizado de rm es rm --cached, en el verbo de "
+                "reparacion de vault.kernel.vcs (AP-68). Borrar notas es "
+                "decision de la persona, nunca de una operacion")
         pass
     else:
         raise GitProhibido(

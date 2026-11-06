@@ -78,7 +78,7 @@ El criterio es el de **quien consume** (regla 7): no «¿está declarado?», sin
 
 **Total de ficheros volátiles rastreados: 0**.
 
-Lo que el dueño del versionado ignora hoy: `*`, `!*/`, `!*.md`, `!.gitignore`, `.history/`, `vault-backups/`, `.locks/`, `00_System/.trash/`, `00_System/token-usage/`.
+Lo que el dueño del versionado ignora hoy: `*`, `!*/`, `!*.md`, `!.gitignore`, `!00_System/.change-log.json`, `.history/`, `vault-backups/`, `.locks/`, `00_System/.trash/`, `00_System/token-usage/`.
 
 Volátiles **sin cubrir** por el dueño: ninguno.
 
@@ -136,7 +136,7 @@ Salta los módulos que ni nombran `*.md` ni filtran notas por sufijo: un módulo
 
 ### 4.5 Por qué el defecto del versionado pasó la CI
 
-El test `tests/test_vcs_capa_de_git.py` fija los patrones de la política (`*`, `!*.md`, `!.gitignore`, `.history/`, `vault-backups/`, `00_System/.trash/`, `00_System/token-usage/`) y **sí** comprueba el resultado en el índice (`git ls-files`), que es el criterio del consumidor. El caso «vault que ya tenía repo» **sí** se prueba: la garantía vive en `commit_de_operacion`, que corre en cada escritura.
+El test `tests/test_vcs_capa_de_git.py` fija los patrones de la política (`*`, `!*.md`, `!.gitignore`, `!00_System/.change-log.json`, `.history/`, `vault-backups/`, `00_System/.trash/`, `00_System/token-usage/`) y **sí** comprueba el resultado en el índice (`git ls-files`), que es el criterio del consumidor. El caso «vault que ya tenía repo» **sí** se prueba: la garantía vive en `commit_de_operacion`, que corre en cada escritura.
 
 ## 5. Huellas estáticas
 
@@ -169,7 +169,7 @@ Una deuda que se salda no se borra: pasa a `saldada` con la evidencia de que est
 |---|---|---|
 | D-01 | saldado | `IGNORADOS_POR_RIESGO` cubre la credencial |
 | D-02 | saldado | `.trash/` cubierto y `.mcp-trace-log.json` cubierto |
-| Notas | sí | la política deja versionar `*.md` y el propio `.gitignore` |
+| Notas | sí | la política deja versionar `*.md` y el propio `.gitignore`, con UNA excepción no-`.md`: `00_System/.change-log.json` — dato, no derivado (F8 no-repudio y `vault_impact` lo leen; ninguna nota lo produce). C-03 saldado: `vault_undo --reparar-indice` trae el índice de vaults anteriores a la política (`rm --cached`, el árbol no se toca), autorizado en AP-68 con su motivo |
 | D-04 | saldado | la remediación de AP-16 no nombra un modelo concreto |
 | D-05 | saldado | `docs/product/overview.md` entra en `WATCHED_DOCS` y sus cifras se contrastan con el registro |
 | D-06 | saldado | la credencial se restringe con ACL real en Windows (`icacls`) y con `chmod 0600` en POSIX |

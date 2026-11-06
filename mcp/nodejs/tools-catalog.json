@@ -7396,19 +7396,23 @@
         "properties": {
           "list": {
             "type": "string",
-            "description": "Listar versiones disponibles para esta nota (obligatorio uno de: list | restore | commits | to)"
+            "description": "Listar versiones disponibles para esta nota (obligatorio uno de: list | restore | commits | to | reparar-indice)"
           },
           "restore": {
             "type": "string",
-            "description": "Restaurar version desde .history/ (obligatorio uno de: list | restore | commits | to)"
+            "description": "Restaurar version desde .history/ (obligatorio uno de: list | restore | commits | to | reparar-indice)"
           },
           "commits": {
             "type": "boolean",
-            "description": "Listar las operaciones del vault (los commits) (obligatorio uno de: list | restore | commits | to)"
+            "description": "Listar las operaciones del vault (los commits) (obligatorio uno de: list | restore | commits | to | reparar-indice)"
           },
           "to": {
             "type": "string",
-            "description": "Volver el vault al estado de un commit (obligatorio uno de: list | restore | commits | to)"
+            "description": "Volver el vault al estado de un commit (obligatorio uno de: list | restore | commits | to | reparar-indice)"
+          },
+          "reparar-indice": {
+            "type": "boolean",
+            "description": "Retirar del indice lo volatil que la politica ignora (rm --cached; el arbol no se toca); idempotente, respuesta 'cero' si ya cumple (obligatorio uno de: list | restore | commits | to | reparar-indice)"
           },
           "version": {
             "type": "string",
@@ -7460,6 +7464,9 @@
           ],
           [
             "to"
+          ],
+          [
+            "reparar-indice"
           ]
         ]
       ]

@@ -281,6 +281,35 @@ def _operaciones_del_vault(limite: int = 20) -> dict:
             "message": f"{len(operaciones)} operacion(es) versionada(s)"}
 
 
+def _reparar_indice() -> dict:
+    """El verbo de reparación del dueño del versionado, por la CLI del vault.
+
+    Un vault anterior a la capa de git lleva en su índice lo que hoy la
+    política ignora. Esto retira esos ficheros del índice (`git rm
+    --cached`, el árbol no se toca) y lo deja en un commit con su cifra. En
+    un vault que ya cumple la política responde `cero` y no escribe nada.
+    """
+    from vault_vcs import hay_repo, reparar_indice
+    from vault_raiz import get_vault_root
+
+    raiz = get_vault_root()
+    base = reparar_indice(raiz)
+    resultado = {"ok": bool(base.get("reparado")), "tool": "vault_undo",
+                 "action": "reparar-indice", **base}
+    if not resultado["ok"]:
+        resultado.setdefault("error_code", "REPARACION_NO_PUDO")
+        resultado.setdefault("message",
+                             resultado.get("motivo", "la reparacion no termino"))
+    elif resultado.get("cero"):
+        resultado["message"] = ("el indice ya cumple la politica: nada que "
+                                "destrackear, nada escrito")
+    else:
+        resultado["message"] = (f"{len(resultado.get('destrackeados', []))} "
+                                "fichero(s) fuera del indice; arbol intacto; "
+                                "commit de reparacion en `vault_undo --commits`")
+    return resultado
+
+
 def _volver_a(sha: str, dry_run: bool, agent: str, forzar: bool = False) -> dict:
     """Vuelve el vault al estado de un commit (el deshacer de vault).
 
@@ -396,6 +425,9 @@ Ejemplos:
   # Simular sin escribir nada
   python vault_undo.py --restore "01_Projects/ans/status.md" --dry-run
 
+  # Traer el indice a la politica (vaults anteriores a la capa de git)
+  python vault_undo.py --reparar-indice
+
 Notas:
   - Sin --force: restaura como <nota>-restored-<timestamp>.md (no sobreescribe)
   - Con --force: sobreescribe la nota actual y escribe entrada en change-log (SP-01)
@@ -412,6 +444,11 @@ Notas:
                        help="Listar las operaciones del vault (los commits)")
     group.add_argument("--to", dest="to_commit", metavar="SHA",
                        help="Volver el vault al estado de un commit")
+    group.add_argument("--reparar-indice", dest="reparar_indice",
+                       action="store_true",
+                       help="Retirar del indice lo volatil que la politica "
+                            "ignora (rm --cached; el arbol no se toca); "
+                            "idempotente, respuesta 'cero' si ya cumple")
 
     parser.add_argument("--version", dest="version",
                         help="Filename exacto en .history/ (default: la mas reciente)")
@@ -426,7 +463,9 @@ Notas:
 
     args = parser.parse_args()
 
-    if args.commits:
+    if args.reparar_indice:
+        result = _reparar_indice()
+    elif args.commits:
         result = _operaciones_del_vault(args.limite)
     elif args.to_commit:
         result = _volver_a(args.to_commit, args.dry_run, args.agent, args.force)

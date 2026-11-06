@@ -51,21 +51,30 @@ from vault.kernel.procesos_git import es_hash
 #: 2. `!*/` deja recorrer las carpetas: sin esto git no baja a buscar notas.
 #: 3. `!*.md` devuelve las notas.
 #: 4. `!.gitignore` versiona la política para que viaje con el vault.
-#: 5. Las carpetas de abajo van **después** de las negaciones porque contienen
+#: 5. `!00_System/.change-log.json` es la única excepción no-`.md`, y es
+#:    **dato, no derivado**: ninguna nota la produce. La leen `vault_impact`
+#:    (qué cambió desde una fecha), SP-01 y la métrica F8 del marco de datos
+#:    (no-repudio: una entrada por nota). Sin ella, una copia del vault
+#:    pierde la autoría de cada nota y no hay de dónde reconstruirla: los
+#:    mensajes de los commits son genéricos y no nombraban al agente. Un
+#:    JSON que se regenera de las notas (`graph.json`, `hash-index.json`)
+#:    no entra ni entra este.
+#: 6. Las carpetas de abajo van **después** de las negaciones porque contienen
 #:    `.md` que no son notas: `.history/` son copias de versión (su nombre
 #:    acaba en `.md`), `vault-backups/` son copias del vault entero y
-#:    `.trash/` es lo borrado. Sin estas cuatro líneas, `!*.md` las metería.
+#:    `.trash/` es lo borrado. Sin estas líneas, `!*.md` las metería.
 #:
 #: Lo que esto deja fuera del repo, además del ruido: los JSON de estado del
 #: sistema (`graph.json`, `hash-index.json`, `tool-spec.json`,
 #: `standard-version.json`…) y los `.gitkeep` de las carpetas vacías. Son
 #: derivados o andamiaje: se regeneran, no son memoria. La memoria son las
-#: notas.
+#: notas y la bitácora que dice quién las escribió.
 IGNORADOS_EN_GIT = (
     "*",
     "!*/",
     "!*.md",
     "!.gitignore",
+    "!00_System/.change-log.json",
     ".history/",
     "vault-backups/",
     ".locks/",
@@ -154,18 +163,83 @@ def asegurar_ignorados(raiz: Path) -> Dict[str, Any]:
     return {"escrito": True, "anadidos": faltan}
 
 
-def _rastreados_ignorados(raiz: Path) -> List[str]:
+def _rastreados_ignorados(raiz: Path, tope: Optional[int] = 5) -> List[str]:
     """Ficheros que el índice sigue versionando pese a estar ignorados.
 
-    `git rm --cached` los sacaría, pero es un verbo mutador que AP-68 no
-    autoriza aquí: retirar contenido del índice es una decisión del dueño, no
-    un efecto colateral de una operación. Se publican para que la deuda vieja
-    sea visible en vez de silenciosa (AP-51).
+    `git rm --cached` los sacaría, pero es un verbo mutador que AP-68 solo
+    autoriza al verbo de reparación (`reparar_indice`, abajo): retirar
+    contenido del índice es una decisión visible, no un efecto colateral de
+    una operación. Por defecto se publican los cinco primeros para que la
+    deuda vieja sea visible en vez de silenciosa (AP-51); `tope=None`
+    devuelve la lista entera, que es lo que el reparador necesita.
     """
     r = _git(raiz, "ls-files", "-ci", "--exclude-standard")
     if r.returncode != 0:
         return []
-    return [l for l in (r.stdout or "").splitlines() if l.strip()][:5]
+    lineas = [l for l in (r.stdout or "").splitlines() if l.strip()]
+    return lineas if tope is None else lineas[:tope]
+
+
+def reparar_indice(raiz: Path) -> Dict[str, Any]:
+    """El verbo de reparación del dueño: trae el índice a la política vigente.
+
+    Un vault que nació antes de la capa de git tiene en su repo lo que hoy
+    la política ignora —copias de `.history/`, JSON de estado, la credencial
+    del servicio de tokens—: `commit_de_operacion` ya repara el `.gitignore`
+    en cada escritura, pero eso no saca nada del índice; los ficheros siguen
+    versionados hacia atrás. Este verbo es la decisión explícita:
+
+    1. Garantiza el `.gitignore` (`asegurar_ignorados`, el mismo dueño).
+    2. Le pide a git los rastreados-ignorados completos.
+    3. Los retira del índice con `git rm --cached` — **el árbol de trabajo
+       no se toca**: un fichero ignorado no se pierde, deja de
+       versionarse.
+    4. Deja la reparación en un commit propio con su cifra, para que
+       `vault_undo --commits` la muestre como lo que fue.
+
+    Idempotente: en un vault que ya cumple la política devuelve `cero` y
+    no escribe nada. La autorización del `rm` en `MUTADORES_AUTORIZADOS`
+    es solo para este uso y con `--cached`; un `rm` que toque el árbol
+    sigue prohibido (AP-68).
+    """
+    raiz = Path(raiz)
+    if not hay_repo(raiz):
+        return {"reparado": False, "destrackeados": [],
+                "motivo": "el vault no tiene repositorio git"}
+
+    ignore = asegurar_ignorados(raiz)
+    viejos = _rastreados_ignorados(raiz, tope=None)
+    resultado: Dict[str, Any] = {"reparado": True, "destrackeados": viejos}
+    if ignore.get("escrito"):
+        resultado["ignore_reparado"] = ignore["anadidos"]
+    if not viejos:
+        resultado["cero"] = True
+        return resultado
+
+    entorno = identidad_de_commit()
+    for i in range(0, len(viejos), 400):
+        lote = viejos[i:i + 400]
+        r = _git(raiz, "rm", "--cached", "-q", "--", *lote, env=entorno)
+        if r.returncode != 0:
+            return {"reparado": False, "destrackeados": [],
+                    "motivo": (r.stderr or "").strip()[:300]
+                    or "git rm no pudo"}
+
+    mensaje = (f"reparacion del indice: {len(viejos)} ficheros destrackeados; "
+               "el repo del vault versiona lo que la politica no ignora")
+    commit = _git(raiz, "commit", "-m", mensaje, env=entorno)
+    salida = (commit.stdout or "") + (commit.stderr or "")
+    if commit.returncode != 0:
+        if "nothing to commit" in salida or "no changes added" in salida:
+            resultado["committed"] = False
+            return resultado
+        return {"reparado": False, "destrackeados": viejos,
+                "motivo": salida.strip()[:300] or "git commit no pudo"}
+    sha = _git(raiz, "rev-parse", "HEAD")
+    resultado["committed"] = True
+    resultado["sha"] = (sha.stdout or "").strip()
+    resultado["mensaje"] = mensaje
+    return resultado
 
 
 def commit_de_operacion(raiz: Path, mensaje: str) -> Dict[str, Any]:
@@ -269,4 +343,4 @@ def ficheros_del_repo(raiz: Path) -> Dict[str, List[str]]:
 __all__ = ["IGNORADOS", "IGNORADOS_EN_GIT", "IGNORADOS_POR_RIESGO",
            "IDENTIDAD_LOCAL", "asegurar_ignorados", "hay_repo", "es_hash",
            "commit_de_operacion", "commits", "contenido_del_commit",
-           "ficheros_del_repo", "identidad_de_commit"]
+           "ficheros_del_repo", "identidad_de_commit", "reparar_indice"]
