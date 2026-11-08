@@ -245,7 +245,7 @@ function discoverVaults(searchRoots) {
               const version = readStandardVersion(full);
               const ilegibles = [];
               const notes = countMdFiles(full, ilegibles);
-              const info = { name, path: full, version, notes, markers, lastSeen: new Date().toISOString() };
+              const info = { name, path: full, version, notes, markers, notes_scope: ALCANCE_DEL_RECuento, lastSeen: new Date().toISOString() };
               if (ilegibles.length) {
                 info.notes_incomplete = ilegibles.length;
                 log("warn", "recuento de notas parcial", { vault: name, unreadable_dirs: ilegibles.length });
@@ -306,10 +306,34 @@ function refreshVaultRegistry() {
       existing.lastSeen = info.lastSeen;
     }
   }
-  if (VAULT_ROOT && ![...VAULT_REGISTRY.values()].some(v => v.path === VAULT_ROOT)) {
-    const name = VAULT_ROOT.split(/[/\\]/).pop();
-    const version = readStandardVersion(VAULT_ROOT);
-    VAULT_REGISTRY.set(name, { name, path: VAULT_ROOT, version, notes: 0, markers: [], lastSeen: new Date().toISOString(), _default: true });
+  // La raíz explícita (`VAULT_ROOT`) puede no seguir la convención del
+  // descubrimiento —`vault-*` o `vault`—, y entonces solo la registraba este
+  // bloque: se añadía con `notes: 0` y el vault aparecía **vacío** aunque
+  // tuviera cientos de notas (medido el 2026-10-30 en el vault
+  // `vault dev codex`; la corrección existía en el árbol local de otra
+  // máquina y no había llegado al repositorio).
+  //
+  // Ahora: se resuelven las rutas antes de comparar —para no registrar dos
+  // veces el mismo vault con distinta forma de ruta—, se cuenta con el mismo
+  // criterio que el descubrimiento y se publica el alcance de la cuenta.
+  if (VAULT_ROOT) {
+    const rootPath = resolve(VAULT_ROOT);
+    const conocido = [...VAULT_REGISTRY.values()].find(v => resolve(v.path) === rootPath);
+    const ilegibles = [];
+    const notes = countMdFiles(rootPath, ilegibles);
+    if (conocido) {
+      conocido.notes = notes;
+      conocido.notes_scope = ALCANCE_DEL_RECuento;
+      if (ilegibles.length) conocido.notes_incomplete = ilegibles.length;
+      else delete conocido.notes_incomplete;
+      conocido.lastSeen = new Date().toISOString();
+    } else {
+      const name = VAULT_ROOT.split(/[/\\]/).pop();
+      const version = readStandardVersion(VAULT_ROOT);
+      const entrada = { name, path: VAULT_ROOT, version, notes, notes_scope: ALCANCE_DEL_RECuento, markers: [], lastSeen: new Date().toISOString(), _default: true };
+      if (ilegibles.length) entrada.notes_incomplete = ilegibles.length;
+      VAULT_REGISTRY.set(name, entrada);
+    }
   }
 }
 
@@ -1101,7 +1125,7 @@ async function handleToolsCall(params, session) {
 
     if (name === "vault_registry") {
       return { content: [{ type: "text", text: JSON.stringify({
-        ok: true, vaults: [...VAULT_REGISTRY.values()].map(v => ({ name: v.name, version: v.version, notes: v.notes, ...(v.notes_incomplete ? { notes_incomplete: v.notes_incomplete } : {}), path: v.path, lastSeen: v.lastSeen }))
+        ok: true, vaults: [...VAULT_REGISTRY.values()].map(v => ({ name: v.name, version: v.version, notes: v.notes, notes_scope: v.notes_scope || ALCANCE_DEL_RECuento, ...(v.notes_incomplete ? { notes_incomplete: v.notes_incomplete } : {}), path: v.path, lastSeen: v.lastSeen }))
       }, null, 2) }] };
     }
 
@@ -1132,6 +1156,17 @@ async function handleToolsCall(params, session) {
     }
 
     await TraceLog.record(name, args, result, vaultRoot);
+
+    // El mapa de stems se cachea por proceso, y la caché **no se invalidaba
+    // nunca**: una nota escrita durante esta sesión no se podía enlazar y el
+    // guard `referencedNotes` la daba por inexistente (medido el 2026-11-08
+    // contra el vault `vault dev codex`: dos rechazos de escritura y una nota
+    // que quedó `notIntegrated`). La invalidación es perezosa —el mapa se
+    // rehace en la siguiente comprobación de enlaces— y solo hace falta si la
+    // operación pudo escribir algo.
+    if (TOOLS_CATALOG[name]?.side_effects) {
+      invalidateStemPathCache();
+    }
 
     // AP-44: el cliente MCP decide si la llamada falló por `isError`, no
     // abriendo el texto. Sin esto, leer una nota inexistente era un éxito.
@@ -1782,7 +1817,7 @@ function startSSE(port) {
       if (vaultName === "all") {
         const vaults = {};
         for (const [name, info] of VAULT_REGISTRY) {
-          vaults[name] = { version: info.version, notes: info.notes, ...(info.notes_incomplete ? { notes_incomplete: info.notes_incomplete } : {}), path: info.path, lastSeen: info.lastSeen };
+          vaults[name] = { version: info.version, notes: info.notes, notes_scope: info.notes_scope || ALCANCE_DEL_RECuento, ...(info.notes_incomplete ? { notes_incomplete: info.notes_incomplete } : {}), path: info.path, lastSeen: info.lastSeen };
         }
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({
@@ -2235,6 +2270,16 @@ class TraceLog {
 // SECCIÓN 9: Observability
 // ============================================================================
 
+//: **Qué cuenta el número de notas** que publica el registro. Sin esta frase,
+//: un `notes: 194` no dice si son notas, ficheros markdown sueltos o
+//: entradas de índice: cinco medidas distintas de lo mismo (medido el
+//: 2026-11-08 en el vault `vault dev codex`: 194 por `/health`, 207 por la
+//: auditoría, 242 en disco, 243 por `vault_list`, 188 indexadas). El alcance
+//: va **publicado con la cifra**, no supuesto por quien la lee.
+const ALCANCE_DEL_RECuento =
+  "ficheros .md visibles: carpetas ocultas (.history, .trash), node_modules y " +
+  "artefactos de build fuera; no distingue notas de indice ni de andamiaje";
+
 async function runHealthCheck(vaultRoot) {
   const inspect = await jsNativeGraphInspect({}, vaultRoot);
   const s = inspect.summary;
@@ -2311,7 +2356,7 @@ async function handleResourcesRead(params, session) {
       case "vault://registry": {
         const vaults = {};
         for (const [name, info] of VAULT_REGISTRY) {
-          vaults[name] = { version: info.version, notes: info.notes, ...(info.notes_incomplete ? { notes_incomplete: info.notes_incomplete } : {}), path: info.path, lastSeen: info.lastSeen };
+          vaults[name] = { version: info.version, notes: info.notes, notes_scope: info.notes_scope || ALCANCE_DEL_RECuento, ...(info.notes_incomplete ? { notes_incomplete: info.notes_incomplete } : {}), path: info.path, lastSeen: info.lastSeen };
         }
         return { contents: [{ uri, mimeType: "application/json", text: JSON.stringify({
           default_vault: detectVaultRoot(), registered: VAULT_REGISTRY.size, vaults

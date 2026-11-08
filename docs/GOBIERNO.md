@@ -27,7 +27,7 @@ _Derivado de los registros canónicos. Se regenera con `python scripts/vault_ser
 ## Qué es ley para quién
 
 - **Para quien usa el vault**: las normas, aplicadas por las tools de escritura y consulta — contrato de nota, vocabulario de estados, protocolo de borrado.
-- **Para quien mantiene este repositorio**: la gobernanza del meta-toolkit — el conjunto de tools cuya naturaleza es `meta_estandar` (30), que miden este repo y no el vault de nadie, por las 28 puertas de `docs/PUERTAS.md`.
+- **Para quien mantiene este repositorio**: la gobernanza del meta-toolkit — el conjunto de tools cuya naturaleza es `meta_estandar` (30), que miden este repo y no el vault de nadie, por las 29 puertas de `docs/PUERTAS.md`.
 
 ## La superficie que ve el agente por MCP
 
@@ -108,4 +108,4 @@ El catálogo marca `exposed_via_mcp` y el servidor MCP lo respeta: las 30 tools 
 
 ## Las puertas
 
-La gobernanza se ejerce por 28 puertas de cierre, una por registro. El porqué de cada una está en [docs/PUERTAS.md](PUERTAS.md), derivado de `vault_gate.PUERTAS`.
+La gobernanza se ejerce por 29 puertas de cierre, una por registro. El porqué de cada una está en [docs/PUERTAS.md](PUERTAS.md), derivado de `vault_gate.PUERTAS`.

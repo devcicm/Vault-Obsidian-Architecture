@@ -20,7 +20,7 @@ from vault.kernel import rutas
 from vault.meta_toolkit.naturalezas import NATURALEZAS
 from vault.meta_toolkit.distribucion import clasificar_tools
 
-OPERATIONS = rutas.ruta_repo(rutas.VAULT_TOOLKIT) / "operations"
+OPERATIONS = rutas.ruta_generada("operations")
 
 _TEMPLATE = '''"""Adaptador generado para la operación canónica ``{name}``."""
 

@@ -117,6 +117,15 @@ PUERTAS: List[Dict[str, Any]] = [
                "secciones se escriben a mano)",
     },
     {
+        "id": "entorno_doc",
+        "nivel": "rapida",
+        "cmd": ["vault_entorno.py", "--check-doc"],
+        "mide": "El registro de variables de entorno y el documento derivado que "
+                "las publica no divergen: el registro es el dueño y el doc es "
+                "su proyección (AP-49)",
+        "fix": "python scripts/vault_entorno.py --doc",
+    },
+    {
         "id": "toolkit_audit",
         "nivel": "release",
         "cmd": ["vault_toolkit_audit.py", "--check"],

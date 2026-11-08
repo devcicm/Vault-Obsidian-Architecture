@@ -15,14 +15,14 @@
 1. tests que alcanzan a lo que se va a commitear, sin los módulos lentos del perfil salvo el test editado (cae a la suite entera si no hay subconjunto honesto, y lo dice): `python scripts/vault_test_scope.py --changed --correr`
 2. puertas de nivel rapida: `python scripts/vault_gate.py --strict --nivel rapida`
 
-Puertas del nivel `rapida` (26): `framework`, `catalogo`, `contratos`, `conteos`, `doc_sync`, `blame`, `contrato_error`, `campos`, `changelog`, `arquitectura`, `servicio`, `blueprint`, `norms_coherence`, `criterios`, `fuente_unica`, `ciclos`, `clones`, `kernel`, `excepcion_declarada`, `recursos`, `procesos_git`, `tests_higiene`, `produccion`, `esquemas`, `metricas`, `doc_staleness`.
+Puertas del nivel `rapida` (27): `framework`, `catalogo`, `contratos`, `conteos`, `doc_sync`, `entorno_doc`, `blame`, `contrato_error`, `campos`, `changelog`, `arquitectura`, `servicio`, `blueprint`, `norms_coherence`, `criterios`, `fuente_unica`, `ciclos`, `clones`, `kernel`, `excepcion_declarada`, `recursos`, `procesos_git`, `tests_higiene`, `produccion`, `esquemas`, `metricas`, `doc_staleness`.
 
 ## `merge`
 
 1. todas las puertas: `python scripts/vault_gate.py --strict --nivel todas`
 2. la suite completa: `python -m pytest tests/ -q -n 4 --tb=short -p no:cacheprovider`
 
-Puertas del nivel `todas` (28): `framework`, `catalogo`, `contratos`, `conteos`, `doc_sync`, `toolkit_audit`, `noop`, `blame`, `contrato_error`, `campos`, `changelog`, `arquitectura`, `servicio`, `blueprint`, `norms_coherence`, `criterios`, `fuente_unica`, `ciclos`, `clones`, `kernel`, `excepcion_declarada`, `recursos`, `procesos_git`, `tests_higiene`, `produccion`, `esquemas`, `metricas`, `doc_staleness`.
+Puertas del nivel `todas` (29): `framework`, `catalogo`, `contratos`, `conteos`, `doc_sync`, `entorno_doc`, `toolkit_audit`, `noop`, `blame`, `contrato_error`, `campos`, `changelog`, `arquitectura`, `servicio`, `blueprint`, `norms_coherence`, `criterios`, `fuente_unica`, `ciclos`, `clones`, `kernel`, `excepcion_declarada`, `recursos`, `procesos_git`, `tests_higiene`, `produccion`, `esquemas`, `metricas`, `doc_staleness`.
 
 ## `release`
 

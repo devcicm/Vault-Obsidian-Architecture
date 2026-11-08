@@ -464,4 +464,4 @@ sobre la historia sin que git la respalde (AP-53).
 
 ---
 
-*28 puertas de cierre. Generado por `scripts/vault_blueprint.py`.*
+*29 puertas de cierre. Generado por `scripts/vault_blueprint.py`.*

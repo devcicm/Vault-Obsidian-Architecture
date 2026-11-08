@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from typing import Optional
 
 #: Los nombres de directorio del layout de este repo, **uno a uno**. Lista
 #: cerrada: un nombre nuevo entra aquí en el diff que lo estrena, con su
@@ -62,6 +63,16 @@ NOMBRES = frozenset({
     VAULT, VAULT_TOOLKIT, AUDITS,
 })
 
+#: Las carpetas que el repositorio **genera**: las produce un generador, sus
+#: ficheros son idénticos por construcción y un barrido que los mida como
+#: código está midiendo ruido (medido el 2026-11-08: 97 adaptadores en
+#: `vault_toolkit/operations/`, 0 clones entre ellos y 0 sombras).
+#:
+#: Lo declara aquí el dueño del layout, y lo usan **los dos**: el generador
+#: (`vault_distribution_sync`) para escribir ahí y los barridos para
+#: excluirlo. Un solo sitio dice dónde está lo generado.
+GENERADOS = {"operations": VAULT_TOOLKIT}
+
 #: **Todo** el layout del repo: lo vigilado más lo que existe sin dar señal
 #: al guard. `agent/` está aquí y no en `NOMBRES` con una medida detrás: de
 #: las 47 apariciones del literal `"agent"` en `scripts/`, `vault/` y `cli/`,
@@ -75,15 +86,28 @@ CARPETAS_DEL_REPO = NOMBRES | {AGENT}
 
 #: Las carpetas del repo donde vive **código**, para los barridos que
 #: miden el código. Es un subconjunto de `CARPETAS_DEL_REPO`: deja fuera las
-#: carpetas de gobernanza (`audits`, `docs`) y la capa de despacho del
-#: producto (`vault_toolkit`), cuyos adaptadores son generados y los barre
-#: su propio guard. Los dos conjuntos se usan enteros: quien barre los dos,
-#: no uno y medio.
+#: carpetas de gobernanza (`audits`, `docs`). Los dos conjuntos se usan
+#: enteros: quien barre los dos, no uno y medio.
 CARPETAS_DE_CODIGO = (SCRIPTS, CLI, VAULT, TESTS)
 
 #: Las mismas, más el servidor MCP: el guard de git mira también el `.mjs`,
 #: que no es Python pero sí es código de este repo.
 CARPETAS_DE_CODIGO_Y_MCP = (SCRIPTS, CLI, VAULT, MCP)
+
+#: Las carpetas que los barridos de **código Python** miden: `scripts/`,
+#: `cli/`, `vault/` y la capa de despacho del producto (`vault_toolkit/`).
+#:
+#: `vault_toolkit/` entra desde el 2026-11-08 (C‑08): antes la medía solo el
+#: guard de criterios, y el guard de clones —el que exige un cuerpo por
+#: dueño— no la veía. La parte **generada** (`vault_toolkit/operations/`) se
+#: excluye por nombre, con la razón escrita: 97 ficheros idénticos por
+#: construcción son ruido, no deuda. La parte escrita a mano
+#: (`loading.py`, `__init__.py`) sí se mide.
+#:
+#: Los dos barridos que la usan no la excluyen igual, y es deliberado: un
+#: **cuerpo** repetido por el generador es ruido; un **criterio** copiado en
+#: los 97 adaptadores sería un defecto real.
+CARPETAS_DE_CODIGO_PYTHON = (SCRIPTS, CLI, VAULT, VAULT_TOOLKIT)
 
 
 #: Patrón de las combinaciones `padre/hijo` que los módulos escriben a mano:
@@ -120,6 +144,23 @@ def ruta_repo(nombre: str) -> Path:
             "lo llama 'el diff que lo revisa'; aquí vale el mismo criterio)."
         )
     return raiz_repo() / nombre
+
+
+def ruta_generada(nombre: str, raiz: Optional[Path] = None) -> Path:
+    """La ruta de una carpeta **generada**, resuelta contra `raiz`.
+
+    `raiz` existe para los barridos que miden un árbol de prueba: la ruta
+    tiene que ser la de ese árbol, no la del checkout. Sin `raiz`, es la del
+    repositorio.
+    """
+    if nombre not in GENERADOS:
+        raise ValueError(
+            f"{nombre!r} no es una carpeta generada; las que hay son "
+            f"{sorted(GENERADOS)}. Si el generador arctic una, se declara en "
+            "GENERADOS en el mismo diff que la usa."
+        )
+    base = Path(raiz) if raiz is not None else raiz_repo()
+    return base / GENERADOS[nombre] / nombre
 
 
 def cita_repo(directorio: str, relativo: str) -> str:

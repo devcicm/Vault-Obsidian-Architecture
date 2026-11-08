@@ -92,6 +92,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 import vault_baseline
 from vault_errors import emit_error, wrap_main
+from vault.kernel import rutas
 
 #: La baseline de CN-05. Vive junto a la tool, como las de los demás guards.
 BASELINE = Path(__file__).parent / "clones-baseline.json"
@@ -117,8 +118,14 @@ def _bases(raiz: Path, por_defecto: bool) -> List[Path]:
     """Las carpetas que se miden, en el checkout y en la wheel.
 
     En el checkout el programa vive en `scripts/`; en la wheel, en `_impl/`.
-    `vault/` y `cli/` son hermanos del programa, no hijos: se buscan en la
-    raíz.
+    `vault/`, `cli/` y `vault_toolkit/` son hermanos del programa, no hijos:
+    se buscan en la raíz.
+
+    **Las carpetas las pregunta al dueño del layout** (`rutas.
+    CARPETAS_DE_CODIGO_PYTHON`) en vez de repetirlas aquí: desde el
+    2026-11-08 la capa de despacho del producto entra en el barrido (C‑08), y
+    una lista repetida en dos sitios es una lista que se queda vieja en uno
+    de los dos.
 
     Con una raíz inyectada (los tests) **no** se cae al programa real: un
     árbol de prueba que mide el repo entero mediría lo que no quiere.
@@ -127,18 +134,36 @@ def _bases(raiz: Path, por_defecto: bool) -> List[Path]:
     if not scripts.is_dir():
         scripts = DIRECTORIO if por_defecto else None
     bases = [scripts] if scripts else []
-    for nombre in ("vault", "cli"):
+    for nombre in rutas.CARPETAS_DE_CODIGO_PYTHON:
+        if nombre == rutas.SCRIPTS:
+            continue
         carpeta = raiz / nombre
         if carpeta.is_dir():
             bases.append(carpeta)
     return bases
 
 
+def _generados(raiz: Path) -> List[Path]:
+    """Las carpetas generadas, resueltas contra el árbol que se mide.
+
+    Lo pregunta al dueño del layout (`rutas.GENERADOS`), que es donde el
+    generador escribe: un solo sitio dice dónde está lo generado. Sus
+    ficheros son idénticos por construcción, así que medirlos como código es
+    ruido (C‑08).
+    """
+    return [rutas.ruta_generada(nombre, raiz) for nombre in rutas.GENERADOS]
+
+
 def _ficheros(raiz: Path, por_defecto: bool = True) -> List[Path]:
     salida: List[Path] = []
+    generados = _generados(raiz)
     for base in _bases(raiz, por_defecto):
         for p in sorted(base.rglob("*.py")):
             if any(parte in EXCLUIR for parte in p.parts):
+                continue
+            if any(p == g or g in p.parents for g in generados):
+                # Lo generado no se mide como código: 97 ficheros idénticos
+                # por construcción son ruido, no deuda (C‑08).
                 continue
             salida.append(p)
     return salida
@@ -382,6 +407,11 @@ def check(raiz: Optional[Path] = None,
         "tool": "vault_clones",
         "norm": "CN-05",
         "action": "check",
+        # **Qué se midió y qué no**: un guard que no publica su alcance no
+        # puede distinguir «no hay clones» de «no miré ahí». Las zonas las
+        # pregunta al dueño del layout; lo generado se nombra aparte.
+        "zones_scanned": sorted(p.name for p in _bases(_raiz(raiz), True)),
+        "generated_excluded": sorted(rutas.GENERADOS),
         "modules_scanned": m["modulos"],
         "functions_scanned": m["funciones"],
         "shadowing_total": len(m["firmas_sombra"]),
