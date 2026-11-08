@@ -5265,7 +5265,10 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
     # Auto-detecta el vault root (vault-sandbox en este repo).
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     import vault_io
-    spec_path = Path(vault_io.resolve_tool_spec())
+    # `resolve_tool_spec()` devuelve None si el vault no tiene contrato:
+    # `Path(None)` reventaba aquí (medido el 2026-11-08) antes de que el
+    # `if spec_path and ...` de abajo pudiera actuar.
+    spec_path = vault_io.resolve_tool_spec()
     spec_data: Dict[str, Any] = {}
     if spec_path and spec_path.exists():
         spec_data = json.loads(spec_path.read_text(encoding="utf-8"))
@@ -5671,10 +5674,18 @@ def check_contracts(spec_path: Optional[str] = None) -> Dict[str, Any]:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     import vault_io
 
-    ruta = Path(spec_path) if spec_path else Path(vault_io.resolve_tool_spec())
+    ruta = Path(spec_path) if spec_path else vault_io.resolve_tool_spec()
     # Una puerta que se cae con traceback no dice nada de lo que debía medir:
     # el spec ausente o ilegible sale como envelope del catálogo (A-02).
+    # `resolve_tool_spec()` devuelve None cuando no hay contrato, y
+    # `Path(None)` reventaba ANTES de que existiera el envelope: el arreglo
+    # estaba puesto, pero debajo del crash (medido el 2026-11-08).
     from vault_errors import emit_error
+    if ruta is None:
+        return emit_error("vault_mcp_catalog", "FILE_NOT_FOUND",
+                          "tool-spec.json no existe en el vault activo",
+                          {"spec_path": None})
+    ruta = Path(ruta)
     if not ruta.is_file():
         return emit_error("vault_mcp_catalog", "FILE_NOT_FOUND",
                           f"tool-spec.json no existe: {ruta.name}",

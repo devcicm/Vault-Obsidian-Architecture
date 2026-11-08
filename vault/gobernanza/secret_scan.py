@@ -35,9 +35,18 @@ SECRET_PATTERNS = [
     },
     {
         "id": "aws_secret_key",
-        "pattern": r"(?<![A-Za-z0-9/+=])[A-Za-z0-9/+=]{40}(?![A-Za-z0-9/+=])",
+        # Una clave de AWS tiene 40 caracteres del alfabeto base64 **con
+        # mayúsculas mezcladas**: la probabilidad de que una sea 40 hex en
+        # minúsculas es ~(16/64)^40, es decir, nula. Un hash de commit de git
+        # (SHA-1) tiene exactamente esa forma, y el patrón anterior lo
+        # bloqueaba: medido el 2026-11-08, una nota de auditoría legítima que
+        # citaba el commit `1db90da…` fue rechazada con `GUARD_CHAIN_FAILED`
+        # y la evidencia hubo que degradarse a la forma abreviada (AP-47 y
+        # AP-44: el guard debe medir secretos, no hashes).
+        "pattern": r"(?<![A-Za-z0-9/+=])(?![0-9a-f]{40})[A-Za-z0-9/+=]{40}(?![A-Za-z0-9/+=])",
         "severity": "high",
-        "description": "Possible AWS secret access key (40 chars base64-like)",
+        "description": "Possible AWS secret access key (40 chars base64-like, "
+                       "not a git SHA-1)",
     },
     {
         "id": "github_personal_token",

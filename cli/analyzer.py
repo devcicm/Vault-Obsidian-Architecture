@@ -200,8 +200,31 @@ class _Scanner(ast.NodeVisitor):
         return "\n".join(self.lines[start:end])
 
     def _has_lock_in_scope(self) -> bool:
-        src = self._enclosing_source()
-        return any(name in src for name in _LOCK_NAMES)
+        """¿La función usa un lock de verdad?
+
+        Antes se buscaba el nombre del lock en el **texto** de la función: un
+        comentario o un docstring que lo mencionara contaba como un lock, y
+        un fichero que solo lo comentaba salía como «con lock». La nota de
+        causa raíz «Concurrency scanner recognizes lock text in a comment»
+        (2026-10-30) lo medía así. Ahora se pregunta al AST: una llamada
+        (`file_lock(...)`), un atributo (`self.lock`) o un nombre usado
+        (`with lock:`). Un comentario no es un lock.
+        """
+        if not self._func_stack:
+            return False
+        fn = self._func_stack[-1]
+        for n in ast.walk(fn):
+            if isinstance(n, ast.Call):
+                func = n.func
+                nombre = (func.attr if isinstance(func, ast.Attribute)
+                          else getattr(func, "id", ""))
+                if nombre in _LOCK_NAMES:
+                    return True
+            elif isinstance(n, ast.Attribute) and n.attr in _LOCK_NAMES:
+                return True
+            elif isinstance(n, ast.Name) and n.id in _LOCK_NAMES:
+                return True
+        return False
 
     # ── módulo ──────────────────────────────────────────────────────────────
     def visit_Module(self, node: ast.Module) -> None:

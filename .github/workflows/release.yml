@@ -167,6 +167,21 @@ jobs:
                                 capture_output=True, text=True).stdout.strip()
           if rc.get("product_tree_sha") != tree:
               errores.append(f"product_tree_sha {rc.get('product_tree_sha')} no es el arbol de {sha} ({tree or 'sha inexistente'})")
+          # El ancestro es una relacion historica, no una identidad de
+          # contenido: un descendiente que cambia el producto tambien es
+          # ancestro, y se publicaba sin haber pasado por la CI certificada.
+          # Lo que se publica es el ARBOL del tag, y tiene que ser el
+          # certificado (nota de causa raiz «Release publishes content the
+          # certified CI never saw», 2026-10-30). Un delta solo documental
+          # tendria que declararse aqui, con su lista de rutas; mientras no
+          # exista esa lista, la puerta es estricta.
+          tree_tag = subprocess.run(["git", "rev-parse", "HEAD^{tree}"],
+                                    capture_output=True, text=True).stdout.strip()
+          if tree_tag != tree:
+              errores.append(
+                  f"el producto del tag ({tree_tag or 'arbol desconocido'}) no es "
+                  f"el certificado ({tree or 'arbol desconocido'}): el tag apunta "
+                  f"a otro contenido que la CI no vio")
           qg = m.get("governance", {}).get("qg_statuses") or {}
           for i in range(8):
               if qg.get(f"QG-0{i}") != "PASS":

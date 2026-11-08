@@ -157,12 +157,22 @@ def _puente() -> Dict[str, Path]:
 
 
 def fuente_de(modulo: str) -> Path:
-    """El fichero que tiene el código de `modulo` (nombre de `scripts/`).
+    """El fichero que tiene el código de `modulo`.
 
     Tras la deuda #12 un nombre de `scripts/` puede ser un alias sin código; un
     guard que lea `scripts/<m>.py` como fuente mide el alias y no al dueño. Un
     solo sitio resuelve eso (AP-57) y los guards lo consultan.
+
+    También acepta un nombre **con puntos** (`vault.kernel.controles`): el
+    dueño de un criterio puede vivir en el paquete y no tener alias en
+    `scripts/`. Antes ese nombre caía en `scripts/vault.kernel.controles.py`,
+    que no existe, y el guard decía «dueño inexistente» de un dueño que sí
+    existe (medido el 2026-11-08 al registrar el vocabulario de estados).
     """
+    if "." in modulo:
+        fichero = _fichero_de_modulo(modulo)
+        if fichero is not None:
+            return fichero
     return _puente().get(modulo, (DIRECTORIO / f"{modulo}.py").resolve())
 
 

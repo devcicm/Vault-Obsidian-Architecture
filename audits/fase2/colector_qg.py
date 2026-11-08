@@ -136,7 +136,14 @@ WORKFLOW_ESPERADO = "Vault CI"
 JOBS_OBLIGATORIOS = _jobs_del_workflow()
 
 ESTADO_OK = "ejecutado"
-ESTADOS = ("ejecutado", "degradado", "fallido", "no_ejecutado")
+#: El vocabulario de los cuatro estados tiene un dueño: `vault.kernel.controles`
+#: (hoja del núcleo, sin imports ni efectos). Este script lo usaba sin
+#: nombrarlo —una copia que nadie comparaba— y por eso lo importaba aparte.
+#: La lista completa se lee del dueño; aquí solo hace falta «ejecutado».
+_RAIZ_REPO = Path(__file__).resolve().parents[2]
+if str(_RAIZ_REPO) not in sys.path:
+    sys.path.insert(0, str(_RAIZ_REPO))
+from vault.kernel.controles import ESTADOS  # noqa: E402 - dueño único del vocabulario
 
 
 # ── Utilidades ───────────────────────────────────────────────────────────────

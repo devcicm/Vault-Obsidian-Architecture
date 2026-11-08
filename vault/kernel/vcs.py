@@ -36,7 +36,7 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from vault.kernel import procesos_git
 from vault.kernel.procesos_git import es_hash
@@ -163,7 +163,7 @@ def asegurar_ignorados(raiz: Path) -> Dict[str, Any]:
     return {"escrito": True, "anadidos": faltan}
 
 
-def _rastreados_ignorados(raiz: Path, tope: Optional[int] = 5) -> List[str]:
+def _rastreados_ignorados(raiz: Path, tope: Optional[int] = 5) -> Tuple[List[str], Optional[str]]:
     """Ficheros que el índice sigue versionando pese a estar ignorados.
 
     `git rm --cached` los sacaría, pero es un verbo mutador que AP-68 solo
@@ -172,12 +172,20 @@ def _rastreados_ignorados(raiz: Path, tope: Optional[int] = 5) -> List[str]:
     una operación. Por defecto se publican los cinco primeros para que la
     deuda vieja sea visible en vez de silenciosa (AP-51); `tope=None`
     devuelve la lista entera, que es lo que el reparador necesita.
+
+    **Devuelve dos cosas, no una** (AP-51): la lista y el motivo del fallo.
+    Un `git` que no puede responder —«dubious ownership», un repo de otra
+    cuenta, un binario que no está— devuelve una lista vacía, y una lista
+    vacía indistinguible de «no hay nada que reparar» es un fallo presentado
+    como un éxito. Medido el 2026-11-08: un vault cuyo repo pertenece a otra
+    cuenta respondió «cero» cuando en realidad git no había dicho nada.
     """
     r = _git(raiz, "ls-files", "-ci", "--exclude-standard")
     if r.returncode != 0:
-        return []
+        motivo = (r.stderr or r.stdout or "git ls-files no pudo responder").strip()
+        return [], (motivo[:300] or "git ls-files no pudo responder")
     lineas = [l for l in (r.stdout or "").splitlines() if l.strip()]
-    return lineas if tope is None else lineas[:tope]
+    return (lineas if tope is None else lineas[:tope]), None
 
 
 def reparar_indice(raiz: Path) -> Dict[str, Any]:
@@ -208,7 +216,13 @@ def reparar_indice(raiz: Path) -> Dict[str, Any]:
                 "motivo": "el vault no tiene repositorio git"}
 
     ignore = asegurar_ignorados(raiz)
-    viejos = _rastreados_ignorados(raiz, tope=None)
+    viejos, error_consulta = _rastreados_ignorados(raiz, tope=None)
+    if error_consulta:
+        # Git no respondió: no se puede afirmar que el índice esté bien.
+        # «Cero» aquí sería mentir (AP-51).
+        return {"reparado": False, "destrackeados": [],
+                "git_no_respondio": True,
+                "motivo": error_consulta}
     resultado: Dict[str, Any] = {"reparado": True, "destrackeados": viejos}
     if ignore.get("escrito"):
         resultado["ignore_reparado"] = ignore["anadidos"]
@@ -280,18 +294,32 @@ def commit_de_operacion(raiz: Path, mensaje: str) -> Dict[str, Any]:
     # envelope, uno reparado o con deuda vieja la publica.
     if ignore.get("escrito"):
         resultado["ignore_reparado"] = ignore["anadidos"]
-    viejos = _rastreados_ignorados(raiz)
-    if viejos:
+    viejos, error_consulta = _rastreados_ignorados(raiz)
+    if error_consulta:
+        # El índice no se pudo consultar: se dice, en vez de publicar una lista
+        # vacía que parece «no hay deuda» (AP-51).
+        resultado["indice_no_consultable"] = error_consulta
+    elif viejos:
         resultado["rastreados_ignorados"] = viejos
     return resultado
 
 
-def commits(raiz: Path, limite: int = 20) -> List[Dict[str, Any]]:
-    """Las operaciones versionadas, de la más reciente a la más antigua."""
+def commits_con_estado(raiz: Path, limite: int = 20) -> Tuple[List[Dict[str, Any]], Optional[str]]:
+    """Las operaciones versionadas y, si git no respondió, el motivo.
+
+    Igual que `_rastreados_ignorados`: una lista vacía puede ser «no hay
+    operaciones» o «git no pudo leer el historial». Quien publica esta lista
+    —`vault_undo --commits`— tiene que poder distinguirlo (AP-51). Medido el
+    2026-11-08: un vault cuyo repo pertenece a otra cuenta respondió «0
+    operaciones» con git sin responder.
+    """
     if not hay_repo(raiz):
-        return []
+        return [], None
     r = _git(raiz, "log", f"-{max(1, int(limite))}",
              "--format=%H%x1f%an%x1f%aI%x1f%s")
+    if r.returncode != 0:
+        motivo = (r.stderr or r.stdout or "git log no pudo responder").strip()
+        return [], (motivo[:300] or "git log no pudo responder")
     lineas = [l for l in (r.stdout or "").splitlines() if l.strip()]
     operaciones = []
     for linea in lineas:
@@ -300,7 +328,12 @@ def commits(raiz: Path, limite: int = 20) -> List[Dict[str, Any]]:
             continue
         operaciones.append({"sha": partes[0], "autor": partes[1],
                              "fecha": partes[2], "mensaje": partes[3]})
-    return operaciones
+    return operaciones, None
+
+
+def commits(raiz: Path, limite: int = 20) -> List[Dict[str, Any]]:
+    """Las operaciones versionadas, de la más reciente a la más antigua."""
+    return commits_con_estado(raiz, limite)[0]
 
 
 def contenido_del_commit(raiz: Path, sha: str) -> Optional[Dict[str, str]]:
@@ -331,16 +364,37 @@ def contenido_del_commit(raiz: Path, sha: str) -> Optional[Dict[str, str]]:
         return None
 
 
+def ficheros_del_repo_con_estado(raiz: Path) -> Tuple[Dict[str, List[str]], Optional[str]]:
+    """Lo que el repo tiene, y si git pudo decirlo.
+
+    Igual que el resto de verbos de lectura: un índice vacío puede ser un
+    repo vacío o un git que no respondió (AP-51).
+    """
+    versionados_r = _git(raiz, "ls-files")
+    if versionados_r.returncode != 0:
+        motivo = (versionados_r.stderr or versionados_r.stdout
+                  or "git ls-files no pudo responder").strip()
+        return ({"versionados": [], "sin_rastrear": []},
+                (motivo[:300] or "git ls-files no pudo responder"))
+    otros_r = _git(raiz, "ls-files", "--others", "--exclude-standard")
+    error = None
+    if otros_r.returncode != 0:
+        error = ((otros_r.stderr or otros_r.stdout
+                  or "git ls-files --others no pudo responder").strip()[:300]
+                 or "git ls-files --others no pudo responder")
+    return ({"versionados": [l for l in (versionados_r.stdout or "").splitlines() if l.strip()],
+             "sin_rastrear": [l for l in (otros_r.stdout or "").splitlines() if l.strip()]},
+            error)
+
+
 def ficheros_del_repo(raiz: Path) -> Dict[str, List[str]]:
     """Lo que el repo tiene: versionados y sin rastrear (lo declarado y lo nuevo)."""
-    versionados = [l for l in (_git(raiz, "ls-files").stdout or "").splitlines() if l.strip()]
-    sin_rastrear = [l for l in (_git(raiz, "ls-files", "--others",
-                                     "--exclude-standard").stdout or "").splitlines()
-                    if l.strip()]
-    return {"versionados": versionados, "sin_rastrear": sin_rastrear}
+    return ficheros_del_repo_con_estado(raiz)[0]
 
 
 __all__ = ["IGNORADOS", "IGNORADOS_EN_GIT", "IGNORADOS_POR_RIESGO",
            "IDENTIDAD_LOCAL", "asegurar_ignorados", "hay_repo", "es_hash",
-           "commit_de_operacion", "commits", "contenido_del_commit",
-           "ficheros_del_repo", "identidad_de_commit", "reparar_indice"]
+           "commit_de_operacion", "commits", "commits_con_estado",
+           "contenido_del_commit", "ficheros_del_repo",
+           "ficheros_del_repo_con_estado", "identidad_de_commit",
+           "reparar_indice"]

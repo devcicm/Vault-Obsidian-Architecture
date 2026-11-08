@@ -20,8 +20,14 @@ from __future__ import annotations
 
 from typing import Any, Callable, Dict, Iterable, List
 
-CONTROLES_OBLIGATORIOS = ("AP-40", "AP-42", "AP-43")
-from vault.kernel.controles import ESTADOS  # dueño único del vocabulario (A-16)
+#: Los cuatro estados y la lista de controles obligatorios tienen un dueño:
+#: `vault.kernel.controles` (hoja del núcleo, sin imports). Aquí se importan;
+#: antes cada consumidor escribía su copia (nota de causa raíz «A canonical
+#: vocabulary has three owners», 2026-10-30).
+from vault.kernel.controles import (  # noqa: E402 - el import va con su criterio
+    CONTROLES_OBLIGATORIOS,
+    ESTADOS,
+)
 
 __all__ = [
     "CONTROLES_OBLIGATORIOS",

@@ -266,7 +266,7 @@ def _operaciones_del_vault(limite: int = 20) -> dict:
     `vault.kernel.vcs`): este listado es el "qué se ha hecho aquí" con fecha y
     autor, y de ahí se elige el punto al que volver.
     """
-    from vault_vcs import commits as operaciones_del_vault, hay_repo
+    from vault_vcs import commits_con_estado, hay_repo
     from vault_raiz import get_vault_root
 
     raiz = get_vault_root()
@@ -275,7 +275,14 @@ def _operaciones_del_vault(limite: int = 20) -> dict:
                 "error_code": "NO_HAY_REPO",
                 "message": "este vault no tiene repositorio git: no hay "
                            "operaciones versionadas"}
-    operaciones = operaciones_del_vault(raiz, limite)
+    operaciones, error = commits_con_estado(raiz, limite)
+    if error:
+        # Git no pudo leer el historial: «0 operaciones» sería un fallo
+        # disfrazado de respuesta (AP-51). Medido el 2026-11-08 con un repo
+        # de otra cuenta: la lista salía vacía y parecía limpia.
+        return {"ok": False, "tool": "vault_undo", "action": "commits",
+                "error_code": "GIT_NO_RESPONDIO",
+                "message": "git no pudo leer el historial del vault: " + error}
     return {"ok": True, "tool": "vault_undo", "action": "commits",
             "operations": operaciones, "total": len(operaciones),
             "message": f"{len(operaciones)} operacion(es) versionada(s)"}
@@ -297,7 +304,12 @@ def _reparar_indice() -> dict:
     resultado = {"ok": bool(base.get("reparado")), "tool": "vault_undo",
                  "action": "reparar-indice", **base}
     if not resultado["ok"]:
-        resultado.setdefault("error_code", "REPARACION_NO_PUDO")
+        # Dos fallos distintos: git no respondió (no sabemos nada del índice)
+        # y la reparación se quedó a medias. No se mezclan (AP-51).
+        resultado.setdefault(
+            "error_code",
+            "GIT_NO_RESPONDIO" if base.get("git_no_respondio")
+            else "REPARACION_NO_PUDO")
         resultado.setdefault("message",
                              resultado.get("motivo", "la reparacion no termino"))
     elif resultado.get("cero"):

@@ -51,6 +51,7 @@ from typing import Any, Dict, List, Optional
 
 __all__ = [
     "CONTROLES",
+    "CONTROLES_OBLIGATORIOS",
     "ESTADOS",
     "contrato_del_puerto",
     "ejecutar",
@@ -86,6 +87,15 @@ CONTROLES: Dict[str, Dict[str, Any]] = {
         "que_mide": "ninguna norma se queda sin que la pronuncie una tool",
     },
 }
+
+#: Los controles obligatorios son **las claves del registro**: se derivan, no
+#: se escriben. La lista vivia copiada en dos sitios (governance y el script de
+#: politica de certificacion) y tres copias del vocabulario de estados (una
+#: delas cuales era codigo muerto); copiar es perder la garantia de que son
+#: las mismas cuatro palabras (nota de causa raiz «A canonical vocabulary has
+#: three owners», 2026-10-30). Aqui esta el dueno: hoja del nucleo, sin
+#: imports, importable por todos.
+CONTROLES_OBLIGATORIOS = tuple(CONTROLES)
 
 #: Presupuesto de latencia por control (DEC-02/COST-a). Medido: ver
 #: `tests/test_puerto_controles.py`. El camino ingenuo medía ~149 s porque

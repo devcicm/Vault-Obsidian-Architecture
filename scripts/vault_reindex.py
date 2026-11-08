@@ -190,7 +190,41 @@ Notas:
         help="Exit 0 si el índice refleja el disco, 1 si hay desfase",
     )
 
+    parser.add_argument(
+        "--check-indices",
+        dest="check_indices",
+        action="store_true",
+        help="Exit 0 si cada entrada de los índices de dominio (.bugs-index.json, "
+             ".code-index.json…) apunta a una nota que existe, 1 si alguna no",
+    )
+
     args = parser.parse_args()
+
+    if args.check_indices:
+        # Los índices de dominio son otra capa: los escribe cada `*_save` y
+        # los reescribe `vault_move`/`vault_delete` (el dueño:
+        # `vault_io.actualizar_indices_de_dominio`). Antes nadie los leía, así
+        # que una entrada que apuntaba a una nota ya renombrada era invisible
+        # (nota de causa raíz «vault_move does not update per-domain
+        # indexes», 2026-10-30). La comprobación la hace el mismo dueño.
+        from vault_io import verificar_indices_de_dominio
+
+        informe = verificar_indices_de_dominio()
+        informe["tool"] = "vault_reindex"
+        informe["action"] = "python vault_reindex.py --check-indices"
+        if not informe["ok"]:
+            informe["error_code"] = "INDEX_STALE"
+            informe["message"] = (
+                f"{len(informe['rotas'])} entrada(s) de índices de dominio "
+                f"apuntan a notas que no existen; "
+                f"{len(informe['ilegibles'])} índice(s) ilegibles.")
+        else:
+            informe["message"] = (
+                f"{informe['revisados']} entrada(s) de índices de dominio: "
+                f"todas resuelven.")
+        informe = completar_envelope("vault_reindex", informe)
+        print(json.dumps(informe, indent=2, ensure_ascii=False))
+        return 0 if informe["ok"] else 1
 
     if args.check:
         informe = index_coherence()

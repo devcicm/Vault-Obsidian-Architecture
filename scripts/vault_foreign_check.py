@@ -62,6 +62,7 @@ from vault_version import CURRENT_VERSION
 from vault_regex import RE_WIKILINK_DESTINO  # dueño único del patrón (AP-50)
 from vault_audit_catalog import es_documentacion_del_estandar  # dueño único del criterio
 from vault_io import is_ajeno_al_vault, is_snapshot_path  # dueños únicos de qué es instantánea y qué es ajeno
+from vault.kernel.controles import ESTADOS  # dueño único del vocabulario de estados de control (AP-57)
 from vault_lib import (  # dueños únicos de sus criterios (AP-57)
     separar_frontmatter,
     indice_de_destinos,
@@ -330,6 +331,12 @@ def contrastar(destino: Path) -> Dict[str, Any]:
         # arreglarlos, que es la única acción que el hallazgo desbloquea.
         "wikilinks_unresolved_sample": rotos[:20],
         "wikilinks_unresolved_all": rotos,
+        # El vocabulario con el que se contrasta: los cuatro estados de control
+        # que el estándar usa. Se publica para que quien lea el informe sepa
+        # contra qué diccionario se midió el vault ajeno — un vault que usa
+        # otras palabras no está roto, pero no se puede comparar como si
+        # hablara el mismo idioma (dueño: `vault.kernel.controles`).
+        "criterio_estados_de_control": list(ESTADOS),
     }
 
 

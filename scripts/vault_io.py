@@ -694,6 +694,52 @@ def actualizar_indices_de_dominio(origen: str, destino: Optional[str] = None) ->
     return {"updated": bool(tocados), "indexes": tocados, "unreadable": ilegibles}
 
 
+def verificar_indices_de_dominio(raiz: Optional[Path] = None) -> Dict[str, Any]:
+    """Comprueba que cada `relPath` de los índices de dominio exista (D-04).
+
+    El índice de dominio guarda cada nota por su ruta relativa. Cuando una
+    nota se renombra con `vault_move`, el índice se reescribe (lo hace
+    `actualizar_indices_de_dominio`, el mismo dueño); cuando se borra fuera
+    de ese camino, la entrada queda apuntando a una ruta que ya no existe.
+    La cuenta de entradas puede seguir cuadrando —la nota existe con otro
+    nombre— y por eso el defecto era invisible: nada leía estos ficheros.
+
+    Esta función es la lectura del mismo dueño: pregunta al disco, no a una
+    lista escrita a mano. Devuelve los `relPath` que no existen y los
+    índices ilegibles, que son dos cosas distintas: una ruta rota y un
+    fichero que no se pudo leer.
+    """
+    raiz = Path(raiz) if raiz is not None else get_vault_root()
+    rotas: List[str] = []
+    ilegibles: List[str] = []
+    revisados = 0
+    for indice in sorted(raiz.glob("*/.*-index.json")):
+        rel_indice = indice.relative_to(raiz).as_posix()
+        try:
+            datos = json.loads(indice.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            ilegibles.append(rel_indice)
+            continue
+        for clave, lista in datos.items():
+            if not isinstance(lista, list):
+                continue
+            for entrada in lista:
+                if not isinstance(entrada, dict):
+                    continue
+                rel = entrada.get("relPath")
+                if not isinstance(rel, str) or not rel:
+                    continue
+                revisados += 1
+                if not (raiz / rel).exists():
+                    rotas.append(f"{rel_indice} -> {rel}")
+    return {
+        "ok": not rotas and not ilegibles,
+        "revisados": revisados,
+        "rotas": rotas,
+        "ilegibles": ilegibles,
+    }
+
+
 class _Lote:
     """Lo apuntado dentro de `escrituras_en_lote`: secciones y notas del grafo."""
 

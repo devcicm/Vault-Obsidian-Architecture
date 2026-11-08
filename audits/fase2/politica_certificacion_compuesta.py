@@ -74,10 +74,20 @@ from __future__ import annotations
 
 import datetime
 import re
+import sys
+from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
-CONTROLES_OBLIGATORIOS = ("AP-40", "AP-42", "AP-43")
-ESTADOS = ("PASS", "FAIL", "BLOCKED")
+#: Los controles obligatorios los declara su dueño —`vault.kernel.controles`,
+#: hoja del núcleo sin imports— y aquí se leen. Antes esta lista estaba
+#: escrita a mano en dos sitios: copiarla es perder la garantía de que son los
+#: mismos tres controles (nota de causa raíz «A canonical vocabulary has three
+#: owners», 2026-10-30).
+_RAIZ = Path(__file__).resolve().parents[2]
+if str(_RAIZ) not in sys.path:
+    sys.path.insert(0, str(_RAIZ))
+from vault.kernel.controles import CONTROLES_OBLIGATORIOS  # noqa: E402
+
 PREFIJOS_GRAVES = ("RUNTIME:", "ESCAPE_NUEVO:")
 ESTADO_RATIFICADO = "RATIFICADO"
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")

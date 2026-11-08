@@ -879,6 +879,33 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": None,
         },
     },
+    "GIT_NO_RESPONDIO": {
+        "category": "infrastructure",
+        "severity": "error",
+        "message": "Git no pudo responder: hay repositorio, pero su historial o su índice no se pudieron leer.",
+        "recovery": {
+            "action": "manual",
+            "hint": "La causa más frecuente es la propiedad del repositorio: git rechaza "
+                    "un repo de otra cuenta con «dubious ownership». Ejecutar git como "
+                    "la persona propietaria del vault, o declarar ese repositorio con "
+                    "`safe.directory` en la cuenta que lo opera. Ninguna respuesta vacía "
+                    "de git se toma como «no hay nada»: un fallo que se lee como un "
+                    "éxito es AP-51.",
+            "docs": None,
+        },
+    },
+    "REPARACION_NO_PUDO": {
+        "category": "infrastructure",
+        "severity": "error",
+        "message": "La reparación del índice no pudo terminar.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el motivo en `motivo`: si git no respondió, la causa está "
+                    "en GIT_NO_RESPONDIO; si el índice cambió mientras se reparaba, "
+                    "reintentar la operación (es idempotente).",
+            "docs": None,
+        },
+    },
     "REGISTRY_UNAVAILABLE": {
         "category": "dependency",
         "severity": "error",

@@ -25,10 +25,19 @@ NORMA = {
         "Timestamps solo con fecha (2026-05-07), con '...' literal, sin zona horaria "
         "o en formato no ISO 8601. vault_diff y vault_timeline no pueden ordenar versiones."
     ),
-    "signal": "vault_audit detecta createdAt/updatedAt que no coinciden con patrón ISO 8601.",
+    "signal": (
+        "vault_norms --scan detecta createdAt/updatedAt ausentes o que no "
+        "coinciden con el patrón ISO 8601 (UTC YYYY-MM-DDTHH:mm:ss.sssZ)."
+    ),
     "prevention": "vault_write genera timestamps con datetime.now(timezone.utc).isoformat() automáticamente.",
     "tools_enforcing": ["vault_write"],
-    "tools_detecting": ["vault_audit"],
+    # La declaración apuntaba a `vault_audit`, que NO lo detectaba: su única
+    # mención era un comentario que decía que la norma se citaba allí antes
+    # (hasta v41.0). El detector vive en `vault_norms --scan`, y el guard de
+    # trazas daba el visto bueno a un comentario (nota de causa raíz «AP-13
+    # detects absent timestamps but not invalid ones», 2026-10-30). El detector
+    # ya distingue las dos mitades —ausente e inválido— desde la corrección.
+    "tools_detecting": ["vault_norms"],
     "introduced_version": "v19",
     "revisado_en": "2026-10-09",
 }

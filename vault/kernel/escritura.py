@@ -110,17 +110,18 @@ def escritura_atomica(
     except OSError as exc:
         if exc.errno == errno.ENOSPC:
             exc.errno = errno.ENOSPC
+        raise
+    finally:
+        # El temporal se limpia SIEMPRE, también con `KeyboardInterrupt`: antes
+        # solo se limpiaba en dos ramas de `except` y un Ctrl-C dejaba el
+        # `.tmp.*` en el vault (medido el 2026-10-30, nota «Atomic-write
+        # temporary file after KeyboardInterrupt»). `finally` cubre las dos
+        # salidas —éxito y fallo— y `missing_ok` tolera que el `replace` ya
+        # lo consumiera.
         try:
             temporary.unlink(missing_ok=True)
         except OSError:
             pass
-        raise
-    except Exception:
-        try:
-            temporary.unlink(missing_ok=True)
-        except OSError:
-            pass
-        raise
 
 
 def apartar_ilegible(path: Path) -> Path:

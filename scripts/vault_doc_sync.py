@@ -656,4 +656,9 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    # A-02: la última puerta que quedaba sin contrato de ejecución. Con
+    # `wrap_main`, un fallo es un envelope (error_code, categoría, recovery) y
+    # no un traceback por stderr; el código de salida no cambia.
+    from vault_errors import wrap_main
+
+    sys.exit(wrap_main(main, "vault_doc_sync"))

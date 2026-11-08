@@ -72,6 +72,23 @@ BASELINE = Path(__file__).parent / "criterios-baseline.json"
 #: está tomando la decisión por su cuenta.
 CRITERIOS_CON_DUENO: List[Dict[str, Any]] = [
     {
+        "criterio": "que_estado_tiene_un_control",
+        # El dueño es la hoja del núcleo: los cuatro estados separan «corrió y
+        # no encontró nada» de «no corrió», y esa distinción solo vale si
+        # todos los productores y consumidores usan las mismas cuatro
+        # palabras. Antes había tres declaraciones que coincidían por
+        # casualidad (nota de causa raíz «A canonical vocabulary has three
+        # owners», 2026-10-30); dos eran código muerto.
+        "dueño": "vault.kernel.controles",
+        "simbolo": "ESTADOS",
+        "senales": ["ejecutado", "degradado", "fallido", "no_ejecutado"],
+        "por_que": (
+            "Los cuatro estados separan 'corrió y no encontró nada' de 'no "
+            "corrió'. Copiarlos es perder esa distinción, y la divergencia "
+            "caería en la evidencia QG que consume la puerta de publicación."
+        ),
+    },
+    {
         "criterio": "que_es_una_instantanea",
         "dueño": "vault_io",
         "simbolo": "is_snapshot_path",

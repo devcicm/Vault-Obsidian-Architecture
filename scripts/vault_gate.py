@@ -41,6 +41,7 @@ verde aquí no es verde allí.
 import argparse
 import ast
 import json
+import os
 import re
 import subprocess
 import sys
@@ -96,6 +97,13 @@ PUERTAS: List[Dict[str, Any]] = [
         "id": "conteos",
         "nivel": "rapida",
         "cmd": ["vault_doc_counts.py", "--check", "--strict"],
+        # La puerta cuenta la suite con `pytest --collect-only`: su coste
+        # crece con cada test que se añade. El presupuesto del runner es de
+        # 600 s, pero el hijo se autodimensionaba con 60 s y moría antes
+        # (nota de causa raíz «The gate that counts tests has five seconds of
+        # headroom», 2026-10-30). Aquí se declara el presupuesto propio y
+        # `_correr` lo reenvía al hijo.
+        "timeout": 300,
         "mide": "Ninguna cifra de la documentación está escrita a mano (AP-47)",
         "fix": "python scripts/vault_doc_counts.py --fix",
     },
@@ -420,6 +428,11 @@ def _correr(puerta: Dict[str, Any], timeout: float = LIMITE_POR_PUERTA) -> Dict[
     """
     timeout = float(puerta.get("timeout", timeout))
     inicio = time.monotonic()
+    # El presupuesto del runner es el del hijo: sin reenviarlo, la tool se
+    # autodimensionaba con 60 s (VAULT_TOOL_TIMEOUT) y una puerta que necesita
+    # más moría sola, con un TOOL_TIMEOUT que no era un veredicto (nota de
+    # causa raíz «The gate that counts tests has five seconds of headroom»).
+    entorno = {**os.environ, "VAULT_TOOL_TIMEOUT": str(int(timeout))}
     try:
         proc = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / puerta["cmd"][0]), *puerta["cmd"][1:]],
@@ -429,6 +442,7 @@ def _correr(puerta: Dict[str, Any], timeout: float = LIMITE_POR_PUERTA) -> Dict[
             errors="replace",
             timeout=timeout,
             cwd=str(REPO_ROOT),
+            env=entorno,
         )
     except subprocess.TimeoutExpired:
         return {

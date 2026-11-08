@@ -135,7 +135,7 @@ Notas del mismo tipo con campos faltantes, tipos mezclados (timestamp con/sin co
 
 - **Severidad:** high
 - **Enforcement:** audit
-- **Detectado por:** vault_audit
+- **Detectado por:** vault_norms
 
 Timestamps solo con fecha (2026-05-07), con '...' literal, sin zona horaria o en formato no ISO 8601. vault_diff y vault_timeline no pueden ordenar versiones.
 
@@ -1107,7 +1107,7 @@ Notas del mismo tipo con campos faltantes, tipos mezclados (timestamp con/sin co
 
 - **Severity:** high
 - **Enforcement:** audit
-- **Detected by:** vault_audit
+- **Detected by:** vault_norms
 
 Timestamps solo con fecha (2026-05-07), con '...' literal, sin zona horaria o en formato no ISO 8601. vault_diff y vault_timeline no pueden ordenar versiones.
 

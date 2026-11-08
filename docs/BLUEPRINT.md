@@ -89,7 +89,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-10** — Migración sin plan de rollback | audit | `framework` | `test_norms_coherence.py` |
 | **AP-11** — Skeleton files — frontmatter válido, contenido vacío | guard | `framework` | `test_envelope_forma.py`, `test_voice.py` |
 | **AP-12** — Frontmatter inconsistente entre notas del mismo tipo | audit | — | `test_capa4_audit_ejercitada.py` |
-| **AP-13** — Timestamps inválidos o incompletos en frontmatter | audit | — | `test_audit_missing_created.py`, `test_meta_contrato.py` |
+| **AP-13** — Timestamps inválidos o incompletos en frontmatter | audit | `framework` | `test_audit_missing_created.py`, `test_meta_contrato.py` |
 | **AP-14** — Wiki-links rotos o vacíos | guard+audit | — | `test_audit_acciones_de_movimiento.py`, `test_normas_caras.py`, `test_normas_enlaces_sin_solape.py`, `test_norms_coherence.py` |
 | **AP-15** — Archivos externos depositados en la raíz del vault | guard+audit | `framework` | `test_normas_sin_registro_a_mano.py`, `test_vault_norms_audit.py` |
 | **AP-16** — Sin identificador de agente en frontmatter | audit | — | `test_ap16_prevencion_dice_lo_que_hace.py`, `test_ap64_responsable.py`, `test_context_memory.py` |
@@ -121,10 +121,10 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-37** — No-op silencioso — ok: true sin indicador de trabajo | audit | `noop` | `test_noop_audit.py`, `test_norms_coherence.py`, `test_vault_gate.py`, `test_voice.py` |
 | **AP-38** — Vocabulario validado después de escribir, no antes | guard+audit | `framework` | `test_status_vocabulary.py` |
 | **AP-39** — Vocabulario abierto sin memoria | guard+audit | `framework` | `test_ap39_registro_en_el_write_path.py`, `test_politica_certificacion_compuesta.py`, `test_tag_vocabulary.py`, `test_vault_init.py` |
-| **AP-40** — Contrato publicado que la CLI rechaza | guard+audit | `contratos`, `framework` | `test_ap40_42_43_estados.py`, `test_catalog_params.py`, `test_fase2_paridad_fail_closed.py`, `test_puerto_controles.py` |
+| **AP-40** — Contrato publicado que la CLI rechaza | guard+audit | `contratos`, `framework` | `test_ap40_42_43_estados.py`, `test_catalog_params.py`, `test_fase2_paridad_fail_closed.py`, `test_puerto_controles.py`, `test_vocabulario_de_controles.py` |
 | **AP-41** — Máquina de estados declarada sin verificar | guard+audit | `framework` | `test_status_machine.py`, `test_voice.py` |
-| **AP-42** — Tool publicada sin haberse ejecutado nunca | guard+audit | `framework` | `test_ap40_42_43_estados.py`, `test_fase2_politica_qg.py`, `test_politica_certificacion_compuesta.py`, `test_puerto_controles.py`, `test_smoke.py`, `test_vault_norms_audit.py`, `test_vault_toolkit_audit.py` |
-| **AP-43** — Norma sin refuerzo en el punto de uso | guard+audit | `framework` | `test_ap39_registro_en_el_write_path.py`, `test_ap40_42_43_estados.py`, `test_puerto_controles.py`, `test_vault_norms_audit.py`, `test_voice.py` |
+| **AP-42** — Tool publicada sin haberse ejecutado nunca | guard+audit | `framework` | `test_ap40_42_43_estados.py`, `test_fase2_politica_qg.py`, `test_politica_certificacion_compuesta.py`, `test_puerto_controles.py`, `test_smoke.py`, `test_vault_norms_audit.py`, `test_vault_toolkit_audit.py`, `test_vocabulario_de_controles.py` |
+| **AP-43** — Norma sin refuerzo en el punto de uso | guard+audit | `framework` | `test_ap39_registro_en_el_write_path.py`, `test_ap40_42_43_estados.py`, `test_puerto_controles.py`, `test_vault_norms_audit.py`, `test_vocabulario_de_controles.py`, `test_voice.py` |
 | **AP-44** — Verificación autoconsistente — la tool se certifica a sí misma | guard+audit | `framework` | `test_ap44_verificacion_autoconsistente.py`, `test_changelog_check.py`, `test_kernel.py`, `test_norms_coherence.py`, `test_procesos_git.py`, `test_puente_sin_hogar.py` |
 | **AP-45** — Cobertura sin evidencia — la nota existe para llenar la sección | guard+audit | `framework` | `test_ap45_cobertura_sin_evidencia.py` |
 | **AP-46** — Frontmatter a mano — cada tool es su propio escritor | guard+audit | `framework` | `test_ap46_escritores_migrados.py`, `test_ap46_interpolacion_cruda.py`, `test_ap46_write_path_unico.py`, `test_norms_coherence.py`, `test_vault_sanacion.py` |

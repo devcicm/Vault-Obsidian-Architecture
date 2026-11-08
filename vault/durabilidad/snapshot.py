@@ -307,7 +307,11 @@ class ServicioSnapshot:
         actual, cuenta = merkle_de(ruta, algo, ilegibles)
         intacto = actual == sellada and not ilegibles
         return {
-            "ok": True,
+            # `ok` dice si la verificación pudo caracterizar el backup.
+            # Con ficheros ilegibles la respuesta es «no se pudo verificar»:
+            # un `ok: true` con `intact: false` se leía como un backup
+            # verificado (AP-51). El merkle y el estado siguen publicados.
+            "ok": not ilegibles,
             "backup": nombre,
             "merkle_algo": algo,
             "intact": intacto,
