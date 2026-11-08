@@ -6,7 +6,7 @@ hallazgos:
 - id: INC-0001
   norm: AP-36
   path: ../../vault-backups
-  observed: '''vault-backups'' existe 2 nivel(es) por encima del vault (<RUTA-LOCAL> Ivan\Documents\GitHub\vault-backups)
+  observed: '''vault-backups'' existe 2 nivel(es) por encima del vault (<RUTA-LOCAL>\Documents\GitHub\vault-backups)
     — side-effect escrito fuera del vault root.'
   environment: escenario A (sandbox canonico)
   root_cause: 'efecto lateral escrito FUERA del vault root (AP-36): un directorio vault-backups existe

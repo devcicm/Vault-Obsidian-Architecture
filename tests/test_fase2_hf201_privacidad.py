@@ -86,6 +86,23 @@ def test_los_marcadores_neutros_no_son_exposicion():
         assert not categorias, (muestra, categorias)
 
 
+def test_un_residuo_de_redaccion_dentro_de_una_ruta_es_exposicion():
+    """La redacción dejó el resto del nombre de la cuenta pegado a la ruta.
+
+    El marcador `<RUTA-LOCAL>` seguido del resto del nombre de la cuenta y de
+    un separador no casa con el patrón de ruta (ya no hay `Users/`) ni con el
+    de cuenta (el nombre completo no aparece): el residuo era invisible para
+    los dos. El nombre del titular es público (está en la LICENSE); lo que no
+    puede publicarse es la ruta de la máquina.
+    """
+    cuenta = CUENTA.split()[0]
+    texto = "<RUTA-LOCAL> " + cuenta + "\\Documents\\GitHub\\repo"
+    hallazgos = _auditor().clasificar(texto)
+    assert any(h["categoria"] == "ruta_local" for h in hallazgos), hallazgos
+    # Y el hallazgo no reproduce el valor: solo su huella.
+    assert cuenta not in json.dumps(hallazgos, ensure_ascii=False), hallazgos
+
+
 def test_el_blob_que_nombra_qa_esta_expuesto_y_el_head_no():
     """QA nombro el blob de 44f6f89:audits/fase2/logs/L3-TD0001-antes.txt como
     expuesto. La verificacion exacta es sobre ESE BLOB (git show), no sobre el
@@ -116,8 +133,10 @@ def test_la_historia_muestra_exposicion_y_el_head_esta_limpio():
 
 
 def test_el_estado_actual_esta_saneado():
-    problemas = _auditor().estado_actual(
-        ("audits/fase2/logs/", "audits/handoff/logs/", "audits/fase2/", "audits/handoff/"))
+    # Todo `audits/`, no solo las dos carpetas que la orden mencionaba: la
+    # evidencia de `audits/architecture/` tambien llevo el residuo de la
+    # redaccion, y por eso la zona estaba fuera del alcance del test.
+    problemas = _auditor().estado_actual(("audits/",))
     assert problemas == [], problemas
 
 

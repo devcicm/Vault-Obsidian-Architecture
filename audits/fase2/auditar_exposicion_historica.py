@@ -108,6 +108,30 @@ def clasificar(texto: str) -> List[Dict[str, str]]:
     if cuenta and cuenta.lower() in texto.lower():
         salidas.append({"categoria": "cuenta_usuario",
                         "huella": _huella(cuenta)})
+    if cuenta:
+        # Una palabra del nombre de la cuenta **dentro de una ruta** es
+        # exposición aunque la cuenta completa no aparezca: la redaccion
+        # manual de las pruebas de instalacion sustituyo la carpeta del autor
+        # (`Users` + la cuenta) por `<RUTA-LOCAL>` y dejo el resto del nombre
+        # pegado a la ruta (`<RUTA-LOCAL> <resto>\Documents\...`). Despues de
+        # esa redaccion no hay `Users/` (el patron de ruta no casa) ni nombre
+        # completo (el patron de cuenta no casa): el residuo era invisible
+        # para los dos.
+        # El nombre del titular es publico (esta en la LICENSE); lo que no
+        # debe publicarse es la ruta de la maquina.
+        #
+        # El caso que se mide es el **residuo de la redaccion**: el marcador
+        # `<RUTA-LOCAL>` seguido del resto del nombre de la cuenta y de un
+        # separador. No se busca la palabra suelta en cualquier parte: una
+        # expresion regular que nombra la cuenta (`r"\b(Carlos\s+Ivan)\b"`)
+        # tiene una `\s` que parece un separador, y las rutas de verdad las
+        # cubre el patron `Users/` de arriba.
+        for palabra in {p for p in re.split(r"\s+", cuenta) if len(p) > 2}:
+            residuo = re.compile(
+                r"(?i)<RUTA-LOCAL>[ \t]*" + re.escape(palabra) + r"[\\/]")
+            if residuo.search(texto):
+                salidas.append({"categoria": "ruta_local",
+                                "huella": _huella(palabra)})
     for coincidencia in CREDENCIAL.finditer(texto):
         salidas.append({"categoria": "forma_secreto",
                         "huella": _huella(coincidencia.group(0))})

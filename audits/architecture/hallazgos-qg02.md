@@ -33,7 +33,7 @@ vocabulario): ese es un defecto **del producto**, no del entorno.
 | INC-0011 | AP-07 | `03_Decisions/mcp-transport-provenance.md` | ADR incompleto — secciones faltantes: Contexto, Decisión, Consecuencias. | escenario A (sandbox canonico) | violacion real del producto (contenido de evidencia) | medium |
 | INC-0012 | AP-64 | `03_Decisions/mcp-transport-provenance.md` | Decisión cerrada sin `responsable`: nadie responde de su porqué. | escenario A (sandbox canonico) | violacion real del producto (contenido de evidencia) | medium |
 | INC-0013 | CN-03 | `07_Knowledge/parser-evidence.md` | status 'active' fuera del vocabulario canónico ['approved', 'archived', 'deprecated', 'dra | escenario A (sandbox canonico) | violacion real del producto (contenido de evidencia) | medium |
-| INC-0014 | AP-36 | `../../vault-backups` | 'vault-backups' existe 2 nivel(es) por encima del vault (<RUTA-LOCAL> Ivan\Documents\GitHu | escenario A (sandbox canonico) | contaminacion de ejecuciones previas | critical |
+| INC-0014 | AP-36 | `../../vault-backups` | 'vault-backups' existe 2 nivel(es) por encima del vault (<RUTA-LOCAL>\Documents\GitHu | escenario A (sandbox canonico) | contaminacion de ejecuciones previas | critical |
 | INC-0015 | AP-39 | `19_Audits/vocabulary/tag-ledger.json` | 3 terminos en uso sin memoria canonica (command, hub, nav) en un runtime recien creado por | escenario B (runtime limpio creado por el producto) | violacion real del producto (CORREGIDA) | medium |
 
 ## Fichas completas
@@ -196,7 +196,7 @@ vocabulario): ese es un defecto **del producto**, no del entorno.
 
 ### INC-0014 — AP-36 (`../../vault-backups`)
 
-- **Observado:** 'vault-backups' existe 2 nivel(es) por encima del vault (<RUTA-LOCAL> Ivan\Documents\GitHub\vault-backups) — side-effect escrito fuera del vault root.
+- **Observado:** 'vault-backups' existe 2 nivel(es) por encima del vault (<RUTA-LOCAL>\Documents\GitHub\vault-backups) — side-effect escrito fuera del vault root.
 - **Entorno:** escenario A (sandbox canonico)
 - **Causa raíz:** efecto lateral escrito FUERA del vault root (AP-36): un directorio vault-backups existe dos niveles por encima del vault; procede de una ejecucion previa de backup
 - **Reproducción:** `python scripts/vault_norms.py --audit --root <runtime>`

@@ -36,17 +36,26 @@ SECRET_PATTERNS = [
     {
         "id": "aws_secret_key",
         # Una clave de AWS tiene 40 caracteres del alfabeto base64 **con
-        # mayúsculas mezcladas**: la probabilidad de que una sea 40 hex en
-        # minúsculas es ~(16/64)^40, es decir, nula. Un hash de commit de git
-        # (SHA-1) tiene exactamente esa forma, y el patrón anterior lo
-        # bloqueaba: medido el 2026-11-08, una nota de auditoría legítima que
-        # citaba el commit `1db90da…` fue rechazada con `GUARD_CHAIN_FAILED`
-        # y la evidencia hubo que degradarse a la forma abreviada (AP-47 y
-        # AP-44: el guard debe medir secretos, no hashes).
-        "pattern": r"(?<![A-Za-z0-9/+=])(?![0-9a-f]{40})[A-Za-z0-9/+=]{40}(?![A-Za-z0-9/+=])",
+        # mayúsculas, minúsculas y dígitos mezclados**: la probabilidad de que
+        # una sea 40 hex en minúsculas es ~(16/64)^40, es decir, nula. Un hash
+        # de commit de git (SHA-1) tiene exactamente esa forma, y el patrón
+        # anterior lo bloqueaba: medido el 2026-11-08, una nota de auditoría
+        # legítima que citaba el commit `1db90da…` fue rechazada con
+        # `GUARD_CHAIN_FAILED` y la evidencia hubo que degradarse a la forma
+        # abreviada (AP-47 y AP-44: el guard debe medir secretos, no hashes).
+        #
+        # Y el caso de las 40 rayas: un separador de 40 `=` en Markdown —o el
+        # banner del propio servidor MCP— tiene la forma del alfabeto base64
+        # y bloqueaba la nota. La regla es la del secreto de verdad: **clases
+        # mezcladas** dentro de los 40 caracteres.
+        "pattern": (r"(?<![A-Za-z0-9/+=])(?![0-9a-f]{40})(?![0-9A-F]{40})"
+                    r"(?=[A-Za-z0-9/+=]{40})"
+                    r"(?=[A-Za-z0-9/+=]{0,39}[A-Z])"
+                    r"(?=[A-Za-z0-9/+=]{0,39}[0-9])"
+                    r"[A-Za-z0-9/+=]{40}(?![A-Za-z0-9/+=])"),
         "severity": "high",
         "description": "Possible AWS secret access key (40 chars base64-like, "
-                       "not a git SHA-1)",
+                       "mixed classes, not a git SHA-1 nor a separator)",
     },
     {
         "id": "github_personal_token",
@@ -74,9 +83,23 @@ SECRET_PATTERNS = [
     },
     {
         "id": "api_key_assignment",
-        "pattern": r"(?i)(api[_-]?key|apikey|secret|token)\s*[:=]\s*['\"]?([A-Za-z0-9_\-]{8,})",
+        # Una **asignación** no es un secreto: `token = document.createElementNS(...)`
+        # en un diagrama generado, o `token = "abc"` en una nota, son código y
+        # prosa, no una credencial. El patrón anterior (8 caracteres) bloqueaba
+        # ambas cosas: medido el 2026-11-08, el HTML de `.archify/` —generado
+        # por el propio repo— caía en el patron, y una nota que habla de
+        # tokens tampoco se podía escribir.
+        #
+        # La regla ahora es la del secreto: **longitud y clases mezcladas**
+        # (20+ caracteres, con mayúscula y con dígito). Un identificador o un
+        # nombre de función no las tiene; una clave sí.
+        "pattern": (r"(?i:(api[_-]?key|apikey|secret|token))\s*[:=]\s*['\"]?"
+                    r"(?=[A-Za-z0-9_\-]{20,})"
+                    r"(?=[A-Za-z0-9_\-]{0,19}[A-Z])"
+                    r"(?=[A-Za-z0-9_\-]{0,19}[0-9])"
+                    r"[A-Za-z0-9_\-]{20,}"),
         "severity": "high",
-        "description": "Hardcoded API key/secret/token assignment",
+        "description": "Hardcoded API key/secret/token assignment (long, mixed classes)",
     },
     {
         "id": "bearer_token",
