@@ -11,7 +11,7 @@ Responde tres preguntas sobre cada tool: **dónde se puede usar**, **si hay evid
 | Operaciones del vault por CLI | 97 | `vault run <tool>` desde la wheel instalada; por MCP las que estén expuestas | agentes y personas con un vault |
 | Operaciones del vault solo por MCP | 2 | servidor MCP (JavaScript nativo); `vault run` no las ejecuta | agentes por MCP |
 | Mantenimiento del estándar | 30 | solo en un checkout de este repo (`python scripts/<tool>.py`); la wheel no las instala | quien mantiene el estándar |
-| Internas | 19 | no son tools de un vault: librerías, registros o CLIs de diagnóstico del toolkit | nadie desde fuera |
+| Internas | 20 | no son tools de un vault: librerías, registros o CLIs de diagnóstico del toolkit | nadie desde fuera |
 | Archivadas | 5 | no se ejecutan; cada una nombra su reemplazo | nadie |
 
 Las 129 activas son 97 + 2 + 30. Expuestas por el servidor MCP: **98**; las otras 31 se ejecutan por CLI o en el checkout.
@@ -222,6 +222,7 @@ Existen en `scripts/` pero no son tools de un vault: librerías, registros o uti
 | `vault_entorno` | No es tool del catalogo: es el registro canonico de las variables de entorno (AP-05) y su CLI publica presupuesto y help. Su consumidor es quien configura la shell, no un vault. |
 | `vault_errors` | Catálogo de códigos de error y su CLI de consulta. Es infraestructura que consumen todas las tools, no una capacidad del vault: publicarla daría a un agente una tool cuyo efecto sobre el vault es ninguno. |
 | `vault_index` | Superseded por vault_reindex y vault_master_index, que son las publicadas. |
+| `vault_insights` | Inventario por lotes de solo lectura y comparacion de snapshots (propuesta `data-engineering-contracts-and-vault-applicability`). Es una utilidad analitica de la persona, no una tool de agente: no se publica en el catalogo MCP ni se expone por la red. |
 | `vault_link_safety` | Librería de validación de enlaces que consumen las tools de grafo; sin CLI. |
 | `vault_manifest` | Lee y valida el manifiesto del estándar, no el vault. |
 | `vault_mcp` | Arranque y diagnóstico del propio servidor MCP. Su superficie es el transporte, no el vault. |

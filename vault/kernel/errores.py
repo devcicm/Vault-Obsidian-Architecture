@@ -859,6 +859,43 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": None,
         },
     },
+    "SCHEMA_MISMATCH": {
+        "category": "validation",
+        "severity": "error",
+        "message": "Los dos artefactos son de esquemas distintos.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Compara artefactos del mismo esquema; mezclar versiones "
+                    "distintas convierte una diferencia de formato en un "
+                    "cambio de dato.",
+            "docs": None,
+        },
+    },
+    "PREFERENCES_UNREADABLE": {
+        "category": "io",
+        "severity": "error",
+        "message": "No se pudo leer el contexto de preferencias.",
+        "recovery": {
+            "action": "run_tool",
+            "tool": "vault_preferences",
+            "args": ["--list"],
+            "hint": "Revisa 17_Preferences/ y el envelope de --list para ver "
+                    "qué fichero falla.",
+            "docs": None,
+        },
+    },
+    "DELETE_FORBIDDEN": {
+        "category": "governance",
+        "severity": "error",
+        "message": "La politica de este vault prohibe borrar en esa seccion.",
+        "recovery": {
+            "action": "manual",
+            "hint": "La seccion esta en `no_borrar` de 00_System/reglas.json: "
+                    "mueve la nota a cuarentena o corrige la politica del vault. "
+                    "Borrar notas es decision del dueno.",
+            "docs": "vault-obsidian-architecture.md \u00a7Inmutabilidad por vault",
+        },
+    },
     "IMMUTABLE_NOTE": {
         "category": "governance",
         "severity": "error",

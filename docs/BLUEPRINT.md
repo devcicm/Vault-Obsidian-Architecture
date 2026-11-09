@@ -55,7 +55,7 @@ regenera.*
 | **Kernel** (`kernel`) | 4 | 24 | 1 | depender de cualquier contexto de dominio |
 | **Autoría** (`autoria`) | 7 | 47 | 0 | — |
 | **Grafo** (`grafo`) | 4 | 15 | 0 | — |
-| **Gobernanza** (`gobernanza`) | 21 | 13 | 0 | — |
+| **Gobernanza** (`gobernanza`) | 21 | 14 | 0 | — |
 | **Índices** (`indices`) | 12 | 7 | 0 | — |
 | **Consulta** (`consulta`) | 7 | 11 | 0 | base de datos; embeddings; servicio externo |
 | **Ciclo de vida** (`ciclo_de_vida`) | 3 | 10 | 0 | — |
@@ -77,7 +77,7 @@ rojo, y una puerta en rojo se desactiva.
 
 | Norma | Enforcement | Puertas | Tests |
 |---|---|---|---|
-| **AP-01** — Documentación alucinada | audit | — | `test_ap01_codigo_inexistente.py`, `test_ap01_prosa.py`, `test_ap40_42_43_estados.py`, `test_ap46_editores.py`, `test_cifras_de_normas_y_cli_groups.py`, `test_norms_coherence.py`, `test_skills_catalogo.py`, `test_skills_contract.py` |
+| **AP-01** — Documentación alucinada | audit | — | `test_ap01_codigo_inexistente.py`, `test_ap01_prosa.py`, `test_ap40_42_43_estados.py`, `test_ap46_editores.py`, `test_cifras_de_normas_y_cli_groups.py`, `test_norms_coherence.py`, `test_skills_catalogo.py`, `test_skills_contract.py`, `test_voz_solo_normas_relevantes.py` |
 | **AP-02** — Proliferación de versiones del mismo documento | audit | — | `test_ap02_versiones_misma_carpeta.py`, `test_norms_coherence.py`, `test_skills_contract.py` |
 | **AP-03** — Stubs sin política de expansión | audit | — | `test_normas_de_audit_ejercitadas.py`, `test_pat2_stub_con_plazo.py` |
 | **AP-04** — Features aspiracionales documentadas como implementadas | audit | — | — |
@@ -87,7 +87,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-08** — Documentación anclada a versiones obsoletas | audit | — | `test_ap08_version_pinned.py`, `test_ap08_vigencia.py` |
 | **AP-09** — Runbooks fuera de estructura | audit | `framework` | `test_vault_norms_audit.py` |
 | **AP-10** — Migración sin plan de rollback | audit | `framework` | `test_norms_coherence.py` |
-| **AP-11** — Skeleton files — frontmatter válido, contenido vacío | guard | `framework` | `test_envelope_forma.py`, `test_voice.py` |
+| **AP-11** — Skeleton files — frontmatter válido, contenido vacío | guard | `framework` | `test_envelope_forma.py`, `test_voice.py`, `test_voz_solo_normas_relevantes.py` |
 | **AP-12** — Frontmatter inconsistente entre notas del mismo tipo | audit | — | `test_capa4_audit_ejercitada.py` |
 | **AP-13** — Timestamps inválidos o incompletos en frontmatter | audit | `framework` | `test_audit_missing_created.py`, `test_meta_contrato.py` |
 | **AP-14** — Wiki-links rotos o vacíos | guard+audit | — | `test_audit_acciones_de_movimiento.py`, `test_normas_caras.py`, `test_normas_enlaces_sin_solape.py`, `test_norms_coherence.py` |

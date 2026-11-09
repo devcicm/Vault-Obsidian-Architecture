@@ -1301,6 +1301,17 @@
             "type": "string",
             "description": "Pregunta en lenguaje natural"
           },
+          "intento": {
+            "type": "string",
+            "description": "Propósito de la consulta (explorar, documentar, cambiar, depurar, revisar). Se registra en el envelope; todavía no reordena: cambiar el orden sin medir es lo que la propuesta critica.",
+            "enum": [
+              "explorar",
+              "documentar",
+              "cambiar",
+              "depurar",
+              "revisar"
+            ]
+          },
           "budget": {
             "type": "integer",
             "description": "Presupuesto en tokens (default: 4000)"
@@ -4649,19 +4660,23 @@
         "properties": {
           "set": {
             "type": "boolean",
-            "description": "Registra o actualiza una preferencia (obligatorio uno de: set | list | context | revoke)"
+            "description": "Registra o actualiza una preferencia (obligatorio uno de: set | list | context | revoke | adapters)"
           },
           "list": {
             "type": "boolean",
-            "description": "Lista las preferencias registradas (obligatorio uno de: set | list | context | revoke)"
+            "description": "Lista las preferencias registradas (obligatorio uno de: set | list | context | revoke | adapters)"
           },
           "context": {
             "type": "boolean",
-            "description": "Bloque markdown listo para inyectar (obligatorio uno de: set | list | context | revoke)"
+            "description": "Bloque markdown listo para inyectar (obligatorio uno de: set | list | context | revoke | adapters)"
           },
           "revoke": {
             "type": "string",
-            "description": "Ruta de la preferencia a revocar (obligatorio uno de: set | list | context | revoke)"
+            "description": "Ruta de la preferencia a revocar (obligatorio uno de: set | list | context | revoke | adapters)"
+          },
+          "adapters": {
+            "type": "string",
+            "description": "Renderiza la politica para los clientes que leen instrucciones (AGENTS.md, CLAUDE.md, GEMINI.md, copilot-instructions.md) en DIR (obligatorio uno de: set | list | context | revoke | adapters)"
           },
           "category": {
             "type": "string",
@@ -4711,6 +4726,10 @@
             "type": "integer",
             "description": "Máximo de preferencias en --context (default: 40)"
           },
+          "force": {
+            "type": "boolean",
+            "description": "Con --adapters: sobrescribe un fichero existente"
+          },
           "agent": {
             "type": "string",
             "description": "Agente que ejecuta (AP-16)"
@@ -4748,6 +4767,9 @@
           ],
           [
             "revoke"
+          ],
+          [
+            "adapters"
           ]
         ]
       ]
@@ -8111,6 +8133,16 @@
         "docs": null
       }
     },
+    "DELETE_FORBIDDEN": {
+      "category": "governance",
+      "severity": "error",
+      "message": "La politica de este vault prohibe borrar en esa seccion.",
+      "recovery": {
+        "action": "manual",
+        "hint": "La seccion esta en `no_borrar` de 00_System/reglas.json: mueve la nota a cuarentena o corrige la politica del vault. Borrar notas es decision del dueno.",
+        "docs": "vault-obsidian-architecture.md §Inmutabilidad por vault"
+      }
+    },
     "DEPENDENCY_MISSING": {
       "category": "dependency",
       "severity": "warning",
@@ -9131,6 +9163,20 @@
         "docs": null
       }
     },
+    "PREFERENCES_UNREADABLE": {
+      "category": "io",
+      "severity": "error",
+      "message": "No se pudo leer el contexto de preferencias.",
+      "recovery": {
+        "action": "run_tool",
+        "tool": "vault_preferences",
+        "args": [
+          "--list"
+        ],
+        "hint": "Revisa 17_Preferences/ y el envelope de --list para ver qué fichero falla.",
+        "docs": null
+      }
+    },
     "PREFERENCE_NOT_FOUND": {
       "category": "not_found",
       "severity": "error",
@@ -9331,6 +9377,16 @@
       "recovery": {
         "action": "manual",
         "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+        "docs": null
+      }
+    },
+    "SCHEMA_MISMATCH": {
+      "category": "validation",
+      "severity": "error",
+      "message": "Los dos artefactos son de esquemas distintos.",
+      "recovery": {
+        "action": "fix_input",
+        "hint": "Compara artefactos del mismo esquema; mezclar versiones distintas convierte una diferencia de formato en un cambio de dato.",
         "docs": null
       }
     },
