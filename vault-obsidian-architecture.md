@@ -3916,6 +3916,43 @@ Los **objetivos** —qué quiere conseguir el dueño del vault— son una nota m
 
 Lo que esta nota **no** es: un canal de órdenes. Un objetivo no mueve al agente por sí solo; describe a dónde va el trabajo. Quien decide sigue siendo el dueño, y un agente sin mandato no lo ejecuta: lo cita.
 
+#### Cómo se escribe una nota: reglas de texto, evidencia y progresión
+
+Propuestas `document-text-style-and-evidence-strategy` y
+`progressive-documentation-and-onboarding-strategy`. No son un esquema
+obligatorio —los campos son **condicionales**, y una nota corta y verdadera
+vale más que una larga y vacía—; son las reglas con las que se revisa una
+nota, y las aplica quien escribe.
+
+**Reglas de texto**
+
+1. **Empieza por la respuesta**: qué se observó, qué se decidió o qué se
+   propone — antes que el contexto.
+2. Lenguaje llano y párrafos cortos; un término técnico se define cuando el
+   lector no lo comparte.
+3. Separa **hecho observado**, **inferencia**, **propuesta**, **decisión** y
+   **desconocido**. Cada afirmación con consecuencia lleva su fuente **junto a
+   la afirmación**, y declara su límite: una prueba en un fixture es evidencia
+   de ese fixture, no de todo el sistema; un test existente no dice que se
+   ejecutó.
+4. **No se inventa** un resultado, un autor, una fecha ni un dato que falta.
+   Lo que no se pudo medir se declara como `unknown`, y eso es información.
+5. Un índice **navega**, no demuestra: enlaza al dueño de cada dato en vez de
+   mantener una segunda copia que envejece. Un enlace es asociación, no
+   causalidad.
+6. La forma del documento la decide su clase (`SECTION_DOCUMENTACION`), no
+   una tabla copiada en la herramienta: el registro se resuelve al ejecutar.
+
+**Progresión.** De la entrada al detalle, en ese orden: índice o entrada →
+inducción (qué es y para quién) → explicación/referencia según la tarea →
+decisión, prueba y cambio que lo sostienen. Un tema no necesita las cuatro
+formas de Diátaxis: necesita las que su lector y su evidencia justifican.
+
+**Contrato de evidencia para una afirmación material:** ruta o observación
+reproducible, fecha o revisión, estado (`observado`, `inferido`, `propuesto`)
+y límites conocidos. Lo que el contrato **no** compra: un puntaje no
+demuestra que el contenido sea verdadero, útil ni completo.
+
 **Guards:** AP-16 (atribución obligatoria) · categoría validada contra el registro · revocación con motivo obligatorio.
 
 **Retorna:** `{ ok, action: created|updated|revoked, path, category, strength, previous_statement }`

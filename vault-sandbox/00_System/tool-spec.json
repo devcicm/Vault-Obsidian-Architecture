@@ -4912,14 +4912,31 @@
         "F3",
         "F7"
       ]
+    },
+    "vault_insights": {
+      "group": "meta",
+      "group_id": 0,
+      "status": "internal",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "completeness"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [],
+      "reason": "Inventario por lotes de solo lectura y comparacion de snapshots (propuesta `data-engineering-contracts-and-vault-applicability`). Es una utilidad analitica de la persona, no una tool de agente: no se publica en el catalogo MCP ni se expone por la red."
     }
   },
   "_counts": {
+    "total": 154,
     "active": 129,
-    "internal": 19,
+    "internal": 20,
     "archived": 5,
-    "total": 153,
-    "active_groups": 37,
-    "schema_version": "1.0"
+    "active_groups": 37
   }
 }

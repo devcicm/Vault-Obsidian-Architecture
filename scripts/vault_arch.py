@@ -458,7 +458,7 @@ CONTEXTS: dict[str, dict] = {
             # registro de etiquetas y la nota de `02_Observability/`— lo
             # publica Gobernanza, y desde Autoría leer el índice era un cruce
             # de frontera que ningún test había ejecutado.
-            "vault_quality_dashboard",
+            "vault_quality_dashboard", "vault_insights",
         ],
     },
     "indices": {
