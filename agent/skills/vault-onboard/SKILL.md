@@ -3,7 +3,7 @@ name: vault-onboard
 description: Populates a vault from a code project that has none — git archaeology, module map, retroactive ADRs, environment and infrastructure notes. Use when a project has code but no vault, when the user asks to "onboard", "bootstrap a vault", "poblar el vault" or "document this repo", or right after vault_init on an empty vault.
 allowed-tools: Bash(python *) Bash(vault *) Read Glob Grep
 argument-hint: "--project NAME --path REPO [--dry-run] [--depth N] [--max-commits N] [--skip NN ...]"
-version: "2.0"
+version: "2.1"
 ---
 
 # vault-onboard
@@ -11,9 +11,8 @@ version: "2.0"
 Take a code project with no vault and populate one, respecting the norms from
 the first note.
 
-Version 2.0. The previous definition is kept next to this one as
-`SKILL-v1.0.md`; it taught a `--skip` value the script accepted and silently
-ignored.
+Version 2.1. Previous definitions remain next to this one as `SKILL-v1.0.md`
+and `SKILL-v2.0.md`.
 
 ## Usage
 
@@ -96,6 +95,17 @@ architectural decision. A `TODO` in the code is a `TODO`, not an observability
 note. A module does not deserve a note for existing; the threshold is that
 something else references it. Reconstructed notes are born `stub` or `draft`,
 never `implemented` — that would assert a review nobody performed.
+
+## Execution evidence
+
+In the result to the user, identify this skill and version, the resolved vault
+and source project, the entry point actually used, and whether the run was a
+dry run. Report the tool's warnings, degraded steps and skipped work; do not
+claim that an output was created unless the run or a readback confirms it.
+When a repository revision is available, report it as provenance; otherwise
+say it was unavailable. This is a report, not an automatic lifecycle ledger.
+Removing the skill later does not establish which notes it created: preserve
+existing notes and use recorded evidence before attributing any output.
 
 ## Reference
 

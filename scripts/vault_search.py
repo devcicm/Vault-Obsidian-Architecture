@@ -27,6 +27,7 @@ import argparse
 
 import json
 
+import os
 import re
 
 import sys
@@ -46,7 +47,38 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 from vault.kernel.normalizacion import fold_accents  # noqa: E402
-from vault_io import assert_within_vault  # noqa: E402
+from vault_io import assert_within_vault, is_snapshot_path  # noqa: E402
+from vault_lib import parse_frontmatter, separar_frontmatter  # noqa: E402
+from vault_entorno import leer as leer_entorno  # dueño del registro (AP-49/05)
+
+
+def _notas_visibles_en_vivo(root: Path):
+    """Read current visible Markdown for MCP; do not follow symlinks or history."""
+    notes, skipped = [], []
+    def onerror(exc):
+        skipped.append(str(exc))
+    for directory, dirs, files in os.walk(root, followlinks=False, onerror=onerror):
+        parent = Path(directory)
+        dirs[:] = [d for d in dirs if not d.startswith('.') and not is_snapshot_path(d) and not (parent / d).is_symlink()]
+        for name in files:
+            if name.startswith('.') or not name.lower().endswith('.md'):
+                continue
+            path = parent / name
+            if path.is_symlink():
+                continue
+            try:
+                text = path.read_text(encoding='utf-8')
+                meta = parse_frontmatter(text) or {}
+                tags = meta.get('tags') or []
+                if isinstance(tags, str):
+                    tags = [t.strip() for t in tags.split(',') if t.strip()]
+                notes.append({'path': path.relative_to(root).as_posix(),
+                              'title': meta.get('title') or path.stem,
+                              'preview': separar_frontmatter(text)[1].strip()[:200].replace('\n', ' '),
+                              'tags': tags, 'updatedAt': meta.get('updatedAt') or meta.get('createdAt') or ''})
+            except (OSError, UnicodeError, ValueError) as exc:
+                skipped.append(f'{path.relative_to(root).as_posix()}: {type(exc).__name__}')
+    return notes, skipped
 
 
 def _raiz() -> Path:
@@ -196,11 +228,17 @@ def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = 
                                  f"No existe la carpeta: {folder}"),
                     "query": query, "results": []}
 
+    live = leer_entorno("VAULT_MCP_LIVE_SEARCH")
+    skipped = []
     try:
 
-        with open(_index_file(), "r", encoding="utf-8") as f:
+        if live:
+            notes, skipped = _notas_visibles_en_vivo(_raiz())
+        else:
 
-            index = json.load(f)
+            with open(_index_file(), "r", encoding="utf-8") as f:
+
+                index = json.load(f)
 
     except (FileNotFoundError, json.JSONDecodeError):
 
@@ -218,7 +256,8 @@ def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = 
         }
 
 
-    notes = index.get("notes", [])
+    if not live:
+        notes = index.get("notes", [])
 
 
     # Score all notes
@@ -269,6 +308,8 @@ def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = 
         "ok": True,
 
         "query": query,
+
+        **({"source": "live_visible_markdown", "incomplete": bool(skipped), "skipped": skipped} if live else {}),
 
         "folder": folder,
 

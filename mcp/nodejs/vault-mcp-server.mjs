@@ -20,6 +20,8 @@
 
 import { createInterface } from "node:readline";
 import { createServer } from "node:http";
+import { createServer as createHttpsServer } from "node:https";
+import { isIP } from "node:net";
 import { spawn, execSync } from "node:child_process";
 import { readFile, readdir, stat, writeFile, mkdir, rename, rmdir } from "node:fs/promises";
 import { existsSync, readdirSync, readFileSync, realpathSync } from "node:fs";
@@ -321,6 +323,7 @@ function refreshVaultRegistry() {
     const conocido = [...VAULT_REGISTRY.values()].find(v => resolve(v.path) === rootPath);
     const ilegibles = [];
     const notes = countMdFiles(rootPath, ilegibles);
+    if (ilegibles.length) log("warn", "recuento de notas parcial", { vault: basename(rootPath), unreadable_dirs: ilegibles.length });
     if (conocido) {
       conocido.notes = notes;
       conocido.notes_scope = ALCANCE_DEL_RECuento;
@@ -328,7 +331,7 @@ function refreshVaultRegistry() {
       else delete conocido.notes_incomplete;
       conocido.lastSeen = new Date().toISOString();
     } else {
-      const name = VAULT_ROOT.split(/[/\\]/).pop();
+      const name = basename(rootPath);
       const version = readStandardVersion(VAULT_ROOT);
       const entrada = { name, path: VAULT_ROOT, version, notes, notes_scope: ALCANCE_DEL_RECuento, markers: [], lastSeen: new Date().toISOString(), _default: true };
       if (ilegibles.length) entrada.notes_incomplete = ilegibles.length;
@@ -1483,6 +1486,8 @@ function executePythonTool(scriptPath, args, vaultRoot, session, schema, modoJso
     const python = detectPython();
     const env = { ...process.env };
     if (vaultRoot) env.VAULT_ROOT = vaultRoot;
+    // Search live visible notes for MCP, including root files and notes not yet indexed.
+    if (scriptPath.endsWith(`${sep}vault_search.py`)) env.VAULT_MCP_LIVE_SEARCH = "1";
     if (session?.clientModelProfile) env.VAULT_MODEL_PROFILE = session.clientModelProfile;
     // Sin esto el hijo hereda la codificación de consola de Windows (cp1252) y
     // cualquier carácter que no exista ahí —`→` de la matriz de trazabilidad,
@@ -1775,25 +1780,30 @@ function permitidaPorToken(tool, session) {
   return necesario !== -1 && necesario <= PERFILES_DE_TOKEN.indexOf(perfil);
 }
 
-function hostPermitido(host, port) {
-  return host === `127.0.0.1:${port}` || host === `localhost:${port}`;
+function hostPermitido(host, port, bindHost) {
+  return host === `${bindHost}:${port}` || (bindHost === "127.0.0.1" && host === `localhost:${port}`);
 }
 
-function startSSE(port) {
+// Bound memory and connection usage independently of HTTP Content-Length.
+const MAX_MESSAGE_BYTES = 1024 * 1024;
+const MAX_SSE_SESSIONS = 64;
+const MESSAGE_TIMEOUT_MS = 30000;
+
+function startSSE(port, bindHost, tlsOptions = null) {
   const { permisosPorToken, token, generado } = resolverTokenHttp();
   if (generado) {
     process.stderr.write(`[MCP AUTH] token de esta ejecución: ${token}\n`);
     process.stderr.write(`[MCP AUTH] envíalo como 'Authorization: Bearer <token>' o fija VAULT_MCP_TOKEN\n`);
   }
 
-  const server = createServer(async (req, res) => {
+  const handler = async (req, res) => {
     const rechazar = (codigo, motivo, extra = {}) => {
       res.writeHead(codigo, { "Content-Type": "application/json", ...extra });
       res.end(JSON.stringify({ ok: false, error: motivo }));
     };
 
-    if (!hostPermitido(req.headers.host, port)) {
-      rechazar(403, "Host no permitido: el servidor solo atiende a 127.0.0.1 o localhost.");
+    if (!hostPermitido(req.headers.host, port, bindHost)) {
+      rechazar(403, "Host no permitido: use la dirección de escucha configurada.");
       return;
     }
     if (req.headers.origin !== undefined) {
@@ -1840,6 +1850,10 @@ function startSSE(port) {
     }
 
     if (req.method === "GET" && req.url.startsWith("/sse")) {
+      if (sessions.size >= MAX_SSE_SESSIONS) {
+        rechazar(503, "Session limit reached; retry after a session disconnects.");
+        return;
+      }
       const url = new URL(req.url, `http://127.0.0.1:${port}`);
       const vaultParam = url.searchParams.get("vault") || "";
       let vaultRoot;
@@ -1902,11 +1916,32 @@ function startSSE(port) {
         return;
       }
 
-      let body = "";
-      req.on("data", (chunk) => { body += chunk; });
+      const chunks = [];
+      let size = 0;
+      let rejected = false;
+      req.setTimeout(MESSAGE_TIMEOUT_MS, () => {
+        if (rejected) return;
+        rejected = true;
+        rechazar(408, "Message body timeout.", { Connection: "close" });
+        req.resume();
+      });
+      req.on("data", (chunk) => {
+        if (rejected) return;
+        size += chunk.length;
+        if (size > MAX_MESSAGE_BYTES) {
+          rejected = true;
+          chunks.length = 0;
+          rechazar(413, "Message body too large.", { Connection: "close" });
+          req.resume();
+          return;
+        }
+        chunks.push(chunk);
+      });
       req.on("end", async () => {
+        req.setTimeout(0);
+        if (rejected) return;
         try {
-          const response = await processMessage(body, session);
+          const response = await processMessage(Buffer.concat(chunks).toString("utf8"), session);
           if (response !== null) {
             const out = JSON.stringify(response);
             res.writeHead(200, { "Content-Type": "application/json" });
@@ -1929,11 +1964,13 @@ function startSSE(port) {
 
     res.writeHead(404, { "Content-Type": "text/plain" });
     res.end("Not found. Available: /sse?vault=NAME, /message (Header: X-MCP-Session), /health, /health?vault=NAME");
-  });
+  };
+  const server = tlsOptions ? createHttpsServer(tlsOptions, handler) : createServer(handler);
 
-  server.listen(port, "127.0.0.1", () => {
+  server.listen(port, bindHost, () => {
     log("info", `========================================`);
-    log("info", `MCP Multi-Tenant SSE Server on http://127.0.0.1:${port}`);
+    log("info", `MCP Multi-Tenant SSE Server on ${tlsOptions ? "https" : "http"}://${bindHost}:${port}`);
+    if (!tlsOptions && !bindHost.startsWith("127.")) log("warn", "HTTP no cifra el token ni el contenido; use un túnel cifrado en redes no confiables.");
     log("info", `Auth:    Authorization: Bearer <token> (VAULT_MCP_TOKEN)`);
     log("info", `Connect: GET /sse?vault=NAME -> get sessionId`);
     log("info", `Call:   POST /message (Header: X-MCP-Session: <id>)`);
@@ -2444,6 +2481,9 @@ async function validateWithObsidian(vaultRoot) {
 // SECCIÓN 7: Main Entry Point
 // ============================================================================
 
+let SSE_HOST = "127.0.0.1";
+let TLS_CERT_PATH = null;
+let TLS_KEY_PATH = null;
 function parseArgs() {
   // `--version` y `--help` salen antes de llegar a `main()`, que es quien carga
   // el catálogo. Sin esto imprimían el respaldo —«desconocida»— justo en los
@@ -2453,6 +2493,22 @@ function parseArgs() {
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--port" && i + 1 < args.length) {
       SSE_PORT = parseInt(args[++i], 10);
+    } else if (args[i] === "--host") {
+      const host = args[++i];
+      if (!host || isIP(host) !== 4 || host === "0.0.0.0" || host === "255.255.255.255") {
+        console.error("--host requires a specific IPv4 address; wildcard addresses are not allowed");
+        process.exit(2);
+      }
+      SSE_HOST = host;
+    } else if (args[i] === "--tls-cert" || args[i] === "--tls-key") {
+      const flag = args[i];
+      const value = args[++i];
+      if (!value || value.startsWith("--")) {
+        console.error(`${flag} requires a file path`);
+        process.exit(2);
+      }
+      if (flag === "--tls-cert") TLS_CERT_PATH = value;
+      else TLS_KEY_PATH = value;
     } else if (args[i] === "--vault" && i + 1 < args.length) {
       VAULT_ROOT = resolve(args[++i]);
     } else if (args[i] === "--log-level" && i + 1 < args.length) {
@@ -2465,12 +2521,18 @@ function parseArgs() {
 Usage:
   node vault-mcp-server.mjs                  stdio mode (default)
   node vault-mcp-server.mjs --port 3000       SSE/HTTP mode
+  node vault-mcp-server.mjs --port 3000 --host 10.10.10.5  bind an explicit IPv4 address
+  node vault-mcp-server.mjs --port 3000 --tls-cert <path> --tls-key <path>  enable HTTPS
   node vault-mcp-server.mjs --vault <path>    explicit vault root
   node vault-mcp-server.mjs --log-level debug debug logging
   node vault-mcp-server.mjs --version         show version
   node vault-mcp-server.mjs --help            this help`);
       process.exit(0);
     }
+  }
+  if (Boolean(TLS_CERT_PATH) !== Boolean(TLS_KEY_PATH) || (TLS_CERT_PATH && !(SSE_PORT > 0))) {
+    console.error("--tls-cert and --tls-key must be supplied together with --port");
+    process.exit(2);
   }
 }
 
@@ -2487,12 +2549,17 @@ function main() {
   refreshVaultRegistry();
 
   if (SSE_PORT > 0) {
-    try {
-      startSSE(SSE_PORT);
-    } catch (e) {
-      log("error", e.message);
-      process.exit(2);
+    let tlsOptions = null;
+    if (TLS_CERT_PATH) {
+      try {
+        tlsOptions = { cert: readFileSync(TLS_CERT_PATH), key: readFileSync(TLS_KEY_PATH) };
+      } catch (e) {
+        console.error(`Unable to read TLS certificate or key: ${e.message}`);
+        process.exit(2);
+      }
     }
+    try { startSSE(SSE_PORT, SSE_HOST, tlsOptions); }
+    catch (e) { console.error(`Unable to start MCP transport: ${e.message}`); process.exit(2); }
   } else {
     startStdio();
   }

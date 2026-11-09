@@ -271,6 +271,22 @@ VARIABLES: Dict[str, Variable] = {
             "Si falta, el servicio genera una al arrancar y la escribe en "
             "`00_System/token-usage/`. Su valor nunca se publica.",
         ),
+        # Paper de la re-auditoria del vault (4.7, integrado desde el arbol
+        # local del MiniServer el 2026-11-09): el indice del servidor MCP se
+        # carga al arrancar y NO se recarga al escribir, asi que una nota
+        # creada despues era invisible para vault_search. Con `=1`, el hijo
+        # puntua sobre el markdown visible de cada consulta en vez del indice
+        # y declara `source`/`incomplete`/`skipped` en el envelope. Solo la
+        # fija el `.mjs`, y solo para `vault_search`: la CLI conserva su
+        # busqueda por indice.
+        Variable(
+            "VAULT_MCP_LIVE_SEARCH", "bandera", False, "consulta",
+            "Busqueda de `vault_search` sobre el markdown visible en cada "
+            "consulta, no sobre el indice del servidor MCP (que se carga al "
+            "arrancar y no se recarga al escribir). La fija el `.mjs` al "
+            "invocar la tool; la CLI no la usa.",
+            convertir=_bandera,
+        ),
         # v41.2. Vacía es el catálogo entero, que es lo que recibía todo
         # cliente hasta ahora; un nombre que no está en `perfiles` no arranca,
         # porque caer al catálogo entero sería exponer lo que se pidió no exponer.

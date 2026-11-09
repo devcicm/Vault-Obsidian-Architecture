@@ -44,7 +44,10 @@ def test_security_md_no_afirma_lo_que_el_codigo_no_hace():
     tokens = gi.codigo_de(SCRIPTS / "vault_token_service.py").read_text(encoding="utf-8")
     errores = (ROOT / "vault" / "kernel" / "errores.py").read_text(encoding="utf-8")
     afirmaciones = {
-        "127.0.0.1": 'server.listen(port, "127.0.0.1"' in servidor,
+        # El bind configurable (integrado del arbol del MiniServer) mantiene
+        # 127.0.0.1 como DEFAULT y rechaza comodines al arrancar.
+        "127.0.0.1": 'let SSE_HOST = "127.0.0.1"' in servidor
+        and 'not allowed' in servidor,
         "VAULT_MCP_TOKEN": "process.env.VAULT_MCP_TOKEN" in servidor,
         "VAULT_MCP_TOKENS": "process.env.VAULT_MCP_TOKENS" in servidor
         and "permitidaPorToken(tool, session)" in servidor,

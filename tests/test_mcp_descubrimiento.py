@@ -47,3 +47,17 @@ def test_un_recuento_completo_no_lleva_la_marca(tmp_path):
     env = _registro(por_defecto, tmp_path / "busqueda")
     vault = next(v for v in env["vaults"] if v["name"] == "vault-ajeno")
     assert "notes_incomplete" not in vault
+
+
+def test_vault_explicito_fuera_de_convencion_cuenta_notas(tmp_path):
+    vault = _init_vault(tmp_path / "vault dev codex")
+    (vault / "07_Knowledge").mkdir(exist_ok=True)
+    (vault / "07_Knowledge" / "one.md").write_text("# One\n", encoding="utf-8")
+    (vault / "07_Knowledge" / "two.md").write_text("# Two\n", encoding="utf-8")
+    (vault / ".hidden.md").write_text("# Hidden\n", encoding="utf-8")
+    env = _registro(vault, tmp_path / "empty-scan-root")
+    found = next(v for v in env["vaults"] if v["name"] == "vault dev codex")
+    expected = sum(1 for p in vault.rglob("*.md") if not any(x.startswith(".") for x in p.relative_to(vault).parts))
+    assert found["notes"] == expected
+    assert found["notes"] >= 2
+    assert "notes_incomplete" not in found

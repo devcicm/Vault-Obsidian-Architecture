@@ -44,11 +44,17 @@ Lo que sigue lo hace el código hoy; cada punto tiene su guard o su test.
 
 - **Servidor MCP por stdio** (modo por defecto): no abre puertos. Habla solo
   con el proceso que lo lanzó.
-- **Servidor MCP por HTTP** (`--port`): escucha solo en `127.0.0.1`, exige
-  `Authorization: Bearer <token>` —de `VAULT_MCP_TOKEN` o generado al arrancar—
-  comparado en tiempo constante, rechaza con 403 un `Host` ajeno (DNS
-  rebinding) y toda petición con cabecera `Origin` (navegadores). Es la norma
-  SP-04. Con `VAULT_MCP_TOKENS=lector:<t>,operador:<t>` cada token abre un
+- **Servidor MCP por HTTP** (`--port`): escucha en `127.0.0.1` por defecto;
+  con `--host <ip>` se abre a UNA IPv4 concreta —las direcciones comodín se
+  rechazan al arrancar— y la cabecera `Host` debe coincidir con esa dirección
+  y puerto (403 si no). Exige `Authorization: Bearer <token>` —de
+  `VAULT_MCP_TOKEN` o generado al arrancar— comparado en tiempo constante, y
+  rechaza toda petición con cabecera `Origin` (navegadores). Es la norma
+  SP-04. Con `--tls-cert`/`--tls-key` el transporte es HTTPS; sin ellos es
+  HTTP sin cifrar: fuera de localhost el token viaja en claro, usa TLS o
+  túnel. Cada cuerpo de `/message` se limita a 1 MiB, 64 sesiones SSE
+  simultáneas y 30 s de recepción —413, 503 y 408—. Con
+  `VAULT_MCP_TOKENS=lector:<t>,operador:<t>` cada token abre un
   perfil: `lector` solo ve y llama a las tools sin side effects, y una sesión
   no acepta mensajes con otro token que el que la abrió.
 - **Escrituras**: toda ruta pasa por `vault_io.assert_within_vault`; una tool

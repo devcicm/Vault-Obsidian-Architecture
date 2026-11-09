@@ -6,7 +6,7 @@
 > una en tu shell lo da `python scripts/vault_entorno.py --filtro <nombre>`:
 > se resuelve al llamarse, no al documentarse (AP-49).
 
-Variables: 28.
+Variables: 29.
 
 | Variable | Tipo | Default | Quién la lee | Qué gobierna |
 |---|---|---|---|---|
@@ -20,6 +20,7 @@ Variables: 28.
 | `VAULT_LATENCY_MAX_MS` | entero | `5` | kernel | Techo duro de la misma medida, en milisegundos: una primitiva que tarde más que esto aun con la mejor de N llamadas es un fallo de latencia, no ruido — una primitiva genuinamente lenta no pasa igual porque su mínimo tampoco pasa (COST-a). |
 | `VAULT_LATENCY_NOMINAL_MS` | entero | `2` | kernel | Latencia NOMINAL, en milisegundos, de una llamada a una primitiva caliente del kernel (parse de frontmatter, filtro de regex, resolución de wikilinks, estimación de tokens). Es el objetivo de regresión que mide `test_latencia_primitivas.py` en serie, no el techo: lo que se aleje de aquí sin que nadie lo declare es deuda de latencia silenciosa. Excluidas con motivo declarado las tools gruesas —auditoría, gates, consultas sobre el vault entero—: su presupuesto es `VAULT_TOOL_TIMEOUT`. |
 | `VAULT_MASTER` | ruta | — | kernel | La casa de los vaults: donde se crean por defecto (vault_init --name) y donde se listan (vault_init --list). Por defecto ~/.vault-master (Windows: %USERPROFILE%\.vault-master). Cambiarla mueve la casa entera; el valor de la variable no se escribe a mano en la documentacion, se lee de aqui. |
+| `VAULT_MCP_LIVE_SEARCH` | bandera | `False` | consulta | Busqueda de `vault_search` sobre el markdown visible en cada consulta, no sobre el indice del servidor MCP (que se carga al arrancar y no se recarga al escribir). La fija el `.mjs` al invocar la tool; la CLI no la usa. |
 | `VAULT_MCP_LOG` | texto | `'info'` | meta_toolkit | Nivel de log del servidor MCP (`info` por defecto). Solo la lee el `.mjs`. |
 | `VAULT_MCP_PERFIL` | texto | `''` | meta_toolkit | Perfil de tools que el servidor MCP expone y acepta (`agente`: las del protocolo de sesión, de `tools-catalog.json` → `perfiles`). Vacía, todas las expuestas por MCP. Solo la lee el `.mjs`. |
 | `VAULT_MCP_PYTHON` | ruta | — | meta_toolkit | Intérprete con el que el servidor MCP lanza las tools. Vacía, sondea `python3`, `python` y `py` (en ese orden; `py` al final porque en Windows del runner resuelve el Python registrado en la máquina, no el del toolkit) y exige a cada candidato que pueda `import yaml` (la dependencia declarada). Instalado en un venv, solo el de ese venv ve el toolkit, y `vault mcp-path` la fija a él: esa elección explícita no se segunda adivina. Solo la lee el `.mjs`. |

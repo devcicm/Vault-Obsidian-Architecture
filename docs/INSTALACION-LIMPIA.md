@@ -2,6 +2,50 @@
 
 <!-- propiedad: CARLOS IVAN CM · revisión: manual -->
 
+
+### Búsqueda de notas desde MCP
+
+`vault_search` invocado por MCP examina los Markdown visibles actuales, incluso
+archivos en la raíz y notas que aún no están en el índice. Puntúa el título,
+las etiquetas y los primeros 200 caracteres del cuerpo, no el texto completo.
+Omite directorios
+ocultos, `vault-backups` y enlaces simbólicos; informa `incomplete` y `skipped`
+si no pudo leer una parte. Sigue devolviendo un máximo de 20 coincidencias y
+reporta `matched` y `truncated`. Este recorrido lee archivos en cada consulta,
+por lo que puede ser más lento en vaults grandes. La CLI conserva su búsqueda
+basada en índice. `vault_list` con `folder: "."` puede incluir historial
+oculto; sus resultados no equivalen al inventario de notas visibles.
+
+### Acceso HTTP desde una interfaz de red
+
+El transporte HTTP escucha por defecto en `127.0.0.1`. Para elegir una interfaz
+IPv4 concreta, inicia el servidor del checkout con `--port 3000 --host 10.10.10.5`
+y establece `VAULT_ROOT` y un `VAULT_MCP_TOKEN` secreto en su entorno. La IP
+debe pertenecer a la máquina; las direcciones comodín no están permitidas. Los
+clientes envían `Authorization: Bearer <token>` y el encabezado `Host` debe
+coincidir con la dirección y el puerto configurados. El servidor sigue
+rechazando solicitudes con `Origin`.
+
+Sin configuración TLS, el transporte utiliza **HTTP sin cifrar**. Para HTTPS,
+proporciona ambos archivos `--tls-cert <certificado.pem> --tls-key <clave.pem>`
+junto con `--port` y `--host`; el servidor no arranca si faltan, no se pueden
+leer o no forman una configuración válida. El certificado debe cubrir la IP o
+nombre que usará el cliente y este debe confiar en su emisor. Guarda la clave
+privada fuera del repositorio con acceso limitado. La alternativa es mantener
+HTTP en localhost y usar un túnel cifrado. Controla el puerto con el firewall.
+El modo instalado desde wheel requiere reinstalar el paquete para incorporar
+este cambio del checkout.
+
+El servidor limita cada cuerpo de `/message` a 1 MiB, admite hasta 64 sesiones
+SSE simultáneas y corta la recepción de un cuerpo tras 30 segundos de inactividad.
+Superar los límites devuelve 413 o 503; cerrar una sesión libera su espacio.
+Estos límites no sustituyen un firewall ni protegen frente a todas las cargas.
+
+Si se genera el token al arrancar, se imprime en stderr. Protege el destino de
+ese flujo para que solo el operador autorizado pueda leerlo; no lo incluyas en
+registros compartidos ni en capturas. Si sospechas exposición, detén el servidor,
+genera un token nuevo, actualiza los clientes autorizados y vuelve a iniciarlo.
+Un cambio de código no protege una instancia ya iniciada: debes reiniciarla.
 El README explica la instalación de un checkout para desarrollar
 (`pip install -e .`). Esta guía cubre lo que hace un tercero: **quitar** lo que
 hubiera, **instalar la wheel** y **registrar el servidor MCP** que viaja dentro

@@ -156,6 +156,13 @@
       "purpose": "Credencial que exige el servicio local de tokens (SP-04). Si falta, el servicio genera una al arrancar y la escribe en `00_System/token-usage/`. Su valor nunca se publica."
     },
     {
+      "name": "VAULT_MCP_LIVE_SEARCH",
+      "type": "bandera",
+      "default": false,
+      "context": "consulta",
+      "purpose": "Busqueda de `vault_search` sobre el markdown visible en cada consulta, no sobre el indice del servidor MCP (que se carga al arrancar y no se recarga al escribir). La fija el `.mjs` al invocar la tool; la CLI no la usa."
+    },
+    {
       "name": "VAULT_MCP_PERFIL",
       "type": "texto",
       "default": "",

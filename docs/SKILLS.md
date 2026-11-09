@@ -25,8 +25,8 @@ LLM) puede invocar. Cada skill tiene:
 | Skill | Versión | Definición | Versiones anteriores | Entry point | Descripción |
 |---|---|---|---|---|---|
 | `vault-sdd-init` | v2.1 | `agent/skills/vault-sdd-init/SKILL.md` | `agent/skills/vault-sdd-init/SKILL-v2.0.md`, `agent/skills/vault-sdd-init/SKILL-v1.0.md` | `scripts/vault_sdd_init.py` | Inicializa el SDD (Spec-Driven Development documentation) de un vault |
-| `vault-sanacion` | v2.0 | `agent/skills/vault-sanacion/SKILL.md` | `agent/skills/vault-sanacion/SKILL-v1.0.md` | `scripts/vault_sanacion.py` | Diagnostica un vault preexistente y devuelve el plan de 12 fases con veredicto y evidencia. **No escribe** |
-| `vault-onboard` | v2.0 | `agent/skills/vault-onboard/SKILL.md` | `agent/skills/vault-onboard/SKILL-v1.0.md` | `scripts/vault_onboard.py` | Puebla un vault desde un proyecto de código que no tiene ninguno |
+| `vault-sanacion` | v2.1 | `agent/skills/vault-sanacion/SKILL.md` | `agent/skills/vault-sanacion/SKILL-v1.0.md`, `agent/skills/vault-sanacion/SKILL-v2.0.md` | `scripts/vault_sanacion.py` | Diagnostica un vault preexistente y devuelve el plan de 12 fases con veredicto y evidencia. **No escribe** |
+| `vault-onboard` | v2.1 | `agent/skills/vault-onboard/SKILL.md` | `agent/skills/vault-onboard/SKILL-v1.0.md`, `agent/skills/vault-onboard/SKILL-v2.0.md` | `scripts/vault_onboard.py` | Puebla un vault desde un proyecto de código que no tiene ninguno |
 | `vault-toolkit-audit` | v1.0 | `agent/skills/vault-toolkit-audit/SKILL.md` | — | `scripts/vault_toolkit_audit.py` | Mide el toolkit tool por tool contra lo que declara y deja la medición registrada |
 
 Lo que la wheel lleva son los **puntos de entrada** de las tres primeras
@@ -49,6 +49,11 @@ actividad de una persona —leer el informe, decidir qué congelar, cuándo
 recongelar— que cada vez se hacía de otra manera; con ella, el procedimiento
 —barrido completo, veredicto por tool, baseline que solo encoge, informe
 derivado— queda escrito y es el mismo para quien lo ejecute.
+
+Desde v2.1, `vault-onboard` y `vault-sanacion` piden que el resultado al usuario
+identifique la versión de la definición, el destino y la evidencia disponible.
+Es una instrucción de reporte, no un registro automático de instalación,
+ejecución o retirada; tampoco atribuye notas sin evidencia.
 
 Durante cuatro versiones hubo una sola —`vault-sdd-init`, la periférica— mientras
 los dos recorridos centrales vivían en `docs/MODO-AGENTICO-SANACION.md` y
