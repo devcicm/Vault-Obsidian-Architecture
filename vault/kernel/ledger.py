@@ -23,7 +23,106 @@ y `record_raw_write`, así que ninguna de las tools que los usa se entera.
 
 import threading
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
+
+
+# ── La valla de cancelación (hallazgo 3.6) ────────────────────────────────
+#
+# `wrap_main` lanza la tool en un hilo daemon con un límite de tiempo. Al
+# agotarse, el envelope dice `TOOL_TIMEOUT` y **el hilo sigue vivo**: en
+# CPython un hilo no se puede matar sin reclamar el proceso. Lo que sí se
+# puede es negarle el disco —que no vuelva a escribir— que es la garantía
+# alcanzable y honesta. El aviso ya decía «pudo escribir después»; esto es
+# lo que hace que no pueda.
+#
+# El flag es **de proceso**, no de hilo: el hilo de la tool y el hilo que
+# espera comparten la misma verdade. `wrap_main` lo abre al arrancar cada
+# ejecución (una tool anterior cancelada no puede dejar cerrado el
+# portón de la siguiente).
+#: La valla es **por hilo**, no de proceso. Un timeout tiene que negarle el
+#: disco al hilo fugado —el de la tool que se pasó de tiempo— y a nadie más:
+#: en el mismo proceso puede estar corriendo la traza del evento, otra
+#: operación o una suite. Una valla de proceso cerraba el portón a todo el
+#: que vino después (medido el 2026-11-09: el test de concurrencia del
+#: change-log fallaba porque el timeout de un test anterior había dejado la
+#: valla cerrada para los hilos siguientes).
+_cancelados: "set[int]" = set()
+_cancelados_lock = threading.Lock()
+
+
+class EscrituraCancelada(RuntimeError):
+    """La ejecución se canceló: esta escritura ya no puede ocurrir.
+
+    Lo lanza el dueño de la escritura cuando el hilo que escribe está
+    cancelado. No es un fallo del dominio —no hay código en `ERROR_CATALOG`
+    para esto—: es una señal de control, y el hilo que la recibe muere con
+    ella.
+    """
+
+
+def cancelar_escrituras(hilo_id: "int | None" = None) -> None:
+    """Cierra la valla para un hilo: sus escrituras nuevas se niegan.
+
+    La llama `wrap_main` al agotarse el límite de tiempo de una tool o al
+    interrumpirla el usuario, con el identificador del hilo de la tool. A
+    partir de ahí, cualquier dueño de escritura que intente escribir
+    **desde ese hilo** lanza `EscrituraCancelada`.
+    """
+    objetivo = hilo_id if hilo_id is not None else threading.get_ident()
+    with _cancelados_lock:
+        _cancelados.add(objetivo)
+
+
+def descartar_cancelacion(hilo_id: "int | None" = None) -> None:
+    """Quita la valla de un hilo. Lo llama el propio hilo al terminar.
+
+    Sin esto, un identificador de hilo reciclado heredaría la prohibición
+    de una ejecución anterior.
+    """
+    objetivo = hilo_id if hilo_id is not None else threading.get_ident()
+    with _cancelados_lock:
+        _cancelados.discard(objetivo)
+
+
+def reanudar_escrituras() -> None:
+    """Abre la valla para este hilo. La llama `wrap_main` al arrancar.
+
+    Con la valla por hilo, esto solo afecta al hilo principal (que nunca
+    queda cancelado): está por simetría con el resto del contrato y para
+    que una ejecución en el mismo proceso no herede nada.
+    """
+    descartar_cancelacion()
+
+
+def cancelacion_activa() -> bool:
+    """¿Hay algún hilo con la valla cerrada?"""
+    with _cancelados_lock:
+        return bool(_cancelados)
+
+
+def exigir_escritura_permitida() -> None:
+    """El punto único por donde pasa toda escritura: comprueba la valla.
+
+    Lo llaman los dueños de escritura (`vault_io.atomic_write_text`,
+    `atomic_write_json` y `vault.kernel.escritura.escritura_atomica`, que es
+    la puerta de los escritores en crudo). Cubrir la valla **aquí** es lo
+    que evita tocar las 129 tools una por una: el veto es del dueño, no del
+    llamador.
+
+    **Límite declarado:** el veto alcanza a lo que pasa por los dueños. Una
+    escritura en crudo (`Path.write_text`) lo esquivaría — y en este repo
+    las que quedan así escriben artefactos derivados **fuera** del vault
+    (blueprint, catálogo, tablas), no notas del vault. La traza de errores,
+    que sí escribe dentro del vault, va por `escritura_atomica` y no queda
+    frenada: la cierra el hilo de la tool, no el principal que la audita.
+    """
+    with _cancelados_lock:
+        cancelado = threading.get_ident() in _cancelados
+    if cancelado:
+        raise EscrituraCancelada(
+            "la ejecución se canceló (timeout o interrupción): la escritura "
+            "no se ha hecho. Comprueba el estado del vault antes de reintentar."
+        )
 
 
 # El indicador de trabajo se MIDE donde el trabajo ocurre, no lo afirma cada

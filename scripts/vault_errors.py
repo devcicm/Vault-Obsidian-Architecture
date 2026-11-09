@@ -613,6 +613,13 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
     _real_stdout = sys.stdout
     result_q: queue.Queue = queue.Queue()
 
+    # La valla de cancelación (hallazgo 3.6) arranca ABIERTA en cada
+    # ejecución: una tool anterior cancelada en este mismo proceso no puede
+    # dejar cerrado el portón de la siguiente.
+    from vault_ledger import descartar_cancelacion, reanudar_escrituras
+
+    reanudar_escrituras()
+
     def _writes() -> Dict[str, Any]:
         """El ledger AP-37 es thread-local: hay que leerlo en ESTE hilo.
 
@@ -651,6 +658,13 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
             result_q.put(("exc", exc, captured.getvalue(), _writes()))
         finally:
             sys.stdout = _real_stdout
+            # Si este hilo quedó cancelado (timeout), la valla se levanta al
+            # terminar: un identificador de hilo reciclado no puede heredar
+            # la prohibición de una ejecución anterior. Sin `try`: una
+            # limpieza que se traga su propio fallo es exactamente lo que
+            # AP-51 veta —aquí no hay nada que tragar: es borrar un
+            # identificador de un conjunto bajo un candado.
+            descartar_cancelacion()
 
     import argparse
 
@@ -663,6 +677,11 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
     except KeyboardInterrupt:
         # A-09: Ctrl-C llega al hilo principal, que solo espera. Sin esto salía
         # un traceback sin envelope y la tool seguía escribiendo en su hilo.
+        # La valla se cierra también aquí: el hilo de la tool sigue vivo y
+        # no debe seguir tocando el disco (hallazgo 3.6).
+        from vault_ledger import cancelar_escrituras
+
+        cancelar_escrituras(t.ident)
         err = emit_error(
             tool=tool_name,
             code="INTERRUPTED",
@@ -674,10 +693,24 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
         argparse.ArgumentParser.error = _error_original
 
     if t.is_alive():
+        # El hilo sigue vivo: en CPython no se puede matar un hilo sin
+        # reclamar el proceso. Lo que sí se puede —y se hace— es negarle el
+        # disco: la valla se cierra PARA ESE HILO y los dueños de
+        # escritura rechazan lo que venga de él. Avisar no era suficiente
+        # (hallazgo 3.6): el envelope decía «pudo escribir después» y el
+        # fichero aparecía.
+        from vault_ledger import cancelar_escrituras
+
+        cancelar_escrituras(t.ident)
         err = emit_error(
             tool=tool_name,
             code="TOOL_TIMEOUT",
-            message=f"La tool '{tool_name}' excedio el limite de {limit}s. Se dejo de esperar, pero seguia ejecutandose en segundo plano y pudo escribir despues: comprueba el estado antes de reintentar.",
+            message=f"La tool '{tool_name}' excedio el limite de {limit}s. Se dejo de esperar, pero seguia ejecutandose en segundo plano: sus escrituras nuevas ya estan negadas, pero lo que hubiera escrito antes del corte sigue en el vault. Comprueba el estado antes de reintentar.",
+            args={
+                "timeout_seconds": limit,
+                "escrituras": "desconocidas: el hilo sigue vivo y su ledger no llego a publicarse",
+                "reintentar": False,
+            },
         )
         _write_output(json.dumps(err, ensure_ascii=False), _real_stdout)
         return 1

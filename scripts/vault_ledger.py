@@ -20,13 +20,31 @@ if _repo_root and str(_repo_root) not in sys.path:
     sys.path.insert(0, str(_repo_root))
 
 from vault.kernel.ledger import (  # noqa: E402
+    EscrituraCancelada,
     _NO_ES_TRABAJO,
     _ledger,
     _record_write,
     _write_ledger,
+    cancelacion_activa,
+    cancelar_escrituras,
+    descartar_cancelacion,
+    exigir_escritura_permitida,
     record_raw_write,
+    reanudar_escrituras,
     write_ledger_reset,
     write_report,
 )
 
-__all__ = ["record_raw_write", "write_ledger_reset", "write_report"]
+__all__ = [
+    "record_raw_write",
+    "write_ledger_reset",
+    "write_report",
+    # La valla de cancelación (hallazgo 3.6): el dueño de la escritura la
+    # consulta, y `vault_errors` cierra la del hilo que se pasó de tiempo.
+    "cancelar_escrituras",
+    "descartar_cancelacion",
+    "reanudar_escrituras",
+    "cancelacion_activa",
+    "exigir_escritura_permitida",
+    "EscrituraCancelada",
+]

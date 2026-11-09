@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional, Sequence
 
 from .bloqueo import comprobar_toma
+from .ledger import exigir_escritura_permitida
 
 
 Guarda = Callable[[Path, str], None]
@@ -99,6 +100,12 @@ def escritura_atomica(
     guardas: Sequence[Guarda] = (),
 ) -> None:
     """Escribe ``path`` por temporal→replace y limpia el temporal si falla."""
+    # La valla de cancelación (hallazgo 3.6) se comprueba en el DUEÑO de la
+    # escritura, no en el llamador: esta función es la puerta por donde
+    # pasan los escritores en crudo —los que declaran por qué no usan el
+    # escritor canónico—, así que el veto cubre también a ellos sin tocar
+    # cada tool.
+    exigir_escritura_permitida()
     for guarda in guardas:
         guarda(path, text)
     path.parent.mkdir(parents=True, exist_ok=True)

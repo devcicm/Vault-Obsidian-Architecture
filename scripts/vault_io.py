@@ -210,11 +210,17 @@ def assert_within_vault(path: Path, vault_root: Path) -> Path:
 # Reexportado sin cambiar nombres: `from vault_io import write_report` sigue
 # siendo válido.
 from vault_ledger import (  # noqa: F401  (reexport deliberado)
+    EscrituraCancelada,
     _NO_ES_TRABAJO,
     _ledger,
     _record_write,
     _write_ledger,
+    cancelacion_activa,
+    cancelar_escrituras,
+    descartar_cancelacion,
+    exigir_escritura_permitida,
     record_raw_write,
+    reanudar_escrituras,
     write_ledger_reset,
     write_report,
 )
@@ -473,7 +479,13 @@ def atomic_write_text(
     secrets (AWS keys, GitHub tokens, bearer tokens, private keys), the
     write is aborted with a descriptive error. Set env var
     VAULT_SKIP_SECRET_SCAN=1 to bypass (not recommended).
+
+    v41.27 (hallazgo 3.6): la valla de cancelación se comprueba **antes
+    de tocar el disco**. Es el dueño de la escritura, no el llamador, el
+    que decide si esta ejecución sigue autorizada a escribir; por eso la
+    comprobación va aquí y no en las 129 tools.
     """
+    exigir_escritura_permitida()
     if text and not _env("VAULT_SKIP_SECRET_SCAN"):
         try:
             guarda_secretos(path, text)
