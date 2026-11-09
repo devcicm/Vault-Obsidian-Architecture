@@ -121,3 +121,47 @@ def test_el_codigo_de_error_esta_en_el_catalogo():
     assert entrada["category"] == "governance"
     assert entrada["recovery"]["action"] in (
         "auto", "fix_input", "manual", "retry", "run_tool")
+
+def test_un_vault_nace_con_la_politica_declarada(tmp_path):
+    """Lote 1: un vault nuevo nace con la politica declarada.
+
+    Las secciones de clase `registro` son historico: no se reescriben, se
+    continua con una nota sucesora. El vault decide lo suyo, asi que el
+    estandar declara la lista de partida en `00_System/inmutable.json`.
+    """
+    import vault_init
+    from vault.kernel.registry import SECTION_DOCUMENTACION
+
+    raiz = tmp_path / "nuevo"
+    raiz.mkdir()
+    previa = vault_io.set_vault_root(raiz)
+    try:
+        vault_init.vault_init(run_audit=False)
+    finally:
+        vault_io.set_vault_root(previa)
+
+    politica = raiz / "00_System" / "inmutable.json"
+    assert politica.is_file(), "el vault nuevo no declaro su politica"
+    declaradas = json.loads(politica.read_text(encoding="utf-8"))["secciones"]
+    registros = sorted(s for s, datos in SECTION_DOCUMENTACION.items()
+                        if datos[0] == "registro")
+    assert declaradas == registros, (declaradas, registros)
+
+
+def test_el_init_no_pisa_la_politica_que_ya_tenia(tmp_path):
+    """La politica es del vault: si ya esta declarada, el init no la toca."""
+    import vault_init
+
+    raiz = tmp_path / "con-politica"
+    (raiz / "00_System").mkdir(parents=True)
+    (raiz / "00_System" / "inmutable.json").write_text(
+        json.dumps({"secciones": ["19_Audits"]}), encoding="utf-8")
+    previa = vault_io.set_vault_root(raiz)
+    try:
+        vault_init.vault_init(run_audit=False)
+    finally:
+        vault_io.set_vault_root(previa)
+
+    declaradas = json.loads(
+        (raiz / "00_System" / "inmutable.json").read_text(encoding="utf-8"))["secciones"]
+    assert declaradas == ["19_Audits"], declaradas

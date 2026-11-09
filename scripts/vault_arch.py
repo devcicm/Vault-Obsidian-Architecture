@@ -1385,6 +1385,13 @@ SUBRUTAS_DE_SISTEMA_SIN_REPOSITORIO: dict[str, dict] = {
                    "resolver la guarda las constantes del módulo: antes la "
                    "escritura se veía como subruta dinámica y no se medía.",
     },
+    "inmutable.json": {
+        "dueno": "ciclo_de_vida",
+        "por_que": "La politica de inmutabilidad del vault la declara "
+                   "`vault_init` al nacer (2026-11-09): que secciones son "
+                   "historico inmutable. Nadie mas la escribe —el dueno la "
+                   "cambia a mano si quiere otra—.",
+    },
     ".voice-counter": {
         "dueno": "autoria",
         "por_que": "Contador de `vault/autoria/voz.py`; nadie más lo escribe.",
@@ -3228,11 +3235,15 @@ def blueprint() -> str:
         if registros:
             lineas += [
                 "",
-                "Candidatas a histórico inmutable por clase `registro`: "
+                "Histórico inmutable por defecto: "
                 + ", ".join(f"`{s}`" for s in registros)
-                + ". La política la declara **cada vault** en "
-                "`00_System/inmutable.json`; esta lista es la sugerencia del "
-                "estándar, no una política común.",
+                + ". Un vault **nace** con esta política declarada en "
+                "`00_System/inmutable.json` (la escribe `vault_init`): "
+                "modificar una nota de esas secciones es un error y se sigue "
+                "con una nota sucesora; **crear** una nota nueva ahí sí se "
+                "permite, porque el histórico crece. La política es del vault y "
+                "el dueño puede cambiarla: `vault_init` nunca pisa la que ya "
+                "estaba declarada.",
             ]
     except (ImportError, AttributeError):
         # Sin la clasificacion de secciones, el plano se publica sin la

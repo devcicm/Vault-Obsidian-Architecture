@@ -3906,6 +3906,16 @@ Preferencias del usuario como **contexto estable**: cómo quiere que se trabaje,
 
 **Revocar no borra** (`### Política de no-derogación` aplicada al contenido del vault): marca `status: revoked` con motivo, fecha y agente. Borrarla destruiría la explicación de por qué el agente se comportaba de otra forma en sesiones anteriores.
 
+#### Los objetivos del propietario, como nota
+
+Los **objetivos** —qué quiere conseguir el dueño del vault— son una nota más: `17_Preferences/objetivos.md`. Ni una tabla aparte ni un campo del frontmatter. Viven en la sección de contexto estable porque el agente los consulta al empezar y porque su ciclo de vida es el de una preferencia: se **sustituyen** con una sucesiva, no se corrigen en sitio.
+
+- **Quién escribe:** el dueño del vault. Un agente solo puede hacerlo por mandato explícito del dueño, y entonces lo firma (`agent:`) y lo dice en su informe —la skill `vault-onboard` ya exige eso de sus salidas (v2.1).
+- **Vocabulario:** `status` con el del registro (`planned` mientras no se cumple, `implemented` al cumplirse, `archived` al retirarse) y `strength: must` / `should` / `may` — el mismo criterio de fuerza que usa `vault_preferences`.
+- **Histórico:** la nota de objetivos **no se reescribe**. El cambio va en una sucesiva y la anterior queda con su `status` y su motivo: es la misma regla que aplica a las secciones de clase `registro`, y por el mismo motivo —lo que se decidió y cuándo no se edita, se añade.
+
+Lo que esta nota **no** es: un canal de órdenes. Un objetivo no mueve al agente por sí solo; describe a dónde va el trabajo. Quien decide sigue siendo el dueño, y un agente sin mandato no lo ejecuta: lo cita.
+
 **Guards:** AP-16 (atribución obligatoria) · categoría validada contra el registro · revocación con motivo obligatorio.
 
 **Retorna:** `{ ok, action: created|updated|revoked, path, category, strength, previous_statement }`
