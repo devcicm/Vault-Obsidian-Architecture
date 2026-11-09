@@ -45,6 +45,7 @@ class Servidor:
                  server=None, cwd=None, extra_env=None):
         self.port = _puerto_libre()
         self.bind_host = bind_host
+        self.vault = vault
         env = {**os.environ, "VAULT_ROOT": str(vault), "VAULT_SCAN_ROOTS": str(vault)}
         env.pop("VAULT_MCP_TOKEN", None)
         env.pop("VAULT_MCP_TOKENS", None)
@@ -587,3 +588,48 @@ def test_el_restore_no_sale_del_vault(tmp_path):
         c2.close()
     finally:
         srv.cerrar()
+
+def test_una_junction_que_apunta_fuera_no_pasa_la_contencion(servidor, tmp_path):
+    """4.3 (restante): un enlace dentro del vault que apunta fuera se rechaza.
+
+    La comprobación léxica no ve nada raro: la ruta está dentro del vault.
+    Lo que la delata es la ruta **real**: el enlace resuelve fuera y el
+    destino real no está bajo la raíz real del vault. Las junctions de
+    Windows no necesitan permisos de administrador, así que la prueba se
+    puede hacer aquí y no solo en theory.
+    """
+    import subprocess
+
+    fuera = tmp_path / "fuera"
+    fuera.mkdir()
+    (fuera / "secreto.json").write_text('{"b64_data": ""}', encoding="utf-8")
+
+    vault = Path(servidor.vault)
+    enlace = vault / "enlace-fuera"
+    if enlace.exists():
+        return  # el servidor no lo dejó (o ya existía): nada que probar
+    # `mklink /J` crea una junction de directorio sin privileges de admin.
+    r = subprocess.run(["cmd", "/c", "mklink", "/J", str(enlace), str(fuera)],
+                       capture_output=True, text=True, encoding="utf-8",
+                       errors="replace", timeout=30)
+    if r.returncode != 0:
+        pytest.skip(f"no se pudo crear la junction: {r.stderr.strip()[:120]}")
+    try:
+        c, _, sid = servidor.abrir_sse()
+        _inicializar(servidor, sid, TOKEN)
+        _, r2 = servidor.pedir(
+            "POST", "/message",
+            {"Authorization": f"Bearer {TOKEN}", "X-MCP-Session": sid},
+            {"jsonrpc": "2.0", "id": 5, "method": "tools/call",
+             "params": {"name": "vault_restore_base64",
+                        "arguments": {"path": "enlace-fuera/secreto.json"}}})
+        cuerpo = json.loads(r2.read().decode())
+        envelope = json.loads(cuerpo["result"]["content"][0]["text"])
+        assert envelope.get("ok") is False, envelope
+        assert envelope.get("error_code") == "INVALID_PATH", envelope
+        c.close()
+    finally:
+        try:
+            os.rmdir(str(enlace))
+        except OSError:
+            pass

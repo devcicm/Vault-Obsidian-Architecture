@@ -370,7 +370,7 @@ FAIR_PRINCIPLES: List[Dict[str, Any]] = [
         "name": "INTEROPERABLE",
         "spanish": "INTEROPERABLE",
         "description": "El dato usa vocabularios y formatos compartidos, y se conecta con otros datos del mismo dominio.",
-        "mechanism": "Frontmatter YAML con vocabulario canónico (type, status vía STATUS_VOCAB, tags), wiki-links [[nota]] como aristas del grafo, Mermaid para diagramas, graph.json como representación explícita, MCP como protocolo de consumo.",
+        "mechanism": "Frontmatter YAML con vocabulario canónico (type, status vía STATUS_VOCAB, tags), wiki-links `[[nota]]` como aristas del grafo, Mermaid para diagramas, graph.json como representación explícita, MCP como protocolo de consumo.",
         "metric": "broken links = 0 · consistencia type↔carpeta (F4)",
         "tools": [
             "vault_graph",
