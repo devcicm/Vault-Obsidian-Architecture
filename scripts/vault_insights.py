@@ -40,6 +40,8 @@ def main() -> int:
                         help="Guarda el snapshot en RUTA (fuera del vault)")
     parser.add_argument("--comparar", nargs=2, metavar=("A", "B"),
                         help="Informe de diferencias entre dos snapshots")
+    parser.add_argument("--force", action="store_true",
+                        help="Con --guardar: sobrescribe un snapshot existente")
     args = parser.parse_args()
 
     raiz = get_vault_root()
@@ -55,7 +57,8 @@ def main() -> int:
             res = comparar(*args.comparar)
         else:
             datos = inventario(Path(raiz))
-            res = guardar(datos, args.guardar, Path(raiz)) if args.guardar else datos
+            res = (guardar(datos, args.guardar, Path(raiz), force=args.force)
+                    if args.guardar else datos)
     except SnapshotInvalido as exc:
         print(json.dumps(emit_error("vault_insights", exc.causa, str(exc)),
                          ensure_ascii=False, indent=2))

@@ -50,6 +50,8 @@ from vault_io import (
     escrituras_en_lote,
     is_snapshot_path,
     normalize_stem,
+    NotaInmutableError,  # el veto del dueno de la escritura
+NotaInmutableError,  # el veto del dueno de la escritura
 )
 from vault_norms_catalog import compute_norm_refs
 from vault.kernel import procesos_git
@@ -1118,7 +1120,10 @@ def _merge_stub(vault_path: Path, new_content: str, dry_run: bool) -> str:
         if not dry_run:
             existing_healed = _rellenar_frontmatter_legacy(existing)
             if existing_healed != existing:
-                atomic_write_text(vault_path, existing_healed)
+                try:
+                    atomic_write_text(vault_path, existing_healed)
+                except NotaInmutableError:
+                    return "omitida_por_politica"
         return "skipped"
 
     # Fusión cross-version: si el frontmatter existente no parsea o le faltan
@@ -1128,7 +1133,15 @@ def _merge_stub(vault_path: Path, new_content: str, dry_run: bool) -> str:
     existing = _rellenar_frontmatter_legacy(existing)
 
     merged = existing.rstrip() + "\n\n" + "\n\n".join(to_add) + "\n"
-    atomic_write_text(vault_path, merged)
+    try:
+        atomic_write_text(vault_path, merged)
+    except NotaInmutableError as exc:
+        # La nota esta en una seccion declarada inmutable: **no se toca**. El
+        # onboarding puebla, no reescribe el historico (medido el 2026-11-09 en
+        # una revision independiente: aqui modificaba una nota de `11_Code`
+        # declarada inmutable, porque el veto vivia en `vault_write` y esta
+        # ruta escribe por el dueno). Se omite y se declara.
+        return "omitida_por_politica"
     _verificar_releyendo(vault_path)
     return "merged"
 
@@ -1289,6 +1302,13 @@ def _make_frontmatter(
     return fm.render()
 
 
+#: Notas que el onboard **no** toco porque viven en una seccion declarada
+#: inmutable (la politica del vault). Se declaran: una omision por politica
+#: es informacion, y el historico sigue intacto. Medido el 2026-11-09 en una
+#: revision independiente: aqui se modificaba una nota declarada inmutable.
+_OMITIDAS_POR_POLITICA: List[Dict[str, Any]] = []
+
+
 #: Notas que el onboard no escribió por falta de evidencia (AP-45). Se vacía al
 #: principio de cada `vault_onboard()` y sale en `warnings` y `next_steps`: el
 #: hueco declarado es información; el stub que lo tapa es desinformación.
@@ -1417,6 +1437,13 @@ def _write(
     fm = _make_frontmatter(title, folder, tags, extra, content)
     full = fm + "\n\n" + body
     action = _merge_stub(path, full, dry_run)
+    if action == "omitida_por_politica":
+        _OMITIDAS_POR_POLITICA.append({
+            "path": rel,
+            "title": title,
+            "reason": "la seccion de la nota esta declarada inmutable: no se "
+                      "reescribe (el historico crece con una sucesora)",
+        })
     return rel, action
 
 
@@ -2858,6 +2885,7 @@ def vault_onboard(
     sha = _run_git(project_path, ["rev-parse", "--short", "HEAD"]) if not no_git else None
     _CONTEXTO_ONBOARD["sha"] = (sha or "").strip() or "sin commit"
     _SIN_EVIDENCIA.clear()
+    _OMITIDAS_POR_POLITICA.clear()
     _DETECCION_DEGRADADA.clear()  # por onboarding, no por proceso
     created: Dict[str, Any] = {}
     merge_stats = {"created": 0, "merged": 0, "skipped": 0, "dry_run": 0}
@@ -3111,6 +3139,7 @@ def vault_onboard(
         # Un hueco nombrado dirige el siguiente trabajo; un stub que lo tapa
         # hace creer que ya está hecho.
         "skipped_no_evidence": list(_SIN_EVIDENCIA),
+            "omitidas_por_politica": list(_OMITIDAS_POR_POLITICA),
         # Vacías a propósito, y por eso se declaran: son secciones dirigidas por
         # eventos. Poblarlas en el arranque sería inventar bugs, auditorías y
         # cuarentenas que no han ocurrido — exactamente AP-45.

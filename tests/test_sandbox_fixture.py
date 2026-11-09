@@ -32,3 +32,27 @@ def test_un_sandbox_de_una_siembra_anterior_no_se_da_por_listo(tmp_path):
     (target / "03_Decisions" / "mcp-transport-provenance.md").unlink()
     assert not ready(target), "falta una nota de la semilla"
     clean(target, preserve_contract=False)
+
+def test_la_limpieza_no_borra_el_contrato_rastreado(tmp_path):
+    """El contrato vive en el sandbox **y esta versionado** (`.gitignore` lo
+    publica a proposito). Que la limpieza se lo llevara convertia un fallo
+    del bootstrap en un repo con un fichero rastreado borrado: medido el
+    2026-11-09 en una revision independiente — dos intentos de prueba
+    abortaron y el contrato hubo que restaurarlo desde HEAD.
+    """
+    import sandbox_fixture
+
+    objetivo = tmp_path / "vault-sandbox"
+    (objetivo / "00_System").mkdir(parents=True)
+    contrato = objetivo / "00_System" / "tool-spec.json"
+    contrato.write_bytes(b'{"tools": {}}')
+    (objetivo / "00_System" / "otro.json").write_bytes(b"{}")
+    (objetivo / "nota.md").write_bytes(b"nota")
+
+    sandbox_fixture.clean(objetivo, preserve_contract=True)
+
+    assert contrato.is_file(), "la limpieza se llevo el contrato versionado"
+    assert contrato.read_bytes() == b'{"tools": {}}'
+    # Lo demas si se limpia: es estado de ejecucion.
+    assert not (objetivo / "00_System" / "otro.json").exists()
+    assert not (objetivo / "nota.md").exists()

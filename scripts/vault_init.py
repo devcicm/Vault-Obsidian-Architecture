@@ -269,30 +269,6 @@ def _vault_init_sin_clean(
     # ocurrió— son histórico: no se reescriben, se continua con una nota
     # sucesora. Un vault puede cambiar su política (fichero propio), pero
     # **nunca se pisa la que ya tenía**: aquí solo se escribe si no existe.
-    try:
-        from vault.kernel.registry import SECTION_DOCUMENTACION
-
-        registros = sorted(s for s, datos in SECTION_DOCUMENTACION.items()
-                            if datos[0] == "registro")
-    except (ImportError, AttributeError, KeyError):
-        registros = []
-    if registros:
-        politica = _raiz() / "00_System" / "inmutable.json"
-        if politica.exists():
-            inmutable_declarado = "ya estaba (no se toca)"
-        else:
-            atomic_write_text(
-                politica,
-                json.dumps({"secciones": registros}, indent=2, ensure_ascii=False)
-                + "\n",
-            )
-            inmutable_declarado = "declarada"
-        result["steps"].append({
-            "step": "inmutable",
-            "path": "00_System/inmutable.json",
-            "secciones": registros,
-            "estado": inmutable_declarado,
-        })
 
     # Step 1.2: índices y hub sobre la estructura vacía, antes que la primera
     # nota. El hub se crea una sola vez y no se reescribe; si lo creara el

@@ -122,15 +122,18 @@ def test_el_codigo_de_error_esta_en_el_catalogo():
     assert entrada["recovery"]["action"] in (
         "auto", "fix_input", "manual", "retry", "run_tool")
 
-def test_un_vault_nace_con_la_politica_declarada(tmp_path):
-    """Lote 1: un vault nuevo nace con la politica declarada.
+def test_un_vault_nace_sin_politica_declarada(tmp_path):
+    """Un vault nuevo **no** declara la política de inmutabilidad.
 
-    Las secciones de clase `registro` son historico: no se reescriben, se
-    continua con una nota sucesora. El vault decide lo suyo, asi que el
-    estandar declara la lista de partida en `00_System/inmutable.json`.
+    Un vault vacío no tiene nada que proteger: si `vault_init` declara
+    las secciones como inmutables antes de que el onboarding las pueble,
+    cada nota que el onboarding escribe recibe el veto (medido el
+    2026-11-09: 45 fallos y 24 errores de preparación). La política la
+    declara el dueño **después** de poblar el vault, cuando ya sabe qué
+    secciones tienen contenido que vale la pena proteger.
     """
     import vault_init
-    from vault.kernel.registry import SECTION_DOCUMENTACION
+    import vault_io
 
     raiz = tmp_path / "nuevo"
     raiz.mkdir()
@@ -141,15 +144,15 @@ def test_un_vault_nace_con_la_politica_declarada(tmp_path):
         vault_io.set_vault_root(previa)
 
     politica = raiz / "00_System" / "inmutable.json"
-    assert politica.is_file(), "el vault nuevo no declaro su politica"
-    declaradas = json.loads(politica.read_text(encoding="utf-8"))["secciones"]
-    registros = sorted(s for s, datos in SECTION_DOCUMENTACION.items()
-                        if datos[0] == "registro")
-    assert declaradas == registros, (declaradas, registros)
+    assert not politica.is_file(), (
+        "el vault nuevo declaró la política de inmutabilidad: eso impide "
+        "que el onboarding pueble las secciones")
+    # Y sin la política, todo es escribible.
+    assert vault_io.inmutables_declaradas(raiz) == []
 
 
-def test_el_init_no_pisa_la_politica_que_ya_tenia(tmp_path):
-    """La politica es del vault: si ya esta declarada, el init no la toca."""
+def test_el_init_respeta_la_politica_que_ya_tenia(tmp_path):
+    """Si el dueño ya declaró su política, el init no la toca."""
     import vault_init
 
     raiz = tmp_path / "con-politica"

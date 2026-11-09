@@ -859,6 +859,39 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": None,
         },
     },
+    "SNAPSHOT_INCOMPLETO": {
+        "category": "validation",
+        "severity": "error",
+        "message": "Una de las capturas esta incompleta: hubo notas ilegibles.",
+        "recovery": {
+            "action": "manual",
+            "hint": "No se comparan capturas incompletas: la diferencia "
+                    "mezclaria lo que falta con lo que cambio. Repara la "
+                    "lectura o vuelve a tomar las dos capturas.",
+            "docs": None,
+        },
+    },
+    "IDENTITY_MISMATCH": {
+        "category": "validation",
+        "severity": "error",
+        "message": "Las capturas son de vaults distintos.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Dos poblaciones distintas no se comparan: su diferencia "
+                    "no seria un cambio de contenido.",
+            "docs": None,
+        },
+    },
+    "SNAPSHOT_EXISTE": {
+        "category": "validation",
+        "severity": "error",
+        "message": "Ya hay un snapshot en esa ruta y no se pisa sin permiso.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Usa otra ruta, o declara que quieres sobrescribirlo.",
+            "docs": None,
+        },
+    },
     "SCHEMA_MISMATCH": {
         "category": "validation",
         "severity": "error",

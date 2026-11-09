@@ -25,6 +25,7 @@ from vault_io import (
     actualizar_indices_de_dominio, assert_within_vault, atomic_write_json, atomic_write_text,
     refrescar_indice_de_seccion,
     nota_no_se_borra,  # politica de no-borrado del vault
+    nota_es_inmutable,  # politica de inmutabilidad del vault
 )
 from vault_registry import es_artefacto_derivado
 from vault_move import notas_que_enlazan
@@ -176,12 +177,23 @@ def vault_delete(
     # ninguna via. Persistir la regla no basta —un prompt no es una frontera
     # de permisos—, asi que la valla vive aqui, en la mutacion.
     seccion_prohibida = nota_no_se_borra(note_path, vault_root)
+    if not seccion_prohibida:
+        # Una seccion declarada **inmutable** tampoco se borra ni se mueve:
+        # el historico no se retira. Mover a cuarentena es tambien una
+        # retirada (la nota sale de su sitio), asi que la valla cubre las dos.
+        seccion_inmutable = nota_es_inmutable(note_path, vault_root)
+        if seccion_inmutable:
+            seccion_prohibida = seccion_inmutable
     if seccion_prohibida:
         return emit_error(
             "vault_delete", "DELETE_FORBIDDEN",
-            f"La seccion '{seccion_prohibida}' esta en no_borrar de "
-            f"00_System/reglas.json: '{path}' no se borra.",
+            f"La seccion '{seccion_prohibida}' esta protegida por la politica "
+            f"del vault (no_borrar o inmutable): '{path}' no se borra ni se "
+            f"mueve de sitio.",
             args={"seccion": seccion_prohibida, "path": path},
+            pista="La politica vive en 00_System/reglas.json (no_borrar) y "
+                  "00_System/inmutable.json (secciones). Mover la nota es "
+                  "tambien retirarla del historico.",
         )
 
     # SP-01 es el protocolo de borrado de notas: los indices, el change-log y

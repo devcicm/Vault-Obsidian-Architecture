@@ -30,6 +30,7 @@ from vault_io import (
     assert_within_vault, atomic_write_text, file_lock, is_snapshot_path,
     actualizar_indices_de_dominio, refrescar_grafo, refrescar_indice_de_seccion,
     tomar_lock, write_report,
+    NotaInmutableError,  # el veto del dueño de la escritura
 )
 from vault_lib import indice_de_nombres, resolver_wikilink, utcnow
 from vault_registry import motivo_de_destino_invalido, section_types, type_misfiled_in
@@ -202,7 +203,13 @@ def update_wiki_links_in_file(
     # índice de sección, que recreaba la carpeta de origen de un move --folder.
     if nuevo_contenido != content:
         if not dry_run:
-            atomic_write_text(file_path, nuevo_contenido)
+            try:
+                atomic_write_text(file_path, nuevo_contenido)
+            except NotaInmutableError as exc:
+                # El veto lo pone el dueño de la escritura; aquí se traduce a
+                # envelope. Reescribir los enlaces entrantes tambien es
+                # escribir en otra nota: si esa es inmutable, el move no va.
+                return emit_error("vault_move", "IMMUTABLE_NOTE", str(exc))
         return {"updated": not dry_run, "links_changed": True, "ambiguous": ambiguo}
 
     return {"updated": False, "links_changed": False, "ambiguous": ambiguo}
@@ -436,7 +443,11 @@ def _escribir_tipo(nota: Path, tipo: str) -> None:
     fm = Frontmatter.editar(bloque or "").set("type", tipo, texto=True)
     if fm.tiene("updatedAt"):
         fm.set("updatedAt", utcnow())
-    atomic_write_text(nota, fm.render() + "\n" + cuerpo)
+    try:
+        atomic_write_text(nota, fm.render() + "\n" + cuerpo)
+    except NotaInmutableError as exc:
+        # Mover una nota de una sección inmutable es retirarla del historial.
+        return emit_error("vault_move", "IMMUTABLE_NOTE", str(exc))
 
 
 def move_note(

@@ -46,6 +46,7 @@ from vault_errors import emit_error, emit_fallo, fuera_de_sesion, mensaje_de, wr
 
 from vault_io import (
     is_snapshot_path,  # dueño único de qué es una instantánea (AP-57)
+    NotaInmutableError,  # el veto del dueño de la escritura
     _rechazar_raiz_insegura,  # AP-36: antes del mkdir de la carpeta destino
     write_report,
     atomic_write_text,
@@ -56,7 +57,6 @@ from vault_io import (
     file_lock,
     guarda_secretos,  # dueño único del escaneo de secretos (AP-57)
     guardar_version_actual,  # dueño único de versionar antes de sobrescribir
-    nota_es_inmutable,  # politica de inmutabilidad declarada por el vault
 )
 from vault_encoding import (
     sanitize_content,
@@ -1367,23 +1367,12 @@ def vault_write(
                 "message": "Note unchanged (same content)",
             }
 
-    # Inmutabilidad declarada por este vault (hallazgo 4.6 del paper): una nota
-    # que ya existe y cae en una seccion declarada inmutable **no se
-    # reescribe**. Escribir una nueva si se permite: el historico crece, no se
-    # reescribe. Sin la declaracion (`00_System/inmutable.json`) no cambia el
-    # comportamiento de nadie.
-    if vault_path.exists():
-        seccion_inmutable = nota_es_inmutable(vault_path)
-        if seccion_inmutable:
-            return emit_error(
-                "vault_write", "IMMUTABLE_NOTE",
-                f"La nota '{rel_path}' esta en la seccion '{seccion_inmutable}', "
-                f"que este vault declara inmutable: no se reescribe. Escribe una "
-                f"nota sucesora.",
-                args={"seccion": seccion_inmutable, "path": rel_path},
-                pista="La politica la declara el vault en 00_System/inmutable.json "
-                      "(secciones: [...]). Para anadir contenido: una nota nueva.",
-            )
+    # La politica de inmutabilidad la comprueba el **dueño de la escritura**
+    # (`vault_io.atomic_write_text`): una nota que ya existe en una seccion
+    # declarada inmutable no se modifica, y el envelope lo dice con
+    # `IMMUTABLE_NOTE`. Aqui no hay una segunda implementacion del criterio
+    # (AP-57): antes la valla vivia en esta tool y la esquivaba el
+    # onboarding, que escribe por el dueno (medido el 2026-11-09).
 
     with file_lock(vault_path, timeout=10.0):
         if vault_path.exists():
@@ -1395,7 +1384,12 @@ def vault_write(
             # (v41.26): lo usan también `vault_undo` y `vault_merge`.
             guardar_version_actual(vault_path)
 
-        atomic_write_text(vault_path, final_content)
+        try:
+            atomic_write_text(vault_path, final_content)
+        except NotaInmutableError as exc:
+            # El veto lo pone el dueno de la escritura; aqui solo se traduce
+            # a envelope (el criterio vive en `vault_io`).
+            return emit_error("vault_write", "IMMUTABLE_NOTE", str(exc))
 
         # Update search index (inside lock for consistency)
 

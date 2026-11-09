@@ -45,7 +45,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-from vault_io import atomic_write_text, get_vault_root, is_snapshot_path, normalize_stem, tomar_lock, write_report
+from vault_io import atomic_write_text, get_vault_root, is_snapshot_path, normalize_stem, tomar_lock, write_report, NotaInmutableError  # el veto del dueño de la escritura
 from vault_registry import es_artefacto_derivado
 from vault_undo import _guardar_version_actual
 
@@ -169,7 +169,12 @@ def _action_merge(source_dir: Path, conflict: str) -> Dict[str, Any]:
                 # escritor en el mismo segundo: lo tapado queda en el historial.
                 _guardar_version_actual(dest)
 
-            atomic_write_text(dest, content)
+            try:
+                atomic_write_text(dest, content)
+            except NotaInmutableError as exc:
+                # El veto lo pone el dueno de la escritura; aqui se traduce
+                # a envelope.
+                return emit_error("vault_merge", "IMMUTABLE_NOTE", str(exc))
 
         merged += 1
 

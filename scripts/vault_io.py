@@ -464,6 +464,58 @@ def _verificar_frontmatter(path: Path, text: str) -> None:
 
 
 
+class NotaInmutableError(ValueError):
+    """La nota vive en una sección declarada inmutable: no se reescribe.
+
+    Lo lanza el **dueño de la escritura** (`atomic_write_text`), no el
+    llamador: antes la valla vivía en `vault_write` y la esquivaban el
+    onboarding (`_merge_stub`), que escribe por el dueño. Medido el
+    2026-11-09 en una revisión independiente: el onboarding modificó una
+    nota de `11_Code` declarada inmutable.
+
+    Lleva `codigo` para que el envelope lo identifique sin que cada
+    escritor tenga que traducirlo (AP-52: un error fuera del catálogo no lo
+    puede consumir nadie).
+    """
+
+    codigo = "IMMUTABLE_NOTE"
+
+    def __init__(self, seccion: str, ruta: str) -> None:
+        self.seccion = seccion
+        self.ruta = ruta
+        super().__init__(
+            f"la nota '{ruta}' esta en la seccion '{seccion}', que este vault "
+            f"declara inmutable: no se reescribe. Escribe una nota sucesora.")
+
+
+def _exigir_politica_de_inmutabilidad(path: Path) -> None:
+    """La política de inmutabilidad, en el punto donde se muta.
+
+    Regla: **una nota que ya existe y vive en una sección declarada
+    inmutable no se modifica**. Crear una nota nueva ahí sí se permite —el
+    histórico crece— y los artefactos derivados (los `index.md`) no son
+    notas: se regeneran, y bloquearlos impediría reindexar una sección
+    inmutable.
+
+    Aquí, y no en cada escritor: el veto es del dueño de la escritura, así
+    que todos los que escriben por él lo heredan.
+    """
+    try:
+        raiz = _raiz.get_vault_root()
+        relativa = path.resolve().relative_to(Path(raiz).resolve()).as_posix()
+    except (ValueError, OSError):
+        return  # fuera del vault activo: lo decide la contención de rutas
+    if not path.exists():
+        return  # crear no es reescribir
+    from vault_registry import es_artefacto_derivado
+
+    if es_artefacto_derivado(relativa):
+        return
+    seccion = seccion_de(relativa)
+    if seccion and seccion in reglas_declaradas(Path(raiz))["inmutable"]:
+        raise NotaInmutableError(seccion, relativa)
+
+
 def atomic_write_text(
     path: Path, text: str, encoding: str = "utf-8", sanitize: bool = True
 ) -> None:
@@ -486,6 +538,10 @@ def atomic_write_text(
     comprobación va aquí y no en las 129 tools.
     """
     exigir_escritura_permitida()
+    # La politica de inmutabilidad, tambien aqui (v41.27): el veto es del
+    # dueño de la escritura, no del llamador. Antes vivia en `vault_write` y
+    # el onboarding lo esquivaba.
+    _exigir_politica_de_inmutabilidad(path)
     if text and not _env("VAULT_SKIP_SECRET_SCAN"):
         try:
             guarda_secretos(path, text)

@@ -142,11 +142,31 @@ def bootstrap(root: Path | None = None) -> Path:
     # sandbox. Se lee antes de limpiar: es fuente canónica trackeada, no estado
     # runtime que deba sobrevivir al bootstrap.
     contract = CANONICAL_SPEC.read_bytes()
-    clean(target, preserve_contract=False)
+    # El contrato **no se borra**: es un fichero rastreado (`.gitignore` lo
+    # publica a proposito) y esta funcion lo leia antes de limpiar. Con
+    # `preserve_contract=False` el sandbox entero se iba, incluido el
+    # contrato, y se reescribia despues: un fallo entre medias (el proceso
+    # muerto, una excepcion en un paso) dejaba el repo con un fichero
+    # rastreado borrado. Medido el 2026-11-09 en una revision independiente:
+    # dos intentos de prueba abortaron y el contrato hubo que restaurarlo
+    # desde HEAD.
+    clean(target, preserve_contract=True)
     (target / "00_System").mkdir(parents=True, exist_ok=True)
     (target / "00_System" / "tool-spec.json").write_bytes(contract)
 
     _run(target, "vault_init.py", "--no-audit")
+
+    # El sandbox es el **espacio de prueba**: las tools tienen que poder
+    # escribir en él libremente, y el vault_init ahora declara la politica de
+    # inmutabilidad por defecto (las secciones `registro` no se reescriben).
+    # Esa politica es para vaults reales; aqui la retiramos, porque los
+    # fixtures escriben notas en `19_Audits` y demas secciones de registro.
+    # Sin esto, la suite entera recibe `IMMUTABLE_NOTE` en la preparacion
+    # (medido el 2026-11-09: 45 fallos y 24 errores en la preparacion).
+    politica = target / "00_System" / "inmutable.json"
+    if politica.exists():
+        politica.unlink()
+
     _write_seed(target)
     _run(target, "vault_reindex.py", "--graph")
     _run(target, "vault_fundamentals.py", "--framework")

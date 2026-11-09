@@ -95,6 +95,13 @@ def _map_exception_to_code(e: BaseException) -> str:
     """
     # Antes que PermissionError, de la que hereda: no saber cuál es el vault
     # no es un problema de permisos (AP-51).
+    # Una excepcion que trae su codigo lo declara ella: asi el error de
+    # la politica de inmutabilidad sale como `IMMUTABLE_NOTE` sin que cada
+    # escritor tenga que traducirlo (AP-52: un error fuera del catalogo no lo
+    # puede consumir nadie).
+    codigo = getattr(e, "codigo", None)
+    if isinstance(codigo, str) and codigo:
+        return codigo
     if isinstance(e, RaizNoIdentificada):
         return "VAULT_NOT_FOUND"
     if isinstance(e, PermissionError):
