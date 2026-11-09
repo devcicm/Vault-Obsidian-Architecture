@@ -603,6 +603,55 @@ def seccion_de(relative: str) -> str:
     return partes[0] if partes else ""
 
 
+#: Donde el vault declara reglas de mutacion que van mas alla de la
+#: inmutabilidad de secciones (hallazgo del paper, propuesta
+#: `persistent-custom-rules-and-agent-integration`): `{"no_borrar": [...]}`.
+#: La inmutabilidad sigue viviendo en `inmutable.json` —no se mueve lo que ya
+#: esta publicado— y aqui se admite tambien como `"inmutable"`.
+FICHERO_REGLAS = "00_System/reglas.json"
+
+
+def reglas_declaradas(raiz: Optional[Path] = None) -> Dict[str, List[str]]:
+    """Las reglas de mutacion que declara este vault.
+
+    Devuelve `{"inmutable": [...], "no_borrar": [...]}`. `inmutable` es la
+    union de `inmutable.json` (lo que ya estaba publicado) y de `reglas.json`;
+    `no_borrar` solo puede venir de `reglas.json`. Un fichero ausente o
+    ilegible **no** convierte el vault en inmutable ni en intocable: ante la
+    duda no se bloquea a nadie, y se dice por que con una lista vacia.
+    """
+    base = Path(raiz) if raiz is not None else _raiz.get_vault_root()
+    inmutables = list(inmutables_declaradas(base))
+    no_borrar: List[str] = []
+    try:
+        datos = json.loads((base / FICHERO_REGLAS).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"inmutable": inmutables, "no_borrar": []}
+    if not isinstance(datos, dict):
+        return {"inmutable": inmutables, "no_borrar": []}
+    for clave in ("inmutable", "secciones"):
+        for s in (datos.get(clave) or []) if isinstance(datos.get(clave), list) else []:
+            if str(s).strip() and str(s).strip() not in inmutables:
+                inmutables.append(str(s).strip())
+    for s in (datos.get("no_borrar") or []) if isinstance(datos.get("no_borrar"), list) else []:
+        if str(s).strip():
+            no_borrar.append(str(s).strip())
+    return {"inmutable": inmutables, "no_borrar": no_borrar}
+
+
+def nota_no_se_borra(nota: Path, raiz: Optional[Path] = None) -> Optional[str]:
+    """La seccion que prohibe borrar esta nota, o None."""
+    base = Path(raiz) if raiz is not None else _raiz.get_vault_root()
+    try:
+        relativa = Path(nota).relative_to(base).as_posix()
+    except ValueError:
+        return None
+    seccion = seccion_de(relativa)
+    if seccion and seccion in reglas_declaradas(base)["no_borrar"]:
+        return seccion
+    return None
+
+
 def nota_es_inmutable(nota: Path, raiz: Optional[Path] = None) -> Optional[str]:
     """La seccion inmutable a la que pertenece la nota, o None.
 

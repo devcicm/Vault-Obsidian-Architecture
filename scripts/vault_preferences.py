@@ -481,6 +481,110 @@ def vault_preferences_revoke(path: str, reason: str,
     }
 
 
+#: Los ficheros que cada cliente lee como instrucciones de proyecto. La lista
+#: es **deliberadamente corta**: es la que la propuesta
+#: `multi-provider-vault-policy-adapters` documenta con su fuente; un cliente
+#: que no esté aquí no se inventa.
+ADAPTADORES = {
+    "AGENTS.md": "Codex y OpenCode",
+    "CLAUDE.md": "Claude Code",
+    "GEMINI.md": "Gemini CLI",
+    ".github/copilot-instructions.md": "GitHub Copilot",
+}
+
+
+def _cuerpo_adapter(cliente: str, contexto: dict, reglas: dict) -> str:
+    """La política del vault, para un cliente que lea instrucciones de proyecto.
+
+    **Entrega, no enforcing.** Este fichero es una instrucción; la frontera de
+    permisos es la del backend (`vault_write`, `vault_delete`). Un agente que
+    no cargue el fichero sigue sujeto a la misma política, porque la política
+    se aplica donde se muta.
+    """
+    lineas = [
+        "<!-- Generado por vault_preferences --adapters. Entrega, no enforcing. -->",
+        "",
+        f"# Política del vault (adaptador para {cliente})",
+        "",
+        "> Este fichero es **entrega**, no enforcing: una instrucción que el "
+        "cliente",
+        "> puede cargar. La política se aplica en la frontera de mutación del "
+        "vault",
+        "> (`vault_write` / `vault_delete`), no aquí. Si este cliente no carga "
+        "el",
+        "> fichero, la política sigue vigente.",
+        "",
+    ]
+    inmutables = reglas.get("inmutable") or []
+    no_borrar = reglas.get("no_borrar") or []
+    if inmutables or no_borrar:
+        lineas += ["## Reglas de mutación", ""]
+        if inmutables:
+            lineas.append("- Secciones **inmutables** (no se reescriben; se "
+                          "continúa con una sucesora): "
+                          + ", ".join(f"`{s}`" for s in inmutables))
+        if no_borrar:
+            lineas.append("- Secciones donde **no se borra**: "
+                          + ", ".join(f"`{s}`" for s in no_borrar))
+        lineas.append("")
+    lineas += ["## Preferencias del propietario", ""]
+    bloque = (contexto.get("context") or contexto.get("block") or "").strip()
+    lineas.append(bloque or "(sin preferencias registradas)")
+    lineas += [
+        "",
+        "## Dónde vive la política",
+        "",
+        "- Las preferencias, en `17_Preferences/` del vault (las escribe el "
+        "dueño; se revocan, no se borran).",
+        "- La inmutabilidad, en `00_System/inmutable.json`; el resto de reglas "
+        "de mutación, en `00_System/reglas.json`.",
+    ]
+    return "\n".join(lineas) + "\n"
+
+
+def vault_preferences_adapters(destino: str, force: bool = False) -> dict:
+    """Renderiza la política del vault en los ficheros que leen los clientes.
+
+    `destino` es la carpeta del proyecto donde viven esos ficheros; el dueño
+    la elige. **No se pisa un fichero que ya exista** sin `force`: el
+    `AGENTS.md` de un proyecto puede ser suyo, y sobrescribirlo es decidir por
+    él.
+    """
+    from pathlib import Path as _Path
+
+    base = _Path(destino)
+    try:
+        contexto = vault_preferences_context(max_items=40)
+    except Exception as exc:  # AP-51: se dice por qué, no se devuelve vacío
+        return emit_error("vault_preferences", "PREFERENCES_UNREADABLE",
+                          f"no se pudo leer el contexto: {exc}")
+    try:
+        from vault_io import reglas_declaradas
+
+        reglas = reglas_declaradas()
+    except Exception:
+        reglas = {"inmutable": [], "no_borrar": []}
+    filas = []
+    for nombre, cliente in ADAPTADORES.items():
+        ruta = base / nombre
+        if ruta.exists() and not force:
+            filas.append({"adapter": nombre, "estado": "existente (no se toca)"})
+            continue
+        ruta.parent.mkdir(parents=True, exist_ok=True)
+        ruta.write_text(_cuerpo_adapter(cliente, contexto, reglas), encoding="utf-8")
+        filas.append({"adapter": nombre, "estado": "escrito"})
+    return {
+        "ok": True,
+        "tool": "vault_preferences",
+        "action": "adapters",
+        "path": str(base),
+        "adapters": filas,
+        "entrega_no_enforcing": (
+            "estos ficheros son instrucciones que un cliente puede cargar; la "
+            "política se aplica en la frontera de mutación del vault, no aquí"
+        ),
+    }
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="vault_preferences — preferencias del usuario como contexto estable",
@@ -516,6 +620,10 @@ Notas:
     mode.add_argument("--list", action="store_true", help="Lista preferencias")
     mode.add_argument("--context", action="store_true", help="Bloque inyectable")
     mode.add_argument("--revoke", metavar="PATH", help="Revoca la preferencia dada")
+    mode.add_argument("--adapters", metavar="DIR",
+                      help="Renderiza la politica para los clientes que leen "
+                           "instrucciones (AGENTS.md, CLAUDE.md, GEMINI.md, "
+                           "copilot-instructions.md) en DIR")
 
     parser.add_argument("--category", help=f"Categoría: {CATEGORIES}")
     parser.add_argument("--title", help="Título de la preferencia")
@@ -532,6 +640,8 @@ Notas:
                         help="Incluye las revocadas en --list")
     parser.add_argument("--max-items", type=int, default=40,
                         help="Máximo de preferencias en --context (default: 40)")
+    parser.add_argument("--force", action="store_true",
+                        help="Con --adapters: sobrescribe un fichero existente")
     parser.add_argument("--agent", help="Agente que ejecuta (AP-16)")
 
     args = parser.parse_args()

@@ -24,6 +24,7 @@ from vault_entorno import agente_por_defecto
 from vault_io import (
     actualizar_indices_de_dominio, assert_within_vault, atomic_write_json, atomic_write_text,
     refrescar_indice_de_seccion,
+    nota_no_se_borra,  # politica de no-borrado del vault
 )
 from vault_registry import es_artefacto_derivado
 from vault_move import notas_que_enlazan
@@ -169,6 +170,19 @@ def vault_delete(
     bloqueo = fuera_de_sesion("vault_delete", note_path)
     if bloqueo:
         return bloqueo
+
+    # La politica del vault (propuesta `persistent-custom-rules-and-agent-
+    # integration`): una seccion declarada en `no_borrar` no se borra por
+    # ninguna via. Persistir la regla no basta —un prompt no es una frontera
+    # de permisos—, asi que la valla vive aqui, en la mutacion.
+    seccion_prohibida = nota_no_se_borra(note_path, vault_root)
+    if seccion_prohibida:
+        return emit_error(
+            "vault_delete", "DELETE_FORBIDDEN",
+            f"La seccion '{seccion_prohibida}' esta en no_borrar de "
+            f"00_System/reglas.json: '{path}' no se borra.",
+            args={"seccion": seccion_prohibida, "path": path},
+        )
 
     # SP-01 es el protocolo de borrado de notas: los indices, el change-log y
     # cualquier otro fichero del vault no se borran por esta via.
