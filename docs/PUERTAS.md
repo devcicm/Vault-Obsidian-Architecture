@@ -88,7 +88,7 @@ Ninguna cifra que describa el estándar debe escribirse a mano. Cada número en 
 
 **Las variables de entorno del estándar, declaradas una sola vez.**
 
-Catorce variables leídas en once módulos, cada una con su `os.environ.get()` y su default escrito a mano en el punto de lectura. Seis aparecían documentadas y ninguna tenía guard, así que la única forma de saber qué configura el estándar era leer los once ficheros. Dos ya divergían: `VAULT_VOICE` se compara contra `"verbose"` en un sitio y contra `"0"` con default `"1"` en otro, y el `.mjs` declara por su cuenta dos que Python no conoce.
+Hasta v40.x, catorce variables se leían en once módulos, cada una con su `os.environ.get()` y su default escrito a mano en el punto de lectura. Seis aparecían documentadas y ninguna tenía guard, así que la única forma de saber qué configura el estándar era leer los once ficheros. Dos ya divergían: `VAULT_VOICE` se compara contra `"verbose"` en un sitio y contra `"0"` con default `"1"` en otro, y el `.mjs` declara por su cuenta dos que Python no conoce.
 
 ## `toolkit_audit`
 

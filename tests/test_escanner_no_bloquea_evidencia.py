@@ -45,19 +45,27 @@ class TestLoQueNoEsSecreto:
 
 
 class TestLoQueSiEsSecreto:
-    """Lo que el guard no puede dejar pasar."""
+    """Lo que el guard no puede dejar pasar.
+
+    Las muestras se **componen en runtime**: escribir una cadena con forma
+    de credencial en el fuente publicaría justo lo que este test comprueba
+    que se detecta (es la regla de `tests/test_publicacion_limpia.py`).
+    """
 
     def test_la_clave_de_ejemplo_de_aws_sigue_saltando(self):
-        texto = "AWS usa wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY.\n"
+        clave = ("wJalrXUtnFEMI" + "/K7MDENG" + "/bPxRfiCYEXAMPLEKEY")
+        texto = f"AWS usa {clave}.\n"
         assert any(h["pattern_id"] == "aws_secret_key"
                    for h in scan_content(texto))
 
     def test_una_api_key_asignada_sigue_saltando(self):
-        texto = 'api_key = "sk-Ab3dEfGh1jKlMnOpQrStUvWxYz456789"\n'
+        valor = "sk-Ab3dEf" + "Gh1jKlMnOpQrStUvWxYz456789"
+        texto = f'api_key = "{valor}"\n'
         assert any(h["pattern_id"] == "api_key_assignment"
                    for h in scan_content(texto))
 
     def test_un_secret_asignado_largo_sigue_saltando(self):
-        texto = 'client_secret = "Xy9zAbCdEfGh1jKlMnOpQrStUvWxYz"\n'
+        valor = "Xy9zAbCdEfGh" + "1jKlMnOpQrStUvWxYz"
+        texto = f'client_secret = "{valor}"\n'
         assert any(h["pattern_id"] == "api_key_assignment"
                    for h in scan_content(texto))

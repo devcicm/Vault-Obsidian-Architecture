@@ -149,6 +149,13 @@
       "purpose": "Tokens del transporte HTTP/SSE con su perfil, `lector:<t>,operador:<t>` (perfiles de `tools-catalog.json` → `perfiles_de_token`). `lector` solo ve y llama a las tools sin side effects. Se suma a `VAULT_MCP_TOKEN`, que es `operador`. Solo la lee el `.mjs`."
     },
     {
+      "name": "VAULT_TOKEN_SERVICE_TOKEN",
+      "type": "texto",
+      "default": "",
+      "context": "meta_toolkit",
+      "purpose": "Credencial que exige el servicio local de tokens (SP-04). Si falta, el servicio genera una al arrancar y la escribe en `00_System/token-usage/`. Su valor nunca se publica."
+    },
+    {
       "name": "VAULT_MCP_PERFIL",
       "type": "texto",
       "default": "",

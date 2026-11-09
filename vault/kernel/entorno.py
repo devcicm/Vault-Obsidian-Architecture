@@ -1,11 +1,17 @@
 """Las variables de entorno del estándar, declaradas una sola vez.
 
-Catorce variables leídas en once módulos, cada una con su `os.environ.get()` y
-su default escrito a mano en el punto de lectura. Seis aparecían documentadas y
-ninguna tenía guard, así que la única forma de saber qué configura el estándar
-era leer los once ficheros. Dos ya divergían: `VAULT_VOICE` se compara contra
-`"verbose"` en un sitio y contra `"0"` con default `"1"` en otro, y el `.mjs`
-declara por su cuenta dos que Python no conoce.
+Hasta v40.x, catorce variables se leían en once módulos, cada una con su
+`os.environ.get()` y su default escrito a mano en el punto de lectura. Seis
+aparecían documentadas y ninguna tenía guard, así que la única forma de saber
+qué configura el estándar era leer los once ficheros. Dos ya divergían:
+`VAULT_VOICE` se compara contra `"verbose"` en un sitio y contra `"0"` con
+default `"1"` en otro, y el `.mjs` declara por su cuenta dos que Python no
+conoce.
+
+**La cifra viva no está escrita aquí** (AP-47): `VARIABLES` es la lista y su
+longitud es el número. Este texto cuenta la historia, no el estado; el estado
+se lee en el registro y se publica en `docs/ENTORNO.md`, que es su proyección
+(la puerta `entorno_doc` lo vigila).
 
 Es AP-05 sobre configuración: el mismo dato —qué variable existe, de qué tipo
 es, qué vale si no está— decidido en cada punto de uso. La corrección es la de
@@ -49,6 +55,25 @@ class Variable:
     #: Cómo se convierte el texto crudo del entorno al valor útil. El default
     #: ya viene convertido, así que solo se aplica cuando la variable existe.
     convertir: Callable[[str], Any] = str
+
+
+#: **La convención de nombres del registro.** Toda variable se llama
+#: `VAULT_*`; una que no lo haga tiene que estar aquí, con su motivo
+#: (medido el 2026-11-09: `VOAS_MERMAID_ORACLE` vive en el registro y rompe
+#: el invariante más barato que un registro puede ofrecer —«prefijo implica
+#: pertenencia»— sin que nadie lo declarara).
+#:
+#: Renombrar una variable publicada rompe a quien la usa, así que la
+#: excepción se **declara** en vez de esconderse: aquí está el motivo, y un
+#: test falla si aparece otra sin declarar.
+NOMBRES_FUERA_DEL_PREFIJO: Dict[str, str] = {
+    "VOAS_MERMAID_ORACLE": (
+        "El paquete del oráculo Mermaid (`mermaid` + `jsdom`) vive fuera del "
+        "repo del toolkit y lo usa el núcleo para validar los diagramas. No "
+        "es configuración del estándar sino una ruta de una dependencia; el "
+        "prefijo `VAULT_` queda reservado a la configuración."
+    ),
+}
 
 
 def _entero(valor: str) -> int:
@@ -233,6 +258,18 @@ VARIABLES: Dict[str, Variable] = {
             "(perfiles de `tools-catalog.json` → `perfiles_de_token`). `lector` solo ve "
             "y llama a las tools sin side effects. Se suma a `VAULT_MCP_TOKEN`, que es "
             "`operador`. Solo la lee el `.mjs`.",
+        ),
+        # SP-04: la credencial del servicio local de tokens. Se leía por
+        # indireccion (`ENV_TOKEN = "VAULT_TOKEN_SERVICE_TOKEN"` y
+        # `os.environ.get(ENV_TOKEN)`), asi que el guard de lecturas sin
+        # declarar —que solo ve literales— no la veia: era una lectura de
+        # entorno sin entrada en el registro. Medido el 2026-11-09 en una
+        # re-auditoria del vault (nota `environment-surface-re-measured`).
+        Variable(
+            "VAULT_TOKEN_SERVICE_TOKEN", "texto", "", "meta_toolkit",
+            "Credencial que exige el servicio local de tokens (SP-04). "
+            "Si falta, el servicio genera una al arrancar y la escribe en "
+            "`00_System/token-usage/`. Su valor nunca se publica.",
         ),
         # v41.2. Vacía es el catálogo entero, que es lo que recibía todo
         # cliente hasta ahora; un nombre que no está en `perfiles` no arranca,

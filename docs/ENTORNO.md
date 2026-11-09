@@ -6,7 +6,7 @@
 > una en tu shell lo da `python scripts/vault_entorno.py --filtro <nombre>`:
 > se resuelve al llamarse, no al documentarse (AP-49).
 
-Variables: 27.
+Variables: 28.
 
 | Variable | Tipo | Default | Quién la lee | Qué gobierna |
 |---|---|---|---|---|
@@ -34,6 +34,7 @@ Variables: 27.
 | `VAULT_SKIP_SECRET_SCAN` | bandera | `False` | kernel | Desactiva el escaneo de secretos del write path. Existe para los tests del propio escáner; en uso normal no se toca. |
 | `VAULT_SMOKE_TIMEOUT` | entero | `90` | meta_toolkit | Segundos por tool en la pasada de humo. Más alto que `VAULT_TOOL_TIMEOUT` porque el smoke arranca un intérprete nuevo. |
 | `VAULT_STRICT_ROOT` | bandera | `False` | kernel | Hace fallar una detección insegura en vez de caer a la raíz del repo. Basta con estar definida (comportamiento heredado). |
+| `VAULT_TOKEN_SERVICE_TOKEN` | texto | `''` | meta_toolkit | Credencial que exige el servicio local de tokens (SP-04). Si falta, el servicio genera una al arrancar y la escribe en `00_System/token-usage/`. Su valor nunca se publica. |
 | `VAULT_TOOL_TIMEOUT` | entero | `60` | kernel | Segundos antes de que una tool se declare colgada. Lo leen `vault_errors` y el servidor MCP, que hasta ahora lo declaraban por separado con el mismo número. |
 | `VAULT_VOICE` | texto | `'1'` | autoria | Verbosidad de la voz del vault: `0` la calla, `verbose` la amplía, cualquier otro valor deja el mensaje normal. |
 | `VOAS_MERMAID_ORACLE` | ruta | — | kernel | Directorio con `node_modules` que trae `mermaid` + `jsdom` para el oráculo del compilador real (`vault_mermaid_check`: `mcp/nodejs/mmd_validate.mjs`). Útil con wheels instaladas, donde el pack vive fuera del checkout. Si falta, el checker degrada al parser heurístico y lo declara. |

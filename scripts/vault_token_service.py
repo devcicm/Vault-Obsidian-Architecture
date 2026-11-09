@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Tuple
 from urllib.parse import urlparse
 
 from vault_errors import emit_error, wrap_main
+from vault_entorno import leer as leer_entorno  # dueño del registro de variables (AP-49)
 from vault_lib import utcnow
 from vault_io import atomic_write_json, file_lock
 
@@ -28,6 +29,13 @@ DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
 # SP-04: sin esta variable el servicio genera el token al arrancar y lo deja
 # en `_token_file()`, de donde lo lee el cliente.
+#
+# **La lee su dueño**: el nombre está declarado en el registro
+# (`vault.kernel.entorno`) y se pide por `leer()`, no por
+# `os.environ.get(ENV_TOKEN)`. La indireccion anterior
+# (`ENV_TOKEN = "VAULT_TOKEN_SERVICE_TOKEN"`) escondía la lectura del guard
+# de variables sin declarar, que solo veía literales: era una credencial
+# leída del entorno sin entrada en el registro (medido el 2026-11-09).
 ENV_TOKEN = "VAULT_TOKEN_SERVICE_TOKEN"
 # Presupuesto del cuerpo de una peticion. QA-R13-06 (dictamen 7dc1a25, P1):
 # sin limite de bytes ni plazo, un cliente que declara `Content-Length` y no
@@ -82,7 +90,7 @@ def _token_file() -> Path:
 def token_del_cliente() -> str:
     """El token con el que un cliente se presenta: el de la variable de
     entorno o, si no hay, el que el servicio dejó al arrancar."""
-    token = os.environ.get(ENV_TOKEN, "").strip()
+    token = leer_entorno(ENV_TOKEN).strip()
     if token:
         return token
     try:
@@ -434,7 +442,7 @@ def serve(host: str, port: int) -> int:
     # fallaba sin decir nada (12 arranques por job, 12 fallos).
     server = ThreadingHTTPServer((host, port), TokenHandler)
     t_bind = time.monotonic()
-    server.token = os.environ.get(ENV_TOKEN, "").strip()
+    server.token = leer_entorno(ENV_TOKEN).strip()
     generado = not server.token
     if generado:
         # Generado, no fijo: solo lo conoce quien puede leer el vault.

@@ -2485,15 +2485,48 @@ def lecturas_de_entorno_sin_registro() -> list[dict]:
             arbol = _ast_de(ruta)
         except SyntaxError:
             continue
+        constantes = _constantes_de_nombre(arbol)
         for nodo in _nodos(arbol):
-            nombre = _nombre_de_variable_leida(nodo)
+            nombre = _nombre_de_variable_leida(nodo, constantes)
             if nombre is not None and nombre not in VARIABLES:
                 hallazgos.append({"module": ruta.stem, "variable": nombre})
     return hallazgos
 
 
-def _nombre_de_variable_leida(nodo: ast.AST) -> str | None:
-    """El literal de `os.environ.get("X")` / `os.environ["X"]`, si lo hay."""
+def _constantes_de_nombre(arbol: ast.Module) -> dict[str, str]:
+    """Las constantes de módulo que guardan un **nombre** de variable.
+
+    Una lectura `os.environ.get(ENV_TOKEN)` no dice de qué variable habla:
+    el nombre está en una constante. Con el escaneo de literales, esa
+    lectura era invisible para el guard —y con ella la credencial del
+    servicio local de tokens (SP-04), que se leía por indireccion—.
+    Resolver **un salto** cierra la clase: el guard ve lo que el código
+    hace, no solo lo que está escrito (el mismo punto ciego que BUG-009 y
+    BUG-010 con las vallas de código).
+    """
+    salida: dict[str, str] = {}
+    for nodo in ast.iter_child_nodes(arbol):
+        if not isinstance(nodo, ast.Assign):
+            continue
+        if not isinstance(nodo.value, ast.Constant):
+            continue
+        if not isinstance(nodo.value.value, str):
+            continue
+        for objetivo in nodo.targets:
+            if isinstance(objetivo, ast.Name):
+                salida[objetivo.id] = nodo.value.value
+    return salida
+
+
+def _nombre_de_variable_leida(nodo: ast.AST,
+                              constantes: dict[str, str] | None = None) -> str | None:
+    """El literal de `os.environ.get("X")` / `os.environ["X"]`, si lo hay.
+
+    Y, si la lectura va por una constante (`os.environ.get(ENV_TOKEN)`), el
+    nombre que esa constante guarda: sin esto, la lectura es invisible para
+    el guard (ver `_constantes_de_nombre`).
+    """
+    constantes = constantes or {}
     if isinstance(nodo, ast.Call):
         f = nodo.func
         if (
@@ -2502,10 +2535,12 @@ def _nombre_de_variable_leida(nodo: ast.AST) -> str | None:
             and isinstance(f.value, ast.Attribute)
             and f.value.attr == "environ"
             and nodo.args
-            and isinstance(nodo.args[0], ast.Constant)
-            and isinstance(nodo.args[0].value, str)
         ):
-            return nodo.args[0].value
+            primero = nodo.args[0]
+            if isinstance(primero, ast.Constant) and isinstance(primero.value, str):
+                return primero.value
+            if isinstance(primero, ast.Name):
+                return constantes.get(primero.id)
     if (
         isinstance(nodo, ast.Subscript)
         and isinstance(nodo.value, ast.Attribute)
@@ -2514,6 +2549,13 @@ def _nombre_de_variable_leida(nodo: ast.AST) -> str | None:
         and isinstance(nodo.slice.value, str)
     ):
         return nodo.slice.value
+    if (
+        isinstance(nodo, ast.Subscript)
+        and isinstance(nodo.value, ast.Attribute)
+        and nodo.value.attr == "environ"
+        and isinstance(nodo.slice, ast.Name)
+    ):
+        return constantes.get(nodo.slice.id)
     return None
 
 
