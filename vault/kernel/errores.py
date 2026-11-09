@@ -859,6 +859,18 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": None,
         },
     },
+    "IMMUTABLE_NOTE": {
+        "category": "governance",
+        "severity": "error",
+        "message": "Esa nota es historica: no se reescribe.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Escribir una nota sucesora en lugar de modificar la anterior. "
+                    "Que una seccion sea inmutable lo declara este vault en "
+                    "00_System/inmutable.json (secciones: [...]).",
+            "docs": "vault-obsidian-architecture.md \u00a7Inmutabilidad por vault",
+        },
+    },
     "INVALID_INPUT": {
         "category": "validation",
         "severity": "error",

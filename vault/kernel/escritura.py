@@ -11,6 +11,7 @@ from __future__ import annotations
 import errno
 import json
 import os
+import re
 import time
 import uuid
 from pathlib import Path
@@ -129,6 +130,112 @@ def escritura_atomica(
             temporary.unlink(missing_ok=True)
         except OSError:
             pass
+
+
+#: El nombre exacto del temporal que escribe esta casa. Solo se borran
+#: ficheros que lo cumplen: **sin esa prueba, el fichero es de alguien**
+#: (hallazgo 4.2 del paper de la re-auditoría del vault).
+PATRON_TEMPORAL = re.compile(r"^\.tmp\.\d+\.[0-9a-f]{8}$")
+
+
+def _pid_vivo(pid: int) -> bool:
+    """¿Hay un proceso con ese identificador?
+
+    En Windows, `os.kill(pid, 0)` no existe; se pregunta a la API del
+    sistema. Un proceso que existe pero no es nuestro (permisos) cuenta
+    como vivo: ante la duda, no se borra nada.
+    """
+    if pid <= 0:
+        return False
+    if os.name == "nt":
+        try:
+            import ctypes
+
+            PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+            handle = ctypes.windll.kernel32.OpenProcess(
+                PROCESS_QUERY_LIMITED_INFORMATION, False, int(pid))
+            if handle:
+                ctypes.windll.kernel32.CloseHandle(handle)
+                return True
+            return False
+        except (ImportError, AttributeError, OSError):
+            # Ante la duda, el proceso se considera vivo: borrar el temporal
+            # de alguien que quizá sigue escribiendo es peor que dejar basura.
+            return True
+    vivo = True
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        vivo = False
+    except OSError:
+        vivo = True  # ante la duda, vivo
+    return vivo
+
+
+def temporales_huerfanos(raiz: Path) -> list[dict]:
+    """Los temporales que dejó una ejecución muerta, **y solo esos**.
+
+    Un temporal es `.tmp.<pid>.<8 hex>` en la carpeta del fichero que se iba
+    a escribir. La propiedad se demuestra por dos cosas a la vez:
+
+    1. el **nombre** tiene la forma que esta casa le da a sus temporales —
+       ningún otro fichero se llama así;
+    2. el **pid** está muerto: si el proceso vive, la escritura está en
+       curso y el temporal es suyo.
+
+    Lo que no cumple las dos se queda: ante la duda, no se borra nada de
+    nadie (la regla del modo agéntico: nada se borra).
+    """
+    huerfanos: list[dict] = []
+    try:
+        base = Path(raiz)
+        candidatos = list(base.rglob(".tmp.*"))
+    except OSError:
+        return huerfanos
+    for cand in candidatos:
+        if not cand.is_file():
+            continue
+        if not PATRON_TEMPORAL.match(cand.name):
+            continue
+        partes = cand.name.split(".")
+        try:
+            pid = int(partes[2])
+        except (IndexError, ValueError):
+            continue
+        if _pid_vivo(pid):
+            continue
+        huerfanos.append({"path": str(cand), "pid": pid})
+    return huerfanos
+
+
+def limpiar_temporales(raiz: Path, *, dry_run: bool = False) -> dict:
+    """Recoge los temporales huérfanos sin tocar nada cuya propiedad no se
+    pueda demostrar.
+
+    Devuelve el recuento de lo borrado (o de lo que se borraría) y de lo que
+    se dejó, con el motivo. Tras una terminación forzada, el **fichero
+    destino está intacto** (la escritura es temporal→rename): lo único que
+    queda es el temporal, y esto lo recoge.
+    """
+    huerfanos = temporales_huerfanos(raiz)
+    borrados: list[str] = []
+    fallidos: list[dict] = []
+    for h in huerfanos:
+        if dry_run:
+            borrados.append(h["path"])
+            continue
+        try:
+            Path(h["path"]).unlink()
+            borrados.append(h["path"])
+        except OSError as exc:
+            fallidos.append({"path": h["path"], "motivo": str(exc)[:160]})
+    return {
+        "temporales_encontrados": len(huerfanos),
+        "temporales_borrados": len(borrados),
+        "borrados": borrados,
+        "fallidos": fallidos,
+        "dry_run": dry_run,
+    }
 
 
 def apartar_ilegible(path: Path) -> Path:

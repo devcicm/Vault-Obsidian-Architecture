@@ -56,6 +56,7 @@ from vault_io import (
     file_lock,
     guarda_secretos,  # dueño único del escaneo de secretos (AP-57)
     guardar_version_actual,  # dueño único de versionar antes de sobrescribir
+    nota_es_inmutable,  # politica de inmutabilidad declarada por el vault
 )
 from vault_encoding import (
     sanitize_content,
@@ -1365,6 +1366,24 @@ def vault_write(
                 "unchanged": True,
                 "message": "Note unchanged (same content)",
             }
+
+    # Inmutabilidad declarada por este vault (hallazgo 4.6 del paper): una nota
+    # que ya existe y cae en una seccion declarada inmutable **no se
+    # reescribe**. Escribir una nueva si se permite: el historico crece, no se
+    # reescribe. Sin la declaracion (`00_System/inmutable.json`) no cambia el
+    # comportamiento de nadie.
+    if vault_path.exists():
+        seccion_inmutable = nota_es_inmutable(vault_path)
+        if seccion_inmutable:
+            return emit_error(
+                "vault_write", "IMMUTABLE_NOTE",
+                f"La nota '{rel_path}' esta en la seccion '{seccion_inmutable}', "
+                f"que este vault declara inmutable: no se reescribe. Escribe una "
+                f"nota sucesora.",
+                args={"seccion": seccion_inmutable, "path": rel_path},
+                pista="La politica la declara el vault en 00_System/inmutable.json "
+                      "(secciones: [...]). Para anadir contenido: una nota nueva.",
+            )
 
     with file_lock(vault_path, timeout=10.0):
         if vault_path.exists():

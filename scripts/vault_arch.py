@@ -3192,6 +3192,53 @@ def blueprint() -> str:
                 for (origen, destino, ctx_destino), n in fronteras.items()
             ]
             lineas.append("")
+    # El inventario de rutas de escritura (hallazgo 4.6 del paper de la
+    # re-auditoria): quien escribe qué. Se deriva del catalogo —cada tool
+    # declara sus `side_effects`— porque una politica de inmutabilidad necesita
+    # saber **quien** escribe cada seccion antes de declararla inmutable.
+    # La lista, no una tabla: el plano usa tablas de tres columnas para las
+    # fronteras, y una fila mas con la misma forma se contaria como frontera
+    # (el test de filas unicas las cuenta por forma). Aquí cada tool es una
+    # linea con su grupo y lo que escribe.
+    lineas += ["", "## Rutas de escritura", "",
+               "Quién escribe qué. Derivado del catálogo (`side_effects`): es el "
+               "inventario que la política de inmutabilidad necesita —una "
+               "sección que se declare inmutable tiene que saber quién la "
+               "escribe—."]
+    from vault_mcp_catalog import TOOLS_CATALOG
+
+    for nombre in sorted(TOOLS_CATALOG):
+        tool = TOOLS_CATALOG[nombre]
+        efectos = tool.get("side_effects") or []
+        if not efectos:
+            continue
+        que = "; ".join(str(e) for e in efectos)
+        lineas.append(f"- `{nombre}` ({tool.get('group', '')}): {que}")
+    lineas.append("")
+
+    # La política **por vault**: el estandar declara cual es la clase de cada
+    # seccion, y las de clase `registro` son las candidatas a historico
+    # inmutable. La lista la decide el dueno de cada vault, en
+    # `00_System/inmutable.json`; aqui solo se publica la sugerencia.
+    try:
+        from vault.kernel.registry import SECTION_DOCUMENTACION
+
+        registros = sorted(s for s, datos in SECTION_DOCUMENTACION.items()
+                            if datos[0] == "registro")
+        if registros:
+            lineas += [
+                "",
+                "Candidatas a histórico inmutable por clase `registro`: "
+                + ", ".join(f"`{s}`" for s in registros)
+                + ". La política la declara **cada vault** en "
+                "`00_System/inmutable.json`; esta lista es la sugerencia del "
+                "estándar, no una política común.",
+            ]
+    except (ImportError, AttributeError):
+        # Sin la clasificacion de secciones, el plano se publica sin la
+        # sugerencia de politica: es una omision declarada, no un fallo.
+        pass
+
     return "\n".join(lineas)
 
 

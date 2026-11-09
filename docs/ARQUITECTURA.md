@@ -194,3 +194,113 @@ Fronteras que hoy cruza (1), deuda declarada:
 |---|---|---|
 | `cli/registry` | `vault_mcp_catalog` | Meta-toolkit |
 
+
+## Rutas de escritura
+
+Quién escribe qué. Derivado del catálogo (`side_effects`): es el inventario que la política de inmutabilidad necesita —una sección que se declare inmutable tiene que saber quién la escribe—.
+- `vault_ai_decision` (IA Governance): Crea nota en 16_AI_Governance/decisions/
+- `vault_append` (Core): Añade contenido a la nota existente y refresca su updatedAt; Anota el cambio en el change-log (F8, no repudio)
+- `vault_arch` (Normas): Con --freeze reescribe scripts/arch-baseline.json; Con --blueprint reescribe docs/ARQUITECTURA.md
+- `vault_backup` (Backups): Crea carpeta en vault-backups/
+- `vault_backup_base64` (Backups): Genera archivo .b64zip.json en vault-backups/
+- `vault_bibliography_save` (Bibliografía): Crea nota en 12_Bibliography/{project}-{slug}.md
+- `vault_blame_audit` (Normas): Con --freeze reescribe scripts/blame-baseline.json
+- `vault_blueprint` (Normas): docs/BLUEPRINT.md; scripts/blueprint-baseline.json
+- `vault_bug_save` (Defectos y Cuarentena): Crea nota en 18_Bugs/{open|root-causes|fixed}/; Actualiza 18_Bugs/.bugs-index.json
+- `vault_change_log` (Change Log): Registra el cambio en el changelog del vault (con --propagate encola la propagación)
+- `vault_changelog_check` (Normas): Con --fijar-hash reescribe la entrada de la versión en curso; Con --freeze escribe scripts/changelog-baseline.json
+- `vault_ciclos` (Normas): scripts/ciclos-baseline.json
+- `vault_clones` (Normas): scripts\clones-baseline.json
+- `vault_code_map` (Código): Genera 11_Code/{project}/map.md con diagrama
+- `vault_code_module` (Código): Crea nota en 11_Code/{project}/
+- `vault_code_relation` (Código): Actualiza índice de relaciones en 11_Code/
+- `vault_code_sync` (Código): Actualiza 11_Code/{project}/index.json; Con --fix: inyecta @vault: en los ficheros fuente del proyecto, FUERA del vault (AP-36: el side effect se declara para poder revisarlo)
+- `vault_code_tag` (Normas): Actualiza frontmatter del módulo
+- `vault_criterios` (Normas): scripts/criterios-baseline.json
+- `vault_delete` (Change Log): Escribe entrada en 00_System/.change-log.json; Escribe entrada en 00_System/change-log.md; Elimina o mueve a 20_Quarantine/; Guarda la versión borrada en .history/ (la restaura vault_undo --restore)
+- `vault_delta` (Session Delta y Tags): Crea 00_System/delta-snapshot.json
+- `vault_diagram_export` (Diagramas): Genera archivos exportados
+- `vault_diagram_save` (Diagramas): Crea nota en 06_Diagrams/{category}/
+- `vault_doc_counts` (Normas): Con --fix reescribe cifras en los documentos vigilados
+- `vault_doc_sync` (Normas): Con --fix reescribe la tabla de índice de scripts/README.md
+- `vault_drift_detect` (Drift Detection): --mode snapshot escribe el snapshot de sesión en 00_System/ y, sobre git, repo.synced_commit en la ficha del proyecto
+- `vault_env_matrix` (Infraestructura): Genera 09_Infrastructure/{project}/matrix.md
+- `vault_env_save` (Infraestructura): Crea nota en 09_Infrastructure/{project}/
+- `vault_error_contract` (Normas): scripts/error-contract-baseline.json (solo con --freeze)
+- `vault_esquema` (Normas): schemas/
+- `vault_excepcion_declarada` (Normas): scripts/excepcion-declarada-baseline.json
+- `vault_fix_all` (Normas): Regenera tools-catalog.json, env-table.json, field-compat-baseline.json, docs/ARQUITECTURA.md, docs/BLUEPRINT.md y las cifras del README
+- `vault_fix_brackets` (Corrección Automática): Backups en vault-backups/.vault-fix-backup-YYYYMMDD-HHMMSS/
+- `vault_flow_save` (Flujos): Crea nota en 13_Flows/{type}/
+- `vault_folder_registry` (Gestión de Carpetas): Crea/actualiza 00_System/custom-folders.json
+- `vault_frontmatter_completar` (Corrección Automática): Reescribe el frontmatter de la nota por atomic_write_text
+- `vault_frontmatter_heal` (Corrección Automática): Reescribe la nota reparada por atomic_write_text
+- `vault_fuente_unica` (Salud del Vault): scripts/fuente-unica-baseline.json
+- `vault_fundamentals` (Data Quality): Con --framework/--doc escribe el marco de datos y la documentación derivada (en el checkout del estándar)
+- `vault_graph` (Salud del Vault): Crea 99_Index/graph.json
+- `vault_graph_fix` (Corrección Automática): Modifica wikilinks en notas; Crea stubs si es necesario
+- `vault_graph_merge` (Salud del Vault): Genera 99_Index/graph-enriched.json; Detecta AP-31 (untyped graph), AP-34 (orphan typed relations), AP-35 (relationship silos)
+- `vault_history_compact` (Versionado): Borra archivos de .history/
+- `vault_incident_save` (Producción/SRE): Crea nota en 02_Observability/incidents/
+- `vault_infra_map` (Infraestructura): Genera diagrama en 09_Infrastructure/{project}/
+- `vault_infra_save` (Infraestructura): Crea nota en 09_Infrastructure/{project}/
+- `vault_ingest` (Memoria de Contexto): Con --commit: crea notas en la sección destino con status draft; Actualiza el índice de la sección
+- `vault_init` (Bootstrap): Crea carpetas, versiona, indexa, audit; Con --name: crea el vault en la casa y le hace su repositorio git
+- `vault_kernel` (Normas): scripts/kernel-baseline.json
+- `vault_knowledge_save` (Conocimiento): Crea nota en 07_Knowledge/{topic}/
+- `vault_log_error` (Observabilidad): Crea/actualiza nota en 02_Observability/
+- `vault_master_index` (Índices): Genera 99_Index/index.md
+- `vault_merge` (Core): Crea backups antes de modificar
+- `vault_mermaid_check` (Diagramas): Con --fix (sin --dry-run): reescribe los .md cuyo bloque el compilador señala, SOLO si una propuesta es aprobada por el compilador; escritura por el patrón canónico (file_lock + record_raw_write + escritura_atomica + refrescar_grafo)
+- `vault_metricas` (Normas): scripts/metricas-observaciones.json; docs/METRICAS.md
+- `vault_migrate_docs` (Migración): Copia/move archivos
+- `vault_migrate_rollback` (Migración): Revierte archivos migrados
+- `vault_model_profile` (Memoria de Contexto): Actualiza 17_Preferences/model_profile.active
+- `vault_move` (Core): Actualiza wiki-links, search-index, graph.json, move-log
+- `vault_ncr_save` (Riesgos/Calidad): Crea nota en 02_Observability/ncr/
+- `vault_noop_audit` (Normas): Con --freeze reescribe scripts/noop-baseline.json
+- `vault_norms` (Normas): Con --apply/--apply-heal edita las notas de norma del vault; Con --rebuild/--audit escribe el registro de normas y sus artefactos derivados
+- `vault_norms_coherence` (Normas): scripts/norms-coherence-baseline.json
+- `vault_onboard` (Bootstrap): Crea notas en las secciones 01…17 del vault destino; No modifica el proyecto de origen: solo lo lee
+- `vault_pattern_save` (Patrones): Crea nota en 05_Patterns/
+- `vault_preferences` (Memoria de Contexto): Crea/actualiza nota en 17_Preferences/{category}/; Actualiza índice de 17_Preferences
+- `vault_privacy_save` (Riesgos/Calidad): Crea nota en 02_Observability/privacy/
+- `vault_produccion` (Normas): docs/GUIA-DE-PRODUCCION.md
+- `vault_project` (Vista del Proyecto): Crea 01_Projects/<slug>/project.md (add); Escribe 00_System/.local/project-paths.json y su .gitignore (link); Escribe 00_System/project-registry.json (rebuild)
+- `vault_project_overview` (Vista del Proyecto): Crea/actualiza 01_Projects/{slug}/overview.md
+- `vault_project_status` (Vista del Proyecto): Con --status/--summary escribe el status del proyecto y anota la entrada en su changelog
+- `vault_propagate` (Propagación): Actualiza notas relacionadas
+- `vault_qa_save` (Tests): Crea 21_QA/.qa-index.json si no existe
+- `vault_quality_check` (Data Quality): Genera reporte en 00_System/
+- `vault_quality_dashboard` (Tests): Genera 02_Observability/qa/quality-dashboard.md
+- `vault_quarantine` (Defectos y Cuarentena): Mueve la nota a 20_Quarantine/{category}/; Actualiza 20_Quarantine/.quarantine-ledger.json (append-only)
+- `vault_recursos` (Normas): scripts/recursos-baseline.json
+- `vault_reindex` (Índices): Actualiza 99_Index/search-index.json; Opcional: 99_Index/graph.json, hash-index.json
+- `vault_relation_add` (Diagramas): Actualiza relaciones en 07_Knowledge/
+- `vault_release_save` (Release): Crea nota en 01_Projects/{project}/releases/
+- `vault_requirement_save` (Requerimientos): Crea nota en 01_Projects/{project}/requirements/
+- `vault_restore` (Backups): Sobreescribe archivos del vault
+- `vault_restore_base64` (Backups): Restaura vault a nuevo directorio
+- `vault_risk_save` (Riesgos/Calidad): Crea nota en 01_Projects/{project}/risks/
+- `vault_ronda` (Session Delta y Tags): Escribe y borra 00_System/ronda-activa.json; Al cerrar, escribe la nota de sesion en 04_Sessions/ por vault_write
+- `vault_runbook_log` (Runbooks): Actualiza log del runbook
+- `vault_runbook_save` (Runbooks): Crea nota en 08_Runbooks/{project}/
+- `vault_sdd_init` (Skills): Escribe 13 documentos derivados en docs/sdd/; Escribe docs/sdd/gaps.md solo si no existe o no tiene contenido manual
+- `vault_section` (Gestión de Carpetas): Crea/actualiza 00_System/secciones.json; Crea la carpeta de la sección si no existe
+- `vault_section_index` (Índices): Genera {section}/index.md
+- `vault_security_scan` (Seguridad): Genera reporte en 02_Observability/vulnerabilities/
+- `vault_slo_save` (Producción/SRE): Crea nota en 02_Observability/slos/
+- `vault_smoke` (Normas): scripts/smoke-baseline.json
+- `vault_standard_upgrade` (Versionado): Actualiza 00_System/standard-version.json; Ejecuta fixes automáticos
+- `vault_supersede` (Corrección Automática): Reescribe el frontmatter de la nota por atomic_write_text; el cuerpo no cambia
+- `vault_tags` (Session Delta y Tags): Reconstruye 00_System/tag-registry.json y 99_Index/tag-index.md; Anota términos nuevos en 19_Audits/vocabulary/tag-ledger.json (append-only)
+- `vault_test_save` (Tests): Crea nota en 15_Tests/{test_type}/{project}-{slug}.md
+- `vault_tests_higiene` (Normas): scripts/tests-higiene-baseline.json
+- `vault_token_service` (Tokens): Sirve la API HTTP local y escribe los flujos de tokens y los ficheros de estado del servicio
+- `vault_toolkit_audit` (Normas): scripts/toolkit-audit-baseline.json; scripts/toolkit-audit-last.json; scripts/toolkit-audit-last-parcial.json
+- `vault_undo` (Versionado): SP-01: escribe change_log si --force; Crea nota restaurada o sobreescribe la actual
+- `vault_voice` (Normas): 00_System/.voice-counter
+- `vault_write` (Core): Versiona en .history/; Actualiza search-index.json; Regenera section index
+
+
+Candidatas a histórico inmutable por clase `registro`: `02_Observability`, `04_Sessions`, `10_Migrated`, `16_AI_Governance`, `18_Bugs`, `19_Audits`, `20_Quarantine`, `21_QA`. La política la declara **cada vault** en `00_System/inmutable.json`; esta lista es la sugerencia del estándar, no una política común.

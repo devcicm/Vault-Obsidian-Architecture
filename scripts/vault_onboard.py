@@ -1227,6 +1227,15 @@ def _intentar_citar_title(bloque: str):
 # ── Frontmatter ───────────────────────────────────────────────────────────────
 
 
+#: De dónde sale lo que este onboarding escribe (hallazgo 4.5b del paper de la
+#: re-auditoría). La nota lo declara en su frontmatter (`provenance`) para que
+#: quien la lea más tarde sepa si es una reconstrucción y de qué. Solo el
+#: **nombre** del proyecto y su commit: una ruta absoluta de la máquina del
+#: dueño en una nota es el residuo que la auditoría de privacidad quitó del
+#: repo, y aquí no volvería.
+_CONTEXTO_ONBOARD: Dict[str, Any] = {}
+
+
 def _make_frontmatter(
     title: str,
     folder: str,
@@ -1242,6 +1251,17 @@ def _make_frontmatter(
     # —eso sería una segunda verdad— sino que se deriva del mismo mapa
     # sección→tipo que usa el write path canónico.
     tipo = extra.get("type") or tipo_por_carpeta(folder)
+    # Procedencia y confianza (hallazgo 4.5b del paper de la re-auditoría): la
+    # nota dice de dónde salió y cuánto se le puede creer. **Sin ruta
+    # absoluta**: el proyecto se nombra, no se maquina —una ruta de la máquina
+    # del dueño en una nota es la clase de residuo que la auditoría de
+    # privacidad quitó del repo.
+    contexto = _CONTEXTO_ONBOARD
+    procedencia = "onboarding"
+    if contexto.get("proyecto"):
+        sha = contexto.get("sha") or "sin commit"
+        procedencia = f"onboarding del proyecto «{contexto['proyecto']}» ({sha})"
+    confianza = "alta" if _tiene_evidencia(content) else "baja"
     # AP-46: el bloque lo escribe su dueño; aquí solo se declaran los campos.
     fm = (
         Frontmatter()
@@ -1253,6 +1273,8 @@ def _make_frontmatter(
         .set("tags", tags)
         .set("norm_refs", norm_refs)
         .set("status", "stub")
+        .set("provenance", procedencia, texto=True)
+        .set("confidence", confianza, texto=True)
         .set("cia_integrity", extra.get("cia_integrity", "medium"))
         .set("cia_availability", extra.get("cia_availability", "medium"))
         .set("cia_sensitivity", extra.get("cia_sensitivity", "internal"))
@@ -2831,6 +2853,10 @@ def vault_onboard(
 
     skip = set(skip or [])
     warnings: List[str] = []
+    _CONTEXTO_ONBOARD.clear()
+    _CONTEXTO_ONBOARD["proyecto"] = project
+    sha = _run_git(project_path, ["rev-parse", "--short", "HEAD"]) if not no_git else None
+    _CONTEXTO_ONBOARD["sha"] = (sha or "").strip() or "sin commit"
     _SIN_EVIDENCIA.clear()
     _DETECCION_DEGRADADA.clear()  # por onboarding, no por proceso
     created: Dict[str, Any] = {}

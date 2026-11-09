@@ -118,6 +118,18 @@ def vault_reindex(
     if rebuild_graph and not dry_run:
         result["graph"] = _rehacer_grafo()
 
+    # Los temporales que dejó una ejecución muerta (hallazgo 4.2 del paper de
+    # la re-auditoría): el fichero destino quedó intacto —la escritura es
+    # temporal→rename—, pero el temporal se quedó en su carpeta. Se recogen
+    # solo los que se pueden demostrar nuestros: nombre con nuestra forma y
+    # proceso muerto.
+    try:
+        from vault.kernel.escritura import limpiar_temporales
+
+        result["temporales"] = limpiar_temporales(repo.raiz, dry_run=dry_run)
+    except Exception as e:
+        result["temporales"] = {"warning": str(e)[:160]}
+
     result.update(navegacion)
     return result
 

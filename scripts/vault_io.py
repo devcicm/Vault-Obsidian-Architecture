@@ -570,6 +570,57 @@ def atomic_write_text(
 _SECCIONES_CON_INDICE_PROPIO = frozenset({"00_System", "99_Index"})
 
 
+#: Donde el vault declara que secciones son historica inmutable (hallazgo 4.6
+#: del paper de la re-auditoria). La politica es **por vault**: la resuelve su
+#: dueno, no el toolkit. El fichero ausente o vacio significa que nada es
+#: inmutable —el comportamiento de siempre—; asi la mecanica existe sin
+#: cambiar a nadie lo que hace.
+FICHERO_INMUTABILIDAD = "00_System/inmutable.json"
+
+
+def inmutables_declaradas(raiz: Optional[Path] = None) -> List[str]:
+    """Las secciones que este vault declara inmutables.
+
+    Lee `00_System/inmutable.json` (`{"secciones": ["19_Audits", ...]}`). Un
+    fichero ilegible se declara vacio, no «todo inmutable»: ante la duda no se
+    bloquea a nadie.
+    """
+    base = Path(raiz) if raiz is not None else _raiz.get_vault_root()
+    fichero = base / FICHERO_INMUTABILIDAD
+    try:
+        datos = json.loads(fichero.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    secciones = datos.get("secciones") if isinstance(datos, dict) else None
+    if not isinstance(secciones, list):
+        return []
+    return [str(s).strip() for s in secciones if str(s).strip()]
+
+
+def seccion_de(relative: str) -> str:
+    """La seccion de primer nivel de una ruta relativa al vault."""
+    partes = str(relative).replace("\\", "/").split("/")
+    return partes[0] if partes else ""
+
+
+def nota_es_inmutable(nota: Path, raiz: Optional[Path] = None) -> Optional[str]:
+    """La seccion inmutable a la que pertenece la nota, o None.
+
+    Que la nota este en una seccion inmutable **no impide escribirla nueva**
+    —el historico crece—; impide **modificarla**. Quien llama decide cual de
+    las dos cosas va a hacer.
+    """
+    base = Path(raiz) if raiz is not None else _raiz.get_vault_root()
+    try:
+        relativa = Path(nota).relative_to(base).as_posix()
+    except ValueError:
+        return None
+    seccion = seccion_de(relativa)
+    if seccion and seccion in inmutables_declaradas(base):
+        return seccion
+    return None
+
+
 def guardar_version_actual(nota: Path) -> str:
     """Copia la versión actual de una nota a `.history/` antes de taparla.
 

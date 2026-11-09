@@ -16,6 +16,22 @@ forma parte del ciclo, no es un extra.
 Supresión puntual: comentario `# cli-scan: ignore <CODIGO> -- <motivo>` en la línea.
 Sin motivo la supresión no se aplica (A-08): un comentario mudo no puede silenciar
 una carrera crítica.
+
+**Qué NO comprueba (hallazgo 4.1 del paper de la re-auditoría del vault).**
+Que la función *use* un lock no dice que el lock proteja *esa* escritura. El
+escáner **no comprueba**:
+
+- el **orden**: un lock adquirido después de la escritura cuenta igual;
+- el **recurso**: un lock sobre otro fichero cuenta igual;
+- la **sección crítica**: un lock cerrado antes de la escritura cuenta igual;
+- los **helpers**: un lock en quien llama no cubre a quien escribe, y RC-01
+  salta sobre un escritor que sí está protegido (falso positivo conocido).
+
+Es un límite del análisis estático, no un defecto: lo que sí hace —y desde
+v40.30, por AST y no por texto— es no contar un comentario como un lock. Las
+fixtures negativas que fijan este límite viven en
+`tests/test_analizador_de_locks.py`: RC-01 significa «no se ve un lock en
+esta función», no «esta escritura está protegida».
 """
 
 from __future__ import annotations

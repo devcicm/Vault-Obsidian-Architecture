@@ -8438,6 +8438,16 @@
         "docs": "vault-obsidian-architecture.md §FL-01"
       }
     },
+    "IMMUTABLE_NOTE": {
+      "category": "governance",
+      "severity": "error",
+      "message": "Esa nota es historica: no se reescribe.",
+      "recovery": {
+        "action": "manual",
+        "hint": "Escribir una nota sucesora en lugar de modificar la anterior. Que una seccion sea inmutable lo declara este vault en 00_System/inmutable.json (secciones: [...]).",
+        "docs": "vault-obsidian-architecture.md §Inmutabilidad por vault"
+      }
+    },
     "INDEX_NOT_FOUND": {
       "category": "infrastructure",
       "severity": "warning",
