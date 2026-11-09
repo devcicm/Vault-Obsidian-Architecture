@@ -16,6 +16,8 @@ from pathlib import Path
 
 import pytest
 
+from apoyo import git_en
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SKILLS_DIR = REPO_ROOT / "agent" / "skills"
 SCRIPTS = REPO_ROOT / "scripts"
@@ -79,14 +81,43 @@ def test_la_skill_declara_su_version_y_la_doc_la_publica(skill):
 
 @pytest.mark.parametrize("skill", SKILLS, ids=IDS)
 def test_las_versiones_anteriores_quedan_al_lado_y_nombradas(skill):
+    """El historial es real, no una convención de nombres (paper 4.5).
+
+    Tres exigencias, en orden de costo: la archivada existe, `docs/SKILLS.md`
+    la nombra, y **Git la lleva** — una copia en disco sin seguimiento se
+    pierde en la primera sincronización, que es exactamente como estaba la
+    `SKILL-v2.0.md` en el árbol de otro agente cuando la re-auditoría la
+    midió. Y el peldaño tiene que ser el **inmediatamente anterior**: de
+    v1.0 a v2.1 sin v2.0 archivada, el salto deja la v2.0 sin restauración
+    posible.
+    """
     actual = tuple(map(int, _version(skill).split(".")))
     archivadas = sorted(skill.parent.glob("SKILL-v*.md"))
+    seguidos = set(git_en(REPO_ROOT, "ls-files", "agent/skills").splitlines())
+    numeros = []
     for vieja in archivadas:
         numero = vieja.stem[len("SKILL-v"):]
-        assert tuple(map(int, numero.split("."))) < actual, vieja
+        numero_t = tuple(map(int, numero.split(".")))
+        assert numero_t < actual, vieja
+        numeros.append(numero_t)
         assert vieja.relative_to(REPO_ROOT).as_posix() in DOC, vieja
+        relativa = vieja.relative_to(REPO_ROOT).as_posix()
+        assert relativa in seguidos, (
+            f"{relativa} existe en disco pero no está en Git: la copia del "
+            f"repo no la lleva y el historial se pierde al sincronizar")
     if actual > (1, 0):
-        assert archivadas, f"{skill.parent.name} subió de versión sin archivar la anterior"
+        if actual[1] > 0:
+            requerida = (actual[0], actual[1] - 1)
+            assert requerida in numeros, (
+                f"{skill.parent.name} v{actual[0]}.{actual[1]} no tiene "
+                f"archivada la inmediatamente anterior "
+                f"v{requerida[0]}.{requerida[1]}: el historial tiene un "
+                f"salto ({sorted(numeros)})")
+        else:
+            mayores = [n for n in numeros if n[0] == actual[0] - 1]
+            assert mayores, (
+                f"{skill.parent.name} subió a v{actual[0]}.0 sin archivar "
+                f"ninguna v{actual[0] - 1}.x")
 
 
 @pytest.mark.parametrize("skill", SKILLS, ids=IDS)

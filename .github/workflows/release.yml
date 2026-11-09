@@ -202,7 +202,7 @@ jobs:
               errores.append(f"qa_verdict_ref no es un fichero de audits/ ni un centinela declarado ({qa!r})")
           if errores:
               print("NO SE PUBLICA:\n  " + "\n  ".join(errores)); sys.exit(1)
-          print(f"OK: {tag} contiene el candidato {sha[:7]}")
+          print(f"OK: {tag} contiene el candidato {sha[:7]} | QA: {qa}")
           EOF
 
       - name: Construir wheel y sdist
