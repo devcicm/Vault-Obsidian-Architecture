@@ -3175,11 +3175,12 @@ Estaba fuera del catálogo. Cuatro versiones con la skill documentada en `docs/S
 python vault_sdd_init.py --bilingual
 python vault_sdd_init.py --check                  # puerta AP-47
 python vault_sdd_init.py --bilingual --force
+python vault_sdd_init.py --bilingual --regenerate-gaps   # pisa gaps.md a sabiendas
 python vault_sdd_init.py --vault-root /ruta/al/vault --bilingual
 ```
 
 - **`--check` es la puerta que faltaba.** El documento se genera derivando el rango de antipatrones de `NORM_CATALOG`, así que el fichero recién escrito nunca miente; lo que envejece es el de la ejecución anterior, que se commiteó y se quedó quieto mientras el registro crecía por debajo. Medido: `04-antipatterns.md` anunciaba `AP-01..AP-35` y el índice `AP-01..AP-25` con el registro en `AP-01..AP-47`. Un mes, tres releases, seis puertas en verde. Es AP-47 —artefacto derivado desfasado— aplicado a la documentación del propio estándar.
-- **`--force` no pisa `gaps.md`.** De los 14, ese es el único declarado *manual fill*, y su preservación no depende del flag: `--force` levanta la idempotencia de lo generado, no el permiso para pisar lo escrito a mano. La restricción estaba publicada sin excepción; el código sí tenía la excepción, y un `--force` para refrescar el rango se llevó por delante 85 hallazgos redactados a mano.
+- **`gaps.md` se preserva sin inspecciones.** De los 14, ese es el único declarado *manual fill*: una vez existe, ninguna ejecución lo pisa — ni el ciclo normal ni `--force`, que levanta la idempotencia de lo generado, no el permiso para pisar lo escrito a mano. Lo sustituyó una heurística («sin el título `# Gaps` o con menos de 200 caracteres se regenera») que destruía notas manuales cortas con `ok: true` — reproducido el 2026-11-09, hallazgo 3.2 de la re-auditoría del vault; antes, un `--force` para refrescar el rango se llevó por delante 85 hallazgos redactados a mano. Regenerarlo exige `--regenerate-gaps`, explícito.
 - **Contención (AP-36):** toda escritura ocurre bajo `<vault-root>/docs/sdd/`. La skill es read-only sobre el resto del vault.
 
 ### `vault_sanacion.py`

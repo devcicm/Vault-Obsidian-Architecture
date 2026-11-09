@@ -6315,6 +6315,10 @@
             "type": "boolean",
             "description": "Regenera los 13 documentos derivados; NO pisa gaps.md"
           },
+          "regenerate-gaps": {
+            "type": "boolean",
+            "description": "Reemplaza gaps.md a sabiendas: pisa lo que haya, incluido lo escrito a mano. Es la única forma de regenerarlo."
+          },
           "check": {
             "type": "boolean",
             "description": "Compara el rango del disco contra NORM_CATALOG; falla si desfasado (AP-47)"

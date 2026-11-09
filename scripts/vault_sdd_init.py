@@ -11,7 +11,7 @@ to specialized generators.
 Usage:
     python scripts/vault_sdd_init.py --bilingual
     python scripts/vault_sdd_init.py --bilingual --dry-run
-    python scripts/vault_sdd_init.py --bilingual --force
+    python scripts/vault_sdd_init.py --bilingual --regenerate-gaps  # pisa gaps.md a sabiendas
     python scripts/vault_sdd_init.py --vault-root /path/to/vault --bilingual
 
 See docs/SKILLS.md for full documentation.
@@ -49,7 +49,7 @@ SKILL_MANIFEST = "00_System/skills/vault-sdd-init.md"
 #: Versión de la skill: la misma que declara `agent/skills/vault-sdd-init/SKILL.md`
 #: en su frontmatter, y `tests/test_skills_versionadas.py` falla si divergen.
 #: Hasta el 2026-10-05 eran cuatro «v1.0» escritos a mano en este fichero.
-SKILL_VERSION = "2.0"
+SKILL_VERSION = "2.1"
 
 EXPECTED_OUTPUTS = [
     "README.md",
@@ -1316,7 +1316,9 @@ def generate_gaps_md(vault_root: Path, drift: dict) -> str:
     return f"""# Gaps — Brechas Detectadas
 
 > Lista priorizada de brechas detectadas durante la generación del SDD.
-> Esta lista se actualiza con cada ejecución de la skill.
+> Esta plantilla se escribe una sola vez: lo que completes aquí no lo pisa
+> ninguna ejecución posterior. Para regenerarla a sabiendas:
+> `python vault_sdd_init.py --bilingual --regenerate-gaps`.
 
 ---
 
@@ -1389,7 +1391,15 @@ def main() -> int:
         "--dry-run", action="store_true", help="Show plan without writing"
     )
     parser.add_argument(
-        "--force", action="store_true", help="Force regeneration (bypass idempotency)"
+        "--force", action="store_true",
+        help="Compatibilidad: la generación de los 12 derivados ya es "
+             "incondicional en cada corrida. Nunca pisa gaps.md; para "
+             "regenerarlo existe --regenerate-gaps."
+    )
+    parser.add_argument(
+        "--regenerate-gaps", action="store_true",
+        help="Reemplaza gaps.md a sabiendas: pisa lo que haya, incluido lo "
+             "escrito a mano. Es la única forma de regenerarlo."
     )
     parser.add_argument(
         "--check",
@@ -1476,30 +1486,31 @@ def main() -> int:
     atomic_write_json(sdd_dir / "integrity-report.json", integrity)
     traza(f"  [OK] integrity-report.json")
 
-    # `gaps.md` es el único de los 14 declarado *manual fill*, y su preservación
-    # NO depende de `--force`: `--force` levanta la idempotencia de lo generado,
-    # no el permiso para pisar lo escrito a mano. Medido: un `--force` para
-    # refrescar el rango de antipatrones se llevó por delante 85 hallazgos
-    # redactados a mano, incluida la tabla de prioridades de FASE 0. La
-    # restricción publicada («no pisa documentación manual») no tenía excepción
-    # escrita; el código sí la tenía.
+    # `gaps.md` es el único de los 14 declarado *manual fill*, y **lo que
+    # existe se preserva sin inspeccionar su contenido**: ni el ciclo normal
+    # ni `--force` lo pisan. `--force` levanta la idempotencia de lo generado,
+    # no el permiso para pisar lo escrito a mano — un `--force` para refrescar
+    # el rango se llevó por delante 85 hallazgos redactados a mano (incluida
+    # la tabla de prioridades de FASE 0). La heurística que quedó entonces
+    # —«sin el título `# Gaps` o con menos de 200 caracteres se regenera»—
+    # era el mismo defecto por la otra puerta: reproducido el 2026-11-09
+    # (hallazgo 3.2 de la re-auditoría del vault), un `gaps.md` manual de
+    # tres líneas se destruía con `ok: true`. Regenerarlo exige
+    # `--regenerate-gaps`: explícito, a sabiendas, y dicho en el envelope.
     gaps_content = generate_gaps_md(vault_root, drift)
     gaps_path = sdd_dir / "gaps.md"
     escritos_gaps: list = []
     preservados: list = []
-    if gaps_path.exists():
-        existing = gaps_path.read_text(encoding="utf-8")
-        if "# Gaps" not in existing or len(existing) < 200:
-            atomic_write_text(gaps_path, gaps_content)
-            escritos_gaps.append("gaps.md")
-            traza(f"  [OK] gaps.md (updated)")
-        else:
-            preservados.append("gaps.md")
-            traza(f"  [SKIP] gaps.md (preserved - manual content detected)")
+    if gaps_path.exists() and not args.regenerate_gaps:
+        preservados.append("gaps.md")
+        traza("  [SKIP] gaps.md (preservado: existe y nadie pisa lo escrito a "
+              "mano; --regenerate-gaps lo reemplaza a sabiendas)")
     else:
+        motivo = ("reemplazado a sabiendas (--regenerate-gaps)"
+                  if args.regenerate_gaps else "plantilla nueva")
         atomic_write_text(gaps_path, gaps_content)
         escritos_gaps.append("gaps.md")
-        traza(f"  [OK] gaps.md")
+        traza(f"  [OK] gaps.md ({motivo})")
 
     traza()
     traza(f"Generated {len(generated) + 2} files in {sdd_dir}")

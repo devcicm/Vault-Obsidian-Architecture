@@ -190,3 +190,79 @@ class TestSkillExecution:
         run2 = {f: GENERATORS[f](tmp_test_dir, drift) for f in GENERATORS}
         for f in run1:
             assert _sin_reloj(run1[f]) == _sin_reloj(run2[f]), f"{f} not idempotent"
+
+
+class TestGapsMdPreservacion:
+    """Hallazgo 3.2 de la re-auditoria del vault (2026-11-09).
+
+    La heuristica anterior -sin el titulo '# Gaps' o con menos de 200
+    caracteres se regenera- destruia contenido manual corto con `ok: true`
+    (reproducido: un `gaps.md` de tres lineas redactadas a mano, `--force`
+    encima, reescrito con la plantilla). La regla ahora es absoluta: lo que
+    existe se preserva sin inspeccionar su contenido, y regenerarlo exige
+    `--regenerate-gaps`, explicito.
+    """
+
+    def _correr(self, tmp_path, *flags):
+        resultado = vault_subproceso.ejecutar(
+            [
+                sys.executable,
+                str(Path(__file__).parent.parent / "scripts" / "vault_sdd_init.py"),
+                "--vault-root", str(tmp_path),
+                *flags,
+            ],
+            capture_output=True,
+            cwd=Path(__file__).parent.parent,
+        )
+        assert resultado.returncode == 0, resultado.stderr
+        return json.loads(resultado.stdout)
+
+    def _gaps_manual(self, tmp_path, texto):
+        sdd = tmp_path / "docs" / "sdd"
+        sdd.mkdir(parents=True, exist_ok=True)
+        (sdd / "gaps.md").write_text(texto, encoding="utf-8")
+
+    def test_un_gaps_manual_corto_sobrevive_force(self, tmp_test_dir):
+        """El repro del hallazgo: tres lineas a mano y `--force` encima."""
+        manual = "# Gaps\n\n- brecha uno redactada a mano\n- brecha dos\n"
+        self._gaps_manual(tmp_test_dir, manual)
+
+        env = self._correr(tmp_test_dir, "--force")
+
+        quedo = (tmp_test_dir / "docs" / "sdd" / "gaps.md").read_text(
+            encoding="utf-8")
+        assert quedo == manual, "--force piso un gaps.md manual"
+        assert "gaps.md" in env["preserved"]
+        assert "gaps.md" not in env["written"]
+
+    def test_un_gaps_manual_sin_titulo_sobrevive(self, tmp_test_dir):
+        """Sin el literal '# Gaps' la heuristica tambien lo reescribia."""
+        manual = "mis brechas:\n- la del indice desfasado\n"
+        self._gaps_manual(tmp_test_dir, manual)
+
+        self._correr(tmp_test_dir, "--bilingual")
+
+        quedo = (tmp_test_dir / "docs" / "sdd" / "gaps.md").read_text(
+            encoding="utf-8")
+        assert quedo == manual
+
+    def test_regenerate_gaps_reemplaza_a_sabiendas(self, tmp_test_dir):
+        """El escape explicito: pisa lo que haya y lo dice en el envelope."""
+        self._gaps_manual(tmp_test_dir, "contenido manual a reemplazar\n")
+
+        env = self._correr(tmp_test_dir, "--regenerate-gaps")
+
+        quedo = (tmp_test_dir / "docs" / "sdd" / "gaps.md").read_text(
+            encoding="utf-8")
+        assert "# Gaps" in quedo, "la plantilla no se escribio"
+        assert "gaps.md" in env["written"]
+        assert "gaps.md" not in env["preserved"]
+
+    def test_primera_corrida_escribe_y_las_siguientes_preservan(self, tmp_test_dir):
+        """La plantilla se escribe una vez; de ahi en adelante es del autor."""
+        env1 = self._correr(tmp_test_dir)
+        assert "gaps.md" in env1["written"]
+
+        env2 = self._correr(tmp_test_dir)
+        assert "gaps.md" in env2["preserved"]
+        assert "gaps.md" not in env2["written"]

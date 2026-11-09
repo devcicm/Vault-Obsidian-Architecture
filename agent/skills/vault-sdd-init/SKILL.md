@@ -2,16 +2,17 @@
 name: vault-sdd-init
 description: Spec-Driven Development (SDD) documentation initializer. Generates the SDD specification suite for a project under docs/sdd/. Use when starting a new project, adding SDD documentation to an existing project, or when the user asks to "initialize SDD" or "create SDD docs".
 allowed-tools: Bash(python *) Bash(vault *) Read Write Glob Grep
-argument-hint: "[--bilingual] [--check] [--dry-run] [--force] [--vault-root PATH]"
-version: "2.0"
+argument-hint: "[--bilingual] [--check] [--dry-run] [--force] [--regenerate-gaps] [--vault-root PATH]"
+version: "2.1"
 ---
 
 # vault-sdd-init
 
 Initialize Spec-Driven Development documentation for a project.
 
-Version 2.0. The previous definition is kept next to this one as
-`SKILL-v1.0.md`.
+Version 2.1 — `gaps.md` preservation became absolute (no content heuristics)
+and `--regenerate-gaps` was added as the only way to overwrite it. The
+previous definition is kept next to this one as `SKILL-v2.0.md`.
 
 Generates the SDD specification suite under `docs/sdd/`: README.md,
 00-principles.md, 01-state-machines.md, 02-implementation.md, 03-usage.md,
@@ -35,6 +36,9 @@ vault run vault_sdd_init --check
 # Force regeneration of what is derived (never gaps.md)
 vault run vault_sdd_init --bilingual --force
 
+# Deliberately replace gaps.md (overwrites manual content)
+vault run vault_sdd_init --bilingual --regenerate-gaps
+
 # Custom vault root
 vault run vault_sdd_init --vault-root /path/to/vault --bilingual
 ```
@@ -49,7 +53,8 @@ of the standard, `python scripts/vault_sdd_init.py …` takes the same arguments
 | `--bilingual` | Generate docs in Spanish and English |
 | `--check` | Compare the range on disk against `NORM_CATALOG`; exit 1 if stale (AP-47) |
 | `--dry-run` | Preview changes without writing |
-| `--force` | Regenerate every derived document — never overwrites `gaps.md` |
+| `--force` | Accepted for compatibility — derived docs are rewritten every run anyway; never touches `gaps.md` |
+| `--regenerate-gaps` | Replace `gaps.md` deliberately, overwriting manual content — the only way to regenerate it |
 | `--vault-root` | Custom vault root path (default: auto-detect) |
 
 ## Exit codes
@@ -68,9 +73,13 @@ it. `--check` is the only thing that looks. Measured before it existed:
 `AP-01..AP-35` in the body, `AP-01..AP-25` in the index, `AP-01..AP-47` in the
 registry — one month and three releases of drift, with every other gate green.
 
-`gaps.md` is the one file declared *manual fill*, and `--force` does not touch
-it. `--force` lifts idempotency over what is generated, not the ban on
-overwriting what a person wrote.
+`gaps.md` is the one file declared *manual fill*: once it exists, **no run
+overwrites it and its content is never inspected to decide**. `--force` lifts
+idempotency over what is generated, not the ban on overwriting what a person
+wrote. The earlier heuristic — "regenerate when the `# Gaps` title is missing
+or the file is under 200 characters" — destroyed short manual notes with
+`ok: true` (reproduced 2026-11-09, finding 3.2 of the vault re-audit).
+`--regenerate-gaps` is the only way to regenerate it, and it says so.
 
 ## Output
 

@@ -24,7 +24,7 @@ LLM) puede invocar. Cada skill tiene:
 
 | Skill | Versión | Definición | Versiones anteriores | Entry point | Descripción |
 |---|---|---|---|---|---|
-| `vault-sdd-init` | v2.0 | `agent/skills/vault-sdd-init/SKILL.md` | `agent/skills/vault-sdd-init/SKILL-v1.0.md` | `scripts/vault_sdd_init.py` | Inicializa el SDD (Spec-Driven Development documentation) de un vault |
+| `vault-sdd-init` | v2.1 | `agent/skills/vault-sdd-init/SKILL.md` | `agent/skills/vault-sdd-init/SKILL-v2.0.md`, `agent/skills/vault-sdd-init/SKILL-v1.0.md` | `scripts/vault_sdd_init.py` | Inicializa el SDD (Spec-Driven Development documentation) de un vault |
 | `vault-sanacion` | v2.0 | `agent/skills/vault-sanacion/SKILL.md` | `agent/skills/vault-sanacion/SKILL-v1.0.md` | `scripts/vault_sanacion.py` | Diagnostica un vault preexistente y devuelve el plan de 12 fases con veredicto y evidencia. **No escribe** |
 | `vault-onboard` | v2.0 | `agent/skills/vault-onboard/SKILL.md` | `agent/skills/vault-onboard/SKILL-v1.0.md` | `scripts/vault_onboard.py` | Puebla un vault desde un proyecto de código que no tiene ninguno |
 | `vault-toolkit-audit` | v1.0 | `agent/skills/vault-toolkit-audit/SKILL.md` | — | `scripts/vault_toolkit_audit.py` | Mide el toolkit tool por tool contra lo que declara y deja la medición registrada |
