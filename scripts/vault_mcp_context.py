@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Optional
 
 
 from vault_lib import utcnow
+from vault_io import atomic_write_json, file_lock
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -57,9 +58,7 @@ def _read_context() -> Dict[str, Any]:
 
 def _write_context(data: Dict[str, Any]) -> None:
     _system_dir().mkdir(parents=True, exist_ok=True)
-    _context_file().write_text(
-        json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
+    atomic_write_json(_context_file(), data)
 
 
 def _default_context() -> Dict[str, Any]:
@@ -88,8 +87,8 @@ class VaultContext:
         return self.data.get("health_score")
 
     def set_health_score(self, score: int) -> None:
-        self.data["health_score"] = score
-        self._update()
+        self._escribir_fusionando(
+            lambda d: d.__setitem__("health_score", score))
 
     def get_last_operation(self) -> Optional[Dict[str, Any]]:
         return self.data.get("last_operation")
@@ -97,22 +96,26 @@ class VaultContext:
     def record_operation(
         self, tool: str, path: str, ok: bool = True, details: Dict[str, Any] = None
     ) -> None:
-        self.data["last_operation"] = {
-            "tool": tool,
-            "path": path,
-            "timestamp": utcnow(),
-            "ok": ok,
-            "details": details or {},
-        }
-        self._update()
+        def _aplicar(d: Dict[str, Any]) -> None:
+            d["last_operation"] = {
+                "tool": tool,
+                "path": path,
+                "timestamp": utcnow(),
+                "ok": ok,
+                "details": details or {},
+            }
+
+        self._escribir_fusionando(_aplicar)
 
     def add_session_change(self, path: str, action: str) -> None:
-        if "session" not in self.data:
-            self.data["session"] = {"started_at": utcnow(), "changes": []}
-        self.data["session"]["changes"].append(
-            {"path": path, "action": action, "timestamp": utcnow()}
-        )
-        self._update()
+        def _aplicar(d: Dict[str, Any]) -> None:
+            sesion = d.setdefault(
+                "session", {"started_at": utcnow(), "changes": []})
+            sesion.setdefault("changes", []).append(
+                {"path": path, "action": action, "timestamp": utcnow()}
+            )
+
+        self._escribir_fusionando(_aplicar)
 
     def get_session_changes(self) -> List[Dict[str, Any]]:
         return self.data.get("session", {}).get("changes", [])
@@ -121,15 +124,15 @@ class VaultContext:
         return self.data.get("open_issues", [])
 
     def set_open_issues(self, issues: List[Dict[str, Any]]) -> None:
-        self.data["open_issues"] = issues
-        self._update()
+        self._escribir_fusionando(
+            lambda d: d.__setitem__("open_issues", issues))
 
     def get_next_actions(self) -> List[str]:
         return self.data.get("next_actions", [])
 
     def set_next_actions(self, actions: List[str]) -> None:
-        self.data["next_actions"] = actions
-        self._update()
+        self._escribir_fusionando(
+            lambda d: d.__setitem__("next_actions", actions))
 
     def get_status(self) -> Dict[str, Any]:
         return {
@@ -145,6 +148,29 @@ class VaultContext:
     def reset_session(self) -> None:
         self.data["session"] = {"started_at": utcnow(), "changes": []}
         self._update()
+
+    def _escribir_fusionando(self, mutador) -> None:
+        """Aplica `mutador` al estado **recargado**, bajo el lock del fichero.
+
+        Leer el snapshot propio y escribirlo entero **pisaba lo que otra
+        instancia hubiera escrito mientras tanto**: dos instancias que
+        anotaran un cambio cada una dejaban solo la ultima (perdida de
+        actualizacion, reproducida el 2026-11-07 con dos instancias
+        obsoletas y de nuevo el 2026-11-09 en la re-auditoria del vault).
+        El lock sin recargar dentro no bastaria: habria que leer DENTRO del
+        lock y fusionar, que es lo que hace esto. La escritura es atomica y
+        la instancia se queda con el estado fusionado.
+        """
+        _system_dir().mkdir(parents=True, exist_ok=True)
+        lock = file_lock(_context_file(), timeout=10.0)
+        if lock is None:
+            raise TimeoutError("el contexto del vault esta bloqueado")
+        with lock:
+            actual = _read_context()
+            mutador(actual)
+            actual["updated_at"] = utcnow()
+            atomic_write_json(_context_file(), actual)
+            self.data = actual
 
     def _update(self) -> None:
         self.data["updated_at"] = utcnow()
