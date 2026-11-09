@@ -117,6 +117,60 @@ def _siguiente(momento: str, tool: str, foco: Mapping[str, Any]) -> str:
     return f"python scripts/vault_voice.py --tool {tool}"
 
 
+#: Cuántas etiquetas de norma caben en el bloque `vault_says`. El bloque
+#: viaja en **cada** respuesta: nombrar todas las reglas que mencionan la
+#: tool convertía un recordatorio en ruido —27 etiquetas y 1.896 caracteres
+#: en una escritura correcta, medido el 2026-11-09 por la nota
+#: `norm-injection-relevance-and-noise-assessment` (hallazgo P1). El tope es
+#: una decisión publicada, no un número escrito a mano en cada llamada.
+LIMITE_ETIQUETAS = 5
+
+
+def _modo_voz() -> str:
+    """El modo de la voz en esta llamada: `normal`, `verbose` o `0`."""
+    import os
+
+    return os.environ.get("VAULT_VOICE", "1")
+
+
+def normas_visibles(
+    normas: List[Dict[str, Any]],
+    momento: str,
+    foco: Optional[Dict[str, Any]],
+    catalog: Iterable[Mapping[str, Any]],
+    tool: str,
+) -> List[Dict[str, Any]]:
+    """Las normas que el bloque nombra, y solo esas.
+
+    La regla de la selección (P1 de la nota citada):
+
+    - **blocked**: solo la norma que bloqueó —es la que se disparó—;
+    - **wrote**: las normas que **ejercen** esa tool, las que podrían haber
+      impedido lo que acaba de pasar;
+    - **read** / **unknown**: la norma enfocada, que ya es una rotación de
+      una sola regla; enumerar las demás no añade nada.
+
+    Lo que este bloque **no** dice: que una norma nombrada se incumplió. Un
+    recordatorio no es un veredicto, y por eso la lista se llama `norms` y
+    no `violated`.
+    """
+    if not normas:
+        return []
+    if momento == "blocked":
+        return [foco] if foco else []
+    if momento == "wrote":
+        ejercen = [
+            norma for norma in catalog
+            if menciona(norma.get("tools_enforcing"), tool)
+        ]
+        if not ejercen:
+            return [foco] if foco else []
+        orden = {norma["code"]: i for i, norma in enumerate(normas)}
+        ejercen.sort(key=lambda n: orden.get(n["code"], 999))
+        return ejercen[:LIMITE_ETIQUETAS]
+    return [foco] if foco else []
+
+
 def speak(
     tool: str,
     payload: Optional[Dict[str, Any]] = None,
@@ -184,7 +238,12 @@ def speak(
         "moment": momento,
         "message": " ".join(parte.strip() for parte in partes if parte and parte.strip()),
         "focus": foco["code"],
-        "norms": [_etiqueta(norma) for norma in normas],
+        # En modo `verbose` el consumidor pide **el catálogo completo**: ahí no
+        # se filtra, porque la lista corta es un recordatorio y la lista larga
+        # es la consulta. La selección por relevancia es del modo normal.
+        "norms": [_etiqueta(norma) for norma in (
+            normas if _modo_voz() == "verbose" else normas_visibles(
+                normas, momento, foco, catalogo, tool))],
         "next": _siguiente(momento, tool, foco),
     }
     if (voice_mode if voice_mode is not None else os.environ.get("VAULT_VOICE", "1")) == "verbose":

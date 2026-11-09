@@ -879,6 +879,15 @@ def compute_norm_refs(folder: str, content: str, wiki_links: List[str]) -> List[
       - hay viñetas:             + AP-20
       - carpeta 03_Decisions/:   + AP-07
       - más de 500 líneas:       + AP-23 (informativa)
+
+    **Qué significa un código de esta lista, y qué no** (P1b de la nota
+    `norm-injection-relevance-and-noise-assessment`): es **procedencia
+    estructural** —la carpeta y la forma del cuerpo—, no una decisión de
+    dominio, ni una infracción, ni prueba de que el contenido sea cierto.
+    Dos notas con el mismo texto en carpetas distintas dan los mismos
+    códigos aunque traten de cosas distintas; y no ver un código de dominio
+    no prueba que su norma no aplique. Un consumidor que describa `norm_refs`
+    como «lo que la nota cumple» está leyendo de más.
     """
     refs: set = {"AP-11", "AP-12", "AP-13", "AP-16", "CN-01", "CN-02", "SP-01"}
 

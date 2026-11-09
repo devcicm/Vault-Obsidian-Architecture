@@ -2288,6 +2288,15 @@ def calcular_salud(unidades: Dict[str, int]) -> Dict[str, Any]:
         "healthIndex": indice,
         "healthProfile": perfil,
         "penalties": detalle,
+        # Lo que el numero **no** dice (punto 5 de la nota
+        # `ai-slop-and-evidence-quality-assessment`): el score es estructural.
+        # Cuenta carpetas, enlaces y frontmatter; no mide si el contenido es
+        # verdadero, util o completo. Un 100 no es un certificado semantico, y
+        # el envelope lo dice en vez de dejar que se lea de mas.
+        "alcance_de_la_medida": (
+            "estructural: mide forma, enlaces y metadatos, no la verdad ni la "
+            "utilidad de lo que dicen las notas. Un 100 no certifica contenido."
+        ),
     }
 
 
@@ -2641,6 +2650,13 @@ def vault_audit(
         "healthIndex": salud["healthIndex"],
         # El desglose que el número agregado destruía: qué familia está mal, y
         # cuál de ellas ya tocó fondo (`saturated`).
+        # Lo que el score no dice: es estructural (punto 5 de la nota
+
+        # `ai-slop-and-evidence-quality-assessment`). Viaja en el
+
+        # envelope para que nadie lea el 100 como certificado de contenido.
+
+        "alcance_de_la_medida": salud.get("alcance_de_la_medida"),
         "healthProfile": salud["healthProfile"],
         # Qué restó cada cosa. Antes había que leerse la función para saberlo.
         "penalties": salud["penalties"],
