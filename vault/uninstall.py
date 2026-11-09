@@ -16,7 +16,8 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess  # noqa: F401 — nombre público del módulo desde antes de compartir `_run`
+import os
+import subprocess  # noqa: F401 - nombre público del módulo desde antes de compartir `_run`
 import sys
 from pathlib import Path
 
@@ -35,12 +36,31 @@ def _pip_uninstall() -> int:
     return _run([sys.executable, "-m", "pip", "uninstall", "-y", pkg])
 
 
+def _misma_ruta(uno: str, otro: Path) -> bool:
+    """¿Dos rutas son la misma, con las diferencias de forma de Windows?
+
+    El manifiesto se escribe con la ruta absoluta y el destino se resuelve en
+    cada arranque: la misma carpeta puede aparecer con el nombre corto
+    (`CARLOS~1`) o con otro caso. Comparar sin normalizar daria «no es mío»
+    por un archivo ajeno —y «es mío» por un manifiesto equivocado.
+    """
+    return os.path.normcase(os.path.abspath(uno)) == os.path.normcase(
+        os.path.abspath(str(otro)))
+
+
 def _uninstall_mcp() -> int:
     """Quita el lanzador MCP **si es nuestro**.
 
     El manifiesto de propiedad (`owner.json` junto al lanzador) es la prueba.
     Si no está, el destino no lo puso este instalador y no se toca: borrar un
     fichero ajeno es una decisión de la persona.
+
+    **Fail closed:** si el manifiesto no se puede leer, o no declara este
+    destino, **no se borra nada** y se dice por qué. Antes, un manifiesto
+    corrupto acababa en `datos = {}` y el borrado seguía adelante: medido el
+    2026-11-09 en una re-auditoria del vault, un manifiesto inválido llevaba
+    a eliminar un lanzador ajeno y a devolver éxito (pérdida de datos con la
+    puerta abierta).
     """
     dest = _destino_mcp()
     manifiesto = _manifiesto_de(dest)
@@ -55,8 +75,18 @@ def _uninstall_mcp() -> int:
         return 0
     try:
         datos = json.loads(manifiesto.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        datos = {}
+    except (OSError, ValueError) as e:
+        print(f"  [ERROR] el manifiesto de propiedad no se puede leer ({e}): "
+              f"{dest} NO se borra")
+        return 1
+    if not isinstance(datos, dict) or not isinstance(datos.get("destino"), str):
+        print(f"  [ERROR] el manifiesto de propiedad no declara un destino: "
+              f"{dest} NO se borra")
+        return 1
+    if not _misma_ruta(datos["destino"], dest):
+        print(f"  [ERROR] el manifiesto declara otro destino "
+              f"({datos['destino']}): {dest} NO se borra")
+        return 1
     if dest.exists() or dest.is_symlink():
         try:
             dest.unlink()

@@ -122,6 +122,66 @@ def test_el_desinstalador_borra_lo_que_es_suyo(tmp_path, monkeypatch):
     assert not manifiesto.exists()
 
 
+# ── Fail closed: un manifiesto que no se puede leer no autoriza a borrar ────
+
+
+def test_un_manifiesto_corrupto_no_borra_un_fichero_ajeno(tmp_path, monkeypatch):
+    """Reproducido el 2026-11-09: un manifiesto de propiedad inválido
+    acababa en `datos = {}` y el borrado seguía adelante. Perder el lanzador
+    de otro con un exit 0 es pérdida de datos."""
+    destino = tmp_path / "bin" / "vault-mcp"
+    destino.parent.mkdir(parents=True)
+    destino.write_text("soy de otro\n", encoding="utf-8")
+    manifiesto = uninstall._manifiesto_de(destino)
+    manifiesto.write_text("{esto no es json", encoding="utf-8")
+    monkeypatch.setattr(uninstall, "_destino_mcp", lambda: destino)
+
+    assert uninstall._uninstall_mcp() == 1
+    assert destino.is_file(), "un manifiesto corrupto borro un fichero ajeno"
+    assert destino.read_text(encoding="utf-8") == "soy de otro\n"
+
+
+def test_un_manifiesto_de_otro_destino_no_borra(tmp_path, monkeypatch):
+    """El manifiesto dice de dónde es el lanzador: si no es este destino, no
+    se toca."""
+    destino = tmp_path / "bin" / "vault-mcp"
+    destino.parent.mkdir(parents=True)
+    destino.write_text("soy de otro\n", encoding="utf-8")
+    manifiesto = uninstall._manifiesto_de(destino)
+    manifiesto.write_text(json.dumps({"destino": str(tmp_path / "otro")}),
+                          encoding="utf-8")
+    monkeypatch.setattr(uninstall, "_destino_mcp", lambda: destino)
+
+    assert uninstall._uninstall_mcp() == 1
+    assert destino.is_file()
+
+
+def test_un_manifiesto_sin_destino_no_borra(tmp_path, monkeypatch):
+    destino = tmp_path / "bin" / "vault-mcp"
+    destino.parent.mkdir(parents=True)
+    destino.write_text("soy de otro\n", encoding="utf-8")
+    manifiesto = uninstall._manifiesto_de(destino)
+    manifiesto.write_text(json.dumps({"script": "otro.py"}), encoding="utf-8")
+    monkeypatch.setattr(uninstall, "_destino_mcp", lambda: destino)
+
+    assert uninstall._uninstall_mcp() == 1
+    assert destino.is_file()
+
+
+def test_la_segunda_pasada_no_encuentra_nada_que_borrar(tmp_path, monkeypatch):
+    """Idempotente: la segunda vez ya no hay lanzador, y el manifiesto se
+    habia retirado con el."""
+    destino = tmp_path / "bin" / "vault-mcp"
+    destino.parent.mkdir(parents=True)
+    monkeypatch.setattr(install, "_destino_mcp", lambda: destino)
+    assert install._install_mcp() == 0
+
+    monkeypatch.setattr(uninstall, "_destino_mcp", lambda: destino)
+    assert uninstall._uninstall_mcp() == 0
+    assert uninstall._uninstall_mcp() == 0
+    assert not destino.exists()
+
+
 # ── La plataforma decide el destino ─────────────────────────────────────────
 
 
