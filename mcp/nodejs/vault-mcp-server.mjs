@@ -1473,6 +1473,31 @@ function toolTimeoutMs() {
   return Math.max(envDefault("VAULT_TOOL_TIMEOUT") * 1000, 120000);
 }
 
+// El envelope de una tool: JSON puro, o JSON precedido de un preámbulo
+// (una tool puede imprimir una línea de progreso antes de su envelope). Si
+// no hay envelope, no hay operación acreditada —y `ok: true` afirmaría una
+// operación que nadie ha visto (familia AP-37).
+function extraerEnvelope(texto) {
+  const limpio = (texto || "").trim();
+  if (!limpio) return null;
+  try {
+    const objeto = JSON.parse(limpio);
+    return (objeto && typeof objeto === "object" && !Array.isArray(objeto)) ? objeto : null;
+  } catch { /* AP-51: no es JSON puro; se busca el último objeto */ }
+  const corte = limpio.lastIndexOf("\n{");
+  if (corte >= 0) {
+    try {
+      const objeto = JSON.parse(limpio.slice(corte + 1));
+      // El fragmento solo cuenta si trae `ok`: un `{` suelto de un preámbulo
+      // no puede ser el envelope de la tool.
+      if (objeto && typeof objeto === "object" && !Array.isArray(objeto) && "ok" in objeto) {
+        return objeto;
+      }
+    } catch { /* AP-51: no hay envelope; se devuelve null */ }
+  }
+  return null;
+}
+
 function executePythonTool(scriptPath, args, vaultRoot, session, schema, modoJson = false) {
   return new Promise((resolve, reject) => {
     // Rewriting _→- in the flag broke underscore flags like --diagram_type /
@@ -1541,7 +1566,7 @@ function executePythonTool(scriptPath, args, vaultRoot, session, schema, modoJso
       const raw = stdout.trim();
       let envelope = null;
       if (raw) {
-        try { envelope = JSON.parse(raw); } catch { /* AP-51: no habla el protocolo; un envelope null se trata abajo */ }
+        envelope = extraerEnvelope(raw);
       }
 
       // Un exit != 0 NO implica que no haya diagnóstico: las puertas `--strict`
@@ -1567,13 +1592,40 @@ function executePythonTool(scriptPath, args, vaultRoot, session, schema, modoJso
         reject(new Error(`Python tool exited with code ${code}: ${stderr || raw}`));
         return;
       }
+      // Lo que sigue, y su lectura (hallazgo 4.3 del paper de la re-auditoría):
+      // **éxito de transporte no es éxito de operación.** El transporte está
+      // bien si la tool terminó con exit 0; la operación solo queda acreditada
+      // si la tool entregó su envelope. Antes, salida vacía o no-JSON devolvía
+      // `ok: true` con un aviso: el agente leía «funcionó» sin que nadie
+      // hubiera acreditado nada. Ahora:
+      //  - se pidió JSON y no vino → incumplimiento de contrato → error;
+      //  - la tool no dijo nada → no hay operación → error;
+      //  - la tool contestó en prosa (tools sin `json_flag`) → el transporte
+      //    está bien y se declara que no hay envelope que acredite el trabajo.
       if (!raw) {
-        resolve({ ok: true, tool: scriptPath, structured: false, warning: "empty_output" });
+        resolve({
+          ok: false,
+          tool: scriptPath,
+          structured: false,
+          error_code: "TOOL_SALIDA_VACIA",
+          message: `La tool '${scriptPath}' terminó sin escribir nada: no hay envelope que acredite la operación.`,
+          exit_code: code,
+        });
         return;
       }
-      // Salida no-JSON con exit 0: la tool terminó bien, pero no hay envelope que
-      // acredite el trabajo. Se declara en vez de fabricar un `ok: true` liso
-      // (familia AP-37: éxito afirmado sin indicador de trabajo).
+      if (modoJson) {
+        resolve({
+          ok: false,
+          tool: scriptPath,
+          structured: false,
+          error_code: "TOOL_SIN_ENVELOPE",
+          message: `La tool '${scriptPath}' debía responder con envelope JSON y respondió en otro formato: la operación no queda acreditada.`,
+          exit_code: code,
+          raw_output: raw.slice(0, 2000),
+          stderr: stderr.trim(),
+        });
+        return;
+      }
       resolve({
         ok: true,
         tool: scriptPath,
@@ -1755,19 +1807,40 @@ function resolverTokenHttp() {
   return { permisosPorToken: [{ digest: digest(token), perfil: perfilMayor() }], token, generado: true };
 }
 
+// La identidad de la credencial, no solo su perfil: el perfil dice QUÉ puede
+// hacer el token, la credencial dice QUIÉN es. Una sesión tiene que quedar
+// ligada a la credencial que la abrió —hallazgo 3.3 del paper de la
+// re-auditoría del vault—: con solo el perfil, dos tokens del mismo perfil
+// (`operador:a` y `operador:b`) se interchangeably, y el que tuviera el
+// id de una sesión ajena podría escribir por ella.
+function credencialDeToken(cabecera, permisosPorToken) {
+  const m = /^Bearer\s+(.+)$/i.exec(cabecera || "");
+  if (!m) return null;
+  const d = digest(m[1].trim());
+  for (const entrada of permisosPorToken) {
+    if (timingSafeEqual(d, entrada.digest)) {
+      return { perfil: entrada.perfil, digest: d };
+    }
+  }
+  return null;
+}
+
+// Dos credenciales son la misma si sus digests coinciden. Los digests son de
+// longitud fija, así que `timingSafeEqual` puede compararlos directamente;
+// `null` (stdio, sin credencial) es la misma credencial que `null`.
+function mismaCredencial(a, b) {
+  if (a === null || a === undefined) return b === null || b === undefined;
+  if (b === null || b === undefined) return false;
+  return timingSafeEqual(a, b);
+}
+
 // El perfil del token de la cabecera, o null. Se comparan digests de longitud
 // fija —`timingSafeEqual` exige longitudes iguales, y comparar longitudes
 // primero filtraría la del token— contra todas las entradas, sin cortar en la
 // primera que coincide.
 function perfilDeToken(cabecera, permisosPorToken) {
-  const m = /^Bearer\s+(.+)$/i.exec(cabecera || "");
-  if (!m) return null;
-  const a = digest(m[1].trim());
-  let perfil = null;
-  for (const entrada of permisosPorToken) {
-    if (timingSafeEqual(a, entrada.digest) && perfil === null) perfil = entrada.perfil;
-  }
-  return perfil;
+  const c = credencialDeToken(cabecera, permisosPorToken);
+  return c ? c.perfil : null;
 }
 
 // Lo que el token de la sesión deja ver y ejecutar. Sin perfil de token
@@ -1812,6 +1885,8 @@ function startSSE(port, bindHost, tlsOptions = null) {
     }
 
     const perfilToken = perfilDeToken(req.headers.authorization, permisosPorToken);
+    const credencial = credencialDeToken(req.headers.authorization, permisosPorToken);
+    const credencialDigest = credencial ? credencial.digest : null;
     const autenticado = perfilToken !== null;
 
     if (req.method === "GET" && req.url.startsWith("/health")) {
@@ -1885,6 +1960,8 @@ function startSSE(port, bindHost, tlsOptions = null) {
         clientModelProfile: null,
         connectedAt: new Date().toISOString(),
         perfilToken,
+        // La credencial que abrió la sesión, no solo su perfil (3.3).
+        credencialDigest,
         res,
       });
 
@@ -1909,10 +1986,11 @@ function startSSE(port, bindHost, tlsOptions = null) {
         res.end(JSON.stringify(jsonrpcError(null, -32001, "No active session. Connect via GET /sse?vault=NAME first.")));
         return;
       }
-      // La sesión la abrió un token; no se le habla con otro. Si no, un token
-      // `lector` conocería el id de una sesión `operador` y escribiría con ella.
-      if (session.perfilToken !== perfilToken) {
-        rechazar(403, "Esta sesión se abrió con otro token: cada sesión se habla con el suyo.");
+      // La sesión la abrió una credencial; no se le habla con otra. Con solo
+      // el perfil, dos tokens del mismo perfil eran intercambiables: quien
+      // tuviera el id de una sesión ajena podía escribir por ella (3.3).
+      if (session.perfilToken !== perfilToken || !mismaCredencial(session.credencialDigest, credencialDigest)) {
+        rechazar(403, "Esta sesión se abrió con otra credencial: cada sesión se habla con la suya.");
         return;
       }
 

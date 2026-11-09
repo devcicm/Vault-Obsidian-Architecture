@@ -41,7 +41,8 @@ def _puerto_libre() -> int:
 
 
 class Servidor:
-    def __init__(self, vault: Path, token=TOKEN, tokens=None, bind_host="127.0.0.1", tls=None):
+    def __init__(self, vault: Path, token=TOKEN, tokens=None, bind_host="127.0.0.1", tls=None,
+                 server=None, cwd=None, extra_env=None):
         self.port = _puerto_libre()
         self.bind_host = bind_host
         env = {**os.environ, "VAULT_ROOT": str(vault), "VAULT_SCAN_ROOTS": str(vault)}
@@ -51,11 +52,18 @@ class Servidor:
             env["VAULT_MCP_TOKEN"] = token
         if tokens is not None:
             env["VAULT_MCP_TOKENS"] = tokens
+        env.update(extra_env or {})
+        # El stderr a un FICHERO, no a una tubería: el arranque del servidor
+        # escribe el catálogo entero de tools retiradas, y una tubería sin
+        # leer puede llenarse y dejar el servidor a medio arrancar (medido el
+        # 2026-11-09: «el servidor no abrió el puerto» sin causa visible).
+        self.log = vault.parent / "servidor.err.log"
+        self._log = open(self.log, "wb")
         self.proc = subprocess.Popen(
-            ["node", str(SERVER), "--port", str(self.port), "--host", bind_host] +
+            ["node", str(server or SERVER), "--port", str(self.port), "--host", bind_host] +
             (["--tls-cert", str(tls[0]), "--tls-key", str(tls[1])] if tls else []),
-            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
-            env=env, cwd=str(REPO_ROOT),
+            stdout=subprocess.DEVNULL, stderr=self._log,
+            env=env, cwd=str(cwd or REPO_ROOT),
         )
         self.tls = tls
         limite = time.time() + 20
@@ -65,9 +73,15 @@ class Servidor:
                     return
             except OSError:
                 if self.proc.poll() is not None:
-                    raise RuntimeError(self.proc.stderr.read().decode("utf-8", "replace"))
+                    raise RuntimeError(self._cola_del_log())
                 time.sleep(0.1)
-        raise RuntimeError("el servidor no abrió el puerto")
+        raise RuntimeError(f"el servidor no abrió el puerto\n{self._cola_del_log()}")
+
+    def _cola_del_log(self, lineas=25) -> str:
+        try:
+            return "\n".join(self.log.read_text(encoding="utf-8", errors="replace").splitlines()[-lineas:])
+        except OSError:
+            return "(sin log)"
 
     def pedir(self, metodo, ruta, cabeceras=None, cuerpo=None, host=None):
         if self.tls:
@@ -100,7 +114,10 @@ class Servidor:
             self.proc.wait(timeout=5)
         except subprocess.TimeoutExpired:
             self.proc.kill()
-        self.proc.stderr.close()
+        try:
+            self._log.close()
+        except (OSError, AttributeError):
+            pass
 
 
 @pytest.fixture
@@ -353,3 +370,220 @@ def test_sp04_esta_catalogada_con_enforcement_real():
     assert "SP-04" in vault_norms_catalog.NORM_CATALOG[
         [n["code"] for n in vault_norms_catalog.NORM_CATALOG].index("AP-36")
     ]["distinguido_de"]
+
+
+# ── 3.3 y 4.3: la sesión pertenece a una credencial, y el éxito de
+#    transporte no es el éxito de la operación ─────────────────────────────────
+
+
+def _hogar_con_tools_falsas(tmp_path) -> Path:
+    """Un «hogar» del servidor con dos tools que rompen el contrato a propósito.
+
+    El servidor resuelve su repo por donde está el `.mjs` (`REPO_ROOT`), así
+    que una copia en un directorio temporal es la forma de que una tool diga
+    lo que quiera —salida vacía, prosa— sin tocar el repo de nadie.
+    """
+    home = tmp_path / "hogar"
+    (home / "mcp" / "nodejs").mkdir(parents=True)
+    (home / "scripts").mkdir(parents=True)
+    for nombre in ("vault-mcp-server.mjs", "env-table.json"):
+        shutil.copy(REPO_ROOT / "mcp" / "nodejs" / nombre,
+                    home / "mcp" / "nodejs" / nombre)
+    catalogo = json.loads(
+        (REPO_ROOT / "mcp" / "nodejs" / "tools-catalog.json").read_text(encoding="utf-8"))
+    # La forma se copia de una tool real: el servidor lee campos que una
+    # entrada mínima no traería. El esquema, en cambio, es vacío: la tool
+    # falsa no pide nada (si no, el servidor la rechazaría por argumentos).
+    plantilla = dict(catalogo["tools"]["vault_read"])
+    esquema_vacio = {"type": "object", "properties": {}, "required": []}
+    catalogo["tools"]["vault_fake_vacia"] = dict(
+        plantilla, name="vault_fake_vacia", script="fake_vacia.py",
+        inputSchema=esquema_vacio,
+        json_flag=True, side_effects=False, exposed_via_mcp=True,
+        purpose="Tool de prueba: termina sin escribir nada.")
+    catalogo["tools"]["vault_fake_prosa"] = dict(
+        plantilla, name="vault_fake_prosa", script="fake_prosa.py",
+        inputSchema=esquema_vacio,
+        json_flag=False, side_effects=False, exposed_via_mcp=True,
+        purpose="Tool de prueba: contesta en prosa.")
+    (home / "mcp" / "nodejs" / "tools-catalog.json").write_text(
+        json.dumps(catalogo, ensure_ascii=False), encoding="utf-8")
+    (home / "scripts" / "fake_vacia.py").write_text(
+        "import sys\nsys.exit(0)\n", encoding="utf-8")
+    (home / "scripts" / "fake_prosa.py").write_text(
+        "print('esto es prosa y no un envelope')\n", encoding="utf-8")
+    return home
+
+
+def _inicializar(srv, sid, token):
+    """El protocolo MCP exige `initialize` antes de `tools/call`.
+
+    Sin esto el servidor responde `-32002 Not initialized`, que no es un
+    defecto del contrato que se quiere probar.
+    """
+    _, r = srv.pedir(
+        "POST", "/message",
+        {"Authorization": f"Bearer {token}", "X-MCP-Session": sid},
+        {"jsonrpc": "2.0", "id": 1, "method": "initialize",
+         "params": {"protocolVersion": "2024-11-05", "capabilities": {},
+                    "clientInfo": {"name": "test", "version": "1"}}})
+    r.read()
+    _, r2 = srv.pedir(
+        "POST", "/message",
+        {"Authorization": f"Bearer {token}", "X-MCP-Session": sid},
+        {"jsonrpc": "2.0", "method": "notifications/initialized"})
+    r2.read()
+
+
+def _llamar(srv, sid, token, nombre, argumentos=None):
+    """Llama a una tool por MCP y devuelve (status, envelope, isError)."""
+    _, r = srv.pedir(
+        "POST", "/message",
+        {"Authorization": f"Bearer {token}", "X-MCP-Session": sid},
+        {"jsonrpc": "2.0", "id": 3, "method": "tools/call",
+         "params": {"name": nombre, "arguments": argumentos or {}}})
+    cuerpo = r.read().decode()
+    respuesta = json.loads(cuerpo)
+    if "error" in respuesta:
+        # Un error JSON-RPC también es una respuesta: se devuelve con la misma
+        # forma para que la aserción pueda mirarlo. Y el `error` puede ser un
+        # objeto (JSON-RPC) o el motivo en texto (el 403 del servidor).
+        error = respuesta["error"]
+        if isinstance(error, dict):
+            return r.status, {"ok": False, "error_code": error.get("code"),
+                              "message": error.get("message")}, True
+        return r.status, {"ok": False, "error_code": "RECHAZO_TRANSPORTE",
+                          "message": str(error)}, True
+    texto = respuesta["result"]["content"][0]["text"]
+    return r.status, json.loads(texto), respuesta["result"].get("isError")
+
+
+def test_una_sesion_no_se_habla_con_otra_credencial_del_mismo_perfil(tmp_path):
+    """3.3: la sesión pertenece a la credencial que la abrió.
+
+    Con solo el perfil, dos tokens `operador` eran intercambiables: quien
+    tuviera el id de una sesión ajena podía escribir por ella. Ahora la
+    credencial es la que ata la sesión.
+    """
+    vault = tmp_path / "vault"
+    (vault / "00_System").mkdir(parents=True)
+    srv = Servidor(vault, token=None, tokens="operador:credencial-a,operador:credencial-b")
+    try:
+        c, _, sid = srv.abrir_sse(token="credencial-a")
+        _inicializar(srv, sid, "credencial-a")
+        status, _, _ = _llamar(srv, sid, "credencial-b", "vault_read")
+        assert status == 403, "otra credencial del mismo perfil pudo hablar por la sesión"
+        c.close()
+
+        c2, _, sid2 = srv.abrir_sse(token="credencial-b")
+        _inicializar(srv, sid2, "credencial-b")
+        status, _, _ = _llamar(srv, sid2, "credencial-b", "vault_read")
+        assert status == 200, "la credencial propia no pudo hablar por su sesión"
+        c2.close()
+    finally:
+        srv.cerrar()
+
+
+def test_una_tool_sin_salida_no_se_declara_exito(tmp_path):
+    """4.3: salida vacía = no hay envelope = no hay operación acreditada.
+
+    Antes devolvía `ok: true` con un aviso: el agente leía «funcionó» sin que
+    nadie hubiera acreditado nada (familia AP-37).
+    """
+    home = _hogar_con_tools_falsas(tmp_path)
+    vault = tmp_path / "vault"
+    (vault / "00_System").mkdir(parents=True)
+    srv = Servidor(vault, token=TOKEN, server=home / "mcp" / "nodejs" / "vault-mcp-server.mjs",
+                   cwd=home)
+    try:
+        c, _, sid = srv.abrir_sse()
+        _inicializar(srv, sid, TOKEN)
+        status, envelope, is_error = _llamar(srv, sid, TOKEN, "vault_fake_vacia")
+        assert status == 200
+        assert envelope["ok"] is False, envelope
+        assert envelope["error_code"] == "TOOL_SALIDA_VACIA", envelope
+        assert is_error, "el cliente MCP no fue avisado del fallo"
+        c.close()
+    finally:
+        srv.cerrar()
+
+
+def test_prosa_cuando_se_pidio_json_no_se_declara_exito(tmp_path):
+    """4.3: se pidió JSON y vino prosa → incumplimiento de contrato."""
+    home = _hogar_con_tools_falsas(tmp_path)
+    vault = tmp_path / "vault"
+    (vault / "00_System").mkdir(parents=True)
+    srv = Servidor(vault, token=TOKEN, server=home / "mcp" / "nodejs" / "vault-mcp-server.mjs",
+                   cwd=home)
+    try:
+        c, _, sid = srv.abrir_sse()
+        _inicializar(srv, sid, TOKEN)
+        status, envelope, is_error = _llamar(srv, sid, TOKEN, "vault_fake_prosa")
+        assert status == 200
+        # Esta tool NO tiene json_flag: contesta en prosa y el transporte está
+        # bien. Lo que no hay es envelope que acredite la operación.
+        assert envelope["ok"] is True, envelope
+        assert envelope["structured"] is False, envelope
+        assert envelope.get("warning") == "non_json_output", envelope
+        assert is_error is None, "una respuesta en prosa no es un error del transporte"
+        c.close()
+    finally:
+        srv.cerrar()
+
+
+def test_un_envelope_tras_un_preambulo_sigue_siendo_envelope(tmp_path):
+    """4.3: una tool puede imprimir una línea antes de su envelope."""
+    home = _hogar_con_tools_falsas(tmp_path)
+    (home / "scripts" / "fake_vacia.py").write_text(
+        "print('[tool] preparando')\nimport json\n"
+        "print(json.dumps({'ok': True, 'tool': 'fake', 'written': 0}))\n",
+        encoding="utf-8")
+    vault = tmp_path / "vault"
+    (vault / "00_System").mkdir(parents=True)
+    srv = Servidor(vault, token=TOKEN, server=home / "mcp" / "nodejs" / "vault-mcp-server.mjs",
+                   cwd=home)
+    try:
+        c, _, sid = srv.abrir_sse()
+        _inicializar(srv, sid, TOKEN)
+        status, envelope, _ = _llamar(srv, sid, TOKEN, "vault_fake_vacia")
+        assert status == 200
+        assert envelope.get("ok") is True, envelope
+        assert envelope.get("tool") == "fake", envelope
+        c.close()
+    finally:
+        srv.cerrar()
+
+
+def test_el_restore_no_sale_del_vault(tmp_path):
+    """4.3: la contención de rutas se prueba, no se supone."""
+    vault = tmp_path / "vault"
+    (vault / "00_System").mkdir(parents=True)
+    fuera = tmp_path / "fuera.json"
+    fuera.write_text("{}", encoding="utf-8")
+    srv = Servidor(vault, token=TOKEN)
+    try:
+        c, _, sid = srv.abrir_sse()
+        _inicializar(srv, sid, TOKEN)
+        status, envelope, is_error = _llamar(srv, sid, TOKEN, "vault_restore_base64")
+        # Sin argumentos, la tool responde con su error de validación: lo que
+        # se comprueba aquí es que existe y que no escribe fuera.
+        assert status == 200
+        assert envelope.get("ok") is False or "MISSING_REQUIRED_ARG" in str(envelope), envelope
+        c.close()
+
+        # Y con una ruta fuera del vault: la herramienta la rechaza.
+        c2, _, sid2 = srv.abrir_sse()
+        _inicializar(srv, sid2, TOKEN)
+        _, r = srv.pedir(
+            "POST", "/message",
+            {"Authorization": f"Bearer {TOKEN}", "X-MCP-Session": sid2},
+            {"jsonrpc": "2.0", "id": 4, "method": "tools/call",
+             "params": {"name": "vault_restore_base64",
+                        "arguments": {"path": str(fuera)}}})
+        cuerpo = json.loads(r.read().decode())
+        envelope = json.loads(cuerpo["result"]["content"][0]["text"])
+        assert envelope.get("ok") is False, envelope
+        assert envelope.get("error_code") == "INVALID_PATH", envelope
+        c2.close()
+    finally:
+        srv.cerrar()
