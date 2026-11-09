@@ -50,10 +50,28 @@ DEFAULT_EXCERPT_TOKENS = 350
 
 # Pesos del rerank. Suman 1.0 a propósito: así `score` es comparable entre
 # consultas y un umbral fijo significa lo mismo siempre.
-W_LEXICAL = 0.45
-W_GRAPH = 0.30
-W_RECENCY = 0.15
-W_CIA = 0.10
+#
+# **Declarados, no calibrados** (propuesta `compact-agent-memory-weights`):
+# son una decisión de diseño, no un resultado medido. El envelope los publica
+# junto a esta frase para que nadie los lea como óptimos; calibrarlos exige
+# una evaluación con consultas y notas reales, y eso es un experimento, no un
+# ajuste a ojo.
+PESOS_RERANK: Dict[str, float] = {
+    "lexical": 0.45,
+    "graph": 0.30,
+    "recency": 0.15,
+    "cia": 0.10,
+}
+W_LEXICAL = PESOS_RERANK["lexical"]
+W_GRAPH = PESOS_RERANK["graph"]
+W_RECENCY = PESOS_RERANK["recency"]
+W_CIA = PESOS_RERANK["cia"]
+
+#: Los intentos que el briefing entiende (propuesta `compact-agent-memory-
+#: weights`, paso 2). Se **registran** en el envelope; todavia no reordenan,
+#: porque cambiar el orden sin medir es exactamente lo que la propuesta
+#: critica. Estan aquí para que el consumidor vea con qué propósito se pidió.
+INTENTOS = ("explorar", "documentar", "cambiar", "depurar", "revisar")
 
 
 # Una nota deprecada o revocada sigue siendo recuperable —no se borra nada—
@@ -255,8 +273,16 @@ def vault_context_pack(
     include_preferences: bool = True,
     min_score: float = 0.0,
     now: Optional[datetime] = None,
+    intento: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Recupera, rerankea y empaqueta el contexto para responder `query`."""
+    """
+Recupera, rerankea y empaqueta el contexto para responder `query`."""
+
+    if intento is not None and intento not in INTENTOS:
+        return emit_error(
+            "vault_context_pack", "INVALID_INPUT",
+            f"--intento {intento!r} no es uno de {', '.join(INTENTOS)}",
+        )
     if budget_tokens <= 0:
         return {"ok": False, "error_code": "INVALID_BUDGET",
                 "error": "El presupuesto de tokens debe ser positivo"}
@@ -458,6 +484,26 @@ def vault_context_pack(
         "excluded": excluded,
         "candidates_considered": len(candidates),
         "preferences_included": len(preferences),
+
+        "weights": dict(PESOS_RERANK),
+
+        "weights_origen": (
+
+            "declarados: decision de diseno que suma 1.0, no una "
+
+            "medicion. Calibrarlos exige una evaluacion con consultas "
+
+            "y notas reales."
+
+        ),
+
+        "intento": intento,
+
+        "intento_nota": (
+
+            "el intento se registra; no reordena mientras no haya medicion"
+
+        ),
         "warnings": warnings,
     }
 
@@ -494,6 +540,12 @@ Notas:
                         help="Pregunta en lenguaje natural")
     parser.add_argument("--query", dest="query_flag", default=None,
                         help="La misma pregunta, en forma nombrada (la que usa MCP)")
+    parser.add_argument(
+        "--intento", choices=list(INTENTOS), default=None,
+        help="Propósito de la consulta (explorar, documentar, cambiar, "
+             "depurar, revisar). Se registra en el envelope; todavía no "
+             "reordena: cambiar el orden sin medir es lo que la propuesta "
+             "critica.")
     parser.add_argument("--budget", type=int, default=None,
                         dest="budget_tokens",
                         help="Presupuesto en tokens (default: del perfil de modelo)")
@@ -521,6 +573,7 @@ Notas:
         query=args.query, budget_tokens=budget, top_k=args.top_k,
         excerpt_tokens=args.excerpt_tokens, min_score=args.min_score,
         include_preferences=not args.no_preferences,
+        intento=args.intento,
     )
 
     if args.format == "markdown" and result.get("ok"):
