@@ -177,6 +177,38 @@ def _uso_mutador(verbo: str, args: list[str]) -> str | None:
     return None
 
 
+def _safe_directory(args: list[str], cwd: "str | None") -> list[str]:
+    """La opción `-c safe.directory=<repo>` **de esta invocación**.
+
+    Git se niega a operar sobre un repositorio cuyo dueño no es el usuario
+    que corre el proceso («dubious ownership»). En el MiniServer eso pasaba:
+    el vault lo escribe la cuenta del servicio MCP y lo lee la del dueño, y
+    git rechazaba las dos.
+
+    La salida es la opción **acotada**: `-c safe.directory=<ruta>` en este
+    argv, que vale solo para esta llamada. La alternativa —`safe.directory=*`
+    en la configuración global— abriría todos los repositorios de la
+    máquina, y esa es una decisión del dueño, no del toolkit.
+
+    Se aplica cuando hay un repositorio conocido: el `-C` del argv si lo
+    hay, y si no el `cwd`. Sin repo conocido no se inventa nada.
+    """
+    import os
+
+    raiz = None
+    if args and args[0] == "-C" and len(args) >= 2:
+        raiz = args[1]
+    elif cwd:
+        raiz = cwd
+    if not raiz:
+        return []
+    try:
+        absoluto = os.path.abspath(raiz)
+    except (OSError, ValueError):
+        return []
+    return ["-c", f"safe.directory={absoluto}"]
+
+
 def ejecutar_git(repositorio: Any, args: list[str], *, binario: bool = False,
                  **kwargs: Any) -> "subprocess.CompletedProcess[str]":
     """`git <args>` en `repositorio`, con las reglas de AP-68 en la puerta.
@@ -257,7 +289,7 @@ def ejecutar_git(repositorio: Any, args: list[str], *, binario: bool = False,
     if not binario:
         kwargs.setdefault("encoding", CODIFICACION)
         kwargs.setdefault("errors", ERRORES)
-    return subprocess.run(["git", *args], cwd=cwd, **kwargs)
+    return subprocess.run(["git", *_safe_directory(args, cwd), *args], cwd=cwd, **kwargs)
 
 
 #: El nombre del fichero dueño: es lo único que el guard excluye del scan.
