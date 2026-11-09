@@ -27,9 +27,11 @@ LLM) puede invocar. Cada skill tiene:
 | `vault-sdd-init` | v2.1 | `agent/skills/vault-sdd-init/SKILL.md` | `agent/skills/vault-sdd-init/SKILL-v2.0.md`, `agent/skills/vault-sdd-init/SKILL-v1.0.md` | `scripts/vault_sdd_init.py` | Inicializa el SDD (Spec-Driven Development documentation) de un vault |
 | `vault-sanacion` | v2.1 | `agent/skills/vault-sanacion/SKILL.md` | `agent/skills/vault-sanacion/SKILL-v1.0.md`, `agent/skills/vault-sanacion/SKILL-v2.0.md` | `scripts/vault_sanacion.py` | Diagnostica un vault preexistente y devuelve el plan de 12 fases con veredicto y evidencia. **No escribe** |
 | `vault-onboard` | v2.1 | `agent/skills/vault-onboard/SKILL.md` | `agent/skills/vault-onboard/SKILL-v1.0.md`, `agent/skills/vault-onboard/SKILL-v2.0.md` | `scripts/vault_onboard.py` | Puebla un vault desde un proyecto de código que no tiene ninguno |
+| `vault-move` | v1.0 | `agent/skills/vault-move/SKILL.md` | — | `scripts/vault_move.py` | Mueve notas o carpetas con preflight de impacto y reescribe los enlaces entrantes |
+| `vault-backup` | v1.0 | `agent/skills/vault-backup/SKILL.md` | — | `scripts/vault_backup.py` | Crea un backup y **prueba la restauración** en un destino aislado antes de afirmar que sirve |
 | `vault-toolkit-audit` | v1.0 | `agent/skills/vault-toolkit-audit/SKILL.md` | — | `scripts/vault_toolkit_audit.py` | Mide el toolkit tool por tool contra lo que declara y deja la medición registrada |
 
-Lo que la wheel lleva son los **puntos de entrada** de las tres primeras
+Lo que la wheel lleva son los **puntos de entrada** de las skills cuyo entry point es un script del catálogo
 (`vault_sanacion`, `vault_onboard`, `vault_sdd_init`): instalado el paquete se
 invocan como `vault run vault_<nombre> …` con los mismos argumentos que el
 script. **No lleva las definiciones `SKILL.md`**: un agente las encuentra por la
