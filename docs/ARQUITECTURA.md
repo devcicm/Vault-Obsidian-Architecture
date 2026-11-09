@@ -303,4 +303,4 @@ Quién escribe qué. Derivado del catálogo (`side_effects`): es el inventario q
 - `vault_write` (Core): Versiona en .history/; Actualiza search-index.json; Regenera section index
 
 
-Candidatas a histórico inmutable por clase `registro`: `02_Observability`, `04_Sessions`, `10_Migrated`, `16_AI_Governance`, `18_Bugs`, `19_Audits`, `20_Quarantine`, `21_QA`. La política la declara **cada vault** en `00_System/inmutable.json`; esta lista es la sugerencia del estándar, no una política común.
+Histórico inmutable por defecto: `02_Observability`, `04_Sessions`, `10_Migrated`, `16_AI_Governance`, `18_Bugs`, `19_Audits`, `20_Quarantine`, `21_QA`. Un vault **nace** con esta política declarada en `00_System/inmutable.json` (la escribe `vault_init`): modificar una nota de esas secciones es un error y se sigue con una nota sucesora; **crear** una nota nueva ahí sí se permite, porque el histórico crece. La política es del vault y el dueño puede cambiarla: `vault_init` nunca pisa la que ya estaba declarada.
