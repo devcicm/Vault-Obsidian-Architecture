@@ -217,6 +217,9 @@ def _correr_puerta(tmp_path, mutar=None):
     git("add", "-A")
     git("commit", "-qm", "producto")
     sha, tree = git("rev-parse", "HEAD"), git("rev-parse", "HEAD^{tree}")
+    # Like the synthetic manifest below, evidence describes the known product.
+    (tmp_path / "audits" / "handoff" / "ACTA.md").write_text(
+        f"Certified product: {sha}\n", encoding="utf-8")
     m = {
         "release_candidate": {"product_sha": sha, "product_tree_sha": tree, "version": 1.0},
         "verification": {"ci": {"run_sha": sha, "conclusion": "success"}},
