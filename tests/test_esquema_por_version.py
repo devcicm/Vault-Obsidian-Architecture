@@ -19,6 +19,33 @@ import vault_contrato_nota as contrato  # noqa: E402
 import vault_esquema  # noqa: E402
 
 
+def test_prepared_v42_is_selectable_without_changing_published_defaults():
+    assert contrato.VERSIONES_CON_CONTRATO[-1] == "v41"
+    assert contrato.VERSIONES[-1] == "v41"
+    prepared = contrato.esquema_json("v42")
+    for field in ("requirement_state", "solution_ref", "solved_by"):
+        assert field in prepared["properties"]
+        assert field not in prepared["required"]
+        assert field not in contrato.esquema_json("v41")["properties"]
+    assert contrato.errores_de_valor({"requirement_state": "not-a-state"}) == []
+    assert contrato.errores_de_valor({"requirement_state": "not-a-state"}, "v41") == []
+    assert contrato.errores_de_valor({"requirement_state": "not-a-state"}, "v42")
+    assert contrato.errores_de_valor({"requirement_state": "verified"}, "v42") == []
+
+
+def test_prepared_schema_does_not_rewrite_historical_schemas(tmp_path, monkeypatch):
+    historical = {}
+    for version in contrato.VERSIONES_CON_CONTRATO:
+        name = f"vault-{version}.schema.json"
+        historical[name] = (REPO_ROOT / "schemas" / name).read_bytes()
+        (tmp_path / name).write_bytes(historical[name])
+    monkeypatch.setattr(vault_esquema, "CARPETA", tmp_path)
+    result = vault_esquema.sync()
+    assert set(result["written"]) == {"schemas/vault-v42.schema.json", "schemas/README.md"}
+    for name, content in historical.items():
+        assert (tmp_path / name).read_bytes() == content
+
+
 def test_schemas_del_repo_al_dia():
     r = vault_esquema.check()
     assert r["ok"], r["stale"] + r["unknown"]
@@ -26,7 +53,7 @@ def test_schemas_del_repo_al_dia():
 
 def test_un_esquema_editado_a_mano_se_detecta(tmp_path, monkeypatch):
     monkeypatch.setattr(vault_esquema, "CARPETA", tmp_path)
-    assert vault_esquema.sync()["written_count"] == len(contrato.VERSIONES_CON_CONTRATO) + 1
+    assert vault_esquema.sync()["written_count"] == len(contrato.VERSIONES_SELECCIONABLES) + 1
     assert vault_esquema.sync()["written_count"] == 0  # AP-37: nada que escribir
     ruta = tmp_path / "vault-v37.schema.json"
     ruta.write_text(ruta.read_text(encoding="utf-8").replace('"createdAt",', ""), encoding="utf-8")

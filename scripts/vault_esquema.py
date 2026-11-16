@@ -40,7 +40,8 @@ from typing import Any, Dict
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from vault_contrato_nota import (CAMPOS, HISTORIA, PRIMER_VALIDADOR, VERSIONES_CON_CONTRATO,
+from vault_contrato_nota import (CAMPOS, HISTORIA, HISTORIA_PREPARADA, PRIMER_VALIDADOR,
+                                 VERSIONES, VERSIONES_PREPARADAS, VERSIONES_SELECCIONABLES,
                                  contrato_de_version, esquema_json)
 from vault_errors import emit_error, wrap_main
 
@@ -58,12 +59,12 @@ def _texto(version: str) -> str:
 
 def _readme() -> str:
     filas = []
-    for v in VERSIONES_CON_CONTRATO:
+    for v in VERSIONES_SELECCIONABLES:
         c = contrato_de_version(v)
         exige = ", ".join(f"`{x}`" for x in c["requeridos"]["contenido"])
         if not c["validador"]:
             exige += " (AP-12 del manifiesto; sin validador)"
-        cambios = "; ".join(h["cambio"] for h in HISTORIA.get(v, [])) or "—"
+        cambios = "; ".join(h["cambio"] for h in {**HISTORIA, **HISTORIA_PREPARADA}.get(v, [])) or "—"
         filas.append(f"| [{v}]({_nombre(v)}) | {exige} | {cambios} |")
     campos = "\n".join(
         f"| `{k}` | {d['nivel']} | {', '.join(d['clases'])} | {d.get('norma', '—')} |"
@@ -111,7 +112,14 @@ en el repositorio y no se publica esquema.
 Cualquier versión se valida con el validador vigente:
 `python scripts/vault_validate.py --check frontmatter --contrato v30`.
 
-## Campos del contrato vigente
+## Contratos preparados
+
+Las versiones preparadas ({", ".join(VERSIONES_PREPARADAS)}) solo se aplican
+al seleccionarlas con `--contrato`. No cambian el contrato predeterminado
+({VERSIONES[-1]}), la version del runtime ni las migraciones. Los campos nuevos
+son opcionales; no se inventan valores ni se modifican notas automaticamente.
+
+## Campos declarados (incluidos los contratos preparados)
 
 | Campo | Nivel | Clases | Norma |
 |---|---|---|---|
@@ -120,7 +128,7 @@ Cualquier versión se valida con el validador vigente:
 
 
 def _esperado() -> Dict[str, str]:
-    salida = {_nombre(v): _texto(v) for v in VERSIONES_CON_CONTRATO}
+    salida = {_nombre(v): _texto(v) for v in VERSIONES_SELECCIONABLES}
     salida["README.md"] = _readme()
     return salida
 
@@ -139,7 +147,7 @@ def check() -> Dict[str, Any]:
         "ok": not divergentes and not sobrantes,
         "tool": "vault_esquema",
         "action": "check",
-        "versions": list(VERSIONES_CON_CONTRATO),
+        "versions": list(VERSIONES_SELECCIONABLES),
         "stale": divergentes,
         "stale_count": len(divergentes),
         # Un esquema sin versión en el contrato no se borra (no-derogación): se
@@ -159,7 +167,7 @@ def sync() -> Dict[str, Any]:
         ruta.write_bytes(texto.encode("utf-8"))
         escritos.append(f"schemas/{nombre}")
     return {"ok": True, "tool": "vault_esquema", "action": "sync",
-            "versions": list(VERSIONES_CON_CONTRATO),
+            "versions": list(VERSIONES_SELECCIONABLES),
             # AP-37: cuántos ficheros cambiaron en disco. Cero es la respuesta
             # de un `--sync` sobre un `schemas/` al día.
             "written": escritos, "written_count": len(escritos)}
@@ -184,7 +192,7 @@ def main() -> int:
             r: Dict[str, Any] = esquema_json(args.version)
         except ValueError as exc:
             env = emit_error("vault_esquema", "INVALID_VALUE", str(exc),
-                             pista=f"una de {VERSIONES_CON_CONTRATO[0]}..{VERSIONES_CON_CONTRATO[-1]}")
+                             pista=f"una de {VERSIONES_SELECCIONABLES[0]}..{VERSIONES_SELECCIONABLES[-1]}")
             print(json.dumps(env, ensure_ascii=False))
             return 1
         print(json.dumps(r, ensure_ascii=False, indent=2))

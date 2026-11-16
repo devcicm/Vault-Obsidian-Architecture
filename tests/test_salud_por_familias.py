@@ -70,6 +70,8 @@ def test_el_refactor_no_movio_ni_un_punto():
     for _ in range(500):
         # ap31 llega ya en puntos desde su detector, no en ocurrencias.
         unidades = {i: rnd.randint(0, 12) for i in IDS}
+        # Preserve the historical score when the newly measured defect is absent.
+        unidades["missing_id"] = 0
         unidades["ap31"] = rnd.choice([0, 5, 10, 20])
         unidades["ap35"] = rnd.choice([0, 1])
         assert vault_audit.calcular_salud(unidades)["healthScore"] == \

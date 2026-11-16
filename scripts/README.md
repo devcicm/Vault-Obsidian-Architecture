@@ -409,9 +409,11 @@ python vault_audit.py --project mi-api
 
 **El score sale del registro `PENALIZACIONES`, no de una fórmula escrita aquí.** Esta sección decía `100 - (vacías×2) - (sin_fm×3) - (broken_links×2) - (stale×1)` — cuatro términos de los veintidós que hay. Los pesos y los topes viven en el registro, agrupados por familia; copiarlos a la documentación es AP-05, y resumirlos mal es lo que ya pasó.
 
-**`healthScore` satura, y se conserva igual.** Parte de 100 y resta 22 penalizaciones independientes cuyos topes suman **285**: con dos o tres familias mal se queda en 0 y deja de distinguir un vault regular de uno perdido. No es teórico — `vault-sandbox/`, el vault de referencia de este repo, puntúa 0. No se recalibra porque lo leen los repos consumidores y cambiar por debajo lo que significa un número publicado es peor que el número malo. Se anota `superseded_by: healthIndex` y se deja donde está.
+**`healthScore` satura.** Parte de 100 y resta las penalizaciones del catálogo canónico: con dos o tres familias mal puede quedar en 0 y dejar de distinguir un vault regular de uno perdido. Conserva su fórmula y se anota `superseded_by: healthIndex`; los resultados históricos no se recalculan.
 
-**`healthIndex` y `healthProfile` son la lectura que sí discrimina.** Seis familias —estructura, conectividad, metadatos, grafo, contenido, ciclo de vida— cada una normalizada contra su propio tope. `healthIndex` es su media **simple**: ponderarla por tope dejaría que `metadatos` (105 puntos) decidiera el número, que es el defecto otra vez. Solo llega a 0 si todas las familias tocan fondo.
+La ausencia de `id` exigido por el contrato de nota se publica en `issues.missingId` y resta **3 puntos por nota, hasta 15**, dentro de metadatos (`missing_id`). Reutiliza el detector contractual: los índices derivados y el material ajeno a las secciones no cuentan como notas; un frontmatter ilegible se informa como tal, sin adivinar campos. Esta señal también participa en la normalización de `healthIndex` y `healthProfile`.
+
+**`healthIndex` y `healthProfile` son la lectura que sí discrimina.** Seis familias —estructura, conectividad, metadatos, grafo, contenido, ciclo de vida— cada una normalizada contra su propio tope derivado del catálogo. `healthIndex` es su media **simple**: ponderarla por tope dejaría que la familia con más penalizaciones decidiera el número. Solo llega a 0 si todas las familias tocan fondo.
 
 ```jsonc
 "healthScore": 0,          // satura: no dice nada más

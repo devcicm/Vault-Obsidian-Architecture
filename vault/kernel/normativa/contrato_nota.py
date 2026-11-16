@@ -56,7 +56,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 from vault_fundamentals_catalog import cia_valores
-from vault_norms_catalog import STATUS_VOCAB
+from vault_norms_catalog import LIFECYCLE_REGISTRY, STATUS_VOCAB
 from vault_registry import es_artefacto_derivado, es_de_seccion
 
 CLASES = ("derivada", "sistema", "sin_seccion", "contenido")
@@ -80,6 +80,10 @@ PREVIAS: Dict[str, str] = {"v18": "974c2ba", "v19": "5ebb043", "v20": "28b5700"}
 #: Todas las versiones con contrato publicado: las previas y las de `MIGRATIONS`.
 VERSIONES_CON_CONTRATO: Tuple[str, ...] = tuple(PREVIAS) + VERSIONES
 
+# Prepared contracts are opt-in; they do not imply a migration or activation.
+VERSIONES_PREPARADAS: Tuple[str, ...] = ("v42",)
+VERSIONES_SELECCIONABLES: Tuple[str, ...] = VERSIONES_CON_CONTRATO + VERSIONES_PREPARADAS
+
 #: Primera versión con un validador ejecutable en el repo.
 PRIMER_VALIDADOR = "v25"
 
@@ -89,6 +93,14 @@ _ISO = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}")
 #: `clases`: a qué clase de nota se le exige. `requerido_desde`: versión en que
 #: `vault_validate` empezó a reprobar su ausencia (None si no la reprueba).
 CAMPOS: Dict[str, Dict[str, Any]] = {
+    "requirement_state": {"tipo": "string", "nivel": "opcional", "clases": ("contenido",),
+                          "requerido_desde": None, "valores_desde": "v42",
+                          "valores": tuple(next(row["states"] for row in LIFECYCLE_REGISTRY
+                                                if row["tool"] == "vault_requirement_save"))},
+    "solution_ref": {"tipo": "string", "nivel": "opcional", "clases": ("contenido",),
+                     "requerido_desde": None},
+    "solved_by": {"tipo": "string", "nivel": "opcional", "clases": ("contenido",),
+                  "requerido_desde": None},
     "id": {"tipo": "string", "nivel": "requerido", "clases": ("sistema", "sin_seccion", "contenido"),
            "requerido_desde": "v25", "normativo_desde": "v18", "norma": "AP-12"},
     "title": {"tipo": "string", "nivel": "requerido", "clases": ("sistema", "sin_seccion", "contenido"),
@@ -236,6 +248,13 @@ HISTORIA: Dict[str, List[Dict[str, Any]]] = {
 POR_DEFECTO: Dict[str, Any] = {"status": "draft", "agent": "system", "tags": []}
 
 
+HISTORIA_PREPARADA: Dict[str, List[Dict[str, Any]]] = {
+    "v42": [{"campos": ["requirement_state", "solution_ref", "solved_by"],
+             "cambio": "Prepared opt-in requirement metadata; no migration or default activation",
+             "fuente": "plan:odd/tasks/close-vault-pending.md:S12"}],
+}
+
+
 def _numero(version: str) -> int:
     return int(version.lstrip("v").split(".", 1)[0])
 
@@ -302,7 +321,7 @@ def errores_de_valor(datos: Mapping[str, Any], version: Optional[str] = None) ->
 
     Con `version`, solo los campos cuyo valor ya se juzgaba en esa versión.
     """
-    juzgados = None if version is None else set(contrato_de_version(version)["valores"])
+    juzgados = set(contrato_de_version(version or VERSIONES[-1])["valores"])
     errores: List[str] = []
     for campo, d in CAMPOS.items():
         if campo not in datos or (juzgados is not None and campo not in juzgados):
@@ -349,7 +368,7 @@ def contrato_de_version(version: str) -> Dict[str, Any]:
     una versión mayor, y si cambia, la historia tendrá que decirlo.
     """
     n = _numero(version)
-    primera, ultima = VERSIONES_CON_CONTRATO[0], VERSIONES_CON_CONTRATO[-1]
+    primera, ultima = VERSIONES_SELECCIONABLES[0], VERSIONES_SELECCIONABLES[-1]
     if not _numero(primera) <= n <= _numero(ultima):
         raise ValueError(f"{version}: fuera de {primera}..{ultima}")
     validador = n >= _numero(PRIMER_VALIDADOR)
@@ -374,7 +393,8 @@ def contrato_de_version(version: str) -> Dict[str, Any]:
         "requeridos": requeridos,
         "valores": valores,
         "recomendados": [c for c, d in CAMPOS.items() if _recomendado_en(d, n, validador)],
-        "historia": [h for v, hs in HISTORIA.items() if _numero(v) <= n for h in hs],
+        "historia": [h for v, hs in {**HISTORIA, **HISTORIA_PREPARADA}.items()
+                     if _numero(v) <= n for h in hs],
     }
 
 
@@ -394,8 +414,9 @@ def vocabulario(campo: str) -> Optional[Tuple[str, ...]]:
 
 def conocido_desde(campo: str) -> Optional[str]:
     """La primera versión cuya historia nombra el campo."""
-    for v in sorted(HISTORIA, key=_numero):
-        if any(campo in h["campos"] for h in HISTORIA[v]):
+    historia = {**HISTORIA, **HISTORIA_PREPARADA}
+    for v in sorted(historia, key=_numero):
+        if any(campo in h["campos"] for h in historia[v]):
             return v
     return None
 

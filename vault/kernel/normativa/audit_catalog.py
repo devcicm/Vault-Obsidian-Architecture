@@ -193,6 +193,8 @@ PENALIZACIONES: List[Dict[str, Any]] = [
     # D-01: `createdAt` ausente tiene a AP-13 como norma, a diferencia de su
     # hermana `updatedAt` (hueco declarado arriba).
     {"id": "missing_created", "familia": "metadatos", "norma": "AP-13", "por_unidad": 3, "tope": 15},
+    # D-01: count only IDs required by the canonical note contract.
+    {"id": "missing_id", "familia": "metadatos", "norma": "AP-12", "por_unidad": 3, "tope": 15},
     {"id": "missing_frontmatter", "familia": "metadatos", "norma": "AP-28", "por_unidad": 3, "tope": 20},
     {"id": "cia_penalty", "familia": "metadatos", "norma": None, "por_unidad": 1, "tope": 15,
      "metrica_sin_norma": (

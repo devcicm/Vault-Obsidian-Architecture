@@ -1847,6 +1847,7 @@ def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]
     missing_cia = []
     missing_updated = []
     missing_created = []
+    missing_id = []
     missing_frontmatter = []
     missing_contract = []
     for p in notes:
@@ -1864,6 +1865,10 @@ def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]
         contrato = _falta_al_contrato(raw, rel)
         if contrato:
             missing_contract.append(contrato)
+        # A note without frontmatter already pays `missing_frontmatter`; like
+        # the sibling field checks, the missing `id` counts only once a block
+        # exists, so the same absence is not penalised twice.
+        falta_id = bool(contrato) and "id" in contrato["missing"]
         # La clase la decide el contrato (AP-57). Aquí había dos criterios
         # propios: todo `99_Index/` como derivado —que libraba también al primer
         # de la sección, una nota— y solo los `index.md`, así que
@@ -1883,6 +1888,8 @@ def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]
         bloque, _cuerpo = separar_frontmatter(raw)
         if bloque is not None:
             fm = _frontmatter_de(bloque)
+            if falta_id:
+                missing_id.append({"path": rel, "title": p.stem})
         else:
             if not is_index:
                 missing_frontmatter.append({"path": rel, "title": p.stem})
@@ -1927,6 +1934,7 @@ def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]
         "missing_cia": missing_cia,
         "missing_updated": missing_updated,
         "missing_created": missing_created,
+        "missing_id": missing_id,
         "missing_frontmatter": missing_frontmatter,
         "missing_contract": missing_contract,
     }
@@ -2504,6 +2512,7 @@ def vault_audit(
     missing_cia = meta_issues["missing_cia"]
     missing_updated = meta_issues["missing_updated"]
     missing_created = meta_issues["missing_created"]
+    missing_id = meta_issues["missing_id"]
     missing_frontmatter = meta_issues["missing_frontmatter"]
     missing_contract = meta_issues["missing_contract"]
 
@@ -2550,6 +2559,7 @@ def vault_audit(
         "missing_cia": len(missing_cia),
         "missing_updated": len(missing_updated),
         "missing_created": len(missing_created),
+        "missing_id": len(missing_id),
         "missing_frontmatter": len(missing_frontmatter),
         # Ya vienen resueltas por su detector: la unidad es el punto, no la
         # ocurrencia. El tope del registro las sigue acotando igual.
@@ -2728,6 +2738,7 @@ def vault_audit(
             "missingCIA": missing_cia,
             "missingUpdated": missing_updated,
             "missingCreated": missing_created,
+            "missingId": missing_id,
             "missingFrontmatter": missing_frontmatter,
             "missingContract": missing_contract,
             "graphKnowledge": {

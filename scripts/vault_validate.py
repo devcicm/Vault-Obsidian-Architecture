@@ -38,7 +38,8 @@ from vault_errors import emit_error, wrap_main
 from vault_io import assert_within_vault, is_snapshot_path  # AP-57: dueño del criterio instantánea
 from vault.kernel.frontmatter_parsing import FrontmatterParseError, parse_frontmatter_with_body
 from vault_fundamentals_catalog import cia_valores
-from vault_contrato_nota import VERSIONES_CON_CONTRATO, contrato_de_version, errores_de_valor, faltantes
+from vault_contrato_nota import (VERSIONES_CON_CONTRATO, VERSIONES_SELECCIONABLES,
+                                 contrato_de_version, errores_de_valor, faltantes)
 
 import yaml
 
@@ -445,7 +446,7 @@ def vault_validate(
             contrato = contrato_de_version(contrato)["version"]
         except ValueError as exc:
             return emit_error("vault_validate", "INVALID_VALUE", str(exc),
-                              pista=f"una de {VERSIONES_CON_CONTRATO[0]}..{VERSIONES_CON_CONTRATO[-1]}")
+                              pista=f"una de {VERSIONES_SELECCIONABLES[0]}..{VERSIONES_SELECCIONABLES[-1]}")
 
     # El barrido sin `--path` ni `--folder` lee el registro de secciones. Uno
     # ilegible es un fallo, no un informe verde sin las propias (AP-51).

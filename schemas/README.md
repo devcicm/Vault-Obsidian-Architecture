@@ -54,6 +54,7 @@ habría puesto y declara el origen de cada valor.
 | [v39](vault-v39.schema.json) | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags` | — |
 | [v40](vault-v40.schema.json) | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags` | — |
 | [v41](vault-v41.schema.json) | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags`, `type`, `status` | requeridos en notas de contenido, por presencia: el valor lo sigue juzgando vault_audit; clase sin_seccion: un .md fuera de toda sección lleva identidad y timestamps; CIA, agent, tags, type y status son de las notas de sección; opcional: la versión del proyecto desde la que rige una nota de arquitectura; el fin sale de superseded_by o del status; opcionales: quién responde del contenido y cuándo se comprobó por última vez; si están, responsable no vacío y revisado_en con fecha ISO; opcional: la nota que reemplaza a esta; si está, no vacío (no-derogación: lo reemplazado se anota, no se borra); opcional: mapa paquete → versión que la nota da por buena; si está, un mapa no vacío sin claves ni valores vacíos (AP-08); opcional: la ronda de trabajo en que se escribió la nota por última vez; si está, con la forma r<AAAAMMDD>-<6 hex> (D-07) |
+| [v42](vault-v42.schema.json) | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags`, `type`, `status` | Prepared opt-in requirement metadata; no migration or default activation |
 
 Hasta v24 no había validador: el contrato de esas versiones es la regla AP-12
 del manifiesto, que exigía los mismos campos a toda nota, de cualquier clase.
@@ -64,10 +65,20 @@ en el repositorio y no se publica esquema.
 Cualquier versión se valida con el validador vigente:
 `python scripts/vault_validate.py --check frontmatter --contrato v30`.
 
-## Campos del contrato vigente
+## Contratos preparados
+
+Las versiones preparadas (v42) solo se aplican
+al seleccionarlas con `--contrato`. No cambian el contrato predeterminado
+(v41), la version del runtime ni las migraciones. Los campos nuevos
+son opcionales; no se inventan valores ni se modifican notas automaticamente.
+
+## Campos declarados (incluidos los contratos preparados)
 
 | Campo | Nivel | Clases | Norma |
 |---|---|---|---|
+| `requirement_state` | opcional | contenido | — |
+| `solution_ref` | opcional | contenido | — |
+| `solved_by` | opcional | contenido | — |
 | `id` | requerido | sistema, sin_seccion, contenido | AP-12 |
 | `title` | requerido | sistema, sin_seccion, contenido | AP-12 |
 | `createdAt` | requerido | sistema, sin_seccion, contenido | AP-12 |
