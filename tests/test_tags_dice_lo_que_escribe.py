@@ -118,3 +118,26 @@ def test_el_contrato_de_vault_tags_no_promete_lo_que_no_emite(vault):
     assert set(entrada["declared_returns"]) - de_error <= emitidos, entrada["declared_returns"]
     for campo in ("total", "renamed", "tags"):
         assert campo in entrada["superseded_fields"], campo
+
+
+def test_el_tag_index_generado_no_cuenta_como_huerfano(tmp_path):
+    """C-12: a generated index that no hub links is a derived artifact, not an orphan note."""
+    import vault_audit
+    import vault_io
+    from apoyo import nota
+
+    root = tmp_path / "vault"
+    (root / "07_Knowledge").mkdir(parents=True)
+    (root / "99_Index").mkdir()
+    (root / "07_Knowledge" / "a.md").write_text(
+        nota({"id": "a", "title": "A", "tags": ["x"]}, "# A\n\n[[b]]"), encoding="utf-8")
+    (root / "07_Knowledge" / "b.md").write_text(
+        nota({"id": "b", "title": "B", "tags": ["x"]}, "# B\n\n[[a]]"), encoding="utf-8")
+    (root / "99_Index" / "tag-index.md").write_text("# Tag index\n\n- x: [[a]], [[b]]\n", encoding="utf-8")
+    previous = vault_io.set_vault_root(root)
+    try:
+        report = vault_audit.vault_audit()
+    finally:
+        vault_io.set_vault_root(previous)
+    orphans = {str(o.get("path", o)) for o in report["issues"]["orphans"]}
+    assert not any("tag-index" in o for o in orphans), orphans

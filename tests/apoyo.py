@@ -26,16 +26,20 @@ import os
 import subprocess
 import sys
 import textwrap
+import threading
+import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Mapping, Optional
+from typing import Any, Dict, Literal, Mapping, Optional
 
 import yaml
 
 from vault.kernel import rutas
+from vault.kernel.bloqueo import proceso_vivo as _consultar_proceso
 
 ROOT = rutas.raiz_repo()
 SCRIPTS = rutas.ruta_repo(rutas.SCRIPTS)
+TESTS = ROOT / "tests"
 
 #: Lo que el 80 % de los lanzadores privados medidos el 2026-10-31 usaba.
 TIMEOUT_S = 300
@@ -103,6 +107,80 @@ def correr_tool(nombre: str, *argv: Any, vault: Optional[Path] = None,
     return Corrida(p.returncode, p.stdout, p.stderr)
 
 
+def _entorno_python(vault: Optional[Path],
+                    env: Optional[Mapping[str, str]]) -> Dict[str, str]:
+    """Compose a child environment that imports this checkout before site packages."""
+    resultado = dict(env) if env is not None else entorno(vault)
+    heredado = resultado.get("PYTHONPATH", "")
+    rutas_importacion = [Path(p) for p in heredado.split(os.pathsep) if p]
+    rutas_importacion.extend((ROOT, SCRIPTS, TESTS))
+    unicas = list(dict.fromkeys(str(p) for p in rutas_importacion))
+    resultado["PYTHONPATH"] = os.pathsep.join(unicas)
+    return resultado
+
+
+def correr_python(*argv: Any, vault: Optional[Path] = None,
+                  env: Optional[Mapping[str, str]] = None,
+                  cwd: Optional[Path] = None,
+                  timeout: float = TIMEOUT_S,
+                  modo: Literal["bytes", "text"] = "text",
+                  capture_output: bool = True,
+                  check: bool = False,
+                  input: Any = None) -> subprocess.CompletedProcess:
+    """Run arbitrary Python with explicit byte or UTF-8 text capture semantics.
+
+    `capture_output=False` leaves stdout/stderr inherited, which is required by
+    probes that measure a child's effect on its parent's streams.
+    """
+    if modo not in ("bytes", "text"):
+        raise ValueError("modo debe ser 'bytes' o 'text'")
+    text_mode = modo == "text"
+    kwargs: Dict[str, Any] = {
+        "env": _entorno_python(vault, env),
+        "cwd": str(cwd or ROOT),
+        "timeout": timeout,
+        "capture_output": capture_output,
+        "check": check,
+        "input": input,
+        "text": text_mode,
+    }
+    if text_mode:
+        kwargs.update(encoding="utf-8", errors="replace")
+    return subprocess.run([sys.executable, *map(str, argv)], **kwargs)
+
+
+def lanzar_python(*argv: Any, vault: Optional[Path] = None,
+                  env: Optional[Mapping[str, str]] = None,
+                  cwd: Optional[Path] = None,
+                  **kwargs: Any) -> subprocess.Popen:
+    """Launch arbitrary Python; omitted streams stay inherited from the caller."""
+    return subprocess.Popen(
+        [sys.executable, *map(str, argv)],
+        env=_entorno_python(vault, env),
+        cwd=str(cwd) if cwd is not None else None, **kwargs)
+
+
+def esperar_condicion(condicion, *, timeout: float,
+                      intervalo: float = 0.01) -> bool:
+    """Wait for a predicate until a monotonic deadline, without fixed sleeps."""
+    if timeout < 0 or intervalo <= 0:
+        raise ValueError("timeout debe ser >= 0 e intervalo debe ser > 0")
+    limite = time.monotonic() + timeout
+    despertar = threading.Event()
+    while True:
+        if condicion():
+            return True
+        restante = limite - time.monotonic()
+        if restante <= 0:
+            return False
+        despertar.wait(min(intervalo, restante))
+
+
+def proceso_activo(pid: int) -> bool:
+    """Check a PID through the shared read-only platform query; unknown is alive."""
+    return _consultar_proceso(pid) is not False
+
+
 def correr_en_proceso(nombre: str, *argv: Any, vault: Optional[Path] = None,
                        agente: Optional[str] = None,
                        cwd: Optional[Path] = None) -> Corrida:
@@ -153,17 +231,25 @@ def correr_en_proceso(nombre: str, *argv: Any, vault: Optional[Path] = None,
     return Corrida(corrida.codigo, corrida.texto, corrida.error)
 
 
-def git_en(vault: Path, *args: str) -> str:
+def git_en(vault: Path, *args: str,
+           env: Optional[Mapping[str, str]] = None,
+           check: bool = False) -> str:
     """La salida de `git` en ese repo: el lanzador, aquí y no en cada test.
 
     La capa de git del vault (v41.26) hace que `git log` sea parte del
     contrato observable —cada operación que escribe deja un commit— y los
     tests tienen que poder mirarlo. Un `subprocess.run(["git", ...])` en cada
-    test es exactamente lo que AP-69 veta: el lanzador privado.
+    test es exactamente lo que AP-69 veta: el lanzador privado. `env` aplica
+    variables solo a esta llamada; `check=True` hace visibles los errores que
+    un fixture no debe confundir con una preparaciÃ³n exitosa.
     """
     p = subprocess.run(["git", "-C", str(vault), *args],
                        capture_output=True, text=True, encoding="utf-8",
-                       errors="replace", timeout=120)
+                       errors="replace", timeout=120,
+                       env=dict(env) if env is not None else None)
+    if check and p.returncode:
+        raise subprocess.CalledProcessError(
+            p.returncode, p.args, output=p.stdout, stderr=p.stderr)
     return (p.stdout or "").strip()
 
 

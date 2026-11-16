@@ -128,3 +128,16 @@ def test_el_limite_esta_documentado_en_el_escaner():
     assert "no comprueba" in fuente.lower(), (
         "el escáner no declara qué no comprueba (orden, recurso, sección "
         "crítica, helpers): quien lo lea lo toma por una garantía")
+
+
+def test_un_string_que_nombra_el_lock_no_cuenta(tmp_path):
+    """A-08: a string literal naming the lock is not a lock either."""
+    codigos = _analizar(tmp_path, '''
+from pathlib import Path
+
+def escribe(datos):
+    ruta = Path("99_Index/search-index.json")
+    motivo = "usar file_lock(ruta) y self.lock antes de escribir"
+    ruta.write_text(datos + motivo)
+''')
+    assert "RC-01" in codigos, codigos

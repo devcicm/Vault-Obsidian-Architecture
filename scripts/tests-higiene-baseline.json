@@ -237,7 +237,6 @@
     "lanzador_privado::test_list_status_vocabulario.py::_run::22a3c686",
     "lanzador_privado::test_lock_dueno_vivo.py::_pid_muerto::7e2314e1",
     "lanzador_privado::test_lock_fencing.py::test_la_tool_responde_note_locked_y_no_ok_true::ca026efc",
-    "lanzador_privado::test_manifiesto_candidato.py::_correr_puerta::3f4d1f97",
     "lanzador_privado::test_mcp_descripcion_calculada.py::_ayuda_de_la_cli._help::9e679244",
     "lanzador_privado::test_mcp_descripcion_calculada.py::_ayuda_de_la_cli::dae31c22",
     "lanzador_privado::test_mcp_enum_de_choices.py::test_el_enum_es_lo_que_argparse_acepta::25e8637b",

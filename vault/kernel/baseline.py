@@ -48,6 +48,7 @@ congelar deuda nueva, y lo que importa es que quede **listada en el envelope**
 en vez de aparecer en el JSON sin que nadie la viera pasar.
 """
 
+import contextlib
 import json
 import re
 import subprocess
@@ -57,7 +58,7 @@ import vault_subproceso
 from vault.kernel import procesos_git
 from datetime import date, datetime
 from pathlib import Path
-from typing import (Any, Dict, Iterable, List, Mapping, Optional, Sequence, Set,
+from typing import (Any, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Set,
                     Tuple, Union)
 
 #: La raíz del repo, donde se le pregunta a git por la baseline congelada.
@@ -217,6 +218,36 @@ def escribir(path: Path, clave: str, norma: str, descripcion: str,
     # Por lo mismo, la sangría es la que el fichero ya tenía.
     path.write_bytes((json.dumps(salida, ensure_ascii=False, indent=_sangria_de(path)) + "\n").encode("utf-8"))
     return len(elementos)
+
+
+@contextlib.contextmanager
+def baselines_intactas(directorio: Path) -> Iterator[List[str]]:
+    """Restore every `*-baseline.json` in `directorio` when the block ends.
+
+    The toolkit and no-op audits execute each tool's documented example, and
+    the meta-toolkit examples include `--freeze`, which rewrites the
+    repository's own baselines (they live next to the scripts, not in the
+    disposable vault copy). A gate run must not change tracked files: the
+    block yields the list of baselines a run rewrote, created or removed, and
+    their previous bytes are put back before the list is read.
+    """
+    antes = {p: p.read_bytes() for p in sorted(directorio.glob("*-baseline.json"))}
+    reescritas: List[str] = []
+    try:
+        yield reescritas
+    finally:
+        for path, datos in antes.items():
+            try:
+                actual = path.read_bytes()
+            except OSError:
+                actual = None
+            if actual != datos:
+                path.write_bytes(datos)
+                reescritas.append(path.name)
+        for path in sorted(directorio.glob("*-baseline.json")):
+            if path not in antes:
+                path.unlink()
+                reescritas.append(path.name)
 
 
 #: La sangría de una baseline que aún no existe.

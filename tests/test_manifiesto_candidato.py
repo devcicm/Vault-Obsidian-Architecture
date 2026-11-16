@@ -200,8 +200,8 @@ def _guion_de_la_puerta():
 def _correr_puerta(tmp_path, mutar=None):
     """Repo git minimo con un manifiesto coherente; `mutar(m, tree)` lo estropea."""
     import copy
-    import sys
     import yaml
+    from apoyo import correr_python
 
     def git(*a):
         return subprocess.run(["git", *a], cwd=str(tmp_path), capture_output=True,
@@ -232,8 +232,7 @@ def _correr_puerta(tmp_path, mutar=None):
         mutar(m)
     (tmp_path / "audits" / "fase2" / "CANDIDATO-RELEASE.yaml").write_text(yaml.safe_dump(m))
     env = {**__import__("os").environ, "GITHUB_REF_NAME": "v1.0"}
-    return subprocess.run([sys.executable, "-c", _guion_de_la_puerta()], cwd=str(tmp_path),
-                          env=env, capture_output=True, text=True, encoding="utf-8")
+    return correr_python("-c", _guion_de_la_puerta(), cwd=tmp_path, env=env)
 
 
 @pytest.mark.skipif(__import__("sys").version_info < (3, 11), reason="tomllib")

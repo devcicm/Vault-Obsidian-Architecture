@@ -489,3 +489,27 @@ def test_ninguna_baseline_del_repo_queda_sin_compromiso():
         if e["estado"] in ("sin_objetivo", "objetivo_invalido"):
             sin.append(f"{fichero}:{clave}")
     assert sin == []
+
+
+def test_baselines_intactas_restores_rewritten_and_created_files(tmp_path):
+    import vault_baseline
+
+    existente = tmp_path / "a-baseline.json"
+    existente.write_bytes(b'{"sites": [1, 2]}\n')
+    with vault_baseline.baselines_intactas(tmp_path) as reescritas:
+        existente.write_bytes(b'{"sites": [1]}\n')
+        (tmp_path / "b-baseline.json").write_bytes(b"{}\n")
+    assert existente.read_bytes() == b'{"sites": [1, 2]}\n'
+    assert not (tmp_path / "b-baseline.json").exists()
+    assert sorted(reescritas) == ["a-baseline.json", "b-baseline.json"]
+
+
+def test_an_audited_freeze_example_never_changes_repository_baselines():
+    """The gate runs each documented example; `--freeze` must not rewrite tracked files."""
+    import vault_smoke
+    from apoyo import SCRIPTS
+
+    antes = {p.name: p.read_bytes() for p in SCRIPTS.glob("*-baseline.json")}
+    vault_smoke.run_one("vault_tests_higiene", argv=[
+        vault_smoke.sys.executable, str(SCRIPTS / "vault_tests_higiene.py"), "--freeze"])
+    assert {p.name: p.read_bytes() for p in SCRIPTS.glob("*-baseline.json")} == antes

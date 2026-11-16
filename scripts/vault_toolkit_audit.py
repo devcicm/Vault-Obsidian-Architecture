@@ -317,6 +317,7 @@ def c3_bis(nombre: str, entrada: Dict[str, Any], lineas: List[Any],
     lo dueñece el ledger (`_NO_ES_TRABAJO`); el embalaje aquí es logística.
     """
     import subprocess
+    import vault_baseline
 
     declarada = "unchanged" in (contrato_de(nombre) or set())
     if not lineas or not declarada:
@@ -352,9 +353,12 @@ def c3_bis(nombre: str, entrada: Dict[str, Any], lineas: List[Any],
         foto_antes = _arbol_local(vault)
         for numero_corrida in (1, 2):
             try:
-                proc = subprocess.run(argv, capture_output=True, text=True,
-                                      env=env, encoding="utf-8", errors="replace",
-                                      cwd=cwd_de_la_corrida, timeout=120)
+                # Same isolation as vault_smoke.run_one: an example that
+                # freezes a repository baseline must not change tracked files.
+                with vault_baseline.baselines_intactas(SCRIPTS_DIR):
+                    proc = subprocess.run(argv, capture_output=True, text=True,
+                                          env=env, encoding="utf-8", errors="replace",
+                                          cwd=cwd_de_la_corrida, timeout=120)
             except subprocess.TimeoutExpired:
                 procesos.append({"corrida": numero_corrida, "perdida": "timeout"})
                 continue

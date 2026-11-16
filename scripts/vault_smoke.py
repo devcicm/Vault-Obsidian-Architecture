@@ -304,10 +304,16 @@ def run_one(tool: str, arbol: bool = False, argv: Optional[List[str]] = None,
             # medido 2026-10-21, el `mi-vault` de la casa nació aquí.
             "VAULT_MASTER": str(destino / ".casa"),
         })
+        import vault_baseline
+
         try:
-            proc = subprocess.run(argv, capture_output=True, text=True, env=env,
-                                  encoding="utf-8", errors="replace",
-                                  timeout=SMOKE_TIMEOUT, cwd=str(cwd))
+            # Meta-toolkit examples such as `--freeze` write the repository's
+            # own baselines, which no disposable vault copy isolates: they are
+            # restored so an audit run never changes tracked files.
+            with vault_baseline.baselines_intactas(SCRIPTS_DIR) as reescritas:
+                proc = subprocess.run(argv, capture_output=True, text=True, env=env,
+                                      encoding="utf-8", errors="replace",
+                                      timeout=SMOKE_TIMEOUT, cwd=str(cwd))
         except subprocess.TimeoutExpired:
             return {"tool": tool, "ok": False, "problem": "timeout",
                     "detail": f"no terminó en {SMOKE_TIMEOUT}s"}

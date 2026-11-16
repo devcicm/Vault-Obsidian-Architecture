@@ -290,7 +290,7 @@ def test_reparar_indice_saca_lo_ignorado_del_index_y_nada_del_disco(vault_con_re
     ignora (`git rm --cached`, el árbol de trabajo no se toca) y lo deja en
     un commit propio con su cifra.
     """
-    from vault.kernel.vcs import reparar_indice
+    from vault.kernel.vcs import identidad_de_commit, reparar_indice
 
     historia = vault_con_repo / ".history"
     historia.mkdir()
@@ -301,7 +301,11 @@ def test_reparar_indice_saca_lo_ignorado_del_index_y_nada_del_disco(vault_con_re
     # Estado de esa generación de vaults: el repositorio ya rastrearía lo volátil.
     _git(vault_con_repo, "add", "-f", str(copia.relative_to(vault_con_repo)),
          str(estado.relative_to(vault_con_repo)))
-    _git(vault_con_repo, "commit", "-m", "estado previo: lo volatil esta rastreado")
+    git_en(vault_con_repo, "commit", "-m", "estado previo: lo volatil esta rastreado",
+           env=identidad_de_commit(), check=True)
+    assert git_en(vault_con_repo, "rev-parse", "--verify", "HEAD"), (
+        "The ignored legacy files must be committed before repair is tested"
+    )
     antes = [l for l in _git(vault_con_repo, "ls-files").splitlines() if l.strip()]
     assert any(f.startswith(".history/") for f in antes), antes
     assert "00_System/estado-volatil.json" in antes, antes
