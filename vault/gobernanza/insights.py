@@ -11,7 +11,7 @@ correcciones que pidio la revision independiente del 2026-11-09:
   cambio que solo es de `status:` o de `tags:`; ahora hay dos hashes y el
   informe distingue `modificadas` (cuerpo) de `metadatos_modificados`.
 - **Identidad y poblacion.** El snapshot lleva `vault_id` (estable por
-  instalacion) y el criterio de poblacion; comparar dos capturas de
+  vault) y el criterio de poblacion; comparar dos capturas de
   poblaciones distintas se rechaza, no se mezcla.
 - **Renombres.** Una nota que cambia de ruta con el mismo cuerpo es un
   renombrado, no una baja y un alta.
@@ -23,7 +23,7 @@ correcciones que pidio la revision independiente del 2026-11-09:
   permiso explicito, y se escribe por temporal→replace.
 
 El dominio no parsea argv ni emite envelopes: eso es del adaptador,
-`scripts/vault_insights.py`. Y no escribe en el vault.
+`scripts/vault_insights.py`. El inventario es de solo lectura. La inicializacion explicita crea una identidad en el vault.
 """
 
 from __future__ import annotations
@@ -40,7 +40,7 @@ from vault.kernel.frontmatter_parsing import separar_frontmatter
 #: La versión del esquema. Cambió con esta revisión (completitud, identidad y
 #: metadatos): dos capturas de esquemas distintos no se comparan, porque
 #: mezclarlas convertiría una diferencia de formato en un cambio de dato.
-ESQUEMA = 2
+ESQUEMA = 3
 
 #: El alcance de la medida, publicado con ella: metadatos autorizados, no
 #: verdad del contenido.
@@ -60,6 +60,7 @@ CAMPOS_METADATO = ("title", "type", "status", "tags", "updatedAt", "createdAt")
 #: La clave del frontmatter, compilada **una vez**: dentro del bucle se
 #: buscaria en la cache de `re` por cada linea de cada nota.
 _RE_CLAVE = re.compile(r"^([A-Za-z_][\w-]*):\s*(.*)$")
+_RE_HASH = re.compile(r"[0-9a-f]{16}")
 
 
 class SnapshotInvalido(ValueError):
@@ -74,23 +75,56 @@ def _hash(texto: str) -> str:
     return hashlib.sha256(texto.encode("utf-8")).hexdigest()[:16]
 
 
-def _identidad(raiz: Path) -> str:
-    """La identidad estable de este vault.
+FICHERO_IDENTIDAD = "00_System/insights-identidad.json"
 
-    No es la ruta (cambia entre maquinas) ni el nombre (puede repetirse): es
-    un identificador derivado de la version del estandar y de la ruta
-    absoluta, que es estable por instalacion. Sirve para que dos capturas
-    de vaultes distintos no se comparen.
-    """
+
+def _identidad(raiz: Path) -> str:
+    """Lee identidad persistente sin crear ni modificar archivos."""
+    fichero = raiz / FICHERO_IDENTIDAD
     try:
-        from vault.kernel.entorno import CURRENT_VERSION  # noqa: F401
-    except Exception:
-        CURRENT_VERSION = ""
+        texto = fichero.read_text(encoding="utf-8")
+    except FileNotFoundError as exc:
+        raise SnapshotInvalido("El vault no tiene identidad: inicialice explicitamente la identidad del vault.",
+                               causa="IDENTITY_MISSING") from exc
+    except (OSError, UnicodeError) as exc:
+        raise SnapshotInvalido("La identidad del vault no se puede leer; no se genera otra.",
+                               causa="DATA_FILE_CORRUPT") from exc
     try:
-        base = str(raiz.resolve()).encode("utf-8")
-    except (OSError, ValueError):
-        base = str(raiz).encode("utf-8")
-    return _hash(f"{CURRENT_VERSION}|{base.decode('utf-8', 'replace')}")
+        datos = json.loads(texto)
+        identidad = datos["vault_id"]
+        if not isinstance(identidad, str) or str(uuid.UUID(identidad)) != identidad:
+            raise ValueError("UUID no canonico")
+        return identidad
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError) as exc:
+        # A present but unusable identity is a damaged file, not two vaults.
+        raise SnapshotInvalido("Identidad invalida: restaure 00_System/insights-identidad.json; "
+                               "no se genera otra.", causa="DATA_FILE_CORRUPT") from exc
+
+
+def inicializar_identidad(raiz: Path) -> dict:
+    """Crea una identidad persistente una sola vez; nunca sustituye otra."""
+    from vault_io import assert_within_vault, reglas_declaradas
+
+    fichero = raiz / FICHERO_IDENTIDAD
+    assert_within_vault(fichero, raiz)
+    reglas_declaradas(raiz)
+    if fichero.exists():
+        return {"ok": True, "tool": "vault_insights", "action": "identidad", "vault_id": _identidad(raiz), "created": False}
+    if not fichero.parent.is_dir():
+        raise SnapshotInvalido("El vault no tiene 00_System; inicialice el vault antes de su identidad.", causa="INVALID_PATH")
+    identidad = str(uuid.uuid4())
+    temporal = fichero.with_name(fichero.name + ".tmp." + uuid.uuid4().hex)
+    try:
+        with temporal.open("x", encoding="utf-8") as salida:
+            json.dump({"vault_id": identidad}, salida)
+            salida.write("\n")
+        try:
+            os.link(temporal, fichero)
+        except FileExistsError:
+            return {"ok": True, "tool": "vault_insights", "action": "identidad", "vault_id": _identidad(raiz), "created": False}
+    finally:
+        temporal.unlink(missing_ok=True)
+    return {"ok": True, "tool": "vault_insights", "action": "identidad", "vault_id": identidad, "created": True}
 
 
 def _notas(raiz: Path) -> list[Path]:
@@ -138,7 +172,7 @@ def inventario(raiz: Path) -> dict:
     for p in candidatas:
         rel = p.relative_to(raiz).as_posix()
         try:
-            texto = p.read_text(encoding="utf-8", errors="replace")
+            texto = p.read_text(encoding="utf-8")
         except OSError as exc:
             errores.append({"path": rel, "tipo": "ilegible",
                             "error": f"{type(exc).__name__}: {exc}"})
@@ -230,24 +264,21 @@ def guardar(inventario_: dict, destino: str, raiz: Path, force: bool = False) ->
             "el snapshot no puede vivir dentro del vault: el inventario lo "
             "contaria y el artefacto contaminaria la medida. Elige una ruta "
             "fuera del vault.", causa="INVALID_PATH")
-    if ruta.exists() and not force:
-        raise SnapshotInvalido(
-            f"ya hay un snapshot en '{ruta}': no se pisa sin --force.",
-            causa="SNAPSHOT_EXISTE")
     ruta.parent.mkdir(parents=True, exist_ok=True)
-    # Escritura atomica: temporal y replace. Un snapshot a medias no es un
-    # snapshot, y un lector podria leerlo.
-    temporal = ruta.with_name(ruta.name + f".tmp.{os.getpid()}.{uuid.uuid4().hex[:8]}")
+    temporal = ruta.with_name(ruta.name + f".tmp.{os.getpid()}.{uuid.uuid4().hex}")
     try:
-        temporal.write_text(
-            json.dumps(inventario_, indent=2, ensure_ascii=False) + "\n",
-            encoding="utf-8")
-        os.replace(temporal, ruta)
+        with temporal.open("x", encoding="utf-8") as salida:
+            json.dump(inventario_, salida, indent=2, ensure_ascii=False)
+            salida.write("\n")
+        if force:
+            os.replace(temporal, ruta)
+        else:
+            try:
+                os.link(temporal, ruta)
+            except FileExistsError as exc:
+                raise SnapshotInvalido(f"ya hay un snapshot en '{ruta}': no se pisa sin --force.", causa="SNAPSHOT_EXISTE") from exc
     finally:
-        try:
-            temporal.unlink(missing_ok=True)
-        except OSError:
-            pass
+        temporal.unlink(missing_ok=True)
     return {"ok": True, "tool": "vault_insights", "action": "guardar",
             "path": str(ruta), "notas": inventario_["total"],
             "complete": inventario_.get("complete", True)}
@@ -269,23 +300,39 @@ def comparar(a: str, b: str) -> dict:
     """
     uno = _leer_snapshot(a)
     dos = _leer_snapshot(b)
-    if uno.get("schema") != dos.get("schema"):
-        raise SnapshotInvalido(
-            f"los snapshots son de esquemas distintos ({uno.get('schema')} y "
-            f"{dos.get('schema')}): compararlos mezclaria medidas.",
-            causa="SCHEMA_MISMATCH")
-    if uno.get("vault_id") and dos.get("vault_id") and uno["vault_id"] != dos["vault_id"]:
-        raise SnapshotInvalido(
-            "los snapshots son de vaults distintos (identidad y poblacion "
-            "distintas): su diferencia no seria un cambio de contenido.",
-            causa="IDENTITY_MISMATCH")
-    incompletos = [ruta for ruta, snap in ((a, uno), (b, dos))
-                   if snap.get("complete") is False]
-    if incompletos:
-        raise SnapshotInvalido(
-            "una de las capturas esta incompleta (hubo notas ilegibles): "
-            f"no se comparan — {', '.join(incompletos)}.",
-            causa="SNAPSHOT_INCOMPLETO")
+    if any(not isinstance(snap, dict) or snap.get("schema") != ESQUEMA for snap in (uno, dos)):
+        raise SnapshotInvalido("Esquema antiguo o desconocido: genere nuevas capturas con identidad persistente.", causa="SCHEMA_MISMATCH")
+    for snap in (uno, dos):
+        try:
+            identidad = snap["vault_id"]
+            if not isinstance(identidad, str) or str(uuid.UUID(identidad)) != identidad:
+                raise ValueError("identidad invalida")
+            poblacion = snap["poblacion"]
+            if not isinstance(poblacion, dict) or not isinstance(poblacion.get("criterio"), str) or not poblacion["criterio"]:
+                raise ValueError("criterio de poblacion ausente")
+            if snap.get("complete") is not True:
+                raise SnapshotInvalido("La captura no declara completitud.", causa="SNAPSHOT_INCOMPLETO")
+            notas = snap["notas"]
+            if not isinstance(notas, list) or any(
+                not isinstance(n, dict)
+                or not isinstance(n.get("path"), str)
+                or not n["path"]
+                or any(not isinstance(n.get(campo), str)
+                       or _RE_HASH.fullmatch(n[campo]) is None
+                       for campo in ("hash_cuerpo", "hash_metadatos"))
+                for n in notas
+            ):
+                raise ValueError("notas invalidas")
+            if len({n["path"] for n in notas}) != len(notas) or snap.get("total") != len(notas) or poblacion.get("notas_leidas") != len(notas) or poblacion.get("notas_encontradas") != len(notas):
+                raise ValueError("recuento o rutas invalidos")
+        except (KeyError, TypeError, ValueError) as exc:
+            if isinstance(exc, SnapshotInvalido):
+                raise
+            raise SnapshotInvalido(f"Snapshot incompleto o invalido: {exc}") from exc
+    if uno["vault_id"] != dos["vault_id"]:
+        raise SnapshotInvalido("Los snapshots pertenecen a vaults distintos.", causa="IDENTITY_MISMATCH")
+    if uno["poblacion"]["criterio"] != dos["poblacion"]["criterio"]:
+        raise SnapshotInvalido("Los criterios de poblacion son distintos.", causa="SCHEMA_MISMATCH")
 
     por_uno = {n["path"]: n for n in uno.get("notas", [])}
     por_dos = {n["path"]: n for n in dos.get("notas", [])}
@@ -300,12 +347,17 @@ def comparar(a: str, b: str) -> dict:
 
     # Un renombrado: la misma nota, otro sitio. Sin esto, una nota movida
     # pareceria una baja y un alta.
-    cuerpos_uno = {n.get("hash_cuerpo"): n["path"] for n in uno.get("notas", [])}
-    cuerpos_dos = {n.get("hash_cuerpo"): n["path"] for n in dos.get("notas", [])}
+    cuerpos_uno: dict[str, list[str]] = {}
+    cuerpos_dos: dict[str, list[str]] = {}
+    for n in uno["notas"]:
+        cuerpos_uno.setdefault(n["hash_cuerpo"], []).append(n["path"])
+    for n in dos["notas"]:
+        cuerpos_dos.setdefault(n["hash_cuerpo"], []).append(n["path"])
     renombradas = sorted(
-        (cuerpos_uno[h], cuerpos_dos[h])
-        for h in(set(cuerpos_uno) & set(cuerpos_dos))
-        if cuerpos_uno[h] != cuerpos_dos[h]
+        (cuerpos_uno[h][0], cuerpos_dos[h][0])
+        for h in set(cuerpos_uno) & set(cuerpos_dos)
+        if len(cuerpos_uno[h]) == len(cuerpos_dos[h]) == 1
+        and cuerpos_uno[h][0] in bajas and cuerpos_dos[h][0] in altas
     )
     renombradas_paths = {a for a, _b in renombradas} | {b for _a, b in renombradas}
     altas_reales = [r for r in altas if r not in renombradas_paths]

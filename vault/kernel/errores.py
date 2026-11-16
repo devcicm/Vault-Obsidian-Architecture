@@ -871,6 +871,19 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": None,
         },
     },
+    "IDENTITY_MISSING": {
+        "category": "validation",
+        "severity": "error",
+        "message": "El vault no tiene identidad persistente para sus capturas.",
+        "recovery": {
+            "action": "run_tool",
+            "tool": "vault_insights",
+            "args": ["--inicializar-identidad"],
+            "hint": "Inicializar la identidad una sola vez con vault_insights "
+                    "--inicializar-identidad; nunca se crea de forma implicita.",
+            "docs": None,
+        },
+    },
     "IDENTITY_MISMATCH": {
         "category": "validation",
         "severity": "error",

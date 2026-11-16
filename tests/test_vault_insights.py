@@ -38,6 +38,7 @@ def _vault(tmp_path: Path) -> Path:
     (raiz / "07_Knowledge" / "dos.md").write_text(
         "---\ntitle: Dos\ntype: note\nstatus: reviewed\n---\n\n"
         "Cuerpo de la nota dos.\n", encoding="utf-8")
+    vault_insights.inicializar_identidad(raiz)
     return raiz
 
 
@@ -199,3 +200,162 @@ def test_el_enlace_entrante_se_cuenta_con_el_extractor_del_dueno(tmp_path):
     assert por_ruta["07_Knowledge/uno.md"] == 1, por_ruta
     assert por_ruta["07_Knowledge/dos.md"] == 1, por_ruta
     assert por_ruta["07_Knowledge/tres.md"] == 0, por_ruta
+
+
+def test_identidad_se_inicializa_una_vez_y_sobrevive_a_renombrado(tmp_path):
+    raiz = _vault(tmp_path)
+    identidad = vault_insights.inicializar_identidad(raiz)
+    assert identidad["created"] is False
+    antes = vault_insights.inventario(raiz)
+    movido = raiz.rename(tmp_path / "vault-renombrado")
+    despues = vault_insights.inventario(movido)
+    assert antes["vault_id"] == despues["vault_id"] == identidad["vault_id"]
+    a, b = tmp_path / "a.json", tmp_path / "b.json"
+    a.write_text(json.dumps(antes), encoding="utf-8")
+    b.write_text(json.dumps(despues), encoding="utf-8")
+    assert vault_insights.comparar(str(a), str(b))["ok"]
+
+
+def test_inventario_no_crea_identidad_ausente(tmp_path):
+    raiz = tmp_path / "vault"
+    (raiz / "00_System").mkdir(parents=True)
+    with pytest.raises(SnapshotInvalido):
+        vault_insights.inventario(raiz)
+    assert not (raiz / "00_System" / "insights-identidad.json").exists()
+    primera = vault_insights.inicializar_identidad(raiz)
+    segunda = vault_insights.inicializar_identidad(raiz)
+    assert primera["created"] and not segunda["created"]
+    assert primera["vault_id"] == segunda["vault_id"]
+
+
+@pytest.mark.parametrize("campo", ["vault_id", "complete", "poblacion", "schema"])
+def test_comparar_rechaza_campos_obligatorios_ausentes(tmp_path, campo):
+    raiz = _vault(tmp_path)
+    uno = vault_insights.inventario(raiz)
+    dos = dict(uno)
+    dos.pop(campo)
+    a, b = tmp_path / "a.json", tmp_path / "b.json"
+    a.write_text(json.dumps(uno), encoding="utf-8")
+    b.write_text(json.dumps(dos), encoding="utf-8")
+    with pytest.raises(SnapshotInvalido):
+        vault_insights.comparar(str(a), str(b))
+
+
+def test_comparar_rechaza_esquema_antiguo_aun_si_ambos_coinciden(tmp_path):
+    raiz = _vault(tmp_path)
+    captura = vault_insights.inventario(raiz)
+    captura["schema"] = 2
+    a = tmp_path / "a.json"
+    a.write_text(json.dumps(captura), encoding="utf-8")
+    with pytest.raises(SnapshotInvalido) as exc:
+        vault_insights.comparar(str(a), str(a))
+    assert exc.value.causa == "SCHEMA_MISMATCH"
+
+
+def test_utf8_invalido_deja_inventario_incompleto(tmp_path):
+    raiz = _vault(tmp_path)
+    (raiz / "07_Knowledge" / "dos.md").write_bytes(b"\xff")
+    datos = vault_insights.inventario(raiz)
+    assert datos["complete"] is False
+    assert datos["errores"][0]["tipo"] == "codificacion"
+
+
+def test_cuerpos_duplicados_no_inventan_renombrados(tmp_path):
+    raiz = _vault(tmp_path)
+    uno = raiz / "07_Knowledge" / "uno.md"
+    dos = raiz / "07_Knowledge" / "dos.md"
+    dos.write_bytes(uno.read_bytes())
+    antes = vault_insights.inventario(raiz)
+    uno.rename(raiz / "07_Knowledge" / "tres.md")
+    despues = vault_insights.inventario(raiz)
+    a, b = tmp_path / "a.json", tmp_path / "b.json"
+    a.write_text(json.dumps(antes), encoding="utf-8")
+    b.write_text(json.dumps(despues), encoding="utf-8")
+    resultado = vault_insights.comparar(str(a), str(b))
+    assert resultado["renombradas"] == []
+    assert resultado["retiradas"] == ["07_Knowledge/uno.md"]
+    assert resultado["anadidas"] == ["07_Knowledge/tres.md"]
+
+
+def test_dos_guardados_concurrentes_no_se_pisan(tmp_path):
+    from concurrent.futures import ThreadPoolExecutor
+    raiz = _vault(tmp_path)
+    datos = vault_insights.inventario(raiz)
+    destino = tmp_path / "snapshot.json"
+    def escribir(_):
+        try:
+            vault_insights.guardar(datos, str(destino), raiz)
+            return "guardado"
+        except SnapshotInvalido as exc:
+            return exc.causa
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        resultados = list(pool.map(escribir, range(2)))
+    assert sorted(resultados) == ["SNAPSHOT_EXISTE", "guardado"]
+    assert json.loads(destino.read_text(encoding="utf-8"))["vault_id"] == datos["vault_id"]
+
+
+def test_guardar_sin_hardlinks_no_pisa_y_limpia_el_temporal(tmp_path, monkeypatch):
+    from vault.gobernanza import insights
+
+    raiz = _vault(tmp_path)
+    datos = vault_insights.inventario(raiz)
+    destino = tmp_path / "snapshot.json"
+    destino.write_text("contenido previo", encoding="utf-8")
+
+    def sin_hardlinks(*_args, **_kwargs):
+        raise OSError("hardlinks no disponibles")
+
+    monkeypatch.setattr(insights.os, "link", sin_hardlinks)
+    with pytest.raises(OSError, match="hardlinks no disponibles"):
+        vault_insights.guardar(datos, str(destino), raiz)
+    assert destino.read_text(encoding="utf-8") == "contenido previo"
+    assert not list(tmp_path.glob("snapshot.json.tmp.*"))
+
+
+def test_criterios_de_poblacion_distintos_no_se_comparan(tmp_path):
+    raiz = _vault(tmp_path)
+    uno = vault_insights.inventario(raiz)
+    dos = dict(uno)
+    dos["poblacion"] = dict(uno["poblacion"], criterio="otra poblacion")
+    a, b = tmp_path / "a.json", tmp_path / "b.json"
+    a.write_text(json.dumps(uno), encoding="utf-8")
+    b.write_text(json.dumps(dos), encoding="utf-8")
+    with pytest.raises(SnapshotInvalido):
+        vault_insights.comparar(str(a), str(b))
+
+
+def test_hashes_invalidos_no_producen_cambios_falsos(tmp_path):
+    raiz = _vault(tmp_path)
+    datos = vault_insights.inventario(raiz)
+    valido = tmp_path / "valido.json"
+    invalido = tmp_path / "invalido.json"
+    valido.write_text(json.dumps(datos), encoding="utf-8")
+    for campo in ("hash_cuerpo", "hash_metadatos"):
+        for valor in ("", "g" * 16, "a" * 15):
+            copia = json.loads(json.dumps(datos))
+            copia["notas"][0][campo] = valor
+            invalido.write_text(json.dumps(copia), encoding="utf-8")
+            with pytest.raises(SnapshotInvalido):
+                vault_insights.comparar(str(valido), str(invalido))
+
+
+@pytest.mark.parametrize("estado,causa", [("ausente", "IDENTITY_MISSING"), ("corrupta", "DATA_FILE_CORRUPT")])
+def test_la_identidad_ausente_o_corrupta_tiene_su_propio_codigo(tmp_path, estado, causa):
+    """A4: a missing identity is not two different vaults, and is never created implicitly."""
+    from vault.gobernanza.insights import FICHERO_IDENTIDAD
+    from vault.kernel.errores import ERROR_CATALOG
+
+    raiz = _vault(tmp_path)
+    fichero = raiz / FICHERO_IDENTIDAD
+    if estado == "ausente":
+        fichero.unlink(missing_ok=True)
+    else:
+        fichero.write_text("{roto", encoding="utf-8")
+    before = fichero.read_bytes() if fichero.exists() else None
+    with pytest.raises(SnapshotInvalido) as exc:
+        vault_insights.inventario(raiz)
+    assert exc.value.causa == causa
+    assert causa in ERROR_CATALOG
+    assert (fichero.read_bytes() if fichero.exists() else None) == before
+    if causa == "IDENTITY_MISSING":
+        assert ERROR_CATALOG[causa]["recovery"]["args"] == ["--inicializar-identidad"]

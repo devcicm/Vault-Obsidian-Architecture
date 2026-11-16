@@ -8,6 +8,7 @@ adaptador debe: leer argv, resolver la raíz y emitir el envelope.
 
 Uso:
 
+    python scripts/vault_insights.py --inicializar-identidad
     python scripts/vault_insights.py
     python scripts/vault_insights.py --guardar C:/datos/vault-2026-11-09.json
     python scripts/vault_insights.py --comparar a.json b.json
@@ -28,6 +29,7 @@ from vault.gobernanza.insights import (  # noqa: E402
     comparar,
     guardar,
     inventario,
+    inicializar_identidad,
 )
 
 
@@ -36,6 +38,8 @@ def main() -> int:
         description="vault_insights — inventario de solo lectura y comparación "
                     "de snapshots",
         allow_abbrev=False)
+    parser.add_argument("--inicializar-identidad", action="store_true",
+                        help="Crea una identidad persistente sin sustituir una existente")
     parser.add_argument("--guardar", metavar="RUTA",
                         help="Guarda el snapshot en RUTA (fuera del vault)")
     parser.add_argument("--comparar", nargs=2, metavar=("A", "B"),
@@ -53,7 +57,11 @@ def main() -> int:
         return 1
 
     try:
-        if args.comparar:
+        if args.inicializar_identidad:
+            if args.comparar or args.guardar or args.force:
+                raise SnapshotInvalido("La inicializacion de identidad no se combina con otras operaciones.", causa="INVALID_INPUT")
+            res = inicializar_identidad(Path(raiz))
+        elif args.comparar:
             res = comparar(*args.comparar)
         else:
             datos = inventario(Path(raiz))
