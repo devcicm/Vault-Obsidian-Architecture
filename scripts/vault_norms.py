@@ -529,6 +529,8 @@ def _checks_estandar(flag, registrar=None) -> list:
 
 def vault_norms_audit(root=None):
     """Auditoria publica: runtime + los tres controles del estandar (TD-0003).
+    AP-70: detecta politicas de mutacion invalidas sin repararlas.
+
 
     La composicion vive aqui, no en el motor, porque `vault_mcp_catalog`,
     `vault_smoke` y `vault_voice` no viajan en la wheel de producto.

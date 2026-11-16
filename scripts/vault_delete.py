@@ -25,7 +25,7 @@ from vault_io import (
     actualizar_indices_de_dominio, assert_within_vault, atomic_write_json, atomic_write_text,
     refrescar_indice_de_seccion, refrescar_grafo,
     nota_no_se_borra,  # politica de no-borrado del vault
-    nota_es_inmutable,  # politica de inmutabilidad del vault
+    nota_es_inmutable, PoliticaInvalidaError,  # politica de inmutabilidad del vault
 )
 from vault_registry import es_artefacto_derivado
 from vault_move import notas_que_enlazan
@@ -145,6 +145,8 @@ def vault_delete(
     force: bool = False,
 ) -> Dict[str, Any]:
     """
+    AP-70: la politica invalida impide la mutacion gobernada.
+
     Delete a note with SP-01 enforcement.
 
     SP-01 (Delete protocol): antes de eliminar, debe existir una entrada en
@@ -185,14 +187,13 @@ def vault_delete(
     # integration`): una seccion declarada en `no_borrar` no se borra por
     # ninguna via. Persistir la regla no basta —un prompt no es una frontera
     # de permisos—, asi que la valla vive aqui, en la mutacion.
-    seccion_prohibida = nota_no_se_borra(note_path, vault_root)
-    if not seccion_prohibida:
-        # Una seccion declarada **inmutable** tampoco se borra ni se mueve:
-        # el historico no se retira. Mover a cuarentena es tambien una
-        # retirada (la nota sale de su sitio), asi que la valla cubre las dos.
-        seccion_inmutable = nota_es_inmutable(note_path, vault_root)
-        if seccion_inmutable:
-            seccion_prohibida = seccion_inmutable
+    # AP-70: una política ilegible impide decidir si el borrado está permitido.
+    try:
+        seccion_prohibida = nota_no_se_borra(note_path, vault_root)
+        if not seccion_prohibida:
+            seccion_prohibida = nota_es_inmutable(note_path, vault_root)
+    except PoliticaInvalidaError as exc:
+        return emit_error("vault_delete", "INVALID_INPUT", str(exc))
     if seccion_prohibida:
         return emit_error(
             "vault_delete", "DELETE_FORBIDDEN",

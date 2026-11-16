@@ -104,6 +104,22 @@ def auditar_runtime(
         )
 
     # ── AP-15 + CN-02: higiene de raíz ────────────────────────────────────────
+    # AP-70: detectar una politica invalida sin repararla ni inventar reglas.
+    from vault_io import PoliticaInvalidaError, claves_de_politica_ignoradas, reglas_declaradas
+    try:
+        reglas_declaradas(root)
+    except PoliticaInvalidaError as exc:
+        _flag("AP-70", "00_System", f"Politica de mutacion invalida: {exc}. Revisar con el propietario; no se repara automaticamente.")
+    else:
+        # A non-mandatory policy ignores keys it does not understand; say so,
+        # because a misspelt key imposes nothing. Advisory, not a blocker.
+        for ignorada in claves_de_politica_ignoradas(root):
+            violations.append({
+                "norm": "AP-70", "severity": "low", "path": ignorada.split(":", 1)[0],
+                "detail": f"Clave de politica ignorada ({ignorada}). Declarar \"obligatoria\": true "
+                          "hace que una clave desconocida detenga las mutaciones.",
+            })
+
     if registro_de_secciones_roto:
         _flag(
             "CN-02",

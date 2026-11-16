@@ -542,6 +542,39 @@ def _cuerpo_adapter(cliente: str, contexto: dict, reglas: dict) -> str:
     return "\n".join(lineas) + "\n"
 
 
+def _escribir_adapter(ruta, texto: str, force: bool) -> bool:
+    """Write one client adapter; False when an existing file is preserved.
+
+    Both paths go through the canonical atomic writer with the secret guard:
+    the adapter embeds vault preferences, which may carry a credential.
+    Without `force` the finished temporary file is published with a hard link,
+    which fails if anything (a file, a dangling symlink) already holds the
+    name, so an `exists()` check cannot race another writer. With `force` the
+    replacement is atomic: a reader sees the old or the new file.
+    """
+    import contextlib
+    import uuid as _uuid
+    from vault.kernel.escritura import escritura_atomica
+    from vault.kernel.fs import guarda_secretos
+
+    if force:
+        escritura_atomica(ruta, texto, guardas=(guarda_secretos,))
+        return True
+    if os.path.lexists(ruta):
+        return False
+    temporal = ruta.with_name(f".{ruta.name}.{_uuid.uuid4().hex[:8]}.adapter")
+    try:
+        escritura_atomica(temporal, texto, guardas=(guarda_secretos,))
+        try:
+            os.link(temporal, ruta)
+        except FileExistsError:
+            return False
+    finally:
+        with contextlib.suppress(OSError):
+            os.unlink(temporal)
+    return True
+
+
 def vault_preferences_adapters(destino: str, force: bool = False) -> dict:
     """Renderiza la política del vault en los ficheros que leen los clientes.
 
@@ -563,16 +596,24 @@ def vault_preferences_adapters(destino: str, force: bool = False) -> dict:
 
         reglas = reglas_declaradas()
     except Exception:
-        reglas = {"inmutable": [], "no_borrar": []}
+        return emit_error("vault_preferences", "INVALID_INPUT",
+                          "No se pudieron verificar las reglas del vault; no se generaron adaptadores.")
     filas = []
     for nombre, cliente in ADAPTADORES.items():
         ruta = base / nombre
-        if ruta.exists() and not force:
-            filas.append({"adapter": nombre, "estado": "existente (no se toca)"})
-            continue
-        ruta.parent.mkdir(parents=True, exist_ok=True)
-        ruta.write_text(_cuerpo_adapter(cliente, contexto, reglas), encoding="utf-8")
-        filas.append({"adapter": nombre, "estado": "escrito"})
+        try:
+            escrito = _escribir_adapter(ruta, _cuerpo_adapter(cliente, contexto, reglas), force)
+        except OSError as exc:
+            # Earlier adapters may already be written: say which, never ok.
+            from vault.kernel.fs import SecretoDetectado
+
+            codigo = "SECRET_DETECTED" if isinstance(exc, SecretoDetectado) else "FILE_WRITE_ERROR"
+            error = emit_error("vault_preferences", codigo,
+                               f"No se pudo escribir el adaptador {nombre}: {type(exc).__name__}")
+            error["adapters"] = filas + [{"adapter": nombre, "estado": "no escrito"}]
+            return error
+        filas.append({"adapter": nombre,
+                      "estado": "escrito" if escrito else "existente (no se toca)"})
     return {
         "ok": True,
         "tool": "vault_preferences",
@@ -664,6 +705,8 @@ Notas:
         )
     elif args.context:
         result = vault_preferences_context(max_items=args.max_items)
+    elif args.adapters:
+        result = vault_preferences_adapters(args.adapters, force=args.force)
     else:
         if not args.reason:
             parser.error("--revoke requiere --reason")

@@ -25,6 +25,7 @@ NORMA = {'code': 'AP-36',
                              'Contener la escritura no protege de un '
                              'invocador ilegítimo, y autenticarlo no '
                              'legitima una ruta fuera del vault.',
+                    'AP-70': 'AP-36 contiene los efectos dentro del vault; AP-70 impide mutar cuando la política existente no puede interpretarse.',
                     'AP-68': 'Los dos encierran al toolkit, pero cosas '
                              'distintas: AP-36 encierra **dónde** se '
                              'escribe lo que el toolkit produce —siempre '

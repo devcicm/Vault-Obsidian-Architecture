@@ -3235,15 +3235,18 @@ def blueprint() -> str:
         if registros:
             lineas += [
                 "",
-                "Histórico inmutable por defecto: "
+                "Secciones candidatas a historico inmutable: "
                 + ", ".join(f"`{s}`" for s in registros)
-                + ". Un vault **nace** con esta política declarada en "
-                "`00_System/inmutable.json` (la escribe `vault_init`): "
-                "modificar una nota de esas secciones es un error y se sigue "
-                "con una nota sucesora; **crear** una nota nueva ahí sí se "
-                "permite, porque el histórico crece. La política es del vault y "
-                "el dueño puede cambiarla: `vault_init` nunca pisa la que ya "
-                "estaba declarada.",
+                + ". Cada vault decide su politica mediante `00_System/inmutable.json` "
+                "y `00_System/reglas.json`; un vault nuevo no la declara por defecto. "
+                "En una seccion declarada, las notas existentes no se reescriben, "
+                "borran ni mueven; se pueden crear sucesoras. Los indices derivados "
+                "conservan su tratamiento propio. Una politica ausente no impone reglas; "
+                "una politica existente ilegible o invalida detiene las mutaciones "
+                "gobernadas hasta que se corrija. Una clave que el toolkit no reconoce "
+                "se ignora y la auditoria AP-70 la informa como aviso; si el fichero "
+                "declara `\"obligatoria\": true`, esa misma clave detiene las mutaciones "
+                "gobernadas.",
             ]
     except (ImportError, AttributeError):
         # Sin la clasificacion de secciones, el plano se publica sin la

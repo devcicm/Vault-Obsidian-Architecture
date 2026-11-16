@@ -8,15 +8,12 @@ las excepciones autorizadas.
 
 Lo que se entrega aquí:
 
-- **La política es del vault**, no del toolkit: `00_System/inmutable.json`
-  declara qué secciones son histórico inmutable. El fichero ausente o vacío
-  significa que nada es inmutable: la mecánica existe **sin cambiarle el
-  comportamiento a nadie**.
+- La politica es del vault y puede declarar secciones inmutables en
+  `00_System/inmutable.json`. Si falta el fichero, no impone restricciones.
 - **Modificar** una nota de una sección declarada es un error con código
   (`IMMUTABLE_NOTE`); **crear** una nota nueva ahí sí se permite: el
   histórico crece, no se reescribe.
-- Un fichero de política ilegible **no** convierte el vault en inmutable
-  entero: ante la duda no se bloquea a nadie.
+- Una politica existente e ilegible o invalida detiene la mutacion.
 
 Lo que NO se hace aquí (y por qué): elegir las secciones. El registro del
 estándar ya clasifica ocho secciones como `registro` —lo que ocurrió,
@@ -104,14 +101,16 @@ def test_una_seccion_no_declarada_se_puede_modificar(vault):
     assert res.get("ok"), res
 
 
-def test_un_fichero_de_politica_ilegible_no_convierte_en_todo_inmutable(vault):
-    """Ante la duda, no se bloquea a nadie."""
-    (vault / "00_System" / "inmutable.json").write_text("{esto no es json",
-                                                        encoding="utf-8")
-    assert vault_io.inmutables_declaradas(vault) == []
-    res = vault_write.vault_write(
-        folder="19_Audits", title="nota", tags=["prueba"], meta={"agent": "opencode"}, content=f"{LARGO}\nSe puede tocar.\n")
-    assert res.get("ok"), res
+def test_un_fichero_de_politica_ilegible_falla_cerrado(vault):
+    """Una politica existente corrupta no equivale a una politica ausente."""
+    (vault / "00_System" / "inmutable.json").write_text("{esto no es json", encoding="utf-8")
+    with pytest.raises(vault_io.PoliticaInvalidaError):
+        vault_io.inmutables_declaradas(vault)
+    with pytest.raises(vault_io.PoliticaInvalidaError):
+        vault_write.vault_write(
+            folder="19_Audits", title="nota", tags=["prueba"], meta={"agent": "opencode"},
+            content=f"{LARGO}\nNo se debe escribir.\n")
+
 
 
 def test_el_codigo_de_error_esta_en_el_catalogo():

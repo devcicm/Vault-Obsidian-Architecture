@@ -4042,7 +4042,7 @@ Lo ingerido entra con `status: draft` y `cia_integrity: low`, de modo que el rer
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **84 normas** del estándar (69 AP + 6 PAT + 4 SP + 5 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-69`. Fuente de verdad: `NORM_CATALOG` en `vault_norms_catalog.py` (`vault_norms.py` lo reexporta). Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **85 normas** del estándar (69 AP + 6 PAT + 4 SP + 5 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-69`. Fuente de verdad: `NORM_CATALOG` en `vault_norms_catalog.py` (`vault_norms.py` lo reexporta). Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -12388,3 +12388,8 @@ Antes de v29 el hardening de v27–v28 cubría los 12 scripts de _creación_ (va
 - Índice full-text `99_Index/search-index.json` con score ponderado (título×4, palabras, preview).
 - Grafo de wiki-links `99_Index/graph.json`.
 - Auto-session logging: `vaultAppendSessionEntry` al inicio y fin de cada turno.
+
+
+### AP-70 - Politica de mutacion ilegible o invalida
+
+Una politica existente que no se puede leer o interpretar no equivale a una politica ausente. Las operaciones gobernadas deben detenerse y exponer el error; la auditoria informa la incidencia sin inventar ni sobrescribir reglas. La reparacion requiere intervencion del propietario.

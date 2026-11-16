@@ -505,6 +505,7 @@ def _exigir_politica_de_inmutabilidad(path: Path) -> None:
         relativa = path.resolve().relative_to(Path(raiz).resolve()).as_posix()
     except (ValueError, OSError):
         return  # fuera del vault activo: lo decide la contención de rutas
+    reglas = reglas_declaradas(Path(raiz))
     if not path.exists():
         return  # crear no es reescribir
     from vault_registry import es_artefacto_derivado
@@ -512,7 +513,7 @@ def _exigir_politica_de_inmutabilidad(path: Path) -> None:
     if es_artefacto_derivado(relativa):
         return
     seccion = seccion_de(relativa)
-    if seccion and seccion in reglas_declaradas(Path(raiz))["inmutable"]:
+    if seccion and seccion in reglas["inmutable"]:
         raise NotaInmutableError(seccion, relativa)
 
 
@@ -634,23 +635,79 @@ _SECCIONES_CON_INDICE_PROPIO = frozenset({"00_System", "99_Index"})
 FICHERO_INMUTABILIDAD = "00_System/inmutable.json"
 
 
-def inmutables_declaradas(raiz: Optional[Path] = None) -> List[str]:
-    """Las secciones que este vault declara inmutables.
+class PoliticaInvalidaError(ValueError):
+    """Una politica existente no se puede leer o interpretar con seguridad."""
 
-    Lee `00_System/inmutable.json` (`{"secciones": ["19_Audits", ...]}`). Un
-    fichero ilegible se declara vacio, no «todo inmutable»: ante la duda no se
-    bloquea a nadie.
+    codigo = "INVALID_INPUT"
+
+
+#: A policy file that declares `"obligatoria": true` asks for strict reading:
+#: any key the toolkit does not understand then blocks governed mutations.
+#: Without it, unknown keys (comments, keys from a newer toolkit) are ignored
+#: and reported by the AP-70 audit, so existing vaults keep working (S4).
+CLAVE_OBLIGATORIA = "obligatoria"
+
+
+def _cargar_politica(fichero: Path) -> Optional[dict]:
+    """The parsed policy object; None when absent. Unreadable or invalid JSON blocks."""
+    # AP-70: fallo cerrado sin inventar una politica.
+    try:
+        contenido = fichero.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return None
+    except (OSError, UnicodeError) as exc:
+        raise PoliticaInvalidaError(f"No se puede leer la politica {fichero}: {exc}") from exc
+    try:
+        datos = json.loads(contenido)
+    except (ValueError, UnicodeError) as exc:
+        raise PoliticaInvalidaError(f"Politica invalida: {fichero}") from exc
+    if not isinstance(datos, dict):
+        raise PoliticaInvalidaError(f"La politica debe ser un objeto JSON: {fichero}")
+    if not isinstance(datos.get(CLAVE_OBLIGATORIA, False), bool):
+        raise PoliticaInvalidaError(f"`{CLAVE_OBLIGATORIA}` debe ser true o false en {fichero}")
+    return datos
+
+
+def _leer_politica(fichero: Path, claves: tuple, requeridas: tuple = ()) -> dict:
+    """Una politica existente invalida detiene la operacion."""
+    # AP-70: claves faltantes, o desconocidas en una politica obligatoria, bloquean.
+    datos = _cargar_politica(fichero)
+    if datos is None:
+        return {}  # An absent policy imposes nothing.
+    desconocidas = set(datos) - set(claves) - {CLAVE_OBLIGATORIA}
+    faltantes = set(requeridas) - set(datos)
+    if faltantes or (desconocidas and datos.get(CLAVE_OBLIGATORIA) is True):
+        raise PoliticaInvalidaError(
+            f"Claves de politica invalidas en {fichero}: desconocidas={sorted(desconocidas)}, faltantes={sorted(faltantes)}")
+    datos = {clave: valor for clave, valor in datos.items() if clave in claves}
+    for clave in claves:
+        if clave in datos and (not isinstance(datos[clave], list) or
+                               any(not isinstance(x, str) or not x.strip() for x in datos[clave])):
+            raise PoliticaInvalidaError(f"La politica {fichero} requiere una lista de secciones en {clave}")
+    return datos
+
+
+def claves_de_politica_ignoradas(raiz: Optional[Path] = None) -> List[str]:
+    """`<file>: <key>` for each key a non-mandatory policy declares but nobody reads.
+
+    Read-only; the AP-70 audit reports them so an owner notices a typo such as
+    `no_borar` that would otherwise silently impose nothing.
     """
     base = Path(raiz) if raiz is not None else _raiz.get_vault_root()
-    fichero = base / FICHERO_INMUTABILIDAD
-    try:
-        datos = json.loads(fichero.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return []
-    secciones = datos.get("secciones") if isinstance(datos, dict) else None
-    if not isinstance(secciones, list):
-        return []
-    return [str(s).strip() for s in secciones if str(s).strip()]
+    ignoradas: List[str] = []
+    for relativa, claves in ((FICHERO_INMUTABILIDAD, ("secciones",)),
+                             (FICHERO_REGLAS, CLAVES_DE_REGLAS)):
+        datos = _cargar_politica(base / relativa) or {}
+        for clave in sorted(set(datos) - set(claves) - {CLAVE_OBLIGATORIA}):
+            ignoradas.append(f"{relativa}: {clave}")
+    return ignoradas
+
+
+def inmutables_declaradas(raiz: Optional[Path] = None) -> List[str]:
+    """La politica ausente no impone restricciones; una invalida detiene la operacion."""
+    base = Path(raiz) if raiz is not None else _raiz.get_vault_root()
+    datos = _leer_politica(base / FICHERO_INMUTABILIDAD, ("secciones",), ("secciones",))
+    return [s.strip() for s in datos.get("secciones", [])]
 
 
 def seccion_de(relative: str) -> str:
@@ -666,25 +723,22 @@ def seccion_de(relative: str) -> str:
 #: esta publicado— y aqui se admite tambien como `"inmutable"`.
 FICHERO_REGLAS = "00_System/reglas.json"
 
+#: Las claves de `reglas.json` que alguien lee.
+CLAVES_DE_REGLAS = ("inmutable", "secciones", "no_borrar")
+
 
 def reglas_declaradas(raiz: Optional[Path] = None) -> Dict[str, List[str]]:
     """Las reglas de mutacion que declara este vault.
 
     Devuelve `{"inmutable": [...], "no_borrar": [...]}`. `inmutable` es la
     union de `inmutable.json` (lo que ya estaba publicado) y de `reglas.json`;
-    `no_borrar` solo puede venir de `reglas.json`. Un fichero ausente o
-    ilegible **no** convierte el vault en inmutable ni en intocable: ante la
-    duda no se bloquea a nadie, y se dice por que con una lista vacia.
+    `no_borrar` solo puede venir de `reglas.json`. Un fichero ausente no
+    impone reglas; uno ilegible o invalido detiene la operacion.
     """
     base = Path(raiz) if raiz is not None else _raiz.get_vault_root()
     inmutables = list(inmutables_declaradas(base))
     no_borrar: List[str] = []
-    try:
-        datos = json.loads((base / FICHERO_REGLAS).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {"inmutable": inmutables, "no_borrar": []}
-    if not isinstance(datos, dict):
-        return {"inmutable": inmutables, "no_borrar": []}
+    datos = _leer_politica(base / FICHERO_REGLAS, CLAVES_DE_REGLAS)
     for clave in ("inmutable", "secciones"):
         for s in (datos.get(clave) or []) if isinstance(datos.get(clave), list) else []:
             if str(s).strip() and str(s).strip() not in inmutables:
@@ -721,7 +775,7 @@ def nota_es_inmutable(nota: Path, raiz: Optional[Path] = None) -> Optional[str]:
     except ValueError:
         return None
     seccion = seccion_de(relativa)
-    if seccion and seccion in inmutables_declaradas(base):
+    if seccion and seccion in reglas_declaradas(base)["inmutable"]:
         return seccion
     return None
 

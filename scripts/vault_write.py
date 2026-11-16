@@ -897,6 +897,8 @@ def vault_write(
     meta: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
+    AP-70: la politica invalida impide la mutacion gobernada.
+
 
     Create or update a note in the vault.
 
@@ -1399,6 +1401,7 @@ def vault_write(
             guardar_version_actual(vault_path)
 
         try:
+            # AP-70: la escritura común rechaza una política existente inválida.
             atomic_write_text(vault_path, final_content)
         except NotaInmutableError as exc:
             # El veto lo pone el dueno de la escritura; aqui solo se traduce

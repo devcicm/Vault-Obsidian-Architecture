@@ -29,7 +29,7 @@ from vault_errors import emit_error, fuera_de_sesion, mensaje_de, wrap_main
 from vault_io import (
     assert_within_vault, atomic_write_text, file_lock, is_snapshot_path,
     actualizar_indices_de_dominio, refrescar_grafo, refrescar_indice_de_seccion,
-    tomar_lock, write_report,
+    tomar_lock, write_report, PoliticaInvalidaError, nota_es_inmutable,
     NotaInmutableError,  # el veto del dueño de la escritura
 )
 from vault_lib import indice_de_nombres, resolver_wikilink, utcnow
@@ -455,6 +455,8 @@ def move_note(
     note_type: Optional[str] = None, refrescar_secciones: bool = True,
 ) -> Dict[str, Any]:
     """Mueve una nota a una nueva ubicación; con `note_type`, la reclasifica.
+    AP-70: la politica invalida impide la mutacion gobernada.
+
 
     `refrescar_secciones=False` lo pasa `move_folder`, que rehace los índices
     de sección una sola vez al final: nota a nota, el índice de la carpeta de
@@ -465,6 +467,14 @@ def move_note(
         return rechazo
     source = _raiz() / from_path
     destination = _raiz() / to_path
+
+    # AP-70: validar la política antes de mover la nota.
+    try:
+        seccion = nota_es_inmutable(source, _raiz())
+    except PoliticaInvalidaError as exc:
+        return emit_error("vault_move", "INVALID_INPUT", str(exc))
+    if seccion:
+        return emit_error("vault_move", "IMMUTABLE_NOTE", f"La seccion '{seccion}' es inmutable: no se mueve {from_path}.")
 
     if not source.exists():
         return emit_error("vault_move", "FILE_NOT_FOUND", f"Archivo no encontrado: {from_path}")
@@ -552,6 +562,8 @@ def _mover_nota(
     links_updated = 0
     files_checked = 0
     links_pending: List[str] = []
+    fallos_enlaces: List[str] = []
+    links_bloqueados: List[str] = []
     links_ambiguous: List[str] = []
 
     for md in notas:
@@ -572,11 +584,17 @@ def _mover_nota(
             continue
         nota_lock = tomar_lock(md, _LOCK_TIMEOUT)
         if nota_lock is None:
-            links_pending.append(md.relative_to(_raiz()).as_posix())
+            rel = md.relative_to(_raiz()).as_posix()
+            links_pending.append(rel)
+            links_bloqueados.append(rel)
             continue
         with nota_lock:
             result = update_wiki_links_in_file(md, old_rel, new_rel, indice, dry_run=False)
-        if result.get("links_changed"):
+        if result.get("ok") is False:
+            rel = md.relative_to(_raiz()).as_posix()
+            links_pending.append(rel)
+            fallos_enlaces.append(f"links: {rel}: {result.get('error_code', 'error al actualizar')}; enlace pendiente")
+        elif result.get("links_changed"):
             links_updated += 1
 
     # A partir del shutil.move el movimiento ya es un hecho en disco. Si la
@@ -585,8 +603,8 @@ def _mover_nota(
     # cuando sí lo hizo. Se degrada a aviso y se pide el reindex.
     degraded: List[str] = [
         f"links: {rel} tenía el lock tomado; su enlace sigue apuntando a {old_stem}"
-        for rel in links_pending
-    ]
+        for rel in links_bloqueados
+    ] + fallos_enlaces
 
     def _safe(nombre: str, fn) -> Dict[str, Any]:
         try:
@@ -651,7 +669,8 @@ def _mover_nota(
         # reescribe porque elegir sería inventar la identidad (AP-17).
         "links_ambiguous": links_ambiguous,
         "degraded": degraded,
-        "next": "vault_reindex --graph" if degraded else None,
+        "next": ("Revisar links_pending y resolver los enlaces sin vulnerar la politica; despues ejecutar vault_reindex --graph"
+                 if links_pending else "vault_reindex --graph" if degraded else None),
         "record": move_record,
     }
 
@@ -694,6 +713,14 @@ def move_folder(
         return rechazo
     source = _raiz() / from_folder
     destination = _raiz() / to_folder
+
+    # AP-70: validar la política antes de mover la carpeta.
+    try:
+        seccion = nota_es_inmutable(source, _raiz())
+    except PoliticaInvalidaError as exc:
+        return emit_error("vault_move", "INVALID_INPUT", str(exc))
+    if seccion:
+        return emit_error("vault_move", "IMMUTABLE_NOTE", f"La seccion '{seccion}' es inmutable: no se mueve {from_folder}.")
 
     if not source.exists():
         return emit_error("vault_move", "FOLDER_NOT_FOUND", f"Carpeta no encontrada: {from_folder}")

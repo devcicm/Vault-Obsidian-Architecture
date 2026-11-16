@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-69 más
-> las familias PAT, SP y CN. Por familia: AP 69, CN 5, PAT 6, SP 4.
-> Bilingual document. Full norm catalog: antipatterns AP-01..AP-69 plus the PAT,
-> SP and CN families. By family: AP 69, CN 5, PAT 6, SP 4.
+> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-70 más
+> las familias PAT, SP y CN. Por familia: AP 70, CN 5, PAT 6, SP 4.
+> Bilingual document. Full norm catalog: antipatterns AP-01..AP-70 plus the PAT,
+> SP and CN families. By family: AP 70, CN 5, PAT 6, SP 4.
 
 ---
 
 ## ES
 
-Total de normas registradas: 84 (AP 69, CN 5, PAT 6, SP 4)
+Total de normas registradas: 85 (AP 70, CN 5, PAT 6, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -827,6 +827,16 @@ Es AP-57 dentro de la suite: el criterio de cómo se lanza una tool o cómo se e
 
 Límites declarados: no ve un lanzador que no pase `sys.executable` (el binario `vault`, `node`), ni un texto armado con `join` a trozos; `normas/*/test_*.py` queda fuera porque corre sin el conftest de `tests/` y sí necesita su propio path. Y verde no dice que la suite sea rápida: eso lo mide `perfil_suite`, por módulo.
 
+### AP-70: Politica de mutacion ilegible o invalida
+
+- **Severidad:** critical
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_norms
+
+Una politica de mutacion existente invalida o ilegible no puede tratarse como ausencia de restricciones.
+
+**Prevención:** Detener las mutaciones gobernadas, informar al propietario y conservar el archivo; una politica ausente sigue sin imponer reglas.
+
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
 - **Severidad:** high
@@ -981,7 +991,7 @@ El transporte HTTP/SSE del servidor MCP acepta sesiones sin token, responde con 
 
 ## EN
 
-Total registered norms: 84 (AP 69, CN 5, PAT 6, SP 4)
+Total registered norms: 85 (AP 70, CN 5, PAT 6, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -1798,6 +1808,16 @@ Es AP-57 dentro de la suite: el criterio de cómo se lanza una tool o cómo se e
 **Prevention:** `vault_tests_higiene --check --strict` recorre por AST los `tests/test_*.py` y publica cada sitio de esas seis clases con su firma de sitio; la baseline solo encoge y congelar deuda nueva exige `--freeze --admitir-nuevos`, que la lista. Cada clase publica su sustituto: `tests/apoyo.py` (`correr_tool`, `entorno`, `nota`, `escribir_nota`, `ROOT`, `SCRIPTS`), el conftest para el path, `capsys` para la salida y esperar a la condición en vez de dormir.
 
 Límites declarados: no ve un lanzador que no pase `sys.executable` (el binario `vault`, `node`), ni un texto armado con `join` a trozos; `normas/*/test_*.py` queda fuera porque corre sin el conftest de `tests/` y sí necesita su propio path. Y verde no dice que la suite sea rápida: eso lo mide `perfil_suite`, por módulo.
+
+### AP-70: Politica de mutacion ilegible o invalida
+
+- **Severity:** critical
+- **Enforcement:** guard+audit
+- **Detected by:** vault_norms
+
+Una politica de mutacion existente invalida o ilegible no puede tratarse como ausencia de restricciones.
+
+**Prevention:** Detener las mutaciones gobernadas, informar al propietario y conservar el archivo; una politica ausente sigue sin imponer reglas.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
