@@ -30,6 +30,10 @@ Usage:
 """
 
 import argparse
+from contextlib import ExitStack
+from contextvars import ContextVar
+from collections.abc import MutableSequence
+from functools import wraps
 import json
 import os
 import re
@@ -48,10 +52,10 @@ from vault_io import (
     assert_within_vault,
     atomic_write_text,
     escrituras_en_lote,
+    file_lock,
     is_snapshot_path,
     normalize_stem,
     NotaInmutableError,  # el veto del dueno de la escritura
-NotaInmutableError,  # el veto del dueno de la escritura
 )
 from vault_norms_catalog import compute_norm_refs
 from vault.kernel import procesos_git
@@ -261,7 +265,41 @@ SECCIONES_OMITIBLES = (
 )
 
 
-_DETECCION_DEGRADADA: List[Dict[str, str]] = []
+class _ListaContextual(MutableSequence):
+    """Lista compatible con helpers existentes, aislada por contexto de ejecucion."""
+    def __init__(self, nombre):
+        self._variable = ContextVar(nombre, default=None)
+
+    def _lista(self):
+        valor = self._variable.get()
+        if valor is None:
+            valor = []
+            self._variable.set(valor)
+        return valor
+
+    def __getitem__(self, indice):
+        return self._lista()[indice]
+
+    def __setitem__(self, indice, valor):
+        self._lista()[indice] = valor
+
+    def __delitem__(self, indice):
+        del self._lista()[indice]
+
+    def __len__(self):
+        return len(self._lista())
+
+    def insert(self, indice, valor):
+        self._lista().insert(indice, valor)
+
+    def iniciar(self):
+        return self._variable.set([])
+
+    def restaurar(self, token):
+        self._variable.reset(token)
+
+
+_DETECCION_DEGRADADA = _ListaContextual("degradacion_onboard")
 
 
 def _registrar_degradacion(paso: str, exc: BaseException) -> None:
@@ -842,7 +880,7 @@ def _read_csproj(project_path: Path) -> Dict[str, Any]:
 #: cosa. Es el caso real de BuilderX, cuyo repositorio contiene en la raíz una
 #: copia del README del estándar: 8 conceptos correctos sobre el proyecto
 #: equivocado, que es la clase de error que nadie revisa porque parece contenido.
-_README_H1: List[str] = []
+_README_H1 = _ListaContextual("readme_onboard")
 
 
 def _read_readme(project_path: Path) -> Tuple[str, List[str]]:
@@ -1075,6 +1113,14 @@ def _verificar_releyendo(vault_path: Path) -> None:
         raise ValueError(f"{vault_path.name}: frontmatter sin {faltan}")
 
 
+class _OnboardNotaBloqueada(Exception):
+    """No se obtuvo el lock de la nota durante el onboarding."""
+
+    def __init__(self, path: Path):
+        self.path = path
+        super().__init__(str(path))
+
+
 def _merge_stub(vault_path: Path, new_content: str, dry_run: bool) -> str:
     """
     Create the file if missing. If it exists, append only missing ## sections.
@@ -1089,6 +1135,21 @@ def _merge_stub(vault_path: Path, new_content: str, dry_run: bool) -> str:
     """
     if dry_run:
         return "dry_run"
+
+    # La escritura atómica no protege la lectura ni el cálculo del merge.
+    # Mantener el mismo lock por nota durante toda la secuencia evita que dos
+    # procesos de onboarding publiquen fusiones basadas en una copia obsoleta.
+    assert_within_vault(vault_path, _raiz())
+    with ExitStack() as stack:
+        try:
+            stack.enter_context(file_lock(vault_path, timeout=30.0))
+        except TimeoutError as exc:
+            raise _OnboardNotaBloqueada(vault_path) from exc
+        return _merge_stub_bajo_lock(vault_path, new_content)
+
+
+def _merge_stub_bajo_lock(vault_path: Path, new_content: str) -> str:
+    """Fusiona una nota mientras el llamante mantiene el lock por archivo."""
 
     vault_path.parent.mkdir(parents=True, exist_ok=True)
     assert_within_vault(vault_path, _raiz())
@@ -1117,13 +1178,12 @@ def _merge_stub(vault_path: Path, new_content: str, dry_run: bool) -> str:
         # `title:` sin citar que rompe el YAML), lo curamos ahora. Sin este
         # camino, un vault v34–v40 nunca recibe la migración del contrato
         # v41 porque el skip ocurre antes de tocar la nota.
-        if not dry_run:
-            existing_healed = _rellenar_frontmatter_legacy(existing)
-            if existing_healed != existing:
-                try:
-                    atomic_write_text(vault_path, existing_healed)
-                except NotaInmutableError:
-                    return "omitida_por_politica"
+        existing_healed = _rellenar_frontmatter_legacy(existing)
+        if existing_healed != existing:
+            try:
+                atomic_write_text(vault_path, existing_healed)
+            except NotaInmutableError:
+                return "omitida_por_politica"
         return "skipped"
 
     # Fusión cross-version: si el frontmatter existente no parsea o le faltan
@@ -1246,7 +1306,33 @@ def _intentar_citar_title(bloque: str):
 #: **nombre** del proyecto y su commit: una ruta absoluta de la máquina del
 #: dueño en una nota es el residuo que la auditoría de privacidad quitó del
 #: repo, y aquí no volvería.
-_CONTEXTO_ONBOARD: Dict[str, Any] = {}
+_CONTEXTO_ONBOARD: ContextVar[Optional[Dict[str, Any]]] = ContextVar(
+    "contexto_onboard", default=None)
+
+
+def _aislar_contexto(funcion):
+    """Cada llamada conserva su procedencia y restaura el contexto incluso si falla."""
+    @wraps(funcion)
+    def ejecutar(*args, **kwargs):
+        token = _CONTEXTO_ONBOARD.set({})
+        listas = (_DETECCION_DEGRADADA, _README_H1, _OMITIDAS_POR_POLITICA, _SIN_EVIDENCIA)
+        tokens = [(lista, lista.iniciar()) for lista in listas]
+        try:
+            return funcion(*args, **kwargs)
+        except _OnboardNotaBloqueada as exc:
+            resultado = emit_error(
+                "vault_onboard", "NOTE_LOCKED",
+                "No se obtuvo el lock de una nota; pueden existir cambios previos del onboarding.",
+                pista="Revisar los cambios anteriores y reintentar cuando la nota esté disponible.",
+            )
+            resultado["partial_changes_possible"] = True
+            resultado["blocked_path"] = exc.path.relative_to(_raiz()).as_posix()
+            return resultado
+        finally:
+            for lista, estado in reversed(tokens):
+                lista.restaurar(estado)
+            _CONTEXTO_ONBOARD.reset(token)
+    return ejecutar
 
 
 def _make_frontmatter(
@@ -1269,7 +1355,7 @@ def _make_frontmatter(
     # absoluta**: el proyecto se nombra, no se maquina —una ruta de la máquina
     # del dueño en una nota es la clase de residuo que la auditoría de
     # privacidad quitó del repo.
-    contexto = _CONTEXTO_ONBOARD
+    contexto = _CONTEXTO_ONBOARD.get() or {}
     procedencia = "onboarding"
     if contexto.get("proyecto"):
         sha = contexto.get("sha") or "sin commit"
@@ -1306,13 +1392,13 @@ def _make_frontmatter(
 #: inmutable (la politica del vault). Se declaran: una omision por politica
 #: es informacion, y el historico sigue intacto. Medido el 2026-11-09 en una
 #: revision independiente: aqui se modificaba una nota declarada inmutable.
-_OMITIDAS_POR_POLITICA: List[Dict[str, Any]] = []
+_OMITIDAS_POR_POLITICA = _ListaContextual("omitidas_onboard")
 
 
 #: Notas que el onboard no escribió por falta de evidencia (AP-45). Se vacía al
 #: principio de cada `vault_onboard()` y sale en `warnings` y `next_steps`: el
 #: hueco declarado es información; el stub que lo tapa es desinformación.
-_SIN_EVIDENCIA: List[Dict[str, str]] = []
+_SIN_EVIDENCIA = _ListaContextual("sin_evidencia_onboard")
 
 
 def _tiene_evidencia(body: str) -> bool:
@@ -1430,7 +1516,8 @@ def _write(
     # No escribirlas no pierde información: la pierde escribirlas, porque una
     # sección vacía invita a llenarla y una llena de stubs declara que ya está.
     if not _tiene_evidencia(body):
-        _SIN_EVIDENCIA.append({"path": rel, "title": title})
+        _SIN_EVIDENCIA.append({"path": rel, "title": title,
+                               "reason": "el contenido no contiene evidencia suficiente"})
         return rel, "skipped_no_evidence"
 
     content = body
@@ -1725,6 +1812,8 @@ def _onboard_02_observability(
                             "text": m.group(2).strip()[:100],
                         }
                     )
+        except _OnboardNotaBloqueada:
+            raise
         except Exception as exc:
             emit_error("vault_onboard", "OBSERVABILITY_SCAN_ERROR", str(exc))
 
@@ -1965,6 +2054,8 @@ Revisar el archivo y extraer ADRs individuales con vault_write.
                 )
             )
             adr_counter[0] += 1
+        except _OnboardNotaBloqueada:
+            raise
         except Exception as exc:
             emit_error("vault_onboard", "DECISION_CREATE_ERROR", str(exc))
 
@@ -2408,6 +2499,8 @@ python scripts/vault_runbook_save.py --project {project} \\
                         dry_run,
                     )
                 )
+        except _OnboardNotaBloqueada:
+            raise
         except Exception as exc:
             emit_error("vault_onboard", "RUNBOOK_CREATE_ERROR", str(exc))
 
@@ -2563,6 +2656,8 @@ python scripts/vault_flow_save.py --project {project} \\
                     dry_run,
                 )
             )
+        except _OnboardNotaBloqueada:
+            raise
         except Exception as exc:
             emit_error("vault_onboard", "FLOW_CREATE_ERROR", str(exc))
     return results
@@ -2638,6 +2733,8 @@ python scripts/vault_requirement_save.py --project {project} \\
                                 dry_run,
                             )
                         )
+        except _OnboardNotaBloqueada:
+            raise
         except Exception as exc:
             emit_error("vault_onboard", "REQUIREMENT_CREATE_ERROR", str(exc))
 
@@ -2857,6 +2954,7 @@ def _update_indexes(sections: List[str], dry_run: bool) -> List[str]:
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 
+@_aislar_contexto
 def vault_onboard(
     project: str,
     path: str,
@@ -2880,14 +2978,16 @@ def vault_onboard(
 
     skip = set(skip or [])
     warnings: List[str] = []
-    _CONTEXTO_ONBOARD.clear()
-    _CONTEXTO_ONBOARD["proyecto"] = project
+    contexto = _CONTEXTO_ONBOARD.get()
+    assert contexto is not None
+    contexto["proyecto"] = project
     sha = _run_git(project_path, ["rev-parse", "--short", "HEAD"]) if not no_git else None
-    _CONTEXTO_ONBOARD["sha"] = (sha or "").strip() or "sin commit"
+    contexto["sha"] = (sha or "").strip() or "sin commit"
     _SIN_EVIDENCIA.clear()
     _OMITIDAS_POR_POLITICA.clear()
     _DETECCION_DEGRADADA.clear()  # por onboarding, no por proceso
     created: Dict[str, Any] = {}
+    acciones_por_seccion: Dict[str, List[str]] = {}
     merge_stats = {"created": 0, "merged": 0, "skipped": 0, "dry_run": 0}
 
     def _record(pairs: List[Tuple[str, str]], key: str) -> None:
@@ -2895,6 +2995,8 @@ def vault_onboard(
         for rel, action in pairs:
             merge_stats[action] = merge_stats.get(action, 0) + 1
             paths.append(rel)
+            seccion = rel.replace("\\", "/").split("/", 1)[0]
+            acciones_por_seccion.setdefault(seccion, []).append(action)
         if paths:
             if key in created and isinstance(created[key], list):
                 created[key].extend(paths)
@@ -3098,6 +3200,28 @@ def vault_onboard(
                 "correr `vault_tags --backfill-ledger` a mano (AP-39)."
             )
 
+    informe_secciones = {}
+    for seccion in ORDERED_SECTIONS:
+        acciones = acciones_por_seccion.get(seccion, [])
+        if seccion[:2] in skip:
+            estado, motivo = "skipped", "Sección omitida por selección explícita."
+        elif seccion in _SECCIONES_NO_POBLADAS:
+            estado, motivo = "by_design", _SECCIONES_NO_POBLADAS[seccion]
+        elif any(a in ("created", "merged", "skipped", "dry_run") for a in acciones):
+            estado = "planned" if dry_run else "processed"
+            motivo = ("Se planificaron notas; no se escribió por dry-run." if dry_run
+                      else "La estrategia procesó notas de esta sección.")
+        elif "omitida_por_politica" in acciones:
+            estado, motivo = "policy", "La política impidió modificar notas existentes."
+        else:
+            estado = "no_notes"
+            motivo = ("La estrategia no produjo notas; consulte las omisiones y "
+                      "los pasos degradados antes de concluir que falta evidencia.")
+        omisiones_politica = [item["path"] for item in _OMITIDAS_POR_POLITICA
+                              if item["path"].split("/", 1)[0] == seccion]
+        informe_secciones[seccion] = {"status": estado, "reason": motivo,
+                                      "policy_omissions": omisiones_politica}
+
     return {
         "ok": True,
         "project": project,
@@ -3144,6 +3268,7 @@ def vault_onboard(
         # eventos. Poblarlas en el arranque sería inventar bugs, auditorías y
         # cuarentenas que no han ocurrido — exactamente AP-45.
         "sections_left_empty_by_design": dict(_SECCIONES_NO_POBLADAS),
+        "sections_report": informe_secciones,
         # Pasos de detección que fallaron: la diferencia entre «el proyecto no
         # tiene esto» y «no pude leerlo». Ver `_registrar_degradacion`.
         "degraded": list(_DETECCION_DEGRADADA),
@@ -3174,6 +3299,9 @@ Ejemplos:
   python vault_onboard.py --project my-api --path . --lang typescript --dry-run
   python vault_onboard.py --project my-api --path . --skip 02 05 13
   python vault_onboard.py --project my-api --path . --no-git --git-phases 6
+
+El resultado JSON incluye sections_report: estado y motivo por sección,
+incluidas las omisiones por política y las secciones sin notas producidas.
 """,
         allow_abbrev=False,
     )

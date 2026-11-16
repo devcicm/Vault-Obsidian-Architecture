@@ -20,7 +20,8 @@ Dos decisiones que explican el resto:
     estuviera completa. Lo que no cabe se reporta en `excluded` con su motivo.
   - **Las preferencias `must` entran siempre**, antes que cualquier resultado.
     Si el presupuesto obliga a elegir entre saber más del tema y saber qué le
-    prohibió el usuario al agente, gana lo segundo.
+    prohibió el usuario al agente, gana lo segundo. Si no caben íntegras con
+    la cabecera, se devuelve INVALID_BUDGET sin entregar contexto parcial.
 
 Usage:
     python vault_context_pack.py "que decidimos sobre el transporte MCP"
@@ -472,6 +473,13 @@ Recupera, rerankea y empaqueta el contexto para responder `query`."""
         lines += [f"- **{p['title']}** ({p['category']}): {p['statement']}"
                   for p in preferences]
         block = "\n".join(lines)
+        minimo = estimate_tokens(header + "\n\n" + block)
+        if minimo > budget_tokens:
+            return emit_error(
+                "vault_context_pack", "INVALID_BUDGET",
+                f"Las preferencias obligatorias requieren al menos {minimo} "
+                f"tokens con la cabecera; presupuesto recibido: {budget_tokens}.",
+            )
         cost = estimate_tokens(block) + SEPARATOR_TOKENS
         blocks.append(block)
         used += cost
@@ -574,7 +582,8 @@ Ejemplos:
 Notas:
   - Encadena vault_query_parse -> vault_search -> vault_subgraph -> rerank
   - El presupuesto recorta notas enteras: nunca entrega media nota como entera
-  - Las preferencias 'must' entran siempre primero (--no-preferences las omite)
+  - Las preferencias 'must' entran siempre primero (--no-preferences las omite);
+    si no caben íntegras con la cabecera, devuelve INVALID_BUDGET
   - `excluded` dice que se dejo fuera y por que: el recorte es auditable
 """,
         allow_abbrev=False,

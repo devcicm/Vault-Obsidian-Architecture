@@ -350,7 +350,6 @@
     "lanzador_privado::test_vault_model_profile.py::TestCLIModes.test_window_flag_prints_context_window::2a6af8b7",
     "lanzador_privado::test_vault_move.py::_mover::6d35e235",
     "lanzador_privado::test_vault_move.py::test_el_enlace_anclado_a_carpeta_se_reescribe_tambien_en_windows::48e1f3e0",
-    "lanzador_privado::test_vault_onboard.py::vault::7da76b1c",
     "lanzador_privado::test_vault_project.py::_ejecutar::b447cc61",
     "lanzador_privado::test_vault_project.py::test_las_acciones_son_excluyentes::dbb7f59f",
     "lanzador_privado::test_vault_section.py::_ejecutar::cfec106b",

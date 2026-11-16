@@ -25,6 +25,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from apoyo import correr_python
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -107,10 +108,8 @@ def vault(tmp_path_factory, proyecto):
         "PYTHONIOENCODING": "utf-8",
         "VAULT_TOOL_TIMEOUT": "600",
     }
-    subprocess.run(
-        [sys.executable, str(SCRIPTS / "vault_init.py")],
-        env=env, capture_output=True, timeout=600,
-    )
+    correr_python(str(SCRIPTS / "vault_init.py"), env=env,
+                  modo="bytes", timeout=600)
     r = vault_subproceso.ejecutar(
         [
             sys.executable, str(SCRIPTS / "vault_onboard.py"),
@@ -131,6 +130,31 @@ def _correr(script, vault_root, *args):
         capture_output=True, timeout=600,
     )
     return json.loads(r.stdout)
+
+
+def test_onboarding_mixto_preserva_nota_y_busca_contenido_generado(tmp_path, proyecto):
+    root = tmp_path / "mixed-vault"
+    root.mkdir()
+    env = {**os.environ, "VAULT_ROOT": str(root), "PYTHONIOENCODING": "utf-8",
+           "VAULT_TOOL_TIMEOUT": "600"}
+    inicializado = correr_python(str(SCRIPTS / "vault_init.py"), env=env,
+                                 modo="bytes", timeout=600)
+    assert inicializado.returncode == 0
+    manual = root / "07_Knowledge" / "manual-evidence.md"
+    manual.parent.mkdir(parents=True, exist_ok=True)
+    manual.write_text("---\ntitle: zxqmanualevidence\ntype: note\nstatus: draft\n---\n\n"
+                      "Contenido manual conservado.\n", encoding="utf-8")
+    before = manual.read_bytes()
+    result = vault_subproceso.ejecutar(
+        [sys.executable, str(SCRIPTS / "vault_onboard.py"), "--project", "demo-api", "--path", str(proyecto)],
+        env=env, capture_output=True, timeout=600)
+    report = json.loads(result.stdout)
+    assert report.get("ok"), report
+    assert manual.read_bytes() == before
+    manual_results = _correr("vault_search.py", root, "--query", "zxqmanualevidence")
+    assert any(hit["path"] == "07_Knowledge/manual-evidence.md" for hit in manual_results["results"])
+    generated_results = _correr("vault_search.py", root, "--query", "userService")
+    assert any(hit["path"].startswith("11_Code/") for hit in generated_results["results"])
 
 
 # ── El criterio de aceptación ────────────────────────────────────────────────

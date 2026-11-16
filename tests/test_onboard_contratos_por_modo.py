@@ -124,3 +124,66 @@ def test_repetir_no_duplica_nada(vault, proyecto):
     assert primera == segunda, "la segunda corrida cambio la nota"
     assert res["merge_stats"]["created"] == 0, res["merge_stats"]
     assert primera.count("# core -- Module") == 1
+
+
+def test_dry_run_declara_secciones_planificadas_y_excluidas(vault, proyecto):
+    resultado = _onboard(proyecto, dry_run=True)
+    assert resultado["ok"], resultado
+    excluidas = resultado["sections_left_empty_by_design"]
+    assert set(excluidas).issubset(set(vault_onboard.ORDERED_SECTIONS))
+    indices = set(resultado["created"].get("indexes_updated", []))
+    previstas = {f"{s}/index.md" for s in vault_onboard.ORDERED_SECTIONS if s not in excluidas}
+    assert indices == previstas
+    assert not list(vault.rglob("*.md")), "dry-run escribio notas"
+
+
+def test_fallo_de_reindex_declara_advertencia_y_conserva_notas(vault, proyecto, monkeypatch):
+    import vault_reindex
+    def fallo():
+        raise OSError("fallo de reindex simulado")
+    monkeypatch.setattr(vault_reindex, "vault_reindex", fallo)
+    resultado = _onboard(proyecto)
+    assert resultado["ok"], resultado
+    assert any("search-index no reconstruido" in aviso for aviso in resultado["warnings"]), resultado
+    assert (vault / "11_Code" / "demo" / "core.md").is_file()
+
+
+def test_contexto_de_onboarding_concurrente_no_se_mezcla(vault, tmp_path, monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    barrera = Barrier(2)
+    observaciones = {}
+    class Terminar(RuntimeError):
+        pass
+    def detectar(raiz, _idioma):
+        listas = (vault_onboard._README_H1, vault_onboard._SIN_EVIDENCIA,
+                  vault_onboard._OMITIDAS_POR_POLITICA, vault_onboard._DETECCION_DEGRADADA)
+        for lista in listas:
+            lista.append(raiz.name)
+        barrera.wait(timeout=10)
+        observaciones[raiz.name] = ((vault_onboard._CONTEXTO_ONBOARD.get() or {}).get("proyecto"),
+                                    tuple(tuple(lista) for lista in listas))
+        raise Terminar()
+    monkeypatch.setattr(vault_onboard, "_detect_project_meta", detectar)
+    proyectos = [tmp_path / "proyecto-uno", tmp_path / "proyecto-dos"]
+    for proyecto in proyectos:
+        proyecto.mkdir()
+    def ejecutar(proyecto):
+        try:
+            vault_onboard.vault_onboard(project=proyecto.name, path=str(proyecto),
+                                        no_git=True, dry_run=True)
+        except Terminar:
+            pass
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        list(pool.map(ejecutar, proyectos))
+    assert observaciones == {p.name: (p.name, ((p.name,),) * 4) for p in proyectos}
+
+
+def test_contexto_de_onboarding_se_restaurara_tras_error(vault, proyecto, monkeypatch):
+    def fallar(*args, **kwargs):
+        raise RuntimeError("simulado")
+    monkeypatch.setattr(vault_onboard, "_detect_project_meta", fallar)
+    antes = vault_onboard._CONTEXTO_ONBOARD.get()
+    with pytest.raises(RuntimeError, match="simulado"):
+        _onboard(proyecto, dry_run=True)
+    assert vault_onboard._CONTEXTO_ONBOARD.get() is antes

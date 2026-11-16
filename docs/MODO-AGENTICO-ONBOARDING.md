@@ -11,6 +11,22 @@ se aplica, y las decisiones que ninguna tool puede tomar sola.
 Contraparte de [`MODO-AGENTICO-SANACION.md`](MODO-AGENTICO-SANACION.md), que
 resuelve el problema contrario: un vault que ya existe y está sin gobernar.
 
+### Resultado por sección y fusiones concurrentes
+
+La respuesta de `vault_onboard` incluye `sections_report`: cada sección registrada
+indica su estado y una razón cuando queda sin notas, se omite por diseño o por
+política, o se encuentra solo planificada en `--dry-run`. Una sección sin notas
+no demuestra por sí sola que el proyecto carezca de evidencia: revisar también
+las advertencias y errores de detección antes de decidir qué documentar.
+
+En Brownfield, fusionar una nota mutable puede cambiar sus bytes sin borrar su
+contenido previo. Las notas declaradas inmutables se omiten. La lectura, fusión
+y escritura de una nota usan un mismo lock para evitar actualizaciones perdidas
+entre procesos cooperantes; editores externos que no usan ese lock quedan fuera
+de esa garantía. Si no se obtiene el lock, `NOTE_LOCKED` identifica la ruta
+relativa de la nota y declara que pueden existir cambios previos del mismo
+onboarding; revise esos cambios antes de reintentar.
+
 Derivado de una ejecución real y completa sobre el repositorio de BuilderX
 (626 commits, solo lectura). Todas las cifras de abajo son de esa ejecución.
 
