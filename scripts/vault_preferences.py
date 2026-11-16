@@ -493,6 +493,52 @@ ADAPTADORES = {
 }
 
 
+#: Karpathy's schema layer is a file the agent reads on every task: a long one
+#: is skimmed, so it carries a budget. The preferences block is the part that
+#: grows with the vault and is the part that is cut, pointing at the full list.
+LINEAS_MAXIMAS_ADAPTER = 120
+
+
+def _mapa_de_carpetas() -> list:
+    """The folder map, derived from `vault_registry.SECTION_DOCUMENTACION`."""
+    from vault_registry import SECTION_DOCUMENTACION
+
+    lineas = ["## Mapa de carpetas", ""]
+    lineas += [f"- `{carpeta}` — {clase}: {motivo}"
+               for carpeta, (clase, motivo) in SECTION_DOCUMENTACION.items()]
+    return lineas + [""]
+
+
+def _regla_de_nombres() -> list:
+    """CN-01 as the norm catalog states it, not a paraphrase."""
+    from vault_norms_catalog import norma_por_codigo
+
+    cn01 = norma_por_codigo("CN-01") or {}
+    if not cn01:
+        return []
+    return ["## Nombres de fichero (CN-01)", "",
+            f"- {cn01.get('name', '')}", f"- {cn01.get('prevention', '')}", ""]
+
+
+def _protocolo_de_sesion() -> list:
+    """The session protocol steps, from `PROTOCOLO_DE_SESION` (kernel leaf).
+
+    One line per step: the call and what it is for. A step that applies only
+    in some sessions says when, because a client that runs it always would
+    hit errors it cannot recover from (`DRIFT_SNAPSHOT_MISSING`).
+    """
+    from vault.kernel.protocolo_de_sesion import PROTOCOLO_DE_SESION
+
+    lineas = ["## Protocolo de sesión", ""]
+    for momento in PROTOCOLO_DE_SESION.values():
+        lineas.append(f"**{momento['titulo']}**")
+        for paso in momento["pasos"]:
+            llamada = f"{paso['tool']} {paso['uso']}".strip()
+            cuando = f" (solo si {paso['cuando']})" if paso.get("cuando") else ""
+            lineas.append(f"- `{llamada}`: {paso['para']}{cuando}")
+    return lineas + [""]
+
+
 def _cuerpo_adapter(cliente: str, contexto: dict, reglas: dict) -> str:
     """La política del vault, para un cliente que lea instrucciones de proyecto.
 
@@ -527,10 +573,9 @@ def _cuerpo_adapter(cliente: str, contexto: dict, reglas: dict) -> str:
             lineas.append("- Secciones donde **no se borra**: "
                           + ", ".join(f"`{s}`" for s in no_borrar))
         lineas.append("")
-    lineas += ["## Preferencias del propietario", ""]
-    bloque = (contexto.get("context") or contexto.get("block") or "").strip()
-    lineas.append(bloque or "(sin preferencias registradas)")
-    lineas += [
+    lineas += _mapa_de_carpetas() + _regla_de_nombres()
+    lineas += _protocolo_de_sesion()
+    cola = [
         "",
         "## Dónde vive la política",
         "",
@@ -538,8 +583,18 @@ def _cuerpo_adapter(cliente: str, contexto: dict, reglas: dict) -> str:
         "dueño; se revocan, no se borran).",
         "- La inmutabilidad, en `00_System/inmutable.json`; el resto de reglas "
         "de mutación, en `00_System/reglas.json`.",
+        f"- Este fichero no pasa de {LINEAS_MAXIMAS_ADAPTER} líneas; lo que no "
+        "cabe se lee con `vault_preferences --context`.",
     ]
-    return "\n".join(lineas) + "\n"
+    lineas += ["## Preferencias del propietario", ""]
+    bloque = (contexto.get("context") or contexto.get("block") or "").strip()
+    preferencias = bloque.splitlines() or ["(sin preferencias registradas)"]
+    hueco = LINEAS_MAXIMAS_ADAPTER - len(lineas) - len(cola)
+    if len(preferencias) > hueco:
+        resto = len(preferencias) - (hueco - 1)
+        preferencias = preferencias[:max(hueco - 1, 0)] + [
+            f"(… {resto} líneas más: `vault_preferences --context`)"]
+    return "\n".join(lineas + preferencias + cola) + "\n"
 
 
 def _escribir_adapter(ruta, texto: str, force: bool) -> bool:

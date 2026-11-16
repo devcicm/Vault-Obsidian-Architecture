@@ -2044,6 +2044,16 @@ aplica las restricciones en sus puntos de mutación. No sobrescribe archivos
 existentes salvo que se indique `--force` expresamente. Si no se pueden leer
 las reglas declaradas, no genera ni sobrescribe adaptadores y devuelve error.
 
+Desde 2026-11-16 (capa de esquema de la LLM Wiki de Karpathy) el adaptador
+publica, **derivado de los registros**: el mapa de carpetas
+(`vault_registry.SECTION_DOCUMENTACION`: carpeta, clase de documento y motivo),
+la regla de nombres CN-01 tal como la dice el catálogo de normas y los pasos del
+protocolo de sesión (`vault.kernel.protocolo_de_sesion.PROTOCOLO_DE_SESION`, con
+su `cuando` si un paso no aplica a toda sesión). Tiene un
+presupuesto de `LINEAS_MAXIMAS_ADAPTER` (120) líneas: lo que se recorta es el
+bloque de preferencias, que es lo que crece con el vault, y la línea de corte dice
+dónde leer el resto (`--context`).
+
 ### `vault_model_profile.py`
 Perfil de modelo LLM para **contexto adaptativo**: budget dinámico según el modelo
 que conecta. Auto-detecta desde `VAULT_MODEL_PROFILE` (propagada por el servidor MCP)
