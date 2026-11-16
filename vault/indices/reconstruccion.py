@@ -14,8 +14,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Sequence
 
 from ..kernel.escritura import escribir_json_si_cambia  # noqa: E402
 from ..kernel.frontmatter_parsing import separar_frontmatter
@@ -55,15 +56,39 @@ class ServicioReindex:
         etiquetas = meta.get("tags") or []
         if isinstance(etiquetas, str):
             etiquetas = [t.strip() for t in etiquetas.split(",") if t.strip()]
+        # The parser consumes universal-newline text, but freshness must also
+        # detect changes to the original bytes (including line endings).
+        # If the note changed between reads, do not attest the resulting row.
+        try:
+            crudo = ruta.read_bytes()
+            texto = crudo.decode("utf-8").replace("\r\n", "\n").replace("\r", "\n")
+            huella = hashlib.sha256(crudo).hexdigest() if texto == contenido else None
+        except (OSError, UnicodeError):
+            huella = None
+        try:
+            mtime = datetime.fromtimestamp(ruta.stat().st_mtime, timezone.utc).isoformat()
+        except (OSError, OverflowError, ValueError):
+            mtime = None
+        titulo = meta.get("title") or ruta.stem
         return {
             "path": self._repo.relativa(ruta),
-            "title": meta.get("title") or ruta.stem,
+            "title": titulo,
             "preview": _previo(contenido),
             "tags": etiquetas,
             "updatedAt": meta.get("updatedAt") or meta.get("createdAt") or "",
+            "content_hash": huella,
+            # Declared metadata and observed filesystem time are distinct
+            # evidence. A missing declared date is never inferred from mtime.
+            "timestamps": {
+                "declared_created_at": meta.get("createdAt"),
+                "declared_updated_at": meta.get("updatedAt"),
+                "declared_source": "frontmatter",
+                "observed_mtime_utc": mtime,
+                "observed_mtime_source": "filesystem",
+            },
         }
 
-    def refrescar(self, ruta: Path, *mas: Path) -> Dict[str, Any]:
+    def refrescar(self, *rutas_escritas: Path, existentes: Sequence[Path] = ()) -> Dict[str, Any]:
         """AP-47: inserta o sustituye la fila de UNA nota recién escrita.
 
         Solo `vault_write` actualizaba el índice; `vault_ingest` y los `*_save`
@@ -77,25 +102,46 @@ class ServicioReindex:
         `index.md` que el gancho de sección genera—: entran en la misma pasada,
         una sola escritura del índice, en vez de una por nota (AP-37 cuenta
         escrituras, y escribir dos veces el mismo fichero no es más trabajo).
+
+        `existentes` are generated notes whose bytes changed (an updated
+        section `index.md`, the change log): in the same pass, only rows that
+        a readable index already holds are replaced. They never create the
+        index, never rebuild it from a corrupt file and never add a row, so the
+        fingerprint stays current without changing what the search returns.
         """
         repo = self._repo
         secciones = repo.ctx.secciones.ordenadas()
-        entradas = []
-        for r in (ruta, *mas):
-            if es_nota_indexable(r, repo.raiz, secciones):
-                contenido = repo.ctx.lector.leer(r)
-                entradas.append(self._entrada(r, contenido, self._parsear(contenido) or {}))
-        if not entradas:
+
+        def construir_entradas(rutas_candidatas):
+            filas = []
+            for r in rutas_candidatas:
+                if es_nota_indexable(r, repo.raiz, secciones):
+                    contenido = repo.ctx.lector.leer(r)
+                    filas.append(self._entrada(r, contenido, self._parsear(contenido) or {}))
+            return filas
+
+        entradas = construir_entradas(rutas_escritas)
+        entradas_existentes = construir_entradas(existentes)
+        if not entradas and not entradas_existentes:
             return {"ok": True, "refreshed": False, "reason": "no_indexable"}
         destino = repo.indice_busqueda
-        rutas = {e["path"] for e in entradas}
         with repo.ctx.escritor.bloquear(destino):
+            legible = True
             try:
                 indice = json.loads(repo.ctx.lector.leer(destino))
             except (FileNotFoundError, json.JSONDecodeError):
-                indice = {}
+                legible, indice = False, {}
             if not isinstance(indice, dict):
-                indice = {}
+                legible, indice = False, {}
+            filas = indice.get("notes")
+            presentes = ({n.get("path") for n in filas if isinstance(n, dict)}
+                         if legible and isinstance(filas, list) else set())
+            escritas = {e["path"] for e in entradas}
+            entradas = entradas + [e for e in entradas_existentes
+                                   if e["path"] in presentes and e["path"] not in escritas]
+            if not entradas:
+                return {"ok": True, "refreshed": False, "reason": "not_indexed"}
+            rutas = {e["path"] for e in entradas}
             notas = [n for n in indice.get("notes", []) if n.get("path") not in rutas]
             notas.extend(entradas)
             # Orden canónico por ruta (v41.12): la reconstrucción inserta en
@@ -150,7 +196,8 @@ class ServicioReindex:
             escribir_json_si_cambia(
                 escribir,
                 repo.indice_busqueda,
-                {"notes": notas, "rebuiltAt": ahora, "totalNotes": len(notas)},
+                {"notes": notas, "rebuiltAt": ahora, "totalNotes": len(notas),
+                 "contentHashVersion": 1},
                 claves_de_sello=CLAVES_DE_SELLO,
             )
             escribir_json_si_cambia(

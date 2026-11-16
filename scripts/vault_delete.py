@@ -23,7 +23,7 @@ from vault_errors import emit_error, fuera_de_sesion, wrap_main
 from vault_entorno import agente_por_defecto
 from vault_io import (
     actualizar_indices_de_dominio, assert_within_vault, atomic_write_json, atomic_write_text,
-    refrescar_indice_de_seccion,
+    refrescar_indice_de_seccion, refrescar_grafo,
     nota_no_se_borra,  # politica de no-borrado del vault
     nota_es_inmutable,  # politica de inmutabilidad del vault
 )
@@ -111,6 +111,15 @@ def _indice_tras_borrar(rel_path: str) -> Dict[str, Any]:
     except Exception as exc:  # noqa: BLE001 - la nota ya no esta en disco
         return {"updated": False, "error": f"{type(exc).__name__}: {exc}",
                 "hint": "ejecutar vault_reindex"}
+
+
+def _grafo_tras_borrar(path: Path, *mas: Path) -> Dict[str, Any]:
+    """Report graph refresh failure without undoing an already completed deletion."""
+    try:
+        return refrescar_grafo(path, *mas)
+    except Exception:
+        return {"ok": False, "refreshed": False,
+                "hint": "ejecutar vault_reindex --graph"}
 
 
 def _guardar_lo_que_se_borra(note_path: Path, rel_path: str) -> str:
@@ -293,6 +302,7 @@ def vault_delete(
             "inbound_links": entrantes,
             "section_index": seccion,
             "search_index": _indice_tras_borrar(rel_path),
+            "graph_index": _grafo_tras_borrar(note_path, trash_dest),
         }
     else:
         guardada = _guardar_lo_que_se_borra(note_path, rel_path)
@@ -313,6 +323,7 @@ def vault_delete(
             "inbound_links": entrantes,
             "section_index": seccion,
             "search_index": _indice_tras_borrar(rel_path),
+            "graph_index": _grafo_tras_borrar(note_path),
         }
 
 

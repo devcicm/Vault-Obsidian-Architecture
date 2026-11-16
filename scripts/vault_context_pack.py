@@ -99,6 +99,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.consulta.repositorio import RepositorioConsulta  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 
+
+def index_coherence():
+    """Check via the runtime-injected read port, never by rebuilding."""
+    from vault.runtime import componer_coherencia_indices
+
+    if not componer_coherencia_indices():
+        return {"ok": False, "status": "index_unavailable"}
+    contexto = construir()
+    proveedor = contexto.coherencia_indices
+    if proveedor is None:
+        return {"ok": False, "status": "index_unavailable"}
+    return proveedor.comprobar(contexto)
+
 # El vocabulario se declara una vez y se consume, no se copia. Ver
 # `vault_vocabulario.py` para el registro y su contexto dueno.
 from vault_vocabulario import peso as _peso
@@ -305,6 +318,19 @@ Recupera, rerankea y empaqueta el contexto para responder `query`."""
     terms = structured["phrases"] + structured["terms"] + structured["tags"]
     lexical: Dict[str, Dict[str, Any]] = {}
     search_error: Optional[str] = None
+    search_incomplete = False
+    search_index_used = False
+    index_warning: Optional[str] = None
+
+    def codigo_busqueda(resultado: Dict[str, Any]) -> str:
+        # No propagar mensajes arbitrarios de un proveedor: pueden contener rutas.
+        codigo = resultado.get("error_code")
+        if codigo == "INDEX_NOT_FOUND":
+            return "INDEX_NOT_FOUND; ejecuta vault_reindex"
+        if (isinstance(codigo, str) and codigo.isascii() and codigo
+                and all(c.isupper() or c.isdigit() or c == "_" for c in codigo)):
+            return codigo
+        return "error sin código"
     # Solo la sección que la pregunta nombra filtra. Hasta v41.2 también lo
     # hacía la inferida por una palabra («diagrama» → 13_Flows), y bastaba con
     # que esa sección devolviera algo para esconder la nota de otra: medido
@@ -314,15 +340,37 @@ Recupera, rerankea y empaqueta el contexto para responder `query`."""
         section = named[0] if named else None
         found = vault_search(" ".join(terms[:8]), folder=section)
         if not found.get("ok"):
-            search_error = mensaje_de(found)
+            search_error = codigo_busqueda(found)
+        elif found.get("source") != "live_visible_markdown":
+            search_index_used = True
+        search_incomplete = bool(found.get("incomplete"))
         for hit in found.get("results", []):
             lexical[hit["path"]] = hit
         # Ni la nombrada se queda sin respuesta: si no devuelve nada, se
         # reintenta sin ella antes que responder "no hay contexto" teniendo el
         # vault la nota en otra sección.
         if section and not lexical:
-            for hit in vault_search(" ".join(terms[:8])).get("results", []):
+            retry = vault_search(" ".join(terms[:8]))
+            if not retry.get("ok"):
+                detalle = codigo_busqueda(retry)
+                search_error = f"{search_error}; reintento: {detalle}" if search_error else detalle
+            elif retry.get("source") != "live_visible_markdown":
+                search_index_used = True
+            search_incomplete = search_incomplete or bool(retry.get("incomplete"))
+            for hit in retry.get("results", []):
                 lexical[hit["path"]] = hit
+
+    if search_index_used:
+        try:
+            estado_indice = index_coherence()
+            if estado_indice.get("status") == "index_stale":
+                index_warning = "índice de búsqueda desactualizado: ejecuta vault_reindex"
+            elif estado_indice.get("status") == "index_incomplete":
+                index_warning = "verificación del índice de búsqueda incompleta; revisa vault_reindex"
+            elif estado_indice.get("status") != "index_ok":
+                index_warning = "no se pudo verificar el índice de búsqueda; revisa vault_reindex"
+        except Exception:
+            index_warning = "no se pudo verificar el índice de búsqueda; revisa vault_reindex"
 
     max_lexical = max((h["score"] for h in lexical.values()), default=0.0) or 1.0
 
@@ -456,6 +504,10 @@ Recupera, rerankea y empaqueta el contexto para responder `query`."""
     warnings: List[str] = list(avisos_de_preferencias)
     if search_error:
         warnings.append(f"búsqueda léxica: {search_error}")
+    if search_incomplete:
+        warnings.append("búsqueda léxica incompleta: algunas notas no se pudieron leer")
+    if index_warning:
+        warnings.append(index_warning)
     if graph_error:
         warnings.append(f"expansión por grafo: {graph_error}")
     if graph_stale:

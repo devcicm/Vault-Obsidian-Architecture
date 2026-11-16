@@ -833,7 +833,7 @@ def extract_wiki_links(content: str) -> List[str]:
 
 def update_search_index(
     vault_path: str, title: str, content: str, tags: List[str], is_new: bool = True
-) -> None:
+) -> str:
     """AP-47: la proyección se actualiza en la misma escritura que la nota.
 
     `search-index.json` es una proyección del disco. Aquí es donde AP-47 se
@@ -873,6 +873,20 @@ def update_search_index(
         return index
 
     atomic_update_json(_index_file(), {"notes": []}, _update)
+
+    # The legacy row above does not carry the canonical content fingerprint.
+    # Reuse the existing incremental-index producer rather than duplicating
+    # its row builder or leaving a newly written note unverifiable.
+    from vault_io import _regenerador_de_indices
+
+    try:
+        regenerador = _regenerador_de_indices()
+        if regenerador is None:
+            return "index_unavailable"
+        regenerador.refrescar_busqueda([_raiz() / vault_path])
+    except Exception:
+        return "index_unavailable"
+    return "index_refreshed"
 
 
 def vault_write(
@@ -1393,7 +1407,7 @@ def vault_write(
 
         # Update search index (inside lock for consistency)
 
-        update_search_index(
+        index_status = update_search_index(
             rel_path,
             title,
         content,
@@ -1472,6 +1486,12 @@ def vault_write(
         "created": existing_id is None,
         "message": f"Note {'created' if existing_id is None else 'updated'} successfully",
     }
+
+    if index_status != "index_refreshed":
+        result["index_warning"] = (
+            "La nota se guardó, pero no se pudo verificar el índice de búsqueda; "
+            "ejecuta vault_reindex."
+        )
 
     if existing_status and meta.get("status") and existing_status != meta["status"]:
         result["status_transition"] = f"{existing_status} -> {meta['status']}"

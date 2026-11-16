@@ -18,6 +18,7 @@ no lo pide.
 from __future__ import annotations
 
 import json
+import hashlib
 from typing import Any, Dict
 
 from .enumeracion import notas_en_disco
@@ -53,7 +54,8 @@ def coherencia_indice(repo: RepositorioIndices) -> Dict[str, Any]:
 
     try:
         datos = json.loads(fichero.read_text(encoding="utf-8"))
-        if not isinstance(datos, dict):
+        if (not isinstance(datos, dict) or not isinstance(datos.get("notes"), list)
+                or any(not isinstance(n, dict) for n in datos["notes"])):
             raise json.JSONDecodeError("no es un objeto", "", 0)
     except (json.JSONDecodeError, OSError) as exc:
         return _degradado("index_corrupt", error=f"{type(exc).__name__}: {exc}")
@@ -66,12 +68,46 @@ def coherencia_indice(repo: RepositorioIndices) -> Dict[str, Any]:
     faltan = sorted(en_disco - indexadas)
     sobran = sorted(indexadas - en_disco)
 
+    # Detect common concurrent writes or replacement around each read. This
+    # is not a transactional snapshot of the entire vault.
+    entradas = {str(n.get("path", "")).replace("\\", "/"): n
+                for n in datos["notes"] if n.get("path")}
+    sin_huella = any(not isinstance(n.get("content_hash"), str)
+                     or len(n["content_hash"]) != 64
+                     for n in entradas.values())
+    if not entradas and datos.get("contentHashVersion") != 1:
+        sin_huella = True
+    modificadas = []
+    incompleto = False
+    for relativa in sorted(en_disco & indexadas):
+        ruta = raiz / relativa
+        try:
+            antes = ruta.stat()
+            contenido = ruta.read_bytes()
+            despues = ruta.stat()
+            if (antes.st_ino, antes.st_size, antes.st_mtime_ns, antes.st_ctime_ns) != (
+                    despues.st_ino, despues.st_size, despues.st_mtime_ns, despues.st_ctime_ns):
+                incompleto = True
+                continue
+            huella = entradas[relativa].get("content_hash")
+            if isinstance(huella, str) and len(huella) == 64:
+                if hashlib.sha256(contenido).hexdigest() != huella:
+                    modificadas.append(relativa)
+        except (OSError, UnicodeError):
+            incompleto = True
+
     nodos = None
     if repo.grafo.exists():
         crudo = repo.leer_json(repo.grafo)
         nodos = len(crudo.get("nodes", [])) if crudo else None
 
-    if not en_disco and not indexadas:
+    if incompleto:
+        estado = "index_incomplete"
+    elif faltan or sobran or modificadas:
+        estado = "index_stale"
+    elif sin_huella:
+        estado = "index_unverified"
+    elif not en_disco and not indexadas:
         estado = "index_ok"  # vault vacío: un índice vacío lo refleja
     elif faltan or sobran:
         estado = "index_stale"
@@ -87,6 +123,8 @@ def coherencia_indice(repo: RepositorioIndices) -> Dict[str, Any]:
         "missing_count": len(faltan),
         "stale_in_index": sobran[:MUESTRA],
         "stale_count": len(sobran),
+        "modified_in_index": modificadas[:MUESTRA],
+        "modified_count": len(modificadas),
         "graph_nodes": nodos,
         "graph_drift": (None if nodos is None else len(en_disco) - nodos),
     }

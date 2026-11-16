@@ -44,6 +44,7 @@ def _sync_index(root: Path) -> None:
     propio— para no medir con un criterio distinto del que arregla (AP-44).
     """
     import json
+    import hashlib
 
     from vault_reindex import notas_indexables
 
@@ -52,9 +53,11 @@ def _sync_index(root: Path) -> None:
         json.dumps(
             {
                 "notes": [
-                    {"path": str(p.relative_to(root)).replace("\\", "/")}
+                    {"path": str(p.relative_to(root)).replace("\\", "/"),
+                     "content_hash": hashlib.sha256(p.read_bytes()).hexdigest()}
                     for p in notas_indexables(root)
-                ]
+                ],
+                "contentHashVersion": 1,
             }
         ),
         encoding="utf-8",

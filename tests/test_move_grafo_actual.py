@@ -13,6 +13,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
@@ -70,3 +71,16 @@ def test_move_dry_run_no_toca_el_grafo_indexado_por_ruta(tmp_path):
                "--to", "07_Knowledge/movida.md", "--json", "--dry-run")
     assert env["ok"] is True and env["degraded"] == [], env
     assert (raiz / "99_Index" / "graph.json").read_bytes() == antes
+
+
+@pytest.mark.parametrize("trash_only", [False, True])
+def test_delete_retira_nodo_del_grafo_actual(tmp_path, trash_only):
+    raiz = _vault(tmp_path)
+    args = ["--path", "07_Knowledge/movible.md", "--reason", "Test deletion", "--force"]
+    if trash_only:
+        args.append("--trash-only")
+    result = _run(raiz, "vault_delete.py", *args)
+    assert result["ok"], result
+    grafo = json.loads((raiz / "99_Index" / "graph.json").read_text(encoding="utf-8"))
+    assert "07_Knowledge/movible.md" not in grafo["nodes"]
+    assert not any(e.get("to") == "07_Knowledge/movible.md" for e in grafo["edges"])

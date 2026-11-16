@@ -210,4 +210,5 @@ def contexto_real(raiz: str | Path | None = None) -> VaultContext:
         indices=_buscar_producto("indices"),
         voz=_buscar_producto("voz"),
         tags=_buscar_producto("tags"),
+        coherencia_indices=_buscar_producto("coherencia_indices"),
     )

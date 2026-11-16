@@ -121,6 +121,38 @@ def test_instalado_el_servidor_lanza_las_tools_desde_impl(tmp_path):
 
 
 @requiere_node
+def test_instalado_frescura_de_contexto_y_busqueda_en_vivo(tmp_path, monkeypatch):
+    import hashlib
+
+    monkeypatch.delenv("VAULT_MCP_LIVE_SEARCH", raising=False)
+    site = tmp_path / "site"
+    servidor = _instalacion(site)
+    # The real wheel ships the normative packages used by context packing.
+    shutil.copytree(RAIZ / "normas", site / "vault_toolkit" / "normas",
+                    ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+    vault = _vault(tmp_path / "vault")
+    carpeta = vault / "07_Knowledge"
+    carpeta.mkdir()
+    nota = carpeta / "sample.md"
+    nota.write_text("original", encoding="utf-8")
+    indice = {"notes": [{"path": "07_Knowledge/sample.md", "title": "zxqfreshness",
+                         "preview": "zxqfreshness", "tags": [],
+                         "content_hash": hashlib.sha256(nota.read_bytes()).hexdigest()}],
+              "contentHashVersion": 1}
+    (vault / "99_Index" / "search-index.json").write_text(json.dumps(indice), encoding="utf-8")
+    nota.write_text("changed", encoding="utf-8")
+    rc, respuestas, error = _sesion(servidor, vault, _entorno(site, VAULT_ROOT=str(vault)), [
+        ("tools/call", {"name": "vault_search", "arguments": {"query": "zxqfreshness"}}),
+        ("tools/call", {"name": "vault_context_pack", "arguments": {"query": "zxqfreshness"}}),
+    ])
+    assert rc == 0, error[-2000:]
+    buscar = json.loads(respuestas[1]["result"]["content"][0]["text"])
+    paquete = json.loads(respuestas[2]["result"]["content"][0]["text"])
+    assert buscar["ok"] and buscar["source"] == "live_visible_markdown"
+    assert paquete["ok"] and any("vault_reindex" in aviso for aviso in paquete["warnings"]), paquete
+
+
+@requiere_node
 def test_instalado_el_handshake_responde_por_stdio(tmp_path):
     """Sin respuesta a `initialize` ningún cliente MCP llega a pedir tools.
 

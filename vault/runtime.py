@@ -47,7 +47,39 @@ PRODUCTORES: Dict[str, str] = {
     "voz": "vault.autoria.voz",
     "indices": "vault_section_index",
     "tags": "vault_tags",
+    "coherencia_indices": "vault.indices.proveedor_coherencia",
 }
+
+
+def componer_coherencia_indices() -> bool:
+    """Offer the read-only provider without writing diagnostic traces."""
+    import importlib
+    from vault.kernel import productores
+
+    nombre = "coherencia_indices"
+    if productores.hay(nombre):
+        return True
+    modulo = PRODUCTORES[nombre]
+    importado = importlib.import_module(modulo)
+    _reofrecer(modulo, importado)
+    return productores.hay(nombre)
+
+
+def comprobar_coherencia_indices(raiz=None) -> dict:
+    """Return a sanitized read-only search-index verification status."""
+    try:
+        if not componer_coherencia_indices():
+            return {"status": "index_unavailable"}
+        from vault.kernel import construir
+
+        contexto = construir(raiz)
+        proveedor = contexto.coherencia_indices
+        estado = proveedor.comprobar(contexto).get("status") if proveedor else None
+        validos = {"index_ok", "index_stale", "index_incomplete", "index_unverified",
+                   "index_missing", "index_corrupt"}
+        return {"status": estado if estado in validos else "index_unavailable"}
+    except Exception:
+        return {"status": "index_unavailable"}
 
 
 def _importar(modulo: str) -> Optional[Any]:

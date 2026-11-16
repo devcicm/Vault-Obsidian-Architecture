@@ -16,6 +16,7 @@ agente busca una nota que existe, no la encuentra, y la vuelve a escribir.
 """
 
 import json
+import hashlib
 from pathlib import Path
 
 import pytest
@@ -29,7 +30,7 @@ import vault_reindex  # noqa: E402
 import vault_grafo_import as gi  # noqa: E402
 
 
-def _vault(tmp_path, notas, indexadas=None, grafo=None):
+def _vault(tmp_path, notas, indexadas=None, grafo=None, legacy=False):
     """Vault mínimo: notas en disco y un índice que dice lo que se le pida."""
     raiz = tmp_path / "vault"
     (raiz / "07_Knowledge").mkdir(parents=True)
@@ -43,7 +44,12 @@ def _vault(tmp_path, notas, indexadas=None, grafo=None):
         idx.mkdir(parents=True, exist_ok=True)
         (idx / "search-index.json").write_text(
             json.dumps(
-                {"notes": [{"path": f"07_Knowledge/{n}", "title": n} for n in indexadas]}
+                {"notes": [{"path": f"07_Knowledge/{n}", "title": n,
+                            **({} if legacy else {"content_hash": hashlib.sha256(
+                                (raiz / "07_Knowledge" / n).read_bytes()
+                                if (raiz / "07_Knowledge" / n).exists() else b""
+                            ).hexdigest()})} for n in indexadas],
+                 **({} if legacy else {"contentHashVersion": 1})}
             ),
             encoding="utf-8",
         )
@@ -129,6 +135,17 @@ def test_el_audit_calla_cuando_el_indice_esta_al_dia(tmp_path):
     raiz = _vault(tmp_path, ["a.md"], indexadas=["a.md"])
     res = vault_norms.vault_norms_audit(root=raiz)
     assert not [v for v in res["violations"] if v["norm"] == "AP-47"]
+
+
+def test_el_audit_distingue_indice_antiguo_no_verificado(tmp_path):
+    raiz = _vault(tmp_path, ["a.md"], indexadas=["a.md"], legacy=True)
+    informe = vault_reindex.index_coherence(raiz)
+    assert informe["status"] == "index_unverified"
+    res = vault_norms.vault_norms_audit(root=raiz)
+    detalle = next(v["detail"] for v in res["violations"] if v["norm"] == "AP-47")
+    assert "no está verificada" in detalle.lower()
+    assert "la búsqueda no ve" not in detalle.lower()
+    assert "vault_reindex" in detalle
 
 
 # ── La verificación mide lo que el arreglo arregla (AP-44) ────────────────────

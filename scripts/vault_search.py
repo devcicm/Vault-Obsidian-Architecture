@@ -258,6 +258,8 @@ def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = 
 
     if not live:
         notes = index.get("notes", [])
+        from vault.runtime import comprobar_coherencia_indices
+        coherencia = comprobar_coherencia_indices(_raiz())
 
 
     # Score all notes
@@ -310,6 +312,9 @@ def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = 
         "query": query,
 
         **({"source": "live_visible_markdown", "incomplete": bool(skipped), "skipped": skipped} if live else {}),
+        **({"index_coherence": coherencia} if not live else {}),
+        **({"warnings": ["No se pudo confirmar la frescura del índice de búsqueda; revisa vault_reindex"]}
+           if not live and coherencia.get("status") != "index_ok" else {}),
 
         "folder": folder,
 

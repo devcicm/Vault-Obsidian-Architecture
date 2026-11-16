@@ -448,6 +448,15 @@ def vault_section_index(
     # Qué índices se pueden enlazar: los que existen y los que esta ejecución
     # va a escribir. Enlazar uno que no llega a existir es un enlace roto.
     vroot = get_vault_root()
+    section_path = vroot / folder
+    if not section_path.exists():
+        return {**emit_error("vault_section_index", "FOLDER_NOT_FOUND", f"La seccion no existe: {folder}"), "folder": folder}
+
+    try:
+        assert_within_vault(section_path, vroot)
+    except ValueError as e:
+        return {**emit_error("vault_section_index", "INVALID_PATH", str(e)), "detail": str(e)}
+
     previstos = {f"{folder}/index.md"}
     if regeneracion_completa:
         previstos |= _indices_de_una_regeneracion_completa(vroot)
@@ -468,15 +477,6 @@ def vault_section_index(
         # aquí debe salir, no absorberse.
         aviso_hub = f"{type(exc).__name__}: {exc}"
         print(f"[vault_section_index] hub no creado: {aviso_hub}", file=sys.stderr)
-
-    section_path = vroot / folder
-    if not section_path.exists():
-        return {**emit_error("vault_section_index", "FOLDER_NOT_FOUND", f"La seccion no existe: {folder}"), "folder": folder}
-
-    try:
-        assert_within_vault(section_path, vroot)
-    except ValueError as e:
-        return {**emit_error("vault_section_index", "INVALID_PATH", str(e)), "detail": str(e)}
 
     now = utcnow()
     notes = _collect_notes(section_path, include_subdirs)
@@ -543,8 +543,9 @@ def vault_section_index(
                 # texto crudo contra un fichero ya saneado reescribe en bucle.
                 sub_contenido, _ = sanitize_content(sub_contenido, dry_run=False)
                 sub_contenido = conservar_marca_de_generado(sub_index, sub_contenido)
-                record_raw_write(sub_index, sub_contenido)
-                escritura_atomica(sub_index, sub_contenido)
+                estado = record_raw_write(sub_index, sub_contenido)
+                if estado != "unchanged" or sub_index.read_bytes() != sub_contenido.encode("utf-8"):
+                    escritura_atomica(sub_index, sub_contenido)
             subdir_indexes.append(
                 str(sub_index.relative_to(vroot)).replace("\\", "/")
             )
@@ -573,8 +574,9 @@ def vault_section_index(
             # de comparación es la de disco (ver la nota en los sub-índices).
             contenido, _ = sanitize_content(contenido, dry_run=False)
             contenido = conservar_marca_de_generado(index_path, contenido)
-            record_raw_write(index_path, contenido)
-            escritura_atomica(index_path, contenido)
+            estado = record_raw_write(index_path, contenido)
+            if estado != "unchanged" or index_path.read_bytes() != contenido.encode("utf-8"):
+                escritura_atomica(index_path, contenido)
 
     return {
         "ok": True,
@@ -590,7 +592,7 @@ def vault_section_index(
     }
 
 
-def refrescar_busqueda(path: Path, *mas: Path) -> Dict[str, Any]:
+def refrescar_busqueda(*paths: Path, existentes: Sequence[Path] = ()) -> Dict[str, Any]:
     """Pone la nota recién escrita en `search-index.json` (AP-47).
 
     Vive aquí y no en cada escritor porque `vault_io -> vault_section_index` es
@@ -599,7 +601,7 @@ def refrescar_busqueda(path: Path, *mas: Path) -> Dict[str, Any]:
     """
     return ServicioReindex(
         RepositorioIndices(construir()), parse_frontmatter
-    ).refrescar(Path(path), *(Path(m) for m in mas))
+    ).refrescar(*(Path(p) for p in paths), existentes=[Path(e) for e in existentes])
 
 
 # Nombre público conservado (lo importan tests y `vault_norms`); la definición
@@ -737,7 +739,8 @@ class _RegeneradorDeIndices:
         hechos = vault_section_index(seccion, nombres=nombres)
         return list(hechos.get("creados") or [])
 
-    def refrescar_busqueda(self, rutas: List[Path], creados: Sequence[str] = ()) -> None:
+    def refrescar_busqueda(self, rutas: List[Path], creados: Sequence[str] = (),
+                           existentes: Sequence[Path] = ()) -> None:
         """Mete las notas escritas en el índice de búsqueda (AP-47).
 
         Aquí, y no en `vault_io`: antes el kernel importaba este módulo por
@@ -746,14 +749,16 @@ class _RegeneradorDeIndices:
         búsqueda en la misma escritura, escriba quien escriba — el mismo
         gancho, con su dueño en el sitio que lo compone.
         """
-        if not rutas and not creados:
+        if not rutas and not creados and not existentes:
             return
         # Y también el index.md que el generador acaba de crear: es una nota en
         # disco como cualquier otra. Solo van los que no existían antes de esta
         # escritura (`creados`) — medido con C8 en una copia de /vcloud: 144 en
         # disco frente a 143 indexadas tras un sanador. Una sola pasada.
         raiz = get_vault_root()
-        refrescar_busqueda(*rutas, *(raiz / rel for rel in creados))
+        # One pass, one index write: written notes, created index.md files and
+        # already-indexed generated notes whose bytes changed (`existentes`).
+        refrescar_busqueda(*rutas, *(raiz / rel for rel in creados), existentes=existentes)
 
 
 def _ofrecer() -> None:

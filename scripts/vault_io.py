@@ -1069,7 +1069,19 @@ def _regenerar_seccion(section: str, rutas: List[Path],
         # búsqueda la actualiza la tool, que es quien sabe de dónde a dónde se
         # movió la nota—.
         creados = list(regenerador.regenerar(section, rutas, nombres) or [])
-        regenerador.refrescar_busqueda(rutas, creados)
+        # The generator also rewrites existing section and subfolder index.md
+        # files. Their search rows carry a content hash, so refreshing only the
+        # newly created ones left every updated index reported as stale.
+        raiz = get_vault_root()
+        regenerados = [f"{section}/index.md"]
+        for ruta in rutas:
+            try:
+                regenerados.append((Path(ruta).parent / "index.md").relative_to(raiz).as_posix())
+            except ValueError:
+                continue
+        existentes = [raiz / rel for rel in dict.fromkeys(regenerados)
+                      if rel not in creados and (raiz / rel).is_file()]
+        regenerador.refrescar_busqueda(rutas, creados, existentes=existentes)
         return creados
     except Exception as exc:
         # AP-51: el fallo queda en la traza con su motivo. Sin un segundo

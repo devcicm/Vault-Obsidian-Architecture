@@ -74,6 +74,8 @@ Scripts Python del estándar **Vault Obsidian Architecture** (versión vigente: 
 ### `vault_write.py`
 Crea o actualiza una nota con frontmatter YAML correcto. Versiona en `.history/` antes de sobreescribir. Actualiza `search-index.json` y regenera el section index automáticamente. Guards AP-20 (bullets vacíos) y AP-21 (wiki-links con ruta).
 
+Si la nota se guardó pero falla el refresco del índice de búsqueda, el resultado incluye `index_warning` con la recomendación de ejecutar `vault_reindex`; la advertencia no implica que se haya revertido la nota.
+
 ```bash
 python vault_write.py --folder "01_Projects/mi-api" --title "Status" --content "# Status\n\nActivo"
 python vault_write.py --folder "03_Decisions" --title "ADR-001" --tags "arch,backend" --meta '{"status":"accepted"}'
@@ -1457,7 +1459,7 @@ python vault_change_log.py --query --action deleted
 | `--last` | Número de entradas a retornar (default: 20) |
 
 ### `vault_delete.py`
-Elimina notas con SP-01 obligatorio: si no existe entrada de change-log para la nota, la crea ANTES de borrar. Por defecto mueve a `20_Quarantine/`; con `--force` elimina directamente.
+Elimina notas con SP-01: si no existe entrada de change-log para la nota, la crea ANTES de borrar. Por defecto elimina la nota; `--trash-only` la mueve a `20_Quarantine/` y `--force` omite la entrada de change-log. El resultado `graph_index` informa el refresco del grafo o su degradación; si este falla, la operación sobre la nota ya ocurrió y se recomienda `vault_reindex --graph`.
 
 ```bash
 # Eliminación normal (crea change-log si no existe, luego elimina)

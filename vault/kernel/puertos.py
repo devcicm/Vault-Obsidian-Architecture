@@ -156,6 +156,14 @@ class Voz(Protocol):
 
 
 @runtime_checkable
+class CoherenciaIndices(Protocol):
+    """Read-only verification of a search index for a supplied context."""
+
+    def comprobar(self, contexto: object) -> dict:
+        """Return a coherence report without modifying the vault."""
+
+
+@runtime_checkable
 class RegeneradorIndices(Protocol):
     """Quien regenera el índice de una sección tras escribir una nota.
 
@@ -170,7 +178,8 @@ class RegeneradorIndices(Protocol):
                   nombres: Optional[Dict[str, List[str]]] = None) -> Sequence[str]:
         """Regenera el índice de `seccion` y devuelve los `index.md` que creó."""
 
-    def refrescar_busqueda(self, rutas: Sequence[Path]) -> None:
+    def refrescar_busqueda(self, rutas: Sequence[Path], creados: Sequence[str] = (),
+                           existentes: Sequence[Path] = ()) -> None:
         """Mete las notas escritas en el índice de búsqueda (AP-47).
 
         Va aparte de `regenerar` a propósito: son dos cosas distintas y

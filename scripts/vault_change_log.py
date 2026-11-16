@@ -166,6 +166,28 @@ def _append_md_log(entry: Dict[str, Any]) -> None:
     row = f"| {ts} | `{action}` | `{path}` | `{new_path}` | {reason} | {agent} |\n"
 
     atomic_write_text(_log_md(), existing + row)
+    _refrescar_busqueda_del_log()
+
+
+def _refrescar_busqueda_del_log() -> None:
+    """The Markdown log is an indexed note: keep its search fingerprint current.
+
+    00_System has no section hook, so without this every append left the
+    search index reporting the log as modified (index_stale).
+    """
+    from vault_io import _regenerador_de_indices
+
+    try:
+        regenerador = _regenerador_de_indices()
+        if regenerador is None:
+            emit_error("vault_change_log", "AUTO_INDEX_ERROR",
+                       "Search index refresh unavailable for the change log.")
+            return
+        regenerador.refrescar_busqueda([], existentes=[_log_md()])
+    except Exception as exc:
+        # AP-51: the failure is traced with its reason; the log entry itself
+        # is already durable and the coherence check will report the row.
+        emit_error("vault_change_log", "AUTO_INDEX_ERROR", f"{type(exc).__name__}")
 
 
 def _run_propagation(path: str, strategy: str) -> Dict[str, Any]:

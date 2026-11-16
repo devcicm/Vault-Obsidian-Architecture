@@ -46,6 +46,13 @@ def _contando(monkeypatch):
     return llamadas
 
 
+def test_una_seccion_ausente_no_publica_un_enlace_de_hub_roto(vault):
+    resultado = vsi.vault_section_index("07_Knowledge")
+    assert not resultado["ok"] and resultado["error_code"] == "FOLDER_NOT_FOUND"
+    hub = vault / "00_System" / "vault-hub.md"
+    assert not hub.exists() or "[[07_Knowledge/index" not in hub.read_text(encoding="utf-8")
+
+
 def test_ap47_una_regeneracion_inventaria_el_vault_una_sola_vez(vault, monkeypatch):
     llamadas = _contando(monkeypatch)
     r = vsi.vault_section_index("01_Projects")

@@ -148,19 +148,21 @@ def auditar_runtime(
                 detalle = {
                     "index_missing": "No existe 99_Index/search-index.json.",
                     "index_corrupt": "99_Index/search-index.json no parsea.",
+                    "index_unverified": "La frescura del índice no está verificada: faltan huellas de contenido.",
+                    "index_incomplete": "La comprobación del índice está incompleta por una lectura fallida o un cambio concurrente.",
                 }.get(
                     coherencia["status"],
                     f"{coherencia.get('missing_count', 0)} nota(s) en disco fuera "
                     f"del índice y {coherencia.get('stale_count', 0)} entrada(s) "
-                    f"que ya no existen "
+                    f"que ya no existen; {coherencia.get('modified_count', 0)} nota(s) "
+                    f"tienen contenido modificado "
                     f"({coherencia['on_disk']} en disco / {coherencia['indexed']} "
                     f"indexadas).",
                 )
                 _flag(
                     "AP-47",
                     "99_Index/search-index.json",
-                    f"{detalle} La búsqueda no ve lo que hay escrito, así que el "
-                    f"agente lo vuelve a escribir. Remedio: `vault_reindex`.",
+                    f"{detalle} Remedio: `vault_reindex`.",
                 )
         except ImportError:
             pass  # sin la tool no hay nada que contrastar

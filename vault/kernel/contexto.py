@@ -25,6 +25,7 @@ from .puertos import (
     BitacoraTags,
     CatalogoNormas,
     CatalogoTools,
+    CoherenciaIndices,
     Escritor,
     Lector,
     RegeneradorIndices,
@@ -61,6 +62,7 @@ class VaultContext:
     #: Quién anota los tags de una nota en la bitácora de vocabulario. `None`
     #: si nadie se ha ofrecido (A-03).
     tags: Optional[BitacoraTags] = None
+    coherencia_indices: Optional[CoherenciaIndices] = None
 
     def ruta(self, *partes: str) -> Path:
         """Una ruta dentro del vault, garantizada dentro del vault (AP-36).
