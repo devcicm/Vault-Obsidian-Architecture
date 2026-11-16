@@ -15,31 +15,38 @@ inexistente: es el punto por el que pasan todas las tools antes de tocar nada.
 
 import json
 import os
-import subprocess
-import sys
 from pathlib import Path
 from typing import Optional, Tuple
+from apoyo import correr_python
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
 
 SONDA = """
-import json, sys
+import io, json, sys
 from pathlib import Path
 sys.path.insert(0, sys.argv[2])
 import vault_raiz
 vault_raiz.VAULT_ROOT = Path(sys.argv[1])
 vault_raiz._VAULT_ROOT_ORIGIN = "repo_root_fallback"
 import vault_errors
-llamada = []
+sys.path.insert(0, str(Path(sys.argv[1]).parent))
+from root_probe_callback import main
 sys.argv = ["vault_audit", *sys.argv[3:]]
-rc = vault_errors.wrap_main(lambda: llamada.append(1) or 0, "vault_audit")
-print(json.dumps({"rc": rc, "ejecutada": bool(llamada)}))
+salida, sys.stdout = sys.stdout, io.StringIO()
+try:
+    rc = vault_errors.wrap_main(main, "vault_audit")
+finally:
+    texto, sys.stdout = sys.stdout.getvalue(), salida
+print(texto, end="")
+print(json.dumps({"rc": rc, "ejecutada": "__callback_executed__" in texto}))
 """
 
 
 def _sondear(raiz: Path, *argv: str, cwd: Path, permisivo: bool = False,
              cwd_cliente: Optional[Path] = None) -> Tuple[dict, str]:
+    (raiz.parent / "root_probe_callback.py").write_text(
+        "def main():\n    print('__callback_executed__')\n    return 0\n", encoding="utf-8")
     env = {k: v for k, v in os.environ.items()
            if k not in ("VAULT_ROOT", "VAULT_STRICT_ROOT", "VAULT_PERMISSIVE_ROOT",
                         "VAULT_CLIENT_CWD")}
@@ -49,9 +56,8 @@ def _sondear(raiz: Path, *argv: str, cwd: Path, permisivo: bool = False,
     env["VAULT_AGENT"] = "pytest"
     if permisivo:
         env["VAULT_PERMISSIVE_ROOT"] = "1"
-    p = subprocess.run([sys.executable, "-c", SONDA, str(raiz), str(SCRIPTS), *argv],
-                       env=env, cwd=str(cwd), capture_output=True, text=True,
-                       encoding="utf-8", timeout=300)
+    p = correr_python("-c", SONDA, str(raiz), str(SCRIPTS), *argv,
+                      env=env, cwd=cwd, modo="text", timeout=300)
     lineas = [l for l in p.stdout.strip().splitlines() if l.startswith("{")]
     assert lineas, p.stderr[-2000:]
     return json.loads(lineas[-1]), "\n".join(lineas[:-1])

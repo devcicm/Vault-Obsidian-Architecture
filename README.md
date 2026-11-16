@@ -734,7 +734,7 @@ scripts/                    ← 172 archivos Python (129 tools activas + interna
 | Entorno | Soporte |
 |---|---|
 | Bash / Linux | Completo |
-| macOS | Fuera de alcance — sin runner en la CI ni classifier; no se promete |
+| macOS | Fuera de alcance — sin runner en la CI ni classifier; no se promete. Las tools que pasan por `wrap_main` fallan cerrado (`UNEXPECTED_ERROR`): no hay adaptador de contención de procesos verificado (A-06); plan de referencia en `docs/auditorias/macos-containment-reference-plan.md` |
 | PowerShell 5.1 (Windows) | Completo — args JSON con `<>` requieren Bash o archivo temporal |
 | Claude Code (CLI) | Nativo — tools invocables como subprocess |
 | Claude API / GPT / Gemini | Mediante harness que expone las tools como function calls |

@@ -210,13 +210,14 @@ def vault_write_hook(text: str) -> tuple[bool, List[Dict[str, Any]]]:
     return ok, findings
 
 
-if __name__ == "__main__":
+def main() -> int:
+    """Importable CLI owner shared by the alias and isolated executor."""
     import argparse
-    import sys
 
     # Hasta 2026-10-04 leía `sys.argv[1]` a mano e ignoraba el resto: `f --json`
     # corría sin avisar de que `--json` no existe. argparse lo rechaza (rc 2).
     parser = argparse.ArgumentParser(
+        prog="secret_scan.py",
         description="Busca patrones de secretos en un .md o en un directorio",
         allow_abbrev=False,
     )
@@ -232,7 +233,7 @@ if __name__ == "__main__":
                 )
         else:
             print(f"No secrets found in {target}")
-        sys.exit(1 if findings else 0)
+        return 1 if findings else 0
     elif target.is_dir():
         total_findings = 0
         for md in sorted(target.rglob("*.md")):
@@ -245,7 +246,13 @@ if __name__ == "__main__":
                         f"  [{f['severity']}] {f['pattern_id']} at line {f['line_hint']}: {f['match_redacted']}"
                     )
         print(f"\nTotal: {total_findings} findings")
-        sys.exit(1 if total_findings else 0)
+        return 1 if total_findings else 0
     else:
         print(f"Not found: {target}")
-        sys.exit(1)
+        return 1
+
+
+if __name__ == "__main__":
+    import sys
+
+    sys.exit(main())

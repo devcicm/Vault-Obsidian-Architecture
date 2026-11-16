@@ -2226,6 +2226,46 @@ python vault_mcp_catalog.py --check-params    # AP-40: params publicados vs argp
 python vault_mcp_catalog.py --sync            # heal
 ```
 
+La CLI directa de `vault_mcp_catalog.py` aplica `VAULT_TOOL_TIMEOUT` en un
+proceso separado. Conserva los bytes y códigos de salida del catálogo; no exige
+un vault existente ni agrega voz o trazas a las invocaciones normales. Al vencer
+el plazo, termina y recoge el proceso antes de emitir `TOOL_TIMEOUT` con traza.
+Un `--sync` iniciado antes del corte puede haber escrito: revisar su destino
+antes de reintentar. Hay un costo adicional de arranque y buffering de salida.
+Las llamadas Python importadas directamente al catálogo conservan su ejecución
+síncrona; el supervisor de esta CLI es independiente de `wrap_main`.
+
+### Aislamiento del wrapper de herramientas
+
+`vault_errors.wrap_main(fn, tool_name, timeout=...)` ejecuta funciones nombradas
+e importables en un proceso separado. Se conservan argv, entorno, cwd, stdin y
+la raíz resuelta del vault; no se comparten globals, monkeypatches, closures ni
+mutaciones de memoria con el proceso padre. Lambdas, funciones locales y
+callbacks sin un módulo importable se rechazan con `INVALID_INPUT`, sin ejecutar
+el callback ni volver al antiguo hilo con timeout.
+
+El presupuesto incluye el arranque del proceso. Antes de admitir el callback,
+Windows lo incorpora a un Job Object. En Linux, un supervisor separado activa
+la adopción de procesos huérfanos (`PR_SET_CHILD_SUBREAPER`), comprueba procfs y
+pidfds y luego admite el worker. Para cancelar, congela los descendientes antes
+de recorrerlos, los señala mediante pidfds y recoge los procesos adoptados:
+cambiar de sesión con `setsid()` no evita esta contención.
+Si no se puede establecer el aislamiento, la llamada falla sin fallback. Un
+timeout o interrupción detiene el worker y sus descendientes contenidos antes
+de devolver el error. Una ejecución exitosa conserva el trabajo asíncrono
+intencional (propagación, refresco de calidad y servicio de tokens).
+
+Esto es control de ciclo de vida de código confiable, **no un sandbox de
+seguridad**. Linux requiere procfs accesible, pidfds y permiso para señalar los
+procesos propios; otros sistemas POSIX aún no tienen un adaptador verificado y
+se rechazan sin fallback. Si falta una capacidad, falla el supervisor o no se
+puede comprobar la limpieza, el resultado declara aislamiento no verificado,
+no un timeout que afirme falsamente haber detenido todo. La limpieza tiene su
+propio plazo acotado después del presupuesto de ejecución. La terminación no revierte escrituras previas
+ni garantiza limpiar temporales o locks de una operación interrumpida. Revisar
+el estado antes de reintentar; `reintentar: false` no promete una transacción.
+El arranque y transporte de resultados agregan costo por llamada.
+
 ### Modos de uso
 
 ```bash

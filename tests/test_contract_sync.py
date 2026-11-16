@@ -9,8 +9,8 @@ La manipulación siempre se hace sobre una copia en `tmp_path`, nunca sobre
 `vault-sandbox/00_System/tool-spec.json`.
 """
 import json
+import os
 import re
-import sys
 from pathlib import Path
 
 import pytest
@@ -18,8 +18,22 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 
 import vault_mcp_catalog as vmc  # noqa: E402
+from apoyo import correr_python
 
 SPEC_REAL = ROOT / "vault-sandbox/00_System/tool-spec.json"
+
+
+def test_cli_catalogo_respeta_presupuesto_y_emite_timeout(tmp_path):
+    root = tmp_path / "vault"
+    (root / "00_System").mkdir(parents=True)
+    (root / "99_Index").mkdir()
+    env = {**os.environ, "VAULT_ROOT": str(root), "VAULT_TOOL_TIMEOUT": "0",
+           "PYTHONIOENCODING": "utf-8"}
+    result = correr_python(str(ROOT / "scripts" / "vault_mcp_catalog.py"),
+                          "--check-params", env=env, modo="text", timeout=60)
+    payload = json.loads(result.stdout)
+    assert result.returncode == 1
+    assert payload["error_code"] == "TOOL_TIMEOUT"
 
 
 @pytest.fixture

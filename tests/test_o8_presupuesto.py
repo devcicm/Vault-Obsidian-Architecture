@@ -14,6 +14,7 @@ import os
 import runpy
 import subprocess
 import sys
+import warnings
 from pathlib import Path
 
 import pytest
@@ -33,7 +34,12 @@ def _presupuesto_de(monkeypatch, defecto, script):
 
     monkeypatch.setattr(vault_errors, "wrap_main", wrap_main_falso)
     monkeypatch.setattr(vault_errors, "TOOL_TIMEOUT_SECONDS", defecto)
-    with pytest.raises(SystemExit):
+    # Alias scripts re-run their owner with runpy.run_module; inside this pytest
+    # process the owner is often imported already, which only this harness sees
+    # (a real CLI run starts a fresh interpreter and emits no warning).
+    with pytest.raises(SystemExit), warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=RuntimeWarning,
+                                message=r".*found in sys\.modules after import of package.*")
         runpy.run_path(str(SCRIPTS / script), run_name="__main__")
     return visto["timeout"]
 

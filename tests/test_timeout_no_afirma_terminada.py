@@ -1,37 +1,31 @@
-"""A-06 (vault dev codex): TOOL_TIMEOUT no puede afirmar que la tool «fue terminada».
-
-`wrap_main` corre la tool en un hilo daemon y, al vencer el plazo, no lo
-detiene: sigue ejecutando y puede escribir después de que el agente ya recibió
-el error. Decir «terminada» induce a reintentar sobre una escritura en curso.
-"""
-
+"""The process-specific timeout is stronger than the generic error catalog."""
 import json
-import sys
-import threading
-import time
+import os
 from pathlib import Path
 
+import vault_errors
+from apoyo import esperar_condicion, proceso_activo
 
-import vault_errors  # noqa: E402
+
+def lenta():
+    pid_path = Path(os.environ["TIMEOUT_PID_PATH"])
+    pid_path.write_text(str(os.getpid()), encoding="utf-8")
+    esperar_condicion(lambda: False, timeout=30)
 
 
-def test_timeout_dice_que_el_hilo_puede_seguir(capsys):
-    liberar = threading.Event()
-
-    def lenta():
-        liberar.wait(5)
-        return 0
-
-    try:
-        rc = vault_errors.wrap_main(lenta, "probe_lenta", timeout=1)
-    finally:
-        liberar.set()
-        time.sleep(0.05)
-    assert rc == 1
-    env = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
-    assert env["error_code"] == "TOOL_TIMEOUT"
-    assert "terminada" not in env["message"]
-    assert "segundo plano" in env["message"]
+def test_timeout_declara_proceso_detenido_y_escrituras_previas(capsys, tmp_path, monkeypatch):
+    pid_path = tmp_path / "worker.pid"
+    monkeypatch.setenv("TIMEOUT_PID_PATH", str(pid_path))
+    # The budget includes worker startup (about a second on a loaded Windows
+    # host), so a one-second budget made "Callback must start" a timing race.
+    assert vault_errors.wrap_main(lenta, "probe_lenta", timeout=8) == 1
+    envelope = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert envelope["error_code"] == "TOOL_TIMEOUT"
+    assert "process tree has stopped" in envelope["message"]
+    assert envelope["args"]["reintentar"] is False
+    assert esperar_condicion(pid_path.exists, timeout=5), "Callback must start"
+    pid = int(pid_path.read_text(encoding="utf-8"))
+    assert esperar_condicion(lambda: not proceso_activo(pid), timeout=5)
 
 
 def test_el_catalogo_no_promete_que_se_termina():

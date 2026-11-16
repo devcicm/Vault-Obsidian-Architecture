@@ -26,7 +26,6 @@ import os
 import queue
 import re
 import sys
-import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -562,17 +561,101 @@ def _versionar_la_operacion(tool_name: str, writes: Dict[str, Any]) -> None:
         pass
 
 
+def _isolated_entry(payload: dict) -> int:
+    """Reconstruct the explicit execution context inside the admitted worker."""
+    import importlib
+    import importlib.util
+    import vault_raiz
+
+    vault_raiz.VAULT_ROOT = Path(payload["root"])
+    vault_raiz._ACTIVE_VAULT_ROOT = None
+    vault_raiz._VAULT_ROOT_ORIGIN = payload["root_origin"]
+    sys.argv = payload["argv"]
+    if payload["module"] in ("__main__", "__vault_callback__"):
+        spec = importlib.util.spec_from_file_location("__vault_callback__", payload["file"])
+        module = importlib.util.module_from_spec(spec)
+        # Nested wrappers must be able to discover this callback's module.
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+        fn = module
+        for part in payload["qualname"].split("."):
+            fn = getattr(fn, part)
+    else:
+        fn = importlib.import_module(payload["module"])
+        for part in payload["qualname"].split("."):
+            fn = getattr(fn, part)
+    return _wrap_main_local(fn, payload["tool"])
+
+
 def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
-    """Envuelve main() con timeout, captura de excepciones, y trace log.
+    """Run an importable callback in a contained process, never a timed thread.
 
-    Args:
-        fn: Función main() a ejecutar
-        tool_name: Nombre de la tool (para logs)
-        timeout: Segundos máximo (default: TOOL_TIMEOUT_SECONDS)
-
-    Returns: exit code (0 = éxito, 1 = error)
+    Parent globals, monkeypatches and closure state are not shared. CLI argv,
+    environment, cwd, stdin and the resolved vault root are explicit inputs.
+    A timeout stops the process tree but cannot roll back previous disk writes.
     """
+    import inspect
+    import subprocess
+    from vault.kernel.aislamiento import ejecutar_aislado, IsolationUnavailable
+
+    rejection = (_rechazo_por_raiz_inexistente(tool_name)
+                 or _rechazo_por_raiz_del_programa(tool_name)
+                 or _rechazo_por_raiz_del_estandar(tool_name))
+    if rejection is not None:
+        _write_output(json.dumps(rejection, ensure_ascii=False))
+        return 1
+    module = inspect.getmodule(fn)
+    source = getattr(module, "__file__", None)
+    qualname = getattr(fn, "__qualname__", "")
+    if (not inspect.isfunction(fn) or "<" in qualname or not source
+            or not Path(source).is_file()):
+        error = emit_error(tool_name, "INVALID_INPUT",
+                           "wrap_main requires an importable named function; "
+                           "closures and lambdas cannot run in an isolated process.")
+        _write_output(json.dumps(error, ensure_ascii=False))
+        return 1
+    resolved = module
+    for part in qualname.split("."):
+        resolved = getattr(resolved, part, None)
+    if resolved is not fn:
+        error = emit_error(tool_name, "INVALID_INPUT",
+                           "The callback is not published under its importable name.")
+        _write_output(json.dumps(error, ensure_ascii=False))
+        return 1
     limit = timeout if timeout is not None else TOOL_TIMEOUT_SECONDS
+    module_name = getattr(getattr(module, "__spec__", None), "name", None) or fn.__module__
+    payload = {"module": module_name, "qualname": qualname,
+               "file": str(Path(source).resolve()), "argv": list(sys.argv),
+               "root": str(get_vault_root()), "root_origin": vault_root_origin(),
+               "tool": tool_name}
+    try:
+        result = ejecutar_aislado("vault_errors", "_isolated_entry", payload, limit)
+    except (subprocess.TimeoutExpired, KeyboardInterrupt) as exc:
+        interrupted = isinstance(exc, KeyboardInterrupt)
+        error = emit_error(
+            tool_name, "INTERRUPTED" if interrupted else "TOOL_TIMEOUT",
+            "The isolated process tree has stopped. Earlier disk writes may "
+            "remain; inspect the vault before retrying.",
+            args={"timeout_seconds": limit, "escrituras": "desconocidas",
+                  "reintentar": False},
+        )
+        _write_output(json.dumps(error, ensure_ascii=False))
+        return 130 if interrupted else 1
+    except (IsolationUnavailable, OSError) as exc:
+        error = emit_error(tool_name, "UNEXPECTED_ERROR",
+                           "Process isolation or completion could not be verified; "
+                           "no thread fallback was used. Inspect state before retrying.",
+                           args={"reintentar": False})
+        _write_output(json.dumps(error, ensure_ascii=False))
+        return 1
+    if result["stdout"]:
+        _write_output(result["stdout"].removesuffix("\n"))
+    sys.stderr.write(result["stderr"])
+    return result["code"]
+
+
+def _wrap_main_local(fn: Callable, tool_name: str) -> int:
+    """Preserve envelopes, voice and ledger semantics in the isolated worker."""
 
     # A-04: la voz se ofrece en la raíz de composición, no en el import del
     # kernel. `vault_errors` importaba `vault.autoria.voz` —el cruce
@@ -627,12 +710,16 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
 
     reanudar_escrituras()
 
+    ledger_failure: Dict[str, str] = {}
+
     def _writes() -> Dict[str, Any]:
         """El ledger AP-37 es thread-local: hay que leerlo en ESTE hilo.
 
         AP-51: si no se puede leer, se dice. `{}` era «cero escrituras» para la
         voz, que afirmaba «nada cambió» sin haberlo comprobado.
         """
+        if ledger_failure:
+            return dict(ledger_failure)
         try:
             # v40.17: la hoja `vault_ledger`, no `vault_io`. Contar escrituras no
             # necesita saber de saneado ni de índices, y pedir el módulo entero
@@ -640,22 +727,23 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
             from vault_ledger import write_report
 
             return write_report()
-        except Exception as exc:
-            emit_error("vault_errors", "WRITE_REPORT_ERROR", str(exc))
-            return {"ledger_ilegible": f"{type(exc).__name__}: {exc}"}
+        except Exception:
+            # Degradation is returned to the caller, not written as a trace.
+            # A failed read must neither leak its exception nor imply no writes.
+            return {"ledger_ilegible": "read_failed"}
 
     def _target():
         captured = io.StringIO()
         sys.stdout = captured
-        # AP-37: el contador de escrituras es thread-local y la tool corre en
-        # ESTE hilo, así que se pone a cero aquí — no en wrap_main, que se
-        # ejecuta en el hilo principal y no vería el mismo ledger.
+        # The callback and ledger reader run in the same isolated worker thread.
         try:
             from vault_ledger import write_ledger_reset
 
             write_ledger_reset()
         except Exception:
-            pass  # AP-37: fail-safe — ledger reset must not crash the tool
+            # Continuing is compatible, but this invocation's write count is
+            # unknown even if a subsequent read happens to succeed.
+            ledger_failure["ledger_ilegible"] = "reset_failed"
         try:
             exit_code = _run()
             result_q.put(("ok", exit_code, captured.getvalue(), _writes()))
@@ -665,62 +753,17 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
             result_q.put(("exc", exc, captured.getvalue(), _writes()))
         finally:
             sys.stdout = _real_stdout
-            # Si este hilo quedó cancelado (timeout), la valla se levanta al
-            # terminar: un identificador de hilo reciclado no puede heredar
-            # la prohibición de una ejecución anterior. Sin `try`: una
-            # limpieza que se traga su propio fallo es exactamente lo que
-            # AP-51 veta —aquí no hay nada que tragar: es borrar un
-            # identificador de un conjunto bajo un candado.
+            # Keep the ledger fence scoped to this local invocation.
             descartar_cancelacion()
 
     import argparse
 
     _error_original = argparse.ArgumentParser.error
     argparse.ArgumentParser.error = _rechazar_argumentos
-    t = threading.Thread(target=_target, daemon=True)
-    t.start()
     try:
-        t.join(timeout=limit)
-    except KeyboardInterrupt:
-        # A-09: Ctrl-C llega al hilo principal, que solo espera. Sin esto salía
-        # un traceback sin envelope y la tool seguía escribiendo en su hilo.
-        # La valla se cierra también aquí: el hilo de la tool sigue vivo y
-        # no debe seguir tocando el disco (hallazgo 3.6).
-        from vault_ledger import cancelar_escrituras
-
-        cancelar_escrituras(t.ident)
-        err = emit_error(
-            tool=tool_name,
-            code="INTERRUPTED",
-            message=f"La tool '{tool_name}' fue interrumpida por el usuario; pudo escribir antes de parar: comprueba el estado antes de reintentar.",
-        )
-        _write_output(json.dumps(err, ensure_ascii=False), _real_stdout)
-        return 130
+        _target()
     finally:
         argparse.ArgumentParser.error = _error_original
-
-    if t.is_alive():
-        # El hilo sigue vivo: en CPython no se puede matar un hilo sin
-        # reclamar el proceso. Lo que sí se puede —y se hace— es negarle el
-        # disco: la valla se cierra PARA ESE HILO y los dueños de
-        # escritura rechazan lo que venga de él. Avisar no era suficiente
-        # (hallazgo 3.6): el envelope decía «pudo escribir después» y el
-        # fichero aparecía.
-        from vault_ledger import cancelar_escrituras
-
-        cancelar_escrituras(t.ident)
-        err = emit_error(
-            tool=tool_name,
-            code="TOOL_TIMEOUT",
-            message=f"La tool '{tool_name}' excedio el limite de {limit}s. Se dejo de esperar, pero seguia ejecutandose en segundo plano: sus escrituras nuevas ya estan negadas, pero lo que hubiera escrito antes del corte sigue en el vault. Comprueba el estado antes de reintentar.",
-            args={
-                "timeout_seconds": limit,
-                "escrituras": "desconocidas: el hilo sigue vivo y su ledger no llego a publicarse",
-                "reintentar": False,
-            },
-        )
-        _write_output(json.dumps(err, ensure_ascii=False), _real_stdout)
-        return 1
 
     try:
         kind, value, captured_text, writes = result_q.get_nowait()

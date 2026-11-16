@@ -1,23 +1,47 @@
-"""A-09 — Ctrl-C durante la espera de wrap_main debe salir con envelope, no con traceback."""
+"""Interruption during process supervision stops its tree and emits an envelope."""
 import json
-import threading
-
 import vault_errors
+from vault.kernel import aislamiento
+from apoyo import esperar_condicion
+
+
+def lenta():
+    esperar_condicion(lambda: False, timeout=30)
+
+
+def _sigint_al_proceso_tras(segundos):
+    """Deliver a real SIGINT to this process: the Linux wait turns it into cancellation."""
+    import os
+    import signal
+    import threading
+
+    timer = threading.Timer(segundos, os.kill, (os.getpid(), signal.SIGINT))
+    timer.start()
+    return timer
 
 
 def test_ctrl_c_en_la_espera_emite_interrupted(monkeypatch, capsys):
-    liberar = threading.Event()
-    real_join = threading.Thread.join
+    import sys
+    if sys.platform == "linux":
+        timer = _sigint_al_proceso_tras(2)
+        try:
+            rc = vault_errors.wrap_main(lenta, "tool_de_prueba", timeout=20)
+        finally:
+            timer.cancel()
+        assert rc == 130
+        assert json.loads(capsys.readouterr().out)["error_code"] == "INTERRUPTED"
+        return
+    original_wait = aislamiento.subprocess.Popen.wait
+    injected = False
 
-    def join_interrumpido(self, timeout=None):
-        raise KeyboardInterrupt
+    def interrupted(self, timeout=None):
+        nonlocal injected
+        if timeout is not None and not injected:
+            injected = True
+            raise KeyboardInterrupt
+        return original_wait(self)
 
-    monkeypatch.setattr(threading.Thread, "join", join_interrumpido)
-    try:
-        rc = vault_errors.wrap_main(lambda: liberar.wait(5) and 0, "tool_de_prueba", timeout=5)
-    finally:
-        liberar.set()
-        monkeypatch.setattr(threading.Thread, "join", real_join)
+    monkeypatch.setattr(aislamiento.subprocess.Popen, "wait", interrupted)
+    rc = vault_errors.wrap_main(lenta, "tool_de_prueba", timeout=5)
     assert rc == 130
-    salida = capsys.readouterr().out
-    assert json.loads(salida[salida.index("{"):])["error_code"] == "INTERRUPTED"
+    assert json.loads(capsys.readouterr().out)["error_code"] == "INTERRUPTED"

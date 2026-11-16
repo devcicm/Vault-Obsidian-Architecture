@@ -96,20 +96,18 @@ def test_un_valor_de_tipo_erroneo_responde_con_envelope(tmp_path):
     assert env["error_code"] == "INVALID_ARGS" and "--limit" in env["message"], env
 
 
+def callback_argumentos_invalidos():
+    import argparse
+    parser = argparse.ArgumentParser(allow_abbrev=False)
+    parser.add_argument("--uno")
+    parser.parse_args(["--dos", "x"])
+
+
 def test_wrap_main_restaura_el_error_de_argparse():
     import argparse
-
-    sys.path.insert(0, str(ROOT / "scripts"))
     import vault_errors
-
     original = argparse.ArgumentParser.error
-
-    def main():
-        p = argparse.ArgumentParser(allow_abbrev=False)
-        p.add_argument("--uno")
-        p.parse_args(["--dos", "x"])
-
-    assert vault_errors.wrap_main(main, "probe") == 2
+    assert vault_errors.wrap_main(callback_argumentos_invalidos, "probe") == 2
     assert argparse.ArgumentParser.error is original
 
 

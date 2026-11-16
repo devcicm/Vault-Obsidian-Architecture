@@ -20,11 +20,10 @@ if _repo_root and str(_repo_root) not in sys.path:
     sys.path.insert(0, str(_repo_root))
 
 if __name__ == "__main__":
-    # Ejecutado como script, el `__main__` es el del dueño: un alias en
-    # `sys.modules` no lo correría, porque el dueño se carga con su nombre.
-    import runpy
+    # Both entry paths use the same importable owner, including isolation.
+    from vault.gobernanza.secret_scan import main
 
-    runpy.run_module("vault.gobernanza.secret_scan", run_name="__main__", alter_sys=True)
+    sys.exit(main())
 else:
     import vault.gobernanza.secret_scan as _dueno  # noqa: E402
 

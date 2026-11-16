@@ -76,6 +76,17 @@ def test_el_reanclaje_es_auditable(tmp_path, raiz_restaurada):
     assert any(n.endswith(".VAULT_ROOT") for n in tocadas)
 
 
+def test_cambiar_a_vault_anidado_no_reancla_el_estado_activo(tmp_path, raiz_restaurada):
+    import vault_raiz  # noqa: F401 — registra el alias público del módulo
+
+    anterior = tmp_path / "vault"
+    anidado = anterior / "hijo"
+    vault_io.set_vault_root(anterior)
+    assert vault_io.set_vault_root(anidado) == anidado.resolve()
+    assert vault_io.get_vault_root() == anidado.resolve()
+    assert "vault_raiz._ACTIVE_VAULT_ROOT" not in vault_io.rebound_constants()
+
+
 def test_volver_a_la_raiz_original_deja_todo_como_estaba(tmp_path):
     """Ir y volver no deja residuo — ni en el proceso ni en lo que ve un módulo.
 

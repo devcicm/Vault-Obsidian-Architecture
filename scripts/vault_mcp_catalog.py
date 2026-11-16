@@ -5989,5 +5989,64 @@ def main():
     parser.print_help()
 
 
-if __name__ == "__main__":
+def _run_cli():
+    """Bound this CLI without changing its legacy output or vault independence.
+
+    The catalog does not spawn descendants. Terminating and reaping its worker
+    prevents delayed writes, but cannot undo a sync already started before the
+    deadline. Imported callers retain the existing synchronous main function.
+    """
+    import subprocess
+    from vault_entorno import leer
+
+    limit = leer("VAULT_TOOL_TIMEOUT")
+    stdout_stream, stderr_stream = sys.stdout, sys.stderr
+    worker = (
+        # `-c` puts the cwd first on sys.path; drop it before any import so a
+        # caller's cwd cannot shadow runpy, json or the toolkit packages.
+        "import sys; getattr(sys.flags,'safe_path',False) or sys.path.pop(0); "
+        "import runpy; p=sys.argv.pop(1); "
+        # A Windows console and a redirected pipe can choose different codecs.
+        # Transfer each parent's stream contract, not just interpreter flags.
+        f"sys.stdout.reconfigure(encoding={getattr(stdout_stream, 'encoding', None) or 'utf-8'!r},"
+        f"errors={getattr(stdout_stream, 'errors', None) or 'strict'!r}); "
+        f"sys.stderr.reconfigure(encoding={getattr(stderr_stream, 'encoding', None) or 'utf-8'!r},"
+        f"errors={getattr(stderr_stream, 'errors', None) or 'backslashreplace'!r}); "
+        "sys.path.insert(0,str(__import__('pathlib').Path(p).parent)); "
+        "sys.argv[0]=p; runpy.run_path(p,run_name='__catalog_worker__')"
+    )
+    command = [sys.executable, "-X", f"utf8={sys.flags.utf8_mode}",
+               "-c", worker, str(Path(__file__).resolve()), *sys.argv[1:]]
+    process = None
+    try:
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate(timeout=limit)
+    except (subprocess.TimeoutExpired, KeyboardInterrupt, OSError) as exc:
+        if process is not None:
+            process.kill()
+            process.communicate()
+        from vault_errors import emit_error
+
+        interrupted = isinstance(exc, KeyboardInterrupt)
+        code = ("INTERRUPTED" if interrupted else "TOOL_TIMEOUT"
+                if isinstance(exc, subprocess.TimeoutExpired) else "INTERNAL_ERROR")
+        error = emit_error(
+            "vault_mcp_catalog", code,
+            "Catalog execution did not complete. The worker has stopped; "
+            "check any sync output before retrying.",
+            args={"timeout_seconds": limit, "reintentar": False},
+        )
+        print(json.dumps(error, ensure_ascii=True))
+        return 130 if interrupted else 1
+    # Relay raw bytes: the legacy child owns encoding and newline translation.
+    sys.stdout.buffer.write(stdout)
+    sys.stdout.buffer.flush()
+    sys.stderr.buffer.write(stderr)
+    sys.stderr.buffer.flush()
+    return process.returncode
+
+
+if __name__ == "__catalog_worker__":
     main()
+elif __name__ == "__main__":
+    sys.exit(_run_cli())

@@ -182,16 +182,18 @@ def test_los_guards_que_leen_el_fuente_siguen_el_alias_hasta_el_dueno():
 
 
 def test_lote_b_un_alias_ejecutado_como_script_corre_el_main_del_dueno(tmp_path):
-    """Lote B de la deuda #12 (2026-10-09): `vault_secret_scan` es hoja pero
-    también CLI. Un alias en `sys.modules` no ejecuta el `__main__` del dueño
-    —el dueño se carga con su propio nombre—, así que el alias de una tool con
-    CLI lo delega con `runpy`. Se prueba por las dos puertas: import y script."""
+    """The CLI alias and executor share the importable owner entry point."""
     import importlib
-    import subprocess
+    from apoyo import correr_python
 
     assert "vault_secret_scan" not in set(vault_arch.modulos_sin_hogar())
     assert (importlib.import_module("vault_secret_scan")
             is importlib.import_module("vault.gobernanza.secret_scan"))
+    from vault.ejecutor import _invocable
+
+    owner = importlib.import_module("vault.gobernanza.secret_scan")
+    assert _invocable(owner) is owner.main
+    assert "<locals>" not in owner.main.__qualname__
 
     import vault_grafo_import as gi
 
@@ -207,9 +209,9 @@ def test_lote_b_un_alias_ejecutado_como_script_corre_el_main_del_dueno(tmp_path)
     assert "potential secret" in r.stdout, (r.codigo, r.stdout, r.stderr)
     # El contrato CLI se queda por subproceso: el script publicado tiene que
     # rechazar el flag que no existe (uno por tool, no por caso).
-    r = subprocess.run([sys.executable, str(ROOT / "scripts" / "vault_secret_scan.py"),
-                        str(nota), "--json"], capture_output=True, text=True, encoding="utf-8")
+    r = correr_python(ROOT / "scripts" / "vault_secret_scan.py", nota, "--json")
     assert r.returncode == 2, "argparse del dueño no corrió"
+    assert r.stderr.startswith("usage: secret_scan.py [-h] target\n")
 
 
 def test_lote_c_vault_entorno_vive_en_el_kernel():

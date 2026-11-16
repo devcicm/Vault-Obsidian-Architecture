@@ -489,6 +489,8 @@ def _reanclar_constantes(anterior: Path, nueva: Path) -> List[str]:
         if not nombre_mod.startswith("vault_") or modulo is None:
             continue
         for nombre, valor in list(vars(modulo).items()):
+            if modulo is _sys.modules[__name__] and nombre == "_ACTIVE_VAULT_ROOT":
+                continue  # estado activo, no una constante derivada del vault
             if not nombre.isupper() or not isinstance(valor, Path):
                 continue
             if nombre == "VAULT_ROOT":

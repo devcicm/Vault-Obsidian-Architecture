@@ -30,7 +30,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 import vault_error_contract as vec  # noqa: E402
 import vault_gate  # noqa: E402
-from apoyo import correr_en_proceso  # noqa: E402
+from apoyo import correr_tool  # noqa: E402
 import vault_mcp_catalog  # noqa: E402
 import vault_norms  # noqa: E402
 
@@ -399,7 +399,9 @@ def test_un_flag_desconocido_no_produce_traceback():
         meta = vault_mcp_catalog.TOOLS_CATALOG[tool]
         if not meta.get("script"):
             continue
-        corrida = correr_en_proceso(Path(meta["script"]).stem, "--parametro-que-no-existe")
+        # By subprocess: since A-06 the wrapped callback runs in an isolated
+        # worker whose stderr is not captured in-process (vault.ejecutor).
+        corrida = correr_tool(Path(meta["script"]).stem, "--parametro-que-no-existe")
         assert corrida.codigo != 0, f"{tool} aceptó un flag inexistente"
         assert "Traceback (most recent call last)" not in (corrida.stderr or ""), tool
 

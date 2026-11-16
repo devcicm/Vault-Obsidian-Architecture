@@ -108,34 +108,41 @@ def test_por_la_politica_de_vault_io_tampoco_se_escribe(tmp_path):
     assert nota.read_text(encoding="utf-8") == "original\n"
 
 
+def callback_append_with_stolen_lock():
+    """Inject ownership loss inside the isolated worker, before real replace."""
+    import vault_append
+    import vault_io
+
+    real = vault_io._record_write
+
+    def steal_before_write(path, text, encoding):
+        _robar(Path(path))
+        return real(path, text, encoding)
+
+    vault_io._record_write = steal_before_write
+    try:
+        return vault_append.main()
+    finally:
+        vault_io._record_write = real
+
+
 SONDA = r"""
-import json, runpy, sys
+import sys
 from pathlib import Path
 scripts = sys.argv[1]
-sys.path[:0] = [scripts, sys.argv[2]]
-import vault_io
-from vault.kernel import bloqueo
-
-real = vault_io._record_write
-
-def robar(path, text, encoding):
-    # El ladrón entra entre la lectura y el replace de la víctima.
-    _, lock_dir = bloqueo.rutas_de_lock(Path(path))
-    (lock_dir / "owner.json").write_text(
-        json.dumps(bloqueo.ficha_del_dueno("ladron")), encoding="utf-8")
-    return real(path, text, encoding)
-
-vault_io._record_write = robar
+sys.path[:0] = [scripts, sys.argv[2], str(Path(sys.argv[2]) / "tests")]
+from test_lock_fencing import callback_append_with_stolen_lock
+from vault_errors import wrap_main
 sys.argv = ["vault_append.py", "--path", "07_Knowledge/log.md",
             "--content", "DE_LA_VICTIMA", "--no-timestamp"]
-runpy.run_path(str(Path(scripts) / "vault_append.py"), run_name="__main__")
+sys.exit(wrap_main(callback_append_with_stolen_lock, "vault_append"))
 """
 
 
 def test_la_tool_responde_note_locked_y_no_ok_true(tmp_path):
     """Lo que ve el consumidor: `vault_append` real, por `wrap_main`."""
     import os
-    import subprocess
+    from apoyo import correr_python
 
     from vault.kernel.errores import problemas_de_forma
 
@@ -144,13 +151,13 @@ def test_la_tool_responde_note_locked_y_no_ok_true(tmp_path):
     nota = raiz / "07_Knowledge" / "log.md"
     original = "---\ntitle: log\nstatus: draft\n---\n# log\n"
     nota.write_text(original, encoding="utf-8")
-    p = subprocess.run(
-        [sys.executable, "-c", SONDA, str(REPO_ROOT / "scripts"), str(REPO_ROOT)],
+    p = correr_python(
+        "-c", SONDA, str(REPO_ROOT / "scripts"), str(REPO_ROOT),
         env=dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
                  PYTHONIOENCODING="utf-8"),
-        capture_output=True, text=True, encoding="utf-8",
         cwd=str(REPO_ROOT / "scripts"), timeout=120,
     )
+    assert p.returncode == 1, (p.stdout, p.stderr)
     env = json.loads(p.stdout[p.stdout.index("{"):])
     assert env["ok"] is False and env["error_code"] == "NOTE_LOCKED", env
     assert env.get("causa") == "LOCK_PERDIDO", env

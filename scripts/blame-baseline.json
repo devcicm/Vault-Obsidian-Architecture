@@ -29,15 +29,11 @@
     },
     {
       "firma": "vault_errors.py::_inject_voice::a36080b0",
-      "visto_en": "vault_errors.py:342"
+      "visto_en": "vault_errors.py:348"
     },
     {
       "firma": "vault_errors.py::_write_output::a36080b0",
-      "visto_en": "vault_errors.py:397"
-    },
-    {
-      "firma": "vault_errors.py::wrap_main._target::a36080b0",
-      "visto_en": "vault_errors.py:643"
+      "visto_en": "vault_errors.py:403"
     },
     {
       "firma": "vault_errors_trace.py::_count_tokens::a36080b0",

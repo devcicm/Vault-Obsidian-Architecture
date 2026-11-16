@@ -42,6 +42,11 @@ al estado en que lo encontró, y su test lo comprueba.
   es el que `wrap_main` aplica, y su propio `timeout` es un añadido seguro:
   expirado, la llamada sigue viva en segundo plano y su resultado se declara
   perdido.
+- **Capturar el stderr de una tool aislada.** Desde A-06, `wrap_main` corre el
+  callback en un proceso hijo contenido (Job en Windows, subreaper en Linux):
+  ese árbol sí se detiene al expirar el presupuesto, pero su stderr va al
+  descriptor real del proceso y no llega a `Ejecucion.error`. Quien necesite
+  el stderr de una tool lo pide por subproceso (`tests/apoyo.correr_tool`).
 - **Correr dos tools a la vez.** `sys.stdout` es del proceso, no del hilo:
   dos capturas simultáneas se pisarían. El ejecutor tiene un candado global y
   serializa las ejecuciones.
@@ -162,16 +167,10 @@ def _directorio_de(modulo: Any) -> Optional[Path]:
 
 
 def _invocable(modulo: Any) -> Callable[[], Any]:
-    """La entrada de la tool: su `main()` o su bloque `__main__`.
+    """Prefer the owner's importable main entry point.
 
-    Las tools con alias (ADR-0002) no tienen `main()`: su CLI vive en el
-    bloque `__main__` del dueño, y el facade la corre con
-    `runpy.run_module("vault.gobernanza.secret_scan", run_name="__main__")`.
-    `vault_secret_scan` es una de ellas: sin esta forma, el ejecutor la
-    invocaría con un `AttributeError` y no imprimiría nada.
-
-    Se ejecuta con la misma forma que usa el facade, para que la salida sea la
-    misma que por línea de comandos.
+    Legacy modules without main retain the runpy fallback for local execution.
+    Isolated execution requires an importable callback, not this nested fallback.
     """
     main = getattr(modulo, "main", None)
     if callable(main):
