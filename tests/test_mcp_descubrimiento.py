@@ -61,3 +61,79 @@ def test_vault_explicito_fuera_de_convencion_cuenta_notas(tmp_path):
     assert found["notes"] == expected
     assert found["notes"] >= 2
     assert "notes_incomplete" not in found
+
+
+def test_descubrimiento_parcial_publica_incompletitud_sin_detalles_privados(tmp_path):
+    por_defecto = _init_vault(tmp_path / "defecto")
+    busqueda = tmp_path / "busqueda"
+    descubierto = busqueda / "vault-visible"
+    for section in ("00_System", "99_Index", "07_Knowledge"):
+        (descubierto / section).mkdir(parents=True, exist_ok=True)
+    (descubierto / "07_Knowledge" / "visible.md").write_text(
+        "# Visible\n", encoding="utf-8")
+
+    subtree = descubierto / "07_Knowledge" / "private-subtree-sentinel"
+    subtree.mkdir()
+    private_candidate = busqueda / "vault-private-candidate-sentinel"
+    private_candidate.mkdir()
+    injection = tmp_path / "fail-readdir.cjs"
+    injection.write_text(
+        "const fs = require('node:fs');\n"
+        "const { syncBuiltinESMExports } = require('node:module');\n"
+        f"const targets = new Set({json.dumps([str(subtree), str(private_candidate)])});\n"
+        "const original = fs.readdirSync;\n"
+        "fs.readdirSync = function(path, ...args) {\n"
+        "  if (targets.has(String(path))) {\n"
+        "    const error = new Error('private-injected-readdir-message');\n"
+        "    error.code = 'EACCES';\n"
+        "    throw error;\n"
+        "  }\n"
+        "  return original.call(this, path, ...args);\n"
+        "};\n"
+        "syncBuiltinESMExports();\n",
+        encoding="utf-8",
+    )
+    missing_optional_root = tmp_path / "missing-optional-scan-root"
+    s = SesionMCP(por_defecto, {
+        "VAULT_SCAN_ROOTS": f"{busqueda};{missing_optional_root}",
+        "NODE_OPTIONS": f'--require="{injection.as_posix()}"',
+    })
+    try:
+        response = s.llamar("vault_registry", {})
+        resource_response = s._pedir("resources/read", {"uri": "vault://registry"})
+        stderr = s.stderr_tail
+    finally:
+        s.cerrar()
+
+    registry = json.loads(response["result"]["content"][0]["text"])
+    by_name = {vault["name"]: vault for vault in registry["vaults"]}
+    assert "vault-visible" in by_name, registry
+    assert by_name["vault-visible"]["notes"] >= 1
+    assert "defecto" in by_name, "the explicit default registry entry must survive"
+    assert registry.get("discovery_incomplete") == {
+        "traversal_failures": 1,
+        "candidate_failures": 1,
+        "truncated": False,
+    }, registry
+    resource = json.loads(resource_response["result"]["contents"][0]["text"])
+    assert resource["discovery_incomplete"] == registry["discovery_incomplete"]
+    observed = json.dumps(response, ensure_ascii=False) + stderr
+    assert str(subtree) not in observed
+    assert str(private_candidate) not in observed
+    assert "private-injected-readdir-message" not in observed
+
+
+def test_raices_opcionales_ausentes_no_marcan_descubrimiento_incompleto(tmp_path):
+    por_defecto = _init_vault(tmp_path / "defecto")
+    busqueda = tmp_path / "busqueda"
+    (busqueda / "vault-visible" / "00_System").mkdir(parents=True)
+    (busqueda / "vault-visible" / "99_Index").mkdir()
+    missing = tmp_path / "missing-optional-scan-root"
+    s = SesionMCP(por_defecto, {"VAULT_SCAN_ROOTS": f"{busqueda};{missing}"})
+    try:
+        response = s.llamar("vault_registry", {})
+    finally:
+        s.cerrar()
+    registry = json.loads(response["result"]["content"][0]["text"])
+    assert "vault-visible" in {vault["name"] for vault in registry["vaults"]}
+    assert "discovery_incomplete" not in registry

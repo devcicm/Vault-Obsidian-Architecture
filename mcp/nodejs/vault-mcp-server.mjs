@@ -119,6 +119,7 @@ let TOOLS_DEL_PERFIL = null;
 let PERFILES_DE_TOKEN = [];
 
 const VAULT_REGISTRY = new Map();
+let VAULT_DISCOVERY_INCOMPLETE = null;
 const sessions = new Map();
 
 const MODEL_MAPPING = {
@@ -227,16 +228,31 @@ function readStandardVersion(root) {
 
 function discoverVaults(searchRoots) {
   const found = new Map();
+  const incomplete = { traversal_failures: 0, candidate_failures: 0, truncated: false };
+  const MAX_DISCOVERY_FAILURES = 100;
   const MARKERS = ["00_System", "01_Projects", "99_Index", ".obsidian"];
   const EXCLUDE = new Set(["vault-sandbox", "vault-backups", "node_modules", ".git", "__pycache__", ".history", ".locks"]);
 
-  function scan(dir, depth) {
+  function recordFailure(kind) {
+    if (incomplete[kind] < MAX_DISCOVERY_FAILURES) incomplete[kind]++;
+    else incomplete.truncated = true;
+  }
+
+  function scan(dir, depth, optionalRoot = false) {
     if (depth > 4) return;
     let entries;
-    try { entries = readdirSync(dir, { withFileTypes: true }); } catch (_) { return; }
+    try { entries = readdirSync(dir, { withFileTypes: true }); } catch (e) {
+      // Configured roots are optional; an absent root contributes no
+      // candidates, not a startup failure or a partial-scan warning.
+      if (!(optionalRoot && e && e.code === "ENOENT")) {
+        recordFailure("traversal_failures");
+      }
+      return;
+    }
     for (const e of entries) {
       if (!e.isDirectory() || e.name.startsWith(".") || EXCLUDE.has(e.name)) continue;
       const full = join(dir, e.name);
+      let candidateFailed = false;
       if (e.name.startsWith("vault-") || e.name === "vault") {
         try {
           const subEntries = readdirSync(full);
@@ -256,20 +272,22 @@ function discoverVaults(searchRoots) {
             }
           }
         } catch (e) {
-          log("debug", "candidato a vault ilegible", { dir: full, error: String(e && e.code || e && e.message || e) });
+          recordFailure("candidate_failures");
+          candidateFailed = true;
         }
       }
-      scan(full, depth + 1);
+      if (!candidateFailed) scan(full, depth + 1);
     }
   }
 
   for (const root of searchRoots) {
-    try { scan(resolve(root), 0); } catch (e) {
-      log("warn", "raíz de búsqueda de vaults ilegible", { root, error: String(e && e.code || e && e.message || e) });
+    try { scan(resolve(root), 0, true); } catch (_) {
+      recordFailure("traversal_failures");
     }
   }
 
-  return found;
+  const hasFailures = incomplete.traversal_failures || incomplete.candidate_failures;
+  return { vaults: found, incomplete: hasFailures ? incomplete : null };
 }
 
 // Un directorio que no se puede listar se anota en `fallos`: antes un
@@ -294,7 +312,8 @@ function countMdFiles(dir, fallos = []) {
 }
 
 function refreshVaultRegistry() {
-  const discovered = discoverVaults(VAULT_SCAN_ROOTS);
+  const { vaults: discovered, incomplete } = discoverVaults(VAULT_SCAN_ROOTS);
+  VAULT_DISCOVERY_INCOMPLETE = incomplete;
   for (const [name, info] of discovered) {
     if (!VAULT_REGISTRY.has(name)) {
       VAULT_REGISTRY.set(name, info);
@@ -337,6 +356,9 @@ function refreshVaultRegistry() {
       if (ilegibles.length) entrada.notes_incomplete = ilegibles.length;
       VAULT_REGISTRY.set(name, entrada);
     }
+  }
+  if (VAULT_DISCOVERY_INCOMPLETE) {
+    log("warn", "descubrimiento de vaults incompleto", VAULT_DISCOVERY_INCOMPLETE);
   }
 }
 
@@ -1128,7 +1150,9 @@ async function handleToolsCall(params, session) {
 
     if (name === "vault_registry") {
       return { content: [{ type: "text", text: JSON.stringify({
-        ok: true, vaults: [...VAULT_REGISTRY.values()].map(v => ({ name: v.name, version: v.version, notes: v.notes, notes_scope: v.notes_scope || ALCANCE_DEL_RECuento, ...(v.notes_incomplete ? { notes_incomplete: v.notes_incomplete } : {}), path: v.path, lastSeen: v.lastSeen }))
+        ok: true,
+        ...(VAULT_DISCOVERY_INCOMPLETE ? { discovery_incomplete: { ...VAULT_DISCOVERY_INCOMPLETE } } : {}),
+        vaults: [...VAULT_REGISTRY.values()].map(v => ({ name: v.name, version: v.version, notes: v.notes, notes_scope: v.notes_scope || ALCANCE_DEL_RECuento, ...(v.notes_incomplete ? { notes_incomplete: v.notes_incomplete } : {}), path: v.path, lastSeen: v.lastSeen }))
       }, null, 2) }] };
     }
 
@@ -2474,7 +2498,9 @@ async function handleResourcesRead(params, session) {
           vaults[name] = { version: info.version, notes: info.notes, notes_scope: info.notes_scope || ALCANCE_DEL_RECuento, ...(info.notes_incomplete ? { notes_incomplete: info.notes_incomplete } : {}), path: info.path, lastSeen: info.lastSeen };
         }
         return { contents: [{ uri, mimeType: "application/json", text: JSON.stringify({
-          default_vault: detectVaultRoot(), registered: VAULT_REGISTRY.size, vaults
+          default_vault: detectVaultRoot(), registered: VAULT_REGISTRY.size,
+          ...(VAULT_DISCOVERY_INCOMPLETE ? { discovery_incomplete: { ...VAULT_DISCOVERY_INCOMPLETE } } : {}),
+          vaults
         }, null, 2) }] };
       }
       case "vault://traceability/mutations": {
