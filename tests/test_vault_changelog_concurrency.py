@@ -19,6 +19,33 @@ from pathlib import Path
 import vault_change_log as cl
 
 
+def test_same_requirement_event_is_idempotent_across_processes(tmp_path):
+    from concurrent.futures import ThreadPoolExecutor
+    from apoyo import correr_python
+
+    root = tmp_path / "vault"
+    (root / "00_System").mkdir(parents=True)
+    code = """
+import json
+from vault_change_log import vault_change_log_add
+result = vault_change_log_add(action="transition", path="14_Requirements/demo/req-001.md",
+    reason="Create requirement", agent="test", event_id="40546746-302c-450e-a080-30a455674ff6",
+    requirement={"project": "demo", "req_id": "REQ-001", "from": None, "to": "draft"})
+print(json.dumps(result))
+"""
+
+    def run(_):
+        return correr_python("-c", code, vault=root)
+
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        results = list(pool.map(run, range(3)))
+    assert all(result.returncode == 0 and json.loads(result.stdout)["ok"] for result in results)
+    rows = json.loads((root / "00_System" / ".change-log.json").read_text(encoding="utf-8"))
+    assert len(rows) == 1
+    markdown = (root / "00_System" / "change-log.md").read_text(encoding="utf-8")
+    assert markdown.count("requirement-event:40546746-302c-450e-a080-30a455674ff6") == 1
+
+
 def _point_module_at(tmp: Path):
     """Se apunta la raíz del proceso, no las constantes del módulo.
 

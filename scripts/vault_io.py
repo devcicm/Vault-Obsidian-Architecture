@@ -838,8 +838,10 @@ def actualizar_indices_de_dominio(origen: str, destino: Optional[str] = None) ->
     raiz = get_vault_root()
     tocados: List[str] = []
     ilegibles: List[str] = []
-    for indice in sorted(raiz.glob("*/.*-index.json")):
-        rel = indice.relative_to(raiz).as_posix()
+    for indice, rel, contenido in _indices_de_dominio(raiz):
+        if not contenido:
+            ilegibles.append(rel)
+            continue
         try:
             with file_lock(indice, timeout=10.0):
                 datos = json.loads(indice.read_text(encoding="utf-8"))
@@ -862,6 +864,91 @@ def actualizar_indices_de_dominio(origen: str, destino: Optional[str] = None) ->
     return {"updated": bool(tocados), "indexes": tocados, "unreadable": ilegibles}
 
 
+def _indices_de_dominio(raiz: Path):
+    """Yield `(path, relative, contained)` for each per-domain index file.
+
+    `Path.glob` follows directory junctions and symlinks, so a section that
+    points outside the vault would otherwise be read (and, on update,
+    rewritten) as if it were vault data. Escaped indexes are reported, never
+    opened.
+    """
+    for indice in sorted(raiz.glob("*/.*-index.json")):
+        rel = indice.relative_to(raiz).as_posix()
+        try:
+            assert_within_vault(indice, raiz)
+        except ValueError:
+            yield indice, rel, False
+            continue
+        yield indice, rel, True
+
+
+def identidad_requisito(datos: Dict[str, Any]) -> Optional[str]:
+    """Return the existing project-qualified identity, never infer a missing ID."""
+    from vault.kernel.normalizacion import slugify_strict
+
+    project, req_id = datos.get("project"), datos.get("req_id")
+    if not isinstance(project, str) or not isinstance(req_id, str):
+        return None
+    project = slugify_strict(project)
+    if not project or not re.fullmatch(r"REQ-\d{3,}", req_id):
+        return None
+    return f"{project}/{req_id}"
+
+
+def leer_requisitos_de_dominio(raiz: Path) -> Dict[str, Any]:
+    """Read requirement notes for checking or rebuilding their derived projection."""
+    from vault.kernel.frontmatter_parsing import parse_frontmatter_with_body, FrontmatterParseError
+    from vault_registry import es_artefacto_derivado
+
+    requirements: Dict[str, Dict[str, Any]] = {}
+    invalid: List[str] = []
+    unreadable: List[str] = []
+    section = raiz / "14_Requirements"
+    if not section.exists():
+        return {"requirements": requirements, "invalidas": invalid, "ilegibles": unreadable}
+    try:
+        assert_within_vault(section, raiz)
+    except ValueError:
+        return {"requirements": requirements, "invalidas": invalid,
+                "ilegibles": ["14_Requirements"]}
+
+    def failed_walk(error):
+        unreadable.append("14_Requirements")
+
+    for folder, dirs, files in os.walk(section, onerror=failed_walk, followlinks=False):
+        for directory in dirs:
+            if (Path(folder) / directory).is_symlink():
+                unreadable.append((Path(folder) / directory).relative_to(raiz).as_posix())
+        dirs[:] = [d for d in dirs if not d.startswith(".")]
+        for name in sorted(files):
+            path = Path(folder) / name
+            rel = path.relative_to(raiz).as_posix()
+            if path.suffix.lower() != ".md" or es_artefacto_derivado(rel):
+                continue
+            try:
+                assert_within_vault(path, raiz)
+                before = path.stat()
+                raw = path.read_text(encoding="utf-8")
+                after = path.stat()
+                if (before.st_mtime_ns, before.st_size) != (after.st_mtime_ns, after.st_size):
+                    unreadable.append(rel)
+                    continue
+                data, _ = parse_frontmatter_with_body(raw)
+            except (OSError, ValueError, FrontmatterParseError):
+                unreadable.append(rel)
+                continue
+            data = data or {}
+            if not ("req_id" in data or "req_type" in data or
+                    data.get("type") == "requirement" or name.startswith("req-")):
+                continue
+            identity = identidad_requisito(data)
+            if identity is None or identity in requirements:
+                invalid.append(rel)
+                continue
+            requirements[identity] = {**data, "relPath": rel, "docId": data.get("id")}
+    return {"requirements": requirements, "invalidas": invalid, "ilegibles": unreadable}
+
+
 def verificar_indices_de_dominio(raiz: Optional[Path] = None) -> Dict[str, Any]:
     """Comprueba que cada `relPath` de los índices de dominio exista (D-04).
 
@@ -878,16 +965,62 @@ def verificar_indices_de_dominio(raiz: Optional[Path] = None) -> Dict[str, Any]:
     fichero que no se pudo leer.
     """
     raiz = Path(raiz) if raiz is not None else get_vault_root()
+    # A requirement saved between the census and the index read would show up
+    # as an invalid identity. Repeat once with a fresh census; a census that
+    # keeps changing is an incomplete read, never reported as corruption.
+    for _ in (1, 2):
+        informe, censo = _verificar_indices_una_vez(raiz)
+        if _firma_del_censo(leer_requisitos_de_dominio(raiz)) == _firma_del_censo(censo):
+            return informe
+    informe["ilegibles"] = sorted(set(informe["ilegibles"]) | {"14_Requirements"})
+    informe["ok"] = False
+    return informe
+
+
+def _firma_del_censo(census: Dict[str, Any]) -> tuple:
+    return (tuple(sorted((k, v.get("relPath")) for k, v in census["requirements"].items())),
+            tuple(sorted(census["invalidas"])), tuple(sorted(census["ilegibles"])))
+
+
+def _verificar_indices_una_vez(raiz: Path):
     rotas: List[str] = []
     ilegibles: List[str] = []
+    invalidas: List[str] = []
+    ausentes: List[str] = []
+    omitidas: List[str] = []
+    census = leer_requisitos_de_dominio(raiz)
+    invalidas.extend(census["invalidas"])
+    ilegibles.extend(census["ilegibles"])
+    requirement_index = raiz / "14_Requirements" / ".requirements-index.json"
+    projected: Dict[str, str] = {}
+    if census["requirements"] and not requirement_index.exists():
+        ausentes.append(requirement_index.relative_to(raiz).as_posix())
     revisados = 0
-    for indice in sorted(raiz.glob("*/.*-index.json")):
-        rel_indice = indice.relative_to(raiz).as_posix()
+    for indice, rel_indice, contenido in _indices_de_dominio(raiz):
+        if not contenido:
+            ilegibles.append(rel_indice)
+            continue
         try:
             datos = json.loads(indice.read_text(encoding="utf-8"))
+            if not isinstance(datos, dict):
+                raise ValueError("Invalid index shape")
         except (OSError, ValueError):
             ilegibles.append(rel_indice)
             continue
+        if indice == requirement_index:
+            rows = datos.get("requirements")
+            if not isinstance(rows, list):
+                ilegibles.append(rel_indice)
+                continue
+            for entry in rows:
+                identity = identidad_requisito(entry) if isinstance(entry, dict) else None
+                if identity is None or identity in projected:
+                    invalidas.append(rel_indice)
+                    continue
+                projected[identity] = entry.get("relPath")
+                expected = census["requirements"].get(identity)
+                if expected is None or expected["relPath"] != entry.get("relPath"):
+                    invalidas.append(rel_indice)
         for clave, lista in datos.items():
             if not isinstance(lista, list):
                 continue
@@ -898,14 +1031,25 @@ def verificar_indices_de_dominio(raiz: Optional[Path] = None) -> Dict[str, Any]:
                 if not isinstance(rel, str) or not rel:
                     continue
                 revisados += 1
-                if not (raiz / rel).exists():
+                try:
+                    assert_within_vault(raiz / rel, raiz)
+                except ValueError:
+                    invalidas.append(rel_indice)
+                    continue
+                if not (raiz / rel).is_file():
                     rotas.append(f"{rel_indice} -> {rel}")
+    for identity, note in census["requirements"].items():
+        if projected.get(identity) != note["relPath"]:
+            omitidas.append(note["relPath"])
     return {
-        "ok": not rotas and not ilegibles,
+        "ok": not any((rotas, ilegibles, invalidas, ausentes, omitidas)),
         "revisados": revisados,
         "rotas": rotas,
         "ilegibles": ilegibles,
-    }
+        "invalidas": sorted(set(invalidas)),
+        "ausentes": ausentes,
+        "omitidas": sorted(omitidas),
+    }, census
 
 
 class _Lote:

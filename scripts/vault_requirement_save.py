@@ -34,7 +34,7 @@ import re
 
 import sys
 
-from vault_change_log import vault_change_log_add
+from vault_change_log import vault_change_log_add, leer_historial_completo
 from vault_errors import emit_error, wrap_main, proyecto_registrado
 from vault_norms_catalog import status_frontmatter_lines
 from vault_lib import yaml_scalar, slugify_strict, utcnow
@@ -45,6 +45,9 @@ from vault_io import (
     atomic_write_text,
     atomic_write_json,
     assert_within_vault,
+    identidad_requisito,
+    leer_requisitos_de_dominio,
+    IndiceIlegible,
 )
 import uuid
 
@@ -88,6 +91,101 @@ REQ_TYPES = ["functional", "non-functional", "constraint", "assumption"]
 PRIORITIES = ["must-have", "should-have", "nice-to-have", "wont-have"]
 
 STATUSES = ["draft", "reviewed", "approved", "implemented", "verified", "obsolete"]
+
+
+def _hay_historial_de_requisitos() -> bool:
+    """True when the durable change log holds structured requirement events."""
+    try:
+        return any(isinstance(row.get("requirement"), dict) for row in leer_historial_completo())
+    except (IndiceIlegible, OSError, ValueError):
+        return True  # Unverifiable history: let the replay report it, never guess.
+
+
+def reconstruir_indice_requisitos() -> Dict[str, Any]:
+    """Explicit mutation API; incomplete evidence never becomes a guessed history."""
+    try:
+        return _reconstruir_indice_requisitos()
+    except (IndiceIlegible, OSError, ValueError, TypeError):
+        return {"ok": False, "error_code": "INDEX_STALE", "history_incomplete": True,
+                "message": "Requirement projection or durable history could not be verified"}
+
+
+def _reconstruir_indice_requisitos() -> Dict[str, Any]:
+    """Replay the complete durable history into the existing derived index.
+
+    Lock order is always projection then history; readers never hold a history
+    lock while waiting for this projection. Legacy prose is not parsed as fact.
+    """
+    with indice_compartido(_index_file(), {"requirements": []}) as index:
+        if (not isinstance(index, dict) or not isinstance(index.get("requirements"), list) or
+                not isinstance(index.get("counters", {}), dict) or
+                any(type(value) is not int or value < 0 for value in index.get("counters", {}).values())):
+            return {"ok": False, "error_code": "INDEX_STALE", "history_incomplete": True,
+                    "message": "Invalid requirement projection shape; restore verified data"}
+        census = leer_requisitos_de_dominio(_raiz())
+        if census["invalidas"] or census["ilegibles"]:
+            return {"ok": False, "error_code": "INDEX_STALE", "history_incomplete": True,
+                    "message": "Requirement notes could not be verified completely"}
+        rows = leer_historial_completo()
+        legacy = [row for row in rows if row.get("action") == "transition" and
+                  str(row.get("path", "")).startswith("14_Requirements/") and
+                  not isinstance(row.get("requirement"), dict)]
+        if legacy:
+            return {"ok": False, "error_code": "INDEX_STALE", "history_incomplete": True,
+                    "legacy_events": len(legacy),
+                    "legacy_paths": sorted({str(row.get("path")) for row in legacy})[:20],
+                    "message": "Legacy requirement history lacks qualified identity; restore verified history",
+                    "recovery": {"action": "manual",
+                                 "hint": "Review the listed change-log rows with their owner: either record "
+                                         "the qualified transition (project/REQ id) through vault_requirement_save "
+                                         "or keep the projection and leave the rows as historical prose. "
+                                         "Nothing is inferred from unqualified rows."}}
+        events: Dict[str, List[Dict[str, Any]]] = {}
+        seen: Dict[str, Dict[str, Any]] = {}
+        counters = dict(index.get("counters") or {})
+        for row in rows:
+            detail = row.get("requirement")
+            if not isinstance(detail, dict):
+                continue
+            identity = identidad_requisito(detail)
+            identifier = row.get("id")
+            if (identity is None or detail.get("identity") != identity or not isinstance(identifier, str) or not identifier or
+                    detail.get("to") not in STATUSES or detail.get("from") not in [None, *STATUSES] or
+                    not row.get("timestamp") or not row.get("agent") or not row.get("reason")):
+                return {"ok": False, "error_code": "INDEX_STALE", "history_incomplete": True,
+                        "message": "Invalid structured requirement history"}
+            if identifier in seen:
+                if seen[identifier] != row:
+                    return {"ok": False, "error_code": "INDEX_STALE", "history_incomplete": True,
+                            "message": "Conflicting requirement event identity"}
+                continue
+            seen[identifier] = row
+            history = events.setdefault(identity, [])
+            if detail["from"] != (history[-1]["to"] if history else None):
+                return {"ok": False, "error_code": "INDEX_STALE", "history_incomplete": True,
+                        "message": "Requirement event sequence is incomplete"}
+            history.append({"id": identifier, "at": row["timestamp"],
+                            "from": detail["from"], "to": detail["to"],
+                            "agent": row["agent"], "reason": row["reason"]})
+            project, req_id = identity.rsplit("/", 1)
+            counters[project] = max(int(counters.get(project, 0)), int(req_id[4:]))
+        previous_entries = {identidad_requisito(row): row for row in index.get("requirements", [])
+                            if isinstance(row, dict) and identidad_requisito(row)}
+        rebuilt = []
+        for identity, note in sorted(census["requirements"].items()):
+            history = events.get(identity, [])
+            if not history or history[-1]["to"] != note.get("requirement_state", note.get("status")):
+                return {"ok": False, "error_code": "INDEX_STALE", "history_incomplete": True,
+                        "message": "Requirement note state lacks matching durable history"}
+            entry = {**previous_entries.get(identity, {}), **{key: note.get(key) for key in
+                     ("docId", "req_id", "project", "title", "req_type", "priority", "status", "relPath")}}
+            entry.pop("pending_transition", None)
+            if note.get("updatedAt") is not None:
+                entry["updatedAt"] = str(note["updatedAt"])
+            entry["events"] = history
+            rebuilt.append(entry)
+        index.update(requirements=rebuilt, counters=counters)
+    return {"ok": True, "requirements": len(rebuilt), "history_incomplete": False}
 
 
 # superseded_by: vault_io.indice_compartido
@@ -144,6 +242,16 @@ def vault_requirement_save(
 
     safe_project = slugify_strict(project)
 
+    if not _index_file().exists():
+        census = leer_requisitos_de_dominio(_raiz())
+        # Counters also live in the durable history: with every note deleted,
+        # skipping the replay reset them and reused an identifier (REQ-001).
+        if (census["requirements"] or census["invalidas"] or census["ilegibles"]
+                or _hay_historial_de_requisitos()):
+            recovery = reconstruir_indice_requisitos()
+            if not recovery["ok"]:
+                return recovery
+
     title_slug = slugify_strict(title)
 
     now = utcnow()
@@ -153,6 +261,7 @@ def vault_requirement_save(
     # reservar el numero fuera del tramo exclusivo hace que dos guardados
     # concurrentes obtengan el mismo id y el mismo nombre de fichero.
     transicion_registrada = False
+    pending_transition = None
 
     with indice_compartido(_index_file(), {"requirements": []}) as index:
 
@@ -302,46 +411,65 @@ def vault_requirement_save(
 
         sin_cambio = bool(previo) and final_content == previo
 
+        previous_pending = existente.get("pending_transition") if existente else None
+        if previous_pending and previous_pending["to"] != status:
+            return {"ok": False, "error_code": "INDEX_STALE", "history_incomplete": True,
+                    "message": "Retry the pending requirement state before requesting another transition"}
         if not sin_cambio:
             note_path.parent.mkdir(parents=True, exist_ok=True)
-
             atomic_write_text(note_path, final_content)
 
-            # D-03: un cambio de estado es un evento del objetivo, no solo un
-            # fichero que cambio. Queda en el indice (events[]) y en el
-            # change-log como `transition`; reconstruir el indice no pierde
-            # el rastro porque el change-log lo conserva.
-            previo_estado = str(existente.get("status") or "") if existente is not None else ""
-            eventos = list(existente.get("events") or []) if existente is not None else []
-            if previo_estado != status:
-                eventos.append({"at": now, "from": previo_estado or None, "to": status})
-                rel_nota = str(note_path.relative_to(_raiz())).replace("\\", "/")
+        previous_state = str(existente.get("status") or "") if existente else ""
+        eventos = list(existente.get("events") or []) if existente else []
+        state_changed = previous_state != status
+        if previous_pending or state_changed:
+            # The event identity is derived from the history position, not
+            # drawn at random: when the ledger commit succeeded but the index
+            # write did not, the retry reproduces the same id and the change
+            # log deduplicates it instead of appending a second transition.
+            sequence = f"{safe_project}/{req_id}#{len(eventos)}:{previous_state or ''}->{status}"
+            pending_transition = previous_pending or {
+                "id": str(uuid.uuid5(uuid.NAMESPACE_URL, "vault-requirement-event:" + sequence)),
+                "from": previous_state or None, "to": status,
+                "reason": f"{req_id}: {previous_state or '(nuevo)'} -> {status}",
+            }
+            rel_note = note_path.relative_to(_raiz()).as_posix()
+            try:
                 registro = vault_change_log_add(
-                    action="transition", path=rel_nota,
-                    reason=f"{req_id}: {previo_estado or '(nuevo)'} -> {status}",
-                    agent="system")
-                transicion_registrada = bool(registro.get("ok"))
+                    action="transition", path=rel_note, reason=pending_transition["reason"],
+                    agent="system", event_id=pending_transition["id"],
+                    requirement={"project": safe_project, "req_id": req_id,
+                                 "from": pending_transition["from"], "to": status})
+            except Exception:
+                # The note may already be durable. Retain a retry identity and
+                # report partial work, never claim a committed history event.
+                registro = {"ok": False}
+            transicion_registrada = bool(registro.get("ok"))
+            if transicion_registrada:
+                event = registro["entry"]
+                if not any(item.get("id") == event["id"] for item in eventos):
+                    eventos.append({"id": event["id"], "at": event["timestamp"],
+                                    "from": event["requirement"]["from"], "to": status,
+                                    "agent": event["agent"], "reason": event["reason"]})
+                pending_transition = None
+        # An unchanged note whose projected state differs is a retry after a
+        # failed index write: the projection must be rewritten, not skipped.
+        if not sin_cambio or previous_pending or state_changed:
             entry = {
-                "docId": note_id,
-                "req_id": req_id,
-                "project": project,
-                "title": title,
-                "req_type": req_type,
-                "priority": priority,
-                "status": status,
-                "relPath": str(note_path.relative_to(_raiz())).replace("\\", "/"),
+                "docId": note_id, "req_id": req_id, "project": project, "title": title,
+                "req_type": req_type, "priority": priority, "status": status,
+                "relPath": note_path.relative_to(_raiz()).as_posix(),
                 "related_code": related_code or [],
-                "updatedAt": now,
+                "updatedAt": existente.get("updatedAt", now) if sin_cambio and existente else now,
                 "events": eventos,
             }
-
+            if pending_transition is not None:
+                entry["pending_transition"] = pending_transition
             if existente is not None:
-                for i, r in enumerate(index["requirements"]):
-                    if r is existente:
-                        index["requirements"][i] = entry
-                        break
+                index["requirements"][index["requirements"].index(existente)] = entry
             else:
                 index["requirements"].append(entry)
+
 
 
     if sin_cambio:
@@ -350,6 +478,12 @@ def vault_requirement_save(
         accion = "updated"
     else:
         accion = "created"
+
+    if pending_transition is not None:
+        return {"ok": False, "error_code": "FILE_WRITE_ERROR", "partial": True,
+                "message": "Requirement note saved, but transition history is pending; retry the same request",
+                "transition_logged": False, "req_id": req_id,
+                "path": str(note_path.relative_to(_raiz())).replace("\\", "/"), **write_report()}
 
     return {
         "ok": True,

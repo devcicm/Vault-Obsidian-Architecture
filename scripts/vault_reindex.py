@@ -207,7 +207,7 @@ Notas:
         dest="check_indices",
         action="store_true",
         help="Exit 0 si cada entrada de los índices de dominio (.bugs-index.json, "
-             ".code-index.json…) apunta a una nota que existe, 1 si alguna no",
+             ".code-index.json…) resuelve y el índice de requisitos está completo; solo lectura",
     )
 
     args = parser.parse_args()
@@ -230,11 +230,34 @@ Notas:
                 f"{len(informe['rotas'])} entrada(s) de índices de dominio "
                 f"apuntan a notas que no existen; "
                 f"{len(informe['ilegibles'])} índice(s) ilegibles.")
+            if any(informe[key] for key in ("invalidas", "ausentes", "omitidas")):
+                informe["message"] += (
+                    f" {len(informe['ausentes'])} índice(s) ausentes; "
+                    f"{len(informe['omitidas'])} requisito(s) omitidos; "
+                    f"{len(informe['invalidas'])} identidad(es) inválidas.")
         else:
             informe["message"] = (
                 f"{informe['revisados']} entrada(s) de índices de dominio: "
                 f"todas resuelven.")
         informe = completar_envelope("vault_reindex", informe)
+        def requirement_scoped(item: str) -> bool:
+            # Diagnostics are vault-relative paths ("rotas" entries are "<index> -> <rel>").
+            return item.split(" -> ", 1)[0].split("/", 1)[0] == "14_Requirements"
+
+        requirement_failure = any(informe[key] for key in ("ausentes", "omitidas")) or any(
+            requirement_scoped(item) for key in ("invalidas", "ilegibles", "rotas") for item in informe[key])
+        if not informe["ok"] and requirement_failure:
+            # Keep the catalog's documentation reference, but never offer the
+            # --graph tool: it does not rebuild requirement indexes.
+            recovery = {key: value for key, value in (informe.get("recovery") or {}).items()
+                        if key not in ("tool", "args")}
+            recovery.update(
+                action="manual",
+                hint="Verify requirement notes and restore their domain projection from verified history. "
+                     "vault_reindex --graph does not rebuild requirement indexes; do not retry blindly.")
+            informe["recovery"] = recovery
+        # This check must not advance the persistent voice counter.
+        informe["vault_says"] = {"moment": "read", "message": informe["message"]}
         print(json.dumps(informe, indent=2, ensure_ascii=False))
         return 0 if informe["ok"] else 1
 

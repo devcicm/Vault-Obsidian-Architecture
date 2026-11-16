@@ -1083,6 +1083,15 @@ python vault_master_index.py
 ---
 
 ### `vault_reindex.py`
+
+`--check-indices` es una comprobación de solo lectura, separada del gate estricto
+y obligatoria para el cierre de esta corrección; no añade una puerta al gate.
+Detecta rutas rotas, índices ilegibles, identidades inválidas y requisitos omitidos.
+La ausencia de `.requirements-index.json` solo falla cuando existen requisitos.
+Recorre y lee las notas de requisitos en cada ejecución: el costo depende del
+volumen y del almacenamiento. No reconstruye índices, no escribe trazas ni avanza
+el contador de voz. Este resultado no certifica el grafo ni la frescura del índice
+de búsqueda, que tienen verificaciones independientes.
 Reconstruye `search-index.json` desde cero. Herramienta de recuperación para índices vacíos o corruptos.
 
 ```bash
@@ -1090,6 +1099,7 @@ python vault_reindex.py
 python vault_reindex.py --dry-run             # ver qué se indexaría sin escribir
 python vault_reindex.py --graph               # también reconstruye graph.json
 python vault_reindex.py --check               # solo verifica estado del índice
+python vault_reindex.py --check-indices       # verifica índices de dominio y requisitos
 ```
 
 > Usar `--check` al inicio de cada sesión para verificar que el índice está operativo.
@@ -1197,6 +1207,21 @@ python vault_flow_save.py --project mi-api --name "CI/CD Pipeline" \
 
 ### `vault_requirement_save.py`
 Documenta requerimientos funcionales y no funcionales en `14_Requirements/` (ISO 29148).
+
+Las transiciones nuevas conservan identidad `{project}/REQ-NNN`, ID de evento,
+estado anterior/nuevo, fecha, agente y motivo en el changelog existente. El
+`events[]` del índice es una proyección de ese registro, no otra autoridad.
+Si la nota se escribió pero el historial falló, el resultado declara trabajo
+parcial y conserva una identidad de reintento: repetir la misma solicitud no
+duplica el evento. No se permite avanzar a otro estado mientras esté pendiente.
+
+La API `vault_requirement_save.reconstruir_indice_requisitos()` reconstruye la
+proyección con el historial completo, no con los últimos 20 eventos. Un guardado
+con índice ausente intenta esa recuperación antes de reservar otro identificador.
+Las filas antiguas sin identidad estructurada se informan como historial
+incompleto; no se interpretan motivos en texto libre ni se inventan transiciones.
+Esta recuperación explícita escribe el índice; `--list` y `--check-indices` no
+la ejecutan. El comando `vault_reindex --graph` tampoco la sustituye.
 
 ```bash
 python vault_requirement_save.py --project mi-api --title "REQ-001 Auth" \

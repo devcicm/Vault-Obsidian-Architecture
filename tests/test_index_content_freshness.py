@@ -277,3 +277,21 @@ def test_ordinary_write_after_reindex_keeps_search_index_coherent(tmp_path, monk
     assert vault_write.vault_write("07_Knowledge", "Second freshness note", content, tags=["test"])["ok"]
     verdict = coherencia_indice(repo)
     assert verdict["status"] == "index_ok", verdict
+
+
+def test_requirement_event_marker_keeps_the_changelog_table_contiguous(tmp_path, monkeypatch):
+    import vault_change_log
+    import vault_io
+
+    (tmp_path / "00_System").mkdir()
+    vault_io.set_vault_root(tmp_path)
+    requirement = {"project": "demo", "req_id": "REQ-001", "from": None, "to": "draft"}
+    assert vault_change_log.vault_change_log_add(
+        action="transition", path="14_Requirements/demo/req-001.md", reason="created",
+        agent="test", requirement=requirement)["ok"]
+    assert vault_change_log.vault_change_log_add(
+        action="created", path="07_Knowledge/n.md", reason="later row", agent="test")["ok"]
+    lines = (tmp_path / "00_System" / "change-log.md").read_text(encoding="utf-8").splitlines()
+    table = lines[lines.index(next(line for line in lines if line.startswith("| Timestamp"))):]
+    assert all(line.startswith("|") for line in table if line.strip()), table
+    assert sum("requirement-event:" in line for line in table) == 1

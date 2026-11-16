@@ -5637,7 +5637,7 @@
           },
           "check-indices": {
             "type": "boolean",
-            "description": "Exit 0 si cada entrada de los índices de dominio (.bugs-index.json, .code-index.json…) apunta a una nota que existe, 1 si alguna no"
+            "description": "Exit 0 si cada entrada de los índices de dominio (.bugs-index.json, .code-index.json…) resuelve y el índice de requisitos está completo; solo lectura"
           }
         },
         "additionalProperties": false

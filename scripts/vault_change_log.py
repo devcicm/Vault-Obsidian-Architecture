@@ -51,7 +51,7 @@ import sys
 from vault_errors import emit_error, emit_fallo, mensaje_de, wrap_main, proyecto_registrado
 from vault_entorno import agente_por_defecto
 from vault_lib import utcnow
-from vault_io import IndiceIlegible, atomic_write_text, file_lock
+from vault_io import IndiceIlegible, atomic_write_text, file_lock, identidad_requisito
 import uuid
 
 from pathlib import Path
@@ -129,7 +129,15 @@ def _write_json_log(entries: List[Dict[str, Any]]) -> None:
     RepositorioGobernanza(construir()).escribir_bitacora_cambios(entries)
 
 
-def _append_md_log(entry: Dict[str, Any]) -> None:
+def leer_historial_completo() -> List[Dict[str, Any]]:
+    """Read one atomic log snapshot without the query API's latest-20 limit."""
+    entries = _read_json_log()
+    if any(not isinstance(entry, dict) for entry in entries):
+        raise IndiceIlegible(_log_json(), ValueError("Invalid history entry"))
+    return entries
+
+
+def _append_md_log(entry: Dict[str, Any]) -> bool:
     _system_dir().mkdir(parents=True, exist_ok=True)
 
     HEADER = (
@@ -146,7 +154,13 @@ def _append_md_log(entry: Dict[str, Any]) -> None:
             existing = _log_md().read_text(encoding="utf-8")
 
         except OSError:
+            if "requirement" in entry:
+                raise
             pass
+
+    marker = f"<!-- requirement-event:{entry['id']} -->" if "requirement" in entry else ""
+    if marker and marker in existing:
+        return False
 
     if "| Timestamp |" not in existing:
         existing = HEADER
@@ -163,10 +177,14 @@ def _append_md_log(entry: Dict[str, Any]) -> None:
 
     agent = entry.get("agent", "")
 
-    row = f"| {ts} | `{action}` | `{path}` | `{new_path}` | {reason} | {agent} |\n"
+    # The marker lives inside the last cell: an HTML block on its own line
+    # ends a GFM table, and every later row would render as plain text.
+    suffix = f" {marker}" if marker else ""
+    row = f"| {ts} | `{action}` | `{path}` | `{new_path}` | {reason} | {agent}{suffix} |\n"
 
     atomic_write_text(_log_md(), existing + row)
     _refrescar_busqueda_del_log()
+    return True
 
 
 def _refrescar_busqueda_del_log() -> None:
@@ -220,6 +238,8 @@ def vault_change_log_add(
     agent: str = "claude",
     new_path: Optional[str] = None,
     propagate: Optional[str] = None,
+    requirement: Optional[Dict[str, Any]] = None,
+    event_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """El registro que **SP-01** exige antes de eliminar una nota.
 
@@ -252,8 +272,29 @@ def vault_change_log_add(
             f"Válidas: {VALID_PROPAGATE_STRATEGIES}",
         )
 
+    if requirement is not None:
+        from vault_norms_catalog import LIFECYCLE_REGISTRY
+
+        states = next(row["states"] for row in LIFECYCLE_REGISTRY
+                      if row["tool"] == "vault_requirement_save")
+        identity = identidad_requisito(requirement)
+        if (action != "transition" or identity is None or
+                requirement.get("to") not in states or
+                requirement.get("from") not in [None, *states]):
+            return emit_error("vault_change_log", "INVALID_VALUE", "Invalid requirement transition")
+        requirement = {"identity": identity, "project": identity.rsplit("/", 1)[0],
+                       "req_id": requirement["req_id"], "from": requirement.get("from"),
+                       "to": requirement["to"]}
+        if event_id is not None:
+            try:
+                event_id = str(uuid.UUID(event_id))
+            except (ValueError, TypeError, AttributeError):
+                return emit_error("vault_change_log", "INVALID_VALUE", "Invalid event identity")
+    elif event_id is not None:
+        return emit_error("vault_change_log", "INVALID_VALUE", "Event identity requires a structured transition")
+
     entry: Dict[str, Any] = {
-        "id": str(uuid.uuid4()),
+        "id": event_id or str(uuid.uuid4()),
         "action": action,
         "path": path,
         "new_path": new_path,
@@ -261,6 +302,8 @@ def vault_change_log_add(
         "agent": agent,
         "timestamp": utcnow(),
     }
+    if requirement is not None:
+        entry["requirement"] = requirement
 
     # Serialize the read-append-write against concurrent writers. Without the lock,
     # two processes could both read the same log, each append their entry, and the
@@ -268,11 +311,20 @@ def vault_change_log_add(
     # whole critical section (JSON + MD append) atomic across processes.
     with file_lock(_log_json()):
         try:
-            entries = _read_json_log()
+            entries = leer_historial_completo()
         except IndiceIlegible as exc:
             # No se escribe nada: el fichero queda como estaba para repararlo.
             return emit_fallo("vault_change_log", exc)
 
+        if requirement is not None:
+            previous = next((row for row in entries if row.get("id") == entry["id"]), None)
+            if previous is not None:
+                if any(previous.get(key) != entry.get(key)
+                       for key in ("action", "path", "requirement")):
+                    return emit_error("vault_change_log", "INVALID_VALUE", "Event identity conflict")
+                repaired = _append_md_log(previous)
+                return {"ok": True, "id": previous["id"], "action": action,
+                        "path": path, "written": int(repaired), "entry": previous}
         entries.append(entry)
 
         _write_json_log(entries)
@@ -292,6 +344,8 @@ def vault_change_log_add(
         "log_md": str(_log_md().relative_to(_raiz())).replace("\\", "/"),
         "log_json": str(_log_json().relative_to(_raiz())).replace("\\", "/"),
     }
+    if requirement is not None:
+        response["entry"] = entry
 
     if propagate:
         prop_result = _run_propagation(path, propagate)
