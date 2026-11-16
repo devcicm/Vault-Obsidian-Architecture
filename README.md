@@ -165,7 +165,7 @@ vault mcp-path --root $PWD/vault-mi-proyecto --project mi-proyecto
 Para un agente, añade `VAULT_MCP_PERFIL=agente` al `env` de la entrada MCP: el
 servidor ofrece y acepta solo las tools del protocolo de sesión —orientarse,
 recordar, escribir, borrar y cerrar—, derivadas de
-`vault.meta_toolkit.protocolo_de_sesion`. Sin ella expone el catálogo entero.
+`vault.kernel.protocolo_de_sesion` (antes `vault.meta_toolkit.protocolo_de_sesion`, que sigue como alias). Sin ella expone el catálogo entero.
 
 **Desinstalar:**
 
@@ -357,7 +357,7 @@ Detalle completo en [Marco de Datos y Gobernanza](./vault-obsidian-architecture.
 | **Principios FAIR** | Findable, Accessible, Interoperable, Reusable — con el mecanismo concreto que ya los cumple | `vault_search`, `vault_master_index`, `.history/` |
 | **V's del Big Data** | Volumen, velocidad, variedad, veracidad, valor, variabilidad — cada V apunta a un número real | `vault_audit`, `vault_change_log`, `vault_delta` |
 | **Trazabilidad** | Cadena verificable `agent:` → `.change-log.json` → `.tool-trace.json` → `.history/` → manifiesto Merkle | `vault_audit --trace` |
-| **Gobernanza** | 85 normas AP/PAT/SP/CN, 0 con enforcement manual | `vault_norms --audit` |
+| **Gobernanza** | 86 normas AP/PAT/SP/CN, 0 con enforcement manual | `vault_norms --audit` |
 | **Alineación ISO** | 13 normas mapeadas cláusula → implementación → tool | `vault_fundamentals --framework` |
 
 ```bash
@@ -531,7 +531,7 @@ python scripts/vault_norms.py --check-framework    # guard anti-drift registro �
 - **AP-36** (critical): toda operación escribe solo dentro del vault, es idempotente
   y deja artefactos rastreables. Backups en `VAULT_ROOT/vault-backups/`, `.bak` de
   moves en `00_System/.trash/`, stubs de mantenimiento en `02_Observability/maintenance/stubs/`.
-- **0 normas con enforcement `manual`**: las 85 normas del catálogo tienen guard o audit.
+- **0 normas con enforcement `manual`**: las 86 normas del catálogo tienen guard o audit.
   `python scripts/vault_norms.py --audit [--root X]` audita AP-06/07/09/10/15/19/36, CN-02/03, SP-01.
 - **Saneamiento de índices**: tablas con `| [[stem]] | Título | ... |` (nunca alias en
   celda); `python scripts/vault_section_index.py --heal` cura índices legacy; escribir
@@ -677,7 +677,7 @@ Sistema de control de asistencia con autenticación biométrica.
 Contiene:
 - 8 principios de diseño
 - 129 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
-- 85 normas: 70 antipatrones (AP-01–AP-70), 6 patrones (PAT-1–PAT-6), 4 SP, 5 CN
+- 86 normas: 71 antipatrones (AP-01–AP-71), 6 patrones (PAT-1–PAT-6), 4 SP, 5 CN
 - norm_refs auto-embebido en frontmatter + vault_code_tag para etiquetas en código fuente
 - 8 Fundamentos de Datos (F1–F8) con trazabilidad a tools
 - CIA schema completo con semántica por tipo de nota

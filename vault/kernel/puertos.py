@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-from typing import Iterator, Protocol, Sequence, runtime_checkable
+from typing import Any, Dict, Iterator, List, Optional, Protocol, Sequence, runtime_checkable
 
 
 @runtime_checkable
@@ -204,4 +204,24 @@ class BitacoraTags(Protocol):
 
     def anotar(self, texto: str, ruta_relativa: str) -> None:
         """Anota los tags de `texto` en la bitácora, bajo `ruta_relativa`."""
+
+
+@runtime_checkable
+class BitacoraCambios(Protocol):
+    """The vault's operation log and append path, for contexts that are not autoria.
+
+    `vault_ingest` (consulta) logs its `ingested` pass and applies the appends
+    it proposes; the mutation-allowed lint run of `vault_audit` (gobernanza)
+    logs `linted`. Importing `vault_change_log` or `vault_append` from either
+    would open a context crossing, so the kernel declares the port and the
+    autoria side (`vault.autoria.bitacora`) offers it on import. Both
+    operations return the owner's envelope unchanged.
+    """
+
+    def anotar(self, accion: str, ruta: str, motivo: str, agente: str) -> Dict[str, Any]:
+        """One change-log row through `vault_change_log_add`."""
+
+    def anexar(self, ruta: str, contenido: str, seccion: Optional[str] = None,
+               con_fecha: bool = True) -> Dict[str, Any]:
+        """Append to an existing note through `vault_append` (never overwrites)."""
 

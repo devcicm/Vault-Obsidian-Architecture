@@ -365,7 +365,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "refresh-dq": {
                 "type": "boolean",
                 "required": False,
-                "description": "Forzar refresh de Data Quality",
+                "description": "Forzar refresh de Data Quality; es la corrida que escribe en el vault y deja una fila `linted` en la bitácora de cambios",
                 "validators": [],
             },
         },
@@ -4609,6 +4609,12 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                               "description": "Permite descargar la URL", "validators": []},
             "agent": {"type": "string", "required": False,
                       "description": "Agente que ejecuta (AP-16)", "validators": []},
+            "archivar_fuente": {"type": "bool", "required": False,
+                                "description": "Guarda la fuente literal en 10_Migrated/fuentes/ y enlaza las notas con source: [[...]] (solo texto, AP-15)",
+                                "validators": []},
+            "desde_pack": {"type": "string", "required": False,
+                           "description": "Envelope JSON de vault_context_pack: el texto es la respuesta y se guarda como un borrador que cita sus notas",
+                           "validators": ["file_exists"]},
         },
         "guards": ["Pre-vuelo anti-poison obligatorio (cli.safety)",
                    "AP-16: requiere agent o VAULT_AGENT",
@@ -4616,7 +4622,8 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                    "Nunca sobrescribe una nota existente",
                    "Red apagada salvo allow_network explícito"],
         "side_effects": ["Con --commit: crea notas en la sección destino con status draft",
-                         "Actualiza el índice de la sección"],
+                         "Actualiza el índice de la sección",
+                         "Con --commit --archivar-fuente: crea la fuente literal en 10_Migrated/fuentes/ (nunca la sobrescribe)"],
         "example": 'python vault_ingest.py --file notas.md --section 07_Knowledge\npython vault_ingest.py --file notas.md --section 07_Knowledge --commit',
         "related": ["vault_write", "vault_knowledge_save", "vault_context_pack"],
     },
@@ -5276,7 +5283,7 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
 
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     from vault.meta_toolkit.naturalezas import NATURALEZAS
-    from vault.meta_toolkit.protocolo_de_sesion import PERFILES, tools_del_perfil
+    from vault.kernel.protocolo_de_sesion import PERFILES, tools_del_perfil
 
     # Derivar execution_module sin dependencia circular (AP-58).
     # A2: toda tool runtime con script tiene execution_module derivado.

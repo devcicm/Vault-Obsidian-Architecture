@@ -24,6 +24,7 @@ de dominio que sube a un dominio, es el sitio donde se enchufan.
 |---|---|---|
 | `voz` | `vault.autoria.voz` | el recordatorio que acompaña a cada envelope (AP-43) |
 | `indices` | `vault_section_index` | regenerar el índice de sección tras una escritura (A-03) |
+| `bitacora_cambios` | `vault.autoria.bitacora` | la fila de la bitácora y el anexo para consulta y gobernanza (`ingested`, `linted`) |
 
 Cada uno **se ofrece al importarse**: el módulo que lo implementa se registra
 en `vault.kernel.productores` cuando se carga. Quien quiera solo el registro
@@ -48,6 +49,9 @@ PRODUCTORES: Dict[str, str] = {
     "indices": "vault_section_index",
     "tags": "vault_tags",
     "coherencia_indices": "vault.indices.proveedor_coherencia",
+    # Change log and append path for consulta/gobernanza (2026-11-16): the
+    # `ingested` and `linted` rows and the appends `vault_ingest` applies.
+    "bitacora_cambios": "vault.autoria.bitacora",
 }
 
 
@@ -195,6 +199,45 @@ def componer_voz() -> bool:
 
     componer("voz")
     return productores.hay("voz")
+
+
+def bitacora_de_cambios() -> Optional[Any]:
+    """The `bitacora_cambios` producer, composed on demand, or `None`.
+
+    Same contract as `vault_io._regenerador_de_indices`: a library caller that
+    did not compose it still gets it, and an absent producer is a value the
+    caller can check and report, never a silent loss.
+    """
+    from vault.kernel import productores
+
+    if not productores.hay("bitacora_cambios"):
+        componer("bitacora_cambios")
+    return productores.buscar("bitacora_cambios")
+
+
+def anotar_operacion(accion: str, ruta: str, motivo: str, agente: str) -> Dict[str, Any]:
+    """One operation-log row through the port, as an envelope fragment.
+
+    `{"change_log": {"id", "action"}}` when the row was written, or
+    `{"change_log_error": <reason>}` when it was not. The reason is sanitized
+    (AP-51): it names the port or the error code, never a path or a trace,
+    because it travels in the envelope of the tool that called it.
+    """
+    try:
+        bitacora = bitacora_de_cambios()
+    except Exception as exc:  # the composer must never take the action down
+        return {"change_log_error": f"bitacora_cambios: {type(exc).__name__}"}
+    if bitacora is None:
+        return {"change_log_error": "nadie atiende el puerto bitacora_cambios: "
+                                    "no se anotó la fila"}
+    try:
+        fila = bitacora.anotar(accion, ruta, motivo, agente)
+    except Exception as exc:
+        return {"change_log_error": f"bitacora_cambios: {type(exc).__name__}"}
+    if isinstance(fila, dict) and fila.get("ok") and fila.get("id"):
+        return {"change_log": {"id": fila["id"], "action": accion}}
+    codigo = fila.get("error_code") if isinstance(fila, dict) else None
+    return {"change_log_error": f"bitacora_cambios: {codigo or 'la bitácora rechazó la fila'}"}
 
 
 def componer_indices() -> bool:

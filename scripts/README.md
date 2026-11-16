@@ -407,6 +407,20 @@ python vault_audit.py
 python vault_audit.py --project mi-api
 ```
 
+**`conceptsWithoutPage` (AP-71, 2026-11-16).** El lint de la LLM Wiki de
+Karpathy: los términos —nombres propios de dos o más palabras y siglas, con la
+regla de entidades de `vault_ingest`, dueño `vault/kernel/normativa/conceptos.py`—
+que mencionan `UMBRAL_CONCEPTO` notas o más (3) y que ningún fichero ni `aliases:`
+resuelve, ni literal ni como slug; un `title:` no resuelve (AP-44). Sin
+penalización. Los cinco más citados entran en `nextActions` (categoría
+`concept_without_page`, con el `vault_write` que crea la página), después de la
+hoja de ruta por carpetas, así que no la esconden.
+
+**La fila `linted`.** Solo la corrida que puede escribir en el vault —`--refresh-dq`,
+la que refresca `quality-index.json`— deja una fila `linted` en la bitácora de
+cambios, por el puerto `bitacora_cambios`; el envelope trae `change_log` o
+`change_log_error`. `vault_audit` sin esa opción sigue siendo de solo lectura.
+
 **El score sale del registro `PENALIZACIONES`, no de una fórmula escrita aquí.** Esta sección decía `100 - (vacías×2) - (sin_fm×3) - (broken_links×2) - (stale×1)` — cuatro términos de los veintidós que hay. Los pesos y los topes viven en el registro, agrupados por familia; copiarlos a la documentación es AP-05, y resumirlos mal es lo que ya pasó.
 
 **`healthScore` satura.** Parte de 100 y resta las penalizaciones del catálogo canónico: con dos o tres familias mal puede quedar en 0 y dejar de distinguir un vault regular de uno perdido. Conserva su fórmula y se anota `superseded_by: healthIndex`; los resultados históricos no se recalculan.
@@ -1447,6 +1461,15 @@ python vault_history_compact.py --apply --note "01_Projects/ans/status.md"
 ### `vault_change_log.py`
 Registra el ciclo de vida de las notas: creadas, actualizadas, eliminadas, movidas. Escribe en `00_System/change-log.md` y `00_System/.change-log.json`.
 
+Acciones válidas (`VALID_ACTIONS`): `created`, `updated`, `deleted`, `moved`,
+`transition` y, desde 2026-11-16, `ingested` (una pasada de ingesta) y `linted`
+(una pasada de lint sobre el vault): las dos operaciones del log de la LLM Wiki de
+Karpathy que no son el ciclo de vida de una sola nota. Las escriben
+`vault_ingest --commit` y `vault_audit --refresh-dq` por el puerto del kernel
+`bitacora_cambios` (productor `vault.autoria.bitacora`, compuesto por
+`vault.runtime`), porque desde consulta y gobernanza importar esta tool sería un
+cruce de contexto.
+
 **REGLA DE GOBERNANZA:** antes de eliminar cualquier nota del vault, llamar obligatoriamente:
 ```bash
 python vault_change_log.py --action deleted --path <ruta> --reason <motivo>
@@ -2111,7 +2134,38 @@ python vault_ingest.py --file notas-reunion.md --section 07_Knowledge   # propue
 python vault_ingest.py --file notas-reunion.md --section 07_Knowledge --commit
 cat conversacion.txt | python vault_ingest.py --stdin --section 04_Sessions
 python vault_ingest.py --file volcado.md --section 07_Knowledge --max-chars 200000
+python vault_ingest.py --file notas-reunion.md --section 07_Knowledge --archivar-fuente --commit
+python vault_ingest.py --text "<respuesta>" --section 07_Knowledge --desde-pack pack.json --commit
 ```
+
+**La LLM Wiki de Karpathy en la ingesta (2026-11-16).**
+
+- **`--archivar-fuente`** (capa cruda): guarda la fuente **literal** en
+  `10_Migrated/fuentes/<nombre>-<sha8>.md` —con frontmatter de procedencia,
+  `type: migrated`, `status: archived`— y cada nota derivada lleva
+  `source: "[[10_Migrated/fuentes/...]]"`. El nombre sale del contenido, así que
+  archivar dos veces la misma fuente no la reescribe. Solo texto: un binario o un
+  `--file` que no sea `.md`/`.markdown`/`.txt` se rechaza con `INVALID_INPUT`
+  (AP-15). **No declara inmutable `10_Migrated`**: eso es del dueño
+  (`00_System/inmutable.json`). El envelope trae `archived_source`.
+- **Páginas afectadas** (`affected_pages`): cada entidad que resuelve a **una**
+  nota existente (nombre de fichero o `aliases:`, literal o slug) recibe una
+  propuesta de anexo en `## Menciones` que apunta a las notas derivadas. En
+  dry-run es propuesta (con el `vault_append` que la aplica); con `--commit` se
+  **aplica** por el puerto del kernel `bitacora_cambios`, cuyo dueño es
+  `vault_append` (añade bajo el cerrojo de la nota, nunca la reescribe, y deja su
+  propia fila `updated`). Cada fila dice `applied`; `affected_pages_applied` es
+  `true` solo si se aplicaron todas. Un nombre ambiguo no propone nada.
+- **Bitácora**: un `--commit` que escribió algo deja **una** fila `ingested` en la
+  bitácora de cambios, por el mismo puerto. El envelope trae `change_log`
+  (`{id, action}`) o, si nadie atiende el puerto, `change_log_error` con el motivo:
+  las notas se escriben igual.
+- **`--desde-pack <pack.json>`** (guardar respuestas): el texto (`--text`,
+  `--file` o `--stdin`) es la respuesta a la consulta del envelope de
+  `vault_context_pack`, y se guarda como **un** borrador `Síntesis: <consulta>`
+  cuyo `related:` son las notas que el paquete incluyó y que existen en el vault,
+  citadas en `## Notas del paquete`. Un paquete sin ninguna nota del vault es
+  `INVALID_INPUT`. Es el paso «Para recordar» del protocolo de sesión.
 
 
 ### `vault_arquitectura_en.py`
@@ -2320,7 +2374,7 @@ VAULT_MCP_TOKEN=<secreto> node mcp/nodejs/vault-mcp-server.mjs --port 3000
 VAULT_MCP_TOKENS=lector:<t1>,operador:<t2> node mcp/nodejs/vault-mcp-server.mjs --port 3000
 
 # Perfil de agente: tools/list y tools/call se limitan a las tools del protocolo
-# de sesión (vault.meta_toolkit.protocolo_de_sesion → tools-catalog.json "perfiles").
+# de sesión (vault.kernel.protocolo_de_sesion → tools-catalog.json "perfiles").
 # Sin la variable, el catálogo expuesto entero; un perfil desconocido no arranca.
 VAULT_MCP_PERFIL=agente node mcp/nodejs/vault-mcp-server.mjs
 ```
@@ -2350,7 +2404,7 @@ VAULT_MCP_PERFIL=agente node mcp/nodejs/vault-mcp-server.mjs
 
 ### `vault_norms.py`
 
-Registro canónico de las 85 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
+Registro canónico de las 86 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
 
 **Desde v40.26 son tres ficheros y una sola tool.** Eran 5.158 líneas que hacían de catálogo, de motor y de fachada a la vez, con el 60% del fichero ocupado por una constante. Ahora `vault_norms_catalog.py` tiene los datos —`NORM_CATALOG` y el vocabulario de estado, sin leer el vault, sin escribir nada y sin importar ninguna tool—, `vault_norms_engine.py` tiene el motor de `--audit`, el drift del marco y el heal de AP-46, y este módulo se queda con la fachada de datos, la CLI y la **reexportación** de todo lo que el repo consumía antes. Esa reexportación es el punto: la superficie externa real son siete símbolos y los tests usan cinco privados más, así que reexportarlos hace que **ningún llamador se toque** y el diff se lea como movimiento puro. Recortar de paso la superficie que usan los tests habría mezclado dos cambios y hecho imposible saber cuál rompió qué.
 

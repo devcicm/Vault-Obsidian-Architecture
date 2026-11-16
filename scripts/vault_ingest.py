@@ -43,7 +43,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from vault.consulta import safety  # noqa: E402
 
-from vault_errors import wrap_main  # noqa: E402
+from vault_errors import emit_error, wrap_main  # noqa: E402
 from vault_io import (  # noqa: E402
     assert_within_vault,
     atomic_write_text,
@@ -76,13 +76,30 @@ DEFAULT_MAX_NOTES = 20
 #: falta para que la superficie de escritura no acepte lo ilimitado.
 DEFAULT_MAX_CHARS = 5_000_000
 
-# Ruido léxico frecuente en texto técnico que pasa el filtro de mayúsculas sin
-# ser una entidad del dominio.
-_ENTITY_STOPWORDS = {
-    "The", "This", "That", "These", "Those", "There", "When", "Where", "What",
-    "With", "From", "Para", "Este", "Esta", "Estos", "Cuando", "Donde", "Como",
-    "Nota", "Note", "Ver", "See", "TODO", "FIXME", "OK",
-}
+# superseded_by: vault.kernel.normativa.conceptos.ENTIDADES_STOPWORDS (2026-11-16).
+# The entity rule gained a second consumer (the AP-71 lint in `vault_audit`),
+# so it moved to a kernel owner both contexts can import (AP-57). The name is
+# kept (no-derogation) and points at the owner's value.
+from vault.kernel.normativa.conceptos import (  # noqa: E402
+    ENTIDADES_STOPWORDS as _ENTITY_STOPWORDS,
+    CLASES_DE_CONCEPTO,
+    extraer_entidades,
+    resolver_concepto,
+)
+
+#: Raw source layer (Karpathy L1): where `--archivar-fuente` keeps the verbatim
+#: source, inside the section that already means "imported as it arrived"
+#: (`vault_registry.SECTION_DOCUMENTACION["10_Migrated"]`). Immutability is not
+#: switched on here: declaring a section immutable is the owner's decision
+#: (`00_System/inmutable.json`), never a side effect of ingesting.
+CARPETA_FUENTES = "10_Migrated/fuentes"
+
+#: AP-15: only text sources are archived. A binary does not belong in the vault
+#: as a note, and `--file` is the only door where the extension is known.
+_SUFIJOS_DE_TEXTO = frozenset({".md", ".markdown", ".txt"})
+
+#: Where a page touched by an ingest receives its proposed append.
+SECCION_DE_MENCIONES = "Menciones"
 
 
 
@@ -246,46 +263,211 @@ def _derive_title(body: str) -> str:
     return first[:70].strip() or "sin-titulo"
 
 
-def _extract_entities(text: str) -> Dict[str, List[str]]:
-    """Extracción determinista: solo lo que el propio texto marca como entidad.
+#: superseded_by: vault.kernel.normativa.conceptos.extraer_entidades (2026-11-16).
+#: Same rule, one owner: the AP-71 lint reads it too. Kept as a name so the
+#: tests and callers that use it keep working (no-derogation).
+_extract_entities = extraer_entidades
 
-    No se infiere nada por semejanza. Un falso positivo aquí acaba siendo un
-    wikilink roto o una nota fantasma, que es peor que no extraer.
+
+def _wikilink_de(ruta: str) -> str:
+    """`07_Knowledge/a.md` -> `[[07_Knowledge/a]]`: the path form a wikilink takes."""
+    return f"[[{ruta[:-3] if ruta.endswith('.md') else ruta}]]"
+
+
+def _ruta_de_fuente_archivada(text: str, source: str, origin: str) -> str:
+    """Content-addressed: the same source archived twice is the same file."""
+    import hashlib
+
+    stem = Path(source).stem if origin == "file" else "fuente"
+    nombre = slugify(stem)[:60] or "fuente"
+    huella = hashlib.sha256(text.encode("utf-8")).hexdigest()[:8]
+    return f"{CARPETA_FUENTES}/{nombre}-{huella}.md"
+
+
+def _motivo_para_no_archivar(text: str, source: str, origin: str) -> Optional[str]:
+    """AP-15: why this source cannot enter the raw layer, or None."""
+    if "\x00" in text:
+        return "AP-15: la fuente contiene bytes nulos (binario); no se archiva como nota"
+    if origin == "file" and Path(source).suffix.lower() not in _SUFIJOS_DE_TEXTO:
+        return (f"AP-15: solo se archivan fuentes de texto "
+                f"({', '.join(sorted(_SUFIJOS_DE_TEXTO))}); la fuente es "
+                f"{Path(source).suffix or 'sin extensión'}")
+    return None
+
+
+def _nota_de_fuente(text: str, source: str, origin: str, agent: str) -> str:
+    """The archived source: provenance frontmatter, then the source verbatim."""
+    import hashlib
+
+    stem = Path(source).stem if origin == "file" else source
+    cabecera = (
+        Frontmatter()
+        .set("title", f"Fuente: {stem}", texto=True)
+        .set("id", str(uuid.uuid4()))
+        .set("type", "migrated")
+        # A raw source is a record of what arrived; it is not revised, so
+        # `archived` (STATUS_VOCAB) and not `draft`.
+        .set("status", "archived")
+        .set("tags", sorted({"ingested", "fuente", origin}))
+        .set("createdAt", utcnow(), texto=True)
+        .set("updatedAt", utcnow(), texto=True)
+        .set("source", source, texto=True)
+        .set("ingest_origin", origin, texto=True)
+        .set("sha256", hashlib.sha256(text.encode("utf-8")).hexdigest(), texto=True)
+        .set("cia_integrity", "medium")
+        .set("cia_availability", "medium")
+        .set("cia_sensitivity", "internal")
+        .set("agent", agent, texto=True)
+        .render()
+    )
+    return cabecera + "\n\n" + text
+
+
+def _indice_del_vault() -> Dict[str, List[str]]:
+    """Names every note answers to (file name and `aliases:`), Obsidian's way.
+
+    The enumeration and the resolver are the kernel's (AP-57): the same
+    criterion `vault_audit` uses to decide that a link resolves.
     """
-    # El wikilink dentro de un fence es código que el texto enseña, no un
-    # destino: Obsidian no lo resuelve. Extraerlo de ahí convertía un
-    # `[[ejemplo]]` de documentación en un enlace real en `related:` y en el
-    # cuerpo, es decir, en una nota fantasma creada por la propia ingesta.
-    # El dueño del criterio es `vault_lib.strip_code_blocks` (AP-57).
-    sin_codigo = strip_code_blocks(text)
-    wikilinks = re.findall(r"\[\[([^\]|#]+)", sin_codigo)
-    tags = re.findall(r"(?<!\w)#([A-Za-z][\w/-]{1,30})", text)
-    urls = re.findall(r"https?://[^\s<>()\"']+", text)
-    code = re.findall(r"`([A-Za-z_][\w.]{2,40})`", text)
-    paths = re.findall(r"\b[\w./-]+\.(?:md|py|js|ts|json|yaml|yml)\b", text)
+    from vault.kernel.enumeracion import notas_en_disco
+    from vault_lib import indice_de_nombres, parse_frontmatter
 
-    # Nombres propios: dos o más palabras capitalizadas seguidas. Con una sola
-    # el ruido supera la señal, así que se descartan.
-    proper = [
-        m for m in re.findall(r"\b(?:[A-Z][a-z]{2,}\s){1,3}[A-Z][a-z]{2,}\b", text)
-        if m.split()[0] not in _ENTITY_STOPWORDS
-    ]
-    # Siglas técnicas: 2–6 mayúsculas (MCP, ADR, HTTP, CIA).
-    acronyms = [a for a in re.findall(r"\b[A-Z]{2,6}\b", text)
-                if a not in _ENTITY_STOPWORDS]
+    raiz = _raiz()
+    relativas: List[str] = []
+    aliases: Dict[str, List[str]] = {}
+    for ruta in notas_en_disco(raiz, _repo().ctx.secciones.ordenadas(),
+                               incluir_indices=False):
+        rel = ruta.relative_to(raiz).as_posix()
+        relativas.append(rel)
+        try:
+            alias = (parse_frontmatter(ruta.read_text(encoding="utf-8")) or {}).get("aliases")
+        except (OSError, UnicodeDecodeError):
+            continue
+        if isinstance(alias, str):
+            alias = [alias]
+        if isinstance(alias, list):
+            aliases[rel] = [a for a in alias if isinstance(a, str)]
+    return indice_de_nombres(relativas, aliases)
 
-    def dedup(items: List[str], limit: int) -> List[str]:
-        return list(dict.fromkeys(i.strip() for i in items if i.strip()))[:limit]
 
-    return {
-        "wikilinks": dedup(wikilinks, 30),
-        "tags": dedup([t.lower() for t in tags], 20),
-        "urls": dedup(urls, 20),
-        "code_refs": dedup(code, 20),
-        "paths": dedup(paths, 20),
-        "proper_nouns": dedup(proper, 20),
-        "acronyms": dedup(acronyms, 20),
-    }
+def _paginas_afectadas(
+    entities: Dict[str, List[str]],
+    proposals: List[Dict[str, Any]],
+    source: str,
+) -> List[Dict[str, Any]]:
+    """Karpathy's ingest step 2: the existing pages this source touches.
+
+    An entity that resolves to exactly one existing note gets a proposed
+    append pointing at the derived notes that mention it. Ambiguous names are
+    skipped: picking one would invent an identity the vault does not fix.
+    With `--commit` they are applied by `_aplicar_paginas`, through the
+    `bitacora_cambios` port, whose owner is `vault_append` (lock, `updatedAt`,
+    its own change-log row): importing it here would open a consulta ->
+    autoria crossing (`vault_arch`).
+    """
+    from vault_lib import resolver_wikilink
+
+    indice = _indice_del_vault()
+    propias = {n["path"] for n in proposals}
+    fecha = utcnow()[:10]
+    filas: List[Dict[str, Any]] = []
+    vistas: Set[str] = set()
+    candidatas = [(e, resolver_concepto(e, indice))
+                  for clase in CLASES_DE_CONCEPTO for e in entities[clase]]
+    candidatas += [(w, resolver_wikilink(w, None, indice)[1]) for w in entities["wikilinks"]]
+    for entidad, rutas in candidatas:
+        if len(rutas) != 1 or rutas[0] in propias or rutas[0] in vistas:
+            continue
+        menciones = [n["path"] for n in proposals if entidad in n["content"]] or \
+            [n["path"] for n in proposals]
+        texto = (f"- Ingesta {fecha} desde `{source}`: menciona **{entidad}** en "
+                 + ", ".join(_wikilink_de(p) for p in menciones))
+        vistas.add(rutas[0])
+        filas.append({
+            "path": rutas[0],
+            "entity": entidad,
+            "section": SECCION_DE_MENCIONES,
+            "append": texto,
+            "command": ["vault_append", "--path", rutas[0], "--section",
+                        SECCION_DE_MENCIONES, "--content", texto],
+        })
+    return filas
+
+
+def _aplicar_paginas(paginas: List[Dict[str, Any]]) -> bool:
+    """Apply each proposed append through the port; True only if all applied.
+
+    `vault_append` appends under the note's lock and never rewrites what is
+    there. A row that fails keeps `applied: false` and the owner's error code;
+    a missing producer is said once per row, not hidden (AP-51).
+    """
+    if not paginas:
+        return False
+    from vault.runtime import bitacora_de_cambios
+
+    try:
+        bitacora = bitacora_de_cambios()
+    except Exception as exc:
+        bitacora, motivo = None, f"bitacora_cambios: {type(exc).__name__}"
+    else:
+        motivo = "nadie atiende el puerto bitacora_cambios: no se aplicó"
+    for fila in paginas:
+        if bitacora is None:
+            fila.update(applied=False, error=motivo)
+            continue
+        try:
+            r = bitacora.anexar(fila["path"], fila["append"], fila["section"], False)
+        except Exception as exc:
+            fila.update(applied=False, error=f"bitacora_cambios: {type(exc).__name__}")
+            continue
+        if isinstance(r, dict) and r.get("ok"):
+            fila["applied"] = True
+        else:
+            codigo = r.get("error_code") if isinstance(r, dict) else None
+            fila.update(applied=False, error=codigo or "vault_append rechazó el anexo")
+    return all(f.get("applied") for f in paginas)
+
+
+def _notas_del_paquete(pack: Dict[str, Any]) -> List[str]:
+    """The pack's included notes that exist in this vault, in pack order."""
+    rutas: List[str] = []
+    for fila in pack.get("included") or []:
+        ruta = fila.get("path") if isinstance(fila, dict) else None
+        if not isinstance(ruta, str) or not ruta.endswith(".md"):
+            continue
+        destino = _raiz() / ruta
+        try:
+            assert_within_vault(destino, _raiz())
+        except ValueError:
+            continue
+        if destino.is_file() and ruta not in rutas:
+            rutas.append(ruta)
+    return rutas
+
+
+def _archivar(rel: str, contenido: str) -> Dict[str, Any]:
+    """Write the raw source once. Same lock and same never-overwrite rule as
+    the derived notes: the name is content-addressed, so an existing file is
+    this same source archived before, not something to replace."""
+    full = _raiz() / rel
+    try:
+        assert_within_vault(full, _raiz())
+    except ValueError as exc:
+        return {"written": False, "failed": str(exc)}
+    full.parent.mkdir(parents=True, exist_ok=True)
+    lock = tomar_lock(full, _LOCK_TIMEOUT)
+    if lock is None:
+        return {"written": False,
+                "failed": "NOTE_LOCKED: otro escritor tiene la fuente; no se archivó"}
+    with lock:
+        if full.exists():
+            return {"written": False, "reason": "ya existe"}
+        try:
+            atomic_write_text(full, contenido)
+        except OSError as exc:
+            return {"written": False, "failed": f"{type(exc).__name__}: {exc}"}
+    update_section_index(rel.split("/", 1)[0])
+    return {"written": True}
 
 
 def _build_note(
@@ -297,6 +479,8 @@ def _build_note(
     origin: str,
     agent: str,
     extra_tags: List[str],
+    fuente_archivada: Optional[str] = None,
+    citadas: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     title = chunk["title"]
     slug = slugify(title)
@@ -306,7 +490,10 @@ def _build_note(
     # AP-26: tags obligatorios. 'ingested' es el marcador que permite auditar
     # después todo lo que entró por esta vía y revisarlo en bloque.
     tags = sorted({"ingested", origin, *extra_tags, *entities["tags"][:5]})
-    related = entities["wikilinks"][:10]
+    # Un borrador guardado desde un paquete cita lo que el paquete incluyó: esa
+    # es su procedencia, no las entidades del texto de la respuesta.
+    related = ([c[:-3] for c in citadas] if citadas is not None
+               else entities["wikilinks"][:10])
 
     # AP-46: el bloque lo escribe su dueño; aquí solo se declaran los campos.
     # Los instantes van con `texto=True` porque esta nota siempre los citó: el
@@ -321,7 +508,11 @@ def _build_note(
         .set("related", related)
         .set("createdAt", utcnow(), texto=True)
         .set("updatedAt", utcnow(), texto=True)
-        .set("source", source, texto=True)
+        # With the raw layer on, `source` is the archived original as a
+        # wikilink (Karpathy L1): the note can be traced to what it came from
+        # inside the vault, not to a path on someone's disk.
+        .set("source", _wikilink_de(fuente_archivada) if fuente_archivada else source,
+             texto=True)
         # AP-56: ni `origin` ni `agent` son valores controlados por esta tool
         # —vienen del invocante—, y un `agent: si: claro` rompía el YAML de la
         # nota entera.
@@ -339,11 +530,15 @@ def _build_note(
     ]
 
     body = [f"# {title}", "", chunk["body"].strip(), ""]
-    if related:
+    if citadas is not None:
+        body += ["## Notas del paquete", ""] + [f"- {_wikilink_de(c)}" for c in citadas] + [""]
+    elif related:
         body += ["## Relacionado", ""] + [f"- [[{r}]]" for r in related] + [""]
     body += ["## Procedencia", "",
-             f"- Origen: `{origin}`", f"- Fuente: `{source}`",
-             "- Estado: `draft` — requiere revisión antes de darse por válido", ""]
+             f"- Origen: `{origin}`", f"- Fuente: `{source}`"]
+    if fuente_archivada:
+        body.append(f"- Fuente archivada: {_wikilink_de(fuente_archivada)}")
+    body += ["- Estado: `draft` — requiere revisión antes de darse por válido", ""]
 
     return {
         "path": rel_path,
@@ -365,12 +560,24 @@ def vault_ingest(
     max_notes: int = DEFAULT_MAX_NOTES,
     tags: Optional[List[str]] = None,
     agent: Optional[str] = None,
+    archivar_fuente: bool = False,
+    pack: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-    """Ingiere un texto y propone (o escribe) las notas derivadas."""
+    """Ingiere un texto y propone (o escribe) las notas derivadas.
+
+    `archivar_fuente` keeps the verbatim source in `10_Migrated/fuentes/` and
+    links each derived note to it (Karpathy's raw layer). `pack` is a
+    `vault_context_pack` envelope: the text is then the answer to its query and
+    becomes ONE draft that cites the pack's notes (saving answers back).
+    """
     text = text or ""
     if not text.strip():
         return {"ok": False, "error_code": "EMPTY_SOURCE",
                 "error": "La fuente no contiene texto"}
+    if archivar_fuente:
+        motivo = _motivo_para_no_archivar(text, source, origin)
+        if motivo:
+            return emit_error("vault_ingest", "INVALID_INPUT", motivo)
 
     section = section.strip("/")
     if section in FORBIDDEN_SECTIONS:
@@ -424,7 +631,21 @@ def vault_ingest(
         }
 
     # ── etapa 2: segmentación y entidades ────────────────────────────────────
-    chunks = _segment(text)
+    citadas: Optional[List[str]] = None
+    if pack is not None:
+        # A saved answer is one page: segmenting it would split the synthesis
+        # the agent just wrote. Its provenance is the pack, so the pack's
+        # notes have to exist here; citing nothing is not a synthesis.
+        citadas = _notas_del_paquete(pack)
+        if not citadas:
+            return emit_error(
+                "vault_ingest", "INVALID_INPUT",
+                "--desde-pack: el paquete no incluye ninguna nota de este vault; "
+                "genera el paquete con vault_context_pack sobre el mismo vault")
+        consulta = str(pack.get("query") or "").strip() or _derive_title(text)
+        chunks = [{"title": f"Síntesis: {consulta}"[:120], "body": text.strip()}]
+    else:
+        chunks = _segment(text)
     if not chunks:
         return {"ok": False, "error_code": "NO_CONTENT",
                 "error": f"Ningún bloque supera {MIN_CHUNK_CHARS} caracteres útiles"}
@@ -432,12 +653,15 @@ def vault_ingest(
     truncated = len(chunks) > max_notes
     chunks = chunks[:max_notes]
     entities = _extract_entities(text)
+    fuente_archivada = (_ruta_de_fuente_archivada(text, source, origin)
+                        if archivar_fuente else None)
 
     proposals: List[Dict[str, Any]] = []
     seen_paths: Set[str] = set()
     for chunk in chunks:
         note = _build_note(chunk, entities, section, subfolder, source, origin,
-                           agent, tags or [])
+                           agent, tags or [], fuente_archivada=fuente_archivada,
+                           citadas=citadas)
         # Dos encabezados iguales producirían el mismo slug y una nota
         # sobrescribiría a la otra en silencio. El sufijo se busca libre: el
         # de `len(seen_paths)` sin recomprobar podía caer sobre una ruta ya
@@ -451,10 +675,18 @@ def vault_ingest(
         seen_paths.add(note["path"])
         proposals.append(note)
 
+    paginas = _paginas_afectadas(entities, proposals, source)
+
     # ── etapa 3: escritura, solo si se pidió ─────────────────────────────────
     written: List[str] = []
     skipped: List[Dict[str, str]] = []
     failed: List[Dict[str, str]] = []
+    archivo: Optional[Dict[str, Any]] = (
+        {"path": fuente_archivada, "written": False} if fuente_archivada else None)
+    if commit and archivo is not None:
+        archivo.update(_archivar(fuente_archivada, _nota_de_fuente(text, source, origin, agent)))
+        if archivo.get("failed"):
+            failed.append({"path": fuente_archivada, "reason": archivo["failed"]})
     if commit:
         for note in proposals:
             full = _raiz() / note["path"]
@@ -498,6 +730,21 @@ def vault_ingest(
         if written:
             update_section_index(section)
 
+    aplicadas = False
+    registro: Dict[str, Any] = {}
+    if commit:
+        # Karpathy's ingest touches the pages it affects: applied only with
+        # --commit, through the port (owner `vault_append`, never overwrites).
+        aplicadas = _aplicar_paginas(paginas)
+        # One `ingested` row per pass that wrote something. A pass that only
+        # skipped existing notes changed nothing, and logs nothing.
+        if written or (archivo or {}).get("written"):
+            from vault.runtime import anotar_operacion
+
+            registro = anotar_operacion(
+                "ingested", section,
+                f"vault_ingest: {len(written)} nota(s) desde {origin}", agent)
+
     return {
         # No `True` fijo: un lote con notas caídas no es un éxito, y devolverlo
         # como tal presentaba el fallo de la tool como ausencia en el dato (AP-51).
@@ -512,6 +759,15 @@ def vault_ingest(
         "proposed": [{k: v for k, v in n.items() if k != "content"} for n in proposals],
         "written": written,
         "skipped": skipped,
+        "archived_source": archivo,
+        # Dry-run: proposals, each with the `vault_append` that applies it.
+        # --commit: applied through the port; each row says `applied`, and this
+        # flag is true only when every proposal was appended. Never an
+        # overwrite; an ambiguous name proposes nothing.
+        "affected_pages": paginas,
+        "affected_pages_applied": aplicadas,
+        # `change_log` ({id, action}) or `change_log_error` (sanitized).
+        **registro,
         "stats": {
             "chars": len(text),
             "chunks": len(proposals),
@@ -520,6 +776,23 @@ def vault_ingest(
         },
         "hint": None if commit else "Revisa `proposed` y repite con --commit para escribir",
     }
+
+
+def _leer_pack(ruta: str) -> Dict[str, Any]:
+    """The `vault_context_pack` envelope saved by the agent, or an error."""
+    path = Path(ruta).expanduser()
+    if not path.is_file():
+        return emit_error("vault_ingest", "FILE_NOT_FOUND", f"--desde-pack: no existe {ruta}")
+    try:
+        datos = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, ValueError) as exc:
+        return emit_error("vault_ingest", "JSON_PARSE_ERROR",
+                          f"--desde-pack: no es un JSON legible: {type(exc).__name__}")
+    if not isinstance(datos, dict) or datos.get("ok") is not True             or not isinstance(datos.get("included"), list):
+        return emit_error("vault_ingest", "INVALID_INPUT",
+                          "--desde-pack: se espera el envelope ok de vault_context_pack "
+                          "con su lista `included`")
+    return datos
 
 
 def main() -> int:
@@ -540,12 +813,21 @@ Ejemplos:
   # Desde una URL (red apagada por defecto)
   python vault_ingest.py --url https://ejemplo/doc --section 07_Knowledge --allow-network
 
+  # Capa cruda: guarda la fuente literal en 10_Migrated/fuentes/ y la cita
+  python vault_ingest.py --file notas-reunion.md --section 07_Knowledge --archivar-fuente --commit
+
+  # Guardar una buena respuesta como borrador que cita el paquete de contexto
+  python vault_ingest.py --text "<respuesta>" --section 07_Knowledge --desde-pack pack.json --commit
+
 Notas:
   - Dry-run por defecto: escribir exige --commit
   - El pre-vuelo anti-poison NO es desactivable
   - Las notas entran con status: draft y cia_integrity: low hasta revisarse
   - Nunca sobrescribe una nota existente
   - AP-16: requiere --agent o VAULT_AGENT
+  - --archivar-fuente no declara inmutable 10_Migrated: eso lo decide el dueño
+  - Las paginas existentes que nombra la fuente se PROPONEN (affected_pages);
+    se aplican con el vault_append que trae cada propuesta
 """,
         allow_abbrev=False,
     )
@@ -572,6 +854,12 @@ Notas:
     parser.add_argument("--allow-network", action="store_true",
                         help="Permite descargar --url")
     parser.add_argument("--agent", help="Agente que ejecuta (AP-16)")
+    parser.add_argument("--archivar-fuente", action="store_true",
+                        help=("Guarda la fuente literal en 10_Migrated/fuentes/ y "
+                              "enlaza las notas con source: [[...]] (solo texto, AP-15)"))
+    parser.add_argument("--desde-pack", metavar="PACK_JSON",
+                        help=("Envelope de vault_context_pack: el texto es la respuesta "
+                              "a su consulta y se guarda como UN borrador que cita sus notas"))
 
     args = parser.parse_args()
 
@@ -581,11 +869,21 @@ Notas:
         print(json.dumps(source, indent=2, ensure_ascii=False))
         return 1
 
+    pack = None
+    if args.desde_pack:
+        pack = _leer_pack(args.desde_pack)
+        if not pack.get("ok"):
+            print(json.dumps(completar_envelope("vault_ingest", pack), indent=2,
+                             ensure_ascii=False))
+            return 1
+
     result = vault_ingest(
-        text=source["text"], section=args.section, source=source["source"],
-        origin=source["origin"], subfolder=args.subfolder,
+        text=source["text"], section=args.section,
+        source=args.desde_pack if pack else source["source"],
+        origin="pack" if pack else source["origin"], subfolder=args.subfolder,
         commit=args.commit and not args.dry_run, max_notes=args.max_notes,
         tags=args.tags, agent=args.agent,
+        archivar_fuente=args.archivar_fuente, pack=pack,
     )
     # D5: un solo sitio lleva los envelopes a mano a la forma canónica.
     result = completar_envelope("vault_ingest", result)

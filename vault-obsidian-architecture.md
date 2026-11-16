@@ -4042,7 +4042,7 @@ Lo ingerido entra con `status: draft` y `cia_integrity: low`, de modo que el rer
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **85 normas** del estándar (69 AP + 6 PAT + 4 SP + 5 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-69`. Fuente de verdad: `NORM_CATALOG` en `vault_norms_catalog.py` (`vault_norms.py` lo reexporta). Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **86 normas** del estándar (69 AP + 6 PAT + 4 SP + 5 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-69`. Fuente de verdad: `NORM_CATALOG` en `vault_norms_catalog.py` (`vault_norms.py` lo reexporta). Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -7913,7 +7913,7 @@ PASO 5 — Al cerrar la sesión:
    ```
 
 > **v41.2 — El protocolo de sesión es un registro (`superseded_by:`
-> `vault.meta_toolkit.protocolo_de_sesion.PROTOCOLO_DE_SESION`).** Los PASOS 0–5 y
+> `vault.kernel.protocolo_de_sesion.PROTOCOLO_DE_SESION`, alias `vault.meta_toolkit.protocolo_de_sesion`).** Los PASOS 0–5 y
 > las reglas de arriba se conservan por la política de no-derogación, pero el
 > protocolo que se aplica es el del registro, y un test falla si esta sección deja
 > de nombrar una de sus tools. Lo que el texto de v22 no decía:
@@ -7922,7 +7922,11 @@ PASO 5 — Al cerrar la sesión:
 >   entero el contexto estable de `17_Preferences/`.
 > - **Para recordar:** `vault_context_pack --query` convierte la pregunta en un
 >   paquete de contexto acotado al presupuesto; `vault_search` comprueba que una
->   nota existe antes de enlazarla (SP-02) y `vault_read` la lee entera.
+>   nota existe antes de enlazarla (SP-02) y `vault_read` la lee entera. Una
+>   respuesta que merece persistir se guarda con `vault_ingest --desde-pack
+>   <pack.json> --text <respuesta> --section 07_Knowledge --commit`: un borrador
+>   cuyo `related:` son las notas que el paquete incluyó (la LLM Wiki de Karpathy:
+>   las buenas respuestas vuelven al wiki como páginas).
 > - **Para borrar:** `vault_delete --path --reason`, que escribe la entrada del
 >   change-log por sí misma (SP-01). La regla 7 —llamar antes a `vault_change_log`—
 >   queda `superseded_by: vault_delete`: hacerlo a mano duplica la entrada.
@@ -12393,3 +12397,18 @@ Antes de v29 el hardening de v27–v28 cubría los 12 scripts de _creación_ (va
 ### AP-70 - Politica de mutacion ilegible o invalida
 
 Una politica existente que no se puede leer o interpretar no equivale a una politica ausente. Las operaciones gobernadas deben detenerse y exponer el error; la auditoria informa la incidencia sin inventar ni sobrescribir reglas. La reparacion requiere intervencion del propietario.
+
+
+### AP-71 - Concepto importante sin página propia
+
+**Enforcement:** `audit` · **Introducido:** v41.26 (2026-11-16)
+
+Un término que varias notas mencionan —un nombre propio de dos o más palabras o una
+sigla, con la misma regla de entidades que usa `vault_ingest`— y que ningún fichero ni
+`aliases:` resuelve. Es el lint de la LLM Wiki de Karpathy: «conceptos importantes que
+se mencionan sin tener su propia página». `vault_audit` lo publica en
+`conceptsWithoutPage` y lleva los más citados a `nextActions` con el `vault_write` que
+crea la página; no resta salud. La resolución es la del lector: nombre de fichero o
+alias, nunca `title:` (AP-44). El umbral (`UMBRAL_CONCEPTO`) está declarado, no
+calibrado. Dueño del criterio: `vault/kernel/normativa/conceptos.py`.
+

@@ -271,6 +271,8 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     # ── Anti-patrón AP-69 ──────────────────────────────────────────────────────
     _desde_paquete("AP-69"),
     _desde_paquete("AP-70"),
+    # ── Anti-patrón AP-71 — concepto sin página (LLM Wiki, 2026-11-16) ─────────
+    _desde_paquete("AP-71"),
     # ── Patrón PAT-6 ───────────────────────────────────────────────────────────
     _desde_paquete("PAT-6"),
     # ── Protocolo de sesión SP-XX ──────────────────────────────────────────────

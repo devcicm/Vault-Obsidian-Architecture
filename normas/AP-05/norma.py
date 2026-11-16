@@ -9,6 +9,11 @@ ejecutar. Movida tal cual desde `NORM_CATALOG` el 2026-10-09; las caras están e
 NORMA = {
     "code": "AP-05",
     "distinguido_de": {
+        "AP-71": (
+            "AP-05 compara valores del mismo dato en notas que existen. AP-71 "
+            "señala el concepto importante que no tiene página propia: sin dueño "
+            "no hay sitio canónico, que es la condición previa para AP-05."
+        ),
         "AP-67": (
             "AP-05 es el dato repetido en dos sitios. AP-67 es el dato que no esta en ninguno: el vault declara un proyecto y no tiene ni una nota de su codigo. Son las dos direcciones del mismo encargo: una sola fuente de verdad."
         ),

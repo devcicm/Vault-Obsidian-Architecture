@@ -274,7 +274,7 @@
           },
           "refresh-dq": {
             "type": "boolean",
-            "description": "Forzar refresh de Data Quality"
+            "description": "Forzar refresh de Data Quality; es la corrida que escribe en el vault y deja una fila `linted` en la bitácora de cambios"
           }
         },
         "additionalProperties": false
@@ -683,13 +683,15 @@
         "properties": {
           "action": {
             "type": "string",
-            "description": "Action to record: ['created', 'updated', 'deleted', 'moved', 'transition']",
+            "description": "Action to record: ['created', 'updated', 'deleted', 'moved', 'transition', 'ingested', 'linted']",
             "enum": [
               "created",
               "updated",
               "deleted",
               "moved",
-              "transition"
+              "transition",
+              "ingested",
+              "linted"
             ]
           },
           "path": {
@@ -3270,6 +3272,14 @@
           "agent": {
             "type": "string",
             "description": "Agente que ejecuta (AP-16)"
+          },
+          "archivar-fuente": {
+            "type": "boolean",
+            "description": "Guarda la fuente literal en 10_Migrated/fuentes/ y enlaza las notas con source: [[...]] (solo texto, AP-15)"
+          },
+          "desde-pack": {
+            "type": "string",
+            "description": "Envelope JSON de vault_context_pack: el texto es la respuesta y se guarda como un borrador que cita sus notas"
           }
         },
         "required": [
@@ -3286,7 +3296,8 @@
       ],
       "side_effects": [
         "Con --commit: crea notas en la sección destino con status draft",
-        "Actualiza el índice de la sección"
+        "Actualiza el índice de la sección",
+        "Con --commit --archivar-fuente: crea la fuente literal en 10_Migrated/fuentes/ (nunca la sobrescribe)"
       ],
       "perfil_minimo": "operador",
       "status": "active",
@@ -9840,6 +9851,7 @@
       "vault_delete",
       "vault_delta",
       "vault_drift_detect",
+      "vault_ingest",
       "vault_preferences",
       "vault_project",
       "vault_read",

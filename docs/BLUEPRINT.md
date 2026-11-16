@@ -69,7 +69,7 @@ regenera.*
 
 *Registros: `vault_norms.NORM_CATALOG` + `vault_gate.PUERTAS` + `tests/`*
 
-84 de 85 normas tienen puerta o test que las nombre.
+85 de 86 normas tienen puerta o test que las nombre.
 **Es la única capa con baseline**, y por un motivo concreto: las demás se midieron
 en cero el día que se declararon porque sus datos ya existían y solo faltaba
 atarlos. Ésta no. Exigir cero aquí el primer día habría hecho nacer la puerta en
@@ -91,7 +91,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-12** — Frontmatter inconsistente entre notas del mismo tipo | audit | — | `test_capa4_audit_ejercitada.py` |
 | **AP-13** — Timestamps inválidos o incompletos en frontmatter | audit | `framework` | `test_audit_missing_created.py`, `test_meta_contrato.py` |
 | **AP-14** — Wiki-links rotos o vacíos | guard+audit | — | `test_audit_acciones_de_movimiento.py`, `test_normas_caras.py`, `test_normas_enlaces_sin_solape.py`, `test_norms_coherence.py` |
-| **AP-15** — Archivos externos depositados en la raíz del vault | guard+audit | `framework` | `test_normas_sin_registro_a_mano.py`, `test_vault_norms_audit.py` |
+| **AP-15** — Archivos externos depositados en la raíz del vault | guard+audit | `framework` | `test_karpathy_ingest.py`, `test_normas_sin_registro_a_mano.py`, `test_vault_norms_audit.py` |
 | **AP-16** — Sin identificador de agente en frontmatter | audit | — | `test_ap16_prevencion_dice_lo_que_hace.py`, `test_ap64_responsable.py`, `test_context_memory.py` |
 | **AP-17** — Canonical-shadow duplication | audit | — | `test_blueprint.py`, `test_normas_caras.py`, `test_normas_de_audit_ejercitadas.py` |
 | **AP-18** — Cross-folder content duplication | audit | — | `test_capa4_audit_ejercitada.py` |
@@ -152,6 +152,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-68** — El git que ejecuta el toolkit, sin dueño | guard | `procesos_git` | `test_procesos_git.py` |
 | **AP-69** — El test que construye a mano lo que ya tiene apoyo | guard | `tests_higiene` | `test_ap69_sin_version_publicada.py` |
 | **AP-70** — Politica de mutacion ilegible o invalida | guard+audit | `framework` | `test_inmutabilidad_todos_los_escritores.py`, `test_reglas_y_adaptadores.py` |
+| **AP-71** — Concepto importante sin página propia | audit | — | `test_karpathy_conceptos.py` |
 | **PAT-6** — Semantic graph enrichment — enriquecimiento periodico del grafo | recommended | — | `test_capa4_audit_ejercitada.py` |
 | **SP-01** — Delete protocol — change_log obligatorio antes de eliminar | audit | `framework` | `test_mermaid_reglas_parsers.py`, `test_vault_norms.py` |
 | **SP-02** — Forward-link verification — buscar antes de linkar | guard | — | `test_normas_enlaces_sin_solape.py`, `test_vault_norms.py` |

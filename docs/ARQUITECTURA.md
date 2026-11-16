@@ -244,7 +244,7 @@ Quién escribe qué. Derivado del catálogo (`side_effects`): es el inventario q
 - `vault_incident_save` (Producción/SRE): Crea nota en 02_Observability/incidents/
 - `vault_infra_map` (Infraestructura): Genera diagrama en 09_Infrastructure/{project}/
 - `vault_infra_save` (Infraestructura): Crea nota en 09_Infrastructure/{project}/
-- `vault_ingest` (Memoria de Contexto): Con --commit: crea notas en la sección destino con status draft; Actualiza el índice de la sección
+- `vault_ingest` (Memoria de Contexto): Con --commit: crea notas en la sección destino con status draft; Actualiza el índice de la sección; Con --commit --archivar-fuente: crea la fuente literal en 10_Migrated/fuentes/ (nunca la sobrescribe)
 - `vault_init` (Bootstrap): Crea carpetas, versiona, indexa, audit; Con --name: crea el vault en la casa y le hace su repositorio git
 - `vault_kernel` (Normas): scripts/kernel-baseline.json
 - `vault_knowledge_save` (Conocimiento): Crea nota en 07_Knowledge/{topic}/

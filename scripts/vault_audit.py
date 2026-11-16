@@ -718,6 +718,40 @@ def _nucleo_del_vault(
             "criterion": _CRITERIO_DEL_NUCLEO}
 
 
+def _detect_conceptos_sin_pagina(
+    notes: List[Path], barrido: Optional[List[Path]] = None,
+) -> List[Dict[str, Any]]:
+    """AP-71: terms several notes mention and no note owns (Karpathy's lint).
+
+    The entity rule and the threshold belong to the kernel owner
+    (`vault.kernel.normativa.conceptos`), shared with `vault_ingest` (AP-57).
+    A page resolves like a wikilink: file name or `aliases:` from the raw
+    sweep, never `title:` (AP-44). Standard documentation is not a note and
+    does not count as a mention. Informational: no penalty, it feeds
+    `nextActions` with what to write next.
+    """
+    from vault.kernel.normativa.conceptos import conceptos_sin_pagina, terminos_de_concepto
+
+    relativas: List[str] = []
+    alias_por_ruta: Dict[str, List[str]] = {}
+    for n in (_barrido_md() if barrido is None else barrido):
+        if _is_snapshot(n):
+            continue
+        rel = n.relative_to(_raiz()).as_posix()
+        relativas.append(rel)
+        alias_por_ruta[rel] = _aliases_de(n)
+    indice = indice_de_nombres(relativas, alias_por_ruta)
+
+    terminos: Dict[str, List[str]] = {}
+    for n in notes:
+        rel = n.relative_to(_raiz()).as_posix()
+        texto = _leer_nota(n, errors="replace")
+        if texto is None or es_documentacion_del_estandar(rel, texto):
+            continue
+        terminos[rel] = terminos_de_concepto(separar_frontmatter(texto)[1])
+    return conceptos_sin_pagina(terminos, indice)
+
+
 def _detect_stale(notes: List[Path]) -> List[Dict[str, Any]]:
     now = datetime.now(timezone.utc).replace(tzinfo=None)
 
@@ -2104,6 +2138,31 @@ def _get_roadmap_for_populated_vault(content_notes: List[Path]) -> List[Dict[str
     return actions
 
 
+#: How many AP-71 concepts reach `nextActions`; the rest stay in the result.
+MAX_ACCIONES_DE_CONCEPTO = 5
+
+
+def _acciones_de_conceptos(conceptos: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """AP-71: one next action per concept without a page, most mentioned first."""
+    from vault_registry import comando_de_tool
+
+    acciones = []
+    for c in conceptos[:MAX_ACCIONES_DE_CONCEPTO]:
+        termino = str(c["term"]).replace("'", "")
+        acciones.append({
+            "priority": "medium" if int(c["notes"]) >= 5 else "low",
+            "category": "concept_without_page",
+            "description": (
+                f"'{termino}' aparece en {c['notes']} notas y ninguna lo explica: "
+                "escríbele su página y enlázala desde ellas (AP-71)."),
+            "command": comando_de_tool(
+                f"vault_write --folder 07_Knowledge --title '{termino}' --content '...'"),
+            "examples": c["examples"],
+            "norm": "AP-71",
+        })
+    return acciones
+
+
 def _read_quality_index() -> Optional[Dict[str, Any]]:
     qi = _leer_artefacto_json(_quality_index())
     return qi if isinstance(qi, dict) else None
@@ -2474,6 +2533,8 @@ def vault_audit(
 
     nucleo = _nucleo_del_vault(notas_del_vault, all_stems, barrido=barrido)
 
+    conceptos = _detect_conceptos_sin_pagina(notas_del_vault, barrido=barrido)
+
     cn01_no_kebab, cn04_sin_titulo = _detect_convenciones_cn01_cn04(notas_del_vault)
 
     stale = _detect_stale(notas_del_vault)
@@ -2674,6 +2735,9 @@ def vault_audit(
         # fuera de `healthProfile`, que itera familias con peso, y sin fila en
         # `PENALIZACIONES`. Ver `_nucleo_del_vault`.
         "vaultCore": nucleo,
+        # AP-71, informative and without weight: what to write next, read from
+        # the notes themselves instead of from folder counts.
+        "conceptsWithoutPage": conceptos,
         "stats": {
             "total": len(notas_del_vault),
             "byFolder": dict(sorted(by_folder.items())),
@@ -3058,6 +3122,12 @@ def vault_audit(
             # Vault is at 100/100 and fully populated — provide a roadmap
             next_actions.extend(_get_roadmap_for_populated_vault(notas_del_vault))
 
+    # AP-71: the concepts the vault keeps mentioning without a page, after the
+    # roadmap so they never hide it. Capped: a list of fifty pages to write is
+    # not an action, it is a backlog, and the full list is in
+    # `conceptsWithoutPage`.
+    next_actions.extend(_acciones_de_conceptos(conceptos))
+
     if next_actions:
         result["nextActions"] = next_actions
         result["nextActionsCount"] = len(next_actions)
@@ -3072,6 +3142,20 @@ def vault_audit(
 
     if tag_health is not None:
         result["tagHealth"] = tag_health
+
+    if refresh_dq:
+        # Karpathy's log: the lint pass is an operation. Only the run that is
+        # allowed to write in the vault (`--refresh-dq`, the one that refreshes
+        # quality-index.json) leaves its `linted` row; the plain audit stays
+        # read-only. Through the port: gobernanza does not import autoria.
+        from vault.kernel.entorno import agente_por_defecto
+        from vault.runtime import anotar_operacion
+
+        result.update(anotar_operacion(
+            "linted", project or ".",
+            f"vault_audit --refresh-dq: healthIndex {result.get('healthIndex')}, "
+            f"{len(conceptos)} concepto(s) sin página (AP-71)",
+            agente_por_defecto()))
 
     return result
 
@@ -3178,7 +3262,7 @@ Notas:
     parser.add_argument(
         "--refresh-dq",
         action="store_true",
-        help="Refresh quality-index.json if stale and include dqHealth in output",
+        help="Refresh quality-index.json if stale and include dqHealth in output; this write-allowed run also logs one `linted` row in the change log",
     )
 
     args = parser.parse_args()

@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-70 más
-> las familias PAT, SP y CN. Por familia: AP 70, CN 5, PAT 6, SP 4.
-> Bilingual document. Full norm catalog: antipatterns AP-01..AP-70 plus the PAT,
-> SP and CN families. By family: AP 70, CN 5, PAT 6, SP 4.
+> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-71 más
+> las familias PAT, SP y CN. Por familia: AP 71, CN 5, PAT 6, SP 4.
+> Bilingual document. Full norm catalog: antipatterns AP-01..AP-71 plus the PAT,
+> SP and CN families. By family: AP 71, CN 5, PAT 6, SP 4.
 
 ---
 
 ## ES
 
-Total de normas registradas: 85 (AP 70, CN 5, PAT 6, SP 4)
+Total de normas registradas: 86 (AP 71, CN 5, PAT 6, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -837,6 +837,16 @@ Una politica de mutacion existente invalida o ilegible no puede tratarse como au
 
 **Prevención:** Detener las mutaciones gobernadas, informar al propietario y conservar el archivo; una politica ausente sigue sin imponer reglas.
 
+### AP-71: Concepto importante sin página propia
+
+- **Severidad:** low
+- **Enforcement:** audit
+- **Detectado por:** vault_audit
+
+Un término que varias notas mencionan --un nombre propio de dos o más palabras o una sigla-- no tiene ninguna nota que responda a él por nombre de fichero o `aliases:`. Cada nota lo explica a medias o lo da por sabido, y un agente que lo busca encuentra menciones dispersas en vez de una definición. Es el lint de la LLM Wiki de Karpathy: "conceptos importantes que se mencionan sin tener su propia página". No se infiere por parecido: solo cuenta lo que el texto marca como entidad, con la regla que ya usa la ingesta.
+
+**Prevención:** `vault_audit` publica `conceptsWithoutPage` y convierte los más citados en `nextActions` con el `vault_write` que crea la página. Se salda escribiendo la página y enlazándola desde las notas que lo mencionan; un alias en una nota existente basta si esa nota ya es su definición. Sin penalización: es una sugerencia de qué escribir, no un defecto que reste salud.
+
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
 - **Severidad:** high
@@ -991,7 +1001,7 @@ El transporte HTTP/SSE del servidor MCP acepta sesiones sin token, responde con 
 
 ## EN
 
-Total registered norms: 85 (AP 70, CN 5, PAT 6, SP 4)
+Total registered norms: 86 (AP 71, CN 5, PAT 6, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -1818,6 +1828,16 @@ Límites declarados: no ve un lanzador que no pase `sys.executable` (el binario 
 Una politica de mutacion existente invalida o ilegible no puede tratarse como ausencia de restricciones.
 
 **Prevention:** Detener las mutaciones gobernadas, informar al propietario y conservar el archivo; una politica ausente sigue sin imponer reglas.
+
+### AP-71: Concepto importante sin página propia
+
+- **Severity:** low
+- **Enforcement:** audit
+- **Detected by:** vault_audit
+
+Un término que varias notas mencionan --un nombre propio de dos o más palabras o una sigla-- no tiene ninguna nota que responda a él por nombre de fichero o `aliases:`. Cada nota lo explica a medias o lo da por sabido, y un agente que lo busca encuentra menciones dispersas en vez de una definición. Es el lint de la LLM Wiki de Karpathy: "conceptos importantes que se mencionan sin tener su propia página". No se infiere por parecido: solo cuenta lo que el texto marca como entidad, con la regla que ya usa la ingesta.
+
+**Prevention:** `vault_audit` publica `conceptsWithoutPage` y convierte los más citados en `nextActions` con el `vault_write` que crea la página. Se salda escribiendo la página y enlazándola desde las notas que lo mencionan; un alias en una nota existente basta si esa nota ya es su definición. Sin penalización: es una sugerencia de qué escribir, no un defecto que reste salud.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
