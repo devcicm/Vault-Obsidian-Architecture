@@ -164,7 +164,23 @@ Búsqueda full-text en `search-index.json` con score ponderado.
 python vault_search.py --query "circuit breaker"
 python vault_search.py --query "deploy" --tag proyecto/mi-api
 python vault_search.py --query "error" --folder "02_Observability"
+python vault_search.py --query "quetzal migratorio" --ranking bm25
 ```
+
+**`--ranking bm25`** (2026-11-16, LLM Wiki de Karpathy) puntúa la **nota entera**
+con Okapi BM25 de la stdlib, sobre las estadísticas de términos que
+`vault_reindex` guarda en cada fila de `search-index.json` (`terms`, `length`;
+dueño `vault/indices/bm25.py`, el mismo tokenizador para el índice y la
+consulta). `pesos` —título×4, tags y el extracto de 200 caracteres— sigue siendo
+el **por defecto**, y no por preferencia: medido con la función de recuerdo del
+banco (`tests/banco_agente.recuerdo_preexistente`, título → paquete), BM25
+regresó. Copia de `pos/vault-pos` (27 candidatas, muestra 25): `recall_pack`
+1.0 → 0.96 y `acierto_primera` 1.0 → 0.88. Copia de `vault dev codex` (234,
+muestra 25): 0.96 → 0.96 y 0.92 → 0.92. Copia de `vault-sandbox` (2): acierto
+1.0 → 0.5. Ninguno es un vault ajeno al estándar —no hay uno en la máquina de
+medida—, así que la cifra de la regla 7 está pendiente. Un índice escrito antes de
+las estadísticas cae a `pesos` y lo dice en `warnings` (con `vault_reindex` como
+salida); el envelope publica siempre `ranking`, el que se usó.
 
 ---
 

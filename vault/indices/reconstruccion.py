@@ -20,6 +20,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence
 
 from ..kernel.escritura import escribir_json_si_cambia  # noqa: E402
 from ..kernel.frontmatter_parsing import separar_frontmatter
+from .bm25 import estadisticas
 from .enumeracion import es_nota_indexable, notas_en_disco
 from .repositorio import RepositorioIndices
 
@@ -70,6 +71,9 @@ class ServicioReindex:
         except (OSError, OverflowError, ValueError):
             mtime = None
         titulo = meta.get("title") or ruta.stem
+        # BM25 over the whole note (`vault.indices.bm25`): the same owner
+        # computes the statistics here and scores them in `vault_search`.
+        terminos = estadisticas(str(titulo), separar_frontmatter(contenido)[1])
         return {
             "path": self._repo.relativa(ruta),
             "title": titulo,
@@ -86,6 +90,8 @@ class ServicioReindex:
                 "observed_mtime_utc": mtime,
                 "observed_mtime_source": "filesystem",
             },
+            "terms": terminos["terms"],
+            "length": terminos["length"],
         }
 
     def refrescar(self, *rutas_escritas: Path, existentes: Sequence[Path] = ()) -> Dict[str, Any]:

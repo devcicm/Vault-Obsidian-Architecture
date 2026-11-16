@@ -72,10 +72,13 @@ def _notas_visibles_en_vivo(root: Path):
                 tags = meta.get('tags') or []
                 if isinstance(tags, str):
                     tags = [t.strip() for t in tags.split(',') if t.strip()]
+                titulo = meta.get('title') or path.stem
+                cuerpo = separar_frontmatter(text)[1]
                 notes.append({'path': path.relative_to(root).as_posix(),
-                              'title': meta.get('title') or path.stem,
-                              'preview': separar_frontmatter(text)[1].strip()[:200].replace('\n', ' '),
-                              'tags': tags, 'updatedAt': meta.get('updatedAt') or meta.get('createdAt') or ''})
+                              'title': titulo,
+                              'preview': cuerpo.strip()[:200].replace('\n', ' '),
+                              'tags': tags, 'updatedAt': meta.get('updatedAt') or meta.get('createdAt') or '',
+                              **_repo(root).estadisticas_bm25(str(titulo), cuerpo)})
             except (OSError, UnicodeError, ValueError) as exc:
                 skipped.append(f'{path.relative_to(root).as_posix()}: {type(exc).__name__}')
     return notes, skipped
@@ -110,19 +113,34 @@ def _en_carpeta(ruta: str, folder: str) -> bool:
     return ruta == folder or ruta.startswith(folder + "/")
 
 
-def score_note(note: Dict[str, Any], query: str, folder: Optional[str], tag: Optional[str]) -> float:
+#: Lexical rankings `vault_search` can use. `pesos` is the historical one
+#: (title x4, tags, 200-character preview); `bm25` scores the whole note with
+#: the term statistics `vault_reindex` stores (`vault.indices.bm25`).
+RANKINGS = ("pesos", "bm25")
 
-    """Calculate weighted search score for a note."""
+#: The default is a measured decision, not a preference: BM25 is adopted only
+#: if the agent bench recall (`recall_pack_ajeno`) does not regress. The
+#: numbers are in `scripts/README.md` (vault_search) and the feature log.
+RANKING_POR_DEFECTO = "pesos"
 
+
+def _pasa_filtros(note: Dict[str, Any], folder: Optional[str], tag: Optional[str]) -> bool:
+    """Folder and tag filters, shared by every ranking."""
     if folder and not _en_carpeta(note.get("path", ""), folder):
-
-        return 0
-
-
+        return False
     # AP-44: la tag se compara con la normalización con que `vault_write` la
     # guardó; `--tag Música` no encontraba la `musica` que él mismo escribió.
     forma = _repo().forma_de_etiqueta if tag else None
     if tag and forma(tag) not in {forma(str(t)) for t in note.get("tags", [])}:
+        return False
+    return True
+
+
+def score_note(note: Dict[str, Any], query: str, folder: Optional[str], tag: Optional[str]) -> float:
+
+    """Calculate weighted search score for a note."""
+
+    if not _pasa_filtros(note, folder, tag):
 
         return 0
 
@@ -185,7 +203,8 @@ def score_note(note: Dict[str, Any], query: str, folder: Optional[str], tag: Opt
     return score
 
 
-def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = None) -> Dict[str, Any]:
+def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = None,
+                 ranking: Optional[str] = None) -> Dict[str, Any]:
 
     """
 
@@ -201,6 +220,8 @@ def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = 
 
         tag: Filter by frontmatter tag
 
+        ranking: `pesos` or `bm25` (default `RANKING_POR_DEFECTO`)
+
 
 
     Returns:
@@ -212,6 +233,12 @@ def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = 
     # AP-37: una consulta vacía no es una búsqueda; devolvía el vault entero.
     if not (query or "").strip():
         return {**emit_error("vault_search", "INVALID_INPUT", "--query vacío."),
+                "query": query, "results": []}
+
+    ranking = ranking or RANKING_POR_DEFECTO
+    if ranking not in RANKINGS:
+        return {**emit_error("vault_search", "INVALID_INPUT",
+                             f"--ranking {ranking!r} no es uno de {', '.join(RANKINGS)}"),
                 "query": query, "results": []}
 
     # Una carpeta que no existe o sale del vault respondía 0 resultados con
@@ -264,11 +291,29 @@ def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = 
 
     # Score all notes
 
+    avisos: List[str] = []
+    usado = ranking
+    puntos_bm25: Dict[str, float] = {}
+    if ranking == "bm25":
+        sin_datos = _repo().filas_sin_estadisticas(notes)
+        if sin_datos:
+            # A partial BM25 would rank by two scales at once; the honest
+            # fallback is the whole old ranking, said out loud.
+            usado = "pesos"
+            avisos.append(f"bm25: {sin_datos} nota(s) del índice sin estadísticas de "
+                          "términos; se usó el ranking por pesos. Ejecuta vault_reindex")
+        else:
+            puntos_bm25 = _repo().puntuar_bm25(query, notes)
+
     scored_notes = []
 
     for note in notes:
 
-        score = score_note(note, query, folder, tag)
+        if usado == "bm25":
+            score = (puntos_bm25.get(note.get("path", ""), 0)
+                     if _pasa_filtros(note, folder, tag) else 0)
+        else:
+            score = score_note(note, query, folder, tag)
 
         if score > 0:
 
@@ -313,8 +358,11 @@ def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = 
 
         **({"source": "live_visible_markdown", "incomplete": bool(skipped), "skipped": skipped} if live else {}),
         **({"index_coherence": coherencia} if not live else {}),
-        **({"warnings": ["No se pudo confirmar la frescura del índice de búsqueda; revisa vault_reindex"]}
-           if not live and coherencia.get("status") != "index_ok" else {}),
+        **({"warnings": avisos + (
+            ["No se pudo confirmar la frescura del índice de búsqueda; revisa vault_reindex"]
+            if not live and coherencia.get("status") != "index_ok" else [])}
+           if avisos or (not live and coherencia.get("status") != "index_ok") else {}),
+        "ranking": usado,
 
         "folder": folder,
 
@@ -363,7 +411,8 @@ Notas:
 
   - Requiere search-index.json generado por vault_reindex.py
 
-  - Score: title×4 + word matches + preview matches
+  - Score: title×4 + word matches + preview matches (--ranking pesos)
+  - --ranking bm25: BM25 sobre la nota entera con las estadisticas del indice
 
 """,
 
@@ -376,10 +425,14 @@ Notas:
 
     parser.add_argument("--tag", help="Filter by tag")
 
+    parser.add_argument("--ranking", choices=RANKINGS, default=None,
+                        help=("pesos (titulo, tags y extracto) o bm25 (nota entera); "
+                              f"por defecto {RANKING_POR_DEFECTO}"))
+
 
     args = parser.parse_args()
 
-    result = vault_search(args.query, args.folder, args.tag)
+    result = vault_search(args.query, args.folder, args.tag, ranking=args.ranking)
 
 
     print(json.dumps(result, indent=2, ensure_ascii=False))

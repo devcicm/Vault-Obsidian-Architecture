@@ -6395,6 +6395,14 @@
           "tag": {
             "type": "string",
             "description": "Filter by tag"
+          },
+          "ranking": {
+            "type": "string",
+            "description": "pesos (título, tags y extracto; por defecto) o bm25 (nota entera, estadísticas del índice)",
+            "enum": [
+              "pesos",
+              "bm25"
+            ]
           }
         },
         "required": [

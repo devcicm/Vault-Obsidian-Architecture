@@ -111,6 +111,30 @@ class RepositorioAutoria:
 
         return normalizar_etiqueta(crudo)
 
+    def puntuar_bm25(self, consulta: str, filas) -> dict:
+        """BM25 scores per path, with the statistics Índices stored (AP-57).
+
+        The tokenizer that built `search-index.json` is the one that reads the
+        query: both live in `vault.indices.bm25`, reached through this
+        repository, which already crosses to Índices, instead of opening a
+        crossing from `vault_search`.
+        """
+        from ..indices.bm25 import puntuar
+
+        return puntuar(consulta, filas)
+
+    def estadisticas_bm25(self, titulo: str, cuerpo: str) -> dict:
+        """The index row's term statistics, for a note read live (MCP live search)."""
+        from ..indices.bm25 import estadisticas
+
+        return estadisticas(titulo, cuerpo)
+
+    def filas_sin_estadisticas(self, filas) -> int:
+        """How many index rows predate the BM25 statistics."""
+        from ..indices.bm25 import faltan_estadisticas
+
+        return faltan_estadisticas(filas)
+
     @property
     def grafo(self) -> Path:
         from ..grafo.repositorio import RepositorioGrafo

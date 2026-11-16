@@ -170,6 +170,12 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Filtrar por carpeta",
                 "validators": [],
             },
+            "ranking": {
+                "type": "string",
+                "required": False,
+                "description": "pesos (título, tags y extracto; por defecto) o bm25 (nota entera, estadísticas del índice)",
+                "validators": [],
+            },
         },
         "guards": [],
         "side_effects": [],
