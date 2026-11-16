@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
 > Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-71 más
-> las familias PAT, SP y CN. Por familia: AP 71, CN 5, PAT 6, SP 4.
+> las familias PAT, SP y CN. Por familia: AP 71, CN 5, PAT 7, SP 4.
 > Bilingual document. Full norm catalog: antipatterns AP-01..AP-71 plus the PAT,
-> SP and CN families. By family: AP 71, CN 5, PAT 6, SP 4.
+> SP and CN families. By family: AP 71, CN 5, PAT 7, SP 4.
 
 ---
 
 ## ES
 
-Total de normas registradas: 86 (AP 71, CN 5, PAT 6, SP 4)
+Total de normas registradas: 87 (AP 71, CN 5, PAT 7, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -957,6 +957,16 @@ Ejecutar vault_graph --typed al final de cada sesion productiva para generar gra
 
 **Prevención:** N/A -- es el patron correcto. Agregar vault_graph --typed al session protocol como paso automatico antes de vault_audit.
 
+### PAT-7: Desacuerdo legítimo declarado -- contradicts entre notas
+
+- **Severidad:** N/A
+- **Enforcement:** recommended
+- **Detectado por:** vault_fuente_unica, vault_context_pack
+
+Cuando dos notas sostienen cosas incompatibles y el desacuerdo es legítimo, una de ellas lo declara en su frontmatter con el predicado de la ontología `contradicts` (`contradicts: ["[[otra-nota]]"]`). `vault_fuente_unica` deja de contar ese conflicto como deuda AP-05 y lo publica en `declared_disagreements`, y `vault_context_pack` entrega los dos lados cuando selecciona uno, con `disagrees_with`. Es la respuesta de la LLM Wiki de Karpathy a las contradicciones: el lint las señala, y las que son reales se conservan como tales en vez de resolverse eligiendo un ganador.
+
+**Prevención:** N/A -- es el patrón correcto. No añade un valor de `status`: el vocabulario es cerrado y el desacuerdo es una relación entre dos notas, no un estado de una.
+
 ### SP-01: Delete protocol -- change_log obligatorio antes de eliminar
 
 - **Severidad:** critical
@@ -1001,7 +1011,7 @@ El transporte HTTP/SSE del servidor MCP acepta sesiones sin token, responde con 
 
 ## EN
 
-Total registered norms: 86 (AP 71, CN 5, PAT 6, SP 4)
+Total registered norms: 87 (AP 71, CN 5, PAT 7, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -1948,6 +1958,16 @@ Los campos id + createdAt + updatedAt + agent + migratedFrom (si aplica) forman 
 Ejecutar vault_graph --typed al final de cada sesion productiva para generar graph-enriched.json con predicates semanticos unificados. El grafo enriquecido combina wiki-links, entity relations y code relations en un solo grafo consultable con filtros por predicate, cardinalidad y tipo de nodo. Esto habilita busquedas de conocimiento semanticas y analisis de impacto con tipos.
 
 **Prevention:** N/A -- es el patron correcto. Agregar vault_graph --typed al session protocol como paso automatico antes de vault_audit.
+
+### PAT-7: Desacuerdo legítimo declarado -- contradicts entre notas
+
+- **Severity:** N/A
+- **Enforcement:** recommended
+- **Detected by:** vault_fuente_unica, vault_context_pack
+
+Cuando dos notas sostienen cosas incompatibles y el desacuerdo es legítimo, una de ellas lo declara en su frontmatter con el predicado de la ontología `contradicts` (`contradicts: ["[[otra-nota]]"]`). `vault_fuente_unica` deja de contar ese conflicto como deuda AP-05 y lo publica en `declared_disagreements`, y `vault_context_pack` entrega los dos lados cuando selecciona uno, con `disagrees_with`. Es la respuesta de la LLM Wiki de Karpathy a las contradicciones: el lint las señala, y las que son reales se conservan como tales en vez de resolverse eligiendo un ganador.
+
+**Prevention:** N/A -- es el patrón correcto. No añade un valor de `status`: el vocabulario es cerrado y el desacuerdo es una relación entre dos notas, no un estado de una.
 
 ### SP-01: Delete protocol -- change_log obligatorio antes de eliminar
 

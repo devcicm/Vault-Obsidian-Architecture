@@ -674,6 +674,14 @@ python vault_fuente_unica.py --freeze                # baseline; solo puede enco
 python vault_fuente_unica.py --check --root <ajeno>  # contraste de la regla 7, solo lectura
 ```
 
+**Desacuerdo declarado (PAT-7, 2026-11-16).** Si una de las notas en conflicto
+declara `contradicts: ["[[otra-nota]]"]` —el predicado de la ontología, inverso
+`contradicted_by`—, el conflicto deja de ser deuda: sale en
+`declared_disagreements` y no en `conflicts` ni en `new_conflicts`. Declararlo en
+cualquiera de las dos basta. Cada par de valores distintos tiene que estar cubierto
+por una declaración: una tercera nota que discrepa sin declararlo mantiene el
+conflicto abierto.
+
 **Por qué llegó en v40.15 y no en v19.** AP-05 es `critical` desde v19 y fue la última norma sin detector, declarada así en `cobertura_descubierta` en vez de escondida en una lista vacía. El motivo escrito era cierto: decidir qué es «el mismo dato» sin embeddings es un problema de diseño abierto.
 
 Lo es **en general**. La observación que lo desbloquea es que no hay que resolverlo en general para medir lo que hace daño. Un dato **tipado** —IP, URL, puerto, semver— no se reconoce por parecido: se compara por igualdad. Y su identidad no hay que adivinarla, porque está escrita al lado en forma de clave. `host_ip: 10.10.10.45` en una nota y `host_ip: 10.10.10.50` en otra del mismo ámbito es AP-05 sin semántica de por medio.
@@ -2111,6 +2119,12 @@ python vault_context_pack.py "errores del proyecto ans" --budget 2000
 python vault_context_pack.py "auth" --format markdown --no-preferences
 ```
 
+**Los dos lados de un desacuerdo (PAT-7).** Si una nota seleccionada está unida
+a otra por `contradicts:` (declarado en cualquiera de las dos), la otra entra
+justo detrás con la misma puntuación y `via: {"contradicts": <la que la trajo>}`,
+y las dos llevan `disagrees_with`. No cuenta contra el top-k; el presupuesto de
+tokens sigue mandando.
+
 ### `vault_ingest.py`
 Ingesta gobernada de conversaciones, ficheros y URLs, con extracción determinista
 de entidades (wikilinks, tags, rutas, siglas, nombres propios).
@@ -2404,7 +2418,7 @@ VAULT_MCP_PERFIL=agente node mcp/nodejs/vault-mcp-server.mjs
 
 ### `vault_norms.py`
 
-Registro canónico de las 86 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
+Registro canónico de las 87 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
 
 **Desde v40.26 son tres ficheros y una sola tool.** Eran 5.158 líneas que hacían de catálogo, de motor y de fachada a la vez, con el 60% del fichero ocupado por una constante. Ahora `vault_norms_catalog.py` tiene los datos —`NORM_CATALOG` y el vocabulario de estado, sin leer el vault, sin escribir nada y sin importar ninguna tool—, `vault_norms_engine.py` tiene el motor de `--audit`, el drift del marco y el heal de AP-46, y este módulo se queda con la fachada de datos, la CLI y la **reexportación** de todo lo que el repo consumía antes. Esa reexportación es el punto: la superficie externa real son siete símbolos y los tests usan cinco privados más, así que reexportarlos hace que **ningún llamador se toque** y el diff se lea como movimiento puro. Recortar de paso la superficie que usan los tests habría mezclado dos cambios y hecho imposible saber cuál rompió qué.
 

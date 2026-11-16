@@ -14,6 +14,11 @@ NORMA = {
             "señala el concepto importante que no tiene página propia: sin dueño "
             "no hay sitio canónico, que es la condición previa para AP-05."
         ),
+        "PAT-7": (
+            "AP-05 es la divergencia que nadie decidió: deuda. PAT-7 es la misma "
+            "divergencia declarada por el autor como desacuerdo legítimo con "
+            "`contradicts:`; declarada, deja de contar como deuda AP-05."
+        ),
         "AP-67": (
             "AP-05 es el dato repetido en dos sitios. AP-67 es el dato que no esta en ninguno: el vault declara un proyecto y no tiene ni una nota de su codigo. Son las dos direcciones del mismo encargo: una sola fuente de verdad."
         ),

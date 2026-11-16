@@ -120,8 +120,33 @@ def _pares(texto: str) -> List[tuple]:
 
 
 def medir(raiz: Optional[Path] = None) -> List[Dict[str, Any]]:
-    """Los conflictos: misma clave tipada, mismo ámbito, valores distintos."""
+    """Los conflictos: misma clave tipada, mismo ámbito, valores distintos.
+
+    Un desacuerdo declarado con `contradicts:` (PAT-7) no es un conflicto: es
+    información que el autor decidió conservar. Sale en `medir_desacuerdos`.
+    """
+    return _medir(raiz)[0]
+
+
+def medir_desacuerdos(raiz: Optional[Path] = None) -> List[Dict[str, Any]]:
+    """PAT-7: the AP-05 conflicts the notes themselves declare as legitimate."""
+    return _medir(raiz)[1]
+
+
+def _medir(raiz: Optional[Path] = None):
+    """`(conflictos, desacuerdos_declarados)` in one sweep of the vault.
+
+    The declaration is read by its single owner,
+    `vault.kernel.normativa.desacuerdos` (also read by `vault_context_pack`),
+    and resolved like a wikilink: file name or `aliases:`, never `title:`.
+    """
+    from vault.kernel.normativa.desacuerdos import desacuerdo_declarado, pares_declarados
+    from vault_lib import indice_de_nombres
+
     raiz = Path(raiz) if raiz else get_vault_root()
+    relativas: List[str] = []
+    aliases: Dict[str, List[str]] = {}
+    frontmatters: Dict[str, Dict[str, Any]] = {}
     # (ámbito, clave) -> valor -> [notas que lo afirman]
     visto: Dict[tuple, Dict[str, List[str]]] = defaultdict(lambda: defaultdict(list))
     tipos: Dict[tuple, str] = {}
@@ -153,6 +178,12 @@ def medir(raiz: Optional[Path] = None) -> List[Dict[str, Any]]:
         # acepta `--root` contra vaults ajenos, que es donde eso llega.
         fm_bruto, cuerpo = parse_frontmatter_with_body(crudo)
         fm: Dict[str, Any] = fm_bruto if isinstance(fm_bruto, dict) else {}
+        relativas.append(rel.as_posix())
+        alias = fm.get("aliases")
+        aliases[rel.as_posix()] = ([alias] if isinstance(alias, str)
+                                   else [a for a in alias if isinstance(a, str)]
+                                   if isinstance(alias, list) else [])
+        frontmatters[rel.as_posix()] = fm
 
         # Un valor dentro de un fence es un ejemplo, no una afirmación (AP-57).
         texto = crudo[:0] + strip_code_blocks(cuerpo)
@@ -174,18 +205,21 @@ def medir(raiz: Optional[Path] = None) -> List[Dict[str, Any]]:
             if rel.as_posix() not in notas:
                 notas.append(rel.as_posix())
 
+    pares = pares_declarados(frontmatters, indice_de_nombres(relativas, aliases))
     conflictos = []
+    desacuerdos = []
     for (ambito, clave), valores in sorted(visto.items()):
         if len(valores) < 2:
             continue
-        conflictos.append({
+        fila = {
             "ambito": ambito,
             "clave": clave,
             "tipo": tipos[(ambito, clave)],
             "valores": {v: sorted(ns) for v, ns in sorted(valores.items())},
             "notas_afectadas": sum(len(ns) for ns in valores.values()),
-        })
-    return conflictos
+        }
+        (desacuerdos if desacuerdo_declarado(valores, pares) else conflictos).append(fila)
+    return conflictos, desacuerdos
 
 
 def _firma(c: Dict[str, Any]) -> str:
@@ -204,7 +238,7 @@ def _baseline() -> List[str]:
 
 
 def check(raiz: Optional[Path] = None) -> Dict[str, Any]:
-    conflictos = medir(raiz)
+    conflictos, desacuerdos = _medir(raiz)
     firmas = {_firma(c) for c in conflictos}
     base = set(_baseline())
     nuevos = sorted(firmas - base)
@@ -218,6 +252,9 @@ def check(raiz: Optional[Path] = None) -> Dict[str, Any]:
         "baseline_size": len(base),
         "new_conflicts": nuevos,
         "resolved_since_baseline": sorted(base - firmas),
+        # PAT-7: declared with `contradicts:`, so not debt. Published, not
+        # hidden: a declaration is a decision someone can review.
+        "declared_disagreements": desacuerdos,
         "hint": (
             "Se salda con PAT-1: una nota canónica declara el dato y las demás "
             "la enlazan. Verde aquí no prueba una sola fuente de verdad: prueba "

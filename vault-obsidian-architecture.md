@@ -4042,7 +4042,7 @@ Lo ingerido entra con `status: draft` y `cia_integrity: low`, de modo que el rer
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **86 normas** del estándar (69 AP + 6 PAT + 4 SP + 5 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-69`. Fuente de verdad: `NORM_CATALOG` en `vault_norms_catalog.py` (`vault_norms.py` lo reexporta). Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **87 normas** del estándar (69 AP + 6 PAT + 4 SP + 5 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-69`. Fuente de verdad: `NORM_CATALOG` en `vault_norms_catalog.py` (`vault_norms.py` lo reexporta). Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -12412,3 +12412,16 @@ crea la página; no resta salud. La resolución es la del lector: nombre de fich
 alias, nunca `title:` (AP-44). El umbral (`UMBRAL_CONCEPTO`) está declarado, no
 calibrado. Dueño del criterio: `vault/kernel/normativa/conceptos.py`.
 
+### PAT-7 - Desacuerdo legítimo declarado: contradicts entre notas
+
+**Enforcement:** `recommended` · **Introducido:** v41.26 (2026-11-16)
+
+Cuando dos notas sostienen cosas incompatibles y el desacuerdo es legítimo —dos fuentes
+que miden distinto, una evidencia sin cerrar—, una de ellas lo declara en su frontmatter
+con el predicado `contradicts` de la ontología (`contradicts: ["[[otra-nota]]"]`, inverso
+`contradicted_by`). `vault_fuente_unica` deja de contar ese conflicto como deuda AP-05 y
+lo publica en `declared_disagreements`; `vault_context_pack`, al seleccionar una de las
+dos notas, entrega también la otra con `disagrees_with`. Una tercera nota que discrepa sin
+declararlo mantiene el conflicto abierto. No añade ningún valor de `status`: el
+vocabulario es cerrado y el desacuerdo es una relación entre notas, no un estado. Lector
+único de la declaración: `vault/kernel/normativa/desacuerdos.py`.

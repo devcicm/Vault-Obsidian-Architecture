@@ -221,6 +221,85 @@ def _read_note(path: str) -> Dict[str, Any]:
     return {"ok": True, "frontmatter": frontmatter, "body": body.strip()}
 
 
+def _pares_en_desacuerdo() -> set:
+    """PAT-7: every declared `contradicts` pair in the vault, symmetric.
+
+    Declaring it on either note is enough, so the whole vault is read, and
+    names resolve the Obsidian way (file name and `aliases:`). The reader of
+    the declaration is its single owner, shared with the AP-05 detector
+    (`vault.kernel.normativa.desacuerdos`).
+    """
+    from vault.kernel.enumeracion import notas_en_disco
+    from vault.kernel.normativa.desacuerdos import PREDICADO, pares_declarados
+    from vault_lib import indice_de_nombres, parse_frontmatter
+
+    raiz = _raiz()
+    relativas: List[str] = []
+    aliases: Dict[str, List[str]] = {}
+    declarantes: Dict[str, Dict[str, Any]] = {}
+    for ruta in notas_en_disco(raiz, _repo().ctx.secciones.ordenadas(), incluir_indices=False):
+        rel = ruta.relative_to(raiz).as_posix()
+        relativas.append(rel)
+        try:
+            fm = parse_frontmatter(ruta.read_text(encoding="utf-8")) or {}
+        except (OSError, UnicodeDecodeError):
+            continue
+        alias = fm.get("aliases")
+        aliases[rel] = ([alias] if isinstance(alias, str)
+                        else [a for a in alias if isinstance(a, str)]
+                        if isinstance(alias, list) else [])
+        if fm.get(PREDICADO):
+            declarantes[rel] = fm
+    if not declarantes:
+        return set()
+    return pares_declarados(declarantes, indice_de_nombres(relativas, aliases))
+
+
+def _con_los_dos_lados(cabeza: List[Dict[str, Any]], now: datetime) -> List[Dict[str, Any]]:
+    """PAT-7: a selected note that declares a disagreement brings the other side.
+
+    The counterpart enters right after the note that names it, with the same
+    score and `via: {"contradicts": <declarer>}`, so the budget sees the pair
+    together; both carry `disagrees_with`. Without any declaration in the vault
+    the selection is returned unchanged.
+    """
+    pares = _pares_en_desacuerdo()
+    if not pares:
+        return cabeza
+    elegidas = {c["path"] for c in cabeza}
+    salida: List[Dict[str, Any]] = []
+    for candidato in cabeza:
+        salida.append(candidato)
+        otros = sorted(x for par in pares if candidato["path"] in par
+                       for x in par if x != candidato["path"])
+        if not otros:
+            continue
+        candidato["disagrees_with"] = otros
+        for otro in otros:
+            if otro in elegidas:
+                continue
+            elegidas.add(otro)
+            nota = _read_note(otro)
+            fm = nota.get("frontmatter", {}) if nota.get("ok") else {}
+            updated = str(fm.get("updatedAt") or "")
+            salida.append({
+                "path": otro,
+                "title": fm.get("title") or Path(otro).stem,
+                "score": candidato["score"],
+                "signals": {"lexical": 0.0, "graph": 0.0,
+                            "recency": round(_recency_score(updated, now), 4),
+                            "cia": CIA_WEIGHT.get(str(fm.get("cia_integrity", "medium")).lower(), 0.5),
+                            "status_penalty": penalizacion(fm)},
+                "status": str(fm.get("status", "")).lower(),
+                "updatedAt": updated,
+                "via": {"contradicts": candidato["path"]},
+                "disagrees_with": [candidato["path"]],
+                "readable": nota.get("ok", False),
+                "body": nota.get("body", "") if nota.get("ok") else "",
+            })
+    return salida
+
+
 def _truncate_to_tokens(text: str, max_tokens: int) -> tuple[str, bool]:
     """Recorta por párrafos, no por caracteres: cortar a mitad de frase produce
     un extracto que el agente cita mal."""
@@ -484,7 +563,9 @@ Recupera, rerankea y empaqueta el contexto para responder `query`."""
         blocks.append(block)
         used += cost
 
-    for candidate in candidates[:top_k]:
+    seleccion = _con_los_dos_lados(candidates[:top_k], now)
+    traidas = {c["path"] for c in seleccion}
+    for candidate in seleccion:
         if not candidate["readable"]:
             excluded.append({"path": candidate["path"], "reason": "no legible"})
             continue
@@ -504,6 +585,8 @@ Recupera, rerankea y empaqueta el contexto para responder `query`."""
                         | {"truncated": truncated, "tokens": cost})
 
     for candidate in candidates[top_k:]:
+        if candidate["path"] in traidas:
+            continue
         excluded.append({"path": candidate["path"], "reason": "fuera del top-k",
                          "score": candidate["score"]})
 

@@ -347,6 +347,16 @@
       "cardinality": "N:M",
       "semantic_weight": 3,
       "source": "code+manual"
+    },
+    "contradicts": {
+      "label": "contradicts",
+      "description": "El nodo fuente sostiene algo incompatible con el nodo destino y el desacuerdo es legitimo y declarado en su frontmatter (PAT-7): no cuenta como deuda AP-05 y vault_context_pack entrega los dos lados",
+      "inverse": "contradicted_by",
+      "domain": ["project", "observability", "decision", "pattern", "diagram", "knowledge", "runbook", "infrastructure", "migrated", "code", "bibliography", "flow", "requirement", "test", "ai_governance"],
+      "range": ["project", "observability", "decision", "pattern", "diagram", "knowledge", "runbook", "infrastructure", "migrated", "code", "bibliography", "flow", "requirement", "test", "ai_governance"],
+      "cardinality": "N:M",
+      "semantic_weight": 3,
+      "source": "frontmatter"
     }
   },
   "predicate_synonyms": {
@@ -413,6 +423,7 @@
     "uses": 2,
     "documents": 2,
     "re_exports": 2,
+    "contradicts": 2,
     "many_to_many": 1,
     "wiki_link": 0
   }

@@ -9,6 +9,11 @@ ejecutar. Movida tal cual desde `NORM_CATALOG` el 2026-10-09; las caras están e
 NORMA = {
     "code": "PAT-1",
     "distinguido_de": {
+        "PAT-7": (
+            "PAT-1 cierra la divergencia eligiendo una nota canónica. PAT-7 "
+            "registra que todavía no hay canónica y que elegir una ahora borraría "
+            "una decisión pendiente."
+        ),
         "AP-05": (
             "AP-05 es el defecto: el mismo dato con valores distintos en varias "
             "notas del mismo ámbito. PAT-1 es el patrón que lo cierra: una nota "
