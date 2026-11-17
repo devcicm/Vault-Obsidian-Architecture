@@ -260,12 +260,13 @@ def test_los_docs_vivos_que_publican_comandos_estan_en_el_alcance():
     `python <tool>.py` está en `DOCS_CON_COMANDOS`. Los derivados los escribe
     su generador desde el registro y su puerta mide la deriva; los registros
     citan comandos como prueba de lo que ocurrió, igual que el changelog."""
+    from vault.kernel import rutas
     from vault_registry import DOCS_DEL_REPO
 
     vivos_con_comandos = {
-        rel for rel, (clase, _) in DOCS_DEL_REPO.items()
+        f"{rutas.DOCS}/{nombre}" for nombre, (clase, _) in DOCS_DEL_REPO.items()
         if clase in ("guia", "tutorial")
-        and vds.RE_INVOCACION.search((REPO_ROOT / rel).read_text(encoding="utf-8"))
+        and vds.RE_INVOCACION.search((REPO_ROOT / rutas.DOCS / nombre).read_text(encoding="utf-8"))
     }
     assert vivos_con_comandos and vivos_con_comandos <= set(vds.DOCS_CON_COMANDOS), (
         sorted(vivos_con_comandos - set(vds.DOCS_CON_COMANDOS)))

@@ -401,27 +401,29 @@ SECTION_DOCUMENTACION: Dict[str, tuple] = {
 #: si un `docs/*.md` no está aquí o si una clase de `DIATAXIS` queda sin
 #: documento ni hueco declarado. El índice `docs/README.md` es navegación
 #: escrita a mano: se clasifica `indice` aunque ninguna tool lo regenere.
+#: Las claves son el nombre del fichero dentro de `docs/` (`rutas.DOCS`): la
+#: ruta la compone el dueño del layout, no un literal aquí.
 DOCS_DEL_REPO: Dict[str, tuple] = {
-    "docs/ARQUITECTURA.md": ("referencia", "contextos acotados y fronteras, derivado de vault_arch"),
-    "docs/BLUEPRINT.md": ("referencia", "plano de construcción derivado de los registros"),
-    "docs/CARRILES.md": ("referencia", "qué exige cada carril, derivado de vault_gate"),
-    "docs/CONTRATO-CONTEXT-PACK.md": ("referencia", "contrato del presupuesto de contexto"),
-    "docs/CONTRATO-DESCUBRIMIENTO.md": ("referencia", "contrato del descubrimiento de vaults del MCP"),
-    "docs/DISPONIBILIDAD-DE-TOOLS.md": ("referencia", "qué tools están activas, derivado"),
-    "docs/ENTORNO.md": ("referencia", "variables de entorno, derivado de vault_entorno"),
-    "docs/EVOLUCION-PRODUCTO-INSTALABLE.md": ("registro", "bitácora de ingeniería de la productización"),
-    "docs/GOBIERNO.md": ("explicacion", "qué es una norma y por qué la escalera de enforcement"),
-    "docs/GUIA-DE-PRODUCCION.md": ("referencia", "promesas a quien instala y quién las ejerce, derivado"),
-    "docs/INSIGHTS.md": ("guia", "cómo inventariar y comparar vaults con vault_insights"),
-    "docs/INSTALACION-LIMPIA.md": ("guia", "quitar lo previo, instalar la wheel y registrar el MCP"),
-    "docs/MAPA-MANIFIESTO.md": ("referencia", "cada titular del manifiesto clasificado"),
-    "docs/METRICAS.md": ("referencia", "métricas de desarrollo y producto, derivado"),
-    "docs/MODO-AGENTICO-ONBOARDING.md": ("guia", "poblar un vault desde un proyecto que no tenía"),
-    "docs/MODO-AGENTICO-SANACION.md": ("guia", "adaptar un vault preexistente sin borrar nada"),
-    "docs/PUERTAS.md": ("referencia", "qué mide cada puerta y cómo se arregla, derivado"),
-    "docs/README.md": ("indice", "índice de docs/, escrito a mano"),
-    "docs/RELEASE-EVIDENCE.md": ("referencia", "evidencia que exige el flujo de release"),
-    "docs/SKILLS.md": ("referencia", "skills que el vault ofrece a un agente"),
+    "ARQUITECTURA.md": ("referencia", "contextos acotados y fronteras, derivado de vault_arch"),
+    "BLUEPRINT.md": ("referencia", "plano de construcción derivado de los registros"),
+    "CARRILES.md": ("referencia", "qué exige cada carril, derivado de vault_gate"),
+    "CONTRATO-CONTEXT-PACK.md": ("referencia", "contrato del presupuesto de contexto"),
+    "CONTRATO-DESCUBRIMIENTO.md": ("referencia", "contrato del descubrimiento de vaults del MCP"),
+    "DISPONIBILIDAD-DE-TOOLS.md": ("referencia", "qué tools están activas, derivado"),
+    "ENTORNO.md": ("referencia", "variables de entorno, derivado de vault_entorno"),
+    "EVOLUCION-PRODUCTO-INSTALABLE.md": ("registro", "bitácora de ingeniería de la productización"),
+    "GOBIERNO.md": ("explicacion", "qué es una norma y por qué la escalera de enforcement"),
+    "GUIA-DE-PRODUCCION.md": ("referencia", "promesas a quien instala y quién las ejerce, derivado"),
+    "INSIGHTS.md": ("guia", "cómo inventariar y comparar vaults con vault_insights"),
+    "INSTALACION-LIMPIA.md": ("guia", "quitar lo previo, instalar la wheel y registrar el MCP"),
+    "MAPA-MANIFIESTO.md": ("referencia", "cada titular del manifiesto clasificado"),
+    "METRICAS.md": ("referencia", "métricas de desarrollo y producto, derivado"),
+    "MODO-AGENTICO-ONBOARDING.md": ("guia", "poblar un vault desde un proyecto que no tenía"),
+    "MODO-AGENTICO-SANACION.md": ("guia", "adaptar un vault preexistente sin borrar nada"),
+    "PUERTAS.md": ("referencia", "qué mide cada puerta y cómo se arregla, derivado"),
+    "README.md": ("indice", "índice de docs/, escrito a mano"),
+    "RELEASE-EVIDENCE.md": ("referencia", "evidencia que exige el flujo de release"),
+    "SKILLS.md": ("referencia", "skills que el vault ofrece a un agente"),
 }
 
 #: Las clases de `DIATAXIS` sin documento propio en `docs/`, con su candidato.

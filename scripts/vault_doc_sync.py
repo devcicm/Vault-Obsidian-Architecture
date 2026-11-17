@@ -232,7 +232,7 @@ def comandos_publicados() -> List[Dict]:
 # `ADR-NNNN` citado sin su `docs/adr/NNNN-*.md` manda al lector a un sitio
 # vacío: el porqué se perdió y el código sigue afirmando que está escrito.
 #: Dónde se buscan citas a ADR: el código del repo y los paquetes de normas.
-ZONAS_CON_CITAS_ADR = (rutas.SCRIPTS, "vault", rutas.CLI, "tests", "normas", "mcp")
+ZONAS_CON_CITAS_ADR = (rutas.SCRIPTS, rutas.VAULT, rutas.CLI, rutas.TESTS, rutas.NORMAS, rutas.MCP)
 SUFIJOS_CON_CITAS_ADR = (".py", ".mjs", ".js")
 RE_CITA_ADR = re.compile(r"\bADR-(\d{4})\b")
 

@@ -218,7 +218,7 @@ def test_un_adr_editado_tras_aceptarse_lo_declara_con_su_motivo():
 def test_todo_doc_de_docs_tiene_su_clase_registrada():
     from vault_registry import DOCS_DEL_REPO, DOCUMENTACION_CLASES
 
-    en_disco = {f"docs/{p.name}" for p in DOCS.glob("*.md")}
+    en_disco = {p.name for p in DOCS.glob("*.md")}
     assert en_disco == set(DOCS_DEL_REPO), (
         f"sin clase: {sorted(en_disco - set(DOCS_DEL_REPO))}; "
         f"registrados sin fichero: {sorted(set(DOCS_DEL_REPO) - en_disco)}")

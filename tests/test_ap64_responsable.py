@@ -100,4 +100,8 @@ def test_ap64_la_plantilla_propone_draft_y_la_guia_nombra_al_responsable():
     (adr,) = [a for a in vault_audit._get_roadmap_for_populated_vault([])
               if "03_Decisions" in a["command"]]
     assert "responsable" in adr["description"] and "AP-64" in adr["description"]
-    assert "--meta '" + json.dumps(meta) + "'" in adr["command"]
+    # Since the Torti Code phase the guidance uses `vault_write --adr`, which
+    # always writes `meta_adr()` (draft) and refuses any other status; the
+    # command no longer carries a hand-built `--meta`.
+    assert "--adr" in adr["command"] and "--meta" not in adr["command"]
+    assert json.dumps(meta)  # the draft meta stays the owner's single definition
