@@ -3,6 +3,11 @@
 Session/group IDs do not define descendants. A dedicated subreaper adopts
 orphans, freezes descendants before traversal, and signals stable pidfds. This
 is lifetime control for trusted code, not a security or resource sandbox.
+
+Known consequence: the supervisor starts its own session, so the worker has no
+controlling terminal. Anything a tool spawns that prompts on `/dev/tty` (git
+credential prompts, ssh passphrases) cannot ask interactively inside the
+worker; configure non-interactive credentials (helpers, agents) instead.
 """
 from __future__ import annotations
 

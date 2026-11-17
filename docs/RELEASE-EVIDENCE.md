@@ -5,7 +5,10 @@
 The release workflow requires each governance evidence document to mention
 the complete certified `release_candidate.product_sha` as a separate hexadecimal
 token. A file's existence, an abbreviated SHA, or evidence for another candidate
-does not satisfy this check. References must remain under the existing `audits/`
+does not satisfy this check. The SHA must be the canonical lowercase form that
+`git rev-parse` prints (40 hex digits, `[0-9a-f]`): an uppercase or SHA-256 form
+is rejected on purpose, so evidence cannot drift from the commit identity git
+reports. References must remain under the existing `audits/`
 reference convention; unreadable or invalid UTF-8 documents fail the gate.
 
 The existing `qa_verdict_ref` exceptions `PENDIENTE` and
