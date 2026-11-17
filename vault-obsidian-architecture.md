@@ -8539,7 +8539,7 @@ temp/
 
 ---
 
-### v41.27 — 2026-11-16 `git: pending`
+### v41.27 — 2026-11-16 `git: deda923a`
 
 Cierre workspace-miniserver: aislamiento de procesos (A-06), indices con huellas de contenido, ledger de requisitos reproducible, contrato v42 opt-in, evidencia de release atada al SHA, descubrimiento MCP parcial, politica de mutacion con fallo cerrado, identidad de insights, onboarding por seccion; normas de las transcripciones Karpathy (AP-71, PAT-7, ingesta con fuente archivada y bitacora, BM25 opcional) y Torti Code (ADR con --adr, sustitucion opt-in, AP-72, revision por fecha).
 
