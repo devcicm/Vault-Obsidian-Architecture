@@ -1214,7 +1214,7 @@ Sobre git, el snapshot anota `repo.synced_commit` en la ficha del proyecto: es e
 | `status` | Ver cambios en cualquier momento |
 | `report` | Último comando antes de cerrar sesión |
 | `vigencia` | Notas que no acompañaron al cambio de su código (AP-08), solo lectura y solo git |
-| `antiguedad` | Notas cuya revisión venció (`revisado_en` + cadencia), solo lectura; no exige `--path` ni `--project` |
+| `antiguedad` | Notas del proyecto cuya revisión venció (`revisado_en` + cadencia), solo lectura; no exige `--path` |
 
 `--mode vigencia` (v41.3) compara el `updatedAt` de cada nota del proyecto con el último commit que tocó los ficheros que la nota declara en `files:`, y lista en `desfasadas` las que quedaron por detrás. Una revisión que confirmó la nota sin cambiar el texto se anota en `revisado_en:` (contrato v41) y cuenta como acompañar al cambio. La relación nota → código la declara la nota; no se adivina por el nombre. `sin_files` cuenta las notas que no declaran su código y `sin_historia` las que declaran ficheros que git no conoce. `codigo_inexistente` (AP-01) nombra las que declaran un fichero que no está en el disco del repo; si no resuelve ninguno, la `pista` sugiere revisar `--path`. Las notas con `superseded_by:` o en estado `deprecated`, `obsolete`, `archived`, `stub` o `template` no se juzgan. Sin git sale `GIT_UNAVAILABLE`.
 
@@ -1225,7 +1225,7 @@ python vault_drift_detect.py --project mi-api --mode vigencia
 `--mode antiguedad` (Torti Code, fase 4) lista en `vencidas` las notas cuyo `revisado_en` más su cadencia ya pasó: la que la nota declara en `cadencia_dias`, o `--cadencia-dias` (por defecto `CADENCIA_DE_NOTA_POR_DEFECTO`). La aritmética es la de las normas, `vault_norms_catalog.estado_de_revision`: un solo dueño. Una nota sin `revisado_en` no se juzga y se cuenta en `sin_fecha`; una fecha ilegible o futura sale en `ilegibles`. Con `--project`, solo las notas de ese proyecto. Vencer no es fallar: es la lista de trabajo de la revisión.
 
 ```bash
-python vault_drift_detect.py --mode antiguedad --cadencia-dias 90
+python vault_drift_detect.py --project "mi-proyecto" --mode antiguedad --cadencia-dias 90
 ```
 
 ---

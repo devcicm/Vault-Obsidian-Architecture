@@ -280,8 +280,10 @@
         "additionalProperties": false
       },
       "guards": [],
-      "side_effects": [],
-      "perfil_minimo": "lector",
+      "side_effects": [
+        "Solo con --refresh-dq: refresca 00_System/quality-index.json si caducó y anota una fila `linted` en 00_System/change-log (indicador `change_log`)"
+      ],
+      "perfil_minimo": "operador",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_audit",
@@ -1856,7 +1858,7 @@
           },
           "mode": {
             "type": "string",
-            "description": "snapshot: save baseline | status: list changes | report: changes + vault coverage | vigencia: notas con `files:` cuyo codigo cambio despues de su updatedAt (AP-08) | antiguedad: notas cuyo `revisado_en` mas su cadencia ya paso (no exige --path)",
+            "description": "snapshot: save baseline | status: list changes | report: changes + vault coverage | vigencia: notas con `files:` cuyo codigo cambio despues de su updatedAt (AP-08) | antiguedad: notas del proyecto cuyo `revisado_en` mas su cadencia ya paso (no exige --path)",
             "enum": [
               "snapshot",
               "status",
@@ -1877,6 +1879,9 @@
             }
           }
         },
+        "required": [
+          "project"
+        ],
         "additionalProperties": false
       },
       "guards": [],

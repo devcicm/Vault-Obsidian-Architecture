@@ -170,6 +170,7 @@
       "status": "active",
       "required_args": [],
       "declared_returns": [
+        "change_log",
         "dqHealth",
         "healthIndex",
         "healthProfile",

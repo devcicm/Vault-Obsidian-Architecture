@@ -29,7 +29,7 @@ Las 129 activas son 97 + 2 + 30. Expuestas por el servidor MCP: **98**; las otra
 | `vault_ai_decision` | IA Governance | sí | sí | OK |
 | `vault_append` | Core | sí | sí | OK |
 | `vault_arquitectura_en` | Memoria de Contexto | sí | no | OK |
-| `vault_audit` | Salud del Vault | sí | no | OK |
+| `vault_audit` | Salud del Vault | sí | sí | OK |
 | `vault_backup` | Backups | sí | sí | OK |
 | `vault_backup_list` | Backups | sí | no | OK |
 | `vault_bibliography_save` | Bibliografía | sí | sí | OK |

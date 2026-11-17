@@ -331,18 +331,27 @@ def test_antiguedad_usa_la_cadencia_del_dueno_no_una_copia():
     assert "estado_de_revision" in fuente and "timedelta" not in fuente
 
 
-def test_antiguedad_por_cli_no_exige_ruta_ni_proyecto(vault):
-    escribir_nota(vault, "07_Knowledge/vieja.md",
-                  {"type": "concept", "title": "vieja", "revisado_en": "2020-01-01"}, "x\n")
+def test_antiguedad_por_cli_acota_al_proyecto_sin_exigir_ruta(tmp_path):
+    """AP-63: `--project` stays required (published MCP contract); it scopes the notes."""
+    from vault_base import copiar_vault
 
-    corrida = correr_en_proceso("vault_drift_detect", "--mode", "antiguedad", vault=vault)
+    raiz = copiar_vault(tmp_path / "vault", "demo")
+    escribir_nota(raiz, "07_Knowledge/vieja.md", {"type": "concept", "title": "vieja",
+                  "project": "demo", "revisado_en": "2020-01-01"}, "x\n")
+    escribir_nota(raiz, "07_Knowledge/ajena.md", {"type": "concept", "title": "ajena",
+                  "project": "otro", "revisado_en": "2020-01-01"}, "x\n")
+
+    corrida = correr_en_proceso("vault_drift_detect", "--project", "demo", "--mode", "antiguedad",
+                                vault=raiz)
 
     assert corrida.codigo == 0, corrida.stdout
     assert [v["path"] for v in corrida.envelope["vencidas"]] == ["07_Knowledge/vieja.md"]
+    sin_proyecto = correr_en_proceso("vault_drift_detect", "--mode", "antiguedad", vault=raiz)
+    assert sin_proyecto.codigo == 2 and sin_proyecto.envelope["error_code"] == "INVALID_ARGS"
 
 
 def test_los_demas_modos_siguen_exigiendo_project(vault):
-    """Lo de antes no cambia: `--project` solo deja de exigirse en antiguedad."""
+    """Lo de antes no cambia: `--project` se exige en todos los modos (AP-63)."""
     corrida = correr_en_proceso("vault_drift_detect", "--mode", "report", vault=vault)
 
     assert corrida.codigo == 2

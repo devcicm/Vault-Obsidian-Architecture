@@ -102,3 +102,18 @@ def test_ap71_el_catalogo_la_declara_como_audit():
     norma = vault_norms_catalog.norma_por_codigo("AP-71")
     assert norma and norma["enforcement"] == "audit"
     assert "vault_audit" in norma["tools_detecting"]
+
+
+def test_audit_refresh_dq_declares_and_emits_its_work_indicator():
+    """OPEN-01: the writing mode declares its side effect and the envelope shows the work."""
+    import vault_smoke
+    from vault_mcp_catalog import TOOLS_CATALOG
+    from vault_noop_audit import WORK_INDICATORS
+    from apoyo import SCRIPTS
+
+    assert TOOLS_CATALOG["vault_audit"]["side_effects"], "the --refresh-dq write must be declared"
+    r = vault_smoke.run_one("vault_audit", arbol=True, argv=[
+        vault_smoke.sys.executable, str(SCRIPTS / "vault_audit.py"), "--refresh-dq"])
+    assert r.get("tool_ok") is True, r
+    assert "change_log" in r["returned"] and "change_log" in WORK_INDICATORS
+    assert any(p.startswith("00_System/") and "change-log" in p for p in r["cambiadas"]), r["cambiadas"]

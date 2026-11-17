@@ -41,7 +41,7 @@ Usage:
     python vault_drift_detect.py --project "ans" --mode vigencia
 
     # Notas cuyo `revisado_en` más su cadencia ya pasó (lista de trabajo)
-    python vault_drift_detect.py --mode antiguedad --cadencia-dias 180
+    python vault_drift_detect.py --project "ans" --mode antiguedad --cadencia-dias 180
 
 Un snapshot sobre git anota `repo.synced_commit` en la ficha del proyecto: es
 el punto hasta el que el vault documenta el código, el que lee
@@ -1431,8 +1431,11 @@ Notas:
 
     parser.add_argument("--path", help="Project root path to scan (por defecto, el enlazado con vault_project --link)")
 
-    parser.add_argument("--project", type=proyecto_registrado("vault_drift_detect"),
-                        help="Project slug (obligatorio salvo en --mode antiguedad, donde filtra)")
+    # AP-63: `--project` is required in every mode (the published MCP contract
+    # derives `required` from here). `antiguedad` uses it to scope the notes;
+    # a whole-vault work list is `vault_drift_antiguedad()` from code.
+    parser.add_argument("--project", type=proyecto_registrado("vault_drift_detect"), required=True,
+                        help="Project slug (obligatorio; en --mode antiguedad acota las notas al proyecto)")
 
     parser.add_argument(
         "--mode",
@@ -1440,7 +1443,7 @@ Notas:
         default="report",
         help="snapshot: save baseline | status: list changes | report: changes + vault coverage"
         " | vigencia: notas con `files:` cuyo codigo cambio despues de su updatedAt (AP-08)"
-        " | antiguedad: notas cuyo `revisado_en` mas su cadencia ya paso (no exige --path)",
+        " | antiguedad: notas del proyecto cuyo `revisado_en` mas su cadencia ya paso (no exige --path)",
     )
 
     parser.add_argument(
@@ -1465,11 +1468,6 @@ Notas:
             result = vault_drift_antiguedad(args.cadencia_dias, project=args.project)
         print(json.dumps(result, indent=2, ensure_ascii=False))
         return 0 if result["ok"] else 1
-    if not args.project:
-        # El mismo rechazo que cuando `--project` era `required=True`: solo
-        # `antiguedad` mide el vault entero sin proyecto.
-        parser.error("the following arguments are required: --project")
-
     ruta = args.path
     if not ruta:
         enlazada = _proyectos.ruta_local(_raiz(), args.project)

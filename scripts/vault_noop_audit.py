@@ -96,6 +96,10 @@ WORK_INDICATORS = {
     # después, si corrigió la fecha). Sigue siendo un indicador de trabajo: sin
     # él no se distingue «fijé el hash» de «no había nada que fijar».
     "changes",
+    # The Karpathy operation log (BitacoraCambios port): `{id, action}` of the
+    # row an operation wrote. `vault_audit --refresh-dq` and `vault_ingest
+    # --commit` return it only when the row was written, so its presence is work.
+    "change_log",
     "claims_checked",
     "count",
     "created",

@@ -383,8 +383,11 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             },
         },
         "guards": [],
-        "side_effects": [],
-        "example": 'python vault_audit.py\npython vault_audit.py --project "mi-proyecto"',
+        "side_effects": [
+            "Solo con --refresh-dq: refresca 00_System/quality-index.json si caducó "
+            "y anota una fila `linted` en 00_System/change-log (indicador `change_log`)",
+        ],
+        "example": 'python vault_audit.py\npython vault_audit.py --project "mi-proyecto"\npython vault_audit.py --refresh-dq',
         "related": ["vault_validate", "vault_fix_brackets", "vault_quality_check"],
     },
     "vault_validate": {
