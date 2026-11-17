@@ -6,6 +6,10 @@
 python -m cli <comando> [opciones]
 ```
 
+> `python -m cli` funciona desde un checkout del repositorio: el paquete `cli`
+> no viaja en la wheel. Con el producto instalado, el punto de entrada es
+> `vault` (`vault tools list`, `vault run <tool> …`).
+
 Referencia exhaustiva de comandos: [`COMMANDS.md`](COMMANDS.md).
 
 ---
