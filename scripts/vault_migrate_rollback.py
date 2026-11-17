@@ -168,8 +168,11 @@ def vault_migrate_rollback(report_path_str: str, confirm: bool = False) -> Dict[
 
         return {
 
-            **emit_error("vault_migrate_rollback", "INDEX_NOT_FOUND",
-                         "No files found in report — report may be empty or malformed."),
+            # PARSE_FAILED, not INDEX_NOT_FOUND: rebuilding indexes (that
+            # code's recovery) cannot repair a migration report (2026-11-17).
+            **emit_error("vault_migrate_rollback", "PARSE_FAILED",
+                         "No files found in report — report may be empty or malformed.",
+                         pista="Check that the report has '## Archivos Distribuidos' and '## Stubs Creados' sections."),
 
             "hint": "Check that the report has '## Archivos Distribuidos' and '## Stubs Creados' sections.",
 

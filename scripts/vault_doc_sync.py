@@ -651,8 +651,12 @@ def fix() -> Dict:
 
     filas = [m.group(0) for m in RE_INDEX_ROW.finditer(text)]
     if not filas:
-        return {**emit_error("vault_doc_sync", "INDEX_NOT_FOUND",
-                             "no se encontró la tabla de índice"),
+        # PARSE_FAILED, not INDEX_NOT_FOUND: the catalog's recovery for the
+        # latter is `vault_reindex --graph`, which never writes this README
+        # table (measured 2026-11-17, tests/test_recovery_arregla_la_causa.py).
+        return {**emit_error("vault_doc_sync", "PARSE_FAILED",
+                             "no se encontró la tabla de índice",
+                             pista="Restore the index table in scripts/README.md; --fix only rewrites existing rows."),
                 "action": "fix", "fixes_applied": 0}
 
     nuevas = [
@@ -668,8 +672,9 @@ def fix() -> Dict:
     if bloque_viejo not in text:
         # Las filas no son contiguas: se reescribe en sitio, una a una, y las
         # sobrantes se eliminan. No se toca nada fuera de la tabla.
-        return {**emit_error("vault_doc_sync", "INDEX_NOT_FOUND",
-                             "las filas del índice no son contiguas; corregir a mano"),
+        return {**emit_error("vault_doc_sync", "PARSE_FAILED",
+                             "las filas del índice no son contiguas; corregir a mano",
+                             pista="Join the index rows of scripts/README.md into one table, then rerun --fix."),
                 "action": "fix", "fixes_applied": 0}
 
     # En bytes, como `disponibilidad_fix`: `write_text` traduce `\n` a CRLF en

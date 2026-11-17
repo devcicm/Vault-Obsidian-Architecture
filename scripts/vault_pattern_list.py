@@ -66,6 +66,26 @@ def _index_file() -> Path:
     return _repo().indice_de_seccion("05_Patterns")
 
 
+def _sin_indice() -> Dict[str, Any]:
+    """`INDEX_NOT_FOUND` with the recovery that actually writes the index.
+
+    The catalog's recovery for that code is `vault_reindex --graph`, which
+    rebuilds `search-index.json` and `graph.json` but never
+    `05_Patterns/index.json`: obeying it returned the same error (measured on
+    2026-11-17). The only producer is `vault_pattern_save`, so `run_tool`
+    points there, the same fix `vault_tags._sin_registro` applied.
+    """
+    envelope = emit_error(
+        "vault_pattern_list", "INDEX_NOT_FOUND",
+        "Pattern index not found. Save patterns first with vault_pattern_save.",
+        pista="Save the first pattern with vault_pattern_save; it creates 05_Patterns/index.json.",
+    )
+    envelope["recovery"]["tool"] = "vault_pattern_save"
+    envelope["recovery"]["args"] = ["--project", "<project>", "--name", "<name>",
+                                    "--type", "<type>", "--status", "<status>"]
+    return envelope
+
+
 def vault_pattern_list(
 
     project: Optional[str] = None,
@@ -85,7 +105,7 @@ def vault_pattern_list(
 
     except (FileNotFoundError, json.JSONDecodeError):
 
-        return emit_error("vault_pattern_list", "INDEX_NOT_FOUND", "Pattern index not found. Save patterns first with vault_pattern_save.")
+        return _sin_indice()
 
 
     patterns = index.get("patterns", [])
