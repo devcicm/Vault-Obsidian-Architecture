@@ -21,7 +21,7 @@ Exclusión declarada (el presupuesto de lo demás ya existe y no se relaja):
 las tools gruesas —`vault_audit`, `vault_smoke`, las 26 puertas, las
 consultas sobre el vault entero— no entran en este presupuesto; su techo es
 `VAULT_TOOL_TIMEOUT` (60 s default) y el de la pasada de humo,
-`VAULT_SMOKE_TIMEOUT` (90 s). Meterlas aquí obligaría a relajar el umbral
+`VAULT_SMOKE_TIMEOUT` (150 s desde 2026-11-16). Meterlas aquí obligaría a relajar el umbral
 hasta que ya no midiera nada.
 """
 

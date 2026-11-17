@@ -21,7 +21,7 @@
     },
     {
       "firma": "vault_audit.py::_read_propagation_pending::08d90f38",
-      "visto_en": "vault_audit.py:2212"
+      "visto_en": "vault_audit.py:2220"
     },
     {
       "firma": "vault_encoding.py::log_encoding_fixes::a36080b0",
@@ -57,19 +57,19 @@
     },
     {
       "firma": "vault_io.py::_auto_tag_ledger::a36080b0",
-      "visto_en": "vault_io.py:989"
+      "visto_en": "vault_io.py:1392"
     },
     {
       "firma": "vault_io.py::_registrar_escaner_degradado::a36080b0",
-      "visto_en": "vault_io.py:250"
+      "visto_en": "vault_io.py:256"
     },
     {
       "firma": "vault_io.py::atomic_write_text::a36080b0",
-      "visto_en": "vault_io.py:511"
+      "visto_en": "vault_io.py:580"
     },
     {
       "firma": "vault_io.py::update_section_index::a36080b0",
-      "visto_en": "vault_io.py:1209"
+      "visto_en": "vault_io.py:1612"
     },
     {
       "firma": "vault_quality_check.py::_compute_ap18::6f345a10",

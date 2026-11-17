@@ -3,3 +3,5 @@
 include empaquetado/__init__.py
 include empaquetado/construir.py
 include empaquetado/fuera-de-la-wheel.json
+# Local work logs must not enter source distributions.
+prune odd

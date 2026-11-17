@@ -109,9 +109,9 @@
     {
       "name": "VAULT_SMOKE_TIMEOUT",
       "type": "entero",
-      "default": 90,
+      "default": 150,
       "context": "meta_toolkit",
-      "purpose": "Segundos por tool en la pasada de humo. Más alto que `VAULT_TOOL_TIMEOUT` porque el smoke arranca un intérprete nuevo."
+      "purpose": "Segundos por tool en la pasada de humo. Más alto que `VAULT_TOOL_TIMEOUT` porque el smoke arranca un intérprete nuevo. Medido el 2026-11-16: el ejemplo de `vault_fix_all` tardó 91,4 s (51 s son el `pytest --collect-only` de `vault_doc_counts`, que crece con la suite); con 90 s la puerta dependía de la máquina."
     },
     {
       "name": "VAULT_DQ_CACHE_MINUTES",

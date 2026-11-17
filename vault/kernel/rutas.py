@@ -82,7 +82,8 @@ GENERADOS = {"operations": VAULT_TOOLKIT}
 #: dar — el criterio es «el nombre citado apunta al directorio», no «la
 #: carpeta existe». `ruta_repo("agent")` sí lo resuelve: declarado no es lo
 #: mismo que vigilado.
-CARPETAS_DEL_REPO = NOMBRES | {AGENT}
+# El seguimiento local de trabajo no forma parte del código ni de la distribución.
+CARPETAS_DEL_REPO = NOMBRES | {AGENT, "odd"}
 
 #: Las carpetas del repo donde vive **código**, para los barridos que
 #: miden el código. Es un subconjunto de `CARPETAS_DEL_REPO`: deja fuera las

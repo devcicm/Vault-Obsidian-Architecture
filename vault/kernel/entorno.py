@@ -214,9 +214,12 @@ VARIABLES: Dict[str, Variable] = {
             _bandera,
         ),
         Variable(
-            "VAULT_SMOKE_TIMEOUT", "entero", 90, "meta_toolkit",
+            "VAULT_SMOKE_TIMEOUT", "entero", 150, "meta_toolkit",
             "Segundos por tool en la pasada de humo. Más alto que "
-            "`VAULT_TOOL_TIMEOUT` porque el smoke arranca un intérprete nuevo.",
+            "`VAULT_TOOL_TIMEOUT` porque el smoke arranca un intérprete nuevo. "
+            "Medido el 2026-11-16: el ejemplo de `vault_fix_all` tardó 91,4 s "
+            "(51 s son el `pytest --collect-only` de `vault_doc_counts`, que crece "
+            "con la suite); con 90 s la puerta dependía de la máquina.",
             _entero,
         ),
         Variable(
