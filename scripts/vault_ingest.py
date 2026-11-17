@@ -408,7 +408,7 @@ def _aplicar_paginas(paginas: List[Dict[str, Any]]) -> bool:
     try:
         bitacora = bitacora_de_cambios()
     except Exception as exc:
-        bitacora, motivo = None, f"bitacora_cambios: {type(exc).__name__}"
+        bitacora, motivo = None, f"bitacora_cambios ({type(exc).__name__})"
     else:
         motivo = "nadie atiende el puerto bitacora_cambios: no se aplicó"
     for fila in paginas:
@@ -418,7 +418,7 @@ def _aplicar_paginas(paginas: List[Dict[str, Any]]) -> bool:
         try:
             r = bitacora.anexar(fila["path"], fila["append"], fila["section"], False)
         except Exception as exc:
-            fila.update(applied=False, error=f"bitacora_cambios: {type(exc).__name__}")
+            fila.update(applied=False, error=f"bitacora_cambios ({type(exc).__name__})")
             continue
         if isinstance(r, dict) and r.get("ok"):
             fila["applied"] = True
