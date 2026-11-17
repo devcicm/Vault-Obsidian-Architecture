@@ -210,6 +210,22 @@ def count_tools_write() -> int:
     return sum(1 for f in load_registry().values() if f.mode == "write")
 
 
+def count_tools_read() -> int:
+    """The tools `python -m cli groups` counts as `read`, by the same owner.
+
+    The `cli groups` example in `cli/COMMANDS.md` published `read: 15` and
+    `write: 114` after `vault_audit` started declaring its write (2026-11-17):
+    no pattern watched that JSON line, so the figure survived (AP-47).
+    """
+    import sys as _sys
+
+    if str(REPO_ROOT) not in _sys.path:
+        _sys.path.insert(0, str(REPO_ROOT))
+    from cli.registry import load_registry
+
+    return sum(1 for f in load_registry().values() if f.mode == "read")
+
+
 def count_scripts() -> int:
     return len(list((REPO_ROOT / "scripts").glob("*.py")))
 
@@ -264,6 +280,8 @@ COUNTED_FACTS: List[Dict] = [
         "value": count_tools_active,
         "patterns": [
             r"(\d+)\s+tools activas",
+            # The `cli groups` example line in `cli/COMMANDS.md`.
+            r'"total": (\d+), "read": \d+, "write"',
             r"[Ll]as\s+\*\*(\d+) tools\*\*",
             r"(\d+)\s+tools con contratos",
             r"(\d+)\s+tools del catálogo",
@@ -330,7 +348,7 @@ COUNTED_FACTS: List[Dict] = [
         "id": "groups",
         "description": "Grupos del catálogo",
         "value": count_groups,
-        "patterns": [r"(\d+)\s+grupos"],
+        "patterns": [r"(\d+)\s+grupos", r'"write": \d+, "groups": (\d+)'],
     },
     {
         "id": "norms_total",
@@ -452,7 +470,14 @@ COUNTED_FACTS: List[Dict] = [
         # (AP-47).
         "patterns": [
             r"las (\d+) tools que escriben",
+            r'"read": \d+, "write": (\d+), "groups"',
         ],
+    },
+    {
+        "id": "tools_read",
+        "description": "Tools del catalogo con mode=read",
+        "value": count_tools_read,
+        "patterns": [r'"total": \d+, "read": (\d+), "write"'],
     },
     {
         "id": "tests",

@@ -201,6 +201,7 @@ Quién escribe qué. Derivado del catálogo (`side_effects`): es el inventario q
 - `vault_ai_decision` (IA Governance): Crea nota en 16_AI_Governance/decisions/
 - `vault_append` (Core): Añade contenido a la nota existente y refresca su updatedAt; Anota el cambio en el change-log (F8, no repudio)
 - `vault_arch` (Normas): Con --freeze reescribe scripts/arch-baseline.json; Con --blueprint reescribe docs/ARQUITECTURA.md
+- `vault_audit` (Salud del Vault): Solo con --refresh-dq: refresca 00_System/quality-index.json si caducó y anota una fila `linted` en 00_System/change-log (indicador `change_log`)
 - `vault_backup` (Backups): Crea carpeta en vault-backups/
 - `vault_backup_base64` (Backups): Genera archivo .b64zip.json en vault-backups/
 - `vault_bibliography_save` (Bibliografía): Crea nota en 12_Bibliography/{project}-{slug}.md
