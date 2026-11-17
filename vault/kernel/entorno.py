@@ -228,6 +228,13 @@ VARIABLES: Dict[str, Variable] = {
             _entero,
         ),
         Variable(
+            "VAULT_RESTORE_MAX_BYTES", "entero", 256 * 1024 * 1024, "meta_toolkit",
+            "Tope en bytes de un backup descomprimido que el servidor MCP acepta "
+            "restaurar (256 MiB). Solo la lee el `.mjs`; vivía allí con su propio "
+            "default y ni `--env` ni `docs/ENTORNO.md` la publicaban (2026-11-17).",
+            _entero,
+        ),
+        Variable(
             "VAULT_SCAN_ROOTS", "texto", "", "meta_toolkit",
             "Rutas separadas por `;` donde el servidor MCP busca vaults. Vacía "
             "significa dos rutas relativas al repo, no «ninguna». Solo la lee "

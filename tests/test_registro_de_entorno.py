@@ -221,6 +221,31 @@ def test_el_mjs_ya_no_declara_sus_propios_defaults():
     assert 'envDefault("VAULT_TOOL_TIMEOUT")' in fuente
 
 
+def test_toda_variable_que_lee_el_mjs_esta_declarada():
+    """The Python guard (`lecturas_de_entorno_sin_registro`) only sees Python.
+
+    Measured 2026-11-17: `VAULT_RESTORE_MAX_BYTES` was read by the MCP server
+    with its own default (256 MiB) and appeared nowhere in the registry, so
+    `--env` and `docs/ENTORNO.md` did not publish it and a third party could not
+    find the knob. Every `VAULT_*` the Node half reads must be declared, and its
+    default must come from the derived table, not from the `.mjs`.
+    """
+    import re
+
+    fuentes = sorted((REPO_ROOT / "mcp" / "nodejs").glob("*.mjs"))
+    assert fuentes
+    leidas = set()
+    for fuente in fuentes:
+        texto = fuente.read_text(encoding="utf-8")
+        leidas |= set(re.findall(r"process\.env\.(VAULT_[A-Z0-9_]+)", texto))
+        leidas |= set(re.findall(r"process\.env\[\s*[\"'](VAULT_[A-Z0-9_]+)", texto))
+    assert leidas, "the scan stopped finding reads: the pattern is stale"
+    assert sorted(leidas - set(VARIABLES)) == []
+    servidor = (REPO_ROOT / "mcp" / "nodejs" / "vault-mcp-server.mjs").read_text(encoding="utf-8")
+    assert "256 * 1024 * 1024" not in servidor
+    assert 'envDefault("VAULT_RESTORE_MAX_BYTES")' in servidor
+
+
 def test_el_mjs_falla_ruidosamente_si_falta_la_tabla():
     """Un fallback silencioso devolvería justo los defaults que esto quita."""
     fuente = (REPO_ROOT / "mcp" / "nodejs" / "vault-mcp-server.mjs").read_text(

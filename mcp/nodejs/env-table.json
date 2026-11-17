@@ -121,6 +121,13 @@
       "purpose": "Cuánto vale el índice de calidad cacheado antes de recalcularlo."
     },
     {
+      "name": "VAULT_RESTORE_MAX_BYTES",
+      "type": "entero",
+      "default": 268435456,
+      "context": "meta_toolkit",
+      "purpose": "Tope en bytes de un backup descomprimido que el servidor MCP acepta restaurar (256 MiB). Solo la lee el `.mjs`; vivía allí con su propio default y ni `--env` ni `docs/ENTORNO.md` la publicaban (2026-11-17)."
+    },
+    {
       "name": "VAULT_SCAN_ROOTS",
       "type": "texto",
       "default": "",

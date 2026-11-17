@@ -6,7 +6,7 @@
 > una en tu shell lo da `python scripts/vault_entorno.py --filtro <nombre>`:
 > se resuelve al llamarse, no al documentarse (AP-49).
 
-Variables: 29.
+Variables: 30.
 
 | Variable | Tipo | Default | Quién la lee | Qué gobierna |
 |---|---|---|---|---|
@@ -30,6 +30,7 @@ Variables: 29.
 | `VAULT_PERMISSIVE_ROOT` | bandera | `False` | kernel | Permite ESCRIBIR sobre una raíz detectada con baja confianza (`repo_root_fallback`). Sin ella, leer con esa raíz sigue permitido y escribir se rechaza: instalado fuera del repo, ese fallback devuelve el propio directorio del programa, así que la escritura caía dentro del toolkit en vez de en un vault. Cuando esa raíz es el paquete del programa tampoco se lee: las tools se niegan con VAULT_NOT_FOUND salvo con esta bandera. |
 | `VAULT_PROJECT` | texto | `''` | kernel | Proyecto al que está atada la sesión (slug o alias registrado). Solo restringe con `VAULT_PROJECT_LOCK=1`. `vault mcp-path --project` la fija ya resuelta. |
 | `VAULT_PROJECT_LOCK` | bandera | `False` | kernel | Con `1`, todo `--project` que no resuelva al de `VAULT_PROJECT` se rechaza con `PROJECT_LOCKED` antes de que la tool haga nada. Encendida sin `VAULT_PROJECT`, rechaza todos: el candado no se abre por falta de configuración. |
+| `VAULT_RESTORE_MAX_BYTES` | entero | `268435456` | meta_toolkit | Tope en bytes de un backup descomprimido que el servidor MCP acepta restaurar (256 MiB). Solo la lee el `.mjs`; vivía allí con su propio default y ni `--env` ni `docs/ENTORNO.md` la publicaban (2026-11-17). |
 | `VAULT_ROOT` | ruta | — | kernel | Fuerza la raíz del vault en vez de autodetectarla. Es la costura declarada para apuntar las tools a un destino concreto. |
 | `VAULT_SCAN_ROOTS` | texto | `''` | meta_toolkit | Rutas separadas por `;` donde el servidor MCP busca vaults. Vacía significa dos rutas relativas al repo, no «ninguna». Solo la lee el `.mjs`; se declara aquí para que `--env` la publique y el servidor deje de inventarse su propia tabla. |
 | `VAULT_SKIP_SECRET_SCAN` | bandera | `False` | kernel | Desactiva el escaneo de secretos del write path. Existe para los tests del propio escáner; en uso normal no se toca. |

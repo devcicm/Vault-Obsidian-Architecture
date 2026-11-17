@@ -856,7 +856,7 @@ async function jsNativeBackupBase64(args, vaultRoot) {
 
 // Tope de lo que el restore descomprime. El backup es entrada no confiable y
 // `inflateSync` sin límite deja que unos KB de base64 pidan gigas de memoria.
-const RESTORE_MAX_BYTES = Number(process.env.VAULT_RESTORE_MAX_BYTES) || 256 * 1024 * 1024;
+const RESTORE_MAX_BYTES = Number(process.env.VAULT_RESTORE_MAX_BYTES) || Number(envDefault("VAULT_RESTORE_MAX_BYTES"));
 
 async function jsNativeRestoreBase64(args, vaultRoot) {
   const tool = "vault_restore_base64";
