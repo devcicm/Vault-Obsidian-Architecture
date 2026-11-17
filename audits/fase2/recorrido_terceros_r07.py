@@ -149,6 +149,14 @@ def main() -> int:
                     help="No borra el sandbox (por defecto se conserva)")
     args = ap.parse_args()
 
+    # A third party has no source tree on its path. Building the wheel leaves
+    # an `*.egg-info` in the repository root; if PYTHONPATH points there, pip in
+    # the clean venv reports the distribution as already installed, skips it and
+    # never creates the `vault` console script. Every child process of this walk
+    # inherits the environment without it.
+    for variable in ("PYTHONPATH", "PYTHONHOME"):
+        os.environ.pop(variable, None)
+
     sandbox = Path(tempfile.mkdtemp(prefix="r09-e2e-"))
     r = Recorrido(sandbox)
     venv = sandbox / "venv"
