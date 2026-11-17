@@ -69,7 +69,7 @@ regenera.*
 
 *Registros: `vault_norms.NORM_CATALOG` + `vault_gate.PUERTAS` + `tests/`*
 
-87 de 88 normas tienen puerta o test que las nombre.
+94 de 94 normas tienen puerta o test que las nombre.
 **Es la única capa con baseline**, y por un motivo concreto: las demás se midieron
 en cero el día que se declararon porque sus datos ya existían y solo faltaba
 atarlos. Ésta no. Exigir cero aquí el primer día habría hecho nacer la puerta en
@@ -77,14 +77,14 @@ rojo, y una puerta en rojo se desactiva.
 
 | Norma | Enforcement | Puertas | Tests |
 |---|---|---|---|
-| **AP-01** — Documentación alucinada | audit | — | `test_ap01_codigo_inexistente.py`, `test_ap01_prosa.py`, `test_ap40_42_43_estados.py`, `test_ap46_editores.py`, `test_cifras_de_normas_y_cli_groups.py`, `test_norms_coherence.py`, `test_skills_catalogo.py`, `test_skills_contract.py`, `test_voz_solo_normas_relevantes.py` |
+| **AP-01** — Documentación alucinada | audit | — | `test_ap01_codigo_inexistente.py`, `test_ap01_prosa.py`, `test_ap40_42_43_estados.py`, `test_ap46_editores.py`, `test_cifras_de_normas_y_cli_groups.py`, `test_norms_coherence.py`, `test_parte_a_normas.py`, `test_skills_catalogo.py`, `test_skills_contract.py`, `test_voz_solo_normas_relevantes.py` |
 | **AP-02** — Proliferación de versiones del mismo documento | audit | — | `test_ap02_versiones_misma_carpeta.py`, `test_norms_coherence.py`, `test_skills_contract.py` |
 | **AP-03** — Stubs sin política de expansión | audit | — | `test_normas_de_audit_ejercitadas.py`, `test_pat2_stub_con_plazo.py` |
-| **AP-04** — Features aspiracionales documentadas como implementadas | audit | — | — |
+| **AP-04** — Features aspiracionales documentadas como implementadas | audit | — | `test_parte_a_normas.py` |
 | **AP-05** — Múltiples fuentes de verdad para el mismo dato | audit | `fuente_unica` | `test_ap05_fuente_unica.py`, `test_ap46_editores.py`, `test_blueprint.py`, `test_js_native_frontera.py`, `test_norms_coherence.py` |
 | **AP-06** — Templates sin instancias reales | audit | `framework` | — |
-| **AP-07** — ADRs incompletos | audit | `framework` | `test_ap07_criterio_adr.py`, `test_ap64_responsable.py`, `test_vault_norms_audit.py` |
-| **AP-08** — Documentación anclada a versiones obsoletas | audit | — | `test_ap08_version_pinned.py`, `test_ap08_vigencia.py` |
+| **AP-07** — ADRs incompletos | guard+audit | `framework` | `test_ap07_criterio_adr.py`, `test_ap64_responsable.py`, `test_parte_a_normas.py`, `test_vault_norms_audit.py` |
+| **AP-08** — Documentación anclada a versiones obsoletas | audit | — | `test_ap08_version_pinned.py`, `test_ap08_vigencia.py`, `test_parte_a_normas.py` |
 | **AP-09** — Runbooks fuera de estructura | audit | `framework` | `test_vault_norms_audit.py` |
 | **AP-10** — Migración sin plan de rollback | audit | `framework` | `test_norms_coherence.py` |
 | **AP-11** — Skeleton files — frontmatter válido, contenido vacío | guard | `framework` | `test_envelope_forma.py`, `test_voice.py`, `test_voz_solo_normas_relevantes.py` |
@@ -145,7 +145,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-61** — El guard cae con el dato que vino a medir | guard+audit | `excepcion_declarada` | `test_excepcion_declarada.py` |
 | **AP-62** — El consumidor paga el fan-out del productor | guard+audit | `recursos` | `test_recursos.py` |
 | **AP-63** — El nombre de un proyecto como texto libre | guard+audit | — | `test_project_registrado.py`, `test_vault_project.py` |
-| **AP-64** — Decisión cerrada sin responsable | audit | `framework` | `test_ap64_responsable.py`, `test_iso42005_impacto.py`, `test_normas_paquete.py`, `test_norms_coherence.py` |
+| **AP-64** — Decisión cerrada sin responsable | guard+audit | `framework` | `test_ap64_responsable.py`, `test_iso42005_impacto.py`, `test_normas_paquete.py`, `test_norms_coherence.py`, `test_parte_a_normas.py` |
 | **AP-65** — Decisión de IA de impacto alto sin evaluación de impacto | audit | `framework` | `test_iso42005_impacto.py`, `test_normas_caras.py`, `test_normas_paquete.py` |
 | **AP-66** — El coste crece con lo que no es trabajo | guard | `arquitectura` | — |
 | **AP-67** — El material que el agente opera, sin nota que lo apunte | guard+audit | — | `test_ap67_conocimiento_del_material.py` |
@@ -154,8 +154,14 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-70** — Politica de mutacion ilegible o invalida | guard+audit | `framework` | `test_inmutabilidad_todos_los_escritores.py`, `test_reglas_y_adaptadores.py` |
 | **AP-71** — Concepto importante sin página propia | audit | — | `test_karpathy_conceptos.py` |
 | **AP-72** — Comentario que cita una decisión que no existe | guard | `doc_sync` | `test_torti_documentacion.py` |
+| **AP-73** — Fuente archivada modificada | guard+audit | — | `test_parte_a_normas.py` |
+| **AP-74** — Operación sin fila en la bitácora | audit | — | `test_parte_a_normas.py` |
+| **AP-75** — Decisión cerrada reescrita | guard+audit | — | `test_parte_a_normas.py` |
+| **AP-76** — Nota viva con la revisión vencida | audit | — | `test_parte_a_normas.py` |
 | **PAT-6** — Semantic graph enrichment — enriquecimiento periodico del grafo | recommended | — | `test_capa4_audit_ejercitada.py` |
 | **PAT-7** — Desacuerdo legítimo declarado — contradicts entre notas | recommended | `fuente_unica` | `test_karpathy_desacuerdos.py` |
+| **PAT-8** — Respuesta compilada en el wiki | recommended | — | `test_parte_a_normas.py` |
+| **PAT-9** — Esquema del agente generado | recommended | — | `test_norms_coherence.py`, `test_parte_a_normas.py` |
 | **SP-01** — Delete protocol — change_log obligatorio antes de eliminar | audit | `framework` | `test_mermaid_reglas_parsers.py`, `test_vault_norms.py` |
 | **SP-02** — Forward-link verification — buscar antes de linkar | guard | — | `test_normas_enlaces_sin_solape.py`, `test_vault_norms.py` |
 | **SP-03** — Session snapshot pattern — delta antes de operaciones masivas | audit | — | `test_vault_norms.py` |
@@ -165,8 +171,6 @@ rojo, y una puerta en rojo se desactiva.
 | **CN-03** — Standard status vocabulary — vocabulario canónico de meta.status | audit | `framework` | `test_calidad_no_castiga_el_vocabulario_canonico.py`, `test_norms_coherence.py`, `test_vault_norms.py`, `test_vault_norms_audit.py`, `test_vault_sanacion.py` |
 | **CN-04** — Note opens with its title — la nota abre con su título como H1 | guard | — | `test_cn01_cn04_audit_informativo.py`, `test_cn04_escritores_con_titulo.py`, `test_cn04_nota_abre_con_titulo.py` |
 | **CN-05** — One body, one owner — un cuerpo, un dueño | guard | `clones` | — |
-
-Sin puerta ni test (1): `AP-04`.
 
 ## Capa 5 — Tools → grupos → contrato
 
@@ -446,7 +450,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 4 | ≤ 2 para 2027-03-31 · cada 90 d · meta_toolkit — vault_kernel → **en_plazo** | 5 → 6 → 6 → 5 → 4 → 4 (encoge, Δ-1) |
 | `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_norms_distincion → **cumple** | 57 → 0 → 0 → 0 (encoge, Δ-57) |
 | `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_norms_coherence → **cumple** | 47 → 0 → 0 → 0 (encoge, Δ-47) |
-| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1505 | — *no aplica*: No es deuda: es el contrato de campos estables con los repos consumidores y crece por diseño cada vez que una tool publica un campo nuevo (1334 → 1410 entre 2026-08-30 y 2026-10-08). Lo que la puerta vigila es que ningún campo desaparezca sin `superseded_fields`, no su tamaño. Declarado el 2026-10-09 con la deuda #8. | 1437 → 1436 → 1448 → 1471 → 1489 → 1505 (crece, Δ+171) |
+| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1506 | — *no aplica*: No es deuda: es el contrato de campos estables con los repos consumidores y crece por diseño cada vez que una tool publica un campo nuevo (1334 → 1410 entre 2026-08-30 y 2026-10-08). Lo que la puerta vigila es que ningún campo desaparezca sin `superseded_fields`, no su tamaño. Declarado el 2026-10-09 con la deuda #8. | 1436 → 1448 → 1471 → 1489 → 1505 → 1506 (crece, Δ+167) |
 | `scripts/excepcion-declarada-baseline.json` | AP-61 — la excepción declarada no es la que escapa | 0 | ≤ 0 para 2027-06-30 · cada 180 d · gobernanza → **cumple** | 0 → 0 (plana, Δ+0) |
 | `scripts/recursos-baseline.json` | AP-62 — el consumidor cruza para leer un recurso y paga el fan-out | 2 | ≤ 0 para 2027-03-31 · cada 90 d · meta_toolkit — vault_recursos → **en_plazo** | 2 → 2 (plana, Δ+0) |
 | `scripts/rutas-baseline.json` | v41.21 — el layout del repo escrito como literal fuera de su dueño vault/kernel/rutas.py; solo encoge | 20 | ≤ 20 para 2027-06-30 · cada 90 d · meta_toolkit — vault.kernel.rutas → **cumple** | 177 → 175 → 16 → 15 → 15 → 20 (encoge, Δ-157) |

@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-72 más
-> las familias PAT, SP y CN. Por familia: AP 72, CN 5, PAT 7, SP 4.
-> Bilingual document. Full norm catalog: antipatterns AP-01..AP-72 plus the PAT,
-> SP and CN families. By family: AP 72, CN 5, PAT 7, SP 4.
+> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-76 más
+> las familias PAT, SP y CN. Por familia: AP 76, CN 5, PAT 9, SP 4.
+> Bilingual document. Full norm catalog: antipatterns AP-01..AP-76 plus the PAT,
+> SP and CN families. By family: AP 76, CN 5, PAT 9, SP 4.
 
 ---
 
 ## ES
 
-Total de normas registradas: 88 (AP 72, CN 5, PAT 7, SP 4)
+Total de normas registradas: 94 (AP 76, CN 5, PAT 9, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -74,10 +74,10 @@ Archivos de template (SLOs, métricas, alertas, ADRs) que existen en el vault pe
 ### AP-07: ADRs incompletos
 
 - **Severidad:** medium
-- **Enforcement:** audit
+- **Enforcement:** guard+audit
 - **Detectado por:** vault_norms
 
-ADRs (Architecture Decision Records) sin secciones Contexto, Decisión y Consecuencias. Un ADR sin estas secciones no aporta valor de auditoría. Opciones evaluadas se recomienda y no se exige desde v41.3: medido contra un vault ajeno (regla 7), ocho de diez ADR reales registran el porqué sin esa sección. El criterio tiene dueño en `vault.kernel.contenido` (`es_adr`, `secciones_adr_faltantes`) y lo leen el scan y la auditoría.
+ADRs (Architecture Decision Records) sin secciones Contexto, Decisión y Consecuencias. Un ADR sin estas secciones no aporta valor de auditoría. Opciones evaluadas se recomienda y no se exige desde v41.3: medido contra un vault ajeno (regla 7), ocho de diez ADR reales registran el porqué sin esa sección. El criterio tiene dueño en `vault.kernel.contenido` (`es_adr`, `secciones_adr_faltantes`) y lo leen el scan y la auditoría. Desde v41.27 es también guard: el dueño de la escritura (`vault_io.atomic_write_text`) rechaza la escritura que deja un ADR en estado cerrado o terminal sin sus secciones, con la plantilla en la pista. Un borrador y una nota que no es ADR no se tocan, y una nota que ya existía no se toca hasta que se reescribe su cuerpo o se cierra: cambiar solo su frontmatter (`superseded_by`) sigue abierto.
 
 **Prevención:** Escribir el ADR desde `vault.kernel.contenido.plantilla_adr()` (Contexto, Opciones, Decisión, Consecuencias), la misma que propone la guía de vault_audit, con el frontmatter de `meta_adr()` (`type: adr`, `status: draft`).
 
@@ -746,12 +746,14 @@ Límites declarados: las tools con `--project` todavía no pasan por el resoluto
 ### AP-64: Decisión cerrada sin responsable
 
 - **Severidad:** medium
-- **Enforcement:** audit
+- **Enforcement:** guard+audit
 - **Detectado por:** vault_norms
 
 Un ADR aprobado es lo que un agente consulta antes de actuar: "esto se decidió así y por esto". Si nadie responde de ese porqué, el agente no distingue una decisión que tomó una persona de una que otro agente escribió y dio por buena. Medido en solo lectura contra un vault consumidor (regla 7, 2026-10-08): ninguno de sus ADR aceptados declara quién responde de él, y la mayoría tampoco declara `agent`.
 
 El criterio tiene dueño en `vault.kernel.contenido.falta_de_responsable` y lo leen el scan y la auditoría. El régimen del estado lo deriva `vault_registry.regimen_de_estado`, así que `accepted` cuenta como `approved`.
+
+Desde v41.27 es también guard: el dueño de la escritura (`vault_io.atomic_write_text`) rechaza la escritura que cierra un ADR --lo crea cerrado o lo pasa a un estado cerrado-- sin `responsable`, o con su propio agente como responsable. Un borrador no se toca, y una decisión que ya estaba cerrada sin responsable no se bloquea hasta que alguien la cierre de nuevo: el guard rechaza la falta que la escritura introduce, no la que ya había.
 
 **Prevención:** Al cerrar una decisión, escribir `responsable:` con la persona que responde de ella (campo opcional del contrato v41). Un agente puede redactar el ADR y dejarlo en `draft` o `review`; aprobarlo con su propio nombre como responsable es lo que la norma marca. La guía de vault_audit propone el ADR con `meta_adr()` --en `draft`, sin `responsable` de relleno, que pasaría la norma sin nadie detrás--.
 
@@ -856,6 +858,46 @@ Un término que varias notas mencionan --un nombre propio de dos o más palabras
 Un comentario del código dice el porqué apuntando a la decisión que lo registra --`ADR-NNNN` en este repositorio, `@vault: 03_Decisions/…` en un proyecto con vault-- y esa decisión no existe. El lector sigue la cita y no encuentra nada: el porqué se perdió y el código sigue afirmando que está escrito. Es la regla de Torti Code "el comentario dice el porqué y apunta al ADR" aplicada a lo único decidible de ella: que el destino exista.
 
 **Prevención:** `vault_doc_sync --check` lista cada cita rota como `adr_sin_fichero` y la puerta falla. Se salda escribiendo el ADR que falta o corrigiendo la cita al número que existe. En un vault, `vault_code_sync` acepta como destino de `@vault:` una decisión de `03_Decisions/` que existe y sigue dando por huérfana la que no.
+
+### AP-73: Fuente archivada modificada
+
+- **Severidad:** high
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_audit
+
+Una fuente que `vault_ingest --archivar-fuente` guardó literal en `10_Migrated/fuentes/` se reescribe. Esa capa es el registro de lo que llegó: las notas derivadas la citan en `source:` como prueba de dónde salió lo que afirman, y una fuente editada después convierte la cita en una afirmación que nadie puede comprobar. Es la capa cruda de la LLM Wiki de Karpathy: el modelo la lee y nunca la edita.
+
+**Prevención:** El dueño de la escritura (`vault_io.atomic_write_text`) rechaza cualquier reescritura de una fuente archivada con `IMMUTABLE_NOTE` y la pista de ingerirla como fuente nueva; escribir los mismos bytes no es reescribir. Lo que cambie fuera del dueño --un editor, un script-- lo ve `vault_audit` en `archivedSourcesModified`, comparando con la huella que `vault_ingest` registró al archivar. Una fuente archivada antes de que existiera la huella sale como no verificable, no como intacta.
+
+### AP-74: Operación sin fila en la bitácora
+
+- **Severidad:** medium
+- **Enforcement:** audit
+- **Detectado por:** vault_audit
+
+Una nota que entró por `vault_ingest --commit` no tiene la fila `ingested` de la pasada que la escribió en `00_System/.change-log.json`. La bitácora es la historia de las operaciones del vault --qué entró, cuándo y quién lo trajo--, y una ingesta sin su fila es material sin procedencia operativa: la nota existe y nadie puede decir en qué operación llegó. Es el log append-only de la LLM Wiki de Karpathy.
+
+**Prevención:** `vault_ingest` escribe el mismo id de pasada en cada nota y en la fila `ingested` que anota por el puerto `bitacora_cambios`; si la fila no se pudo anotar, su envelope lo dice en `change_log_error`. `vault_audit` lista en `ingestsWithoutLog` las notas cuya pasada no tiene fila. Solo lectura: la bitácora no se repara reescribiéndola.
+
+### AP-75: Decisión cerrada reescrita
+
+- **Severidad:** high
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_audit
+
+Un ADR aprobado se edita en su cuerpo en vez de sustituirse. Quien consultó la decisión antes ya no puede leer lo que se decidió, y quien la consulta ahora no sabe que cambió ni por qué. Torti Code lo resume: una decisión aprobada no se reescribe, se escribe la nueva y se enlaza. Cambiar el frontmatter --la transición de estado, el `superseded_by`-- no reescribe el porqué; cambiar el cuerpo sí.
+
+**Prevención:** Un vault que declara `sustitucion` en `00_System/reglas.json` convierte la norma en guard: el dueño de la escritura rechaza con `IMMUTABLE_NOTE` el cambio de cuerpo de una decisión cerrada y señala `vault_supersede`. La auditoría corre siempre, declare o no el vault la sustitución: `vault_audit` publica `closedDecisionsRewritten`, contrastando con el historial de la nota.
+
+### AP-76: Nota viva con la revisión vencida
+
+- **Severidad:** low
+- **Enforcement:** audit
+- **Detectado por:** vault_drift_detect
+
+Una nota que declara cuándo se revisó (`revisado_en`) lleva más tiempo sin releerse que su cadencia. Torti Code: la documentación desactualizada es peor que ninguna, y lo que la evita es un dueño, una fecha de revisión y una herramienta que avise. Vencer no es estar mal: es que nadie ha comprobado que siga siendo cierta.
+
+**Prevención:** `vault_drift_detect --mode antiguedad` publica la lista de trabajo (`vencidas`, con su responsable) sin poner `ok` en falso. Revisar es releer la nota contra lo que describe y poner `revisado_en` con la fecha del día; la cadencia se declara en `cadencia_dias`.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
@@ -977,6 +1019,26 @@ Cuando dos notas sostienen cosas incompatibles y el desacuerdo es legítimo, una
 
 **Prevención:** N/A -- es el patrón correcto. No añade un valor de `status`: el vocabulario es cerrado y el desacuerdo es una relación entre dos notas, no un estado de una.
 
+### PAT-8: Respuesta compilada en el wiki
+
+- **Severidad:** N/A
+- **Enforcement:** recommended
+- **Detectado por:** vault_ingest
+
+Una respuesta que sintetiza varias notas y valdrá en otra sesión se guarda como página del vault en vez de perderse con la conversación. Es la consulta de la LLM Wiki de Karpathy: las buenas respuestas vuelven al wiki con sus citas. `vault_ingest --desde-pack` la escribe como un solo borrador que cita en `related:` y en el cuerpo las notas del paquete de `vault_context_pack` del que salió.
+
+**Prevención:** N/A -- es el patrón correcto. La síntesis nace en `draft` y con integridad baja: no vale como conocimiento revisado hasta que una persona la revise. Un paquete que no incluye ninguna nota del vault se rechaza: una síntesis sin fuentes no es una página del wiki.
+
+### PAT-9: Esquema del agente generado
+
+- **Severidad:** N/A
+- **Enforcement:** recommended
+- **Detectado por:** vault_preferences
+
+El fichero que un agente lee en cada tarea --`AGENTS.md`, `CLAUDE.md`…-- se genera desde los registros del vault y no se escribe a mano: el mapa de carpetas, la regla de nombres (CN-01), dónde viven las decisiones, el comando de pruebas que el dueño declara y el protocolo de sesión. Es la capa de esquema de la LLM Wiki de Karpathy, y el AGENTS.md corto que dice dónde viven las decisiones de Torti Code. Tiene un presupuesto de líneas: un esquema largo se lee en diagonal.
+
+**Prevención:** N/A -- es el patrón correcto. Lo que crece con el vault --las preferencias del dueño-- se recorta apuntando a la lista completa; si la parte derivada sola no cabe, se acorta el registro que la produce, no el presupuesto. El adaptador es entrega, no enforcing: la política se aplica en la frontera de mutación.
+
 ### SP-01: Delete protocol -- change_log obligatorio antes de eliminar
 
 - **Severidad:** critical
@@ -1021,7 +1083,7 @@ El transporte HTTP/SSE del servidor MCP acepta sesiones sin token, responde con 
 
 ## EN
 
-Total registered norms: 88 (AP 72, CN 5, PAT 7, SP 4)
+Total registered norms: 94 (AP 76, CN 5, PAT 9, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -1086,10 +1148,10 @@ Archivos de template (SLOs, métricas, alertas, ADRs) que existen en el vault pe
 ### AP-07: ADRs incompletos
 
 - **Severity:** medium
-- **Enforcement:** audit
+- **Enforcement:** guard+audit
 - **Detected by:** vault_norms
 
-ADRs (Architecture Decision Records) sin secciones Contexto, Decisión y Consecuencias. Un ADR sin estas secciones no aporta valor de auditoría. Opciones evaluadas se recomienda y no se exige desde v41.3: medido contra un vault ajeno (regla 7), ocho de diez ADR reales registran el porqué sin esa sección. El criterio tiene dueño en `vault.kernel.contenido` (`es_adr`, `secciones_adr_faltantes`) y lo leen el scan y la auditoría.
+ADRs (Architecture Decision Records) sin secciones Contexto, Decisión y Consecuencias. Un ADR sin estas secciones no aporta valor de auditoría. Opciones evaluadas se recomienda y no se exige desde v41.3: medido contra un vault ajeno (regla 7), ocho de diez ADR reales registran el porqué sin esa sección. El criterio tiene dueño en `vault.kernel.contenido` (`es_adr`, `secciones_adr_faltantes`) y lo leen el scan y la auditoría. Desde v41.27 es también guard: el dueño de la escritura (`vault_io.atomic_write_text`) rechaza la escritura que deja un ADR en estado cerrado o terminal sin sus secciones, con la plantilla en la pista. Un borrador y una nota que no es ADR no se tocan, y una nota que ya existía no se toca hasta que se reescribe su cuerpo o se cierra: cambiar solo su frontmatter (`superseded_by`) sigue abierto.
 
 **Prevention:** Escribir el ADR desde `vault.kernel.contenido.plantilla_adr()` (Contexto, Opciones, Decisión, Consecuencias), la misma que propone la guía de vault_audit, con el frontmatter de `meta_adr()` (`type: adr`, `status: draft`).
 
@@ -1758,12 +1820,14 @@ Límites declarados: las tools con `--project` todavía no pasan por el resoluto
 ### AP-64: Decisión cerrada sin responsable
 
 - **Severity:** medium
-- **Enforcement:** audit
+- **Enforcement:** guard+audit
 - **Detected by:** vault_norms
 
 Un ADR aprobado es lo que un agente consulta antes de actuar: "esto se decidió así y por esto". Si nadie responde de ese porqué, el agente no distingue una decisión que tomó una persona de una que otro agente escribió y dio por buena. Medido en solo lectura contra un vault consumidor (regla 7, 2026-10-08): ninguno de sus ADR aceptados declara quién responde de él, y la mayoría tampoco declara `agent`.
 
 El criterio tiene dueño en `vault.kernel.contenido.falta_de_responsable` y lo leen el scan y la auditoría. El régimen del estado lo deriva `vault_registry.regimen_de_estado`, así que `accepted` cuenta como `approved`.
+
+Desde v41.27 es también guard: el dueño de la escritura (`vault_io.atomic_write_text`) rechaza la escritura que cierra un ADR --lo crea cerrado o lo pasa a un estado cerrado-- sin `responsable`, o con su propio agente como responsable. Un borrador no se toca, y una decisión que ya estaba cerrada sin responsable no se bloquea hasta que alguien la cierre de nuevo: el guard rechaza la falta que la escritura introduce, no la que ya había.
 
 **Prevention:** Al cerrar una decisión, escribir `responsable:` con la persona que responde de ella (campo opcional del contrato v41). Un agente puede redactar el ADR y dejarlo en `draft` o `review`; aprobarlo con su propio nombre como responsable es lo que la norma marca. La guía de vault_audit propone el ADR con `meta_adr()` --en `draft`, sin `responsable` de relleno, que pasaría la norma sin nadie detrás--.
 
@@ -1868,6 +1932,46 @@ Un término que varias notas mencionan --un nombre propio de dos o más palabras
 Un comentario del código dice el porqué apuntando a la decisión que lo registra --`ADR-NNNN` en este repositorio, `@vault: 03_Decisions/…` en un proyecto con vault-- y esa decisión no existe. El lector sigue la cita y no encuentra nada: el porqué se perdió y el código sigue afirmando que está escrito. Es la regla de Torti Code "el comentario dice el porqué y apunta al ADR" aplicada a lo único decidible de ella: que el destino exista.
 
 **Prevention:** `vault_doc_sync --check` lista cada cita rota como `adr_sin_fichero` y la puerta falla. Se salda escribiendo el ADR que falta o corrigiendo la cita al número que existe. En un vault, `vault_code_sync` acepta como destino de `@vault:` una decisión de `03_Decisions/` que existe y sigue dando por huérfana la que no.
+
+### AP-73: Fuente archivada modificada
+
+- **Severity:** high
+- **Enforcement:** guard+audit
+- **Detected by:** vault_audit
+
+Una fuente que `vault_ingest --archivar-fuente` guardó literal en `10_Migrated/fuentes/` se reescribe. Esa capa es el registro de lo que llegó: las notas derivadas la citan en `source:` como prueba de dónde salió lo que afirman, y una fuente editada después convierte la cita en una afirmación que nadie puede comprobar. Es la capa cruda de la LLM Wiki de Karpathy: el modelo la lee y nunca la edita.
+
+**Prevention:** El dueño de la escritura (`vault_io.atomic_write_text`) rechaza cualquier reescritura de una fuente archivada con `IMMUTABLE_NOTE` y la pista de ingerirla como fuente nueva; escribir los mismos bytes no es reescribir. Lo que cambie fuera del dueño --un editor, un script-- lo ve `vault_audit` en `archivedSourcesModified`, comparando con la huella que `vault_ingest` registró al archivar. Una fuente archivada antes de que existiera la huella sale como no verificable, no como intacta.
+
+### AP-74: Operación sin fila en la bitácora
+
+- **Severity:** medium
+- **Enforcement:** audit
+- **Detected by:** vault_audit
+
+Una nota que entró por `vault_ingest --commit` no tiene la fila `ingested` de la pasada que la escribió en `00_System/.change-log.json`. La bitácora es la historia de las operaciones del vault --qué entró, cuándo y quién lo trajo--, y una ingesta sin su fila es material sin procedencia operativa: la nota existe y nadie puede decir en qué operación llegó. Es el log append-only de la LLM Wiki de Karpathy.
+
+**Prevention:** `vault_ingest` escribe el mismo id de pasada en cada nota y en la fila `ingested` que anota por el puerto `bitacora_cambios`; si la fila no se pudo anotar, su envelope lo dice en `change_log_error`. `vault_audit` lista en `ingestsWithoutLog` las notas cuya pasada no tiene fila. Solo lectura: la bitácora no se repara reescribiéndola.
+
+### AP-75: Decisión cerrada reescrita
+
+- **Severity:** high
+- **Enforcement:** guard+audit
+- **Detected by:** vault_audit
+
+Un ADR aprobado se edita en su cuerpo en vez de sustituirse. Quien consultó la decisión antes ya no puede leer lo que se decidió, y quien la consulta ahora no sabe que cambió ni por qué. Torti Code lo resume: una decisión aprobada no se reescribe, se escribe la nueva y se enlaza. Cambiar el frontmatter --la transición de estado, el `superseded_by`-- no reescribe el porqué; cambiar el cuerpo sí.
+
+**Prevention:** Un vault que declara `sustitucion` en `00_System/reglas.json` convierte la norma en guard: el dueño de la escritura rechaza con `IMMUTABLE_NOTE` el cambio de cuerpo de una decisión cerrada y señala `vault_supersede`. La auditoría corre siempre, declare o no el vault la sustitución: `vault_audit` publica `closedDecisionsRewritten`, contrastando con el historial de la nota.
+
+### AP-76: Nota viva con la revisión vencida
+
+- **Severity:** low
+- **Enforcement:** audit
+- **Detected by:** vault_drift_detect
+
+Una nota que declara cuándo se revisó (`revisado_en`) lleva más tiempo sin releerse que su cadencia. Torti Code: la documentación desactualizada es peor que ninguna, y lo que la evita es un dueño, una fecha de revisión y una herramienta que avise. Vencer no es estar mal: es que nadie ha comprobado que siga siendo cierta.
+
+**Prevention:** `vault_drift_detect --mode antiguedad` publica la lista de trabajo (`vencidas`, con su responsable) sin poner `ok` en falso. Revisar es releer la nota contra lo que describe y poner `revisado_en` con la fecha del día; la cadencia se declara en `cadencia_dias`.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
@@ -1988,6 +2092,26 @@ Ejecutar vault_graph --typed al final de cada sesion productiva para generar gra
 Cuando dos notas sostienen cosas incompatibles y el desacuerdo es legítimo, una de ellas lo declara en su frontmatter con el predicado de la ontología `contradicts` (`contradicts: ["[[otra-nota]]"]`). `vault_fuente_unica` deja de contar ese conflicto como deuda AP-05 y lo publica en `declared_disagreements`, y `vault_context_pack` entrega los dos lados cuando selecciona uno, con `disagrees_with`. Es la respuesta de la LLM Wiki de Karpathy a las contradicciones: el lint las señala, y las que son reales se conservan como tales en vez de resolverse eligiendo un ganador.
 
 **Prevention:** N/A -- es el patrón correcto. No añade un valor de `status`: el vocabulario es cerrado y el desacuerdo es una relación entre dos notas, no un estado de una.
+
+### PAT-8: Respuesta compilada en el wiki
+
+- **Severity:** N/A
+- **Enforcement:** recommended
+- **Detected by:** vault_ingest
+
+Una respuesta que sintetiza varias notas y valdrá en otra sesión se guarda como página del vault en vez de perderse con la conversación. Es la consulta de la LLM Wiki de Karpathy: las buenas respuestas vuelven al wiki con sus citas. `vault_ingest --desde-pack` la escribe como un solo borrador que cita en `related:` y en el cuerpo las notas del paquete de `vault_context_pack` del que salió.
+
+**Prevention:** N/A -- es el patrón correcto. La síntesis nace en `draft` y con integridad baja: no vale como conocimiento revisado hasta que una persona la revise. Un paquete que no incluye ninguna nota del vault se rechaza: una síntesis sin fuentes no es una página del wiki.
+
+### PAT-9: Esquema del agente generado
+
+- **Severity:** N/A
+- **Enforcement:** recommended
+- **Detected by:** vault_preferences
+
+El fichero que un agente lee en cada tarea --`AGENTS.md`, `CLAUDE.md`…-- se genera desde los registros del vault y no se escribe a mano: el mapa de carpetas, la regla de nombres (CN-01), dónde viven las decisiones, el comando de pruebas que el dueño declara y el protocolo de sesión. Es la capa de esquema de la LLM Wiki de Karpathy, y el AGENTS.md corto que dice dónde viven las decisiones de Torti Code. Tiene un presupuesto de líneas: un esquema largo se lee en diagonal.
+
+**Prevention:** N/A -- es el patrón correcto. Lo que crece con el vault --las preferencias del dueño-- se recorta apuntando a la lista completa; si la parte derivada sola no cabe, se acorta el registro que la produce, no el presupuesto. El adaptador es entrega, no enforcing: la política se aplica en la frontera de mutación.
 
 ### SP-01: Delete protocol -- change_log obligatorio antes de eliminar
 

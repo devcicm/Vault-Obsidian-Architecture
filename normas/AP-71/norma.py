@@ -39,6 +39,13 @@ NORMA = {
     "tools_enforcing": [],
     "tools_detecting": ["vault_audit"],
     "distinguido_de": {
+        "PAT-8": (
+            "AP-71 señala el concepto que varias notas mencionan y ninguna "
+            "define. PAT-8 es cómo nace una página a partir de una pregunta "
+            "ya respondida: la síntesis vuelve al wiki citando las notas de "
+            "las que salió. Una página de PAT-8 puede saldar un AP-71, pero "
+            "su origen es la consulta, no la mención repetida."
+        ),
         "AP-05": (
             "AP-05 es el mismo dato con valores distintos en varias notas. "
             "AP-71 no compara valores: señala que el concepto no tiene dueño, "

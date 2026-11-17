@@ -752,6 +752,142 @@ def _detect_conceptos_sin_pagina(
     return conceptos_sin_pagina(terminos, indice)
 
 
+def _leer_nota_partida(nota: Path) -> Optional[Tuple[Dict[str, Any], str]]:
+    """`(frontmatter, body)` of a note, or None when it cannot be read or parsed."""
+    texto = _leer_nota(nota, errors="replace")
+    if texto is None:
+        return None
+    try:
+        fm, cuerpo = parse_frontmatter_with_body(texto)
+    except FrontmatterParseError:
+        return None
+    return fm or {}, cuerpo
+
+
+def _detect_fuentes_alteradas(barrido: Optional[List[Path]] = None) -> Dict[str, Any]:
+    """AP-73: archived raw sources whose body no longer matches its fingerprint.
+
+    The write owner refuses the rewrite; this sees what changed outside it (an
+    editor, a script, a merge). The criterion and the fingerprint belong to
+    `vault.kernel.contenido`. A source archived before the fingerprint existed
+    is `unverifiable`, never intact. Read-only and without weight.
+    """
+    from vault.kernel.contenido import es_fuente_archivada, estado_de_fuente_archivada
+
+    modificadas: List[Dict[str, Any]] = []
+    sin_huella: List[Dict[str, Any]] = []
+    medidas = 0
+    for nota in sorted(_barrido_md() if barrido is None else barrido):
+        rel = nota.relative_to(_raiz()).as_posix()
+        if _is_snapshot(nota):
+            continue
+        leida = _leer_nota_partida(nota)
+        if leida is None or not es_fuente_archivada(rel, leida[0]):
+            continue
+        medidas += 1
+        estado = estado_de_fuente_archivada(*leida)
+        if estado == "alterada":
+            modificadas.append({"path": rel, "norm": "AP-73",
+                                "detail": "el cuerpo ya no coincide con la huella registrada al "
+                                          "archivarla; una fuente nueva se ingiere, no se edita"})
+        elif estado == "sin_huella":
+            sin_huella.append({"path": rel, "norm": "AP-73",
+                               "detail": "archivada sin `sha256_cuerpo`: no se puede verificar"})
+    return {"norm": "AP-73", "checked": medidas, "modified": modificadas,
+            "unverifiable": sin_huella}
+
+
+def _detect_ingestas_sin_bitacora(barrido: Optional[List[Path]] = None) -> Dict[str, Any]:
+    """AP-74: ingested notes whose pass left no `ingested` row in the change log.
+
+    Karpathy's log: every ingest is an operation, and the log is append-only.
+    A note follows to its row by the pass id both carry (`ingest_pass`); a note
+    written before that id existed is counted as `unverifiable`, not matched by
+    a guessed time window. Read-only: the log is read, never repaired.
+    """
+    ruta = _repo().bitacora_cambios
+    filas: List[Dict[str, Any]] = []
+    if ruta.exists():
+        try:
+            datos = json.loads(ruta.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, ValueError) as exc:
+            return {"norm": "AP-74", "unavailable": f"change log ilegible: {type(exc).__name__}"}
+        filas = [f for f in datos if isinstance(f, dict)] if isinstance(datos, list) else []
+    razones = [str(f.get("reason") or "") for f in filas if f.get("action") == "ingested"]
+    faltan: List[Dict[str, Any]] = []
+    sin_pasada = 0
+    medidas = 0
+    for nota in sorted(_barrido_md() if barrido is None else barrido):
+        if _is_snapshot(nota):
+            continue
+        leida = _leer_nota_partida(nota)
+        if leida is None or str(leida[0].get("type") or "").lower() != "ingested":
+            continue
+        medidas += 1
+        pasada = str(leida[0].get("ingest_pass") or "").strip()
+        if not pasada:
+            sin_pasada += 1
+        elif not any(pasada in razon for razon in razones):
+            faltan.append({"path": nota.relative_to(_raiz()).as_posix(), "norm": "AP-74",
+                           "ingest_pass": pasada,
+                           "detail": "ninguna fila `ingested` del change log nombra su pasada"})
+    return {"norm": "AP-74", "checked": medidas, "missing": faltan,
+            "unverifiable": sin_pasada}
+
+
+def _detect_decisiones_reescritas(barrido: Optional[List[Path]] = None) -> Dict[str, Any]:
+    """AP-75: closed decisions whose body changed after they were closed.
+
+    The reliable history is the note's own `.history/` (the write owner saves
+    the previous version before overwriting). The first version in a closed or
+    terminal status is when the decision closed; a current body with another
+    fingerprint was rewritten instead of superseded. Without any version the
+    decision is `unverifiable`, not clean. Runs whether or not the vault opted
+    into `sustitucion` (that only turns the guard on). Read-only.
+    """
+    from vault.kernel import historia
+    from vault.kernel.contenido import REGIMENES_DE_CIERRE, es_adr, huella_de_cuerpo
+    from vault_norms_catalog import STATUS_TRANSITIONS, normalize_status
+    from vault_registry import regimen_de_estado
+
+    def _cerrada(fm: Dict[str, Any]) -> bool:
+        bruto = str(fm.get("status") or "").strip()
+        canonico = normalize_status(bruto)[0] if bruto else None
+        return (canonico in STATUS_TRANSITIONS and canonico != "template"
+                and regimen_de_estado(canonico, STATUS_TRANSITIONS) in REGIMENES_DE_CIERRE)
+
+    reescritas: List[Dict[str, Any]] = []
+    sin_historia: List[Dict[str, Any]] = []
+    medidas = 0
+    for nota in sorted(_barrido_md() if barrido is None else barrido):
+        rel = nota.relative_to(_raiz()).as_posix()
+        if _is_snapshot(nota):
+            continue
+        leida = _leer_nota_partida(nota)
+        if leida is None or not es_adr(rel, leida[0].get("type", ""), nota.stem):
+            continue
+        if not _cerrada(leida[0]):
+            continue
+        medidas += 1
+        versiones = list(reversed(historia.versiones(_raiz() / ".history", rel)))
+        if not versiones:
+            sin_historia.append({"path": rel, "norm": "AP-75",
+                                 "detail": "sin versiones en .history/: no se sabe si el cuerpo "
+                                           "cambió después de cerrarse"})
+            continue
+        cierre = next((v for v in versiones
+                       if (p := _leer_nota_partida(v["path"])) and _cerrada(p[0])), None)
+        if cierre is None:
+            continue  # closed in its last write: nothing was rewritten after it
+        cuerpo_al_cerrar = _leer_nota_partida(cierre["path"])[1]
+        if huella_de_cuerpo(cuerpo_al_cerrar) != huella_de_cuerpo(leida[1]):
+            reescritas.append({"path": rel, "norm": "AP-75", "closed_in": cierre["filename"],
+                               "detail": "el cuerpo cambió después de cerrarse; una decisión "
+                                         "cerrada se sustituye (vault_supersede), no se reescribe"})
+    return {"norm": "AP-75", "checked": medidas, "rewritten": reescritas,
+            "unverifiable": sin_historia}
+
+
 def _detect_stale(notes: List[Path]) -> List[Dict[str, Any]]:
     now = datetime.now(timezone.utc).replace(tzinfo=None)
 
@@ -2538,6 +2674,14 @@ def vault_audit(
 
     conceptos = _detect_conceptos_sin_pagina(notas_del_vault, barrido=barrido)
 
+    # AP-73, AP-74 and AP-75: what the write owner refuses, seen from the
+    # vault as it is (an edit made outside the owner, a log row that never
+    # landed, a rewrite in a vault that did not opt into `sustitucion`).
+    # Informative work lists, without weight in the healthIndex.
+    fuentes_alteradas = _detect_fuentes_alteradas(barrido)
+    ingestas_sin_bitacora = _detect_ingestas_sin_bitacora(barrido)
+    decisiones_reescritas = _detect_decisiones_reescritas(barrido)
+
     cn01_no_kebab, cn04_sin_titulo = _detect_convenciones_cn01_cn04(notas_del_vault)
 
     stale = _detect_stale(notas_del_vault)
@@ -2741,6 +2885,9 @@ def vault_audit(
         # AP-71, informative and without weight: what to write next, read from
         # the notes themselves instead of from folder counts.
         "conceptsWithoutPage": conceptos,
+        "archivedSourcesModified": fuentes_alteradas,
+        "ingestsWithoutLog": ingestas_sin_bitacora,
+        "closedDecisionsRewritten": decisiones_reescritas,
         "stats": {
             "total": len(notas_del_vault),
             "byFolder": dict(sorted(by_folder.items())),

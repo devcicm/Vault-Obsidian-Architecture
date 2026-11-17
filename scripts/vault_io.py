@@ -488,6 +488,16 @@ class NotaInmutableError(ValueError):
             f"declara inmutable: no se reescribe. Escribe una nota sucesora."))
 
 
+def _forma_del_cuerpo(cuerpo: str) -> str:
+    """A body as the write owner will store it: sanitized, LF, no outer blanks.
+
+    Two bodies with the same form are the same why: comparing raw text would
+    call a rewrite what is only the sanitizer folding an em-dash.
+    """
+    cuerpo = sanitize_content(cuerpo.replace("\r\n", "\n").lstrip("﻿"), dry_run=False)[0]
+    return cuerpo.strip()
+
+
 def _decision_cerrada_reescrita(path: Path, relativa: str, seccion: str,
                                 text: str) -> Optional[str]:
     """Por qué `text` reescribe una decisión cerrada que debía sustituirse, o None.
@@ -517,16 +527,138 @@ def _decision_cerrada_reescrita(path: Path, relativa: str, seccion: str,
     if not cambio_de_cuerpo_exige_nota_nueva(seccion, status, STATUS_TRANSITIONS):
         return None
 
-    def _forma(cuerpo: str) -> str:
-        cuerpo = sanitize_content(cuerpo.replace("\r\n", "\n").lstrip("﻿"), dry_run=False)[0]
-        return cuerpo.strip()
-
-    if _forma(cuerpo_actual) == _forma(cuerpo_nuevo):
+    # AP-75: a closed decision is superseded, not rewritten; this is the guard
+    # of the vaults that opt in (the audit runs always, in `vault_audit`).
+    if _forma_del_cuerpo(cuerpo_actual) == _forma_del_cuerpo(cuerpo_nuevo):
         return None
-    return (f"la nota '{relativa}' es una decision cerrada (status {bruto}) y este vault "
+    return (f"AP-75: la nota '{relativa}' es una decision cerrada (status {bruto}) y este vault "
             f"declara en {FICHERO_REGLAS} que en '{seccion}' lo cerrado se sustituye, "
             "no se reescribe: escribe la sucesora y enlazala con "
             f"`vault_supersede --path {relativa} --by <sucesora> --apply`.")
+
+
+def _fuente_archivada_reescrita(path: Path, relativa: str,
+                                text: Optional[str]) -> Optional[str]:
+    """Why `text` rewrites an archived raw source, or None.
+
+    Always on, unlike `sustitucion`: the raw layer is the record of what
+    arrived, and nothing in the toolkit has a reason to change it. Writing the
+    same bytes again is not a rewrite (the owner skips it). An unreadable
+    frontmatter cannot say the note is a source; the frontmatter check decides.
+    """
+    from vault.kernel.contenido import CARPETA_FUENTES, es_fuente_archivada
+    from vault.kernel.frontmatter_parsing import FrontmatterParseError, parse_frontmatter_with_body
+
+    if not relativa.startswith(CARPETA_FUENTES + "/"):
+        return None
+    try:
+        actual = path.read_text(encoding="utf-8", errors="replace")
+        fm, _ = parse_frontmatter_with_body(actual)
+    except (OSError, FrontmatterParseError):
+        return None
+    if not es_fuente_archivada(relativa, fm):
+        return None
+    # AP-73: the archived source is read, never edited.
+    if text is not None and sanitize_content(strip_bom(text)[0], dry_run=False)[0] == actual:
+        return None
+    return (f"AP-73: la nota '{relativa}' es una fuente archivada (type: migrated, "
+            "status: archived): se lee, no se edita. Para registrar otra versión de la "
+            "fuente, ingiérela como fuente nueva con `vault_ingest --archivar-fuente`; "
+            "las notas derivadas la citarán en `source:`.")
+
+
+class DecisionCerradaInvalidaError(ValueError):
+    """A write would leave a closed decision without its why or its owner.
+
+    Raised by the write owner (`atomic_write_text`) so every writer inherits
+    it, like `NotaInmutableError`. `norma` is AP-07 or AP-64; `pista` is the
+    recovery the envelope carries, the ADR template for AP-07.
+    """
+
+    codigo = "VALIDATION_FAILED"
+
+    def __init__(self, norma: str, motivo: str, pista: str) -> None:
+        self.norma = norma
+        self.pista = pista
+        super().__init__(motivo)
+
+
+def _exigir_decision_cerrada_valida(path: Path, text: Optional[str]) -> None:
+    """AP-07 and AP-64 at the mutation boundary: closing a decision has a price.
+
+    Rule: a write that leaves an ADR (`es_adr`) in a closed or terminal status
+    is refused when the decision lacks Contexto/Decisión/Consecuencias, and a
+    write that leaves it in a closed status is refused when nobody answers for
+    it (`falta_de_responsable`). Drafts and non-ADR notes are not touched.
+
+    An existing note is untouched until it is rewritten: the defect is refused
+    when the write introduces it — a new note, the transition into closed, or
+    for AP-07 a rewrite of the body —, never when the write only touches the
+    frontmatter of a decision that already had it (`vault_supersede` adding
+    `superseded_by` is the way out, and must stay open).
+    """
+    if text is None or path.suffix.lower() != ".md":
+        return
+    try:
+        relativa = path.resolve().relative_to(Path(_raiz.get_vault_root()).resolve()).as_posix()
+    except (ValueError, OSError):
+        return
+    from vault.kernel.contenido import (
+        CARPETA_DECISIONES,
+        es_adr,
+        falta_de_responsable,
+        plantilla_adr,
+        secciones_faltantes_al_cerrar,
+    )
+
+    if not relativa.startswith(CARPETA_DECISIONES + "/"):
+        return
+    from vault.kernel.frontmatter_parsing import FrontmatterParseError, parse_frontmatter_with_body
+    from vault_norms_catalog import STATUS_TRANSITIONS, normalize_status
+    from vault_registry import regimen_de_estado
+
+    def _leer(texto: str):
+        fm, cuerpo = parse_frontmatter_with_body(texto)
+        fm = fm or {}
+        if not es_adr(relativa, fm.get("type", ""), path.stem):
+            return None
+        bruto = str(fm.get("status") or "").strip()
+        canonico = normalize_status(bruto)[0] if bruto else None
+        regimen = regimen_de_estado(canonico, STATUS_TRANSITIONS) if canonico in STATUS_TRANSITIONS else ""
+        return {"fm": fm, "cuerpo": cuerpo,
+                "faltan": secciones_faltantes_al_cerrar(fm, cuerpo, regimen),
+                "sin_responsable": falta_de_responsable(fm, regimen)}
+
+    try:
+        nueva = _leer(text)
+    except FrontmatterParseError:
+        return  # `_verificar_frontmatter` decides, not this guard
+    if nueva is None:
+        return
+    previa = None
+    if path.exists():
+        try:
+            previa = _leer(path.read_text(encoding="utf-8", errors="replace"))
+        except (OSError, FrontmatterParseError):
+            return  # what was there cannot be read: nothing to compare against
+    # AP-07: the why of a closed decision is written before it is consulted.
+    if nueva["faltan"] and not (
+            previa and previa["faltan"]
+            and _forma_del_cuerpo(previa["cuerpo"]) == _forma_del_cuerpo(nueva["cuerpo"])):
+        raise DecisionCerradaInvalidaError(
+            "AP-07",
+            f"AP-07: '{relativa}' es una decision cerrada (status {nueva['fm'].get('status')}) "
+            f"y le faltan {', '.join(nueva['faltan'])}. Una decision se cierra con su porque "
+            "escrito; mientras se discute, se deja en draft.",
+            "Escribir el porqué con esta plantilla y volver a cerrar la decisión:\n"
+            + plantilla_adr())
+    # AP-64: a closed decision has a person who answers for it.
+    if nueva["sin_responsable"] and not (previa and previa["sin_responsable"]):
+        raise DecisionCerradaInvalidaError(
+            "AP-64",
+            f"AP-64: '{relativa}': {nueva['sin_responsable']}.",
+            "Al cerrar la decisión, declarar `responsable:` con la persona que responde de "
+            "su porqué (no el agente que la redactó); si aún se discute, dejarla en draft.")
 
 
 def _exigir_politica_de_inmutabilidad(path: Path, text: Optional[str] = None) -> None:
@@ -556,6 +688,9 @@ def _exigir_politica_de_inmutabilidad(path: Path, text: Optional[str] = None) ->
     seccion = seccion_de(relativa)
     if seccion and seccion in reglas["inmutable"]:
         raise NotaInmutableError(seccion, relativa)
+    motivo = _fuente_archivada_reescrita(path, relativa, text)
+    if motivo:
+        raise NotaInmutableError(seccion, relativa, motivo=motivo)
     if text is not None and seccion and seccion in sustitucion_declarada(Path(raiz)):
         motivo = _decision_cerrada_reescrita(path, relativa, seccion, text)
         if motivo:
@@ -588,6 +723,9 @@ def atomic_write_text(
     # dueño de la escritura, no del llamador. Antes vivia en `vault_write` y
     # el onboarding lo esquivaba.
     _exigir_politica_de_inmutabilidad(path, text)
+    # AP-07 y AP-64 en la frontera de mutacion: cerrar una decision exige su
+    # porque y su responsable, para todo escritor que pase por aqui.
+    _exigir_decision_cerrada_valida(path, text)
     if text and not _env("VAULT_SKIP_SECRET_SCAN"):
         try:
             guarda_secretos(path, text)

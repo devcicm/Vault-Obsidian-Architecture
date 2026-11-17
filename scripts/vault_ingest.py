@@ -47,6 +47,7 @@ from vault_errors import emit_error, wrap_main  # noqa: E402
 from vault_io import (  # noqa: E402
     assert_within_vault,
     atomic_write_text,
+    sanitize_content,  # what the write owner stores is what the hash covers (AP-73)
     tomar_lock,
     update_section_index,
 )
@@ -76,6 +77,12 @@ DEFAULT_MAX_NOTES = 20
 #: falta para que la superficie de escritura no acepte lo ilimitado.
 DEFAULT_MAX_CHARS = 5_000_000
 
+# The raw-layer criterion and fingerprint have one owner (AP-73).
+from vault.kernel.contenido import (  # noqa: E402
+    CAMPO_HUELLA_FUENTE,
+    CARPETA_FUENTES as _CARPETA_FUENTES,
+    huella_de_cuerpo,
+)
 # superseded_by: vault.kernel.normativa.conceptos.ENTIDADES_STOPWORDS (2026-11-16).
 # The entity rule gained a second consumer (the AP-71 lint in `vault_audit`),
 # so it moved to a kernel owner both contexts can import (AP-57). The name is
@@ -92,7 +99,9 @@ from vault.kernel.normativa.conceptos import (  # noqa: E402
 #: (`vault_registry.SECTION_DOCUMENTACION["10_Migrated"]`). Immutability is not
 #: switched on here: declaring a section immutable is the owner's decision
 #: (`00_System/inmutable.json`), never a side effect of ingesting.
-CARPETA_FUENTES = "10_Migrated/fuentes"
+#: The value belongs to the raw-layer owner (`vault.kernel.contenido`), shared
+#: with the write owner that refuses the rewrite and the audit (AP-73).
+CARPETA_FUENTES = _CARPETA_FUENTES
 
 #: AP-15: only text sources are archived. A binary does not belong in the vault
 #: as a note, and `--file` is the only door where the extension is known.
@@ -314,6 +323,10 @@ def _nota_de_fuente(text: str, source: str, origin: str, agent: str) -> str:
         .set("source", source, texto=True)
         .set("ingest_origin", origin, texto=True)
         .set("sha256", hashlib.sha256(text.encode("utf-8")).hexdigest(), texto=True)
+        # AP-73: the fingerprint of the body as the write owner stores it
+        # (sanitized), recorded at archive time so the audit can tell an edit
+        # from a byte the sanitizer folded. `sha256` stays: it names the file.
+        .set(CAMPO_HUELLA_FUENTE, huella_de_cuerpo(sanitize_content(text)[0]), texto=True)
         .set("cia_integrity", "medium")
         .set("cia_availability", "medium")
         .set("cia_sensitivity", "internal")
@@ -481,6 +494,7 @@ def _build_note(
     extra_tags: List[str],
     fuente_archivada: Optional[str] = None,
     citadas: Optional[List[str]] = None,
+    pasada: Optional[str] = None,
 ) -> Dict[str, Any]:
     title = chunk["title"]
     slug = slugify(title)
@@ -498,7 +512,7 @@ def _build_note(
     # AP-46: el bloque lo escribe su dueño; aquí solo se declaran los campos.
     # Los instantes van con `texto=True` porque esta nota siempre los citó: el
     # lector recibe `str`, y pasarlos a crudo le cambiaría el tipo.
-    frontmatter = [
+    cabecera = (
         Frontmatter()
         .set("title", title, texto=True)
         .set("id", str(uuid.uuid4()))
@@ -517,6 +531,13 @@ def _build_note(
         # —vienen del invocante—, y un `agent: si: claro` rompía el YAML de la
         # nota entera.
         .set("ingest_origin", origin, texto=True)
+    )
+    if pasada:
+        # AP-74: the pass that wrote this note, the same id its `ingested`
+        # log row names, so the audit can follow the note to its row.
+        cabecera.set("ingest_pass", pasada, texto=True)
+    frontmatter = [
+        cabecera
         # AP-30 se cumple aquí, y por eso `vault_ingest` la aplica en vez de
         # solo detectarla: la tríada CIA se escribe en el mismo acto que crea la
         # nota, así que por esta vía no puede entrar una nota sin clasificar.
@@ -633,6 +654,8 @@ def vault_ingest(
     # ── etapa 2: segmentación y entidades ────────────────────────────────────
     citadas: Optional[List[str]] = None
     if pack is not None:
+        # PAT-8: a good answer is compiled back into the wiki as a page that
+        # cites what it was built from; it stays `draft` until a person reviews it.
         # A saved answer is one page: segmenting it would split the synthesis
         # the agent just wrote. Its provenance is the pack, so the pack's
         # notes have to exist here; citing nothing is not a synthesis.
@@ -655,13 +678,15 @@ def vault_ingest(
     entities = _extract_entities(text)
     fuente_archivada = (_ruta_de_fuente_archivada(text, source, origin)
                         if archivar_fuente else None)
+    # AP-74: one id per pass, written in every note and in the pass's log row.
+    pasada = str(uuid.uuid4())
 
     proposals: List[Dict[str, Any]] = []
     seen_paths: Set[str] = set()
     for chunk in chunks:
         note = _build_note(chunk, entities, section, subfolder, source, origin,
                            agent, tags or [], fuente_archivada=fuente_archivada,
-                           citadas=citadas)
+                           citadas=citadas, pasada=pasada)
         # Dos encabezados iguales producirían el mismo slug y una nota
         # sobrescribiría a la otra en silencio. El sufijo se busca libre: el
         # de `len(seen_paths)` sin recomprobar podía caer sobre una ruta ya
@@ -752,7 +777,8 @@ def vault_ingest(
 
             registro = anotar_operacion(
                 "ingested", section,
-                f"vault_ingest: {len(written)} nota(s) desde {origin}", agent)
+                f"vault_ingest: {len(written)} nota(s) desde {origin} (pasada {pasada})",
+                agent)
 
     return {
         # No `True` fijo: un lote con notas caídas no es un éxito, y devolverlo
@@ -776,6 +802,10 @@ def vault_ingest(
         "affected_pages": paginas,
         "affected_pages_applied": aplicadas,
         **({"affected_pages_skipped": paginas_omitidas} if paginas_omitidas else {}),
+        # The pass id the notes and the log row share (AP-74), and the pattern
+        # a saved answer follows (PAT-8).
+        "ingest_pass": pasada,
+        **({"pattern": "PAT-8"} if pack is not None else {}),
         # `change_log` ({id, action}) or `change_log_error` (sanitized).
         **registro,
         "stats": {

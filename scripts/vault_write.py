@@ -47,6 +47,7 @@ from vault_errors import emit_error, emit_fallo, fuera_de_sesion, mensaje_de, wr
 from vault_io import (
     is_snapshot_path,  # dueño único de qué es una instantánea (AP-57)
     NotaInmutableError,  # el veto del dueño de la escritura
+    DecisionCerradaInvalidaError,  # AP-07/AP-64 en el dueño de la escritura
     _rechazar_raiz_insegura,  # AP-36: antes del mkdir de la carpeta destino
     write_report,
     atomic_write_text,
@@ -1219,6 +1220,11 @@ def vault_write(
         existing_created = canonical_utc(fm_previo.get("createdAt")) or None
         existing_status = str(fm_previo.get("status") or "") or None
         existing_type = str(fm_previo.get("type") or "") or None
+        # AP-64: an update that does not mention `responsable` is not removing
+        # it. Dropping it on every rewrite turned the edit of a closed decision
+        # into a decision nobody answers for (the write owner refuses that).
+        if "responsable" not in meta and fm_previo.get("responsable"):
+            meta["responsable"] = fm_previo["responsable"]
 
     # Check if note exists in a different folder (auto-move suggestion)
     else:
@@ -1414,6 +1420,10 @@ def vault_write(
             # El veto lo pone el dueno de la escritura; aqui solo se traduce
             # a envelope (el criterio vive en `vault_io`).
             return emit_error("vault_write", "IMMUTABLE_NOTE", str(exc))
+        except DecisionCerradaInvalidaError as exc:
+            # AP-07/AP-64: el criterio es del dueño de la escritura; aquí se
+            # traduce con su pista (la plantilla del ADR, o quién responde).
+            return emit_error("vault_write", exc.codigo, str(exc), pista=exc.pista)
 
         # Update search index (inside lock for consistency)
 

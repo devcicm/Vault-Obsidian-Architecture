@@ -185,6 +185,7 @@ Un comentario dice el porqué y apunta a la decisión (`03_Decisions/` en un vau
 | Pide | Lo que sí se mide | `cobertura_descubierta` |
 |---|---|---|
 | un comentario dice el porqué y apunta a la decisión que lo registra; no repite lo que el código ya dice | que la decisión citada exista: AP-72 (`vault_doc_sync` en el repositorio, `vault_code_sync` en un vault) | Que un comentario repita el código solo se decide leyéndolo contra el código. Un detector por parecido léxico entre el comentario y la línea que acompaña marcaría como repetición el comentario que nombra la variable para explicar por qué existe, y daría por bueno el que repite con sinónimos: un guard débil que da verde sin medir. El estándar no tiene embeddings ni modelo en el bucle, así que el hueco se declara. |
+| un documento es de un solo tipo Diátaxis --tutorial, guía, referencia o explicación--; no mezcla los cuatro | la clase que declara cada sección (`vault_registry.SECTION_DOCUMENTACION`) y cada documento del repo (`DOCS_DEL_REPO`), y el tipo que le falta (`HUECOS_DOCS_DEL_REPO`) | La clase se declara y se publica; que el texto de la nota sea de esa clase y no de otra solo se decide leyéndolo. Un detector por encabezados ("Paso 1", "Parámetros") marcaría como mezcla la referencia que enlaza su tutorial y daría por pura la explicación escrita como receta: un guard débil que da verde sin medir. Sin modelo en el bucle, el hueco se declara (Torti Code, Parte A del plan de estrés, 2026-11-17). |
 
 ### Cuándo crear vs enriquecer
 

@@ -16,3 +16,13 @@ que nombra AP-04 en su cuerpo dentro de una tool que el catálogo declara, o un
 - **Aplica / detecta**: el catálogo no declara ninguna tool.
 - **Hueco declarado**: `cobertura_descubierta` en `norma.py`.
 - **Tests** (`tests/`): ninguno la ejercita en el cuerpo de un `test_*`.
+
+## Por qué no es un guard
+
+Sigue en `audit` a propósito (Parte A del plan de estrés, L3, 2026-11-17), y hoy
+ni siquiera tiene detector (`cobertura_descubierta`). Lo que separa AP-04 de una
+nota correcta es si la funcionalidad descrita está desplegada, y eso no está en la
+nota ni en el vault en el momento de escribirla: es un hecho del sistema que se
+documenta, y cambia después. Un guard que decidiera por el tiempo verbal del
+cuerpo rechazaría la referencia que describe en presente lo que sí existe y
+dejaría pasar la promesa escrita en futuro: un guard débil que da verde sin medir.

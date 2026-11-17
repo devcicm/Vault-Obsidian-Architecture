@@ -954,6 +954,20 @@ HUECOS_DE_METODOLOGIA = {
             "con sinónimos: un guard débil que da verde sin medir. El estándar no "
             "tiene embeddings ni modelo en el bucle, así que el hueco se declara."),
     },
+    "tipos_diataxis_mezclados": {
+        "pide": ("un documento es de un solo tipo Diátaxis —tutorial, guía, referencia o "
+                 "explicación—; no mezcla los cuatro"),
+        "medido": ("la clase que declara cada sección (`vault_registry.SECTION_DOCUMENTACION`) "
+                   "y cada documento del repo (`DOCS_DEL_REPO`), y el tipo que le falta "
+                   "(`HUECOS_DOCS_DEL_REPO`)"),
+        "cobertura_descubierta": (
+            "La clase se declara y se publica; que el texto de la nota sea de esa clase y "
+            "no de otra solo se decide leyéndolo. Un detector por encabezados («Paso 1», "
+            "«Parámetros») marcaría como mezcla la referencia que enlaza su tutorial y "
+            "daría por pura la explicación escrita como receta: un guard débil que da "
+            "verde sin medir. Sin modelo en el bucle, el hueco se declara (Torti Code, "
+            "Parte A del plan de estrés, 2026-11-17)."),
+    },
 }
 
 

@@ -8,6 +8,11 @@ de derivarlo; se regenera con `vault_norms_engine.escribir_caras_derivadas`.
 """
 
 GUARD = [
+    'scripts/vault_io.py::_exigir_decision_cerrada_valida',
+    'scripts/vault_io.py::atomic_write_text',
+    'scripts/vault_write.py::vault_write',
+    'scripts/vault_write.py::vault_write_adr',
+    'scripts/vault_write.py::main',
     'scripts/vault_norms.py::vault_norms_scan',
     'vault/kernel/normativa/norms_catalog.py::compute_norm_refs',
     'vault/gobernanza/auditoria_runtime.py::auditar_runtime',

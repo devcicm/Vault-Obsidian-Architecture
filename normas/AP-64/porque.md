@@ -19,6 +19,12 @@ alguna deja de existir.
 - **Prevención** al escribir: `vault/kernel/contenido.py::meta_adr` propone el
   ADR en `draft` y sin `responsable` de relleno, y el contrato v41 declara el
   campo (`vault/kernel/normativa/contrato_nota.py`).
+- **Guard** (v41.27, Parte A del plan de estrés):
+  `scripts/vault_io.py::_exigir_decision_cerrada_valida`, en el dueño de la
+  escritura. Rechaza la escritura que cierra un ADR sin quien responda de él;
+  la falta que ya había no se bloquea hasta que alguien la cierre de nuevo.
+  `vault_write` conserva el `responsable` de la nota al reescribirla: perderlo
+  en cada edición era cerrar sin dueño una decisión que lo tenía.
 - **Detección**: `scripts/vault_norms.py::vault_norms_scan` y
   `vault/gobernanza/auditoria_runtime.py::auditar_runtime`.
 - **Heal**: no tiene. Quién responde de una decisión lo escribe esa persona; un

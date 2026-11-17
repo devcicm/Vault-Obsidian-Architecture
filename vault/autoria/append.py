@@ -31,7 +31,7 @@ import sys
 from vault_change_log import vault_change_log_add
 from vault_errors import emit_error, fuera_de_sesion, mensaje_de, wrap_main
 
-from vault_io import assert_within_vault, atomic_write_text, get_vault_root, tomar_lock, NotaInmutableError  # el veto del dueño de la escritura
+from vault_io import assert_within_vault, atomic_write_text, get_vault_root, tomar_lock, NotaInmutableError, DecisionCerradaInvalidaError  # el veto del dueño de la escritura
 from vault_lib import separar_frontmatter, utcnow
 from vault_registry import es_artefacto_derivado
 from vault.kernel.entorno import agente_por_defecto
@@ -225,6 +225,9 @@ def _append_bajo_lock(
     except NotaInmutableError as exc:
         # El veto lo pone el dueno de la escritura; aqui se traduce a envelope.
         return emit_error("vault_append", "IMMUTABLE_NOTE", str(exc))
+    except DecisionCerradaInvalidaError as exc:
+        # AP-07/AP-64: closing a decision is refused by the write owner.
+        return emit_error("vault_append", exc.codigo, str(exc), pista=exc.pista)
 
     # F8 (no repudio): la constancia del añadido, como la de `vault_write`
     # desde m292. Hasta 2026-10-15 el append cambiaba la nota sin anotar nada.

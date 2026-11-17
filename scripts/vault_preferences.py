@@ -683,11 +683,28 @@ def vault_preferences_adapters(destino: str, force: bool = False) -> dict:
     except Exception:
         return emit_error("vault_preferences", "INVALID_INPUT",
                           "No se pudieron verificar las reglas del vault; no se generaron adaptadores.")
+    # PAT-9: the schema the agent reads on every task has a line budget, and
+    # an adapter that would exceed it is not written at all. Only the owner's
+    # preferences are cut to fit; when the derived part alone is over budget
+    # the schema is wrong, and writing it anyway would publish a file the
+    # agent skims. Checked for every client before writing any of them.
+    cuerpos = {nombre: _cuerpo_adapter(cliente, contexto, reglas)
+               for nombre, cliente in ADAPTADORES.items()}
+    excedidos = {nombre: len(texto.splitlines()) for nombre, texto in cuerpos.items()
+                 if len(texto.splitlines()) > LINEAS_MAXIMAS_ADAPTER}
+    if excedidos:
+        nombre, lineas = next(iter(excedidos.items()))
+        return emit_error(
+            "vault_preferences", "VALIDATION_FAILED",
+            f"PAT-9: el adaptador {nombre} tendría {lineas} líneas y el presupuesto es "
+            f"{LINEAS_MAXIMAS_ADAPTER}; no se escribió ninguno.",
+            pista=("La parte derivada (mapa, protocolo, decisiones) no cabe: acortar el "
+                   "registro que la produce, no el presupuesto."))
     filas = []
     for nombre, cliente in ADAPTADORES.items():
         ruta = base / nombre
         try:
-            escrito = _escribir_adapter(ruta, _cuerpo_adapter(cliente, contexto, reglas), force)
+            escrito = _escribir_adapter(ruta, cuerpos[nombre], force)
         except OSError as exc:
             # Earlier adapters may already be written: say which, never ok.
             from vault.kernel.fs import SecretoDetectado

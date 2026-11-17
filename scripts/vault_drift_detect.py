@@ -1014,9 +1014,12 @@ def vault_drift_antiguedad(cadencia_dias: Optional[int] = None, hoy=None,
             ilegibles.append({"path": rel, "problema": estado["problema"]})
         elif estado["vencida"]:
             vencidas.append({"path": rel, "responsable": fm.get("responsable"), **estado})
+    # AP-76: a living note past its review cadence is work to do, not a
+    # failure: the list never turns `ok` false.
     return {
         "ok": True,
         "mode": "antiguedad",
+        "norm": "AP-76",
         "hoy": hoy.isoformat(),
         "cadencia_por_defecto": por_defecto,
         "notas_medidas": medidas,

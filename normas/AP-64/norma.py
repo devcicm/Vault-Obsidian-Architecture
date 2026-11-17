@@ -12,7 +12,7 @@ NORMA = {
     "type": "antipattern",
     "category": "process",
     "severity": "medium",
-    "enforcement": "audit",
+    "enforcement": "guard+audit",
     "description": (
         "Un ADR aprobado es lo que un agente consulta antes de actuar: «esto "
         "se decidió así y por esto». Si nadie responde de ese porqué, el "
@@ -24,7 +24,14 @@ NORMA = {
         "El criterio tiene dueño en `vault.kernel.contenido."
         "falta_de_responsable` y lo leen el scan y la auditoría. El régimen "
         "del estado lo deriva `vault_registry.regimen_de_estado`, así que "
-        "`accepted` cuenta como `approved`."
+        "`accepted` cuenta como `approved`.\n\n"
+        "Desde v41.27 es también guard: el dueño de la escritura "
+        "(`vault_io.atomic_write_text`) rechaza la escritura que cierra un "
+        "ADR —lo crea cerrado o lo pasa a un estado cerrado— sin "
+        "`responsable`, o con su propio agente como responsable. Un borrador "
+        "no se toca, y una decisión que ya estaba cerrada sin responsable no "
+        "se bloquea hasta que alguien la cierre de nuevo: el guard rechaza "
+        "la falta que la escritura introduce, no la que ya había."
     ),
     "signal": (
         "ADR (`es_adr`, la misma definición que AP-07) en un estado de "
@@ -45,9 +52,14 @@ NORMA = {
         "decisiones de IA de `16_AI_Governance/` llevan su propio "
         "`human_approved`."
     ),
-    "tools_enforcing": [],
+    "tools_enforcing": ["vault_io", "vault_write"],
     "tools_detecting": ["vault_norms"],
     "distinguido_de": {
+        "AP-75": (
+            "AP-64 pide que alguien responda de la decisión cerrada; AP-75, "
+            "que lo que esa persona aprobó no cambie por debajo. Reescribirla "
+            "deja al responsable firmando un texto que no aprobó."
+        ),
         "AP-07": (
             "Las dos miran el mismo ADR. AP-07 pregunta si el porqué está "
             "escrito —contexto, decisión, consecuencias—; AP-64, si alguien "
@@ -68,5 +80,5 @@ NORMA = {
         ),
     },
     "introduced_version": "v41.3",
-    "revisado_en": "2026-10-09",
+    "revisado_en": "2026-11-17",
 }

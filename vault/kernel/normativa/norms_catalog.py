@@ -275,10 +275,18 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     _desde_paquete("AP-71"),
     # ── Anti-patrón AP-72 — cita a una decisión inexistente (Torti Code, 2026-11-16)
     _desde_paquete("AP-72"),
+    # ── Anti-patrones AP-73..AP-76 — Parte A del plan de estrés (2026-11-17) ──
+    _desde_paquete("AP-73"),
+    _desde_paquete("AP-74"),
+    _desde_paquete("AP-75"),
+    _desde_paquete("AP-76"),
     # ── Patrón PAT-6 ───────────────────────────────────────────────────────────
     _desde_paquete("PAT-6"),
     # ── Patrón PAT-7 — desacuerdo declarado (LLM Wiki, 2026-11-16) ─────────────
     _desde_paquete("PAT-7"),
+    # ── Patrones PAT-8 y PAT-9 — capas wiki y esquema (2026-11-17) ────────────
+    _desde_paquete("PAT-8"),
+    _desde_paquete("PAT-9"),
     # ── Protocolo de sesión SP-XX ──────────────────────────────────────────────
     _desde_paquete("SP-01"),
     _desde_paquete("SP-02"),

@@ -100,6 +100,16 @@ mayúsculas, **se actualiza en su sitio** con su nombre y su `id`; el nombre nue
 estrena cuando no existe ninguna. Un título sin letras ni dígitos (`!!!`) conserva el nombre
 del criterio anterior en vez de quedarse vacío.
 
+**AP-07 y AP-64 — cerrar una decisión exige su porqué y su responsable (2026-11-17).**
+El dueño de la escritura (`vault_io.atomic_write_text`, y con él todo escritor) rechaza
+con `VALIDATION_FAILED` la escritura que deja un ADR de `03_Decisions/` en un estado
+cerrado o terminal sin Contexto/Decisión/Consecuencias —la plantilla va en
+`recovery.hint`— o que lo cierra sin `responsable:` (o con su propio agente como
+responsable). Un borrador y una nota que no es ADR no se tocan; una nota que ya existía
+no se bloquea hasta que se reescribe su cuerpo o se cierra, y cambiar solo su
+frontmatter (`vault_supersede`) sigue abierto. Una actualización que no menciona
+`responsable` lo conserva.
+
 **AP-41 — el ciclo de vida se verifica al escribir.** Al actualizar una nota
 existente, `vault_write` lee su frontmatter y comprueba la transición de `status`
 contra `vault_norms.STATUS_TRANSITIONS`. Una transición que no está en la máquina
@@ -432,6 +442,16 @@ resuelve, ni literal ni como slug; un `title:` no resuelve (AP-44). Sin
 penalización. Los cinco más citados entran en `nextActions` (categoría
 `concept_without_page`, con el `vault_write` que crea la página), después de la
 hoja de ruta por carpetas, así que no la esconden.
+
+**`archivedSourcesModified`, `ingestsWithoutLog`, `closedDecisionsRewritten`
+(AP-73, AP-74, AP-75; 2026-11-17).** Tres listas de trabajo en solo lectura y sin
+peso en el `healthIndex`, cada una con `norm`, `checked` y lo que encontró:
+la fuente archivada cuyo cuerpo ya no tiene la huella `sha256_cuerpo` registrada al
+archivarla (`modified`; sin huella, `unverifiable`); la nota ingerida cuyo
+`ingest_pass` no nombra ninguna fila `ingested` del change log (`missing`; sin
+pasada, el recuento `unverifiable`); y el ADR cerrado cuyo cuerpo cambió después de su
+primera versión cerrada en `.history/` (`rewritten`; sin versiones, `unverifiable`).
+Lo que no se puede verificar no se da por limpio.
 
 **La fila `linted`.** Solo la corrida que puede escribir en el vault —`--refresh-dq`,
 la que refresca `quality-index.json`— deja una fila `linted` en la bitácora de
@@ -1222,7 +1242,7 @@ Sobre git, el snapshot anota `repo.synced_commit` en la ficha del proyecto: es e
 python vault_drift_detect.py --project mi-api --mode vigencia
 ```
 
-`--mode antiguedad` (Torti Code, fase 4) lista en `vencidas` las notas cuyo `revisado_en` más su cadencia ya pasó: la que la nota declara en `cadencia_dias`, o `--cadencia-dias` (por defecto `CADENCIA_DE_NOTA_POR_DEFECTO`). La aritmética es la de las normas, `vault_norms_catalog.estado_de_revision`: un solo dueño. Una nota sin `revisado_en` no se juzga y se cuenta en `sin_fecha`; una fecha ilegible o futura sale en `ilegibles`. Con `--project`, solo las notas de ese proyecto. Vencer no es fallar: es la lista de trabajo de la revisión.
+`--mode antiguedad` (Torti Code, fase 4) lista en `vencidas` las notas cuyo `revisado_en` más su cadencia ya pasó: la que la nota declara en `cadencia_dias`, o `--cadencia-dias` (por defecto `CADENCIA_DE_NOTA_POR_DEFECTO`). La aritmética es la de las normas, `vault_norms_catalog.estado_de_revision`: un solo dueño. Una nota sin `revisado_en` no se juzga y se cuenta en `sin_fecha`; una fecha ilegible o futura sale en `ilegibles`. Con `--project`, solo las notas de ese proyecto. Vencer no es fallar: es la lista de trabajo de la revisión, y el envelope lo dice con `norm: AP-76`.
 
 ```bash
 python vault_drift_detect.py --project "mi-proyecto" --mode antiguedad --cadencia-dias 90
@@ -2060,7 +2080,9 @@ protocolo de sesión (`vault.kernel.protocolo_de_sesion.PROTOCOLO_DE_SESION`, co
 su `cuando` si un paso no aplica a toda sesión). Tiene un
 presupuesto de `LINEAS_MAXIMAS_ADAPTER` (120) líneas: lo que se recorta es el
 bloque de preferencias, que es lo que crece con el vault, y la línea de corte dice
-dónde leer el resto (`--context`).
+dónde leer el resto (`--context`). Desde 2026-11-17 el presupuesto es un guard
+(PAT-9): si algún adaptador pasaría de `LINEAS_MAXIMAS_ADAPTER` líneas aun con las
+preferencias recortadas, no se escribe ninguno y el envelope es `VALIDATION_FAILED`.
 
 ### `vault_model_profile.py`
 Perfil de modelo LLM para **contexto adaptativo**: budget dinámico según el modelo
@@ -2207,13 +2229,19 @@ python vault_ingest.py --text "<respuesta>" --section 07_Knowledge --desde-pack 
 - **Bitácora**: un `--commit` que escribió algo deja **una** fila `ingested` en la
   bitácora de cambios, por el mismo puerto. El envelope trae `change_log`
   (`{id, action}`) o, si nadie atiende el puerto, `change_log_error` con el motivo:
-  las notas se escriben igual.
+  las notas se escriben igual. Desde 2026-11-17 la fila nombra la pasada
+  (`pasada <id>`) y cada nota la lleva en `ingest_pass`; el envelope la devuelve
+  también en `ingest_pass` (AP-74).
+- **Fuente archivada inmutable (AP-73, 2026-11-17)**: la fuente lleva
+  `sha256_cuerpo`, la huella del cuerpo tal como se guarda, y el dueño de la escritura
+  rechaza reescribirla con `IMMUTABLE_NOTE`; otra versión se ingiere como fuente nueva.
 - **`--desde-pack <pack.json>`** (guardar respuestas): el texto (`--text`,
   `--file` o `--stdin`) es la respuesta a la consulta del envelope de
   `vault_context_pack`, y se guarda como **un** borrador `Síntesis: <consulta>`
   cuyo `related:` son las notas que el paquete incluyó y que existen en el vault,
   citadas en `## Notas del paquete`. Un paquete sin ninguna nota del vault es
-  `INVALID_INPUT`. Es el paso «Para recordar» del protocolo de sesión.
+  `INVALID_INPUT`. Es el paso «Para recordar» del protocolo de sesión, y el envelope
+  declara `pattern: PAT-8`.
 
 
 ### `vault_arquitectura_en.py`
@@ -2452,7 +2480,7 @@ VAULT_MCP_PERFIL=agente node mcp/nodejs/vault-mcp-server.mjs
 
 ### `vault_norms.py`
 
-Registro canónico de las 88 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
+Registro canónico de las 94 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
 
 **Desde v40.26 son tres ficheros y una sola tool.** Eran 5.158 líneas que hacían de catálogo, de motor y de fachada a la vez, con el 60% del fichero ocupado por una constante. Ahora `vault_norms_catalog.py` tiene los datos —`NORM_CATALOG` y el vocabulario de estado, sin leer el vault, sin escribir nada y sin importar ninguna tool—, `vault_norms_engine.py` tiene el motor de `--audit`, el drift del marco y el heal de AP-46, y este módulo se queda con la fachada de datos, la CLI y la **reexportación** de todo lo que el repo consumía antes. Esa reexportación es el punto: la superficie externa real son siete símbolos y los tests usan cinco privados más, así que reexportarlos hace que **ningún llamador se toque** y el diff se lea como movimiento puro. Recortar de paso la superficie que usan los tests habría mezclado dos cambios y hecho imposible saber cuál rompió qué.
 

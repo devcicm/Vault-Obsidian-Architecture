@@ -4042,7 +4042,7 @@ Lo ingerido entra con `status: draft` y `cia_integrity: low`, de modo que el rer
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **88 normas** del estándar (72 AP + 7 PAT + 4 SP + 5 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-72`. Fuente de verdad: `NORM_CATALOG` en `vault_norms_catalog.py` (`vault_norms.py` lo reexporta). Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **94 normas** del estándar (76 AP + 9 PAT + 4 SP + 5 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-76`. Fuente de verdad: `NORM_CATALOG` en `vault_norms_catalog.py` (`vault_norms.py` lo reexporta). Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -4671,6 +4671,14 @@ incompletas decisiones que sí lo explican. El criterio tiene un dueño,
 
 *superseded_by* (en lo que el guard exige, no en lo que el estándar aconseja): «un ADR sin
 opciones evaluadas no es un ADR».
+
+**Guard en la frontera de mutación (v41.27).** Desde la Parte A del plan de estrés la
+norma es `guard+audit`. El dueño de la escritura (`vault_io.atomic_write_text`) rechaza con
+`VALIDATION_FAILED` y la plantilla en la pista la escritura que deja un ADR en un estado
+cerrado o terminal sin Contexto, Decisión y Consecuencias, venga del escritor que venga. Un
+borrador sigue pudiendo estar incompleto mientras se discute y una nota que no es ADR no se
+toca. Una nota que ya existía no se bloquea hasta que se reescribe su cuerpo o se cierra:
+cambiar solo su frontmatter —el `superseded_by` de `vault_supersede`— es la salida.
 
 ---
 
@@ -7150,8 +7158,12 @@ prosa no cuenta — que es lo que impide contar como proyectos los ejemplos de e
 
 ### AP-64 — Decisión cerrada sin responsable
 
-**Enforcement:** `audit` · **Severidad:** medium · **Introducido:** v41.3
+**Enforcement:** `guard+audit` (guard desde v41.27) · **Severidad:** medium · **Introducido:** v41.3
 **Audit:** `python scripts/vault_norms.py --audit` · **Criterio:** `vault.kernel.contenido.falta_de_responsable`
+**Guard:** el dueño de la escritura (`vault_io.atomic_write_text`) rechaza con `VALIDATION_FAILED`
+la escritura que cierra un ADR —lo crea cerrado o lo pasa a un estado cerrado— sin
+`responsable`, o firmado por su propio agente. La falta que ya había no se bloquea hasta que
+alguien cierre la decisión de nuevo, y `vault_write` conserva el `responsable` al reescribir.
 
 **Síntoma.** Un ADR aprobado —lo que un agente consulta antes de actuar: «esto se decidió así
 y por esto»— no dice quién responde de su porqué. O lo dice, y es el mismo agente que lo
@@ -12432,6 +12444,60 @@ mide —que el comentario no repita el código— está declarado como
 `cobertura_descubierta` en la metodología que publica `vault_sdd_init`, con su motivo:
 un detector por parecido léxico sería un guard débil.
 
+### AP-73 - Fuente archivada modificada
+
+**Enforcement:** `guard+audit` · **Introducido:** v41.27 (2026-11-17)
+
+La capa cruda de la LLM Wiki de Karpathy es inmutable: el modelo la lee y nunca la
+edita. Una fuente que `vault_ingest --archivar-fuente` guardó en `10_Migrated/fuentes/`
+con `type: migrated` y `status: archived` es la prueba que citan en `source:` las notas
+derivadas, y una fuente editada después convierte esa cita en una afirmación que nadie
+puede comprobar. El dueño de la escritura (`vault_io.atomic_write_text`) rechaza toda
+reescritura con `IMMUTABLE_NOTE` y la pista de ingerir la nueva versión como fuente
+nueva; escribir los mismos bytes no es reescribir. Al archivar, `vault_ingest` registra
+`sha256_cuerpo`, la huella del cuerpo tal como el dueño lo guarda, y `vault_audit`
+publica en `archivedSourcesModified` la fuente cuyo cuerpo ya no la tiene —lo que cambió
+fuera del dueño—. Una fuente archivada antes de que existiera la huella sale como no
+verificable, no como intacta. No declara inmutable `10_Migrated`: eso sigue siendo
+decisión del dueño del vault. Dueño del criterio: `vault/kernel/contenido.py`.
+
+### AP-74 - Operación sin fila en la bitácora
+
+**Enforcement:** `audit` · **Introducido:** v41.27 (2026-11-17)
+
+Cada ingesta deja una fila en un log que solo crece (Karpathy). Una nota que entró por
+`vault_ingest --commit` sin la fila `ingested` de su pasada en
+`00_System/.change-log.json` es material sin procedencia operativa. `vault_ingest`
+escribe el mismo id de pasada en cada nota (`ingest_pass`) y en la fila que anota por el
+puerto `bitacora_cambios`; `vault_audit` lista en `ingestsWithoutLog` las notas cuya
+pasada no nombra ninguna fila, en solo lectura. Una nota ingerida antes de que existiera
+el id cuenta como no verificable: enlazarla por una ventana de tiempo sería adivinar.
+
+### AP-75 - Decisión cerrada reescrita
+
+**Enforcement:** `guard+audit` · **Introducido:** v41.27 (2026-11-17)
+
+Una decisión aprobada no se reescribe: se escribe la sucesora y se enlaza (Torti Code).
+Cambiar el frontmatter —la transición, el `superseded_by`— no reescribe el porqué;
+cambiar el cuerpo sí. Un vault que declara `sustitucion` en `00_System/reglas.json`
+convierte la norma en guard: el dueño de la escritura rechaza con `IMMUTABLE_NOTE` el
+cambio de cuerpo de una decisión cerrada y señala `vault_supersede`. La auditoría corre
+siempre: `vault_audit` publica en `closedDecisionsRewritten` el ADR cerrado cuyo cuerpo
+ya no es el de su primera versión cerrada en `.history/`. Sin versiones la decisión sale
+como no verificable: el change log no guarda cuerpos y un cambio hecho a mano no deja
+versión.
+
+### AP-76 - Nota viva con la revisión vencida
+
+**Enforcement:** `audit` · **Introducido:** v41.27 (2026-11-17)
+
+La documentación desactualizada es peor que ninguna, y lo que la evita es un dueño, una
+fecha de revisión y una herramienta que avise (Torti Code). Una nota con `revisado_en`
+cuya cadencia —`cadencia_dias` de la nota o la de la llamada— ya pasó sale en la lista de
+trabajo de `vault_drift_detect --mode antiguedad`, con la aritmética de las normas
+(`estado_de_revision`). Vencer no es fallar: la lista nunca pone `ok` en falso, porque una
+puerta por fecha haría que lo barato fuera poner hoy en `revisado_en` sin releer nada.
+
 ### PAT-7 - Desacuerdo legítimo declarado: contradicts entre notas
 
 **Enforcement:** `recommended` · **Introducido:** v41.26 (2026-11-16)
@@ -12445,3 +12511,26 @@ dos notas, entrega también la otra con `disagrees_with`. Una tercera nota que d
 declararlo mantiene el conflicto abierto. No añade ningún valor de `status`: el
 vocabulario es cerrado y el desacuerdo es una relación entre notas, no un estado. Lector
 único de la declaración: `vault/kernel/normativa/desacuerdos.py`.
+
+### PAT-8 - Respuesta compilada en el wiki
+
+**Enforcement:** `recommended` · **Introducido:** v41.27 (2026-11-17)
+
+Una respuesta que sintetiza varias notas y valdrá en otra sesión vuelve al vault como
+página, con sus citas, en vez de perderse con la conversación: es la consulta de la LLM
+Wiki de Karpathy. `vault_ingest --desde-pack` la escribe como un solo borrador que cita en
+`related:` y en el cuerpo las notas del paquete de `vault_context_pack`, y su envelope
+declara `pattern: PAT-8`. Nace en `draft` y con integridad baja hasta que una persona la
+revise, y un paquete sin notas del vault se rechaza. El protocolo de sesión lo propone en
+el momento «Para recordar».
+
+### PAT-9 - Esquema del agente generado
+
+**Enforcement:** `recommended` · **Introducido:** v41.27 (2026-11-17)
+
+El fichero que un agente lee en cada tarea —`AGENTS.md`, `CLAUDE.md`…— se genera desde los
+registros del vault: mapa de carpetas, CN-01, dónde viven las decisiones, el comando de
+pruebas que declara el dueño y el protocolo de sesión (capa de esquema de Karpathy;
+AGENTS.md corto de Torti Code). `vault_preferences --adapters` recorta las preferencias para
+caber en `LINEAS_MAXIMAS_ADAPTER` líneas y, si un adaptador pasaría del presupuesto aun así,
+no escribe ninguno y lo dice con `VALIDATION_FAILED`: un esquema largo se lee en diagonal.

@@ -79,7 +79,10 @@ def test_ap64_catalogo_y_contrato():
     from vault_contrato_nota import CAMPOS
     from vault_norms_catalog import norma_por_codigo
     ap64 = norma_por_codigo("AP-64")
-    assert ap64["enforcement"] == "audit" and ap64["tools_detecting"] == ["vault_norms"]
+    # Hardened in v41.27 (Part A, L3): the write owner refuses closing without
+    # an owner; the scan and the audit keep detecting what already exists.
+    assert ap64["enforcement"] == "guard+audit" and ap64["tools_detecting"] == ["vault_norms"]
+    assert "vault_io" in ap64["tools_enforcing"]
     for vecina in ("AP-07", "AP-16"):
         assert vecina in ap64["distinguido_de"]
         assert "AP-64" in norma_por_codigo(vecina)["distinguido_de"]

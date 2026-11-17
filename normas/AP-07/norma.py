@@ -9,6 +9,12 @@ ejecutar. Movida tal cual desde `NORM_CATALOG` el 2026-10-09; las caras están e
 NORMA = {
     "code": "AP-07",
     "distinguido_de": {
+        "AP-75": (
+            "Las dos miran el ADR cerrado. AP-07 pregunta si su porqué está "
+            "escrito; AP-75, si ese porqué sigue siendo el que se aprobó. Un "
+            "ADR completo puede haberse reescrito, y uno incompleto puede no "
+            "haberse tocado nunca."
+        ),
         "AP-72": (
             "AP-07 lee el ADR que existe y mide sus secciones. AP-72 no lee el "
             "contenido: mide que el ADR citado desde el código exista."
@@ -32,14 +38,21 @@ NORMA = {
     "type": "antipattern",
     "category": "process",
     "severity": "medium",
-    "enforcement": "audit",
+    "enforcement": "guard+audit",
     "description": (
         "ADRs (Architecture Decision Records) sin secciones Contexto, Decisión "
         "y Consecuencias. Un ADR sin estas secciones no aporta valor de auditoría. "
         "Opciones evaluadas se recomienda y no se exige desde v41.3: medido contra "
         "un vault ajeno (regla 7), ocho de diez ADR reales registran el porqué sin "
         "esa sección. El criterio tiene dueño en `vault.kernel.contenido` "
-        "(`es_adr`, `secciones_adr_faltantes`) y lo leen el scan y la auditoría."
+        "(`es_adr`, `secciones_adr_faltantes`) y lo leen el scan y la auditoría. "
+        "Desde v41.27 es también guard: el dueño de la escritura "
+        "(`vault_io.atomic_write_text`) rechaza la escritura que deja un ADR "
+        "en estado cerrado o terminal sin sus secciones, con la plantilla en "
+        "la pista. Un borrador y una nota que no es ADR no se tocan, y una "
+        "nota que ya existía no se toca hasta que se reescribe su cuerpo o "
+        "se cierra: cambiar solo su frontmatter (`superseded_by`) sigue "
+        "abierto."
     ),
     "signal": (
         "Nota de 03_Decisions/ —sin `type` o con `type: adr|decision`, que no sea "
@@ -52,8 +65,8 @@ NORMA = {
         "la guía de vault_audit, con el frontmatter de `meta_adr()` "
         "(`type: adr`, `status: draft`)."
     ),
-    "tools_enforcing": [],
+    "tools_enforcing": ["vault_io", "vault_write"],
     "tools_detecting": ["vault_norms"],
     "introduced_version": "v19",
-    "revisado_en": "2026-10-09",
+    "revisado_en": "2026-11-17",
 }

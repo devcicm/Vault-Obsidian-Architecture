@@ -5,6 +5,7 @@ Es una hoja del toolkit: no conoce CLI, manifiesto, baselines ni checkout.
 
 from __future__ import annotations
 
+import hashlib
 import re
 import unicodedata
 
@@ -250,6 +251,81 @@ def meta_adr() -> dict:
     sin que nadie respondiera de nada.
     """
     return {"type": "adr", "status": "draft"}
+
+
+# ── AP-07 at the mutation boundary: what "closing" means for a decision ────
+#
+# The audit reads every ADR; the guard only refuses what a write makes
+# definitive. An open decision (`draft`, `review`) may still be incomplete
+# while it is discussed; once its status leaves the open regime it is what an
+# agent consults, so its why must be written. The regime is derived by
+# `vault_registry.regimen_de_estado` and passed by the caller, as for AP-64.
+
+#: Regimes in which a decision no longer goes back to draft.
+REGIMENES_DE_CIERRE = ("cerrado", "terminal")
+
+#: States that announce themselves as scaffolding (AP-03 rules them).
+_ESTADOS_DE_ANDAMIO = ("stub", "template")
+
+
+def secciones_faltantes_al_cerrar(fm, cuerpo: str, regimen: str) -> list:
+    """AP-07: the mandatory sections a closed decision lacks, or `[]`.
+
+    Empty for an open decision and for scaffolding: the guard asks for the
+    why only when the decision is definitive.
+    """
+    estado = str((fm or {}).get("status") or "").strip().lower()
+    if regimen not in REGIMENES_DE_CIERRE or estado in _ESTADOS_DE_ANDAMIO:
+        return []
+    return secciones_adr_faltantes(cuerpo)
+
+
+# ── AP-73: the raw source layer (Karpathy L1) ───────────────────────────────
+#
+# `vault_ingest --archivar-fuente` keeps the source verbatim; the model reads
+# it and never edits it. Which note is an archived source, and how its body is
+# fingerprinted, is decided here once: the write owner refuses the rewrite,
+# the archiver records the fingerprint and the audit compares it.
+
+#: Where archived sources live, inside the section that means "imported as it
+#: arrived" (`vault_registry.SECTION_DOCUMENTACION["10_Migrated"]`).
+CARPETA_FUENTES = "10_Migrated/fuentes"
+
+#: Frontmatter field with the fingerprint of the body as it was archived. The
+#: older `sha256` is the hash of the raw text before the write owner sanitized
+#: it, so it cannot tell a sanitized byte from an edit.
+CAMPO_HUELLA_FUENTE = "sha256_cuerpo"
+
+
+def es_fuente_archivada(rel: str, fm) -> bool:
+    """AP-73: the note is an archived raw source that is never rewritten."""
+    fm = fm or {}
+    rel = str(rel).replace("\\", "/")
+    return (rel.startswith(CARPETA_FUENTES + "/")
+            and str(fm.get("type") or "").strip().lower() == "migrated"
+            and str(fm.get("status") or "").strip().lower() == "archived")
+
+
+def huella_de_cuerpo(cuerpo: str) -> str:
+    """The fingerprint of a note body: line endings, BOM and outer blanks aside.
+
+    Those three are what reading and writing change without anyone editing
+    (the parser drops the leading blank, a Windows editor writes CRLF).
+    """
+    texto = (cuerpo or "").replace("\r\n", "\n").lstrip("﻿").strip()
+    return hashlib.sha256(texto.encode("utf-8")).hexdigest()
+
+
+def estado_de_fuente_archivada(fm, cuerpo: str) -> str:
+    """AP-73: `intacta`, `alterada`, or `sin_huella` when nothing was recorded.
+
+    Without a recorded fingerprint the source cannot be called intact: it is
+    reported as unverifiable rather than guessed.
+    """
+    registrada = str((fm or {}).get(CAMPO_HUELLA_FUENTE) or "").strip().lower()
+    if not registrada:
+        return "sin_huella"
+    return "intacta" if registrada == huella_de_cuerpo(cuerpo) else "alterada"
 
 
 # ── AP-65: decisión de IA de impacto alto sin evaluación de impacto ────────

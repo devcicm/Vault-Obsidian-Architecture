@@ -9,6 +9,12 @@ ejecutar. Movida tal cual desde `NORM_CATALOG` el 2026-10-09; las caras están e
 NORMA = {
     "code": "AP-08",
     "distinguido_de": {
+        "AP-76": (
+            "AP-08 es la nota que ya describe algo que cambió —el código que "
+            "documenta se tocó después que ella—. AP-76 no mira el código: "
+            "dice que nadie ha comprobado la nota en su plazo, cambiara algo "
+            "o no. Una revisión vencida puede seguir siendo cierta."
+        ),
         "AP-04": (
             "Las dos son documentación desalineada del código, en sentidos "
             "opuestos. AP-04 va por delante —describe lo que aún no existe—; "

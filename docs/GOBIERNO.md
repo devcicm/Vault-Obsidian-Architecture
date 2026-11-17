@@ -10,19 +10,19 @@ _Derivado de los registros canónicos. Se regenera con `python scripts/vault_ser
 
 ## Las cuatro familias de normas
 
-88 normas vivas, cada una un paquete en `normas/<código>/`. El catálogo derivado completo está en [docs/sdd/04-antipatterns.md](sdd/04-antipatterns.md).
+94 normas vivas, cada una un paquete en `normas/<código>/`. El catálogo derivado completo está en [docs/sdd/04-antipatterns.md](sdd/04-antipatterns.md).
 
-- **AP** · Anti-patrón — Un fallo con nombre, señal, prevención y límites. La unidad normativa principal. (81 vigentes).
-- **PAT** · Patrón — La forma recomendada de resolver algo que el estándar ya resolvió mal una vez. (7 vigentes).
+- **AP** · Anti-patrón — Un fallo con nombre, señal, prevención y límites. La unidad normativa principal. (85 vigentes).
+- **PAT** · Patrón — La forma recomendada de resolver algo que el estándar ya resolvió mal una vez. (9 vigentes).
 - **SP** · Protocolo de sesión — Reglas de proceso entre el agente y el vault durante una sesión. (0 vigentes).
 - **CN** · Convención — Un acuerdo de nomenclatura o forma que mantiene el vault legible y predecible. (0 vigentes).
 
 ## La escalera de enforcement
 
 - **guard** (15 normas) — Falla en el punto de uso: la tool se niega a hacerlo mal.
-- **guard+audit** (33 normas) — Y además una puerta la mide sobre el repo entero.
+- **guard+audit** (37 normas) — Y además una puerta la mide sobre el repo entero.
 - **audit** (33 normas) — Una puerta la mide; se arregla en el siguiente ciclo.
-- **recommended** (7 normas) — Se publica, no se fuerza. La cobertura débil se declara.
+- **recommended** (9 normas) — Se publica, no se fuerza. La cobertura débil se declara.
 
 ## Qué es ley para quién
 
