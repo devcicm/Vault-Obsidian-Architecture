@@ -94,6 +94,15 @@ donde importa, y prefiero decirlas aquí que dejar que las descubras tú.
   de un proxy inverso sigue sin ser un uso soportado. Por stdio no hay puerto.
 - **Contra un vault que no sea tuyo, primero solo lectura:**
   `python scripts/vault_foreign_check.py --root <ruta>`.
+- **Cada tool corre en un proceso contenido (A-06).** Un timeout o un Ctrl-C detiene
+  el árbol entero de procesos (Job object en Windows, subreaper en Linux). Cuesta
+  ~0,3 s por llamada (medido en serie: 0,48 s → 0,79 s) y, en Linux, el worker no
+  tiene terminal: lo que pida una contraseña por `/dev/tty` necesita credenciales no
+  interactivas. **En macOS las tools fallan cerrado** (`UNEXPECTED_ERROR`): no hay
+  adaptador de contención verificado.
+- **La búsqueda por defecto pondera título, tags y vista previa**; `--ranking bm25`
+  puntúa la nota entera, pero en las medidas de 2026-11-16 empeoró el primer acierto,
+  así que es opcional.
 
 Los huecos conocidos no están escondidos: están **medidos** y publicados en
 [`docs/GUIA-DE-PRODUCCION.md`](./docs/GUIA-DE-PRODUCCION.md), que se genera desde
