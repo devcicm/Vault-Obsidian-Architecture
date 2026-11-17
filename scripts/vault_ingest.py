@@ -675,7 +675,16 @@ def vault_ingest(
         seen_paths.add(note["path"])
         proposals.append(note)
 
-    paginas = _paginas_afectadas(entities, proposals, source)
+    # Affected pages are enrichment: an unreadable section registry must not
+    # turn an ingest into a standard section into a failure (the write path
+    # still refuses the own-section targets it cannot verify).
+    from vault.kernel.fallos import FalloDeDominio
+
+    paginas_omitidas: Optional[str] = None
+    try:
+        paginas = _paginas_afectadas(entities, proposals, source)
+    except FalloDeDominio as exc:
+        paginas, paginas_omitidas = [], exc.causa
 
     # ── etapa 3: escritura, solo si se pidió ─────────────────────────────────
     written: List[str] = []
@@ -766,6 +775,7 @@ def vault_ingest(
         # overwrite; an ambiguous name proposes nothing.
         "affected_pages": paginas,
         "affected_pages_applied": aplicadas,
+        **({"affected_pages_skipped": paginas_omitidas} if paginas_omitidas else {}),
         # `change_log` ({id, action}) or `change_log_error` (sanitized).
         **registro,
         "stats": {

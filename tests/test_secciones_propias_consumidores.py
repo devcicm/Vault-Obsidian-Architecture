@@ -572,7 +572,12 @@ def test_la_ingesta_con_el_registro_roto_no_escribe(tmp_path):
     r = _ingerir(raiz, "22_Scripts")
     assert r["ok"] is False and r["error_code"] == "DATA_FILE_CORRUPT", r
     assert not (raiz / "22_Scripts").exists()
-    assert _ingerir(raiz, "07_Knowledge")["ok"] is True
+    estandar = _ingerir(raiz, "07_Knowledge")
+    assert estandar["ok"] is True, estandar
+    # The affected-pages enrichment needs the registry: it is skipped, and says why.
+    if "affected_pages" in estandar:
+        assert estandar["affected_pages"] == []
+        assert estandar.get("affected_pages_skipped") == "INDICE_ILEGIBLE", estandar
 
 
 # ── La consulta reconoce la sección propia que la pregunta nombra ──
