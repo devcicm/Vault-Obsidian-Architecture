@@ -4042,7 +4042,7 @@ Lo ingerido entra con `status: draft` y `cia_integrity: low`, de modo que el rer
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **87 normas** del estándar (69 AP + 6 PAT + 4 SP + 5 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-69`. Fuente de verdad: `NORM_CATALOG` en `vault_norms_catalog.py` (`vault_norms.py` lo reexporta). Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **88 normas** del estándar (69 AP + 6 PAT + 4 SP + 5 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-69`. Fuente de verdad: `NORM_CATALOG` en `vault_norms_catalog.py` (`vault_norms.py` lo reexporta). Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -12411,6 +12411,20 @@ se mencionan sin tener su propia página». `vault_audit` lo publica en
 crea la página; no resta salud. La resolución es la del lector: nombre de fichero o
 alias, nunca `title:` (AP-44). El umbral (`UMBRAL_CONCEPTO`) está declarado, no
 calibrado. Dueño del criterio: `vault/kernel/normativa/conceptos.py`.
+
+### AP-72 - Comentario que cita una decisión que no existe
+
+**Enforcement:** `guard` · **Introducido:** v41.26 (2026-11-16)
+
+Un comentario dice el porqué y apunta a la decisión que lo registra (Torti Code,
+«documentación útil»); si la decisión citada no existe, el lector sigue la cita y no
+encuentra nada. En el repositorio, `vault_doc_sync --check` falla con
+`adr_sin_fichero` por cada `ADR-NNNN` del código sin su `docs/adr/NNNN-*.md`. En un
+vault, `vault_code_sync` acepta como destino de `@vault:` una decisión de
+`03_Decisions/` que existe (`es_adr`) y sigue dando por huérfana la que no. Lo que no
+mide —que el comentario no repita el código— está declarado como
+`cobertura_descubierta` en la metodología que publica `vault_sdd_init`, con su motivo:
+un detector por parecido léxico sería un guard débil.
 
 ### PAT-7 - Desacuerdo legítimo declarado: contradicts entre notas
 

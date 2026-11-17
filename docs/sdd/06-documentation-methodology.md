@@ -121,7 +121,7 @@ la versión del estándar fija qué contrato de frontmatter se le exige.
 |---|---|---|---|
 | historia | se reescribe en su sitio y la versión anterior queda en .history/ | vault_write, vault_history_compact | guard |
 | anexado | solo se añade al final; lo ya escrito no se reescribe | vault_append | recommended |
-| sustitucion | la versión nueva es otra nota y la anterior declara superseded_by | vault_supersede | recommended |
+| sustitucion | la versión nueva es otra nota y la anterior declara superseded_by | vault_supersede | recommended; `guard` en el vault que declara `sustitucion` en `00_System/reglas.json` |
 | regenerado | artefacto derivado: se regenera desde las notas y no se versiona | vault_section_index | guard |
 | inmutable | estado terminal: ni se reescribe ni se sustituye, queda como hecho | vault_write | recommended |
 
@@ -176,6 +176,16 @@ El vault declara la versión que aplica en `00_System/standard-version.json` (`v
 - Requirement: ## Descripción, ## Acceptance Criteria, ## Traceability
 - Test: ## Setup, ## Steps, ## Expected, ## Results
 
+### Comentarios en el código (guideline) y lo que no se mide
+
+Un comentario dice el porqué y apunta a la decisión (`03_Decisions/` en un vault,
+`@vault:` desde el código); lo que el código ya dice no se comenta. Fuente:
+`vault_sdd_init.HUECOS_DE_METODOLOGIA`.
+
+| Pide | Lo que sí se mide | `cobertura_descubierta` |
+|---|---|---|
+| un comentario dice el porqué y apunta a la decisión que lo registra; no repite lo que el código ya dice | que la decisión citada exista: AP-72 (`vault_doc_sync` en el repositorio, `vault_code_sync` en un vault) | Que un comentario repita el código solo se decide leyéndolo contra el código. Un detector por parecido léxico entre el comentario y la línea que acompaña marcaría como repetición el comentario que nombra la variable para explicar por qué existe, y daría por bueno el que repite con sinónimos: un guard débil que da verde sin medir. El estándar no tiene embeddings ni modelo en el bucle, así que el hueco se declara. |
+
 ### Cuándo crear vs enriquecer
 
 - **Crear** cuando: concepto NO existe, <70% overlap con existente
@@ -207,6 +217,10 @@ El vault declara la versión que aplica en `00_System/standard-version.json` (`v
 ### Minimum structure (guideline)
 
 (See list above in ES section.)
+
+### Code comments (guideline) and what is not measured
+
+(See table above in ES section: `vault_sdd_init.HUECOS_DE_METODOLOGIA`.)
 
 ### When to create vs enrich
 

@@ -118,6 +118,13 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Ruta a archivo JSON con frontmatter adicional",
                 "validators": ["file_exists", "valid_json_file"],
             },
+            "adr": {
+                "type": "boolean",
+                "required": False,
+                "description": ("Escribe un ADR en 03_Decisions con el siguiente adr-NNN libre, "
+                                "en draft, y exige Contexto/Decisión/Consecuencias (AP-07)"),
+                "validators": [],
+            },
         },
         "guards": [
             "AP-20 (no bullets vacíos)",

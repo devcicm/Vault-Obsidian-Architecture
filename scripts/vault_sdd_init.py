@@ -875,7 +875,7 @@ def _tabla_ejes() -> str:
     from vault_norms_catalog import STATUS_TRANSITIONS
     from vault_registry import regimen_de_estado
     from vault_registry import (EJES_DOCUMENTACION, MODOS_DE_VERSION, REGIMENES_DE_ESTADO,
-                                modo_de_version)
+                                enforcement_de_modo, modo_de_version)
 
     def _lista(xs):
         return ", ".join(f"`{x}`" for x in xs) or "wikilink en el cuerpo"
@@ -887,7 +887,11 @@ def _tabla_ejes() -> str:
                     f"{', '.join(e['tools'])} | {e['version']} |")
     modos = ["| Modo | Qué significa | Tools | Enforcement |", "|---|---|---|---|"]
     for modo, m in MODOS_DE_VERSION.items():
-        modos.append(f"| {modo} | {m['que']} | {', '.join(m['tools'])} | {m['enforcement']} |")
+        enforcement = m["enforcement"]
+        if m.get("clave_de_politica"):
+            enforcement += (f"; `{enforcement_de_modo(modo, declarado=True)}` en el vault que "
+                            f"declara `{m['clave_de_politica']}` en `00_System/reglas.json`")
+        modos.append(f"| {modo} | {m['que']} | {', '.join(m['tools'])} | {enforcement} |")
     regimenes = "\n".join(f"- **{r}** — {d}" for r, d in REGIMENES_DE_ESTADO.items())
     clases = list(EJES_DOCUMENTACION)
     estados = ["| status | Régimen | " + " | ".join(clases) + " |",
@@ -932,11 +936,40 @@ def _tabla_schema() -> str:
     return "\n".join(filas)
 
 
+#: Lo que la metodología pide y ninguna tool mide, con su motivo escrito. Es
+#: el mismo campo que declara una norma sin detector (`cobertura_descubierta`):
+#: un hueco con nombre no es deuda escondida, y un guard débil que diera verde
+#: sin medir sería peor que el hueco (Torti Code, fase 4, 2026-11-16).
+HUECOS_DE_METODOLOGIA = {
+    "comentario_que_repite_el_codigo": {
+        "pide": ("un comentario dice el porqué y apunta a la decisión que lo registra; "
+                 "no repite lo que el código ya dice"),
+        "medido": ("que la decisión citada exista: AP-72 (`vault_doc_sync` en el "
+                   "repositorio, `vault_code_sync` en un vault)"),
+        "cobertura_descubierta": (
+            "Que un comentario repita el código solo se decide leyéndolo contra el "
+            "código. Un detector por parecido léxico entre el comentario y la línea "
+            "que acompaña marcaría como repetición el comentario que nombra la "
+            "variable para explicar por qué existe, y daría por bueno el que repite "
+            "con sinónimos: un guard débil que da verde sin medir. El estándar no "
+            "tiene embeddings ni modelo en el bucle, así que el hueco se declara."),
+    },
+}
+
+
+def _huecos_de_metodologia() -> str:
+    filas = ["| Pide | Lo que sí se mide | `cobertura_descubierta` |", "|---|---|---|"]
+    for h in HUECOS_DE_METODOLOGIA.values():
+        filas.append(f"| {h['pide']} | {h['medido']} | {h['cobertura_descubierta']} |")
+    return "\n".join(filas)
+
+
 def generate_methodology(vault_root: Path, drift: dict) -> str:
     """Generate 06-documentation-methodology.md (bilingual, the 'science')."""
     return (_METODOLOGIA.replace("{TABLA_DOCUMENTACION}", _tabla_documentacion())
             .replace("{SCHEMA_POR_TIPO}", _tabla_schema())
-            .replace("{EJES_DOCUMENTACION}", _tabla_ejes()))
+            .replace("{EJES_DOCUMENTACION}", _tabla_ejes())
+            .replace("{HUECOS_DE_METODOLOGIA}", _huecos_de_metodologia()))
 
 
 _METODOLOGIA = """# Documentation Methodology — Metodología de Documentación
@@ -1009,6 +1042,14 @@ la versión del estándar fija qué contrato de frontmatter se le exige.
 - Requirement: ## Descripción, ## Acceptance Criteria, ## Traceability
 - Test: ## Setup, ## Steps, ## Expected, ## Results
 
+### Comentarios en el código (guideline) y lo que no se mide
+
+Un comentario dice el porqué y apunta a la decisión (`03_Decisions/` en un vault,
+`@vault:` desde el código); lo que el código ya dice no se comenta. Fuente:
+`vault_sdd_init.HUECOS_DE_METODOLOGIA`.
+
+{HUECOS_DE_METODOLOGIA}
+
 ### Cuándo crear vs enriquecer
 
 - **Crear** cuando: concepto NO existe, <70% overlap con existente
@@ -1040,6 +1081,10 @@ la versión del estándar fija qué contrato de frontmatter se le exige.
 ### Minimum structure (guideline)
 
 (See list above in ES section.)
+
+### Code comments (guideline) and what is not measured
+
+(See table above in ES section: `vault_sdd_init.HUECOS_DE_METODOLOGIA`.)
 
 ### When to create vs enrich
 

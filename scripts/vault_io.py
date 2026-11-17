@@ -480,15 +480,56 @@ class NotaInmutableError(ValueError):
 
     codigo = "IMMUTABLE_NOTE"
 
-    def __init__(self, seccion: str, ruta: str) -> None:
+    def __init__(self, seccion: str, ruta: str, motivo: Optional[str] = None) -> None:
         self.seccion = seccion
         self.ruta = ruta
-        super().__init__(
+        super().__init__(motivo or (
             f"la nota '{ruta}' esta en la seccion '{seccion}', que este vault "
-            f"declara inmutable: no se reescribe. Escribe una nota sucesora.")
+            f"declara inmutable: no se reescribe. Escribe una nota sucesora."))
 
 
-def _exigir_politica_de_inmutabilidad(path: Path) -> None:
+def _decision_cerrada_reescrita(path: Path, relativa: str, seccion: str,
+                                text: str) -> Optional[str]:
+    """Por qué `text` reescribe una decisión cerrada que debía sustituirse, o None.
+
+    Rige solo en las secciones que el vault declara bajo `sustitucion` en
+    `00_System/reglas.json` (Torti Code, fase 4). Cambiar el frontmatter —la
+    transición de estado, el `superseded_by` que anota `vault_supersede`— no
+    reescribe el porqué; cambiar el cuerpo sí. Si el frontmatter actual no
+    parsea no se puede saber el estado, y lo decide la verificación de
+    frontmatter, no esta valla.
+    """
+    from vault.kernel.contenido import CARPETA_DECISIONES, es_adr
+    from vault.kernel.frontmatter_parsing import FrontmatterParseError, parse_frontmatter_with_body
+    from vault_norms_catalog import STATUS_TRANSITIONS, normalize_status
+    from vault_registry import cambio_de_cuerpo_exige_nota_nueva
+
+    try:
+        fm, cuerpo_actual = parse_frontmatter_with_body(
+            path.read_text(encoding="utf-8", errors="replace"))
+        _, cuerpo_nuevo = parse_frontmatter_with_body(text)
+    except FrontmatterParseError:
+        return None
+    if seccion == CARPETA_DECISIONES and not es_adr(relativa, fm.get("type", ""), path.stem):
+        return None  # el índice y los primers de la sección no son decisiones
+    bruto = str(fm.get("status") or "").strip()
+    status = normalize_status(bruto)[0] if bruto else ""
+    if not cambio_de_cuerpo_exige_nota_nueva(seccion, status, STATUS_TRANSITIONS):
+        return None
+
+    def _forma(cuerpo: str) -> str:
+        cuerpo = sanitize_content(cuerpo.replace("\r\n", "\n").lstrip("﻿"), dry_run=False)[0]
+        return cuerpo.strip()
+
+    if _forma(cuerpo_actual) == _forma(cuerpo_nuevo):
+        return None
+    return (f"la nota '{relativa}' es una decision cerrada (status {bruto}) y este vault "
+            f"declara en {FICHERO_REGLAS} que en '{seccion}' lo cerrado se sustituye, "
+            "no se reescribe: escribe la sucesora y enlazala con "
+            f"`vault_supersede --path {relativa} --by <sucesora> --apply`.")
+
+
+def _exigir_politica_de_inmutabilidad(path: Path, text: Optional[str] = None) -> None:
     """La política de inmutabilidad, en el punto donde se muta.
 
     Regla: **una nota que ya existe y vive en una sección declarada
@@ -515,6 +556,10 @@ def _exigir_politica_de_inmutabilidad(path: Path) -> None:
     seccion = seccion_de(relativa)
     if seccion and seccion in reglas["inmutable"]:
         raise NotaInmutableError(seccion, relativa)
+    if text is not None and seccion and seccion in sustitucion_declarada(Path(raiz)):
+        motivo = _decision_cerrada_reescrita(path, relativa, seccion, text)
+        if motivo:
+            raise NotaInmutableError(seccion, relativa, motivo=motivo)
 
 
 def atomic_write_text(
@@ -542,7 +587,7 @@ def atomic_write_text(
     # La politica de inmutabilidad, tambien aqui (v41.27): el veto es del
     # dueño de la escritura, no del llamador. Antes vivia en `vault_write` y
     # el onboarding lo esquivaba.
-    _exigir_politica_de_inmutabilidad(path)
+    _exigir_politica_de_inmutabilidad(path, text)
     if text and not _env("VAULT_SKIP_SECRET_SCAN"):
         try:
             guarda_secretos(path, text)
@@ -723,8 +768,12 @@ def seccion_de(relative: str) -> str:
 #: esta publicado— y aqui se admite tambien como `"inmutable"`.
 FICHERO_REGLAS = "00_System/reglas.json"
 
-#: Las claves de `reglas.json` que alguien lee.
-CLAVES_DE_REGLAS = ("inmutable", "secciones", "no_borrar")
+#: Las claves de `reglas.json` que alguien lee. `sustitucion` lista las
+#: secciones donde una nota cerrada se sustituye en vez de reescribirse
+#: (`vault_registry.MODOS_DE_VERSION`, opt-in); `comandos_de_prueba`, los
+#: comandos con que el dueño dice que se prueba su proyecto, para que el
+#: adaptador de cliente los publique sin inventarlos.
+CLAVES_DE_REGLAS = ("inmutable", "secciones", "no_borrar", "sustitucion", "comandos_de_prueba")
 
 
 def reglas_declaradas(raiz: Optional[Path] = None) -> Dict[str, List[str]]:
@@ -747,6 +796,22 @@ def reglas_declaradas(raiz: Optional[Path] = None) -> Dict[str, List[str]]:
         if str(s).strip():
             no_borrar.append(str(s).strip())
     return {"inmutable": inmutables, "no_borrar": no_borrar}
+
+
+def _lista_de_reglas(clave: str, raiz: Optional[Path] = None) -> List[str]:
+    base = Path(raiz) if raiz is not None else _raiz.get_vault_root()
+    datos = _leer_politica(base / FICHERO_REGLAS, CLAVES_DE_REGLAS)
+    return [s.strip() for s in datos.get(clave) or [] if s.strip()]
+
+
+def sustitucion_declarada(raiz: Optional[Path] = None) -> List[str]:
+    """Las secciones donde este vault declara que lo cerrado se sustituye."""
+    return _lista_de_reglas("sustitucion", raiz)
+
+
+def comandos_de_prueba_declarados(raiz: Optional[Path] = None) -> List[str]:
+    """Los comandos de prueba que declara el dueño; vacío si no declara ninguno."""
+    return _lista_de_reglas("comandos_de_prueba", raiz)
 
 
 def nota_no_se_borra(nota: Path, raiz: Optional[Path] = None) -> Optional[str]:

@@ -110,6 +110,10 @@ def con_titulo(titulo: str, cuerpo: str) -> str:
 #: Valores de `type` que declaran una decisión arquitectónica.
 TIPOS_ADR = ("decision", "adr")
 
+#: La sección donde viven las decisiones: la que AP-07 mide, la que
+#: `vault_write --adr` escribe y la que el adaptador de cliente manda leer.
+CARPETA_DECISIONES = "03_Decisions"
+
 #: Sección obligatoria → términos que la reconocen en un encabezado, sin tildes
 #: y en minúscula. Cuenta la subcadena: «Contexto detectado» es Contexto.
 SECCIONES_ADR = (
@@ -145,7 +149,7 @@ def es_adr(rel: str, tipo: str = "", stem: str = "") -> bool:
     `type` sigue siendo ADR: omitir el campo no es la vía de escape del guard.
     """
     rel = rel.replace("\\", "/")
-    if not rel.startswith("03_Decisions/"):
+    if not rel.startswith(CARPETA_DECISIONES + "/"):
         return False
     stem = (stem or rel.rsplit("/", 1)[-1].rsplit(".", 1)[0]).lower()
     if stem == "index" or _PRIMER.match(stem):
@@ -170,6 +174,25 @@ def secciones_adr_faltantes(cuerpo: str) -> list:
 def secciones_adr_recomendadas_faltantes(cuerpo: str) -> list:
     """Secciones recomendadas de AP-07 que el ADR no tiene."""
     return _faltan(cuerpo, SECCIONES_ADR_RECOMENDADAS)
+
+
+#: El nombre de un ADR numerado: `adr-NNN-<slug>` (el número abre el stem).
+_NUMERO_ADR = re.compile(r"^adr-(\d+)(?:-|$)", re.IGNORECASE)
+
+#: Cifras del número de un ADR nuevo: `adr-007`, no `adr-7`.
+CIFRAS_ADR = 3
+
+
+def siguiente_numero_adr(stems) -> str:
+    """El primer `adr-NNN` libre después del mayor que ya existe.
+
+    Recibe los stems de `03_Decisions/` en vez de leer el disco: quien llama
+    sabe dónde está el vault y bajo qué lock lo mira. Un hueco en la
+    numeración no se rellena: el número de una decisión retirada no se
+    reutiliza, porque otro documento puede seguir citándolo.
+    """
+    usados = [int(m.group(1)) for s in stems for m in [_NUMERO_ADR.match(str(s))] if m]
+    return f"adr-{(max(usados) + 1 if usados else 1):0{CIFRAS_ADR}d}"
 
 
 def plantilla_adr() -> str:

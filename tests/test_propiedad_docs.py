@@ -10,6 +10,12 @@ renglones. Tres clases, cada una con su criterio:
   no-derogación; el ADR lleva además su `Responsable:` (AP-64, v41.21).
 - **vivo** — lo demás: alguien tiene que mirarlo de vez en cuando, y este
   test es el que se acuerda.
+
+La cabecera admite además la fecha de la última revisión,
+`<!-- propiedad: … · revisión: manual · revisado: AAAA-MM-DD -->` (Torti Code,
+fase 4: dueño, fecha de revisión y una herramienta que avise). Vencerla no
+falla: `test_docs_vivos_con_revision_vencida_son_lista_de_trabajo` la publica
+como trabajo pendiente, con la aritmética de las normas.
 """
 
 import sys
@@ -91,7 +97,7 @@ def test_los_derivados_tienen_productor_y_no_cabecera():
             continue
         cabeza = p.read_text(encoding="utf-8", errors="replace")[:300]
         assert "propiedad:" not in cabeza, (
-            f"{rel} es derivado: su dueño es {DERIVADOS[rel]}, no una persona"
+            f"{rel} es derivado: su dueño es la tool que lo genera, no una persona"
         )
 
 
@@ -103,3 +109,136 @@ def test_los_adr_llevan_responsable_incluso_como_registro():
         assert "Responsable:" in t, (
             f"{adr.name} declara una decisión sin responsable"
         )
+
+
+# ── Revisión por fecha (Torti Code, fase 4) ─────────────────────────────────
+
+import re  # noqa: E402
+from datetime import date  # noqa: E402
+
+RE_REVISADO = re.compile(r"revisado:\s*(\S+?)\s*(?:·|-->|$)")
+
+#: Cada cuántos días se relee un doc vivo: la cadencia de una norma
+#: `recommended`, la que solo orienta (`CADENCIA_POR_ENFORCEMENT`).
+CADENCIA_DOCS_VIVOS = "recommended"
+
+
+def _linea_de_propiedad(p: Path) -> str:
+    cabeza = p.read_text(encoding="utf-8", errors="replace")[:400]
+    return next((linea for linea in cabeza.splitlines() if "propiedad:" in linea), "")
+
+
+def test_la_fecha_de_revision_de_la_cabecera_es_legible():
+    """`revisado:` es opcional; si está, es una fecha y no es futura."""
+    from vault_norms_catalog import estado_de_revision
+
+    malas = []
+    for p in docs_de_docs():
+        m = RE_REVISADO.search(_linea_de_propiedad(p))
+        if m:
+            estado = estado_de_revision(m.group(1), 1, date.today())
+            if "problema" in estado:
+                malas.append((p.relative_to(RAIZ).as_posix(), estado["problema"]))
+    assert not malas, malas
+
+
+def test_la_cabecera_acepta_la_fecha_de_revision():
+    """El caso que la cabecera nueva admite, medido en un doc que la lleva."""
+    linea = _linea_de_propiedad(DOCS / "INSIGHTS.md")
+    assert "revisión:" in linea and RE_REVISADO.search(linea), linea
+
+
+def test_docs_vivos_con_revision_vencida_son_lista_de_trabajo(capsys):
+    """No es una puerta: imprime qué docs vivos tocan revisar y por qué."""
+    from vault_norms_catalog import CADENCIA_POR_ENFORCEMENT, estado_de_revision
+
+    cadencia = CADENCIA_POR_ENFORCEMENT[CADENCIA_DOCS_VIVOS]
+    vencidos, sin_fecha = [], []
+    for p in docs_de_docs():
+        rel = p.relative_to(RAIZ).as_posix()
+        linea = _linea_de_propiedad(p)
+        if not linea:
+            continue
+        m = RE_REVISADO.search(linea)
+        if not m:
+            sin_fecha.append(rel)
+            continue
+        estado = estado_de_revision(m.group(1), cadencia, date.today())
+        if estado.get("vencida"):
+            vencidos.append(f"{rel} (venció el {estado['vence_en']})")
+    with capsys.disabled():
+        print(f"\n[revisión de docs vivos] vencidos: {vencidos or 'ninguno'}; "
+              f"sin fecha de revisión: {len(sin_fecha)}")
+    assert all(" (venció el " in v for v in vencidos), vencidos
+
+
+# ── AP-07 sobre los ADR del repo, y lo editado tras aceptarlos ─────────────
+
+#: Un ADR aceptado se sustituye, no se reescribe. Los que se editaron después
+#: de aceptarse lo declaran aquí con su motivo, en vez de reescribir su
+#: historia: la edición ya ocurrió y borrarla sería otra reescritura.
+ADR_EDITADOS_TRAS_ACEPTAR = {
+    "docs/adr/0002-puente-scripts-impl.md": (
+        "Lleva una línea «Estado del puente (2026-10-16)» y un «Addendum "
+        "(v40.35)» añadidos tras su aceptación, antes de que el repo adoptara "
+        "«se sustituye, no se reescribe» (2026-11-16). Se conservan como "
+        "están; un cambio de decisión nuevo va en un ADR sucesor."),
+}
+
+#: Las marcas de una edición posterior a la aceptación que se pueden leer en
+#: el propio documento, sin historia de git.
+RE_EDICION_TRAS_ACEPTAR = re.compile(
+    r"^(?:#{2,}\s*Addendum\b|- \*\*Estado del [^*]+\(\d{4}-\d{2}-\d{2}\)\*\*)",
+    re.MULTILINE)
+
+
+def _adrs():
+    return sorted((DOCS / "adr").glob("[0-9][0-9][0-9][0-9]-*.md"))
+
+
+def test_los_adr_del_repo_tienen_las_secciones_de_ap07():
+    from vault.kernel.contenido import secciones_adr_faltantes
+
+    faltas = {a.name: secciones_adr_faltantes(a.read_text(encoding="utf-8"))
+              for a in _adrs()}
+    assert _adrs() and not {k: v for k, v in faltas.items() if v}, faltas
+
+
+def test_un_adr_editado_tras_aceptarse_lo_declara_con_su_motivo():
+    editados = {a.relative_to(RAIZ).as_posix() for a in _adrs()
+                if RE_EDICION_TRAS_ACEPTAR.search(a.read_text(encoding="utf-8"))}
+    assert editados == set(ADR_EDITADOS_TRAS_ACEPTAR), (
+        "un ADR aceptado se sustituye con uno nuevo; si ya se editó, se declara "
+        f"en ADR_EDITADOS_TRAS_ACEPTAR con su motivo: {sorted(editados)}")
+    assert all(m.strip() for m in ADR_EDITADOS_TRAS_ACEPTAR.values())
+
+
+# ── Clase Diátaxis de cada doc del repo ─────────────────────────────────────
+
+def test_todo_doc_de_docs_tiene_su_clase_registrada():
+    from vault_registry import DOCS_DEL_REPO, DOCUMENTACION_CLASES
+
+    en_disco = {f"docs/{p.name}" for p in DOCS.glob("*.md")}
+    assert en_disco == set(DOCS_DEL_REPO), (
+        f"sin clase: {sorted(en_disco - set(DOCS_DEL_REPO))}; "
+        f"registrados sin fichero: {sorted(set(DOCS_DEL_REPO) - en_disco)}")
+    for rel, (clase, motivo) in DOCS_DEL_REPO.items():
+        assert clase in DOCUMENTACION_CLASES and motivo.strip(), rel
+
+
+def test_cada_clase_diataxis_tiene_doc_o_hueco_declarado():
+    from vault_registry import DIATAXIS, DOCS_DEL_REPO, HUECOS_DOCS_DEL_REPO
+
+    con_doc = {clase for clase, _ in DOCS_DEL_REPO.values()}
+    for clase in DIATAXIS:
+        assert (clase in con_doc) != (clase in HUECOS_DOCS_DEL_REPO), clase
+
+
+def test_el_tutorial_que_falta_esta_publicado_con_su_candidato():
+    from vault_registry import HUECOS_DOCS_DEL_REPO
+
+    hueco = HUECOS_DOCS_DEL_REPO["tutorial"]
+    assert hueco["candidato"] == "README.md#quick-start"
+    assert "## Quick Start" in (RAIZ / "README.md").read_text(encoding="utf-8")
+    indice = (DOCS / "README.md").read_text(encoding="utf-8")
+    assert "HUECOS_DOCS_DEL_REPO" in indice and "Quick Start" in indice

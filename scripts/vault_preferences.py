@@ -539,6 +539,35 @@ def _protocolo_de_sesion() -> list:
     return lineas + [""]
 
 
+def _decisiones() -> list:
+    """Where decisions live and how they change, from the registry and AP-07/AP-64.
+
+    Torti Code (phase 4): an agent reads the decisions before changing what
+    they explain, writes a new one as a draft, and supersedes a closed one
+    instead of rewriting it.
+    """
+    from vault.kernel.contenido import CARPETA_DECISIONES
+    from vault_registry import SECTION_DOCUMENTACION
+
+    _, motivo = SECTION_DOCUMENTACION[CARPETA_DECISIONES]
+    return ["## Decisiones", "",
+            f"- Leer `{CARPETA_DECISIONES}/` antes de cambiar lo que una decisión explica "
+            f"({motivo}).",
+            "- Una decisión nueva: `vault_write --adr` (nace en `draft`, con Contexto, "
+            "Decisión y Consecuencias).",
+            "- Una decisión cerrada no se reescribe: se escribe la sucesora y se enlaza "
+            "con `vault_supersede`.",
+            ""]
+
+
+def _comandos_de_prueba(comandos: list) -> list:
+    """The test commands the owner declares in `reglas.json`; nothing is invented."""
+    if not comandos:
+        return []
+    return (["## Comando de pruebas", ""]
+            + [f"- `{c}` (declarado en `00_System/reglas.json`)" for c in comandos] + [""])
+
+
 def _cuerpo_adapter(cliente: str, contexto: dict, reglas: dict) -> str:
     """La política del vault, para un cliente que lea instrucciones de proyecto.
 
@@ -573,7 +602,8 @@ def _cuerpo_adapter(cliente: str, contexto: dict, reglas: dict) -> str:
             lineas.append("- Secciones donde **no se borra**: "
                           + ", ".join(f"`{s}`" for s in no_borrar))
         lineas.append("")
-    lineas += _mapa_de_carpetas() + _regla_de_nombres()
+    lineas += _mapa_de_carpetas() + _regla_de_nombres() + _decisiones()
+    lineas += _comandos_de_prueba(reglas.get("comandos_de_prueba") or [])
     lineas += _protocolo_de_sesion()
     cola = [
         "",
@@ -647,9 +677,9 @@ def vault_preferences_adapters(destino: str, force: bool = False) -> dict:
         return emit_error("vault_preferences", "PREFERENCES_UNREADABLE",
                           f"no se pudo leer el contexto: {exc}")
     try:
-        from vault_io import reglas_declaradas
+        from vault_io import comandos_de_prueba_declarados, reglas_declaradas
 
-        reglas = reglas_declaradas()
+        reglas = {**reglas_declaradas(), "comandos_de_prueba": comandos_de_prueba_declarados()}
     except Exception:
         return emit_error("vault_preferences", "INVALID_INPUT",
                           "No se pudieron verificar las reglas del vault; no se generaron adaptadores.")

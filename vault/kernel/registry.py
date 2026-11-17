@@ -394,6 +394,47 @@ SECTION_DOCUMENTACION: Dict[str, tuple] = {
     "99_Index": ("indice", "índices de navegación que regeneran las tools"),
 }
 
+#: **Clase de cada documento de `docs/` del repositorio del estándar.** El
+#: mismo vocabulario que las secciones de un vault (`DOCUMENTACION_CLASES`),
+#: aplicado a los documentos de este repo (Torti Code, fase 4: «cuatro tipos
+#: que no se mezclan»). Lo consume `tests/test_propiedad_docs.py`, que falla
+#: si un `docs/*.md` no está aquí o si una clase de `DIATAXIS` queda sin
+#: documento ni hueco declarado. El índice `docs/README.md` es navegación
+#: escrita a mano: se clasifica `indice` aunque ninguna tool lo regenere.
+DOCS_DEL_REPO: Dict[str, tuple] = {
+    "docs/ARQUITECTURA.md": ("referencia", "contextos acotados y fronteras, derivado de vault_arch"),
+    "docs/BLUEPRINT.md": ("referencia", "plano de construcción derivado de los registros"),
+    "docs/CARRILES.md": ("referencia", "qué exige cada carril, derivado de vault_gate"),
+    "docs/CONTRATO-CONTEXT-PACK.md": ("referencia", "contrato del presupuesto de contexto"),
+    "docs/CONTRATO-DESCUBRIMIENTO.md": ("referencia", "contrato del descubrimiento de vaults del MCP"),
+    "docs/DISPONIBILIDAD-DE-TOOLS.md": ("referencia", "qué tools están activas, derivado"),
+    "docs/ENTORNO.md": ("referencia", "variables de entorno, derivado de vault_entorno"),
+    "docs/EVOLUCION-PRODUCTO-INSTALABLE.md": ("registro", "bitácora de ingeniería de la productización"),
+    "docs/GOBIERNO.md": ("explicacion", "qué es una norma y por qué la escalera de enforcement"),
+    "docs/GUIA-DE-PRODUCCION.md": ("referencia", "promesas a quien instala y quién las ejerce, derivado"),
+    "docs/INSIGHTS.md": ("guia", "cómo inventariar y comparar vaults con vault_insights"),
+    "docs/INSTALACION-LIMPIA.md": ("guia", "quitar lo previo, instalar la wheel y registrar el MCP"),
+    "docs/MAPA-MANIFIESTO.md": ("referencia", "cada titular del manifiesto clasificado"),
+    "docs/METRICAS.md": ("referencia", "métricas de desarrollo y producto, derivado"),
+    "docs/MODO-AGENTICO-ONBOARDING.md": ("guia", "poblar un vault desde un proyecto que no tenía"),
+    "docs/MODO-AGENTICO-SANACION.md": ("guia", "adaptar un vault preexistente sin borrar nada"),
+    "docs/PUERTAS.md": ("referencia", "qué mide cada puerta y cómo se arregla, derivado"),
+    "docs/README.md": ("indice", "índice de docs/, escrito a mano"),
+    "docs/RELEASE-EVIDENCE.md": ("referencia", "evidencia que exige el flujo de release"),
+    "docs/SKILLS.md": ("referencia", "skills que el vault ofrece a un agente"),
+}
+
+#: Las clases de `DIATAXIS` sin documento propio en `docs/`, con su candidato.
+#: Declarar el hueco es publicarlo: `docs/README.md` lo nombra y un test lo
+#: comprueba. Se salda escribiendo el documento y quitando la entrada.
+HUECOS_DOCS_DEL_REPO: Dict[str, dict] = {
+    "tutorial": {
+        "motivo": ("no hay un recorrido guiado propio de principio a fin; lo más "
+                   "cercano lleva de clonar a la primera nota documentada"),
+        "candidato": "README.md#quick-start",
+    },
+}
+
 #: **Eje de versionado: cómo cambia una nota sin perder lo que fue.** Cada modo
 #: nombra las tools que lo realizan y cuánto obliga: `guard` si la tool lo hace
 #: siempre, `recommended` si existe la vía pero nada impide tomar otra. El test
@@ -405,12 +446,27 @@ MODOS_DE_VERSION: Dict[str, dict] = {
     "anexado": {"que": "solo se añade al final; lo ya escrito no se reescribe",
                 "tools": ("vault_append",), "enforcement": "recommended"},
     "sustitucion": {"que": "la versión nueva es otra nota y la anterior declara superseded_by",
-                    "tools": ("vault_supersede",), "enforcement": "recommended"},
+                    "tools": ("vault_supersede",), "enforcement": "recommended",
+                    "clave_de_politica": "sustitucion"},
     "regenerado": {"que": "artefacto derivado: se regenera desde las notas y no se versiona",
                    "tools": ("vault_section_index",), "enforcement": "guard"},
     "inmutable": {"que": "estado terminal: ni se reescribe ni se sustituye, queda como hecho",
                   "tools": ("vault_write",), "enforcement": "recommended"},
 }
+
+#: Un modo con `clave_de_politica` pasa de `recommended` a `guard` en el vault
+#: que lo declara en `00_System/reglas.json` bajo esa clave, con la lista de
+#: secciones donde rige: `{"sustitucion": ["03_Decisions"]}` hace que el cuerpo
+#: de una decisión cerrada no se reescriba (Torti Code, fase 4: «un ADR aprobado
+#: no se reescribe, se sustituye»). Sin la clave nada cambia: un vault que no
+#: optó sigue editando como siempre, y la frontera la aplica `vault_io`.
+
+
+def enforcement_de_modo(modo: str, declarado: bool = False) -> str:
+    """El enforcement de `modo` en un vault que lo `declarado` en su política o no."""
+    m = MODOS_DE_VERSION[modo]
+    return "guard" if declarado and m.get("clave_de_politica") else m["enforcement"]
+
 
 #: **Ejes de trazabilidad y versionado por clase de documento.** `traza` dice
 #: con qué se enlaza una nota de esa clase y por qué campos de frontmatter; los
@@ -486,6 +542,22 @@ def modo_de_version(clase: str, regimen: str) -> str:
     if regimen == "terminal":
         return "inmutable"
     raise ValueError(f"régimen desconocido: {regimen}")
+
+
+def cambio_de_cuerpo_exige_nota_nueva(seccion: str, status: str,
+                                      transiciones: Mapping[str, Iterable[str]]) -> bool:
+    """¿Reescribir el cuerpo de una nota de `seccion` en `status` es una versión nueva?
+
+    Sí cuando el modo de su clase en el régimen de su estado es `sustitucion`
+    o `inmutable`: una nota cerrada se sustituye y una terminal queda como
+    hecho. Una sección sin clase registrada, o un estado fuera de las
+    transiciones, no exige nada: el criterio no adivina.
+    """
+    clase = (SECTION_DOCUMENTACION.get(seccion) or (None,))[0]
+    if clase is None or status not in transiciones:
+        return False
+    return modo_de_version(clase, regimen_de_estado(status, transiciones)) in (
+        "sustitucion", "inmutable")
 
 
 

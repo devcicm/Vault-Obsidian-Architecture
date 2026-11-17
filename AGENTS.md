@@ -1,5 +1,13 @@
 # AGENTS.md — instrucciones para agentes en este repo
 
+> **En corto, para un agente:**
+> - Esto es el **estándar** (spec + toolkit) que define cómo se construyen los vaults; no es un vault.
+> - Antes de cerrar un cambio, el carril `dev`: `python scripts/vault_test_scope.py --changed --correr`
+>   y `python scripts/vault_gate.py --strict --nivel rapida`.
+> - Las decisiones viven en `docs/adr/`; el porqué de cada norma, en `normas/<código>/porque.md`.
+> - Todo lo que se ejecuta va contra `vault-sandbox/`, nunca contra la raíz del repo ni un vault real.
+> - Lo derivado no se edita a mano: se regenera con su dueño (abajo, «Cuatro cosas…»).
+
 Este repositorio **no es un vault**: es el **estándar** que define cómo se construyen los
 vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se puede cometer aquí.
 
@@ -12,7 +20,7 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~12.000 líneas). Fuente normativa. |
 | `scripts/*.py` | ~172 scripts, 129 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (7281 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (7319 tests). Toda norma con guard debe tener test. |
 | `normas/` | Normas como paquete (`normas/<código>/`: `norma.py`, `porque.md`, `guard.py`, `heal.py`, `test_*.py`). Las carga `vault_norms_catalog` en su sitio del catálogo; la forma la vigila `--check-framework`. Desde m186 toda norma vive aquí (cuántas, `NORMAS_EN_PAQUETE`). `guard.py`/`heal.py` son derivados —apuntan a la función dueña; los sanadores salen de `vault_norms_catalog.SANADORES`— y se regeneran con `vault_norms_engine.escribir_caras_derivadas`, no a mano. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
@@ -126,6 +134,8 @@ Si necesitas un dato de estos, léelo del registro — no lo redefinas ni lo cop
 | Raíz del vault en runtime | `vault_io.get_vault_root()` / `set_vault_root()` |
 | Cómo se detectó esa raíz (confianza) | `vault_io.vault_root_origin()` / `vault_root_is_confident()` |
 | Contrato de tools (`tool-spec.json`) | `vault_io.tool_spec_path()` → `<vault>/00_System/`; `resolve_tool_spec()` con fallback legacy |
+| Decisiones de arquitectura de este repo (ADR) | `docs/adr/NNNN-*.md`. Un comentario del código que cita un ADR apunta a uno que existe (AP-72, `vault_doc_sync --check`); un ADR aceptado se sustituye con uno nuevo, no se reescribe, y lo ya editado tras aceptarse lo declara `tests/test_propiedad_docs.py` con su motivo |
+| Clase Diátaxis de cada documento de `docs/` y la que falta | `vault_registry.DOCS_DEL_REPO` + `HUECOS_DOCS_DEL_REPO`; `docs/README.md` publica el hueco |
 
 ---
 

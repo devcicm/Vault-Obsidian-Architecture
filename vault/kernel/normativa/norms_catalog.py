@@ -273,6 +273,8 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     _desde_paquete("AP-70"),
     # ── Anti-patrón AP-71 — concepto sin página (LLM Wiki, 2026-11-16) ─────────
     _desde_paquete("AP-71"),
+    # ── Anti-patrón AP-72 — cita a una decisión inexistente (Torti Code, 2026-11-16)
+    _desde_paquete("AP-72"),
     # ── Patrón PAT-6 ───────────────────────────────────────────────────────────
     _desde_paquete("PAT-6"),
     # ── Patrón PAT-7 — desacuerdo declarado (LLM Wiki, 2026-11-16) ─────────────
@@ -359,6 +361,32 @@ CADENCIA_POR_ENFORCEMENT: Dict[str, int] = {
 }
 
 
+def estado_de_revision(bruto: Any, cadencia: Any, hoy: _date) -> Dict[str, Any]:
+    """La aritmética de vencimiento de una revisión, para normas y para notas.
+
+    `{"problema": motivo}` si el dato no se puede leer —cadencia que no es un
+    entero positivo, `revisado_en` que no es una fecha AAAA-MM-DD o es
+    posterior a `hoy`—; si no, `revisado_en`, `cadencia_dias`, `vence_en` y
+    `vencida` (`revisado_en + cadencia_dias < hoy`). Un solo dueño: la usan
+    `gestion_de_normas` y `vault_drift_detect --mode antiguedad` (AP-57).
+    """
+    if not (isinstance(cadencia, int) and not isinstance(cadencia, bool) and cadencia > 0):
+        return {"problema": f"cadencia {cadencia!r} no es un número de días positivo"}
+    if isinstance(bruto, _date):
+        bruto = bruto.isoformat()  # YAML lee `2026-11-16` sin comillas como fecha
+    try:
+        revisado = _date.fromisoformat(bruto) if isinstance(bruto, str) else None
+    except ValueError:
+        revisado = None
+    if revisado is None:
+        return {"problema": f"`revisado_en` debe ser una fecha AAAA-MM-DD, no {bruto!r}"}
+    if revisado > hoy:
+        return {"problema": f"`revisado_en` {bruto} es posterior a hoy ({hoy.isoformat()})"}
+    vence = revisado + _timedelta(days=cadencia)
+    return {"revisado_en": bruto, "cadencia_dias": cadencia,
+            "vence_en": vence.isoformat(), "vencida": vence < hoy}
+
+
 def gestion_de_normas(hoy: Optional[_date] = None,
                       catalogo: Optional[Sequence[Dict[str, Any]]] = None) -> Dict[str, Any]:
     """El registro de gestión de cada norma, qué entradas están mal formadas y
@@ -387,22 +415,11 @@ def gestion_de_normas(hoy: Optional[_date] = None,
         if not (isinstance(responsable, str) and responsable.strip()):
             problemas.append({"code": code, "problema": "`responsable` en blanco"})
             continue
-        try:
-            revisado = _date.fromisoformat(bruto) if isinstance(bruto, str) else None
-        except ValueError:
-            revisado = None
-        if revisado is None:
-            problemas.append({"code": code, "problema": (
-                f"`revisado_en` debe ser una fecha AAAA-MM-DD, no {bruto!r}")})
+        estado = estado_de_revision(bruto, cadencia, hoy)
+        if "problema" in estado:
+            problemas.append({"code": code, "problema": estado["problema"]})
             continue
-        if revisado > hoy:
-            problemas.append({"code": code, "problema": (
-                f"`revisado_en` {bruto} es posterior a hoy ({hoy.isoformat()})")})
-            continue
-        vence = revisado + _timedelta(days=cadencia)
-        entrada = {"code": code, "responsable": responsable, "revisado_en": bruto,
-                   "cadencia_dias": cadencia, "vence_en": vence.isoformat(),
-                   "vencida": vence < hoy}
+        entrada = {"code": code, "responsable": responsable, **estado}
         normas.append(entrada)
         if entrada["vencida"]:
             vencidas.append(entrada)

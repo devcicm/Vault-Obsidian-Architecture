@@ -6,6 +6,12 @@
 [manifiesto](../vault-obsidian-architecture.md); lo de aquí lo explica, lo
 deriva o lo archiva.
 
+La clase de cada documento —tutorial, guía, referencia o explicación, más
+`registro` e `indice`— la declara `vault_registry.DOCS_DEL_REPO`, y no se
+mezclan en un mismo documento. Falta un **tutorial** propio: el hueco está
+declarado en `vault_registry.HUECOS_DOCS_DEL_REPO`, y mientras tanto el recorrido
+guiado es el [Quick Start](../README.md#quick-start) del README.
+
 ## Instalar y operar
 
 | Documento | Para qué |

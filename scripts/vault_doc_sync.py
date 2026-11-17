@@ -116,11 +116,19 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # Publicaba `vault_restore.py --name`, un flag que la tool no acepta, y no lo
 # publicaba en un doc: lo repartía a cada vault creado. El guard de v40.4 medía
 # los documentos escritos a mano y era ciego justo a la copia que viaja.
+#
+# Desde 2026-11-16 (Torti Code, fase 4: docs como código) entran las guías
+# vivas de `docs/` que dictan `python <tool>.py`; las que lo hacen las mide
+# `test_los_docs_vivos_que_publican_comandos_estan_en_el_alcance` con la clase
+# de `vault_registry.DOCS_DEL_REPO`. `INSTALACION-LIMPIA.md` y los dos modos
+# agénticos no publican ninguna invocación `python <tool>.py` que este guard
+# sepa leer (usan `vault …`, `pip` y la llamada MCP), así que no entran.
 DOCS_CON_COMANDOS = (
     "AGENTS.md",
     "README.md",
     "scripts/README.md",
     f"{rutas.SANDBOX}/00_System/vault-commands.md",
+    f"{rutas.DOCS}/INSIGHTS.md",
 )
 
 # `scripts/` es opcional: `scripts/README.md` publica sus ejemplos como
@@ -217,6 +225,41 @@ def comandos_publicados() -> List[Dict]:
                             "detail": f"{donde} — {m.group(1)} no acepta {flag}",
                         })
     return problems
+
+
+# AP-72 (2026-11-16, Torti Code fase 4): un comentario que dice el porqué
+# apunta a la decisión que lo registra, y esa decisión tiene que existir. Un
+# `ADR-NNNN` citado sin su `docs/adr/NNNN-*.md` manda al lector a un sitio
+# vacío: el porqué se perdió y el código sigue afirmando que está escrito.
+#: Dónde se buscan citas a ADR: el código del repo y los paquetes de normas.
+ZONAS_CON_CITAS_ADR = (rutas.SCRIPTS, "vault", rutas.CLI, "tests", "normas", "mcp")
+SUFIJOS_CON_CITAS_ADR = (".py", ".mjs", ".js")
+RE_CITA_ADR = re.compile(r"\bADR-(\d{4})\b")
+
+
+def adr_citados_sin_fichero(raiz: Path = None, zonas=None) -> List[Dict]:
+    """AP-72: cada `ADR-NNNN` que cita el código tiene su `docs/adr/NNNN-*.md`."""
+    raiz = Path(raiz) if raiz is not None else REPO_ROOT
+    existentes = {p.name[:4] for p in (raiz / rutas.DOCS / "adr").glob("[0-9][0-9][0-9][0-9]-*.md")}
+    problemas: List[Dict] = []
+    for zona in (zonas if zonas is not None else ZONAS_CON_CITAS_ADR):
+        base = raiz / zona
+        if not base.is_dir():
+            continue
+        for fichero in sorted(base.rglob("*")):
+            if (fichero.suffix not in SUFIJOS_CON_CITAS_ADR or not fichero.is_file()
+                    or {"__pycache__", "node_modules"} & set(fichero.parts)):
+                continue
+            texto = fichero.read_bytes().decode("utf-8", "replace")
+            for numero, linea in enumerate(texto.splitlines(), 1):
+                for m in RE_CITA_ADR.finditer(linea):
+                    if m.group(1) not in existentes:
+                        problemas.append({
+                            "kind": "adr_sin_fichero",
+                            "detail": (f"AP-72: {fichero.relative_to(raiz).as_posix()}:{numero} "
+                                       f"cita {m.group(0)} y docs/adr/ no tiene {m.group(1)}-*.md"),
+                        })
+    return problemas
 
 
 # Séptima comprobación (2026-10-02). La sexta medía los `.md` escritos a mano y
@@ -542,6 +585,7 @@ def scan() -> Dict:
     text = README.read_text(encoding="utf-8")
     problems: List[Dict] = []
     problems.extend(comandos_publicados())
+    problems.extend(adr_citados_sin_fichero())  # AP-72
     problems.extend(disponibilidad_problemas())
     problems.extend(tabla_del_readme_raiz())
     problems.extend({k: v for k, v in p.items() if k != "sitio"} for p in recetas_en_codigo())

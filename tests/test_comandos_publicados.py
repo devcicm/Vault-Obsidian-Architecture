@@ -253,3 +253,19 @@ def test_ap42_los_ejemplos_del_readme_corren_en_un_vault(tool, tmp_path, vault_c
         corrida = correr_en_proceso(tool, *args, vault=raiz)
         assert corrida.codigo == 0, (args, corrida.stdout[-400:], corrida.stderr[-400:])
         assert corrida.envelope["ok"] is True
+
+
+def test_los_docs_vivos_que_publican_comandos_estan_en_el_alcance():
+    """Docs como código (Torti Code, fase 4): un doc vivo de `docs/` que dicta
+    `python <tool>.py` está en `DOCS_CON_COMANDOS`. Los derivados los escribe
+    su generador desde el registro y su puerta mide la deriva; los registros
+    citan comandos como prueba de lo que ocurrió, igual que el changelog."""
+    from vault_registry import DOCS_DEL_REPO
+
+    vivos_con_comandos = {
+        rel for rel, (clase, _) in DOCS_DEL_REPO.items()
+        if clase in ("guia", "tutorial")
+        and vds.RE_INVOCACION.search((REPO_ROOT / rel).read_text(encoding="utf-8"))
+    }
+    assert vivos_con_comandos and vivos_con_comandos <= set(vds.DOCS_CON_COMANDOS), (
+        sorted(vivos_con_comandos - set(vds.DOCS_CON_COMANDOS)))

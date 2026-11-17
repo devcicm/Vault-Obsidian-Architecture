@@ -18,7 +18,7 @@ Usage:
 
     python vault_write.py --folder "01_Projects/ans" --title "Status" --content "# Status\n\n..."
 
-    python vault_write.py --folder "03_Decisions" --title "ADR-001" --tags "architecture,backend" --meta '{"status": "accepted"}'
+    python vault_write.py --adr --folder "03_Decisions" --title "Serializar escrituras" --tags "architecture,backend" --content @file:adr.md
 
 """
 
@@ -117,7 +117,14 @@ from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.autoria.ronda import es_round_id, round_id_activo  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 from vault.kernel import historia  # noqa: E402
-from vault.kernel.contenido import con_titulo  # noqa: E402
+from vault.kernel.contenido import (  # noqa: E402
+    CARPETA_DECISIONES,
+    con_titulo,
+    meta_adr,
+    plantilla_adr,
+    secciones_adr_faltantes,
+    siguiente_numero_adr,
+)
 from vault.kernel.errores import completar_envelope  # noqa: E402
 from vault.kernel.frontmatter_escritura import (  # noqa: E402
     Frontmatter,
@@ -1522,6 +1529,63 @@ def vault_write(
     return result
 
 
+#: Donde viven las decisiones; un ADR fuera de aquí no es un ADR para AP-07.
+CARPETA_ADR = CARPETA_DECISIONES
+
+
+def vault_write_adr(
+    folder: str,
+    title: str,
+    content: str,
+    tags: Optional[List[str]] = None,
+    meta: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """AP-07 y AP-64 al escribir: un ADR nace con su número, su plantilla y en `draft`.
+
+    El vídeo de Torti Code (fase 4, 2026-11-16) lo resume en contexto,
+    decisión («vamos a…») y consecuencias. El ejemplo publicado de esta tool
+    enseñaba lo contrario: un ADR `accepted` sin contenido. Aquí:
+
+    - El número es el siguiente `adr-NNN` libre (`siguiente_numero_adr`),
+      tomado bajo un lock de la carpeta para que dos escrituras a la vez no
+      estrenen el mismo.
+    - El cuerpo lo escribe quien decide. Si le falta una sección que AP-07
+      exige, se rechaza con la plantilla (`plantilla_adr`) en la pista: un
+      encabezado vacío pasaría AP-07 sin que nadie hubiera escrito el porqué.
+    - El frontmatter es `meta_adr()`: nace en `draft`. Pedir otro `status` es
+      un conflicto, no un valor que se ignora en silencio.
+    """
+    carpeta = folder.replace("\\", "/").strip("/")
+    if carpeta != CARPETA_ADR and not carpeta.startswith(CARPETA_ADR + "/"):
+        return emit_error(
+            "vault_write", "INVALID_FOLDER",
+            f"--adr escribe en {CARPETA_ADR}/, no en {folder}",
+            pista=f'--folder "{CARPETA_ADR}"')
+    base = meta_adr()
+    pedido = str((meta or {}).get("status") or base["status"]).strip().lower()
+    if pedido != base["status"]:
+        return emit_error(
+            "vault_write", "CONFLICTING_ARGS",
+            f"--adr nace en '{base['status']}' y --meta pide '{pedido}': quien redacta "
+            "una decisión no la aprueba al escribirla (AP-64)",
+            pista="Escribirlo en draft y cerrarlo después con `responsable:` (AP-64).")
+    faltan = secciones_adr_faltantes(content or "")
+    if faltan:
+        return emit_error(
+            "vault_write", "VALIDATION_FAILED",
+            f"AP-07: al ADR le faltan {', '.join(faltan)}",
+            pista="Escribir el porqué con esta plantilla:\n" + plantilla_adr())
+    destino = _raiz() / carpeta
+    with file_lock(destino / ".adr-numero", timeout=10.0):
+        stems = [p.stem for p in destino.glob("*.md")] if destino.is_dir() else []
+        numero = siguiente_numero_adr(stems)
+        resultado = vault_write(carpeta, f"{numero.upper()} {title}", content, tags,
+                                {**(meta or {}), **base})
+    if resultado.get("ok"):
+        resultado["adr"] = {"numero": numero, "status": base["status"]}
+    return resultado
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Vault Write Tool",
@@ -1532,9 +1596,9 @@ Ejemplos:
 
   python vault_write.py --folder "01_Projects/mi-api" --title "Status" --content "# Status\\n\\nActivo"
 
-  python vault_write.py --folder "03_Decisions" --title "ADR-001" --tags arch backend --meta '{"status":"accepted"}'
+  python vault_write.py --adr --folder "03_Decisions" --title "Serializar escrituras" --tags arch backend --content @file:adr.md
 
-  python vault_write.py --folder "03_Decisions" --title "ADR-001" --content "..." --meta-file meta.json
+  python vault_write.py --folder "07_Knowledge" --title "Glosario" --content "..." --meta-file meta.json
 
   python vault_write.py --folder "07_Knowledge/concepts" --scan-path "docs/concepts/"
 
@@ -1592,6 +1656,13 @@ Notas:
         help="Versión de paquete que la nota da por buena (repetible; AP-08)",
     )
 
+    # AP-07 + AP-64: el ADR nace numerado, con sus secciones y en draft.
+    parser.add_argument(
+        "--adr", action="store_true",
+        help="Escribe un ADR en 03_Decisions: siguiente adr-NNN libre, status draft, "
+             "y exige Contexto/Decisión/Consecuencias (AP-07)",
+    )
+
     args = parser.parse_args()
 
     pins: Dict[str, str] = {}
@@ -1606,6 +1677,13 @@ Notas:
             ), ensure_ascii=False))
             return 1
         pins[pin[0]] = pin[1]
+
+    if args.adr and args.scan_path:
+        print(json.dumps(emit_error(
+            "vault_write", "CONFLICTING_ARGS",
+            "--adr escribe una decisión y --scan-path importa una carpeta: no se combinan",
+        ), ensure_ascii=False))
+        return 1
 
     # --scan-path mode: scan directory for .md files
 
@@ -1748,8 +1826,9 @@ Notas:
         meta = {**(meta or {}), "version_pinned": pins}
 
     # D5: los guards de contenido devuelven el envelope a mano; sale canónico.
+    escritor = vault_write_adr if args.adr else vault_write
     result = completar_envelope(
-        "vault_write", vault_write(args.folder, title, content, args.tags, meta))
+        "vault_write", escritor(args.folder, title, content, args.tags, meta))
 
     print(json.dumps(result, indent=2, ensure_ascii=False))
 

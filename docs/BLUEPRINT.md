@@ -69,7 +69,7 @@ regenera.*
 
 *Registros: `vault_norms.NORM_CATALOG` + `vault_gate.PUERTAS` + `tests/`*
 
-86 de 87 normas tienen puerta o test que las nombre.
+87 de 88 normas tienen puerta o test que las nombre.
 **Es la única capa con baseline**, y por un motivo concreto: las demás se midieron
 en cero el día que se declararon porque sus datos ya existían y solo faltaba
 atarlos. Ésta no. Exigir cero aquí el primer día habría hecho nacer la puerta en
@@ -153,6 +153,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-69** — El test que construye a mano lo que ya tiene apoyo | guard | `tests_higiene` | `test_ap69_sin_version_publicada.py` |
 | **AP-70** — Politica de mutacion ilegible o invalida | guard+audit | `framework` | `test_inmutabilidad_todos_los_escritores.py`, `test_reglas_y_adaptadores.py` |
 | **AP-71** — Concepto importante sin página propia | audit | — | `test_karpathy_conceptos.py` |
+| **AP-72** — Comentario que cita una decisión que no existe | guard | `doc_sync` | `test_torti_documentacion.py` |
 | **PAT-6** — Semantic graph enrichment — enriquecimiento periodico del grafo | recommended | — | `test_capa4_audit_ejercitada.py` |
 | **PAT-7** — Desacuerdo legítimo declarado — contradicts entre notas | recommended | `fuente_unica` | `test_karpathy_desacuerdos.py` |
 | **SP-01** — Delete protocol — change_log obligatorio antes de eliminar | audit | `framework` | `test_mermaid_reglas_parsers.py`, `test_vault_norms.py` |

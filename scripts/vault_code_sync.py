@@ -117,6 +117,29 @@ def _vault_ref_in_file(file_path: Path) -> Optional[str]:
         return None
 
 
+def _decision_existente(ref: str) -> bool:
+    """AP-72 en el vault: un `@vault:` puede apuntar a la decisión que explica el código.
+
+    El comentario que dice el porqué apunta al ADR (Torti Code, fase 4). Hasta
+    aquí solo contaban las notas de `11_Code/`, y un `@vault:` a una decisión
+    de `03_Decisions/` salía como huérfano aunque la nota existiera. Qué es
+    una decisión lo dice su dueño, `es_adr`; la ruta no sale del vault.
+    """
+    from vault.kernel.contenido import es_adr
+
+    # AP-72: el destino tiene que ser una decisión que existe, no cualquier nota.
+    relativa = ref.replace("\\", "/").removesuffix(".md") + ".md"
+    if not es_adr(relativa):
+        return False
+    raiz = _raiz().resolve()
+    destino = (raiz / relativa).resolve()
+    try:
+        destino.relative_to(raiz)
+    except ValueError:
+        return False
+    return destino.is_file()
+
+
 def _collect_code_notes(project: Optional[str]) -> List[Tuple[Path, Dict[str, str]]]:
     """Collect all vault notes in 11_Code/ (optionally filtered by project)."""
     root = _code_dir() / project if project else _code_dir()
@@ -303,7 +326,7 @@ def vault_code_sync(
             if src_file.suffix.lower() not in _CODE_EXTS:
                 continue
             ref = _vault_ref_in_file(src_file)
-            if ref and ref not in all_note_refs:
+            if ref and ref not in all_note_refs and not _decision_existente(ref):
                 orphan_vault_refs.append(
                     {
                         "source_file": str(src_file),

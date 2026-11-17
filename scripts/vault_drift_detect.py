@@ -40,6 +40,9 @@ Usage:
     # AP-08: notas con `files:` cuyo código cambió después de su updatedAt
     python vault_drift_detect.py --project "ans" --mode vigencia
 
+    # Notas cuyo `revisado_en` más su cadencia ya pasó (lista de trabajo)
+    python vault_drift_detect.py --mode antiguedad --cadencia-dias 180
+
 Un snapshot sobre git anota `repo.synced_commit` en la ficha del proyecto: es
 el punto hasta el que el vault documenta el código, el que lee
 `vault_project --sync-status`.
@@ -951,6 +954,81 @@ def _pin_anclado(fijada: Any, manifiesto: str) -> Optional[bool]:
     return a[:k] != b[:k]
 
 
+#: Cada cuántos días toca releer una nota que no declara su `cadencia_dias`.
+#: Es la de una norma `recommended` (`CADENCIA_POR_ENFORCEMENT`): una nota
+#: orienta, no la vigila un guard. Declarado, no calibrado.
+CADENCIA_DE_NOTA_POR_DEFECTO = 180
+
+
+def vault_drift_antiguedad(cadencia_dias: Optional[int] = None, hoy=None,
+                           project: Optional[str] = None) -> Dict[str, Any]:
+    """Notas cuya revisión venció: `revisado_en` más su cadencia ya pasó.
+
+    Torti Code (fase 4): la documentación desactualizada es peor que ninguna,
+    y lo que la evita es un dueño, una fecha de revisión y una herramienta que
+    avise. La fecha es `revisado_en` (contrato v41); la cadencia, la que la
+    nota declara en `cadencia_dias` o la de la llamada. La aritmética es la de
+    las normas, `vault_norms_catalog.estado_de_revision`: un solo dueño
+    (AP-57). Una nota sin `revisado_en` no se juzga, se cuenta en `sin_fecha`
+    (AP-60), y una fecha ilegible o futura sale en `ilegibles`. Vencer no es
+    fallar: es una lista de trabajo. Solo lectura.
+    """
+    from datetime import date as _date
+
+    from vault.kernel.fallos import FalloDeDominio
+    from vault_norms_catalog import estado_de_revision
+
+    try:
+        secciones = _repo().ctx.secciones.ordenadas()
+    except FalloDeDominio as fallo:
+        return emit_fallo("vault_drift_detect", fallo)
+    raiz = _raiz()
+    hoy = hoy or _date.today()
+    por_defecto = CADENCIA_DE_NOTA_POR_DEFECTO if cadencia_dias is None else cadencia_dias
+    es_del = _proyectos.pertenencia_en(raiz, project) if project else (lambda _p: True)
+    vencidas: List[Dict[str, Any]] = []
+    ilegibles: List[Dict[str, Any]] = []
+    medidas = 0
+    sin_fecha = 0
+    for nota in sorted(notas_en_disco(raiz, secciones, incluir_indices=False)):
+        rel = nota.relative_to(raiz).as_posix()
+        if is_snapshot_path(rel):
+            continue
+        try:
+            texto = nota.read_text(encoding="utf-8-sig")
+        except (OSError, UnicodeDecodeError):
+            ilegibles.append({"path": rel, "problema": "la nota no se puede leer"})
+            continue
+        if es_documentacion_del_estandar(rel, texto):
+            continue
+        fm = parse_frontmatter(texto)
+        if not es_del(fm.get("project")):
+            continue
+        if fm.get("revisado_en") in (None, ""):
+            sin_fecha += 1
+            continue
+        medidas += 1
+        estado = estado_de_revision(fm.get("revisado_en"),
+                                    fm.get("cadencia_dias", por_defecto), hoy)
+        if "problema" in estado:
+            ilegibles.append({"path": rel, "problema": estado["problema"]})
+        elif estado["vencida"]:
+            vencidas.append({"path": rel, "responsable": fm.get("responsable"), **estado})
+    return {
+        "ok": True,
+        "mode": "antiguedad",
+        "hoy": hoy.isoformat(),
+        "cadencia_por_defecto": por_defecto,
+        "notas_medidas": medidas,
+        "sin_fecha": sin_fecha,
+        "vencidas_total": len(vencidas),
+        "vencidas": vencidas,
+        "ilegibles": ilegibles,
+        "hint": ("Revisar es releer la nota contra lo que describe y poner `revisado_en` "
+                 "con la fecha del día; vencer no es fallar."),
+    }
+
+
 def vault_drift_vigencia(path: str, project: str) -> Dict[str, Any]:
     """AP-08: notas del proyecto cuyo código cambió después de su `updatedAt`.
 
@@ -1353,14 +1431,22 @@ Notas:
 
     parser.add_argument("--path", help="Project root path to scan (por defecto, el enlazado con vault_project --link)")
 
-    parser.add_argument("--project", type=proyecto_registrado("vault_drift_detect"), required=True, help="Project slug")
+    parser.add_argument("--project", type=proyecto_registrado("vault_drift_detect"),
+                        help="Project slug (obligatorio salvo en --mode antiguedad, donde filtra)")
 
     parser.add_argument(
         "--mode",
-        choices=["snapshot", "status", "report", "vigencia"],
+        choices=["snapshot", "status", "report", "vigencia", "antiguedad"],
         default="report",
         help="snapshot: save baseline | status: list changes | report: changes + vault coverage"
-        " | vigencia: notas con `files:` cuyo codigo cambio despues de su updatedAt (AP-08)",
+        " | vigencia: notas con `files:` cuyo codigo cambio despues de su updatedAt (AP-08)"
+        " | antiguedad: notas cuyo `revisado_en` mas su cadencia ya paso (no exige --path)",
+    )
+
+    parser.add_argument(
+        "--cadencia-dias", type=int, default=None,
+        help="--mode antiguedad: dias entre revisiones para la nota que no declara "
+             "`cadencia_dias` (por defecto, CADENCIA_DE_NOTA_POR_DEFECTO)",
     )
 
     parser.add_argument(
@@ -1370,6 +1456,19 @@ Notas:
     )
 
     args = parser.parse_args()
+
+    if args.mode == "antiguedad":
+        if args.cadencia_dias is not None and args.cadencia_dias <= 0:
+            result = emit_error("vault_drift_detect", "INVALID_VALUE",
+                                f"--cadencia-dias {args.cadencia_dias}: tiene que ser positivo")
+        else:
+            result = vault_drift_antiguedad(args.cadencia_dias, project=args.project)
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return 0 if result["ok"] else 1
+    if not args.project:
+        # El mismo rechazo que cuando `--project` era `required=True`: solo
+        # `antiguedad` mide el vault entero sin proyecto.
+        parser.error("the following arguments are required: --project")
 
     ruta = args.path
     if not ruta:

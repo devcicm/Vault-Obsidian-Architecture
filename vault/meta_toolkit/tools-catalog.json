@@ -1856,13 +1856,18 @@
           },
           "mode": {
             "type": "string",
-            "description": "snapshot: save baseline | status: list changes | report: changes + vault coverage | vigencia: notas con `files:` cuyo codigo cambio despues de su updatedAt (AP-08)",
+            "description": "snapshot: save baseline | status: list changes | report: changes + vault coverage | vigencia: notas con `files:` cuyo codigo cambio despues de su updatedAt (AP-08) | antiguedad: notas cuyo `revisado_en` mas su cadencia ya paso (no exige --path)",
             "enum": [
               "snapshot",
               "status",
               "report",
-              "vigencia"
+              "vigencia",
+              "antiguedad"
             ]
+          },
+          "cadencia-dias": {
+            "type": "integer",
+            "description": "--mode antiguedad: dias entre revisiones para la nota que no declara `cadencia_dias` (por defecto, CADENCIA_DE_NOTA_POR_DEFECTO)"
           },
           "extensions": {
             "type": "array",
@@ -1872,9 +1877,6 @@
             }
           }
         },
-        "required": [
-          "project"
-        ],
         "additionalProperties": false
       },
       "guards": [],
@@ -7645,6 +7647,10 @@
           "version-pinned": {
             "type": "string",
             "description": "Versión de paquete que la nota da por buena (repetible; AP-08)"
+          },
+          "adr": {
+            "type": "boolean",
+            "description": "Escribe un ADR en 03_Decisions con el siguiente adr-NNN libre, en draft, y exige Contexto/Decisión/Consecuencias (AP-07)"
           }
         },
         "required": [

@@ -106,7 +106,7 @@ from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
 # era la segunda declaración que envejece en silencio.
 from vault.kernel.indices_structural import RESERVED_INDEX_NAMES as _STRUCTURAL_NAMES  # noqa: E402
 from vault.kernel import construir  # noqa: E402
-from vault.kernel.contenido import abre_con_h1, meta_adr, plantilla_adr  # noqa: E402
+from vault.kernel.contenido import abre_con_h1, plantilla_adr  # noqa: E402
 from vault.kernel.normalizacion import slugify_strict  # noqa: E402
 from vault.kernel.escalon import escalon  # noqa: E402
 from vault.kernel.frontmatter_parsing import FrontmatterParseError, parse_frontmatter_with_body  # noqa: E402
@@ -2068,9 +2068,12 @@ def _get_roadmap_for_populated_vault(content_notes: List[Path]) -> List[Dict[str
                 # Plantilla y frontmatter salen del dueño de AP-07/AP-64: escrita
                 # aquí a mano, proponía «Decision» y el criterio pedía otra lista
                 # (v41.3), y nada decía quién responde de la decisión.
-                "command": "python scripts/vault_write.py --folder 03_Decisions --title 'ADR-001 ...' --content '"
-                + plantilla_adr().rstrip("\n").replace("\n", "\\n") + "' --meta '"
-                + json.dumps(meta_adr()) + "'",
+                # `--adr` (fase 4) numera, deja `draft` y rechaza las secciones
+                # vacías. La plantilla va como guía: pasarla vacía como
+                # contenido la rechaza el gate de contenido (AP-11).
+                "template": plantilla_adr(),
+                "command": "python scripts/vault_write.py --adr --folder 03_Decisions "
+                           "--title '<decisión>' --content @file:adr.md",
             }
         )
     if by_folder.get("08_Runbooks", 0) < 1:

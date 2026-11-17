@@ -78,8 +78,8 @@ Si la nota se guardó pero falla el refresco del índice de búsqueda, el result
 
 ```bash
 python vault_write.py --folder "01_Projects/mi-api" --title "Status" --content "# Status\n\nActivo"
-python vault_write.py --folder "03_Decisions" --title "ADR-001" --tags "arch,backend" --meta '{"status":"accepted"}'
-python vault_write.py --folder "03_Decisions" --title "ADR-001" --content "..." --meta-file meta.json
+python vault_write.py --adr --folder "03_Decisions" --title "Serializar escrituras" --tags "arch,backend" --content @file:adr.md
+python vault_write.py --folder "07_Knowledge" --title "Glosario" --content "..." --meta-file meta.json
 ```
 
 | Parámetro | Requerido | Descripción |
@@ -90,6 +90,7 @@ python vault_write.py --folder "03_Decisions" --title "ADR-001" --content "..." 
 | `--tags` | no | Lista de etiquetas |
 | `--meta` | no | JSON adicional para frontmatter |
 | `--meta-file` | no | Ruta a JSON con frontmatter adicional (evita problemas de quoting en PowerShell) |
+| `--adr` | no | Escribe un ADR en `03_Decisions`: siguiente `adr-NNN` libre, `status: draft` (`meta_adr()`), y rechaza con `VALIDATION_FAILED` el cuerpo sin Contexto/Decisión/Consecuencias, con la plantilla en la pista (AP-07). Pedir otro `status` es `CONFLICTING_ARGS`: quien redacta no aprueba (AP-64) |
 
 **CN-01 — el nombre sale del slug canónico (v40.35).** El fichero se deriva del título con
 `slugify_strict`, el mismo que usa el resto del toolkit: «Mapa de Código — ANS (v2)» es
@@ -1213,11 +1214,18 @@ Sobre git, el snapshot anota `repo.synced_commit` en la ficha del proyecto: es e
 | `status` | Ver cambios en cualquier momento |
 | `report` | Último comando antes de cerrar sesión |
 | `vigencia` | Notas que no acompañaron al cambio de su código (AP-08), solo lectura y solo git |
+| `antiguedad` | Notas cuya revisión venció (`revisado_en` + cadencia), solo lectura; no exige `--path` ni `--project` |
 
 `--mode vigencia` (v41.3) compara el `updatedAt` de cada nota del proyecto con el último commit que tocó los ficheros que la nota declara en `files:`, y lista en `desfasadas` las que quedaron por detrás. Una revisión que confirmó la nota sin cambiar el texto se anota en `revisado_en:` (contrato v41) y cuenta como acompañar al cambio. La relación nota → código la declara la nota; no se adivina por el nombre. `sin_files` cuenta las notas que no declaran su código y `sin_historia` las que declaran ficheros que git no conoce. `codigo_inexistente` (AP-01) nombra las que declaran un fichero que no está en el disco del repo; si no resuelve ninguno, la `pista` sugiere revisar `--path`. Las notas con `superseded_by:` o en estado `deprecated`, `obsolete`, `archived`, `stub` o `template` no se juzgan. Sin git sale `GIT_UNAVAILABLE`.
 
 ```bash
 python vault_drift_detect.py --project mi-api --mode vigencia
+```
+
+`--mode antiguedad` (Torti Code, fase 4) lista en `vencidas` las notas cuyo `revisado_en` más su cadencia ya pasó: la que la nota declara en `cadencia_dias`, o `--cadencia-dias` (por defecto `CADENCIA_DE_NOTA_POR_DEFECTO`). La aritmética es la de las normas, `vault_norms_catalog.estado_de_revision`: un solo dueño. Una nota sin `revisado_en` no se juzga y se cuenta en `sin_fecha`; una fecha ilegible o futura sale en `ilegibles`. Con `--project`, solo las notas de ese proyecto. Vencer no es fallar: es la lista de trabajo de la revisión.
+
+```bash
+python vault_drift_detect.py --mode antiguedad --cadencia-dias 90
 ```
 
 ---
@@ -2444,7 +2452,7 @@ VAULT_MCP_PERFIL=agente node mcp/nodejs/vault-mcp-server.mjs
 
 ### `vault_norms.py`
 
-Registro canónico de las 87 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
+Registro canónico de las 88 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
 
 **Desde v40.26 son tres ficheros y una sola tool.** Eran 5.158 líneas que hacían de catálogo, de motor y de fachada a la vez, con el 60% del fichero ocupado por una constante. Ahora `vault_norms_catalog.py` tiene los datos —`NORM_CATALOG` y el vocabulario de estado, sin leer el vault, sin escribir nada y sin importar ninguna tool—, `vault_norms_engine.py` tiene el motor de `--audit`, el drift del marco y el heal de AP-46, y este módulo se queda con la fachada de datos, la CLI y la **reexportación** de todo lo que el repo consumía antes. Esa reexportación es el punto: la superficie externa real son siete símbolos y los tests usan cinco privados más, así que reexportarlos hace que **ningún llamador se toque** y el diff se lea como movimiento puro. Recortar de paso la superficie que usan los tests habría mezclado dos cambios y hecho imposible saber cuál rompió qué.
 

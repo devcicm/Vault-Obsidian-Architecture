@@ -9,6 +9,10 @@ ejecutar. Movida tal cual desde `NORM_CATALOG` el 2026-10-09; las caras están e
 NORMA = {
     "code": "AP-07",
     "distinguido_de": {
+        "AP-72": (
+            "AP-07 lee el ADR que existe y mide sus secciones. AP-72 no lee el "
+            "contenido: mide que el ADR citado desde el código exista."
+        ),
         "AP-10": (
             "Las dos son documentos de proceso incompletos. AP-07 es el ADR al "
             "que le faltan secciones obligatorias —contexto, decisión, "
