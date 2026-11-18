@@ -195,6 +195,10 @@ def vault_pattern_save(
 
     existing_tags: List[Any] = []
 
+    # The creation date is a fact of the note, not of this save: every re-save
+    # used to overwrite it with now (W1 advisory, 2026-11-17).
+    existing_created = None
+
     evolution_entries = []
 
     if pattern_path.exists():
@@ -204,6 +208,11 @@ def vault_pattern_save(
         meta = parse_frontmatter(existing_content)
 
         existing_id = meta.get("id")
+
+        # The raw text, not the parsed value: YAML turns it into a datetime
+        # and `str()` would rewrite it in another format.
+        creada = re.search(r"^createdAt:[ \t]*(.+?)[ \t]*$", existing_content.split("\n---", 1)[0], re.M)
+        existing_created = creada.group(1).strip("'\"") if creada and meta.get("createdAt") else None
 
         existing_status = estado_de_la_nota(meta)
 
@@ -289,7 +298,7 @@ def vault_pattern_save(
         "tags", sorted({*map(str, existing_tags), safe_project, pattern_type, "pattern"})
     )
 
-    frontmatter.set("createdAt", timestamp)
+    frontmatter.set("createdAt", existing_created or timestamp)
 
     frontmatter.set("updatedAt", timestamp)
 

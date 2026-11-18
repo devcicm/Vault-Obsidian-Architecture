@@ -207,3 +207,17 @@ def test_flow_lifecycle_with_and_without_service(vault):
         assert r.envelope["totals"]["events"] == 2
     finally:
         _parar(vault)
+
+
+def test_ending_a_flow_never_begun_writes_nothing(vault, monkeypatch):
+    """`end` on an unknown flow used to create an empty, ended flow file
+    (W5 advisory, 2026-11-17). Like `get_flow`, it reports FILE_NOT_FOUND."""
+    import vault_io
+    import vault_token_service as servicio
+
+    monkeypatch.setenv("VAULT_ROOT", str(vault))
+    vault_io.set_vault_root(vault)
+    r = servicio.end_flow({"flow_id": "nunca"})
+    assert r["ok"] is False and r["error_code"] == "FILE_NOT_FOUND", r
+    assert r["flow_id"] == "nunca"
+    assert not _flujo(vault, "nunca").exists()

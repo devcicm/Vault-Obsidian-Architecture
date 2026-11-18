@@ -249,6 +249,12 @@ def end_flow(payload: Dict[str, Any]) -> Dict[str, Any]:
     if not flow_id:
         return emit_error("vault_token_service", "MISSING_REQUIRED_ARG", "falta flow_id")
     path = _flow_path(flow_id)
+    # Ending a flow that was never begun used to create an empty, ended flow
+    # file (W5 advisory, 2026-11-17); like `get_flow`, an unknown flow is
+    # reported, and nothing is written.
+    if not path.exists():
+        return {**emit_error("vault_token_service", "FILE_NOT_FOUND",
+                             f"flow no encontrado: {flow_id}"), "flow_id": flow_id}
     with file_lock(path):
         flow = _read_json(path, _default_flow(flow_id))
         flow["status"] = "ended"

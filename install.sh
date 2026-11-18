@@ -72,8 +72,23 @@ echo "[1/2] Instalando CLI ($PYTHON -m pip install -e .)..."
 
 echo
 echo "[2/2] Verificando entry points..."
-"$PYTHON" -m vault.product_cli --help > /dev/null 2>&1 && echo "  vault.product_cli: OK" || echo "  vault.product_cli: FAIL"
-"$PYTHON" -m vault.gobernanza.tool --help > /dev/null 2>&1 && echo "  vault.gobernanza.tool: OK" || echo "  vault.gobernanza.tool: FAIL"
+# A failed entry point ends the install with an error: printing FAIL and then
+# "Instalación completa" told the user it had worked (2026-11-17).
+FALLOS=0
+for MODULO in vault.product_cli vault.gobernanza.tool; do
+    if "$PYTHON" -m "$MODULO" --help > /dev/null 2>&1; then
+        echo "  $MODULO: OK"
+    else
+        echo "  $MODULO: FAIL"
+        FALLOS=$((FALLOS + 1))
+    fi
+done
+if [ "$FALLOS" -ne 0 ]; then
+    echo
+    echo "[ERROR] $FALLOS entry point(s) no arrancan; revisa la salida de pip de arriba."
+    echo "=== Instalación incompleta ==="
+    exit 1
+fi
 
 if [ "$INSTALL_MCP" = "1" ]; then
     echo

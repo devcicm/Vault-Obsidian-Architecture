@@ -199,3 +199,25 @@ def test_el_destino_depende_de_la_plataforma():
     else:
         assert str(destino) == "/usr/local/bin/vault-mcp", destino
 
+
+
+def test_pip_gestionado_por_el_sistema_se_explica_y_no_lanza_pip(monkeypatch, capsys):
+    """Debian 12 / Ubuntu 23.04+ mark the system Python EXTERNALLY-MANAGED
+    (PEP 668): pip refuses with a raw error. `install.sh` already explains it
+    and points to a venv; the Python installer launched pip anyway (W6 gap,
+    2026-11-17). It now stops before pip with the venv command."""
+    lanzados = []
+    monkeypatch.setattr(install, "_run", lambda cmd, **kw: lanzados.append(cmd) or 0)
+    monkeypatch.setattr(install, "_gestionado_por_el_sistema", lambda: True)
+    assert install._pip_install() != 0
+    assert lanzados == []
+    salida = capsys.readouterr()
+    assert "venv" in (salida.out + salida.err)
+
+
+def test_pip_en_un_entorno_propio_sigue_instalando(monkeypatch):
+    lanzados = []
+    monkeypatch.setattr(install, "_run", lambda cmd, **kw: lanzados.append(cmd) or 0)
+    monkeypatch.setattr(install, "_gestionado_por_el_sistema", lambda: False)
+    assert install._pip_install() == 0
+    assert lanzados and lanzados[0][1:4] == ["-m", "pip", "install"]

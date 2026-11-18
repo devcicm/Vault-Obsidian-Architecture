@@ -236,3 +236,20 @@ def test_el_listado_con_indice_filtra_como_antes(tmp_path):
     r = _cli(vault, "vault_pattern_list.py", "--type", "design").envelope
     assert r["ok"] is True and r["total"] == 1, r
     assert r["patterns"][0]["pattern"] == "CQRS", r
+
+
+def test_resave_conserva_la_fecha_de_creacion(tmp_path):
+    """The creation date is a fact of the note: a re-save used to overwrite
+    it with the time of the save (W1 advisory, 2026-11-17)."""
+    vault = _vault(tmp_path)
+    assert _save(vault, "planificado").envelope["ok"]
+    nota = vault / NOTA
+    texto = nota.read_text(encoding="utf-8")
+    antigua = "createdAt: 2020-01-02T03:04:05.000Z"  # the tool's own format
+    lineas = [antigua if linea.startswith("createdAt:") else linea for linea in texto.split("\n")]
+    nota.write_text("\n".join(lineas), encoding="utf-8")
+
+    assert _save(vault, "en_progreso").envelope["ok"]
+    escrita = nota.read_text(encoding="utf-8")
+    assert antigua in escrita, escrita
+    assert str(_frontmatter(nota)["updatedAt"]) != str(_frontmatter(nota)["createdAt"])

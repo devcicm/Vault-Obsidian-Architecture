@@ -54,7 +54,24 @@ def _run(cmd: list[str], **kwargs) -> int:
     return r.returncode
 
 
+def _gestionado_por_el_sistema() -> bool:
+    """PEP 668: a system Python outside a venv marked EXTERNALLY-MANAGED.
+
+    The same test `install.sh` runs before pip (2026-11-17).
+    """
+    marca = Path(sysconfig.get_path("stdlib")) / "EXTERNALLY-MANAGED"
+    return sys.prefix == sys.base_prefix and marca.is_file()
+
+
 def _pip_install(extra: str = "") -> int:
+    if _gestionado_por_el_sistema():
+        print(
+            "[install] Este Python lo gestiona el sistema (PEP 668) y pip se negaría.\n"
+            f"  Crea un entorno propio y repite desde él:\n"
+            f"    {sys.executable} -m venv .venv && .venv/bin/python -m vault.install",
+            file=sys.stderr,
+        )
+        return 2
     cmd = [sys.executable, "-m", "pip", "install", "-e", str(REPO_ROOT)]
     if extra:
         cmd.extend(extra.split())
