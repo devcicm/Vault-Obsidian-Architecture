@@ -35,10 +35,6 @@ def _vault(tmp_path: Path) -> Path:
     return vault
 
 
-def _concreto(args, valores):
-    return [valores.get(a, a) for a in args]
-
-
 def test_ap52_pattern_list_sin_indice_recupera_con_quien_lo_escribe(tmp_path):
     vault = _vault(tmp_path)
     (vault / "05_Patterns").mkdir()
@@ -48,14 +44,28 @@ def test_ap52_pattern_list_sin_indice_recupera_con_quien_lo_escribe(tmp_path):
     recovery = error["recovery"]
     assert recovery["action"] == "run_tool", recovery
     assert recovery["tool"] == "vault_pattern_save", recovery
+    assert recovery["args"] == ["--rebuild-index"], recovery
 
-    # Obeying the recovery literally (placeholders filled in) clears the error.
-    args = _concreto(recovery["args"], {
-        "<project>": "mi-api", "<name>": "Reintentos", "<type>": "design",
-        "<status>": "planificado"})
-    assert _cli(vault, "vault_pattern_save.py", *args)["ok"]
+    # Obeying the recovery literally clears the error; with no pattern notes
+    # the rebuilt index is empty, not missing.
+    assert _cli(vault, "vault_pattern_save.py", *recovery["args"])["ok"]
     listado = _cli(vault, "vault_pattern_list.py")
-    assert listado["ok"], listado
+    assert listado["ok"] and listado["total"] == 0, listado
+
+
+def test_ap52_pattern_list_sin_indice_con_notas_las_lista_tras_recuperar(tmp_path):
+    """QA-FL-PAT: the notes are there, the index is not; the recovery finds them."""
+    vault = _vault(tmp_path)
+    assert _cli(vault, "vault_pattern_save.py", "--project", "mi-api", "--name",
+                "Reintentos", "--type", "design", "--status", "planificado")["ok"]
+    (vault / "05_Patterns" / "index.json").unlink()
+
+    recovery = _cli(vault, "vault_pattern_list.py")["recovery"]
+    assert _cli(vault, recovery["tool"] + ".py", *recovery["args"])["ok"]
+
+    listado = _cli(vault, "vault_pattern_list.py")
+    assert listado["ok"] and listado["total"] == 1, listado
+    assert listado["patterns"][0]["path"] == "05_Patterns/design/mi-api-reintentos.md", listado
 
 
 def test_ap52_doc_sync_sin_tabla_de_indice_pide_corregir_el_readme(tmp_path, monkeypatch):

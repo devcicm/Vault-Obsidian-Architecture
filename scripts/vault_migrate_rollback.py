@@ -194,7 +194,7 @@ def vault_migrate_rollback(report_path_str: str, confirm: bool = False) -> Dict[
 
             "reportPath": report_path_str,
 
-            "toDelete": [str(f.relative_to(_raiz())) for f in existing_files],
+            "toDelete": [f.relative_to(_raiz()).as_posix() for f in existing_files],
 
             "notFound": not_found,
 
@@ -228,11 +228,11 @@ def vault_migrate_rollback(report_path_str: str, confirm: bool = False) -> Dict[
 
             f.unlink()
 
-            deleted.append(str(f.relative_to(_raiz())))
+            deleted.append(f.relative_to(_raiz()).as_posix())
 
         except Exception as e:
 
-            errors.append({"path": str(f.relative_to(_raiz())), "error": str(e)})
+            errors.append({"path": f.relative_to(_raiz()).as_posix(), "error": str(e)})
 
 
     # Remove entries from search index
@@ -240,19 +240,36 @@ def vault_migrate_rollback(report_path_str: str, confirm: bool = False) -> Dict[
     index_removed = remove_from_index(all_paths)
 
 
-    # Delete the report itself
+    # Delete the report itself, but only when the migration is fully undone.
+    # The report is the only map back: deleting it while some of its entries
+    # were not found (or failed to delete) left the rest of the migration
+    # impossible to undo. That is what a report from the Windows version
+    # before QA-FL-02 did, whose links had lost every separator: 0 files
+    # deleted, report deleted. Paths are never guessed; the report stays so
+    # it can be corrected and the rollback run again.
 
     report_deleted = False
 
-    try:
+    report_kept_because = None
 
-        report_path.unlink()
+    if not_found or errors:
 
-        report_deleted = True
+        report_kept_because = (
+            f"{len(not_found)} entries not found and {len(errors)} errors; "
+            f"the report is kept so the rollback can be completed"
+        )
 
-    except OSError:
+    else:
 
-        pass
+        try:
+
+            report_path.unlink()
+
+            report_deleted = True
+
+        except OSError:
+
+            pass
 
 
     return {
@@ -273,11 +290,21 @@ def vault_migrate_rollback(report_path_str: str, confirm: bool = False) -> Dict[
 
         "reportDeleted": report_deleted,
 
+        "reportKeptBecause": report_kept_because,
+
         "message": (
 
             f"Rollback complete: {len(deleted)} files removed, "
 
             f"{index_removed} index entries removed."
+
+            if report_kept_because is None else
+
+            f"Rollback incomplete: {len(deleted)} files removed, "
+
+            f"{index_removed} index entries removed; {report_kept_because} "
+
+            f"(see notFound and errors)."
 
         ),
 
@@ -313,6 +340,8 @@ Notas:
   - --confirm true ejecuta el rollback: borra notas, stubs y actualiza el indice
 
   - Solo elimina archivos creados por esa migracion especifica
+
+  - El informe solo se borra si la reversion es completa; con notFound o errors se conserva
 
 """,
 

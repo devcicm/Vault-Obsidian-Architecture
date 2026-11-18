@@ -18,6 +18,8 @@ Usage:
 
     python vault_pattern_save.py --project "ans" --name "Circuit-Breaker" --type "code" --status "en_progreso" --files "src/resilience.py" --related "Retry"
 
+    python vault_pattern_save.py --rebuild-index
+
 """
 
 import argparse
@@ -36,6 +38,7 @@ from vault_lib import yaml_scalar, utcnow, slugify
 from vault_lib import parse_frontmatter
 from vault_io import (
     indice_compartido,
+    file_lock,
     write_report,
     atomic_write_text,
     atomic_write_json,
@@ -65,6 +68,21 @@ VALID_TRANSITIONS = _mapa("pattern_state", {
     "deprecado": ["implementado", "en_progreso"],
     "refactoring": ["implementado", "en_progreso", "deprecado"],
 })
+
+
+def estado_de_la_nota(meta: Dict[str, Any]) -> Optional[str]:
+    """The pattern's own state, the key of `VALID_TRANSITIONS`.
+
+    Since AP-38 `status` holds the canonical note lifecycle (`planned`) and
+    the pattern state lives in `pattern_state` (`planificado`). The guard read
+    `status`, found no transitions from `planned` and froze every pattern after
+    its first save (QA-FL-01, 2026-11-17). Notes written before AP-38 carry the
+    domain value in `status` itself, so that is read only when it is one.
+    """
+    if meta.get("pattern_state") is not None:
+        return str(meta["pattern_state"])
+    legado = meta.get("status")
+    return legado if legado in PATTERN_STATUSES else None
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -134,6 +152,17 @@ def save_pattern_index(data: Dict[str, Any]) -> None:
     atomic_write_json(_index_file(), data)
 
 
+def _seccion(texto: str, titulo: str) -> Optional[str]:
+    """The body of a `## <titulo>` section this tool wrote, or None."""
+    encontrada = re.search(
+        rf"^## {re.escape(titulo)}\n\n(.*?)(?=\n## |\n+---\n\*Última actualización|\Z)",
+        texto, re.DOTALL | re.MULTILINE,
+    )
+    if not encontrada or not encontrada.group(1).strip():
+        return None
+    return encontrada.group(1).strip()
+
+
 def vault_pattern_save(
     project: str,
     name: str,
@@ -164,6 +193,8 @@ def vault_pattern_save(
 
     existing_status = None
 
+    existing_tags: List[Any] = []
+
     evolution_entries = []
 
     if pattern_path.exists():
@@ -174,14 +205,39 @@ def vault_pattern_save(
 
         existing_id = meta.get("id")
 
-        existing_status = meta.get("status")
+        existing_status = estado_de_la_nota(meta)
+
+        if isinstance(meta.get("tags"), list):
+            existing_tags = meta["tags"]
+
+        # The note is rewritten whole, so what it already documents is carried
+        # over unless this save restates it. Without this, advancing the state
+        # with `--status` alone (possible again since QA-FL-01) dropped the
+        # description, files, related patterns and notes.
+        if description is None:
+            description = _seccion(existing_content, "Descripción")
+
+        if notes is None:
+            notes = _seccion(existing_content, "Notas")
+
+        if files is None and isinstance(meta.get("files"), list):
+            files = [str(f) for f in meta["files"]]
+
+        if related_patterns is None and isinstance(meta.get("relatedPatterns"), list):
+            related_patterns = [str(r) for r in meta["relatedPatterns"]]
 
         evo_match = re.search(
             r"## Evolución\n(.*?)(?=\n## |\Z)", existing_content, re.DOTALL
         )
 
         if evo_match:
-            evolution_entries = evo_match.group(1).strip().split("\n")
+            # Only the list items: the section is the last one, so the match
+            # also runs over the `---` footer, which then piled up inside the
+            # history on every save.
+            evolution_entries = [
+                linea for linea in evo_match.group(1).strip().split("\n")
+                if linea.startswith("- ")
+            ]
 
     timestamp = utcnow()
 
@@ -225,6 +281,14 @@ def vault_pattern_save(
 
     frontmatter.lineas(status_frontmatter_lines("vault_pattern_save", status))
 
+    # AP-26 asks every content note for at least one tag, and this product's
+    # own audit flagged every pattern note (QA-FL-09). The tags come from what
+    # the note already declares, as in `vault_diagram_save`; the ones a person
+    # added to the note survive a re-save.
+    frontmatter.set(
+        "tags", sorted({*map(str, existing_tags), safe_project, pattern_type, "pattern"})
+    )
+
     frontmatter.set("createdAt", timestamp)
 
     frontmatter.set("updatedAt", timestamp)
@@ -258,16 +322,10 @@ def vault_pattern_save(
     if notes:
         body_sections.append(f"## Notas\n\n{notes}")
 
-    if evolution_entries or (existing_status and existing_status != status):
-        evo_section = ["## Evolución\n"]
-
-        for entry in evolution_entries:
-            evo_section.append(entry)
-
-        if existing_status and existing_status != status:
-            evo_section.append(f"- **{existing_status}** → **{status}** ({timestamp})")
-
-        body_sections.append("\n".join(evo_section))
+    if evolution_entries:
+        # The transition of this save is already in `evolution_entries`;
+        # appending it here as well wrote every transition twice.
+        body_sections.append("\n".join(["## Evolución\n", *evolution_entries]))
 
     body_sections.append(f"\n---\n*Última actualización: {timestamp}*")
 
@@ -315,6 +373,97 @@ def vault_pattern_save(
     }
 
 
+#: Why a note under `05_Patterns/` stays out of a rebuilt index.
+_SIN_ESTADO = "no pattern_state in the pattern vocabulary"
+_SIN_TIPO = "type is not a pattern type"
+_SIN_NOMBRE = "no title or project"
+
+
+def _entrada_de_la_nota(ruta: Path) -> Dict[str, Any]:
+    """The index entry a pattern note declares, or the reason it declares none.
+
+    Only what the note's frontmatter says, in the shape `vault_pattern_save`
+    writes: no field is guessed. `status` in the index is the pattern state,
+    as on every save.
+    """
+    meta = parse_frontmatter(ruta.read_text(encoding="utf-8", errors="replace"))
+    estado = estado_de_la_nota(meta)
+    if estado not in PATTERN_STATUSES:
+        return {"reason": _SIN_ESTADO}
+    if meta.get("type") not in PATTERN_TYPES:
+        return {"reason": _SIN_TIPO}
+    if not meta.get("title") or not meta.get("project"):
+        return {"reason": _SIN_NOMBRE}
+    entrada = {
+        "path": str(ruta.relative_to(_raiz()).as_posix()),
+        "pattern": str(meta["title"]),
+        "project": str(meta["project"]),
+        "type": meta["type"],
+        "status": estado,
+    }
+    if meta.get("updatedAt"):
+        entrada["updatedAt"] = str(meta["updatedAt"])
+    return entrada
+
+
+def vault_pattern_rebuild_index() -> Dict[str, Any]:
+    """Rebuild `05_Patterns/index.json` from the pattern notes (QA-FL-PAT).
+
+    The index is derived: every entry is what a note's frontmatter declares.
+    A vault that has the notes but lost the index (or never had one, after a
+    copy or a migration) had no way back, because only a save wrote it, and
+    only with its own entry. `vault_pattern_list` points its `INDEX_NOT_FOUND`
+    recovery here. Notes the pattern module does not recognise are reported in
+    `skipped` with their reason, never indexed by guessing; the section's own
+    `index.md` is not a note.
+    """
+    carpeta = _patterns_dir()
+    destino = _index_file()
+    patterns: List[Dict[str, Any]] = []
+    skipped: List[Dict[str, str]] = []
+    notas = sorted(carpeta.rglob("*.md")) if carpeta.is_dir() else []
+    for ruta in notas:
+        if ruta.name.lower() == "index.md":
+            continue
+        entrada = _entrada_de_la_nota(ruta)
+        if "reason" in entrada:
+            skipped.append({"path": str(ruta.relative_to(_raiz()).as_posix()),
+                            "reason": entrada["reason"]})
+        else:
+            patterns.append(entrada)
+
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    # A full replacement, not an upsert: the lock keeps a concurrent save from
+    # interleaving, and nothing from the previous file is read or kept.
+    with file_lock(destino, timeout=30.0):
+        atomic_write_json(destino, {"patterns": patterns})
+
+    return {
+        "ok": True,
+        **write_report(),
+        "action": "rebuild-index",
+        "index": str(destino.relative_to(_raiz()).as_posix()),
+        "indexed": len(patterns),
+        "skipped": skipped,
+    }
+
+
+_OBLIGATORIOS = ("project", "name", "type", "status")
+_DEL_GUARDADO = (*_OBLIGATORIOS, "description", "files", "related", "notes")
+
+
+def _validar_modo(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
+    """A save needs its four fields; a rebuild takes none of a save's."""
+    if args.rebuild_index:
+        sobran = [f"--{c}" for c in _DEL_GUARDADO if getattr(args, c) is not None]
+        if sobran:
+            parser.error(f"--rebuild-index takes no other argument: {', '.join(sobran)}")
+        return
+    faltan = [f"--{c}" for c in _OBLIGATORIOS if getattr(args, c) is None]
+    if faltan:
+        parser.error(f"the following arguments are required: {', '.join(faltan)}")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Vault Pattern Save Tool",
@@ -331,6 +480,8 @@ Ejemplos:
 
   python vault_pattern_save.py --project "mi-api" --name "CQRS" --type "design" --status "implementado" --notes "Ver ADR-003"
 
+  python vault_pattern_save.py --rebuild-index
+
 
 
 Notas:
@@ -343,18 +494,25 @@ Notas:
 
   - Las transiciones de estado se validan y se registran en el historial de evolucion
 
+  - Al volver a guardar, lo que no se repite (--description, --files, --related, --notes) se conserva
+
+  - --rebuild-index reconstruye 05_Patterns/index.json desde las notas de patron
+    (las que declaran pattern_state); las que no reconoce salen en `skipped`
+
 """,
         allow_abbrev=False,
     )
 
-    parser.add_argument("--project", type=proyecto_registrado("vault_pattern_save"), required=True, help="Project name")
+    # Required for a save, refused with --rebuild-index: argparse cannot say
+    # "required unless", so `_validar_modo` enforces it with argparse's words.
+    parser.add_argument("--project", type=proyecto_registrado("vault_pattern_save"), help="Project name (required to save)")
 
-    parser.add_argument("--name", required=True, help="Pattern name")
+    parser.add_argument("--name", help="Pattern name (required to save)")
 
-    parser.add_argument("--type", choices=PATTERN_TYPES, required=True, help=f"Pattern type: {PATTERN_TYPES}")
+    parser.add_argument("--type", choices=PATTERN_TYPES, help=f"Pattern type (required to save): {PATTERN_TYPES}")
 
     parser.add_argument(
-        "--status", choices=PATTERN_STATUSES, required=True, help=f"Pattern status: {PATTERN_STATUSES}"
+        "--status", choices=PATTERN_STATUSES, help=f"Pattern status (required to save): {PATTERN_STATUSES}"
     )
 
     parser.add_argument("--description", help="Pattern description")
@@ -365,7 +523,20 @@ Notas:
 
     parser.add_argument("--notes", help="Additional notes")
 
+    parser.add_argument(
+        "--rebuild-index",
+        action="store_true",
+        help="Rebuild 05_Patterns/index.json from the pattern notes; takes no other argument",
+    )
+
     args = parser.parse_args()
+
+    _validar_modo(parser, args)
+
+    if args.rebuild_index:
+        result = vault_pattern_rebuild_index()
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return 0 if result["ok"] else 1
 
     result = vault_pattern_save(
         args.project,

@@ -282,7 +282,28 @@ def scan_directory(source_path: Path, formats: List[str]) -> List[Path]:
     return files
 
 
-def process_file_staging(file_path: Path, project: str) -> Optional[Dict[str, Any]]:
+def origen_portable(file_path: Path, source: Optional[Path] = None) -> str:
+    """Where a migrated file came from, without this machine's identity.
+
+    `<source folder>/<path inside it>`, POSIX. The absolute path (drive,
+    user name, home) used to land in `migratedFrom`, in the stub's
+    `**Origen:**` and in the report, i.e. inside a vault that is shared
+    (QA-PORT-03, 2026-11-17). Nothing reads it back: the rollback works from
+    the report's vault links only.
+    """
+    if source is None:
+        return file_path.name
+    raiz = Path(source).resolve()
+    try:
+        dentro = Path(file_path).resolve().relative_to(raiz).as_posix()
+    except ValueError:
+        dentro = Path(file_path).name
+    return f"{raiz.name}/{dentro}" if raiz.name else dentro
+
+
+def process_file_staging(
+    file_path: Path, project: str, source: Optional[Path] = None
+) -> Optional[Dict[str, Any]]:
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
@@ -305,6 +326,8 @@ def process_file_staging(file_path: Path, project: str) -> Optional[Dict[str, An
 
     timestamp = datetime.now(timezone.utc).isoformat()
 
+    origen = origen_portable(file_path, source)
+
     from vault_lib import utcnow
     now = utcnow()
     tags = [project, "migrated"]
@@ -314,7 +337,7 @@ def process_file_staging(file_path: Path, project: str) -> Optional[Dict[str, An
         Frontmatter()
         .set("title", file_path.stem, texto=True)
         .set("id", str(uuid.uuid4()))
-        .set("migratedFrom", file_path.as_posix())
+        .set("migratedFrom", origen)
         .set("type", "migrated")
         .set("createdAt", now)
         .set("updatedAt", now)
@@ -334,7 +357,7 @@ def process_file_staging(file_path: Path, project: str) -> Optional[Dict[str, An
     frontmatter.append(f"\n{content_converted.strip()}\n")
 
     return {
-        "originalPath": str(file_path),
+        "originalPath": origen,
         "originalName": file_path.name,
         "stagedName": filename,
         "content": "\n".join(frontmatter),
@@ -366,13 +389,13 @@ def vault_migrate_docs(
     errors: List[Dict[str, Any]] = []
 
     for file_path in files:
-        result = process_file_staging(file_path, project)
+        result = process_file_staging(file_path, project, source)
 
         if result:
             staged_results.append(result)
 
         else:
-            errors.append({"path": str(file_path), "reason": "Could not read file"})
+            errors.append({"path": origen_portable(file_path, source), "reason": "Could not read file"})
 
     phase1_report = {
         "phase": "STAGING",
@@ -459,19 +482,23 @@ def vault_migrate_docs(
 
         dest_path.parent.mkdir(parents=True, exist_ok=True)
 
-        relative_parent = str(dest_path.parent.relative_to(_raiz()))
+        relative_parent = dest_path.parent.relative_to(_raiz()).as_posix()
 
         if relative_parent not in subfolders_created:
             subfolders_created.append(relative_parent)
 
-        dest_path_rels = dest_path.relative_to(_raiz())
+        # POSIX on every OS: the report links these paths, and `safe_wikilink`
+        # strips backslashes, so on Windows the report named
+        # `10_Migratedexcludeddeploy.md` and the rollback could find nothing
+        # (QA-FL-02, 2026-11-17).
+        dest_path_rels = dest_path.relative_to(_raiz()).as_posix()
 
         distributed.append(
             {
                 "originalName": staged["originalName"],
                 "stagedName": staged["stagedName"],
                 "destFolder": str(carpeta_destino.relative_to(_raiz())).replace("\\", "/"),
-                "destPath": str(dest_path_rels),
+                "destPath": dest_path_rels,
                 "relevance": relevance,
                 "sugerencia_de_seccion": sugerencia,
             }
@@ -522,7 +549,7 @@ def vault_migrate_docs(
         stub_content = f"""# {Path(staged["originalName"]).stem}
 
 
-> Este archivo fue migrado a: [[{safe_wikilink(str(dest_path_rels))}|{safe_wikilink(dest_folder)}/{safe_wikilink(dest_name)}]]
+> Este archivo fue migrado a: [[{safe_wikilink(dest_path_rels)}|{safe_wikilink(dest_folder)}/{safe_wikilink(dest_name)}]]
 
 
 **Origen:** `{staged["originalPath"]}`
@@ -547,7 +574,7 @@ _{staged["preview"][:200]}..._
         stubs_created.append(
             {
                 "originalName": staged["originalName"],
-                "stub": str(stub_path.relative_to(_raiz())),
+                "stub": stub_path.relative_to(_raiz()).as_posix(),
             }
         )
 
@@ -676,7 +703,7 @@ _{staged["preview"][:200]}..._
         ],
         "subfoldersCreated": subfolders_created,
         "stubsCreated": len(stubs_created),
-        "reportFile": str(report_path.relative_to(_raiz())),
+        "reportFile": report_path.relative_to(_raiz()).as_posix(),
         "message": f"Migration complete: {direct_count} direct, {indirect_count} indirect, {excluded_count} excluded. {len(subfolders_created)} subfolders created.",
     }
 

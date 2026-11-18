@@ -74,15 +74,21 @@ def _sin_indice() -> Dict[str, Any]:
     `05_Patterns/index.json`: obeying it returned the same error (measured on
     2026-11-17). The only producer is `vault_pattern_save`, so `run_tool`
     points there, the same fix `vault_tags._sin_registro` applied.
+
+    It points to `--rebuild-index`, not to a save with placeholders: a save
+    writes an index holding only its own entry, so a vault whose pattern notes
+    were already there still listed none of them (QA-FL-PAT). The rebuild
+    reads them all, and on a vault with no notes writes an empty index.
     """
     envelope = emit_error(
         "vault_pattern_list", "INDEX_NOT_FOUND",
-        "Pattern index not found. Save patterns first with vault_pattern_save.",
-        pista="Save the first pattern with vault_pattern_save; it creates 05_Patterns/index.json.",
+        "Pattern index not found. Rebuild it from the pattern notes with "
+        "vault_pattern_save --rebuild-index.",
+        pista="vault_pattern_save --rebuild-index writes 05_Patterns/index.json "
+              "from the notes in 05_Patterns/; any save also creates it.",
     )
     envelope["recovery"]["tool"] = "vault_pattern_save"
-    envelope["recovery"]["args"] = ["--project", "<project>", "--name", "<name>",
-                                    "--type", "<type>", "--status", "<status>"]
+    envelope["recovery"]["args"] = ["--rebuild-index"]
     return envelope
 
 
@@ -205,7 +211,7 @@ Notas:
 
   - VAULT_ROOT se detecta automaticamente desde la ubicacion del script
 
-  - Requiere que vault_pattern_save haya sido ejecutado al menos una vez
+  - Lee 05_Patterns/index.json; si falta, vault_pattern_save --rebuild-index lo reconstruye desde las notas
 
   - Estados: implementado, en_progreso, planificado, deprecado, refactoring
 
