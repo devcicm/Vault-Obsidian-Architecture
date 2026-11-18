@@ -47,7 +47,10 @@ from typing import Any, Dict, List
 
 
 from vault_errors import emit_error, fuera_de_sesion, wrap_main
-from vault_io import assert_within_vault, atomic_write_text, get_vault_root, is_snapshot_path, tomar_lock
+from vault_io import (  # NotaInmutableError: el veto del dueño de la escritura
+    FICHERO_INMUTABILIDAD, FICHERO_REGLAS, NotaInmutableError, assert_within_vault,
+    atomic_write_text, get_vault_root, is_snapshot_path, nota_es_inmutable, tomar_lock,
+)
 from vault_lib import destino_mas_corto, indice_de_nombres, inventario_de_nombres, resolver_sustitucion
 from vault.kernel.frontmatter_escritura import Frontmatter
 from vault.kernel.frontmatter_parsing import (
@@ -75,6 +78,26 @@ def _datos(texto: str) -> Dict[str, Any]:
     (CN-05).
     """
     return parse_frontmatter(texto)
+
+
+def _pista_inmutable(nota: Path, raiz: Path):
+    """The supported path when the whole section is frozen, or None (catalog hint).
+
+    `secciones` in the immutability file freezes every byte of the section,
+    the `superseded_by` key included, by design. Decision sections that must
+    stay closed but be superseded declare `sustitucion` in the rules file:
+    there a closed body is still not rewritten (AP-75) and this tool links
+    the successor. Other refusals (an archived source) keep the catalog hint.
+    """
+    seccion = nota_es_inmutable(nota, raiz)
+    if not seccion:
+        return None
+    return (f"La seccion '{seccion}' esta declarada inmutable entera ({FICHERO_INMUTABILIDAD} "
+            f"`secciones`, o `inmutable` en {FICHERO_REGLAS}): ahi no se anota nada, tampoco "
+            f"{CLAVE}. Para sustituir decisiones cerradas, el modo soportado es "
+            f"`sustitucion` en {FICHERO_REGLAS} ({{\"sustitucion\": [\"{seccion}\"]}}) en lugar "
+            f"de `secciones`: el cuerpo cerrado sigue sin reescribirse (AP-75) y "
+            f"vault_supersede enlaza la sucesora. Cambiar la politica es decision del dueno.")
 
 
 def supersede(path: str, by: str, apply: bool = False, replace: bool = False) -> Dict[str, Any]:
@@ -177,6 +200,13 @@ def supersede(path: str, by: str, apply: bool = False, replace: bool = False) ->
                     "path": rel}
         try:
             atomic_write_text(nota, nuevo)
+        except NotaInmutableError as exc:
+            # QA-FL-07: the write owner's refusal is governance, not a disk
+            # problem; as WRITE_ERROR its recovery sent the agent to check
+            # permissions. The guard stays (S4): the hint names the mode that
+            # admits this flow, without relaxing the one that forbids it.
+            return {**emit_error(TOOL, "IMMUTABLE_NOTE", str(exc),
+                                 pista=_pista_inmutable(nota, raiz)), "path": rel}
         except (PermissionError, ValueError) as exc:
             return {**emit_error(TOOL, "WRITE_ERROR", str(exc), exception=exc), "path": rel}
     return {**base, "written": True}

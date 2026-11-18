@@ -58,7 +58,24 @@ def vault_quarantine_add(
     resultado = _servicio(root).retener(path, reason, category, agent)
     if "ok" in resultado:
         return resultado
-    return {"ok": True, **write_report(), **resultado}
+    indices = _reubicar(resultado["origin"], resultado["path"], root)
+    return {"ok": True, **write_report(), **resultado, **indices}
+
+
+def _reubicar(origen: str, destino: str, root=None) -> Dict[str, Any]:
+    """AP-47: the indexes follow the note to where it now is on disk.
+
+    Retaining or returning a note moves it, and the old search row, domain
+    entry and graph node kept the path it had left: `vault_search` returned
+    a dead path until a reindex. The owners are those of a move
+    (`vault_move.reubicar_indices`). A library caller that names another
+    `root` keeps the old behaviour: the index owners resolve the active vault.
+    """
+    if root is not None:
+        return {}
+    from vault_move import reubicar_indices
+
+    return {"indexes": reubicar_indices(origen, destino)}
 
 
 def vault_quarantine_restore(
@@ -68,7 +85,8 @@ def vault_quarantine_restore(
     resultado = _servicio(root).devolver(path, agent)
     if "ok" in resultado:
         return resultado
-    return {"ok": True, **write_report(), **resultado}
+    indices = _reubicar(resultado["from"], resultado["path"], root)
+    return {"ok": True, **write_report(), **resultado, **indices}
 
 
 def vault_quarantine_list(

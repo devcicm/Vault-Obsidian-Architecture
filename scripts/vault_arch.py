@@ -316,6 +316,10 @@ CONTEXTS: dict[str, dict] = {
             "buscar": "vault_search:vault_search",
             "hablar": "vault/autoria/voz:speak",
             "tipo_por_carpeta": "vault_write:tipo_por_carpeta",
+            # QA-FL-06 (2026-11-17): quarantine add/restore re-points the
+            # search row, domain indexes, graph and section indexes through
+            # the owner of moving instead of leaving them stale.
+            "reubicar_indices": "vault_move:reubicar_indices",
         },
         "prohibe": [],
         "modulos": [
@@ -2040,6 +2044,18 @@ _cruce("ciclo_de_vida", "grafo", "permanente", "ciclo_de_vida",
        "grafo. Reimplementarlo aquí sería AP-57.")
 _cruce("grafo", "autoria", "permanente", "grafo",
        "Etiquetar código escribe la nota por el write path único (AP-46).")
+_cruce("autoria", "durabilidad", "permanente", "autoria",
+       "El borrado suave es cuarentena: `vault_delete --trash-only` pasa por "
+       "`vault_quarantine_add` para que la nota quede en el registro de la "
+       "cuarentena y `--restore` la devuelva (QA-FL-06, 2026-11-17). Mover la "
+       "nota por su cuenta dejaba un estado sin salida.",
+       revisado="2026-11-17")
+_cruce("durabilidad", "autoria", "permanente", "durabilidad",
+       "Poner y sacar de cuarentena mueve una nota: los índices (búsqueda, "
+       "dominio, grafo y sección) los reubica el dueño de mover, por su puerto "
+       "`reubicar_indices`, en vez de una segunda copia de esa lógica (AP-57). "
+       "Grafo y autoría ya se cruzan así en las dos direcciones.",
+       revisado="2026-11-17")
 _cruce("consulta", "autoria", "permanente", "consulta",
        "El paquete de contexto busca notas: la búsqueda tiene dueño en Autoría.")
 _cruce("consulta", "grafo", "permanente", "consulta",

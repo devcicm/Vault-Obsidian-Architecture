@@ -14,7 +14,6 @@ Usage:
 
 import argparse
 import json
-import shutil
 import sys
 from pathlib import Path
 from typing import Any, Dict
@@ -23,12 +22,13 @@ from vault_errors import emit_error, fuera_de_sesion, wrap_main
 from vault_entorno import agente_por_defecto
 from vault_io import (
     actualizar_indices_de_dominio, assert_within_vault, atomic_write_json, atomic_write_text,
-    refrescar_indice_de_seccion, refrescar_grafo,
+    refrescar_grafo,
     nota_no_se_borra,  # politica de no-borrado del vault
     nota_es_inmutable, PoliticaInvalidaError,  # politica de inmutabilidad del vault
 )
 from vault_registry import es_artefacto_derivado
-from vault_move import notas_que_enlazan
+from vault_move import notas_que_enlazan, refrescar_seccion
+from vault_quarantine import vault_quarantine_add  # puerto `poner_en_cuarentena`
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -43,12 +43,6 @@ def _raiz() -> Path:
 
 def _repo(root=None) -> RepositorioAutoria:
     return RepositorioAutoria(construir(root))
-
-
-def _trash_dir() -> Path:
-    trash = _raiz() / "20_Quarantine"
-    trash.mkdir(parents=True, exist_ok=True)
-    return trash
 
 
 def _already_deleted(path: str) -> bool:
@@ -157,7 +151,7 @@ def vault_delete(
         path: vault-relative note path
         reason: motivo de eliminacion (requerido)
         agent: agente que realiza la eliminacion
-        trash_only: solo mover a 20_Quarantine/ en vez de eliminar
+        trash_only: retener en 20_Quarantine/ por vault_quarantine en vez de eliminar
         dry_run: no escribir nada, solo reportar
         force: omitir la verificacion SP-01 (para uso interno)
     """
@@ -281,34 +275,41 @@ def vault_delete(
         sp01_note = "SP-01: forzado con --force (sin change-log)"
 
     if trash_only:
-        trash_dest = _trash_dir() / note_path.name
-        counter = 1
-        while trash_dest.exists():
-            stem = note_path.stem
-            trash_dest = _trash_dir() / f"{stem}_{counter}.md"
-            counter += 1
-        shutil.move(str(note_path), str(trash_dest))
-        # AP-47: quitarla de su sección la saca del `index.md`, que solo se
-        # rehacía al escribir (medido como consumidor, 2026-10-10).
-        seccion = refrescar_indice_de_seccion(note_path)
+        # QA-FL-06: the trash is the quarantine, through its owner. Moving the
+        # file here by hand left it out of the ledger, so `vault_quarantine
+        # --list` did not see it and `--restore` answered NOT_QUARANTINED: the
+        # only way back was an undocumented `vault_move`. The owner records
+        # the origin and the reason, and the adapter moves the indexes along.
+        retenida = vault_quarantine_add(rel_path, reason, "unclassified", agent)
+        if not retenida.get("ok"):
+            return emit_error("vault_delete", retenida.get("error_code") or "WRITE_ERROR",
+                              retenida.get("error") or retenida.get("message") or "")
+        indices = retenida.get("indexes", {})
+        secciones = indices.get("section_index") or [{}]
         return {
             "ok": True,
             "action": "moved_to_quarantine",
             "note": path,
-            "quarantined_to": str(trash_dest.relative_to(vault_root)).replace("\\", "/"),
+            "quarantined_to": retenida["path"],
             "deleted": False,
             "trashed": True,
             "change_logged": change_logged,
             "sp01_status": sp01_note,
+            "recoverable": {
+                "quarantine": retenida["path"],
+                "restore": f'vault_quarantine --restore "{retenida["path"]}"',
+            },
             "inbound_links": entrantes,
-            "section_index": seccion,
-            "search_index": _indice_tras_borrar(rel_path),
-            "graph_index": _grafo_tras_borrar(note_path, trash_dest),
+            # The origin section's refresh, as before; the others go in `indexes`.
+            "section_index": secciones[0],
+            "search_index": indices.get("search_index"),
+            "graph_index": indices.get("graph_index"),
+            "degraded": indices.get("degraded", []),
         }
     else:
         guardada = _guardar_lo_que_se_borra(note_path, rel_path)
         note_path.unlink()
-        seccion = refrescar_indice_de_seccion(note_path)
+        seccion = refrescar_seccion(note_path)
         return {
             "ok": True,
             "action": "deleted",
@@ -354,7 +355,8 @@ Ejemplos:
 Notas:
   - --reason es OBLIGATORIO
   - Si la nota ya fue registrada como deleted en change-log, no escribira entrada duplicada
-  - --trash-only mueve a 20_Quarantine/ en vez de eliminar
+  - --trash-only retiene la nota en 20_Quarantine/unclassified/ por el dueño de la
+    cuarentena; se devuelve con vault_quarantine --restore (recoverable.restore)
   - --force omite la creacion de change-log (para recovery de la propia tool)
 """,
         allow_abbrev=False,

@@ -269,12 +269,53 @@ def _reescribir_enlaces(
     return texto, cambios, ambiguo
 
 
+def _filas_canonicas(index_data: Dict[str, Any]) -> bool:
+    """True when every search row is a dict: the schema the refresh owner writes."""
+    notas = index_data.get("notes", [])
+    return isinstance(notas, list) and all(isinstance(n, dict) for n in notas)
+
+
+def _en_busqueda(rel: str) -> bool:
+    try:
+        datos = json.loads(_search_index().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    notas = datos.get("notes", []) if isinstance(datos, dict) else []
+    return any(isinstance(n, dict) and n.get("path") == rel for n in notas)
+
+
+def _regenerador():
+    """The `indices` port; its absence is a reason, not a silent skip (AP-51)."""
+    from vault_io import _regenerador_de_indices  # the port, as vault_change_log asks it
+
+    regenerador = _regenerador_de_indices()
+    if regenerador is None:
+        raise RuntimeError("nadie atiende el puerto `indices`")
+    return regenerador
+
+
 def update_search_index(old_path: str, new_path: str, dry_run: bool = False) -> Dict[str, Any]:
-    """Actualiza search-index.json con la nueva ubicación."""
+    """Actualiza search-index.json con la nueva ubicación (AP-47).
+
+    The old row leaves and the new path enters through the refresh owner
+    (`vault_section_index.refrescar_busqueda`, by the `indices` port), so the
+    row carries the moved note's current title, hash and terms. Rewriting
+    only the rows that already existed left a note whose row was missing
+    (sent to quarantine by the old `vault_delete --trash-only`, then moved
+    back) invisible to `vault_search`, and a reclassified note with two rows.
+    An index whose rows are not all dicts (legacy) keeps the in-place rewrite.
+    """
     if not _search_index().exists():
         return {"updated": False, "reason": "search-index not found"}
+    estado = {"canonico": False, "removed": 0}
 
     def cambiar(index_data: Dict[str, Any]) -> bool:
+        if not dry_run and _filas_canonicas(index_data):
+            notas = index_data.get("notes", [])
+            quedan = [n for n in notas if n.get("path") != old_path]
+            estado.update(canonico=True, removed=len(notas) - len(quedan))
+            index_data["notes"] = quedan
+            return bool(estado["removed"])
         updated = False
         for note in index_data.get("notes", []):
             if not isinstance(note, dict):
@@ -290,7 +331,72 @@ def update_search_index(old_path: str, new_path: str, dry_run: bool = False) -> 
         if not isinstance(index_data, dict):
             return {"updated": False, "reason": "search-index con esquema no reconocido"}
         return {"updated": cambiar(index_data)}
-    return _reescribir_json(_search_index(), cambiar)
+    hecho = _reescribir_json(_search_index(), cambiar)
+    if not estado["canonico"]:
+        return hecho
+    _regenerador().refrescar_busqueda([_raiz() / new_path])
+    indexada = _en_busqueda(new_path)
+    return {"updated": bool(estado["removed"]) or indexada,
+            "removed": estado["removed"], "indexed": indexada}
+
+
+def refrescar_seccion(ruta: Path) -> Dict[str, Any]:
+    """`refrescar_indice_de_seccion` plus the search rows of what it regenerated.
+
+    Regenerating a section `index.md` changes its bytes, and its search row
+    carries a content hash: without refreshing that row `vault_reindex
+    --check` reported the index as modified after a delete or a move between
+    sections. The rows refreshed are the ones `vault_io._regenerar_seccion`
+    names (the section index and the note folder's index), only if indexed.
+    """
+    hecho = refrescar_indice_de_seccion(ruta)
+    if not hecho.get("updated"):
+        return hecho
+    raiz = _raiz()
+    nombrados = [raiz / hecho["section"] / "index.md", Path(ruta).parent / "index.md"]
+    existentes = [p for p in dict.fromkeys(nombrados) if p.is_file()]
+    try:
+        _regenerador().refrescar_busqueda([], existentes=existentes)
+    except Exception as exc:  # noqa: BLE001 - the index.md is already regenerated
+        # AP-51: traced with its reason; `vault_reindex --check` names the row.
+        emit_error("vault_move", "AUTO_INDEX_ERROR", f"{type(exc).__name__}: {exc}")
+    return hecho
+
+
+def reubicar_indices(origen: str, destino: str) -> Dict[str, Any]:
+    """Derived indexes after a note left `origen` for `destino` outside `vault_move`.
+
+    `vault_quarantine` (add and restore) and `vault_delete --trash-only` move
+    the note through the quarantine owner, not through `_mover_nota`. The
+    owners are the ones a move uses: search row (old out, new in), domain
+    indexes rewritten to the new path, graph node moved and both section
+    indexes regenerated. The note already moved, so a failing index degrades
+    with its reason; it does not undo the move.
+    """
+    raiz = _raiz()
+    degradado: List[str] = []
+
+    def _safe(nombre: str, fn) -> Dict[str, Any]:
+        try:
+            return fn()
+        except Exception as exc:  # noqa: BLE001 - the note already moved
+            degradado.append(f"{nombre}: {type(exc).__name__}: {exc}")
+            return {"updated": False, "error": str(exc)}
+
+    busqueda = _safe("search-index", lambda: update_search_index(origen, destino))
+    dominio = _safe("domain-indexes", lambda: actualizar_indices_de_dominio(origen, destino))
+    degradado.extend(f"domain-indexes: {r} ilegible" for r in dominio.get("unreadable", []))
+    grafo = _safe("graph", lambda: refrescar_grafo(raiz / destino, raiz / origen))
+    secciones: List[Dict[str, Any]] = []
+    for ruta in dict.fromkeys((raiz / origen, raiz / destino)):
+        hecho = _safe("section-index", lambda r=ruta: refrescar_seccion(r))
+        if hecho.get("section"):
+            secciones.append(hecho)
+        if hecho.get("ok") is False:
+            degradado.append(f"section-index: {hecho.get('section')}: {hecho.get('message')}")
+    return {"search_index": busqueda, "domain_indexes": dominio, "graph_index": grafo,
+            "section_index": secciones, "degraded": degradado,
+            "next": "vault_reindex" if degradado else None}
 
 
 def update_graph(old_path: str, new_path: str, dry_run: bool = False) -> Dict[str, Any]:
@@ -624,7 +730,7 @@ def _mover_nota(
     secciones: List[Dict[str, Any]] = []
     if not dry_run and refrescar_secciones:
         for ruta in dict.fromkeys((source, destination)):
-            hecho = refrescar_indice_de_seccion(ruta)
+            hecho = refrescar_seccion(ruta)
             if hecho.get("section") and hecho["section"] not in {x["section"] for x in secciones}:
                 secciones.append(hecho)
             if not hecho.get("ok"):
@@ -819,7 +925,7 @@ def move_folder(
     secciones: List[Dict[str, Any]] = []
     if not dry_run:
         for carpeta in dict.fromkeys((source, destination)):
-            hecho = refrescar_indice_de_seccion(carpeta / "index.md")
+            hecho = refrescar_seccion(carpeta / "index.md")
             if hecho.get("section") and hecho["section"] not in {x["section"] for x in secciones}:
                 secciones.append(hecho)
 

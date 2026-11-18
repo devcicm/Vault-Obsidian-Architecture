@@ -88,9 +88,11 @@ def test_una_nota_del_vault_se_sigue_borrando(entorno):
 def test_trash_only_mueve_la_nota_a_cuarentena(entorno):
     raiz, nota, _ = entorno
     r = _ejecutar(raiz, "--path", "07_Knowledge/vieja.md", "--reason", "prueba", "--trash-only")
-    assert r["ok"] and r["quarantined_to"] == "20_Quarantine/vieja.md", r
+    # Since QA-FL-06 (2026-11-17) the trash goes through the quarantine owner,
+    # so `vault_quarantine --list/--restore` see it.
+    assert r["ok"] and r["quarantined_to"] == "20_Quarantine/unclassified/vieja.md", r
     assert not nota.exists()
-    assert (raiz / "20_Quarantine" / "vieja.md").is_file()
+    assert (raiz / "20_Quarantine" / "unclassified" / "vieja.md").is_file()
 
 
 # ── El índice de búsqueda no guarda notas borradas ───────────────────────────
@@ -110,7 +112,12 @@ def test_la_nota_borrada_sale_del_indice(entorno, modo):
     r = _ejecutar(raiz, "--path", "07_Knowledge/vieja.md", "--reason", "prueba", *modo)
     assert r["ok"] and r["search_index"]["removed"] == 1, r
     rutas = [n["path"] for n in json.loads(fichero.read_text(encoding="utf-8"))["notes"]]
-    assert rutas == ["07_Knowledge/otra.md"]
+    assert "07_Knowledge/vieja.md" not in rutas and "07_Knowledge/otra.md" in rutas, rutas
+    if modo:
+        # The trashed note stays findable where it now lives (QA-FL-06).
+        assert "20_Quarantine/unclassified/vieja.md" in rutas, rutas
+    else:
+        assert rutas == ["07_Knowledge/otra.md"]
 
 
 def test_un_indice_corrupto_no_convierte_el_borrado_en_fallo(entorno):

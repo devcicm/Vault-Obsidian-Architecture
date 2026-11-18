@@ -2,7 +2,7 @@
 
 > Documento derivado. Se genera con `python scripts/vault_arch.py --blueprint`; la fuente es `CONTEXTS` en `scripts/vault_arch.py`. No se edita a mano.
 
-**10 contextos**, **180 módulos** clasificados, **32 fronteras cruzadas** pendientes de publicar puerto.
+**10 contextos**, **180 módulos** clasificados, **34 fronteras cruzadas** pendientes de publicar puerto.
 
 ## Los límites
 
@@ -39,10 +39,12 @@ graph TD
     autoria -.->|cruce| gobernanza
     grafo -.->|cruce| autoria
     consulta -.->|cruce| autoria
+    autoria -.->|cruce| durabilidad
     ciclo_de_vida -.->|cruce| indices
     ciclo_de_vida -.->|cruce| autoria
     ciclo_de_vida -.->|cruce| grafo
     ciclo_de_vida -.->|cruce| gobernanza
+    durabilidad -.->|cruce| autoria
     meta_toolkit -.->|cruce| ciclo_de_vida
     ciclo_de_vida -.->|cruce| meta_toolkit
     autoria -.->|cruce| meta_toolkit
@@ -67,14 +69,15 @@ graph TD
 ## Autoría
 
 - **Lenguaje ubicuo:** nota, frontmatter, slug, sección, alias
-- **Puertos publicados:** `anexar` → `vault_append:vault_append`, `buscar` → `vault_search:vault_search`, `escribir_nota` → `vault_write:vault_write`, `fusionar` → `vault_merge:vault_merge`, `hablar` → `vault/autoria/voz:speak`, `mover` → `vault_move:move_note`, `tipo_por_carpeta` → `vault_write:tipo_por_carpeta`
+- **Puertos publicados:** `anexar` → `vault_append:vault_append`, `buscar` → `vault_search:vault_search`, `escribir_nota` → `vault_write:vault_write`, `fusionar` → `vault_merge:vault_merge`, `hablar` → `vault/autoria/voz:speak`, `mover` → `vault_move:move_note`, `reubicar_indices` → `vault_move:reubicar_indices`, `tipo_por_carpeta` → `vault_write:tipo_por_carpeta`
 - **Módulos (47):** `vault_ai_decision`, `vault_append`, `vault_bibliography_save`, `vault_bug_save`, `vault_change_log`, `vault_dataset`, `vault_delete`, `vault_delta`, `vault_diagram_export`, `vault_diagram_save`, `vault_diff`, `vault_env_save`, `vault_fix_brackets`, `vault_flow_save`, `vault_frontmatter_completar`, `vault_frontmatter_heal`, `vault_incident_save`, `vault_infra_save`, `vault_knowledge_get`, `vault_knowledge_save`, `vault_list`, `vault_log_error`, `vault_merge`, `vault_move`, `vault_ncr_save`, `vault_pattern_list`, `vault_pattern_save`, `vault_privacy_save`, `vault_project`, `vault_project_overview`, `vault_project_status`, `vault_qa_save`, `vault_read`, `vault_release_save`, `vault_requirement_save`, `vault_risk_save`, `vault_ronda`, `vault_runbook_log`, `vault_runbook_save`, `vault_search`, `vault_slo_save`, `vault_supersede`, `vault_test_save`, `vault_timeline`, `vault_undo`, `vault_voice`, `vault_write`
 
-Fronteras que hoy cruza (5), deuda declarada:
+Fronteras que hoy cruza (6), deuda declarada:
 
 | Módulo | Importa | Contexto destino |
 |---|---|---|
 | `vault_change_log` | `vault/gobernanza` | Gobernanza |
+| `vault_delete` | `vault_quarantine` | Durabilidad |
 | `vault_voice` | `vault_mcp_catalog` | Meta-toolkit |
 | `vault_write` | `vault_tags` | Índices |
 | `vault/autoria/repositorio.py` | `vault/indices` (7 imports) | Índices |
@@ -162,6 +165,12 @@ Fronteras que hoy cruza (12), deuda declarada:
 - **Puertos publicados:** `crear_backup` → `vault_backup:vault_backup`, `listar_backups` → `vault_backup_list:vault_backup_list`, `poner_en_cuarentena` → `vault_quarantine:vault_quarantine_add`, `restaurar` → `vault_restore:vault_restore`
 - **No cruza:** escribir fuera de la raíz del vault (AP-36)
 - **Módulos (4):** `vault_backup`, `vault_backup_list`, `vault_quarantine`, `vault_restore`
+
+Fronteras que hoy cruza (1), deuda declarada:
+
+| Módulo | Importa | Contexto destino |
+|---|---|---|
+| `vault_quarantine` | `vault_move` | Autoría |
 
 ## Meta-toolkit
 
@@ -262,12 +271,12 @@ Quién escribe qué. Derivado del catálogo (`side_effects`): es el inventario q
 - `vault_noop_audit` (Normas): Con --freeze reescribe scripts/noop-baseline.json
 - `vault_norms` (Normas): Con --apply/--apply-heal edita las notas de norma del vault; Con --rebuild/--audit escribe el registro de normas y sus artefactos derivados
 - `vault_norms_coherence` (Normas): scripts/norms-coherence-baseline.json
-- `vault_onboard` (Bootstrap): Crea notas en las secciones 01…17 del vault destino; No modifica el proyecto de origen: solo lo lee
-- `vault_pattern_save` (Patrones): Crea nota en 05_Patterns/
+- `vault_onboard` (Bootstrap): Crea notas en las secciones 01…17 del vault destino; Registra el proyecto (01_Projects/<slug>/project.md) y enlaza --path en 00_System/.local/project-paths.json; No modifica el proyecto de origen: solo lo lee
+- `vault_pattern_save` (Patrones): Crea nota en 05_Patterns/; Reescribe 05_Patterns/index.json desde las notas (--rebuild-index)
 - `vault_preferences` (Memoria de Contexto): Crea/actualiza nota en 17_Preferences/{category}/; Actualiza índice de 17_Preferences
 - `vault_privacy_save` (Riesgos/Calidad): Crea nota en 02_Observability/privacy/
 - `vault_produccion` (Normas): docs/GUIA-DE-PRODUCCION.md
-- `vault_project` (Vista del Proyecto): Crea 01_Projects/<slug>/project.md (add); Escribe 00_System/.local/project-paths.json y su .gitignore (link); Escribe 00_System/project-registry.json (rebuild)
+- `vault_project` (Vista del Proyecto): Crea 01_Projects/<slug>/project.md (add); Escribe 00_System/.local/project-paths.json y su .gitignore (link); Escribe 00_System/project-registry.json (rebuild); Quita la entrada de 00_System/.local/project-paths.json y vault-paths.json (unlink); Borra 01_Projects/<slug>/ (solo index.md derivados) y rehace project-registry.json (remove)
 - `vault_project_overview` (Vista del Proyecto): Crea/actualiza 01_Projects/{slug}/overview.md
 - `vault_project_status` (Vista del Proyecto): Con --status/--summary escribe el status del proyecto y anota la entrada en su changelog
 - `vault_propagate` (Propagación): Actualiza notas relacionadas
@@ -297,10 +306,10 @@ Quién escribe qué. Derivado del catálogo (`side_effects`): es el inventario q
 - `vault_tags` (Session Delta y Tags): Reconstruye 00_System/tag-registry.json y 99_Index/tag-index.md; Anota términos nuevos en 19_Audits/vocabulary/tag-ledger.json (append-only)
 - `vault_test_save` (Tests): Crea nota en 15_Tests/{test_type}/{project}-{slug}.md
 - `vault_tests_higiene` (Normas): scripts/tests-higiene-baseline.json
+- `vault_token_counter` (Tokens): Escribe los flujos de tokens y los ficheros de estado del servicio en 00_System/token-usage/ (self-test, start-service, begin, event, end)
 - `vault_token_service` (Tokens): Sirve la API HTTP local y escribe los flujos de tokens y los ficheros de estado del servicio
 - `vault_toolkit_audit` (Normas): scripts/toolkit-audit-baseline.json; scripts/toolkit-audit-last.json; scripts/toolkit-audit-last-parcial.json
 - `vault_undo` (Versionado): SP-01: escribe change_log si --force; Crea nota restaurada o sobreescribe la actual
-- `vault_voice` (Normas): 00_System/.voice-counter
 - `vault_write` (Core): Versiona en .history/; Actualiza search-index.json; Regenera section index
 
 
