@@ -52,18 +52,26 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "fix_input",
             "hint": "Verificar que el vault tenga carpeta 99_Index/ para que _detect_vault_root() lo detecte, o definir la env var VAULT_ROOT con la ruta absoluta al vault.",
-            "docs": "vault-obsidian-architecture.md §Estructura de carpetas",
+            "docs": "vault-obsidian-architecture.md §Estructura del Vault",
         },
     },
     "FOLDER_NOT_FOUND": {
         "category": "infrastructure",
         "severity": "error",
         "message": "La carpeta especificada no existe dentro del vault.",
+        # 2026-11-17 (flow QA, QA-FL-03): publicaba `--check`, que solo informa;
+        # quien la seguía recibía el mismo error. Sin `--check` el upgrade crea
+        # las secciones del registro que faltan y no toca notas. Un nombre mal
+        # escrito no es una sección ausente: sus emisores dan UNKNOWN_SECTION
+        # o SOURCE_NOT_FOUND, que se corrigen en el argumento.
         "recovery": {
             "action": "run_tool",
             "tool": "vault_standard_upgrade",
-            "args": ["--check"],
-            "hint": "Ejecutar vault_standard_upgrade --check para detectar carpetas faltantes y aplicar migraciones.",
+            "args": [],
+            "hint": "Ejecutar vault_standard_upgrade (sin --check, que solo informa) para crear "
+                    "las secciones del estándar que faltan; no toca notas. En un vault de una "
+                    "versión anterior aplica también sus migraciones pendientes: --check las "
+                    "enumera antes.",
             "docs": "vault-obsidian-architecture.md §Versionado del estándar",
         },
     },
@@ -76,7 +84,7 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "tool": "vault_search",
             "args": ["--query", "<title>"],
             "hint": "Usar vault_search para localizar la nota por título o contenido.",
-            "docs": "vault-obsidian-architecture.md §Grupo 1 — Búsqueda",
+            "docs": "vault-obsidian-architecture.md §Grupo 1 — Core (escritura, lectura, búsqueda)",
         },
     },
     "FILE_WRITE_ERROR": {
@@ -131,7 +139,7 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             # recuperación al pie de la letra seguía sin graph.json.
             "args": ["--graph"],
             "hint": "Ejecutar vault_reindex --graph para regenerar todos los índices (graph.json, search-index.json); sin --graph solo se regenera search-index.json.",
-            "docs": "vault-obsidian-architecture.md §Grupo 10 — Indexación",
+            "docs": "vault-obsidian-architecture.md §Grupo 15 — Índices de Navegación",
         },
     },
     # 2026-10-07: `vault_reindex --check` devolvía `status: index_stale` sin
@@ -145,7 +153,7 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "tool": "vault_reindex",
             "args": ["--graph"],
             "hint": "Ejecutar vault_reindex --graph para reconstruir search-index.json y graph.json desde el disco; el detalle está en missing_in_index y stale_in_index.",
-            "docs": "vault-obsidian-architecture.md §Grupo 10 — Indexación",
+            "docs": "vault-obsidian-architecture.md §AP-47",
         },
     },
     # 2026-10-07: `vault_drift_detect --mode report` sin snapshot sobre un repo
@@ -243,7 +251,7 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "fix_input",
             "hint": "Las rutas deben ser relativas al vault root. Ejemplo: 01_Projects/mi-api/overview.md",
-            "docs": "vault-obsidian-architecture.md §Estructura de carpetas",
+            "docs": "vault-obsidian-architecture.md §Estructura del Vault",
         },
     },
     "INVALID_FOLDER": {
@@ -261,7 +269,7 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "hint": "Elegir una sección del vault (vault_section --list enseña las del "
                     "estándar y las propias) o declarar una propia NN_Nombre con "
                     "vault_section --add.",
-            "docs": "vault-obsidian-architecture.md §Estructura de carpetas",
+            "docs": "vault-obsidian-architecture.md §CN-02",
         },
     },
     # Los dos códigos de la frontera de proceso de la CLI consolidada. Antes de
@@ -277,7 +285,7 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "action": "fix_input",
             "hint": "Revisar `findings`: cada hallazgo dice qué campo y por qué. "
                     "Ninguna escritura ocurrió. Repetir con --force asume el riesgo.",
-            "docs": "vault-obsidian-architecture.md §Guards anti-poison",
+            "docs": "vault-obsidian-architecture.md §Grupo 34 — Memoria de Contexto",
         },
     },
     "INTERRUPTED": {
@@ -336,7 +344,7 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "action": "fix_input",
             "hint": "El mensaje enumera los valores admitidos; usar uno de ellos. "
                     "Si el vocabulario es de dominio, la fuente es vault_norms.",
-            "docs": "vault-obsidian-architecture.md §Vocabularios",
+            "docs": "vault-obsidian-architecture.md §AP-38",
         },
     },
     "MERMAID_INVALID": {
@@ -353,7 +361,7 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "hint": "El envelope lleva `validation_errors[]` con la lista de "
                     "hallazgos (tipo, mensaje, sugerencia). Corregir el contenido "
                     "Mermaid y reintentar.",
-            "docs": "vault-obsidian-architecture.md §Diagramas",
+            "docs": "vault-obsidian-architecture.md §AP-25",
         },
     },
     "RESERVED_NAME": {
@@ -391,7 +399,7 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             # `vault_write` no tiene `--path`: la nota se nombra por carpeta y título.
             "args": ["--folder", "<folder>", "--title", "<title>", "--content", "<content>"],
             "hint": "Usar vault_write para reescribir la nota con frontmatter completo.",
-            "docs": "vault-obsidian-architecture.md §Frontmatter obligatorio",
+            "docs": "vault-obsidian-architecture.md §AP-28",
         },
     },
     "FRONTMATTER_PARSE_ERROR": {
@@ -401,7 +409,7 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "manual",
             "hint": "Abrir la nota en Obsidian y corregir el bloque --- manualmente.",
-            "docs": "vault-obsidian-architecture.md §Frontmatter obligatorio",
+            "docs": "vault-obsidian-architecture.md §AP-56",
         },
     },
     "IDENTITY_CONFLICT": {
@@ -411,7 +419,7 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "fix_input",
             "hint": "Cambiar el título (slug) para crear una nota distinta, o usar el project correcto.",
-            "docs": "vault-obsidian-architecture.md §FL-01",
+            "docs": "vault-obsidian-architecture.md §AP-17",
         },
     },
     "CONFLICTING_ARGS": {
@@ -466,7 +474,7 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "fix_input",
             "hint": "Usar exactamente [[nombre-nota]] o [[nombre-nota|alias]]. No usar [[[...]]], [[...]]], [[]], [[carpeta/nota]], ni links sin cierre.",
-            "docs": "vault-obsidian-architecture.md AP-21",
+            "docs": "vault-obsidian-architecture.md §AP-21",
         },
     },
     "CIRCULAR_WIKILINK": {
@@ -478,7 +486,7 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "tool": "vault_graph_fix",
             "args": [],
             "hint": "Ejecutar vault_graph_fix para romper el ciclo automáticamente, o revisar manualmente los wikilinks en las notas del ciclo.",
-            "docs": "vault-obsidian-architecture.md §Grafos",
+            "docs": "vault-obsidian-architecture.md §Grupo 6 — Salud del Vault",
         },
     },
     "AP17_DUPLICATE_TITLE": {
@@ -490,7 +498,7 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "tool": "vault_audit",
             "args": [],
             "hint": "Ejecutar vault_audit para identificar pares duplicados y decidir cuál es la nota canónica.",
-            "docs": "vault-obsidian-architecture.md §AP-17, PAT-3",
+            "docs": "vault-obsidian-architecture.md §AP-17",
         },
     },
     "AP18_HASH_DUPLICATE": {
@@ -503,7 +511,7 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "args": [],
             # `--hash` no existe: el audit por defecto ya detecta AP-18.
             "hint": "Ejecutar vault_audit: el informe lista los duplicados exactos cross-folder bajo AP-18.",
-            "docs": "vault-obsidian-architecture.md §AP-18, PAT-3",
+            "docs": "vault-obsidian-architecture.md §AP-18",
         },
     },
     "AP19_SHADOW_INDEX": {
@@ -542,19 +550,22 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
     "JSON_PARSE_ERROR": {
         "category": "io",
         "severity": "error",
-        "message": "El archivo JSON del índice está corrupto o mal formado.",
+        "message": "Un fichero JSON está corrupto o mal formado.",
+        # 2026-11-17 (flow QA, QA-FL-04): publicaba `vault_reindex`, y ninguno
+        # de sus emisores lee un índice que reindex regenere (el contrato
+        # `tool-spec.json`, la respuesta de un subproceso). Un índice derivado
+        # ilegible es INDEX_STALE; un JSON que el usuario pasa por argumento,
+        # INVALID_INPUT o ARG_JSON_INVALID; un fichero de datos, DATA_FILE_CORRUPT.
         "recovery": {
-            "action": "run_tool",
-            "tool": "vault_reindex",
-            "args": [],
-            "hint": "Ejecutar vault_reindex para regenerar los índices desde cero.",
+            "action": "manual",
+            "hint": "Corregir el fichero que nombra el mensaje o restaurarlo desde git o un "
+                    "backup, y repetir.",
             "docs": None,
         },
     },
-    # Distinto de JSON_PARSE_ERROR a propósito: aquel es un índice derivado que
-    # `vault_reindex` regenera; este es un fichero de datos de origen —las
-    # relaciones de un proyecto— que nada regenera. Reescribirlo con lo que se
-    # pudo leer, que es nada, borra lo que guardaba.
+    # Distinto de un índice derivado a propósito: este es un fichero de datos
+    # de origen —las relaciones de un proyecto— que nada regenera. Reescribirlo
+    # con lo que se pudo leer, que es nada, borra lo que guardaba.
     "DATA_FILE_CORRUPT": {
         "category": "io",
         "severity": "error",
@@ -814,7 +825,7 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
                 "nunca fue público, decláralo en `internal_fields` antes de "
                 "quitarlo."
             ),
-            "docs": "AGENTS.md §No-derogación",
+            "docs": "vault-obsidian-architecture.md §Política de no-derogación",
         },
     },
     # ── Lifecycle ─────────────────────────────────────────────────────────────
@@ -939,7 +950,7 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "hint": "La seccion esta en `no_borrar` de 00_System/reglas.json: "
                     "mueve la nota a cuarentena o corrige la politica del vault. "
                     "Borrar notas es decision del dueno.",
-            "docs": "vault-obsidian-architecture.md \u00a7Inmutabilidad por vault",
+            "docs": "vault-obsidian-architecture.md §SP-01",
         },
     },
     "IMMUTABLE_NOTE": {
@@ -951,7 +962,7 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "hint": "Escribir una nota sucesora en lugar de modificar la anterior. "
                     "Que una seccion sea inmutable lo declara este vault en "
                     "00_System/inmutable.json (secciones: [...]).",
-            "docs": "vault-obsidian-architecture.md \u00a7Inmutabilidad por vault",
+            "docs": "vault-obsidian-architecture.md §AP-75",
         },
     },
     "INVALID_INPUT": {

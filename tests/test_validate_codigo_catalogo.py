@@ -121,21 +121,20 @@ def test_solo_carpetas_ausentes_recibe_la_recuperacion_que_las_crea(tmp_path):
 
     rec = r["recovery"]
     assert (rec["action"], rec["tool"]) == ("run_tool", "vault_standard_upgrade"), rec
-    env = dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
-               PYTHONIOENCODING="utf-8")
+
+    from apoyo import correr_tool
 
     def upgrade(*argv):
-        p = subprocess.run(
-            [sys.executable, str(SCRIPTS / f"{rec['tool']}.py"), *argv],
-            env=env, capture_output=True, text=True, encoding="utf-8",
-            errors="replace", cwd=str(tmp_path), timeout=300)
-        assert p.returncode == 0, p.stderr[-1000:]
-        salida = p.stdout.strip()
-        return json.loads(salida[salida.index("{"):])
+        corrida = correr_tool(rec["tool"], *argv, vault=raiz, cwd=tmp_path, timeout=300)
+        assert corrida.returncode == 0, corrida.stderr[-1000:]
+        return corrida.envelope
 
-    assert "21_QA" in upgrade(*rec["args"])["folders_to_create"]
+    # The recovery is the plain upgrade: `--check` is read-only and obeying it
+    # left the vault failing the same way (QA-FL-03, 2026-11-17).
+    assert rec["args"] == [], rec
+    assert "21_QA" in upgrade("--check")["folders_to_create"]
     assert not (raiz / "21_QA").exists(), "--check no escribe"
-    assert "21_QA" in upgrade()["folders_created"]
+    assert "21_QA" in upgrade(*rec["args"])["folders_created"]
 
     rc, r = _validate(raiz, "--check", "structure")
     assert rc == 0 and r["ok"] is True, r

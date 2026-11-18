@@ -203,6 +203,31 @@ def score_note(note: Dict[str, Any], query: str, folder: Optional[str], tag: Opt
     return score
 
 
+def _carpeta_inexistente(folder: str) -> Dict[str, Any]:
+    """The error for a `--folder` that is not on disk, by what can fix it.
+
+    Flow QA 2026-11-17 (QA-FL-03): every missing folder was FOLDER_NOT_FOUND,
+    whose recovery creates the standard sections that are missing. That only
+    fixes a missing standard section; a misspelt folder (`07_Knowlege`) is
+    fixed in the argument, so it is UNKNOWN_SECTION with the sections that
+    exist (`valid`), as `vault_ingest` publishes them.
+    """
+    from vault_registry import secciones_del_vault, standard_folders
+
+    raiz = _raiz()
+    seccion = folder.replace("\\", "/").strip("/").split("/")[0]
+    if seccion in standard_folders() and not (raiz / seccion).exists():
+        return emit_error("vault_search", "FOLDER_NOT_FOUND",
+                          f"Falta la sección del estándar {seccion}: {folder}")
+    try:
+        secciones = secciones_del_vault(raiz)
+    except ValueError:
+        secciones = standard_folders()
+    return {**emit_error("vault_search", "UNKNOWN_SECTION",
+                         f"--folder {folder!r} no existe en el vault"),
+            "valid": [s for s in secciones if (raiz / s).is_dir()]}
+
+
 def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = None,
                  ranking: Optional[str] = None) -> Dict[str, Any]:
 
@@ -251,9 +276,7 @@ def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = 
             return {**emit_error("vault_search", "INVALID_PATH", str(exc)),
                     "query": query, "results": []}
         if not carpeta.is_dir():
-            return {**emit_error("vault_search", "FOLDER_NOT_FOUND",
-                                 f"No existe la carpeta: {folder}"),
-                    "query": query, "results": []}
+            return {**_carpeta_inexistente(folder), "query": query, "results": []}
 
     live = leer_entorno("VAULT_MCP_LIVE_SEARCH")
     skipped = []

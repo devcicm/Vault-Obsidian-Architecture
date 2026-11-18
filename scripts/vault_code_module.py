@@ -621,7 +621,7 @@ Notas:
         if not scan_dir.exists():
             print(
                 json.dumps(
-                    emit_error("vault_code_module", "FOLDER_NOT_FOUND", f"scan-path not found: {args.scan_path}"),
+                    emit_error("vault_code_module", "SOURCE_NOT_FOUND", f"--scan-path no existe: {args.scan_path}"),
                     ensure_ascii=False,
                 )
             )

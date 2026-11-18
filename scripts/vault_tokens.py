@@ -52,11 +52,11 @@ def _load_entries(since: Optional[str] = None) -> List[Dict[str, Any]]:
     try:
         entries = json.loads(_tokens_file().read_text(encoding="utf-8"))
         if not isinstance(entries, list):
-            emit_error("vault_tokens", "JSON_PARSE_ERROR",
+            emit_error("vault_tokens", "DATA_FILE_CORRUPT",
                       f"Token log no es una lista: {_tokens_file()}")
             return []
     except (json.JSONDecodeError, UnicodeDecodeError, OSError) as exc:
-        emit_error("vault_tokens", "JSON_PARSE_ERROR", str(exc))
+        emit_error("vault_tokens", "DATA_FILE_CORRUPT", str(exc))
         return []
 
     if since:

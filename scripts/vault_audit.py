@@ -1812,6 +1812,24 @@ def _detect_mermaid_errors() -> List[Dict[str, Any]]:
     return errors
 
 
+def _grafo_posterior_a(momento: Any) -> bool:
+    """True when `99_Index/graph.json` was written after the ISO instant `momento`.
+
+    A move without a timestamp (older logs) or without a graph is not known to
+    be in the graph, so it stays reported.
+    """
+    grafo = _raiz() / "99_Index" / "graph.json"
+    if not momento or not grafo.exists():
+        return False
+    try:
+        instante = datetime.fromisoformat(str(momento).replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if instante.tzinfo is None:
+        instante = instante.replace(tzinfo=timezone.utc)
+    return grafo.stat().st_mtime > instante.timestamp()
+
+
 def _detect_graph_knowledge_antipatterns() -> Dict[str, Any]:
     """AP-31/34/35: detect knowledge graph antipatterns in graph-enriched.json.
 
@@ -1829,6 +1847,10 @@ def _detect_graph_knowledge_antipatterns() -> Dict[str, Any]:
         "ap31_penalty": 0,
         "ap34_orphan_relations": [],
         "ap35_silo_flags": {},
+        # Flow QA 2026-11-17 (QA-FL-08): whether `vault_graph --typed` already
+        # merged every relation source as it is now. When it did, running it
+        # again cannot add a typed edge; only declaring relations can.
+        "ap31_typed_pass_current": False,
     }
 
     has_entity = ENTITY_DIR.exists() and list(ENTITY_DIR.glob("*relations.json"))
@@ -1870,6 +1892,11 @@ def _detect_graph_knowledge_antipatterns() -> Dict[str, Any]:
             enriched = json.loads(raw2.decode("utf-8"))
             total = enriched.get("metadata", {}).get("total_edges", 0)
             typed = enriched.get("metadata", {}).get("typed_edges", 0)
+            fuentes = [p.stat().st_mtime for p in entity_files]
+            if has_code:
+                fuentes.append(CODE_INDEX.stat().st_mtime)
+            result["ap31_typed_pass_current"] = (
+                ENRICHED_FILE.stat().st_mtime >= max(fuentes, default=0.0))
             if total > 0:
                 result["ap31_typed_ratio"] = round(typed / total, 3)
                 if result["ap31_typed_ratio"] < 0.1 and (has_entity or has_code):
@@ -2736,6 +2763,7 @@ def vault_audit(
     ap31_penalty = graph_knowledge["ap31_penalty"]
     ap34_orphan_relations = graph_knowledge["ap34_orphan_relations"]
     ap35_silo_flags = graph_knowledge["ap35_silo_flags"]
+    ap31_typed_pass_current = graph_knowledge["ap31_typed_pass_current"]
 
     # AP-22 (wikilink vacío) penaliza menos que AP-24 (brackets rotos): el
     # primero es auto-fixable, el segundo rompe el enlace de verdad.
@@ -3154,6 +3182,11 @@ def vault_audit(
             # solo importaba el bloque del grafo, y sin graph.json el audit caía.
             move_data = json.loads(move_log.read_text(encoding="utf-8"))
             for move in move_data[-5:]:
+                # Flow QA 2026-11-17 (QA-FL-08): the last five moves were
+                # echoed forever, also after `vault_graph` had done what the
+                # action asks. A graph written after the move already has it.
+                if _grafo_posterior_a(move.get("timestamp")):
+                    continue
                 next_actions.append(
                     {
                         "priority": "low",
@@ -3196,15 +3229,24 @@ def vault_audit(
             }
         )
 
-    # AP-26: Missing tags - suggest adding tags
-    if missing_tags:
-        tag_paths = [m["path"] for m in missing_tags[:5]]
+    # AP-26: Missing tags — one action per note, on the note itself. Flow QA
+    # 2026-11-17 (QA-FL-09): the recipe was `vault_write --folder --title`,
+    # which wrote a second note next to the untagged one (the file name comes
+    # from the title, not from the existing path) with a hard-coded
+    # `--tags ans`. No tool edits `tags:` in place: `vault_tags --suggest`
+    # proposes the canonical tags for that path and the frontmatter is edited.
+    for nota_sin_tags in missing_tags[:5]:
+        ruta = nota_sin_tags["path"]
         next_actions.append(
             {
                 "priority": "high",
                 "category": "missing_tags",
-                "description": f"{len(missing_tags)} notas de contenido sin tags. Primeras: {tag_paths}",
-                "command": "python scripts/vault_write.py --folder <folder> --title <title> --content @file:<path> --tags ans <category>",
+                "path": ruta,
+                "description": (
+                    f"`{ruta}` es una nota de contenido sin tags "
+                    f"({len(missing_tags)} en total). Añadir en su frontmatter los "
+                    "tags que propone el comando; no se crea otra nota."),
+                "command": f'python scripts/vault_tags.py --suggest "{ruta}"',
                 "norm": "AP-26",
             }
         )
@@ -3237,17 +3279,34 @@ def vault_audit(
                 }
             )
 
-    # AP-31: Untyped graph — suggest running enrich
+    # AP-31: Untyped graph. While a relation source is newer than the typed
+    # graph, the step is the typed pass; once it merged them all, repeating it
+    # adds nothing (flow QA 2026-11-17, QA-FL-08) and the step is to declare
+    # relations: between code files, or between entities.
     if ap31_typed_ratio < 0.1 and ap31_penalty > 0:
+        if not ap31_typed_pass_current:
+            paso = ("Ejecutar vault_graph --typed para enriquecer el grafo con "
+                    "relaciones semanticas (AP-31).")
+            comando = "python scripts/vault_graph.py --typed"
+        elif (ap35_silo_flags or {}).get("code_index_exists"):
+            paso = ("El grafo tipado ya incluye todas las relaciones declaradas: "
+                    "declarar relaciones entre ficheros de codigo y regenerarlo (AP-31).")
+            comando = ("python scripts/vault_code_relation.py --project <project> "
+                       "--from_file <path> --to_file <path> --relation_type <type>")
+        else:
+            paso = ("El grafo tipado ya incluye todas las relaciones declaradas: "
+                    "declarar relaciones entre entidades y regenerarlo (AP-31).")
+            comando = ("python scripts/vault_relation_add.py --project <project> "
+                       "--from <entity> --to <entity> --relation_type <type>")
         next_actions.append(
             {
                 "priority": "medium",
                 "category": "untyped_graph",
                 "description": (
                     f"Solo {ap31_typed_ratio * 100:.1f}% de las aristas tienen predicate. "
-                    "Ejecutar vault_graph --typed para enriquecer el grafo con relaciones semanticas (AP-31)."
+                    + paso
                 ),
-                "command": "python scripts/vault_graph.py --typed",
+                "command": comando,
                 "norm": "AP-31",
             }
         )

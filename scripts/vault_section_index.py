@@ -450,7 +450,16 @@ def vault_section_index(
     vroot = get_vault_root()
     section_path = vroot / folder
     if not section_path.exists():
-        return {**emit_error("vault_section_index", "FOLDER_NOT_FOUND", f"La seccion no existe: {folder}"), "folder": folder}
+        # Flow QA 2026-11-17 (QA-FL-03): FOLDER_NOT_FOUND's recovery creates
+        # the standard sections that are missing, and nothing else. A missing
+        # subfolder or a declared custom section that is not on disk is fixed
+        # in the argument (or by creating it), not by that recovery.
+        seccion = folder.split("/")[0]
+        if seccion in ORDERED_SECTIONS and not (vroot / seccion).exists():
+            return {**emit_error("vault_section_index", "FOLDER_NOT_FOUND",
+                                 f"La seccion no existe: {folder}"), "folder": folder}
+        return {**emit_error("vault_section_index", "UNKNOWN_SECTION",
+                             f"La carpeta no existe en el vault: {folder}"), "folder": folder}
 
     try:
         assert_within_vault(section_path, vroot)

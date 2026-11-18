@@ -826,7 +826,8 @@ def _leer_pack(ruta: str) -> Dict[str, Any]:
     try:
         datos = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, ValueError) as exc:
-        return emit_error("vault_ingest", "JSON_PARSE_ERROR",
+        # The pack is the user's file, not an index: fixed in the input (QA-FL-04).
+        return emit_error("vault_ingest", "INVALID_INPUT",
                           f"--desde-pack: no es un JSON legible: {type(exc).__name__}")
     if not isinstance(datos, dict) or datos.get("ok") is not True             or not isinstance(datos.get("included"), list):
         return emit_error("vault_ingest", "INVALID_INPUT",

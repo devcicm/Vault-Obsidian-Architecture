@@ -50,7 +50,7 @@ def main() -> int:
         source = Path(args.scan_path)
         if not source.exists():
             print(json.dumps(
-                emit_error("vault_knowledge_save", "FOLDER_NOT_FOUND", f"scan-path not found: {args.scan_path}"),
+                emit_error("vault_knowledge_save", "SOURCE_NOT_FOUND", f"--scan-path no existe: {args.scan_path}"),
                 ensure_ascii=False,
             ))
             return 1

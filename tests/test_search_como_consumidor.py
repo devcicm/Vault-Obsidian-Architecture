@@ -74,7 +74,9 @@ def test_el_filtro_de_tag_usa_la_forma_guardada(raiz, tag):
 
 def test_la_carpeta_es_un_componente_no_un_prefijo(raiz):
     env = _cli(raiz, "vault_search.py", "--query", "verano", "--folder", "07_K")
-    assert env["ok"] is False and env["error_code"] == "FOLDER_NOT_FOUND", env
+    # A typo is not a missing standard section: `vault_standard_upgrade` (the
+    # FOLDER_NOT_FOUND recovery) cannot fix it (QA-FL-03, 2026-11-17).
+    assert env["ok"] is False and env["error_code"] == "UNKNOWN_SECTION", env
     env = _cli(raiz, "vault_search.py", "--query", "verano", "--folder", "07_Knowledge/")
     assert _paths(env) == ["07_Knowledge/cancion.md"], env
 

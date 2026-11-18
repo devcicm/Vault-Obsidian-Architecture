@@ -632,6 +632,23 @@ def _estructura_sin_migracion(to_version: str, previstas: List[str] = ()) -> Lis
     ]
 
 
+def _mensaje_sin_salto(version: str, creadas: List[str], faltan: List[str]) -> str:
+    """The message when there is no version jump: up to date only if nothing is missing.
+
+    Flow QA 2026-11-17 (QA-FL-03): with a registry section missing, `--check`
+    said "up to date… No migrations needed" next to a non-empty
+    `folders_to_create`, and the plain run said the same after creating them.
+    """
+    if creadas:
+        return (f"Sin migraciones que aplicar en {version}. Se crean las secciones del "
+                f"registro que faltaban: {', '.join(creadas)}.")
+    if faltan:
+        return (f"Sin migraciones que aplicar en {version}, pero faltan secciones del "
+                f"registro: {', '.join(faltan)}. No se ha escrito nada; para crearlas, "
+                "vault_standard_upgrade sin --check.")
+    return f"Vault is up to date at {version}. No migrations needed."
+
+
 def _crear_carpetas(carpetas: List[str]) -> None:
     """Como `_apply_migration`: la carpeta y su `.gitkeep`, dentro del vault."""
     for folder in carpetas:
@@ -1047,7 +1064,7 @@ def vault_standard_upgrade(
                        if faltan else "No cambia la estructura ")
                     + f"y no se ha escrito nada. Para sellarlo: --to {to_version}"
                     if pendiente_de_sellar
-                    else f"Vault is up to date at {current_applied}. No migrations needed."
+                    else _mensaje_sin_salto(current_applied, creadas, faltan)
                 )
             ),
             "current_version": to_version if sellado else current_applied,

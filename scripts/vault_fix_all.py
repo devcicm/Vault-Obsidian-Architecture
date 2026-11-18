@@ -216,12 +216,22 @@ def _ejecutar_paso(paso: Dict[str, Any], paso_n: int) -> Dict[str, Any]:
             cmd, cwd=str(REPO_ROOT),
             capture_output=True, timeout=180,
         )
-    except (OSError, TimeoutError) as e:
+    except (OSError, subprocess.TimeoutExpired) as e:
+        # Flow QA 2026-11-17 (QA-FL-12): both were SERVICE_UNAVAILABLE, whose
+        # recovery starts the token counter, and `subprocess.run` raises
+        # `TimeoutExpired`, not `TimeoutError`, so a slow step crashed the fixer.
+        destino = paso.get("script") or paso.get("modulo")
+        if isinstance(e, subprocess.TimeoutExpired):
+            error = emit_error("vault_fix_all", "TOOL_TIMEOUT",
+                               f"{destino} excedió {e.timeout:g} s y se dejó de esperar")
+        else:
+            error = emit_error(
+                "vault_fix_all", "TOOL_EXECUTION_FAILED",
+                f"no se pudo ejecutar {destino}: {e}",
+                pista=f"Comprobar que el intérprete de Python y {destino} existen en "
+                      "este checkout, y repetir con --step para ese paso.")
         return {
-            **emit_error(
-                "vault_fix_all", "SERVICE_UNAVAILABLE",
-                f"no se pudo ejecutar {paso.get('script') or paso.get('modulo')}: {e}",
-            ),
+            **error,
             "paso": paso_n,
             "nombre": paso["nombre"],
             "por_que": paso["por_que"],

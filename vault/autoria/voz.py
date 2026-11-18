@@ -109,12 +109,41 @@ def _etiqueta(norma: Mapping[str, Any]) -> str:
     return f"{norma['code']} — {norma['name']}"
 
 
-def _siguiente(momento: str, tool: str, foco: Mapping[str, Any]) -> str:
+def _siguiente(momento: str, tool: str, foco: Mapping[str, Any]) -> Optional[str]:
+    """The next step, in the form that runs here, or None when nothing runs here.
+
+    Flow QA 2026-11-17 (QA-FL-11, QA-PORT-05): `next` always named
+    `python scripts/...`; an installed product has no `scripts/`, and its
+    `vault run` refuses `vault_norms` and `vault_voice` because they are
+    standard maintenance. The form is `comando_de_tool`'s (the owner that
+    renders a recipe as `vault run` or `python scripts/`), and a recipe that
+    only the checkout can run is not offered to an installed runtime.
+    """
     if momento == "blocked":
-        return f"python scripts/vault_norms.py --show {foco['code']}"
-    if momento == "wrote":
-        return "python scripts/vault_norms.py --audit"
-    return f"python scripts/vault_voice.py --tool {tool}"
+        receta = f"vault_norms --show {foco['code']}"
+    elif momento == "wrote":
+        receta = "vault_norms --audit"
+    else:
+        receta = f"vault_voice --tool {tool}"
+    return _ejecutable_aqui(receta)
+
+
+def _ejecutable_aqui(receta: str) -> Optional[str]:
+    """`receta` rendered by `comando_de_tool`, or None if this runtime refuses it.
+
+    Every recipe of the voice names a meta-standard tool (`vault_norms`,
+    `vault_voice`), and the installed `vault run` refuses those
+    (`not_runtime_operation`). So the installed form of a recipe is a step that
+    does not run, and it is not offered. Asking the product catalog instead
+    would be an `autoria -> meta_toolkit` crossing that `vault_arch` forbids.
+    """
+    try:
+        from vault.kernel.registry import comando_de_tool
+    except ImportError:
+        # The voice never breaks a tool: without the owner there is no step.
+        return None
+    comando = comando_de_tool(receta)
+    return None if comando.startswith("vault run ") else comando
 
 
 #: Cuántas etiquetas de norma caben en el bloque `vault_says`. El bloque
@@ -244,8 +273,10 @@ def speak(
         "norms": [_etiqueta(norma) for norma in (
             normas if _modo_voz() == "verbose" else normas_visibles(
                 normas, momento, foco, catalogo, tool))],
-        "next": _siguiente(momento, tool, foco),
     }
+    siguiente = _siguiente(momento, tool, foco)
+    if siguiente:
+        bloque["next"] = siguiente
     if (voice_mode if voice_mode is not None else os.environ.get("VAULT_VOICE", "1")) == "verbose":
         bloque["detail"] = [
             {
