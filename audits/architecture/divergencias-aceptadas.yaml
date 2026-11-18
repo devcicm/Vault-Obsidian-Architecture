@@ -166,3 +166,27 @@ divergencias:
   ratificado_por: "propietario (devcicm)"
   ratificado_en: "2026-11-03"
   acto: "audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-11-03.md#DEC-08"
+- id: DIV-12
+  divergencia: "par solo en el registro: ['autoria', 'durabilidad']"
+  divergencia_original: "ninguna: el par no existia ni en el snapshot ni en el registro"
+  causa: "el par autoria -> durabilidad ENTRO al presupuesto de cruces por decision del propietario (DEC-09): vault_delete --trash-only pasa por vault_quarantine_add para que la nota quede en el registro de la cuarentena y --restore la devuelva (QA-FL-06). El snapshot .archify/ es anterior y no lo lista"
+  evidencia:
+  - "commits/761df59a"
+  - "audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-11-18.md#DEC-09"
+  accion_requerida: "ratificacion del propietario"
+  ratificado: true
+  ratificado_por: "propietario (devcicm)"
+  ratificado_en: "2026-11-18"
+  acto: "audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-11-18.md#DEC-11"
+- id: DIV-13
+  divergencia: "par solo en el registro: ['durabilidad', 'autoria']"
+  divergencia_original: "ninguna: el par no existia ni en el snapshot ni en el registro"
+  causa: "el par durabilidad -> autoria ENTRO al presupuesto de cruces por decision del propietario (DEC-09): poner y sacar de cuarentena reubica los indices por el puerto reubicar_indices del dueño de mover, en vez de una segunda copia de esa logica (AP-57). El snapshot .archify/ es anterior y no lo lista"
+  evidencia:
+  - "commits/761df59a"
+  - "audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-11-18.md#DEC-09"
+  accion_requerida: "ratificacion del propietario"
+  ratificado: true
+  ratificado_por: "propietario (devcicm)"
+  ratificado_en: "2026-11-18"
+  acto: "audits/handoff/ACTA-DECISIONES-PROPIETARIO-2026-11-18.md#DEC-11"
