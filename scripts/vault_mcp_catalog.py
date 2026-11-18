@@ -905,6 +905,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         ],
         "side_effects": [
             "Crea notas en las secciones 01…17 del vault destino",
+            "Registra el proyecto (01_Projects/<slug>/project.md) y enlaza --path en 00_System/.local/project-paths.json",
             "No modifica el proyecto de origen: solo lo lee",
         ],
         "example": (
@@ -1606,8 +1607,8 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             },
         },
         "guards": [],
-        "side_effects": ["Crea nota en 05_Patterns/"],
-        "example": 'python vault_pattern_save.py --project "mi-api" --name "Repository" --type "architecture" --status "implementado" --description "Abstraccion de acceso a datos"',
+        "side_effects": ["Crea nota en 05_Patterns/", "Reescribe 05_Patterns/index.json desde las notas (--rebuild-index)"],
+        "example": 'python vault_pattern_save.py --project "mi-api" --name "Repository" --type "architecture" --status "implementado" --description "Abstraccion de acceso a datos"\npython vault_pattern_save.py --rebuild-index',
         "related": ["vault_pattern_list", "vault_code_module"],
     },
     "vault_pattern_list": {
@@ -1984,7 +1985,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "name": "vault_project",
         "script": "vault_project.py",
         "group": "Vista del Proyecto",
-        "purpose": "Registro de proyectos (AP-63): lista, resuelve nombre->slug, audita fantasmas, da de alta con alias y enlaza la ruta local en 00_System/.local/.",
+        "purpose": "Registro de proyectos (AP-63): lista, resuelve nombre->slug, audita fantasmas, da de alta con alias, enlaza la ruta local en 00_System/.local/, la desenlaza (unlink) y da de baja proyectos sin notas (remove).",
         "params": {
             "list": {"type": "boolean", "required": False, "description": "Lista proyectos, alias, ambigüedades e incidencias", "validators": []},
             "resolve": {"type": "string", "required": False, "description": "Nombre o alias a resolver a su slug canónico", "validators": []},
@@ -1995,15 +1996,19 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "title": {"type": "string", "required": False, "description": "Título de la ficha (con add)", "validators": []},
             "alias": {"type": "array", "required": False, "description": "Alias del proyecto (con add)", "validators": []},
             "status": {"type": "string", "required": False, "description": "Estado de la ficha nueva (con add; default in-progress)", "validators": ["enum:approved,archived,deprecated,draft,implemented,in-progress,obsolete,planned,reviewed,stub,template,verified"]},
-            "path": {"type": "string", "required": False, "description": "Ruta local del repositorio (con link)", "validators": []},
+            "unlink": {"type": "string", "required": False, "description": "Proyecto cuya ruta local (y la del vault) se quita de esta máquina; con path, solo si es la enlazada", "validators": []},
+            "remove": {"type": "string", "required": False, "description": "Da de baja el proyecto del registro; se niega mientras le quede alguna nota (nunca borra notas)", "validators": []},
+            "path": {"type": "string", "required": False, "description": "Ruta local del repositorio (con link o unlink)", "validators": []},
         },
         "guards": ["AP-63: un nombre de proyecto resuelve a un único slug o la tool falla"],
         "side_effects": [
             "Crea 01_Projects/<slug>/project.md (add)",
             "Escribe 00_System/.local/project-paths.json y su .gitignore (link)",
             "Escribe 00_System/project-registry.json (rebuild)",
+            "Quita la entrada de 00_System/.local/project-paths.json y vault-paths.json (unlink)",
+            "Borra 01_Projects/<slug>/ (solo index.md derivados) y rehace project-registry.json (remove)",
         ],
-        "example": 'python vault_project.py --add ans --title "ANS" --alias ans-api\npython vault_project.py --resolve "ANS API"\npython vault_project.py --audit',
+        "example": 'python vault_project.py --add ans --title "ANS" --alias ans-api\npython vault_project.py --resolve "ANS API"\npython vault_project.py --audit\npython vault_project.py --unlink ans',
         "related": ["vault_project_status", "vault_project_overview"],
     },
     "vault_project_status": {

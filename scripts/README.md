@@ -296,8 +296,11 @@ Documenta un patrón de diseño, arquitectura, código o integración en `05_Pat
 
 ```bash
 python vault_pattern_save.py --project mi-api --name "Circuit Breaker" --type code \
-  --description "Fallos en cascada" --notes "Solución y implementación"
+  --status planificado --description "Fallos en cascada" --notes "Solución y implementación"
+python vault_pattern_save.py --rebuild-index
 ```
+
+El estado del patrón (`--status`) se guarda en `pattern_state` y sus transiciones las valida la máquina de estados del propio patrón; volver a guardar el mismo estado no es una transición, y lo que un guardado no repite (`--description`, `--files`, `--related`, `--notes`) se conserva de la nota. La nota lleva `tags` (proyecto, tipo y `pattern`, más los que ya tuviera). `--rebuild-index` reconstruye `05_Patterns/index.json` desde las notas que declaran `pattern_state` y lista en `skipped` las que no reconoce; es la recuperación que publica `vault_pattern_list` cuando falta el índice.
 
 | `--category` | Carpeta |
 |---|---|
@@ -862,6 +865,10 @@ detecta el clasificador es una **sugerencia** del informe, y decidir dónde vive
 cada documento es de quien migra. Y **no se pisa lo que ya existe**: si la copia
 está, se deja como estaba, su versión anterior queda en `.history/` y el
 conflicto se declara en el informe (`## Conflictos (NO se sobrescribió nada)`).
+Las rutas que la migración escribe en el vault (enlaces del informe y de los
+stubs) son POSIX en cualquier sistema, y el origen de cada documento
+(`migratedFrom`, `**Origen:**`) se guarda como `<carpeta de origen>/<ruta
+dentro de ella>`, nunca como ruta absoluta de la máquina que migró.
 
 ---
 
@@ -873,6 +880,8 @@ python vault_migrate_rollback.py \
   --report_path "10_Migrated/_report-mi-api-2026-05-09.md" \
   --confirm true
 ```
+
+El informe solo se borra cuando la reversión es completa: si alguna entrada no aparece (`notFound`) o falla al borrarse (`errors`), el informe se conserva y `reportKeptBecause` dice por qué. Las rutas no se adivinan.
 
 ---
 
@@ -920,12 +929,16 @@ Hasta v41.3 este ejemplo usaba `--stack`, que la tool no acepta (`allow_abbrev=F
 ### `vault_project.py`
 Registro de proyectos (AP-63). El nombre de un proyecto es identidad: resuelve a **un** slug o la tool falla con `PROJECT_NOT_FOUND` (con `sugerencias`) o `PROJECT_AMBIGUOUS` (con `candidatos`). La carpeta `01_Projects/<slug>/` registra el slug; la ficha opcional `01_Projects/<slug>/project.md` aporta `title`, `aliases` y `status`. No es `index.md`: ese nombre está reservado y lo regenera `vault_section_index`.
 
-La ruta local del repositorio **no va en ninguna nota**: es de cada máquina y vive en `00_System/.local/project-paths.json`, que lleva su propio `.gitignore`. Lo portable sí va a la ficha, bajo `repo:` —`remote`, `default_branch`, `synced_commit`, `synced_at`—: `--link` anota remoto y rama, `vault_drift_detect --mode snapshot` y `vault_code_sync` (con trazabilidad limpia) anotan el commit, y `--sync-status` cuenta los commits que el repo lleva por delante del vault (P4). **Proyecto por sesión (P5):** con `VAULT_PROJECT=<slug|alias>` y `VAULT_PROJECT_LOCK=1`, la fábrica `proyecto_registrado` —por la que pasa el `--project` de toda tool— rechaza con `PROJECT_LOCKED` cualquier otro proyecto antes de que la tool escriba; el candado sin `VAULT_PROJECT` rechaza todos. Las tools que reciben ruta y no `--project` —`vault_write`, `vault_append`, `vault_move` (origen y destino; `--impact` solo lee) y `vault_delete`— aplican el mismo candado al segundo segmento de la ruta (`<carpeta>/<slug>/…`). `vault mcp-path --project` emite esa configuración con el slug ya resuelto. `00_System/project-registry.json` es un derivado que regenera `--rebuild`. `--audit` es de solo lectura: lista las notas cuyo `project:` no resuelve (fantasmas) y las claves no canónicas (`proyecto:`, `PROJECT:`), sin contar la copia del manifiesto. `--heal` (P6) repara lo mecánico de ese audit —clave no canónica y valor que resuelve por alias o variante— al slug del registro; es dry-run salvo `--apply`, que deja la versión anterior en `.history/` (la lista `vault_undo --list`). Los fantasmas y los conflictos se listan y no se tocan.
+La ruta local del repositorio **no va en ninguna nota**: es de cada máquina y vive en `00_System/.local/project-paths.json`, que lleva su propio `.gitignore`. Lo portable sí va a la ficha, bajo `repo:` —`remote`, `default_branch`, `synced_commit`, `synced_at`—: `--link` anota remoto y rama, `vault_drift_detect --mode snapshot` y `vault_code_sync` (con trazabilidad limpia) anotan el commit, y `--sync-status` cuenta los commits que el repo lleva por delante del vault (P4). **Proyecto por sesión (P5):** con `VAULT_PROJECT=<slug|alias>` y `VAULT_PROJECT_LOCK=1`, la fábrica `proyecto_registrado` —por la que pasa el `--project` de toda tool— rechaza con `PROJECT_LOCKED` cualquier otro proyecto antes de que la tool escriba; el candado sin `VAULT_PROJECT` rechaza todos. Las tools que reciben ruta y no `--project` —`vault_write`, `vault_append`, `vault_move` (origen y destino; `--impact` solo lee) y `vault_delete`— aplican el mismo candado al segundo segmento de la ruta (`<carpeta>/<slug>/…`). `vault mcp-path --project` emite esa configuración con el slug ya resuelto. `00_System/project-registry.json` es un derivado que regenera `--rebuild`. `--audit` es de solo lectura: lista las notas cuyo `project:` no resuelve (fantasmas) y las claves no canónicas (`proyecto:`, `PROJECT:`), sin contar la copia del manifiesto. `--heal` (P6) repara lo mecánico de ese audit —clave no canónica y valor que resuelve por alias o variante— al slug del registro; es dry-run salvo `--apply`, que deja la versión anterior en `.history/` (la lista `vault_undo --list`). Los fantasmas y los conflictos se listan y no se tocan. `--audit` lista además en `projects_without_card` los proyectos registrados por su carpeta que ya no tienen ficha: se restaura con `--add` o se da de baja con `--remove`.
+
+**Deshacer.** `--unlink <slug>` quita de esta máquina la ruta del repo (y la del vault declarada) que puso `--link`; con `--path` solo desenlaza si es la ruta enlazada (`INVALID_PATH` si no). La ficha conserva `repo:`, que es portable. `--remove <slug>` da de baja el proyecto: borra su carpeta de `01_Projects/` —solo sus `index.md` derivados—, sus rutas locales y su fila de `project-registry.json`. **Nunca borra notas**: se niega con `INVALID_INPUT` y la lista `owned_notes` mientras quede alguna del proyecto, la ficha incluida (se borra con `vault_delete`, que deja su fila SP-01 y la copia en `.history/`) o cualquier nota cuyo `project:` le pertenezca.
 
 ```bash
 python vault_project.py --add ans --title "ANS" --alias ans-api
 python vault_project.py --resolve "ANS API"          # → ans, project_resolved_from: alias
 python vault_project.py --link ans --path ../ans     # → 00_System/.local/ + repo: en la ficha
+python vault_project.py --unlink ans                 # → unlinked: true; la ficha conserva repo:
+python vault_project.py --remove ans                 # → INVALID_INPUT + owned_notes mientras le queden notas
 python vault_project.py --sync-status ans            # → in_sync | behind (pending_commits) | never_synced
 vault mcp-path --root <vault> --project ans           # → env con VAULT_PROJECT=ans + VAULT_PROJECT_LOCK=1
 python vault_project.py --audit
@@ -1561,7 +1574,7 @@ python vault_change_log.py --query --action deleted
 | `--last` | Número de entradas a retornar (default: 20) |
 
 ### `vault_delete.py`
-Elimina notas con SP-01: si no existe entrada de change-log para la nota, la crea ANTES de borrar. Por defecto elimina la nota; `--trash-only` la mueve a `20_Quarantine/` y `--force` omite la entrada de change-log. El resultado `graph_index` informa el refresco del grafo o su degradación; si este falla, la operación sobre la nota ya ocurrió y se recomienda `vault_reindex --graph`.
+Elimina notas con SP-01: si no existe entrada de change-log para la nota, la crea ANTES de borrar. Por defecto elimina la nota (`vault_undo --restore` la devuelve desde `.history/`); `--trash-only` la retiene por el dueño de la cuarentena en `20_Quarantine/unclassified/`, con origen y razón en el ledger, y el sobre trae `recoverable.restore` con el `vault_quarantine --restore` que la devuelve a su sitio. `--force` omite la entrada de change-log. Los índices siguen a la nota: la búsqueda pierde la ruta vieja y gana la nueva, y `vault_reindex --check` queda limpio. El resultado `graph_index` informa el refresco del grafo o su degradación; si este falla, la operación sobre la nota ya ocurrió y se recomienda `vault_reindex --graph`.
 
 ```bash
 # Eliminación normal (crea change-log si no existe, luego elimina)
@@ -1585,7 +1598,7 @@ python vault_delete.py --path "07_Knowledge/old-note.md" \
 |---|---|
 | `--path` | Ruta relativa al vault de la nota a eliminar |
 | `--reason` | Motivo de eliminación (SP-01, requerido) |
-| `--trash-only` | Solo mover a `20_Quarantine/` en vez de eliminar |
+| `--trash-only` | Retener en `20_Quarantine/unclassified/` (ledger de `vault_quarantine`) en vez de eliminar |
 | `--dry-run` | Simular sin escribir nada |
 | `--force` | Omitir creación de change-log (uso interno) |
 | `--agent` | Nombre del agente (default: `claude`) |
@@ -1964,6 +1977,8 @@ python vault_onboard.py --project mi-api --path ../mi-api --max-commits 5000
 ```
 
 **Lee el proyecto, escribe solo en el vault.** El repo de origen no se toca.
+
+**Deja el proyecto registrado y enlazado.** Además del overview, crea la ficha `01_Projects/<slug>/project.md` y enlaza `--path` como repositorio local con las mismas funciones que `vault_project --add` y `--link`; el envelope lo publica en `project_link`. Así `vault_drift_detect --project <slug> --mode snapshot` funciona sin más pasos. Con `--dry-run` solo dice lo que haría (`would_register`, `would_link`); con `--skip 01` no registra ni enlaza. Un registro rechazado (un alias que ya es de otro proyecto) no deshace el onboard: va a `project_link` y a `warnings`.
 
 Si el proyecto ya tenía documentación suelta, el orden es `vault_migrate_docs` **antes** que `vault_onboard`, para que el onboard no vuelva a escribir lo que ya estaba escrito.
 
@@ -3366,6 +3381,8 @@ Tres propiedades que la hacen segura:
 - **La nota se mueve, no se copia.** Dos copias de una nota dudosa es peor que una: la que queda fuera se sigue leyendo como contexto válido.
 - **El origen se guarda dos veces** — en el frontmatter de la nota y en el ledger append-only. Si el ledger se corrompe, la nota sigue sabiendo de dónde salió; una cuarentena de la que no se sale es una papelera con otro nombre.
 - **La razón es obligatoria**, y restaurar sobre un origen ocupado falla en vez de sobrescribir.
+
+Retener y devolver mueven también los índices, con los dueños de `vault_move`: la fila de búsqueda de la ruta vieja sale y entra la nueva, los índices de dominio y el grafo pasan a la ruta nueva y se rehacen los índices de las dos secciones (`indexes` en el sobre). Antes la búsqueda devolvía la ruta que la nota había dejado. `vault_delete --trash-only` pasa por aquí, así que `--list` y `--restore` la ven.
 
 `status` no se toca al retener: el estado de la nota no cambió por estar en cuarentena, y sobrescribirlo destruiría el dato que quizá haga falta para clasificarla.
 

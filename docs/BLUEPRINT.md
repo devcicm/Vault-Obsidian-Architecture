@@ -53,7 +53,7 @@ regenera.*
 | Contexto | Puertos | Módulos | Sin hogar | Prohíbe |
 |---|---|---|---|
 | **Kernel** (`kernel`) | 4 | 24 | 1 | depender de cualquier contexto de dominio |
-| **Autoría** (`autoria`) | 7 | 47 | 0 | — |
+| **Autoría** (`autoria`) | 8 | 47 | 0 | — |
 | **Grafo** (`grafo`) | 4 | 15 | 0 | — |
 | **Gobernanza** (`gobernanza`) | 21 | 14 | 0 | — |
 | **Índices** (`indices`) | 12 | 7 | 0 | — |
@@ -95,9 +95,9 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-16** — Sin identificador de agente en frontmatter | audit | — | `test_ap16_prevencion_dice_lo_que_hace.py`, `test_ap64_responsable.py`, `test_context_memory.py` |
 | **AP-17** — Canonical-shadow duplication | audit | — | `test_blueprint.py`, `test_normas_caras.py`, `test_normas_de_audit_ejercitadas.py` |
 | **AP-18** — Cross-folder content duplication | audit | — | `test_capa4_audit_ejercitada.py` |
-| **AP-19** — Shadow indexing | audit | `framework` | — |
+| **AP-19** — Shadow indexing | audit | `framework` | `test_errores_docs_resuelven.py` |
 | **AP-20** — Deceptive skeleton (empty-list) | guard | — | `test_ap20_esqueleto_de_lista.py` |
-| **AP-21** — Path-anchored wiki-links | guard+audit | — | `test_ap21_dentro_de_fence.py`, `test_ap21_ruta_necesaria.py`, `test_normas_caras.py`, `test_normas_enlaces_sin_solape.py`, `test_vault_regex.py` |
+| **AP-21** — Path-anchored wiki-links | guard+audit | — | `test_ap21_dentro_de_fence.py`, `test_ap21_ruta_necesaria.py`, `test_flujo_recuperaciones.py`, `test_normas_caras.py`, `test_normas_enlaces_sin_solape.py`, `test_vault_regex.py` |
 | **AP-22** — Wiki-link vacío — [[]] sin destino | guard+audit | — | `test_normas_caras.py`, `test_normas_enlaces_sin_solape.py`, `test_norms_coherence.py`, `test_vault_regex.py` |
 | **PAT-1** — Canonical source anchoring | recommended | — | `test_norms_coherence.py` |
 | **PAT-2** — Stub enrichment gradient | recommended | — | `test_pat2_stub_con_plazo.py` |
@@ -112,7 +112,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-28** — Missing frontmatter — nota sin bloque YAML | audit | — | `test_ap56_frontmatter_heal.py` |
 | **AP-29** — Missing status field — nota sin estado de ciclo de vida | audit | — | `test_contrato_sin_seccion.py` |
 | **AP-30** — Missing CIA classification — nota sin clasificación de la tríada | audit | — | `test_normas_de_audit_ejercitadas.py` |
-| **AP-31** — Grafo sin tipos semanticos — edges sin predicate explícito | audit | — | `test_capa4_audit_ejercitada.py` |
+| **AP-31** — Grafo sin tipos semanticos — edges sin predicate explícito | audit | — | `test_capa4_audit_ejercitada.py`, `test_flujo_auditoria.py` |
 | **AP-32** — Relaciones tipadas sin predicate valido en la ontologia | audit | — | `test_graph_merge_sugerencias.py` |
 | **AP-33** — Predicado no canonico — sinonimo no normalizado | audit | — | `test_graph_merge_sugerencias.py` |
 | **AP-34** — Relacion tipada huerfana — endpoint inexistente en el vault | audit | — | `test_graph_merge_sugerencias.py` |
@@ -122,7 +122,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-38** — Vocabulario validado después de escribir, no antes | guard+audit | `framework` | `test_status_vocabulary.py` |
 | **AP-39** — Vocabulario abierto sin memoria | guard+audit | `framework` | `test_ap39_registro_en_el_write_path.py`, `test_politica_certificacion_compuesta.py`, `test_tag_vocabulary.py`, `test_vault_init.py` |
 | **AP-40** — Contrato publicado que la CLI rechaza | guard+audit | `contratos`, `framework` | `test_ap40_42_43_estados.py`, `test_catalog_params.py`, `test_fase2_paridad_fail_closed.py`, `test_puerto_controles.py`, `test_vocabulario_de_controles.py` |
-| **AP-41** — Máquina de estados declarada sin verificar | guard+audit | `framework` | `test_status_machine.py`, `test_voice.py` |
+| **AP-41** — Máquina de estados declarada sin verificar | guard+audit | `framework` | `test_flujo_requisitos.py`, `test_status_machine.py`, `test_voice.py` |
 | **AP-42** — Tool publicada sin haberse ejecutado nunca | guard+audit | `framework` | `test_ap40_42_43_estados.py`, `test_fase2_politica_qg.py`, `test_politica_certificacion_compuesta.py`, `test_puerto_controles.py`, `test_smoke.py`, `test_vault_norms_audit.py`, `test_vault_toolkit_audit.py`, `test_vocabulario_de_controles.py` |
 | **AP-43** — Norma sin refuerzo en el punto de uso | guard+audit | `framework` | `test_ap39_registro_en_el_write_path.py`, `test_ap40_42_43_estados.py`, `test_puerto_controles.py`, `test_vault_norms_audit.py`, `test_vocabulario_de_controles.py`, `test_voice.py` |
 | **AP-44** — Verificación autoconsistente — la tool se certifica a sí misma | guard+audit | `framework` | `test_ap44_verificacion_autoconsistente.py`, `test_changelog_check.py`, `test_kernel.py`, `test_norms_coherence.py`, `test_procesos_git.py`, `test_puente_sin_hogar.py` |
@@ -437,8 +437,8 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 
 | Baseline | Norma | Congelado | Objetivo | Pendiente |
 |---|---|---|---|---|
-| `scripts/arch-baseline.json` | cruces entre contextos | 32 | ≤ 30 para 2027-03-31 · cada 90 d · meta_toolkit — vault_arch → **en_plazo** | 37 → 37 → 37 → 34 → 33 → 32 (encoge, Δ-5) |
-| `scripts/arch-baseline.json` | cruces fuera de puerto | 0 | ≤ 4 para 2027-03-31 · cada 90 d · meta_toolkit — vault_arch → **cumple** | 6 → 5 → 5 → 0 → 0 → 0 (encoge, Δ-8) |
+| `scripts/arch-baseline.json` | cruces entre contextos | 34 | ≤ 30 para 2027-03-31 · cada 90 d · meta_toolkit — vault_arch → **en_plazo** | 37 → 37 → 34 → 33 → 32 → 34 (encoge, Δ-3) |
+| `scripts/arch-baseline.json` | cruces fuera de puerto | 0 | ≤ 4 para 2027-03-31 · cada 90 d · meta_toolkit — vault_arch → **cumple** | 5 → 5 → 0 → 0 → 0 → 0 (encoge, Δ-8) |
 | `scripts/blame-baseline.json` | AP-51 | 29 | ≤ 20 para 2027-03-31 · cada 90 d · meta_toolkit — vault_blame_audit → **en_plazo** | 30 → 30 → 30 → 30 → 29 → 29 (encoge, Δ-2) |
 | `scripts/error-contract-baseline.json` | AP-52 | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_error_contract → **cumple** | 110 → 110 → 0 → 9 → 0 → 0 (encoge, Δ-158) |
 | `scripts/noop-baseline.json` | AP-37 | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_noop_audit → **cumple** | 0 → 0 → 0 → 0 (plana, Δ+0) |

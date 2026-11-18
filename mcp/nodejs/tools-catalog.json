@@ -4540,6 +4540,7 @@
       ],
       "side_effects": [
         "Crea notas en las secciones 01…17 del vault destino",
+        "Registra el proyecto (01_Projects/<slug>/project.md) y enlaza --path en 00_System/.local/project-paths.json",
         "No modifica el proyecto de origen: solo lo lee"
       ],
       "perfil_minimo": "operador",
@@ -4597,7 +4598,7 @@
         "properties": {
           "project": {
             "type": "string",
-            "description": "Project name"
+            "description": "Project name (required to save)"
           },
           "name": {
             "type": "string",
@@ -4605,7 +4606,7 @@
           },
           "type": {
             "type": "string",
-            "description": "Pattern type: ['design', 'architecture', 'code', 'integration']",
+            "description": "Pattern type (required to save): ['design', 'architecture', 'code', 'integration']",
             "enum": [
               "design",
               "architecture",
@@ -4615,7 +4616,7 @@
           },
           "status": {
             "type": "string",
-            "description": "Pattern status: ['planificado', 'en_progreso', 'implementado', 'deprecado', 'refactoring']",
+            "description": "Pattern status (required to save): ['planificado', 'en_progreso', 'implementado', 'deprecado', 'refactoring']",
             "enum": [
               "planificado",
               "en_progreso",
@@ -4645,19 +4646,18 @@
           "notes": {
             "type": "string",
             "description": "Additional notes"
+          },
+          "rebuild-index": {
+            "type": "boolean",
+            "description": "Rebuild 05_Patterns/index.json from the pattern notes; takes no other argument"
           }
         },
-        "required": [
-          "project",
-          "name",
-          "type",
-          "status"
-        ],
         "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
-        "Crea nota en 05_Patterns/"
+        "Crea nota en 05_Patterns/",
+        "Reescribe 05_Patterns/index.json desde las notas (--rebuild-index)"
       ],
       "perfil_minimo": "operador",
       "status": "active",
@@ -4980,7 +4980,7 @@
     },
     "vault_project": {
       "name": "vault_project",
-      "description": "Registro de proyectos (AP-63): lista, resuelve nombre->slug, audita fantasmas, da de alta con alias y enlaza la ruta local en 00_System/.local/.",
+      "description": "Registro de proyectos (AP-63): lista, resuelve nombre->slug, audita fantasmas, da de alta con alias, enlaza la ruta local en 00_System/.local/, la desenlaza (unlink) y da de baja proyectos sin notas (remove).",
       "group": "Vista del Proyecto",
       "script": "vault_project.py",
       "inputSchema": {
@@ -4988,35 +4988,43 @@
         "properties": {
           "list": {
             "type": "boolean",
-            "description": "Lista proyectos, alias, ambigüedades e incidencias (obligatorio uno de: list | resolve | audit | add | link | sync-status | rebuild | heal)"
+            "description": "Lista proyectos, alias, ambigüedades e incidencias (obligatorio uno de: list | resolve | audit | add | link | unlink | remove | sync-status | rebuild | heal)"
           },
           "resolve": {
             "type": "string",
-            "description": "Nombre o alias a resolver a su slug canónico (obligatorio uno de: list | resolve | audit | add | link | sync-status | rebuild | heal)"
+            "description": "Nombre o alias a resolver a su slug canónico (obligatorio uno de: list | resolve | audit | add | link | unlink | remove | sync-status | rebuild | heal)"
           },
           "audit": {
             "type": "boolean",
-            "description": "Notas cuyo project: no resuelve y claves no canónicas (solo lectura) (obligatorio uno de: list | resolve | audit | add | link | sync-status | rebuild | heal)"
+            "description": "Notas cuyo project: no resuelve y claves no canónicas (solo lectura) (obligatorio uno de: list | resolve | audit | add | link | unlink | remove | sync-status | rebuild | heal)"
           },
           "add": {
             "type": "string",
-            "description": "Slug a registrar, o al que sumar alias si ya existe (obligatorio uno de: list | resolve | audit | add | link | sync-status | rebuild | heal)"
+            "description": "Slug a registrar, o al que sumar alias si ya existe (obligatorio uno de: list | resolve | audit | add | link | unlink | remove | sync-status | rebuild | heal)"
           },
           "link": {
             "type": "string",
-            "description": "Proyecto cuya ruta local se guarda (con path) (obligatorio uno de: list | resolve | audit | add | link | sync-status | rebuild | heal)"
+            "description": "Proyecto cuya ruta local se guarda (con path) (obligatorio uno de: list | resolve | audit | add | link | unlink | remove | sync-status | rebuild | heal)"
+          },
+          "unlink": {
+            "type": "string",
+            "description": "Proyecto cuya ruta local (y la del vault) se quita de esta máquina; con path, solo si es la enlazada (obligatorio uno de: list | resolve | audit | add | link | unlink | remove | sync-status | rebuild | heal)"
+          },
+          "remove": {
+            "type": "string",
+            "description": "Da de baja el proyecto del registro; se niega mientras le quede alguna nota (nunca borra notas) (obligatorio uno de: list | resolve | audit | add | link | unlink | remove | sync-status | rebuild | heal)"
           },
           "sync-status": {
             "type": "string",
-            "description": "Commits del repo enlazado pendientes de volcar al vault (obligatorio uno de: list | resolve | audit | add | link | sync-status | rebuild | heal)"
+            "description": "Commits del repo enlazado pendientes de volcar al vault (obligatorio uno de: list | resolve | audit | add | link | unlink | remove | sync-status | rebuild | heal)"
           },
           "rebuild": {
             "type": "boolean",
-            "description": "Regenera 00_System/project-registry.json (obligatorio uno de: list | resolve | audit | add | link | sync-status | rebuild | heal)"
+            "description": "Regenera 00_System/project-registry.json (obligatorio uno de: list | resolve | audit | add | link | unlink | remove | sync-status | rebuild | heal)"
           },
           "heal": {
             "type": "boolean",
-            "description": "Canoniza project: al slug registrado (dry-run salvo --apply) (obligatorio uno de: list | resolve | audit | add | link | sync-status | rebuild | heal)"
+            "description": "Canoniza project: al slug registrado (dry-run salvo --apply) (obligatorio uno de: list | resolve | audit | add | link | unlink | remove | sync-status | rebuild | heal)"
           },
           "apply": {
             "type": "boolean",
@@ -5053,7 +5061,7 @@
           },
           "path": {
             "type": "string",
-            "description": "Ruta local del repositorio (con link)"
+            "description": "Ruta local del repositorio (con link o unlink)"
           },
           "vault": {
             "type": "string",
@@ -5068,7 +5076,9 @@
       "side_effects": [
         "Crea 01_Projects/<slug>/project.md (add)",
         "Escribe 00_System/.local/project-paths.json y su .gitignore (link)",
-        "Escribe 00_System/project-registry.json (rebuild)"
+        "Escribe 00_System/project-registry.json (rebuild)",
+        "Quita la entrada de 00_System/.local/project-paths.json y vault-paths.json (unlink)",
+        "Borra 01_Projects/<slug>/ (solo index.md derivados) y rehace project-registry.json (remove)"
       ],
       "perfil_minimo": "operador",
       "status": "active",
@@ -5094,6 +5104,12 @@
           ],
           [
             "link"
+          ],
+          [
+            "unlink"
+          ],
+          [
+            "remove"
           ],
           [
             "sync-status"
@@ -7915,7 +7931,7 @@
         "tool": "vault_audit",
         "args": [],
         "hint": "Ejecutar vault_audit para identificar pares duplicados y decidir cuál es la nota canónica.",
-        "docs": "vault-obsidian-architecture.md §AP-17, PAT-3"
+        "docs": "vault-obsidian-architecture.md §AP-17"
       }
     },
     "AP18_HASH_DUPLICATE": {
@@ -7927,7 +7943,7 @@
         "tool": "vault_audit",
         "args": [],
         "hint": "Ejecutar vault_audit: el informe lista los duplicados exactos cross-folder bajo AP-18.",
-        "docs": "vault-obsidian-architecture.md §AP-18, PAT-3"
+        "docs": "vault-obsidian-architecture.md §AP-18"
       }
     },
     "AP19_SHADOW_INDEX": {
@@ -8070,7 +8086,7 @@
         "tool": "vault_graph_fix",
         "args": [],
         "hint": "Ejecutar vault_graph_fix para romper el ciclo automáticamente, o revisar manualmente los wikilinks en las notas del ciclo.",
-        "docs": "vault-obsidian-architecture.md §Grafos"
+        "docs": "vault-obsidian-architecture.md §Grupo 6 — Salud del Vault"
       }
     },
     "CLEAR_FM_ERROR": {
@@ -8130,7 +8146,7 @@
       "recovery": {
         "action": "manual",
         "hint": "Un campo estable no se borra: se anota en `superseded_fields` con `superseded_by` y `why`, y se sigue emitiendo. Si el campo nunca fue público, decláralo en `internal_fields` antes de quitarlo.",
-        "docs": "AGENTS.md §No-derogación"
+        "docs": "vault-obsidian-architecture.md §Política de no-derogación"
       }
     },
     "DATA_FILE_CORRUPT": {
@@ -8170,7 +8186,7 @@
       "recovery": {
         "action": "manual",
         "hint": "La seccion esta en `no_borrar` de 00_System/reglas.json: mueve la nota a cuarentena o corrige la politica del vault. Borrar notas es decision del dueno.",
-        "docs": "vault-obsidian-architecture.md §Inmutabilidad por vault"
+        "docs": "vault-obsidian-architecture.md §SP-01"
       }
     },
     "DEPENDENCY_MISSING": {
@@ -8324,7 +8340,7 @@
           "<title>"
         ],
         "hint": "Usar vault_search para localizar la nota por título o contenido.",
-        "docs": "vault-obsidian-architecture.md §Grupo 1 — Búsqueda"
+        "docs": "vault-obsidian-architecture.md §Grupo 1 — Core (escritura, lectura, búsqueda)"
       }
     },
     "FILE_READ_ERROR": {
@@ -8364,10 +8380,8 @@
       "recovery": {
         "action": "run_tool",
         "tool": "vault_standard_upgrade",
-        "args": [
-          "--check"
-        ],
-        "hint": "Ejecutar vault_standard_upgrade --check para detectar carpetas faltantes y aplicar migraciones.",
+        "args": [],
+        "hint": "Ejecutar vault_standard_upgrade (sin --check, que solo informa) para crear las secciones del estándar que faltan; no toca notas. En un vault de una versión anterior aplica también sus migraciones pendientes: --check las enumera antes.",
         "docs": "vault-obsidian-architecture.md §Versionado del estándar"
       }
     },
@@ -8397,7 +8411,7 @@
           "<content>"
         ],
         "hint": "Usar vault_write para reescribir la nota con frontmatter completo.",
-        "docs": "vault-obsidian-architecture.md §Frontmatter obligatorio"
+        "docs": "vault-obsidian-architecture.md §AP-28"
       }
     },
     "FRONTMATTER_PARSE_ERROR": {
@@ -8407,7 +8421,7 @@
       "recovery": {
         "action": "manual",
         "hint": "Abrir la nota en Obsidian y corregir el bloque --- manualmente.",
-        "docs": "vault-obsidian-architecture.md §Frontmatter obligatorio"
+        "docs": "vault-obsidian-architecture.md §AP-56"
       }
     },
     "GIT_NO_RESPONDIO": {
@@ -8497,7 +8511,7 @@
       "recovery": {
         "action": "fix_input",
         "hint": "Cambiar el título (slug) para crear una nota distinta, o usar el project correcto.",
-        "docs": "vault-obsidian-architecture.md §FL-01"
+        "docs": "vault-obsidian-architecture.md §AP-17"
       }
     },
     "IDENTITY_MISMATCH": {
@@ -8531,7 +8545,7 @@
       "recovery": {
         "action": "manual",
         "hint": "Escribir una nota sucesora en lugar de modificar la anterior. Que una seccion sea inmutable lo declara este vault en 00_System/inmutable.json (secciones: [...]).",
-        "docs": "vault-obsidian-architecture.md §Inmutabilidad por vault"
+        "docs": "vault-obsidian-architecture.md §AP-75"
       }
     },
     "INDEX_NOT_FOUND": {
@@ -8545,7 +8559,7 @@
           "--graph"
         ],
         "hint": "Ejecutar vault_reindex --graph para regenerar todos los índices (graph.json, search-index.json); sin --graph solo se regenera search-index.json.",
-        "docs": "vault-obsidian-architecture.md §Grupo 10 — Indexación"
+        "docs": "vault-obsidian-architecture.md §Grupo 15 — Índices de Navegación"
       }
     },
     "INDEX_STALE": {
@@ -8559,7 +8573,7 @@
           "--graph"
         ],
         "hint": "Ejecutar vault_reindex --graph para reconstruir search-index.json y graph.json desde el disco; el detalle está en missing_in_index y stale_in_index.",
-        "docs": "vault-obsidian-architecture.md §Grupo 10 — Indexación"
+        "docs": "vault-obsidian-architecture.md §AP-47"
       }
     },
     "INDEX_UPDATE_ERROR": {
@@ -8703,7 +8717,7 @@
           "--list"
         ],
         "hint": "Elegir una sección del vault (vault_section --list enseña las del estándar y las propias) o declarar una propia NN_Nombre con vault_section --add.",
-        "docs": "vault-obsidian-architecture.md §Estructura de carpetas"
+        "docs": "vault-obsidian-architecture.md §CN-02"
       }
     },
     "INVALID_HOPS": {
@@ -8793,7 +8807,7 @@
       "recovery": {
         "action": "fix_input",
         "hint": "Las rutas deben ser relativas al vault root. Ejemplo: 01_Projects/mi-api/overview.md",
-        "docs": "vault-obsidian-architecture.md §Estructura de carpetas"
+        "docs": "vault-obsidian-architecture.md §Estructura del Vault"
       }
     },
     "INVALID_PHASE": {
@@ -8893,7 +8907,7 @@
       "recovery": {
         "action": "fix_input",
         "hint": "El mensaje enumera los valores admitidos; usar uno de ellos. Si el vocabulario es de dominio, la fuente es vault_norms.",
-        "docs": "vault-obsidian-architecture.md §Vocabularios"
+        "docs": "vault-obsidian-architecture.md §AP-38"
       }
     },
     "INVALID_WINDOW": {
@@ -8909,12 +8923,10 @@
     "JSON_PARSE_ERROR": {
       "category": "io",
       "severity": "error",
-      "message": "El archivo JSON del índice está corrupto o mal formado.",
+      "message": "Un fichero JSON está corrupto o mal formado.",
       "recovery": {
-        "action": "run_tool",
-        "tool": "vault_reindex",
-        "args": [],
-        "hint": "Ejecutar vault_reindex para regenerar los índices desde cero.",
+        "action": "manual",
+        "hint": "Corregir el fichero que nombra el mensaje o restaurarlo desde git o un backup, y repetir.",
         "docs": null
       }
     },
@@ -8955,7 +8967,7 @@
       "recovery": {
         "action": "fix_input",
         "hint": "El envelope lleva `validation_errors[]` con la lista de hallazgos (tipo, mensaje, sugerencia). Corregir el contenido Mermaid y reintentar.",
-        "docs": "vault-obsidian-architecture.md §Diagramas"
+        "docs": "vault-obsidian-architecture.md §AP-25"
       }
     },
     "MIGRATION_MISMATCH": {
@@ -9252,7 +9264,7 @@
       "recovery": {
         "action": "fix_input",
         "hint": "Revisar `findings`: cada hallazgo dice qué campo y por qué. Ninguna escritura ocurrió. Repetir con --force asume el riesgo.",
-        "docs": "vault-obsidian-architecture.md §Guards anti-poison"
+        "docs": "vault-obsidian-architecture.md §Grupo 34 — Memoria de Contexto"
       }
     },
     "PRODUCTORES_NO_DISPONIBLES": {
@@ -9675,7 +9687,7 @@
       "recovery": {
         "action": "fix_input",
         "hint": "Verificar que el vault tenga carpeta 99_Index/ para que _detect_vault_root() lo detecte, o definir la env var VAULT_ROOT con la ruta absoluta al vault.",
-        "docs": "vault-obsidian-architecture.md §Estructura de carpetas"
+        "docs": "vault-obsidian-architecture.md §Estructura del Vault"
       }
     },
     "VERSION_NOT_FOUND": {
@@ -9719,7 +9731,7 @@
       "recovery": {
         "action": "fix_input",
         "hint": "Usar exactamente [[nombre-nota]] o [[nombre-nota|alias]]. No usar [[[...]]], [[...]]], [[]], [[carpeta/nota]], ni links sin cierre.",
-        "docs": "vault-obsidian-architecture.md AP-21"
+        "docs": "vault-obsidian-architecture.md §AP-21"
       }
     },
     "WRITE_ERROR": {
