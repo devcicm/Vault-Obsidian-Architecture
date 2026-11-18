@@ -280,7 +280,9 @@ def vault_delete(
         # --list` did not see it and `--restore` answered NOT_QUARANTINED: the
         # only way back was an undocumented `vault_move`. The owner records
         # the origin and the reason, and the adapter moves the indexes along.
-        retenida = vault_quarantine_add(rel_path, reason, "unclassified", agent)
+        # B2: untouched bytes, as the plain move of base kept them.
+        retenida = vault_quarantine_add(rel_path, reason, "unclassified", agent,
+                                        conservar_bytes=True)
         if not retenida.get("ok"):
             return emit_error("vault_delete", retenida.get("error_code") or "WRITE_ERROR",
                               retenida.get("error") or retenida.get("message") or "")
@@ -302,7 +304,10 @@ def vault_delete(
             "inbound_links": entrantes,
             # The origin section's refresh, as before; the others go in `indexes`.
             "section_index": secciones[0],
-            "search_index": indices.get("search_index"),
+            # B3: the fields and meanings of base. `domain_indexes` lives inside
+            # `search_index` as on a hard delete; `graph_index.path` is the origin.
+            "search_index": {**(indices.get("search_index") or {}),
+                             "domain_indexes": indices.get("domain_indexes")},
             "graph_index": indices.get("graph_index"),
             "degraded": indices.get("degraded", []),
         }

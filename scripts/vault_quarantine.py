@@ -53,9 +53,12 @@ def vault_quarantine_add(
     category: str = "unclassified",
     agent: Optional[str] = None,
     root=None,
+    conservar_bytes: bool = False,
 ) -> Dict[str, Any]:
+    """`conservar_bytes`: move the note untouched (the trash of `vault_delete`)."""
     agent = agent or _env("VAULT_AGENT")
-    resultado = _servicio(root).retener(path, reason, category, agent)
+    resultado = _servicio(root).retener(path, reason, category, agent,
+                                        conservar_bytes=conservar_bytes)
     if "ok" in resultado:
         return resultado
     indices = _reubicar(resultado["origin"], resultado["path"], root)

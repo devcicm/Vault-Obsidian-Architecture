@@ -14,6 +14,7 @@ and `vault_search` returns the note at the path where it is on disk.
 
 import json
 import shlex
+import textwrap
 
 import pytest
 
@@ -177,3 +178,91 @@ def test_la_cli_de_la_papelera_publica_la_restauracion(vault):
                           vault=vault)
     assert corrida.codigo == 0, corrida.stderr[-800:]
     assert corrida.envelope["recoverable"]["restore"].startswith("vault_quarantine --restore")
+
+
+# ── B2: the trash keeps the note's bytes, there and back ────────────────────
+# Verifier, 2026-11-18: routed through `retener`, the trash re-serialized the
+# frontmatter. After `--restore` the YAML comment was gone, `repo:` came back
+# as a JSON-style map, the `summary: |` block as a quoted string and the
+# instants as `+00:00`. At base the trash was a plain move (byte-identical).
+
+RICA = "07_Knowledge/rica.md"
+TEXTO_RICO = textwrap.dedent("""\
+    ---
+    # owner comment that a re-serializer drops
+    title: Rica
+    type: knowledge
+    status: draft
+    tags: [a, b]
+    repo:
+      remote: https://example.invalid/repo.git
+      branch: main
+    summary: |
+      line one
+      line two
+    createdAt: 2026-01-02T03:04:05.000Z
+    updatedAt: 2026-01-02T03:04:05.000Z
+    ---
+
+    # Rica
+
+    zebrafish rich note, first real line of content.
+    Second line of real content, with a marker: @.
+    Third line of real content for the note.
+""")
+
+
+@pytest.mark.parametrize("crudo", [
+    TEXTO_RICO.encode("utf-8"),
+    # A byte that is not UTF-8: a plain move carried it, a text rewrite replaces it.
+    TEXTO_RICO.encode("utf-8").replace(b"@", b"\xe9"),
+], ids=["yaml-rico", "byte-no-utf8"])
+def test_la_papelera_conserva_los_bytes_ida_y_vuelta(vault, crudo):
+    (vault / RICA).write_bytes(crudo)
+    codigo, env = _tool(vault, "vault_delete", "--path", RICA, "--reason", "review",
+                        "--trash-only")
+    assert codigo == 0 and env["trashed"] is True, env
+    retenida = env["quarantined_to"]
+    assert retenida == "20_Quarantine/unclassified/rica.md", env
+    assert (vault / retenida).read_bytes() == crudo
+    assert not (vault / RICA).exists()
+    assert [(e["origin"], e["path"]) for e in _ledger(vault)] == [(RICA, retenida)]
+
+    orden = shlex.split(env["recoverable"]["restore"])
+    codigo, env = _tool(vault, orden[0], *orden[1:])
+    assert codigo == 0 and env["path"] == RICA, env
+    assert (vault / RICA).read_bytes() == crudo
+    assert not (vault / retenida).exists()
+    assert _ledger(vault)[0]["restored"] is True
+
+
+# ── B3: the trash envelope keeps the fields and meanings it had ─────────────
+# At base (`shutil.move`) `search_index` carried `domain_indexes` and
+# `graph_index.path` named the note's origin. Additions are fine; a field that
+# disappears or changes meaning breaks whoever already reads it.
+
+CAMPOS_DE_BASE = {"ok", "action", "note", "quarantined_to", "deleted", "trashed",
+                  "change_logged", "sp01_status", "inbound_links", "section_index",
+                  "search_index", "graph_index"}
+
+
+def test_el_sobre_de_la_papelera_conserva_los_campos_de_base(vault):
+    dominio = vault / "07_Knowledge" / ".knowledge-index.json"
+    dominio.write_text(json.dumps({"entries": [{"relPath": NOTA, "title": "Zebra nota"}]}),
+                       encoding="utf-8")
+    codigo, env = _tool(vault, "vault_reindex", "--graph")
+    assert codigo == 0 and (vault / "99_Index" / "graph.json").is_file(), env
+    codigo, env = _tool(vault, "vault_delete", "--path", NOTA, "--reason", "r",
+                        "--trash-only")
+    assert codigo == 0, env
+    assert CAMPOS_DE_BASE <= set(env), sorted(CAMPOS_DE_BASE - set(env))
+    assert {"updated", "removed", "domain_indexes"} <= set(env["search_index"]), env
+    assert env["search_index"]["removed"] == 1, env
+    assert set(env["search_index"]["domain_indexes"]) == {"updated", "indexes",
+                                                           "unreadable"}, env
+    assert env["search_index"]["domain_indexes"]["updated"] is True, env
+    assert env["search_index"]["domain_indexes"]["indexes"] == [
+        "07_Knowledge/.knowledge-index.json"], env
+    assert env["graph_index"].get("path") == NOTA, env["graph_index"]
+    rutas = [e["relPath"] for e in json.loads(dominio.read_text(encoding="utf-8"))["entries"]]
+    assert NOTA not in rutas, rutas

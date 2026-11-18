@@ -87,7 +87,17 @@ class ServicioCuarentena:
     # ── Retener ──────────────────────────────────────────────────────────────
 
     def retener(self, ruta: str, razon: str, categoria: str = "unclassified",
-                agente: str = "") -> dict:
+                agente: str = "", conservar_bytes: bool = False) -> dict:
+        """Retain `ruta` in quarantine.
+
+        `conservar_bytes` moves the file untouched: the origin and the reason
+        live only in the ledger (`bytes_preserved: true`), and `devolver`
+        moves it back the same way. It is the trash of `vault_delete
+        --trash-only`, which at base was a plain move: re-serializing the
+        frontmatter there dropped comments, reshaped maps and block scalars
+        and rewrote instants, and a byte that is not UTF-8 was replaced.
+        Without it the origin also travels inside the note, as always.
+        """
         if categoria not in CATEGORIAS:
             return {"ok": False, "error_code": "INVALID_CATEGORY",
                     "error": f"category '{categoria}' no válida. Usa: {CATEGORIAS}"}
@@ -124,6 +134,12 @@ class ServicioCuarentena:
             destino = destino.with_name(f"{destino.stem}-{uuid.uuid4().hex[:8]}.md")
 
         ahora = self._ctx.reloj.marca()
+        if conservar_bytes:
+            # Moved, not copied, and not rewritten: the bytes are the owner's.
+            destino.parent.mkdir(parents=True, exist_ok=True)
+            origen.replace(destino)
+            return self._anotar(rel_origen, destino, categoria, razon, agente, ahora,
+                                bytes_preserved=True)
         fm, cuerpo = self._partir(origen.read_text(encoding="utf-8", errors="replace"))
         fm["quarantine_origin"] = rel_origen
         fm["quarantine_reason"] = razon.strip()
@@ -141,12 +157,20 @@ class ServicioCuarentena:
         # como contexto válido, que es justo lo que se quería impedir.
         origen.unlink()
 
+        return self._anotar(rel_origen, destino, categoria, razon, agente, ahora)
+
+    def _anotar(self, rel_origen: str, destino: Path, categoria: str, razon: str,
+                agente: str, ahora: str, bytes_preserved: bool = False) -> dict:
+        """The ledger entry of a retention: one shape for both modes."""
         rel_destino = self._relativa(destino)
-        ledger = self._leer_ledger()
-        ledger["entries"].append({
+        entrada = {
             "origin": rel_origen, "path": rel_destino, "category": categoria,
             "reason": razon.strip(), "agent": agente, "at": ahora, "restored": False,
-        })
+        }
+        if bytes_preserved:
+            entrada["bytes_preserved"] = True
+        ledger = self._leer_ledger()
+        ledger["entries"].append(entrada)
         self._guardar_ledger(ledger)
 
         return {"action": "quarantined", "path": rel_destino,
@@ -180,6 +204,12 @@ class ServicioCuarentena:
                           f"Restaurar encima sobrescribiría una nota existente."),
             }
 
+        if entrada.get("bytes_preserved"):
+            # Retained untouched (the trash): it goes back untouched.
+            destino.parent.mkdir(parents=True, exist_ok=True)
+            actual.replace(destino)
+            return self._marcar_devuelta(ledger, entrada, rel, agente)
+
         fm, cuerpo = self._partir(actual.read_text(encoding="utf-8", errors="replace"))
         # Los campos de cuarentena se van con ella: el paso por cuarentena queda
         # en el ledger, que es append-only, no incrustado en la nota devuelta.
@@ -190,7 +220,9 @@ class ServicioCuarentena:
             destino, _serializar_frontmatter(fm) + "\n\n" + cuerpo.lstrip("\n")
         )
         actual.unlink()
+        return self._marcar_devuelta(ledger, entrada, rel, agente)
 
+    def _marcar_devuelta(self, ledger: dict, entrada: dict, rel: str, agente: str) -> dict:
         entrada["restored"] = True
         entrada["restored_at"] = self._ctx.reloj.marca()
         entrada["restored_by"] = agente or "unknown"

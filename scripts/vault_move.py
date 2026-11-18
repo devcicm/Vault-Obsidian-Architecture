@@ -386,14 +386,26 @@ def reubicar_indices(origen: str, destino: str) -> Dict[str, Any]:
     busqueda = _safe("search-index", lambda: update_search_index(origen, destino))
     dominio = _safe("domain-indexes", lambda: actualizar_indices_de_dominio(origen, destino))
     degradado.extend(f"domain-indexes: {r} ilegible" for r in dominio.get("unreadable", []))
-    grafo = _safe("graph", lambda: refrescar_grafo(raiz / destino, raiz / origen))
+    # `path` names where the note left, as the trash envelope always did.
+    grafo = _safe("graph", lambda: refrescar_grafo(raiz / origen, raiz / destino))
+    # The byte-preserving trash does not pass through the write hook, so the
+    # `index.md` its destination folder gets is not indexed by anyone else:
+    # it enters the search as the hook's `creados` would, and only into an
+    # index the search step could read (a corrupt one is never rebuilt here).
+    nuevo = raiz / destino
+    candidatos = list(dict.fromkeys((raiz / Path(destino).parts[0] / "index.md",
+                                     nuevo.parent / "index.md")))
+    previos = {p for p in candidatos if p.is_file()}
     secciones: List[Dict[str, Any]] = []
-    for ruta in dict.fromkeys((raiz / origen, raiz / destino)):
+    for ruta in dict.fromkeys((raiz / origen, nuevo)):
         hecho = _safe("section-index", lambda r=ruta: refrescar_seccion(r))
         if hecho.get("section"):
             secciones.append(hecho)
         if hecho.get("ok") is False:
             degradado.append(f"section-index: {hecho.get('section')}: {hecho.get('message')}")
+    creados = [p for p in candidatos if p.is_file() and p not in previos]
+    if creados and "indexed" in busqueda:
+        _safe("search-index", lambda: _regenerador().refrescar_busqueda(creados) or {})
     return {"search_index": busqueda, "domain_indexes": dominio, "graph_index": grafo,
             "section_index": secciones, "degraded": degradado,
             "next": "vault_reindex" if degradado else None}
