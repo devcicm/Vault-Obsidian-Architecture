@@ -3446,7 +3446,7 @@ Ejemplos:
 
   python vault_audit.py --project "mi-proyecto"
 
-  python vault_audit.py --path "C:/repos/mi-api/docs"
+  python vault_audit.py --path "/ruta/a/mi-api/docs"
 
   python vault_audit.py --project "ans" --path "src/docs"
 

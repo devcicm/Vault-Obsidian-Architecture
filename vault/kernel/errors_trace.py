@@ -25,7 +25,7 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple
 # ledger, índice de sección, vocabulario de tags— no aplicaba a un JSON generado
 # aquí mismo dentro de `00_System/`, y era justamente lo que arrastraba el ciclo.
 from vault_fs import escritura_atomica, file_lock, guarda_secretos
-from vault_raiz import escritura_admitida, get_vault_root
+from vault_raiz import RaizNoIdentificada, escritura_admitida, get_vault_root
 
 from .escritura import apartar_ilegible
 
@@ -54,6 +54,78 @@ def reiniciar_tokens() -> bool:
         return False
     tkf.unlink()
     return True
+
+
+def rutas_locales() -> List[Tuple[str, str]]:
+    """(prefix, marker) pairs to reduce, longest first.
+
+    The vault root goes before the home because it usually hangs from it. Only
+    absolute paths are used: with `VAULT_ROOT=vault` replacing the raw text
+    would erase the word «vault» from any message. Moved here from
+    `vault_errors` (2026-11-17) so the trace owner can apply it to every entry;
+    `vault_errors._rutas_locales` is kept as an alias.
+    """
+    from .entorno import leer as _env
+
+    pares = []
+    raices = []
+    raiz = _env("VAULT_ROOT")
+    if raiz and Path(raiz).is_absolute():
+        raices.append(Path(raiz))
+    try:
+        raices.append(get_vault_root())
+    except RaizNoIdentificada:  # no vault identified yet: only the env root and home apply
+        pass
+    for r in raices:
+        if r.is_absolute():
+            for p in {r, r.resolve()}:
+                pares.append((p, "<vault>"))
+    try:
+        home = Path.home()
+    except RuntimeError:
+        home = None
+    if home is not None:
+        for p in {home, home.resolve()}:
+            pares.append((p, "~"))
+    salida = set()
+    for ruta, marcador in pares:
+        if len(ruta.parts) < 2:  # `/` or `C:\` as home: reducing it would erase everything
+            continue
+        for forma in {str(ruta), ruta.as_posix()}:
+            salida.add((forma, marcador))
+    return sorted(salida, key=lambda par: len(par[0]), reverse=True)
+
+
+def sin_rutas_locales(texto: Optional[str]) -> Optional[str]:
+    """AP-36 applied to output: text does not publish the local disk.
+
+    The vault root becomes `<vault>` (the relative part stays useful) and the
+    user's home becomes `~`.
+    """
+    if not texto:
+        return texto
+    import os
+
+    bandera = _re.IGNORECASE if os.name == "nt" else 0
+    for forma, marcador in rutas_locales():
+        texto = _re.sub(_re.escape(forma), lambda _m, m=marcador: m, texto, flags=bandera)
+    return texto
+
+
+def _reducir_rutas(valor: Any) -> Any:
+    """`sin_rutas_locales` over every string of a trace entry.
+
+    The trace lives inside the vault, which is meant to be shared or
+    committed; until 2026-11-17 `vault_init`'s own entry stored
+    `"vault_root": "C:/Users/<user>/..."` (QA-PORT-02 class).
+    """
+    if isinstance(valor, str):
+        return sin_rutas_locales(valor)
+    if isinstance(valor, dict):
+        return {k: _reducir_rutas(v) for k, v in valor.items()}
+    if isinstance(valor, (list, tuple)):
+        return [_reducir_rutas(v) for v in valor]
+    return valor
 
 
 TRACE_MAX_ENTRIES = 500
@@ -154,6 +226,7 @@ def log_trace(entry: Dict[str, Any], *mas: Dict[str, Any]) -> None:
     `mas` son entradas que van en la misma escritura: las pasa el cierre de
     `trazas_en_lote`. Dentro de un lote solo se apuntan; las escribe el cierre.
     """
+    entry, *mas = [_reducir_rutas(e) for e in (entry, *mas)]
     pendientes = _LOTE.get()
     if pendientes is not None:
         pendientes.extend((entry, *mas))

@@ -1070,9 +1070,19 @@ def comando_de_tool(receta: str) -> str:
     mismo, pero desde `vault/kernel/` su directorio nunca se llama `_impl`.
     """
     tool, _, args = receta.strip().partition(" ")
-    if vault_grafo_import.DIRECTORIO.name == "_impl":
+    if corre_instalado():
         return f"vault run {tool} {args}".rstrip()
     return f"python scripts/{tool}.py {args}".rstrip()
+
+
+def corre_instalado() -> bool:
+    """¿Corre el producto instalado (wheel) y no un checkout del repositorio?
+
+    El único criterio de «checkout o wheel» para lo que se le muestra a quien
+    usa la tool: `comando_de_tool` lo usa para el comando y `vault_errors`
+    para que `recovery.docs` apunte a algo que exista (QA-PORT-13, 2026-11-17).
+    """
+    return vault_grafo_import.DIRECTORIO.name == "_impl"
 
 
 def es_andamio(texto: str) -> bool:

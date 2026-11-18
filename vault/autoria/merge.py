@@ -383,7 +383,7 @@ Ejemplos:
 
   python vault_merge.py --source "/path/to/other-vault" --action merge --conflict skip
 
-  python vault_merge.py --source "C:/old-vault" --action merge --conflict rename
+  python vault_merge.py --source "/ruta/a/old-vault" --action merge --conflict rename
 
   python vault_merge.py --action detect
 

@@ -2777,8 +2777,8 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         ],
         "side_effects": [],
         "example": (
-            "python vault_foreign_check.py --root D:/vaults/notas\n"
-            "python vault_foreign_check.py --root D:/vaults/notas --report informe.json\n"
+            "python vault_foreign_check.py --root /ruta/a/notas\n"
+            "python vault_foreign_check.py --root /ruta/a/notas --report informe.json\n"
             "python vault_foreign_check.py --self-test"
         ),
         "related": ["vault_validate", "vault_graph_inspect", "vault_norms"],
@@ -4327,7 +4327,9 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Genera archivo .b64zip.json en vault-backups/"],
-        "example": "node vault-mcp-server.mjs --tool vault_backup_base64",
+        # MCP-only (no script): the server has no `--tool` flag, so the example
+        # is the JSON-RPC call a client sends (QA-PORT-11, 2026-11-17).
+        "example": 'tools/call {"name": "vault_backup_base64", "arguments": {"label": "antes-de-migrar"}}',
         "related": ["vault_restore_base64", "vault_backup"],
     },
     "vault_restore_base64": {
@@ -4352,7 +4354,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": ["Confirmación explícita requerida"],
         "side_effects": ["Restaura vault a nuevo directorio"],
-        "example": 'node vault-mcp-server.mjs --tool vault_restore_base64 --path "backups/vault.b64zip.json" --confirm true',
+        "example": 'tools/call {"name": "vault_restore_base64", "arguments": {"path": "backups/vault.b64zip.json", "confirm": "true"}}',
         "related": ["vault_backup_base64", "vault_restore"],
     },
     # ── Memoria de contexto ──────────────────────────────────────────────────

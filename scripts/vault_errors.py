@@ -142,47 +142,14 @@ MEMORY_ERROR: Dict[str, Any] = {
 }
 
 
-def _rutas_locales() -> List[tuple]:
-    """(prefijo, marcador) a reducir, del más largo al más corto.
-
-    La raíz del vault va antes que el home porque suele colgar de él. Solo se
-    usan rutas absolutas: con `VAULT_ROOT=vault` sustituir el texto crudo
-    borraría la palabra «vault» de cualquier mensaje.
-    """
-    pares = []
-    raiz = _env("VAULT_ROOT")
-    if raiz and Path(raiz).is_absolute():
-        for p in {Path(raiz), Path(raiz).resolve()}:
-            pares.append((p, "<vault>"))
-    try:
-        home = Path.home()
-    except RuntimeError:
-        home = None
-    if home is not None:
-        for p in {home, home.resolve()}:
-            pares.append((p, "~"))
-    salida = []
-    for ruta, marcador in pares:
-        if len(ruta.parts) < 2:  # `/` o `C:\` como home: reducirlo lo borraría todo
-            continue
-        for forma in {str(ruta), ruta.as_posix()}:
-            salida.append((forma, marcador))
-    return sorted(salida, key=lambda par: len(par[0]), reverse=True)
-
-
-def _sin_rutas_locales(texto: Optional[str]) -> Optional[str]:
-    """AP-36 aplicado a la salida: el mensaje no publica el disco local.
-
-    Un envelope sale por MCP hacia el agente y sus logs. La raíz del vault se
-    reduce a `<vault>` —la parte relativa sigue siendo útil— y el directorio
-    del usuario a `~`.
-    """
-    if not texto:
-        return texto
-    bandera = re.IGNORECASE if os.name == "nt" else 0
-    for forma, marcador in _rutas_locales():
-        texto = re.sub(re.escape(forma), lambda _m, m=marcador: m, texto, flags=bandera)
-    return texto
+#: AP-36 applied to output (a message does not publish the local disk). The
+#: owner moved to the trace module of the kernel on 2026-11-17 so the trace
+#: can reduce every entry, not only error messages; the names stay here
+#: (no-derogation).
+from vault_errors_trace import (  # noqa: E402
+    rutas_locales as _rutas_locales,
+    sin_rutas_locales as _sin_rutas_locales,
+)
 
 
 def emit_error(
@@ -203,8 +170,52 @@ def emit_error(
         incluir_traceback=bool(_env("VAULT_DEBUG")),
         pista=pista,
     )
+    recovery = entry.get("recovery")
+    if isinstance(recovery, dict) and recovery.get("docs"):
+        recovery["docs"] = _docs_publicadas(recovery["docs"])
     log_trace(entry)
     return entry
+
+
+def pagina_del_proyecto() -> Optional[str]:
+    """The project's Homepage, read from the installed distribution metadata.
+
+    Not written here by hand: `pyproject.toml` `[project.urls]` is the owner
+    and the wheel carries it. None when the metadata names no Homepage;
+    `importlib.metadata.PackageNotFoundError` when nothing is installed.
+    """
+    from importlib import metadata
+
+    datos = metadata.metadata("vault-obsidian-architecture")
+    for valor in datos.get_all("Project-URL") or []:
+        etiqueta, _, url = valor.partition(",")
+        if etiqueta.strip().lower() == "homepage" and url.strip():
+            return url.strip().rstrip("/")
+    return (datos.get("Home-page") or "").strip().rstrip("/") or None
+
+
+def _docs_publicadas(docs: str) -> str:
+    """`recovery.docs` a wheel user can open (QA-PORT-13, 2026-11-17).
+
+    The anchors name repository files (`vault-obsidian-architecture.md §…`,
+    `AGENTS.md §…`) that the wheel does not ship. Installed, the file becomes
+    its published copy under the Homepage and the section text stays; in a
+    checkout the repository path is the right pointer and nothing changes.
+    """
+    from importlib import metadata
+
+    from vault.kernel.registry import corre_instalado
+
+    fichero, _, seccion = docs.partition(" ")
+    if not corre_instalado() or not fichero.endswith(".md"):
+        return docs
+    try:
+        inicio = pagina_del_proyecto()
+    except metadata.PackageNotFoundError:
+        return docs
+    if not inicio:
+        return docs
+    return f"{inicio}/blob/main/{fichero} {seccion}".rstrip()
 
 
 #: La tabla y su traducción viven en el núcleo desde v40.34 (`vault.kernel.

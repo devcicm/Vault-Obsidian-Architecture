@@ -415,8 +415,8 @@ def main() -> int:
         epilog="""
 Ejemplos:
 
-  python scripts/vault_foreign_check.py --root "D:/vaults/notas-personales"
-  python scripts/vault_foreign_check.py --root "D:/vaults/notas" --report informe.json
+  python scripts/vault_foreign_check.py --root "/ruta/a/notas-personales"
+  python scripts/vault_foreign_check.py --root "/ruta/a/notas" --report informe.json
   python scripts/vault_foreign_check.py --self-test
 
 No escribe nada en el vault medido. --root no tiene valor por defecto y

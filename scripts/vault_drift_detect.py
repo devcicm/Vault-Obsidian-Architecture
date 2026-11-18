@@ -1414,7 +1414,7 @@ Ejemplos:
 
   python vault_drift_detect.py --path "src/" --project "ans" --mode status
 
-  python vault_drift_detect.py --path "C:/repos/mi-api" --project "mi-api" --mode snapshot --extensions .py .js .ts
+  python vault_drift_detect.py --path "/ruta/a/mi-api" --project "mi-api" --mode snapshot --extensions .py .js .ts
 
 
 

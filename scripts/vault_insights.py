@@ -10,7 +10,7 @@ Uso:
 
     python scripts/vault_insights.py --inicializar-identidad
     python scripts/vault_insights.py
-    python scripts/vault_insights.py --guardar C:/datos/vault-2026-11-09.json
+    python scripts/vault_insights.py --guardar /ruta/a/datos/vault-2026-11-09.json
     python scripts/vault_insights.py --comparar a.json b.json
 """
 

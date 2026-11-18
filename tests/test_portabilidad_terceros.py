@@ -37,7 +37,7 @@ from pathlib import Path
 
 import pytest
 
-from apoyo import ROOT, correr_python, correr_tool, entorno
+from apoyo import ROOT, SCRIPTS, correr_python, correr_tool, entorno
 
 import vault_grafo_import
 import vault_io
@@ -78,6 +78,21 @@ def test_la_traza_de_encoding_no_publica_la_ruta_de_la_maquina(tmp_path):
         assert (vault / e["path"]).is_file(), e
     assert "01_Projects/00-01_projects-primer.md" in {e["path"] for e in arreglos}
     assert _sin_rutas_de(json.dumps(arreglos, ensure_ascii=False), vault, tmp_path) == []
+
+
+def test_ninguna_entrada_de_la_traza_publica_la_ruta_de_la_maquina(tmp_path):
+    """The encoding fix covered one writer; `vault_init`'s own entry still
+    stored `"vault_root": "C:/Users/<user>/..."` (W6 advisory, 2026-11-17).
+    The trace owner reduces the vault root and the home for every entry."""
+    vault = tmp_path / "mi vault ñ"
+    vault.mkdir()
+    r = correr_tool("vault_init", "--no-audit", vault=vault)
+    assert r.codigo == 0 and r.envelope["ok"], r.stderr[-1500:]
+
+    traza = _texto(vault / "00_System" / ".tool-trace.json")
+    assert json.loads(traza), "vault_init no longer writes a trace: the probe is stale"
+    assert _sin_rutas_de(traza, vault, tmp_path, Path.home()) == []
+    assert "<vault>" in traza
 
 
 # ── QA-PORT-04: the security scan stores paths relative to what it scanned ──
@@ -315,3 +330,52 @@ def test_mcp_path_avisa_si_node_no_esta(tmp_path):
     assert rc == 0 and d["ok"] is True, d
     assert d["config"]["command"] == "node"
     assert any("Node" in w and "18" in w for w in d.get("warnings", [])), d
+
+
+# ── QA-PORT-13: error docs a wheel user can open ────────────────────────────
+
+
+def test_las_docs_del_error_apuntan_a_lo_publicado_si_esta_instalado(instalado):
+    """`recovery.docs` names `vault-obsidian-architecture.md §…`, a file the
+    wheel does not ship (QA-PORT-13, 2026-11-17). Installed, the pointer is the
+    published file under the project's Homepage; the section stays."""
+    from importlib import metadata
+
+    import vault_errors
+
+    try:
+        inicio = vault_errors.pagina_del_proyecto()
+    except metadata.PackageNotFoundError:  # pragma: no cover - no metadata at all
+        pytest.skip("no installed metadata to read the Homepage from")
+    assert inicio and inicio.startswith("https://"), inicio
+    docs = vault_errors.emit_error("vault_search", "INDEX_NOT_FOUND")["recovery"]["docs"]
+    assert docs.startswith(inicio + "/blob/main/vault-obsidian-architecture.md"), docs
+    assert "§" in docs, docs
+
+
+def test_las_docs_del_error_siguen_siendo_del_repo_en_el_checkout():
+    import vault_errors
+
+    docs = vault_errors.emit_error("vault_search", "INDEX_NOT_FOUND")["recovery"]["docs"]
+    assert docs.startswith("vault-obsidian-architecture.md §"), docs
+
+
+# ── S5: published examples run on any machine (verifier B4, 2026-11-17) ────
+
+_UNIDAD = re.compile(r"(?<![A-Za-z])[A-Za-z]:[\/]")
+
+
+def test_ningun_ejemplo_publicado_lleva_una_letra_de_unidad():
+    """`C:/repos/...` and `D:/vaults/...` only exist on one kind of machine.
+
+    The catalog `example` strings and every `python ...` line of the scripts'
+    help text are what a third party copies; they use neutral paths."""
+    import vault_mcp_catalog
+
+    malos = [f"catalog:{nombre}" for nombre, tool in vault_mcp_catalog.TOOLS_CATALOG.items()
+             if _UNIDAD.search(tool.get("example", "") or "")]
+    for fuente in sorted([*SCRIPTS.glob("*.py"), *(ROOT / "vault").rglob("*.py")]):
+        for n, linea in enumerate(fuente.read_text(encoding="utf-8").splitlines(), 1):
+            if linea.strip().startswith("python ") and _UNIDAD.search(linea):
+                malos.append(f"{fuente.relative_to(ROOT).as_posix()}:{n}")
+    assert malos == []

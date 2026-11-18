@@ -20,9 +20,9 @@ NEVER migrates source code files (.js, .ts, .py, etc.) — only documentation.
 
 Usage:
 
-    python vault_migrate_docs.py --source_path "C:/docs" --project "ans" --keywords "Ansible MCP" --dry_run true
+    python vault_migrate_docs.py --source_path "/ruta/a/docs" --project "ans" --keywords "Ansible MCP" --dry_run true
 
-    python vault_migrate_docs.py --source_path "C:/old-docs" --project "mi-api" --dry_run false
+    python vault_migrate_docs.py --source_path "/ruta/a/old-docs" --project "mi-api" --dry_run false
 
 """
 
@@ -716,9 +716,9 @@ def main():
 
 Ejemplos:
 
-  python vault_migrate_docs.py --source_path "C:/docs" --project "ans" --keywords "Ansible MCP" --dry_run true
+  python vault_migrate_docs.py --source_path "/ruta/a/docs" --project "ans" --keywords "Ansible MCP" --dry_run true
 
-  python vault_migrate_docs.py --source_path "C:/old-docs" --project "mi-api" --dry_run false
+  python vault_migrate_docs.py --source_path "/ruta/a/old-docs" --project "mi-api" --dry_run false
 
   python vault_migrate_docs.py --source_path "docs/" --project "ans" --formats ".md" ".txt" --dry_run true
 
