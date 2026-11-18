@@ -68,7 +68,7 @@ from vault_fundamentals_catalog import cia_por_defecto
 from vault_io import (assert_within_vault, atomic_write_text, escrituras_en_lote, get_vault_root,
                       is_snapshot_path, tomar_lock)
 from vault_lib import canonical_utc
-from vault_registry import secciones_del_vault, section_default_type
+from vault_registry import comando_de_tool, secciones_del_vault, section_default_type
 from vault.kernel.frontmatter_escritura import Frontmatter
 from vault.kernel.frontmatter_parsing import (
     FrontmatterParseError,
@@ -233,7 +233,7 @@ def completar(path: Optional[str] = None, apply: bool = False,
             campos, nuevo, causa = planificar(nota, rel, texto, agent)
             if causa:
                 omitidas.append({"path": rel, "cause": causa,
-                                 "hint": "python scripts/vault_frontmatter_heal.py --apply"})
+                                 "hint": comando_de_tool("vault_frontmatter_heal --apply")})
                 continue
             if not campos:
                 continue

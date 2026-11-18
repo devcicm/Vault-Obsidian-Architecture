@@ -132,8 +132,10 @@ class VaultMCP:
     def health(self) -> Dict[str, Any]:
         """Ejecuta vault_audit y actualiza el contexto."""
         try:
+            # This interpreter, not the first `python` on PATH: Debian and
+            # Ubuntu ship only `python3` (QA-PORT-06, 2026-11-17).
             result = vault_subproceso.ejecutar(
-                ["python", "vault_audit.py"],
+                [sys.executable, "vault_audit.py"],
                 cwd=str(SCRIPTS_DIR),
                 capture_output=True,
                 timeout=120,
@@ -257,7 +259,7 @@ class VaultMCP:
         script_name = tool["script"]
 
         try:
-            args = ["python", script_name]
+            args = [sys.executable, script_name]
             for key, value in params.items():
                 if isinstance(value, bool):
                     if value:

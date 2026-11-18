@@ -6,7 +6,7 @@
 > una en tu shell lo da `python scripts/vault_entorno.py --filtro <nombre>`:
 > se resuelve al llamarse, no al documentarse (AP-49).
 
-Variables: 30.
+Variables: 31.
 
 | Variable | Tipo | Default | Quién la lee | Qué gobierna |
 |---|---|---|---|---|
@@ -27,6 +27,7 @@ Variables: 30.
 | `VAULT_MCP_TOKEN` | texto | `''` | meta_toolkit | Token que exige el transporte HTTP/SSE del servidor MCP (`Authorization: Bearer`). Si falta, se genera uno por arranque. Solo la lee el `.mjs`; stdio no la usa. |
 | `VAULT_MCP_TOKENS` | texto | `''` | meta_toolkit | Tokens del transporte HTTP/SSE con su perfil, `lector:<t>,operador:<t>` (perfiles de `tools-catalog.json` → `perfiles_de_token`). `lector` solo ve y llama a las tools sin side effects. Se suma a `VAULT_MCP_TOKEN`, que es `operador`. Solo la lee el `.mjs`. |
 | `VAULT_MODEL_PROFILE` | texto | `''` | consulta | Perfil de modelo LLM activo. Lo propaga el servidor MCP al detectar el cliente (clientInfo.name). Lo lee vault_model_profile y vault_context_pack para adaptar el budget al modelo. |
+| `VAULT_OBSIDIAN_API_URL` | texto | `'http://localhost:27124'` | meta_toolkit | URL base de la API REST de Obsidian (plugin Local REST API) con la que el servidor MCP valida contra el índice de Obsidian. Solo la lee el `.mjs`; estaba fija en el código, así que otro puerto, otro host o HTTPS no se podían usar (QA-PORT-12, 2026-11-17). |
 | `VAULT_PERMISSIVE_ROOT` | bandera | `False` | kernel | Permite ESCRIBIR sobre una raíz detectada con baja confianza (`repo_root_fallback`). Sin ella, leer con esa raíz sigue permitido y escribir se rechaza: instalado fuera del repo, ese fallback devuelve el propio directorio del programa, así que la escritura caía dentro del toolkit en vez de en un vault. Cuando esa raíz es el paquete del programa tampoco se lee: las tools se niegan con VAULT_NOT_FOUND salvo con esta bandera. |
 | `VAULT_PROJECT` | texto | `''` | kernel | Proyecto al que está atada la sesión (slug o alias registrado). Solo restringe con `VAULT_PROJECT_LOCK=1`. `vault mcp-path --project` la fija ya resuelta. |
 | `VAULT_PROJECT_LOCK` | bandera | `False` | kernel | Con `1`, todo `--project` que no resuelva al de `VAULT_PROJECT` se rechaza con `PROJECT_LOCKED` antes de que la tool haga nada. Encendida sin `VAULT_PROJECT`, rechaza todos: el candado no se abre por falta de configuración. |

@@ -5,12 +5,14 @@
 #   --mcp  Incluir eliminación del symlink MCP
 #   --all  Desinstalar todo (CLI + MCP)
 #
-# Requiere: pip
+# Requiere: pip del intérprete `$PYTHON` (por defecto `python3`; con un venv
+# activo, el del venv)
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$SCRIPT_DIR"
+PYTHON="${PYTHON:-python3}"
 
 UNINSTALL_MCP="${UNINSTALL_MCP:-0}"
 UNINSTALL_ALL="${UNINSTALL_ALL:-0}"
@@ -21,7 +23,7 @@ for arg in "$@"; do
         --all)  UNINSTALL_MCP=1; UNINSTALL_ALL=1 ;;
         --dry-run)
             echo "[dry-run] Acciones que se ejecutarían:"
-            echo "  pip uninstall -y vault-obsidian-architecture"
+            echo "  $PYTHON -m pip uninstall -y vault-obsidian-architecture"
             if [ "$UNINSTALL_MCP" = "1" ]; then
                 echo "  rm -f /usr/local/bin/vault-mcp"
             fi
@@ -52,7 +54,7 @@ if [ "$UNINSTALL_MCP" = "1" ]; then
 fi
 
 echo "[2/2] Desinstalando paquete pip..."
-pip uninstall -y vault-obsidian-architecture || echo "  No estaba instalado via pip"
+"$PYTHON" -m pip uninstall -y vault-obsidian-architecture || echo "  No estaba instalado via pip ($PYTHON)"
 
 echo
 echo "=== Desinstalación completa ==="

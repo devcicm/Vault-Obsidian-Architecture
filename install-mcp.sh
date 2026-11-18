@@ -28,6 +28,10 @@ echo "Source: $MCP_SRC"
 echo "Dest:  $MCP_DEST"
 echo
 
+# Un symlink corre con el modo de su destino: sin el bit de ejecución (zip,
+# copia sin modos) `vault-mcp` daría «permission denied».
+[ -x "$MCP_SRC" ] || chmod +x "$MCP_SRC"
+
 if [ -w "$(dirname "$MCP_DEST")" ]; then
     [ -L "$MCP_DEST" ] && rm "$MCP_DEST"
     [ -f "$MCP_DEST" ] && { echo "[ERROR] $MCP_DEST existe y no es symlink"; exit 1; }

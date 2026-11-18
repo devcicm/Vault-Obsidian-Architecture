@@ -33,6 +33,7 @@ import argparse
 import json
 import os
 import shutil
+import stat
 import subprocess
 import sys
 import sysconfig
@@ -144,6 +145,20 @@ def _install_cli() -> int:
     return 0
 
 
+def _hacer_ejecutable(script: Path) -> None:
+    """Adds the execute bits a symlink in a bin directory needs (POSIX only).
+
+    A symlink runs with its target's mode: a checkout, a zip download or a
+    copy that dropped the mode left `vault-mcp` as "permission denied"
+    (QA-PORT-07, 2026-11-17). Only execute bits are added; the rest of the
+    mode stays as the owner left it.
+    """
+    modo = stat.S_IMODE(script.stat().st_mode)
+    deseado = modo | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+    if deseado != modo:
+        script.chmod(deseado)
+
+
 def _install_mcp() -> int:
     print("[install] MCP server launcher...")
     mcp_script = REPO_ROOT / "mcp" / "nodejs" / "vault-mcp-server.mjs"
@@ -174,6 +189,7 @@ def _install_mcp() -> int:
             os.replace(temporal, dest)
             print(f"  Lanzador: {dest} -> {mcp_script}")
         else:
+            _hacer_ejecutable(mcp_script)
             dest.symlink_to(mcp_script.resolve())
             print(f"  Symlink: {dest} -> {mcp_script}")
     except OSError as e:

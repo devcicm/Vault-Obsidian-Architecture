@@ -15,7 +15,7 @@
  * Uso:
  *   node vault-mcp-server.mjs                # modo stdio
  *   node vault-mcp-server.mjs --port 3000     # modo SSE/HTTP
- *   node vault-mcp-server.mjs --vault C:/...  # vault root explícito
+ *   node vault-mcp-server.mjs --vault <ruta-del-vault>  # vault root explícito
  */
 
 import { createInterface } from "node:readline";
@@ -2553,7 +2553,9 @@ async function handleResourcesRead(params, session) {
 // SECCIÓN 11: Obsidian Desktop API (validación externa)
 // ============================================================================
 
-const OBSIDIAN_API_URL = "http://localhost:27124";
+// Declarada en el registro de entorno (`VAULT_OBSIDIAN_API_URL`): estaba fija
+// aquí y otro puerto, host o HTTPS no se podían usar (QA-PORT-12).
+const OBSIDIAN_API_URL = process.env.VAULT_OBSIDIAN_API_URL || envDefault("VAULT_OBSIDIAN_API_URL");
 let obsidianAvailable = null;
 
 async function checkObsidianHealth() {

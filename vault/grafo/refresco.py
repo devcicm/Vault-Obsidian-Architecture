@@ -31,7 +31,18 @@ from .repositorio import RepositorioGrafo
 # wikilink. Las demás (`deleted-node`) las añade la reconstrucción comparando
 # con el grafo anterior, y el refresco las conserva tal cual.
 
-PISTA_RECONSTRUIR = "python scripts/vault_graph.py"
+
+def pista_reconstruir() -> str:
+    """How to rebuild the graph, in the form that runs where this code runs.
+
+    Until 2026-11-17 it was the literal `python scripts/vault_graph.py`, which
+    an installed wheel does not have (QA-PORT-05). The owner of that form is
+    `vault.kernel.registry.comando_de_tool`; it is imported here, on use, so
+    this package keeps loading without the registry.
+    """
+    from ..kernel.registry import comando_de_tool
+
+    return comando_de_tool("vault_graph")
 
 
 def nodo_de_nota(rel: str, nota: Dict[str, Any]) -> Dict[str, Any]:
@@ -138,7 +149,7 @@ class ServicioRefrescoGrafo:
                 grafo = json.loads(repo.ctx.lector.leer(destino))
             except FileNotFoundError:
                 return {"ok": True, "refreshed": False, "reason": "graph_missing",
-                        "hint": PISTA_RECONSTRUIR}
+                        "hint": pista_reconstruir()}
             except (json.JSONDecodeError, UnicodeDecodeError) as exc:
                 # Ilegible no es ausente: refrescar sobre un grafo vacío
                 # escribiría uno con una sola nota encima del que hay (AP-52:
@@ -146,7 +157,7 @@ class ServicioRefrescoGrafo:
                 raise FalloDeDominio(
                     "INDICE_ILEGIBLE",
                     f"graph.json no se puede leer como JSON: {type(exc).__name__}: {exc}",
-                    path=repo.relativa(destino), hint=PISTA_RECONSTRUIR,
+                    path=repo.relativa(destino), hint=pista_reconstruir(),
                 ) from exc
             nodes = grafo.get("nodes") if isinstance(grafo, dict) else None
             if not isinstance(nodes, dict) or any(
@@ -154,7 +165,7 @@ class ServicioRefrescoGrafo:
                 for n in nodes.values()
             ):
                 return {"ok": True, "refreshed": False, "reason": "graph_without_aliases",
-                        "hint": PISTA_RECONSTRUIR}
+                        "hint": pista_reconstruir()}
             for r in rutas:
                 rel = repo.relativa(r)
                 if repo.ctx.lector.existe(r):

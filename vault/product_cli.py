@@ -10,6 +10,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 from importlib import metadata
@@ -435,6 +436,21 @@ def _raiz_de_mcp_path() -> Path:
     return Path(raiz)
 
 
+#: Diagnosis states of `diagnosticar_runtime` that mean "there is no vault
+#: there"; the others (missing version file, missing sections) describe a
+#: folder the MCP server can still serve.
+_SIN_VAULT = ("INVALID_TARGET", "RUNTIME_MISSING", "NOT_RUNTIME")
+
+#: `command` stays `node`, resolved by the client's PATH, so the config reads
+#: the same on every machine; without Node on this PATH it is said instead of
+#: handing out a config that cannot start (QA-PORT-09, 2026-11-17).
+_AVISO_SIN_NODE = (
+    "Node no está en el PATH: el servidor MCP necesita Node 18+ "
+    "(https://nodejs.org). Instálalo, o pon en `command` la ruta absoluta de "
+    "`node` si el cliente arranca con otro PATH."
+)
+
+
 def cmd_mcp_path(args: argparse.Namespace) -> int:
     """Ruta del servidor MCP y la entrada de configuración de un cliente.
 
@@ -452,6 +468,13 @@ def cmd_mcp_path(args: argparse.Namespace) -> int:
     if servidor is None:
         return _error("mcp_server_missing", "el servidor MCP no está en esta instalación", 1)
     raiz = _raiz_pedida(args.root)
+    if raiz:
+        # A config for a vault that does not exist starts a server that serves
+        # nothing; `ok: true` hid it (QA-PORT-09). Only existence is checked:
+        # any folder may be a vault, not just one made by `vault init`.
+        diagnostico = diagnosticar_runtime(raiz)
+        if diagnostico.get("state") in _SIN_VAULT:
+            return _lifecycle_result(diagnostico)
     env: dict[str, str] = {
         "VAULT_ROOT": str(Path(raiz).resolve()) if raiz else "<ruta absoluta del vault>",
         "VAULT_MCP_PYTHON": sys.executable,
@@ -464,6 +487,8 @@ def cmd_mcp_path(args: argparse.Namespace) -> int:
         payload["project"] = slug
         payload["project_resolved_from"] = _proyectos.resuelto_desde(pedido, slug)
     payload["config"] = {"command": "node", "args": [str(servidor)], "env": env}
+    if shutil.which("node") is None:
+        payload["warnings"] = [_AVISO_SIN_NODE]
     _emit(payload)
     return 0
 

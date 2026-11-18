@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vault_errors import emit_error, wrap_main
+from vault_registry import comando_de_tool
 from vault.grafo.aristas import predicado_de  # noqa: E402
 from vault.grafo.lectura import grafo_para_consulta, nodos_por_ruta  # noqa: E402
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
@@ -170,7 +171,7 @@ def _desfase(nodes: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
         "stale_graph": bool(nuevas or borradas),
         "stale": {"new": len(nuevas), "gone": len(borradas),
                   "sample_new": nuevas[:5], "sample_gone": borradas[:5],
-                  "hint": "python scripts/vault_graph.py"},
+                  "hint": comando_de_tool("vault_graph")},
     }
 
 
@@ -296,7 +297,7 @@ def vault_subgraph(
             "ok": False,
             "error_code": "GRAPH_MISSING",
             "error": "No hay grafo. Ejecuta vault_graph para generarlo.",
-            "hint": "python scripts/vault_graph.py",
+            "hint": comando_de_tool("vault_graph"),
         }
 
     nodes = _nodes_by_path(graph)

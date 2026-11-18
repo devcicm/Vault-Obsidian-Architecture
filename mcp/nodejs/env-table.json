@@ -128,6 +128,13 @@
       "purpose": "Tope en bytes de un backup descomprimido que el servidor MCP acepta restaurar (256 MiB). Solo la lee el `.mjs`; vivía allí con su propio default y ni `--env` ni `docs/ENTORNO.md` la publicaban (2026-11-17)."
     },
     {
+      "name": "VAULT_OBSIDIAN_API_URL",
+      "type": "texto",
+      "default": "http://localhost:27124",
+      "context": "meta_toolkit",
+      "purpose": "URL base de la API REST de Obsidian (plugin Local REST API) con la que el servidor MCP valida contra el índice de Obsidian. Solo la lee el `.mjs`; estaba fija en el código, así que otro puerto, otro host o HTTPS no se podían usar (QA-PORT-12, 2026-11-17)."
+    },
+    {
       "name": "VAULT_SCAN_ROOTS",
       "type": "texto",
       "default": "",

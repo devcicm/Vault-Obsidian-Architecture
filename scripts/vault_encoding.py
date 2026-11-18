@@ -547,6 +547,28 @@ def detect_issues(text: str) -> List[Dict[str, Any]]:
     return issues
 
 
+#: What the trace stores for a file outside the vault: its name, never the
+#: absolute path of the machine that wrote it.
+FUERA_DEL_VAULT = "<fuera-del-vault>"
+
+
+def _ruta_para_traza(path: Path) -> str:
+    """The file as the vault names it: relative to its root, POSIX.
+
+    Until 2026-11-17 the trace stored `str(path)`, so right after `vault init`
+    `00_System/.tool-trace.json` carried the absolute path of the person's
+    machine twenty times and a shared vault published who wrote it and where
+    (QA-PORT-02).
+    """
+    from vault_raiz import get_vault_root
+
+    ruta = Path(path)
+    try:
+        return ruta.resolve().relative_to(get_vault_root().resolve()).as_posix()
+    except (OSError, ValueError):
+        return f"{FUERA_DEL_VAULT}/{ruta.name}"
+
+
 def log_encoding_fixes(
     fixes: List[Dict[str, Any]], path: Path, tool: str = "encoding_sanitizer"
 ) -> None:
@@ -567,7 +589,7 @@ def log_encoding_fixes(
         entry = {
             "tool": tool,
             "category": "encoding_fix",
-            "path": str(path),
+            "path": _ruta_para_traza(path),
             "fixes": fixes,
             "fix_count": len(fixes),
             "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z"),

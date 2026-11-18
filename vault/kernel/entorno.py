@@ -235,6 +235,13 @@ VARIABLES: Dict[str, Variable] = {
             _entero,
         ),
         Variable(
+            "VAULT_OBSIDIAN_API_URL", "texto", "http://localhost:27124", "meta_toolkit",
+            "URL base de la API REST de Obsidian (plugin Local REST API) con la "
+            "que el servidor MCP valida contra el índice de Obsidian. Solo la "
+            "lee el `.mjs`; estaba fija en el código, así que otro puerto, otro "
+            "host o HTTPS no se podían usar (QA-PORT-12, 2026-11-17).",
+        ),
+        Variable(
             "VAULT_SCAN_ROOTS", "texto", "", "meta_toolkit",
             "Rutas separadas por `;` donde el servidor MCP busca vaults. Vacía "
             "significa dos rutas relativas al repo, no «ninguna». Solo la lee "

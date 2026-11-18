@@ -274,7 +274,7 @@ node mcp/nodejs/vault-mcp-server.mjs --port 3000
 
 ### Con vault root explicito
 ```bash
-node mcp/nodejs/vault-mcp-server.mjs --vault "C:/Users/.../mi-vault" --port 3000
+node mcp/nodejs/vault-mcp-server.mjs --vault "<ruta-del-vault>" --port 3000
 ```
 
 ---

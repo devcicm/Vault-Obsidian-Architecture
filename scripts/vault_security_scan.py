@@ -203,6 +203,12 @@ def _escanear(
 
             escaneados += 1
             findings = scan_file(item, active_rules)
+            # Relative to what was scanned, POSIX: the absolute path named the
+            # person's machine in the envelope and in every note saved to the
+            # vault (QA-PORT-04, 2026-11-17).
+            relativa = item.relative_to(path).as_posix()
+            for f in findings:
+                f["file"] = relativa
 
             if findings:
                 results.append((item, findings))
@@ -279,7 +285,7 @@ def save_findings_to_vault(findings: List[Dict], project: str) -> List[str]:
     # encoding y el temp+replace viven ahí (AP-36).
     atomic_write_text(report_path, "\n".join(report_lines))
 
-    saved_files.append(str(report_path.relative_to(_raiz())))
+    saved_files.append(report_path.relative_to(_raiz()).as_posix())
 
     for f in findings:
         if f["severity"] in ["critical", "high"]:
@@ -313,7 +319,7 @@ def save_findings_to_vault(findings: List[Dict], project: str) -> List[str]:
 
             atomic_write_text(note_path, "\n".join(note_lines))
 
-            saved_files.append(str(note_path.relative_to(_raiz())))
+            saved_files.append(note_path.relative_to(_raiz()).as_posix())
 
     return saved_files
 
@@ -428,7 +434,7 @@ Ejemplos:
 
   python vault_security_scan.py --path "src/" --project "mi-api" --categories "secrets" "injection" --save_findings true
 
-  python vault_security_scan.py --path "C:/repos/backend/src" --project "backend"
+  python vault_security_scan.py --path "<ruta-absoluta-del-repo>/src" --project "backend"
 
   python vault_security_scan.py --path "src/" --project "mi-api" --categories "all" --save_findings false
 
