@@ -13,6 +13,7 @@ Types: functional, non-functional, constraint, assumption
 Priority: must-have, should-have, nice-to-have (MoSCoW)
 
 Status: draft -> reviewed -> approved -> implemented -> verified -> obsolete
+(validated against STATUS_TRANSITIONS, AP-41; a new requirement starts as draft or reviewed)
 
 
 
@@ -36,7 +37,8 @@ import sys
 
 from vault_change_log import vault_change_log_add, leer_historial_completo
 from vault_errors import emit_error, wrap_main, proyecto_registrado
-from vault_norms_catalog import status_frontmatter_lines
+from vault_norms_catalog import STATUS_TRANSITIONS, status_frontmatter_lines
+from vault_registry import regimen_de_estado
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from datetime import datetime, timezone
 from vault_io import (
@@ -63,7 +65,7 @@ from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 from vault.kernel.contenido import con_titulo  # noqa: E402
 from vault.kernel.frontmatter_escritura import conservar_nota_generada  # noqa: E402
-from vault.autoria.frontmatter import Frontmatter  # noqa: E402
+from vault.autoria.frontmatter import Frontmatter, firmante  # noqa: E402
 
 
 from vault_encoding import sanitize_content  # noqa: E402
@@ -91,6 +93,52 @@ REQ_TYPES = ["functional", "non-functional", "constraint", "assumption"]
 PRIORITIES = ["must-have", "should-have", "nice-to-have", "wont-have"]
 
 STATUSES = ["draft", "reviewed", "approved", "implemented", "verified", "obsolete"]
+
+#: The states a requirement may be created in (AP-41). Not a second table: a
+#: requirement enters the lifecycle in an *open* state of
+#: `STATUS_TRANSITIONS` (one that can still go back to `draft`, per
+#: `regimen_de_estado`). A closed state is only reachable through recorded
+#: transitions; being born `verified` would skip the machine the ledger
+#: replays.
+ESTADOS_DE_ALTA = tuple(s for s in STATUSES
+                        if regimen_de_estado(s, STATUS_TRANSITIONS) == "abierto")
+
+
+def _transicion_ilegal(previo: Optional[str], destino: str) -> Optional[Dict[str, Any]]:
+    """The AP-41 rejection for `previo -> destino`, or None when it is allowed.
+
+    Same verdict and envelope shape as `vault_write`'s AP-41 guard: the table
+    is `vault_norms_catalog.STATUS_TRANSITIONS`, never a copy. `previo` None is
+    a new requirement, checked against `ESTADOS_DE_ALTA`. A previous state the
+    machine does not know (debt older than AP-38) is let through, as
+    `vault_write` does, and the audit reports it.
+    """
+    if previo == destino:
+        return None
+    if previo is None:
+        permitidos = set(ESTADOS_DE_ALTA)
+        origen = "(nuevo)"
+    elif previo in STATUS_TRANSITIONS:
+        permitidos = set(STATUS_TRANSITIONS[previo])
+        origen = repr(previo)
+    else:
+        return None
+    if destino in permitidos:
+        return None
+    return {
+        **emit_error(
+            "vault_requirement_save", "illegal_status_transition",
+            f"AP-41: transición {origen} -> {destino!r} no está en "
+            f"STATUS_TRANSITIONS. Desde {origen} solo se puede pasar a "
+            f"{sorted(permitidos) or ['(ninguno: estado terminal)']}. "
+            f"Recorre los estados intermedios con --req-id; nada se escribió."),
+        "error": "illegal_status_transition",
+        "norm_code": "AP-41",
+        "norm_name": "Máquina de estados declarada sin verificar",
+        "from_status": previo,
+        "to_status": destino,
+        "allowed": sorted(permitidos),
+    }
 
 
 def _hay_historial_de_requisitos() -> bool:
@@ -256,6 +304,10 @@ def vault_requirement_save(
 
     now = utcnow()
 
+    # AP-16: the note and its change-log row are signed by whoever writes,
+    # resolved by the owner every typed save tool uses (`firmante`).
+    agente = firmante()
+
     # El lock abarca desde la lectura hasta la escritura, no solo la
     # escritura: este indice es tambien el contador del correlativo, y
     # reservar el numero fuera del tramo exclusivo hace que dos guardados
@@ -290,6 +342,20 @@ def vault_requirement_save(
                  if slugify_strict(str(r.get("title") or "")) == title_slug),
                 None,
             )
+
+        # AP-41 before anything is reserved or written: a rejected move leaves
+        # the counter, the note, the ledger and this projection untouched
+        # (`indice_compartido` only writes when the data changed). A pending
+        # retry was checked when first requested and is replayed below; an
+        # entry without a recorded state has no machine to walk.
+        if existente is None:
+            rechazo = _transicion_ilegal(None, status)
+        elif existente.get("pending_transition") or not existente.get("status"):
+            rechazo = None
+        else:
+            rechazo = _transicion_ilegal(str(existente["status"]), status)
+        if rechazo is not None:
+            return rechazo
 
         if existente is not None:
             req_id = str(existente.get("req_id") or "")
@@ -362,7 +428,7 @@ def vault_requirement_save(
 
         frontmatter.set("cia_sensitivity", "internal")
 
-        frontmatter.set("agent", "system")
+        frontmatter.set("agent", agente, texto=True)
 
 
         body_sections = []
@@ -437,7 +503,7 @@ def vault_requirement_save(
             try:
                 registro = vault_change_log_add(
                     action="transition", path=rel_note, reason=pending_transition["reason"],
-                    agent="system", event_id=pending_transition["id"],
+                    agent=agente, event_id=pending_transition["id"],
                     requirement={"project": safe_project, "req_id": req_id,
                                  "from": pending_transition["from"], "to": status})
             except Exception:
@@ -540,6 +606,10 @@ Notes:
   - priority: must-have | should-have | nice-to-have | wont-have    (MoSCoW)
 
   - status: draft | reviewed | approved | implemented | verified | obsolete
+    Changes follow STATUS_TRANSITIONS (AP-41): draft -> reviewed -> approved ->
+    implemented -> verified -> obsolete, one step at a time with --req-id. A new
+    requirement starts as draft or reviewed. An illegal move is rejected with
+    illegal_status_transition and writes nothing.
 
   - --related_code accepts comma-separated file paths
 

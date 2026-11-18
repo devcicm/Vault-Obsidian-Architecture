@@ -16,9 +16,11 @@ encima, así que lo que el registro guardara allí se perdería en la siguiente
 pasada. Se midió en los dos vaults ajenos antes de escribir esto: sus
 `<slug>/index.md` son índices generados sin frontmatter.
 
-**Qué no hace.** No escribe nada, no sabe del catálogo de errores y no conoce
-rutas locales de repositorio. Nombra lo que pasó con `FalloDeDominio`; la tool
-lo traduce con `vault_errors.emit_fallo`.
+**Qué no hace.** No sabe del catálogo de errores. Nombra lo que pasó con
+`FalloDeDominio`; la tool lo traduce con `vault_errors.emit_fallo`. Lo que
+escribe —la ficha, el `repo:` y las rutas locales— lo escribe con el transporte
+que le pasa quien llama (`escribir`), que es quien cuenta la escritura (AP-37);
+leer el registro sigue sin escribir nada.
 
 **Por qué en el núcleo (v40.34).** Nació en `vault/autoria/`, y en cuanto las
 tools de grafo, gobernanza o ciclo de vida empezaron a resolver su `--project`
@@ -33,6 +35,7 @@ from __future__ import annotations
 import difflib
 import json
 import os
+import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Dict, Iterable, List, Mapping, Optional, Set, Tuple
@@ -375,6 +378,154 @@ def anotar_repo(
     fm = Frontmatter.editar(bloque or "").set("repo", ordenado)
     escribir(ficha, fm.render() + "\n" + cuerpo)
     return rel
+
+
+#: `00_System/.local/.gitignore`: nada de esa carpeta viaja con el vault.
+GITIGNORE_LOCAL = "*\n"
+
+
+def ficha_nueva(slug: str, titulo: str, alias: List[str], status: str, *,
+                agente: str, ahora: str, cia: Mapping[str, str]) -> str:
+    """El texto de la ficha `01_Projects/<slug>/project.md` de un alta.
+
+    La ficha es una nota de contenido como cualquier otra: hasta v40.34 salía
+    sin autor, tags, CIA ni fechas, y el audit la penalizaba en cuanto se
+    registraba un proyecto (AP-16, AP-26, AP-30, missing_updated). Hasta
+    v40.36, además, sin `id`, que el contrato exige a toda nota (AP-12).
+    Quien firma, la hora y la CIA por defecto los da quien llama: el núcleo no
+    conoce el entorno ni el catálogo de fundamentos.
+    """
+    fm = (
+        Frontmatter()
+        .set("title", titulo, texto=True)
+        .set("id", str(uuid.uuid4()))
+        .set("type", "project")
+        .set("project", slug, texto=True)
+        .set("aliases", alias)
+        .set("status", status)
+        .set("tags", [slug, "project"])
+        .set("createdAt", ahora)
+        .set("updatedAt", ahora)
+    )
+    for campo, valor in cia.items():
+        fm.set(campo, valor, texto=True)
+    fm.set("agent", agente, texto=True)
+    return (
+        fm.render()
+        + f"\n\n# {titulo}\n\n"
+        + "Ficha del proyecto en el registro (AP-63). La ruta local del "
+        + "repositorio no va aquí: es de cada máquina y vive en "
+        + "`00_System/.local/project-paths.json`, fuera de git.\n"
+    )
+
+
+def registrar_en(
+    raiz: Path,
+    slug: str,
+    titulo: Optional[str],
+    alias: List[str],
+    status: str,
+    *,
+    agente: str,
+    ahora: str,
+    cia: Mapping[str, str],
+    escribir: Callable[[Path, str], object] = escritura_atomica,
+) -> Dict[str, str]:
+    """AP-63: alta de un proyecto o suma de alias. Nunca reasigna un nombre.
+
+    El dueño de `vault_project --add` y del registro que hace `vault_onboard`
+    (QA-FL-13): dos puertas, una sola regla. `ValueError` si ``slug`` no
+    produce un slug válido; `FalloDeDominio` `PROYECTO_AMBIGUO` si el slug o
+    un alias ya identifican a otro proyecto. Devuelve `action` (`added` o
+    `aliased`), `project` y `ficha` (relativa al vault).
+    """
+    canonico = slugify_strict(slug or "")
+    if not canonico:
+        raise ValueError(f"{slug!r} no produce un slug válido")
+    registro = leer_registro(Path(raiz))
+    alias = [a.strip() for a in alias if a.strip()]
+    for nombre in (canonico, *alias):
+        duenos = registro.claves().get(slugify_strict(nombre), set()) - {canonico}
+        if duenos:
+            raise FalloDeDominio(
+                "PROYECTO_AMBIGUO",
+                f"{nombre!r} ya identifica a {', '.join(sorted(duenos))}; "
+                f"añadirlo a {canonico} lo haría ambiguo.",
+                project=nombre, candidatos=sorted(duenos | {canonico}),
+            )
+    ficha = _ficha(raiz, canonico)
+    if ficha.is_file():
+        bloque, cuerpo = separar_frontmatter(ficha.read_text(encoding="utf-8"))
+        previos = list(registro.proyectos[canonico].aliases) if canonico in registro.proyectos else []
+        conocidos = {slugify_strict(x) for x in previos}
+        nuevos = [a for a in alias if slugify_strict(a) not in conocidos]
+        if nuevos:
+            fm = (Frontmatter.editar(bloque or "").set("aliases", previos + nuevos)
+                  .set("updatedAt", ahora))
+            # `render()` va sin salto final y `cuerpo` empieza tras la línea de
+            # cierre: el salto entre los dos es el que `separar_frontmatter` quitó.
+            escribir(ficha, fm.render() + "\n" + cuerpo)
+        accion = "aliased"
+    else:
+        escribir(ficha, ficha_nueva(canonico, titulo or canonico, alias, status,
+                                    agente=agente, ahora=ahora, cia=cia))
+        accion = "added"
+    return {"action": accion, "project": canonico,
+            "ficha": f"{CARPETA_PROYECTOS}/{canonico}/{FICHA}"}
+
+
+def enlazar_en(
+    raiz: Path,
+    slug: str,
+    destino: Path,
+    *,
+    git: Callable[..., Optional[str]],
+    escribir: Callable[[Path, str], object],
+    escribir_crudo: Callable[[Path, str], object],
+    escribir_json: Callable[[Path, object], object],
+    vault: Optional[str] = None,
+    leer_puntero: Optional[Callable[[Path], Optional[Path]]] = None,
+) -> Dict[str, object]:
+    """Enlaza ``destino`` como repositorio local de ``slug`` en esta máquina.
+
+    El dueño de `vault_project --link` y del enlace que hace `vault_onboard`
+    (QA-FL-13). La ruta va a `RUTAS_LOCALES`, que git ignora desde dentro; lo
+    portable —remoto y rama— va a `repo:` de la ficha (`anotar_repo`); con
+    ``vault`` (o el puntero `.vault-path` del repo, si se pasa
+    ``leer_puntero``) queda declarado dónde vive el vault del proyecto.
+    ``git(ruta, *args)`` lee el repo y devuelve la salida o ``None``: un repo
+    sin remoto o sin git se enlaza igual. `ValueError` si el registro local
+    existe y no se puede leer: no se reescribe a ciegas.
+    """
+    raiz = Path(raiz)
+    gitignore = raiz / DIRECTORIO_LOCAL / ".gitignore"
+    if not gitignore.is_file():
+        escribir_crudo(gitignore, GITIGNORE_LOCAL)
+    fichero = raiz / RUTAS_LOCALES
+    rutas: Dict[str, str] = {}
+    if fichero.is_file():
+        try:
+            rutas = json.loads(fichero.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            raise ValueError(
+                f"{RUTAS_LOCALES.as_posix()} no se puede leer ({exc}); no se reescribe") from exc
+    if rutas.get(slug) != str(destino):
+        rutas[slug] = str(destino)
+        escribir_json(fichero, dict(sorted(rutas.items())))
+    remoto = git(destino, "config", "--get", "remote.origin.url")
+    rama = git(destino, "symbolic-ref", "--short", "refs/remotes/origin/HEAD")
+    rama = rama.split("/", 1)[1] if rama and "/" in rama else git(destino, "branch", "--show-current")
+    ficha = anotar_repo(raiz, slug, escribir, remote=remoto, default_branch=rama)
+    # Es una declaración, no una escritura fuera del vault: el puntero lo
+    # escribe la persona.
+    vault_declarado = vault
+    if vault_declarado is None and leer_puntero is not None:
+        puntero = leer_puntero(destino)
+        if puntero is not None:
+            vault_declarado = str(puntero)
+    vault_guardado = anotar_vault(raiz, slug, vault_declarado) if vault_declarado else None
+    return {"project": slug, "file": RUTAS_LOCALES.as_posix(), "ficha": ficha,
+            "repo": repo_de(raiz, slug), "vault": vault_guardado}
 
 
 def resuelto_desde(nombre: str, slug: str) -> str:

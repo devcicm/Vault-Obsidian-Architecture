@@ -44,17 +44,17 @@ def _guardar(raiz, estado):
 def test_cada_cambio_de_estado_deja_fila_y_evento(tmp_path):
     raiz = copiar_vault(tmp_path / "vault", "demo")
     assert _guardar(raiz, "draft")[1]["transition_logged"] is True
-    assert _guardar(raiz, "approved")[1]["transition_logged"] is True
+    assert _guardar(raiz, "reviewed")[1]["transition_logged"] is True
     # Mismo estado y mismo cuerpo: ni evento ni fila.
-    assert _guardar(raiz, "approved")[1]["transition_logged"] is False
+    assert _guardar(raiz, "reviewed")[1]["transition_logged"] is False
 
     indice = json.loads(next(raiz.rglob(".requirements-index.json")).read_text(encoding="utf-8"))
     ev = indice["requirements"][0]["events"]
-    assert [(e["from"], e["to"]) for e in ev] == [(None, "draft"), ("draft", "approved")]
+    assert [(e["from"], e["to"]) for e in ev] == [(None, "draft"), ("draft", "reviewed")]
 
     log = json.loads((raiz / "00_System" / ".change-log.json").read_text(encoding="utf-8"))
     filas = [e for e in log if e["action"] == "transition"]
-    assert [e["reason"] for e in filas] == ["REQ-001: (nuevo) -> draft", "REQ-001: draft -> approved"]
+    assert [e["reason"] for e in filas] == ["REQ-001: (nuevo) -> draft", "REQ-001: draft -> reviewed"]
     assert [e["requirement"]["identity"] for e in filas] == ["demo/REQ-001"] * 2
     assert [e["id"] for e in filas] == [e["id"] for e in ev]
 
@@ -65,14 +65,14 @@ def test_requirement_projection_replays_complete_log_and_is_idempotent(tmp_path)
     import vault_requirement_save as requirements
 
     root = copiar_vault(tmp_path / "vault", "demo")
-    assert _guardar(root, "approved")[0] == 0
+    assert _guardar(root, "reviewed")[0] == 0
     log_path = root / "00_System" / ".change-log.json"
     log = json.loads(log_path.read_text(encoding="utf-8"))
     event = next(e for e in log if e["action"] == "transition")
     rows = []
     for number in range(31):
-        state = "approved" if number % 2 == 0 else "draft"
-        previous = "draft" if state == "approved" else "approved"
+        state = "reviewed" if number % 2 == 0 else "draft"
+        previous = "draft" if state == "reviewed" else "reviewed"
         row = {**event, "id": str(uuid.uuid4()),
                "requirement": {**event["requirement"], "from": None if number == 0 else previous,
                                "to": state}}
@@ -80,7 +80,7 @@ def test_requirement_projection_replays_complete_log_and_is_idempotent(tmp_path)
     log_path.write_text(json.dumps(rows), encoding="utf-8")
     index = root / "14_Requirements" / ".requirements-index.json"
     index.unlink()
-    code, saved = _guardar(root, "approved")
+    code, saved = _guardar(root, "reviewed")
     assert code == 0 and saved["req_id"] == "REQ-001", saved
     vault_io.set_vault_root(root)
     result = requirements.reconstruir_indice_requisitos()
@@ -162,15 +162,15 @@ def test_retry_after_projection_failure_converges_without_duplicate_events(tmp_p
     with monkeypatch.context() as patch:
         patch.setattr(vault_io, "atomic_write_json", failing_index)
         with pytest.raises(OSError):
-            requirements.vault_requirement_save(**arguments, status="approved")
+            requirements.vault_requirement_save(**arguments, status="reviewed")
     for _ in range(3):
-        assert requirements.vault_requirement_save(**arguments, status="approved")["ok"]
+        assert requirements.vault_requirement_save(**arguments, status="reviewed")["ok"]
     rows = json.loads((root / "00_System" / ".change-log.json").read_text(encoding="utf-8"))
     transitions = [(r["requirement"]["from"], r["requirement"]["to"]) for r in rows if r.get("requirement")]
-    assert transitions == [(None, "draft"), ("draft", "approved")]
+    assert transitions == [(None, "draft"), ("draft", "reviewed")]
     index = json.loads((root / "14_Requirements" / ".requirements-index.json").read_text(encoding="utf-8"))
     entry = index["requirements"][0]
-    assert entry["status"] == "approved"
+    assert entry["status"] == "reviewed"
     assert [(e["from"], e["to"]) for e in entry["events"]] == transitions
     assert requirements.reconstruir_indice_requisitos()["ok"]
 

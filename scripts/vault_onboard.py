@@ -6,7 +6,9 @@ Cubre las 12 secciones activas del vault y construye historial de desarrollo
 desde git log (o mtime de archivos si no hay git).
 
 Estrategias de sección:
-  01_Projects   — overview con fechas git, contributors, versiones
+  01_Projects   — overview con fechas git, contributors, versiones; además
+                  registra el proyecto (ficha project.md) y enlaza --path como
+                  su repositorio local, igual que vault_project --add / --link
   02_Observability — TODO/FIXME/HACK/BUG detectados en código fuente
   03_Decisions  — ADRs retroactivos desde commits arquitectónicos
   04_Sessions   — una nota por fase temporal del proyecto (antes/después)
@@ -50,6 +52,7 @@ from vault_entorno import agente_por_defecto
 from vault_lib import slugify_strict, utcnow
 from vault_io import (
     assert_within_vault,
+    atomic_write_json,
     atomic_write_text,
     escrituras_en_lote,
     file_lock,
@@ -58,7 +61,10 @@ from vault_io import (
     NotaInmutableError,  # el veto del dueno de la escritura
 )
 from vault_norms_catalog import compute_norm_refs
-from vault.kernel import procesos_git
+from vault_fundamentals_catalog import cia_por_defecto
+from vault_raiz import leer_puntero
+from vault.kernel import procesos_git, proyectos
+from vault.kernel.fallos import FalloDeDominio
 from vault_registry import ORDERED_SECTIONS, es_artefacto_derivado
 from vault_write import tipo_por_carpeta
 
@@ -2954,6 +2960,55 @@ def _update_indexes(sections: List[str], dry_run: bool) -> List[str]:
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 
+def _registrar_y_enlazar(project: str, project_path: Path, dry_run: bool, agent: str,
+                         skip: set, warnings: List[str]) -> Dict[str, Any]:
+    """QA-FL-13: the onboarded project ends registered and linked to its repo.
+
+    The onboard wrote `01_Projects/<project>/overview.md` and stopped there: no
+    card and no local link, so the session protocol's next step
+    (`vault_drift_detect --project <slug> --mode snapshot`) failed with
+    `MISSING_REQUIRED_ARG`. Registration and link go through the kernel owners
+    that `vault_project --add` and `--link` also use
+    (`proyectos.registrar_en`, `proyectos.enlazar_en`), never a second
+    implementation. A refusal (an alias that belongs to another project) does
+    not undo the onboard: it is reported here and in `warnings`.
+    """
+    slug = slugify_strict(project)
+    if "01" in skip:
+        return {"project": slug, "skipped": True,
+                "reason": "01_Projects omitida por --skip: ni ficha ni enlace"}
+    if dry_run:
+        ficha = _raiz() / proyectos.CARPETA_PROYECTOS / slug / proyectos.FICHA
+        return {"project": slug, "dry_run": True,
+                "would_register": not ficha.is_file(), "would_link": str(project_path)}
+    try:
+        alta = proyectos.registrar_en(_raiz(), project, project, [], "in-progress",
+                                      agente=agent, ahora=utcnow(), cia=cia_por_defecto(),
+                                      escribir=atomic_write_text)
+    except (ValueError, FalloDeDominio) as exc:
+        codigo = getattr(exc, "causa", None) or type(exc).__name__
+        warnings.append(
+            f"El proyecto no se registró ({codigo}): {exc} Registrarlo con "
+            f"vault_project --add y enlazarlo con vault_project --link antes de "
+            f"vault_drift_detect.")
+        return {"project": slug, "registered": None, "linked": False, "error": str(exc)}
+    try:
+        enlace = proyectos.enlazar_en(
+            _raiz(), alta["project"], project_path,
+            git=lambda ruta, *args: _run_git(ruta, list(args)),
+            escribir=atomic_write_text,
+            escribir_crudo=lambda ruta, texto: atomic_write_text(ruta, texto, sanitize=False),
+            escribir_json=atomic_write_json, leer_puntero=leer_puntero)
+    except ValueError as exc:
+        warnings.append(
+            f"El repositorio no se enlazó: {exc} Enlazarlo con vault_project --link "
+            f"{alta['project']} --path <repo>.")
+        return {"project": alta["project"], "registered": alta["action"],
+                "ficha": alta["ficha"], "linked": False, "error": str(exc)}
+    return {"project": alta["project"], "registered": alta["action"],
+            "ficha": alta["ficha"], "linked": True, "file": enlace["file"]}
+
+
 @_aislar_contexto
 def vault_onboard(
     project: str,
@@ -3108,6 +3163,10 @@ def vault_onboard(
             )
         if "17" not in skip:
             _record(_onboard_17_preferences(project, meta, agent, dry_run), "preferences")
+        # 4b. QA-FL-13: register the project and link the scanned repository,
+        # inside the batch so the card is indexed with the rest.
+        project_link = _registrar_y_enlazar(project, project_path, dry_run, agent, skip,
+                                            warnings)
 
     # 5. Update indexes
     #
@@ -3122,6 +3181,8 @@ def vault_onboard(
     # responsabilidad de refrescar índices ajenos a esta corrida: de
     # `vault_reindex`, que es la tool que existe para eso.
     writes = merge_stats["created"] + merge_stats["merged"]
+    if project_link.get("registered") == "added":
+        writes += 1  # the new card is a note the indexes have to list
     if writes == 0 and not dry_run:
         created["indexes_updated"] = []
         created["indexes_skipped"] = (
@@ -3259,6 +3320,7 @@ def vault_onboard(
         },
         "created": created,
         "merge_stats": merge_stats,
+        "project_link": project_link,
         # AP-45: lo que NO se escribió, y por qué. Es la mitad útil del informe.
         # Un hueco nombrado dirige el siguiente trabajo; un stub que lo tapa
         # hace creer que ya está hecho.
@@ -3302,6 +3364,11 @@ Ejemplos:
 
 El resultado JSON incluye sections_report: estado y motivo por sección,
 incluidas las omisiones por política y las secciones sin notas producidas.
+
+El proyecto queda registrado (ficha 01_Projects/<slug>/project.md) y --path
+enlazado como su repositorio local (project_link), así que
+vault_drift_detect --project <slug> --mode snapshot funciona sin más pasos.
+Con --dry-run no se registra ni enlaza nada; con --skip 01, tampoco.
 """,
         allow_abbrev=False,
     )

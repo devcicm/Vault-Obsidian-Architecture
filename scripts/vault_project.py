@@ -8,8 +8,9 @@ Esta es la puerta de entrada al registro que lee `vault.kernel.proyectos`:
 - `--resolve NOMBRE`: el slug canónico, o `PROJECT_NOT_FOUND` con sugerencias
   / `PROJECT_AMBIGUOUS` con candidatos. `project_resolved_from` dice si casó
   por slug o por alias.
-- `--audit`: notas cuyo `project:` no resuelve (los fantasmas) y claves no
-  canónicas (`Proyecto:`, `PROJECT:`). Solo lectura.
+- `--audit`: notas cuyo `project:` no resuelve (los fantasmas), claves no
+  canónicas (`Proyecto:`, `PROJECT:`) y proyectos registrados sin ficha
+  (`projects_without_card`). Solo lectura.
 - `--add SLUG [--title] [--alias ...] [--status]`: registra el proyecto
   creando su ficha `01_Projects/<slug>/project.md`, o le suma alias si ya
   existe. Un alias que ya es de otro proyecto se rechaza: no se elige en
@@ -19,6 +20,15 @@ Esta es la puerta de entrada al registro que lee `vault.kernel.proyectos`:
   Una ruta de disco es de una máquina, no del proyecto: en una nota viajaría
   con cada copia del vault (y `_sin_rutas_locales` la rechaza).
   Lo portable —remoto y rama por defecto— va a `repo:` de la ficha.
+- `--unlink SLUG [--path RUTA]`: deshace `--link` en esta máquina: quita la
+  ruta del repositorio (y la del vault declarada) del registro local. Con
+  `--path`, solo si es la ruta enlazada. La ficha conserva `repo:`, que es
+  portable.
+- `--remove SLUG`: da de baja el proyecto del registro —su carpeta en
+  `01_Projects/`, sus rutas locales y su fila del derivado—. Nunca borra
+  notas: se niega mientras quede alguna del proyecto (la ficha incluida, que
+  se borra con `vault_delete`, o las que citan el proyecto en `project:`) y
+  las lista en `owned_notes`.
 - `--sync-status PROYECTO`: compara `repo.synced_commit` con el HEAD del repo
   enlazado y da los commits pendientes de volcar al vault. Solo lectura.
   `vault_drift_detect --mode snapshot` y `vault_code_sync` (con trazabilidad
@@ -35,6 +45,8 @@ Ejemplos:
     python vault_project.py --add ans --title "ANS" --alias ans-api
     python vault_project.py --link ans --path ../ans
     python vault_project.py --link ans --path ../ans --vault ~/.vault-master/ans
+    python vault_project.py --unlink ans
+    python vault_project.py --remove ans
     python vault_project.py --sync-status ans
     python vault_project.py --audit
     python vault_project.py --heal            # dry-run
@@ -56,7 +68,9 @@ from vault_errors import emit_error, emit_fallo, wrap_main
 # se reexporta para quien lo importara de la tool.
 from vault_errors import proyecto_registrado  # noqa: F401
 from vault_io import (atomic_write_json, atomic_write_text, escrituras_en_lote, file_lock,
-                      get_vault_root, is_snapshot_path, write_report)
+                      get_vault_root, is_snapshot_path, refrescar_indice_de_seccion,
+                      write_report)
+from vault_registry import es_artefacto_derivado
 from vault_lib import parse_frontmatter_with_body, utcnow
 from vault_norms_catalog import STATUS_VOCAB
 from vault_undo import _guardar_version_actual
@@ -81,7 +95,7 @@ REGISTRO_DERIVADO = Path("00_System") / "project-registry.json"
 #: contexto; se conservan los nombres.
 DIRECTORIO_LOCAL = proyectos.DIRECTORIO_LOCAL
 RUTAS_LOCALES = proyectos.RUTAS_LOCALES
-_GITIGNORE_LOCAL = "*\n"
+_GITIGNORE_LOCAL = proyectos.GITIGNORE_LOCAL
 
 #: Claves que en un vault real declaran el proyecto. Solo `project` es la
 #: canónica; las otras se miden para nombrarlas, no se aceptan.
@@ -136,11 +150,18 @@ def auditar(raiz: Optional[Path] = None) -> Dict[str, Any]:
             for nombre in (valor if isinstance(valor, list) else [valor]):
                 citas.setdefault(str(nombre), []).append(rel.as_posix())
     hallazgos = proyectos.fantasmas(registro, citas)
+    # QA-FL-13: a folder without card is a valid registration (the folder
+    # names the slug), but after deleting the card the project silently stayed
+    # registered. The audit names it so the owner either restores the card
+    # (`--add`) or unregisters it (`--remove`).
+    sin_ficha = sorted(slug for slug, p in registro.proyectos.items() if p.ficha is None)
     return {
         "ok": True, "tool": TOOL, "action": "audit", "norm": "AP-63",
         "projects_registered": len(registro.proyectos),
         "phantoms": hallazgos,
         "phantoms_total": len(hallazgos),
+        "projects_without_card": sin_ficha,
+        "projects_without_card_total": len(sin_ficha),
         "non_canonical_keys": no_canonicas,
         "notes_unreadable": ilegibles,
         "notes_unreadable_total": len(ilegibles),
@@ -268,77 +289,39 @@ def sanar(apply: bool = False) -> Dict[str, Any]:
     }
 
 
+# superseded_by: vault.kernel.proyectos.ficha_nueva (QA-FL-13). The card text
+# moved to the kernel so `vault_onboard` registers with the same owner; this
+# name keeps its contract (no-derogacion).
 def _ficha_nueva(slug: str, titulo: str, alias: List[str], status: str) -> str:
-    # La ficha es una nota de contenido como cualquier otra: hasta v40.34 salía
-    # sin autor, tags, CIA ni fechas, y el audit la penalizaba en cuanto se
-    # registraba un proyecto (AP-16, AP-26, AP-30, missing_updated). Hasta
-    # v40.36, además, sin `id`, que el contrato exige a toda nota (AP-12).
-    ahora = utcnow()
-    fm = (
-        Frontmatter()
-        .set("title", titulo, texto=True)
-        .set("id", str(uuid.uuid4()))
-        .set("type", "project")
-        .set("project", slug, texto=True)
-        .set("aliases", alias)
-        .set("status", status)
-        .set("tags", [slug, "project"])
-        .set("createdAt", ahora)
-        .set("updatedAt", ahora)
-    )
-    for campo, valor in cia_por_defecto().items():
-        fm.set(campo, valor, texto=True)
-    fm.set("agent", firmante(), texto=True)
-    return (
-        fm.render()
-        + f"\n\n# {titulo}\n\n"
-        + "Ficha del proyecto en el registro (AP-63). La ruta local del "
-        + "repositorio no va aquí: es de cada máquina y vive en "
-        + "`00_System/.local/project-paths.json`, fuera de git.\n"
-    )
+    # AP-63: the card of a new project, signed and dated by this tool.
+    return proyectos.ficha_nueva(slug, titulo, alias, status, agente=firmante(),
+                                 ahora=utcnow(), cia=cia_por_defecto())
 
 
 def registrar(slug: str, titulo: Optional[str], alias: List[str], status: str) -> Dict[str, Any]:
-    """AP-63: alta o suma de alias. Nunca reasigna un nombre que ya es de otro."""
-    canonico = slugify_strict(slug or "")
-    if not canonico:
-        return emit_error(TOOL, "INVALID_ARGS", f"{slug!r} no produce un slug válido")
-    registro = _registro()
-    alias = [a.strip() for a in alias if a.strip()]
-    for nombre in (canonico, *alias):
-        dueños = registro.claves().get(slugify_strict(nombre), set()) - {canonico}
-        if dueños:
-            return emit_fallo(TOOL, FalloDeDominio(
-                "PROYECTO_AMBIGUO",
-                f"{nombre!r} ya identifica a {', '.join(sorted(dueños))}; "
-                f"añadirlo a {canonico} lo haría ambiguo.",
-                project=nombre, candidatos=sorted(dueños | {canonico}),
-            ))
+    """AP-63: alta o suma de alias. Nunca reasigna un nombre que ya es de otro.
 
-    ficha = _raiz() / proyectos.CARPETA_PROYECTOS / canonico / proyectos.FICHA
-    if ficha.is_file():
-        bloque, cuerpo = separar_frontmatter(ficha.read_text(encoding="utf-8"))
-        previos = list(registro.proyectos[canonico].aliases) if canonico in registro.proyectos else []
-        nuevos = [a for a in alias if slugify_strict(a) not in {slugify_strict(x) for x in previos}]
-        if nuevos:
-            fm = (Frontmatter.editar(bloque or "").set("aliases", previos + nuevos)
-                  .set("updatedAt", utcnow()))
-            # `render()` va sin salto final y `cuerpo` empieza tras la línea de
-            # cierre: el salto entre los dos es el que `separar_frontmatter` quitó.
-            atomic_write_text(ficha, fm.render() + "\n" + cuerpo)
-        accion = "aliased"
-    else:
-        atomic_write_text(ficha, _ficha_nueva(canonico, titulo or canonico, alias, status))
-        accion = "added"
-    return {"ok": True, "tool": TOOL, "action": accion, "project": canonico,
-            "ficha": ficha.relative_to(_raiz()).as_posix(), **write_report()}
+    The rule lives in `vault.kernel.proyectos.registrar_en`, shared with
+    `vault_onboard`; this adapter only translates its outcome to the envelope.
+    """
+    try:
+        alta = proyectos.registrar_en(_raiz(), slug, titulo, alias, status,
+                                      agente=firmante(), ahora=utcnow(),
+                                      cia=cia_por_defecto(), escribir=atomic_write_text)
+    except ValueError as exc:
+        return emit_error(TOOL, "INVALID_ARGS", str(exc))
+    except FalloDeDominio as fallo:
+        return emit_fallo(TOOL, fallo)
+    return {"ok": True, "tool": TOOL, **alta, **write_report()}
 
 
 def enlazar(nombre: str, ruta: str, vault: Optional[str] = None) -> Dict[str, Any]:
     """La ruta local va a `00_System/.local/`, que git ignora desde dentro.
 
     Con `vault` (o con el puntero `.vault-path` del repositorio) queda
-    declarado tambien donde vive el vault de este proyecto (v41.15).
+    declarado tambien donde vive el vault de este proyecto (v41.15). The
+    link itself is `vault.kernel.proyectos.enlazar_en`, shared with
+    `vault_onboard`.
     """
     try:
         slug = _registro().resolver(nombre)
@@ -347,45 +330,155 @@ def enlazar(nombre: str, ruta: str, vault: Optional[str] = None) -> Dict[str, An
     destino = Path(ruta).expanduser().resolve()
     if not destino.is_dir():
         return emit_error(TOOL, "INVALID_PATH", f"{ruta!r} no es un directorio")
-    local = _raiz() / DIRECTORIO_LOCAL
-    gitignore = local / ".gitignore"
-    if not gitignore.is_file():
-        atomic_write_text(gitignore, _GITIGNORE_LOCAL, sanitize=False)
-    fichero = _raiz() / RUTAS_LOCALES
-    rutas: Dict[str, str] = {}
-    if fichero.is_file():
-        try:
-            rutas = json.loads(fichero.read_text(encoding="utf-8"))
-        except (OSError, ValueError) as exc:
-            return emit_error(TOOL, "DATA_FILE_CORRUPT",
-                              f"{RUTAS_LOCALES.as_posix()} no se puede leer ({exc}); no se reescribe")
-    if rutas.get(slug) != str(destino):
-        rutas[slug] = str(destino)
-        atomic_write_json(fichero, dict(sorted(rutas.items())))
-    # Lo portable va a la ficha; la ruta, nunca. Un repo sin remoto o sin git
-    # se enlaza igual: la ruta basta para `drift_detect` por hash.
-    remoto = _git(destino, "config", "--get", "remote.origin.url")
-    rama = _git(destino, "symbolic-ref", "--short", "refs/remotes/origin/HEAD")
-    rama = rama.split("/", 1)[1] if rama and "/" in rama else _git(destino, "branch", "--show-current")
-    ficha = proyectos.anotar_repo(_raiz(), slug, atomic_write_text,
-                                  remote=remoto, default_branch=rama)
-    # Donde vive el vault de este proyecto: lo que se le pasa, o el puntero
-    # que el repositorio declara (`.vault-path`). Es una declaracion, no una
-    # escritura fuera del vault: el puntero lo escribe la persona.
-    vault_declarado = vault
-    if vault_declarado is None:
-        from vault_raiz import leer_puntero
+    from vault_raiz import leer_puntero
 
-        puntero = leer_puntero(destino)
-        if puntero is not None:
-            vault_declarado = str(puntero)
-    vault_guardado = None
-    if vault_declarado:
-        vault_guardado = proyectos.anotar_vault(_raiz(), slug, vault_declarado)
-    return {"ok": True, "tool": TOOL, "action": "link", "project": slug,
-            "file": RUTAS_LOCALES.as_posix(), "ficha": ficha,
-            "repo": proyectos.repo_de(_raiz(), slug),
-            "vault": vault_guardado, **write_report()}
+    try:
+        enlace = proyectos.enlazar_en(
+            _raiz(), slug, destino, git=_git, escribir=atomic_write_text,
+            escribir_crudo=lambda p, t: atomic_write_text(p, t, sanitize=False),
+            escribir_json=atomic_write_json, vault=vault, leer_puntero=leer_puntero)
+    except ValueError as exc:
+        return emit_error(TOOL, "DATA_FILE_CORRUPT", str(exc))
+    return {"ok": True, "tool": TOOL, "action": "link", **enlace, **write_report()}
+
+
+def _olvidar_ruta(fichero: Path, slug: str) -> Any:
+    """Drop ``slug`` from a local path registry; True, False or an error envelope.
+
+    The registries are machine-local JSON objects written by `--link`. An
+    unreadable one is reported and never rewritten, as `--link` does.
+    """
+    if not fichero.is_file():
+        return False
+    try:
+        rutas = json.loads(fichero.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return emit_error(TOOL, "DATA_FILE_CORRUPT",
+                          f"{fichero.name} no se puede leer ({exc}); no se reescribe")
+    if not isinstance(rutas, dict) or slug not in rutas:
+        return False
+    rutas.pop(slug)
+    atomic_write_json(fichero, dict(sorted(rutas.items())))
+    return True
+
+
+def desenlazar(nombre: str, ruta: Optional[str] = None) -> Dict[str, Any]:
+    """QA-FL-13: undo `--link` on this machine.
+
+    Removes the repository path (and the declared vault path) of the project
+    from `00_System/.local/`. With ``ruta`` it only unlinks when that is the
+    linked path: unlinking the wrong checkout is refused, not guessed. The
+    card keeps `repo:` (remote, branch, synced commit): that is portable
+    project data, not this machine's link.
+    """
+    try:
+        slug = _registro().resolver(nombre)
+    except FalloDeDominio as fallo:
+        return emit_fallo(TOOL, fallo)
+    if ruta is not None:
+        enlazada = proyectos.ruta_local(_raiz(), slug)
+        if enlazada is not None and enlazada != Path(ruta).expanduser().resolve():
+            return emit_error(TOOL, "INVALID_PATH",
+                              f"{slug} está enlazado a otra ruta; no se desenlaza",
+                              pista=f"python vault_project.py --sync-status {slug} "
+                                    "muestra el enlace; repite --unlink sin --path "
+                                    "o con la ruta enlazada.")
+    quitado = _olvidar_ruta(_raiz() / RUTAS_LOCALES, slug)
+    if isinstance(quitado, dict):
+        return quitado
+    vault_quitado = _olvidar_ruta(_raiz() / proyectos.RUTAS_DE_VAULT, slug)
+    if isinstance(vault_quitado, dict):
+        return vault_quitado
+    return {"ok": True, "tool": TOOL, "action": "unlink", "project": slug,
+            "unlinked": quitado, "vault_unlinked": vault_quitado,
+            "file": RUTAS_LOCALES.as_posix(), **write_report()}
+
+
+def _notas_del_proyecto(raiz: Path, registro: proyectos.Registro, slug: str):
+    """What still belongs to ``slug``: ``(owned, unreadable)`` relative paths.
+
+    Owned is every file under its `01_Projects/<slug>/` folder except the
+    derived `index.md` and lock files, plus every note elsewhere whose
+    `project:` belongs to it by `proyectos.pertenencia` (the one predicate,
+    AP-63). A note whose frontmatter cannot be read is listed apart: it may
+    cite the project, and nobody can tell.
+    """
+    carpeta = raiz / proyectos.CARPETA_PROYECTOS / slug
+    propias = set()
+    for fichero in sorted(carpeta.rglob("*")):
+        if not fichero.is_file():
+            continue
+        rel = fichero.relative_to(raiz).as_posix()
+        if es_artefacto_derivado(rel) or ".locks" in fichero.relative_to(carpeta).parts:
+            continue
+        propias.add(rel)
+    es_del = proyectos.pertenencia(registro, slug)
+    ilegibles = []
+    for _p, rel, crudo in _notas_de_proyecto(raiz):
+        if rel.as_posix() in propias:
+            continue
+        fm, _cuerpo, legible, _causa = parse_frontmatter_robust(crudo)
+        if not legible:
+            ilegibles.append(rel.as_posix())
+            continue
+        for clave, valor in fm.items():
+            if str(clave).lower() not in _CLAVES_DE_PROYECTO:
+                continue
+            if any(es_del(v) for v in (valor if isinstance(valor, list) else [valor])):
+                propias.add(rel.as_posix())
+    return sorted(propias), ilegibles
+
+
+def retirar(nombre: str) -> Dict[str, Any]:
+    """QA-FL-13: unregister a project. Never deletes a note.
+
+    Refuses while anything still belongs to the project (its card included:
+    deleting a note is `vault_delete`'s job, with its SP-01 change-log row and
+    trash copy). With nothing left, it removes the folder's derived files and
+    the folder itself, the machine-local paths, and refreshes the section index
+    and the derived registry if it exists.
+    """
+    registro = _registro()
+    try:
+        slug = registro.resolver(nombre)
+    except FalloDeDominio as fallo:
+        return emit_fallo(TOOL, fallo)
+    raiz = _raiz()
+    propias, ilegibles = _notas_del_proyecto(raiz, registro, slug)
+    if propias:
+        primera = propias[0]
+        return {
+            **emit_error(
+                TOOL, "INVALID_INPUT",
+                f"{slug} todavía tiene {len(propias)} nota(s); --remove no borra notas",
+                pista=(f"Borra o reasigna cada nota de owned_notes (python vault_delete.py "
+                       f"--path \"{primera}\" --reason \"...\"; o cambia su project:) y "
+                       f"repite: python vault_project.py --remove {slug}")),
+            "project": slug, "owned_notes": propias,
+        }
+    carpeta = raiz / proyectos.CARPETA_PROYECTOS / slug
+    borrados = []
+    for fichero in sorted(carpeta.rglob("*"), key=lambda p: len(p.parts), reverse=True):
+        if fichero.is_file():
+            borrados.append(fichero.relative_to(raiz).as_posix())
+            fichero.unlink()
+        elif fichero.is_dir():
+            fichero.rmdir()
+    if carpeta.is_dir():
+        carpeta.rmdir()
+    quitado = _olvidar_ruta(raiz / RUTAS_LOCALES, slug)
+    vault_quitado = _olvidar_ruta(raiz / proyectos.RUTAS_DE_VAULT, slug)
+    avisos = [r for r in (quitado, vault_quitado) if isinstance(r, dict)]
+    indice = refrescar_indice_de_seccion(carpeta / proyectos.FICHA)
+    derivado = None
+    if (raiz / REGISTRO_DERIVADO).is_file():
+        derivado = reconstruir()["file"]
+    return {"ok": True, "tool": TOOL, "action": "remove", "project": slug,
+            "unregistered": True, "removed_files": sorted(borrados),
+            "unlinked": quitado is True, "vault_unlinked": vault_quitado is True,
+            "section_index": indice, "registry_rebuilt": derivado,
+            "notes_unreadable": ilegibles,
+            **({"warnings": avisos} if avisos else {}), **write_report()}
 
 
 def _git(ruta: Path, *args: str) -> Optional[str]:
@@ -464,6 +557,12 @@ def main() -> int:
     accion.add_argument("--audit", action="store_true", help="Fantasmas y claves no canónicas")
     accion.add_argument("--add", metavar="SLUG", help="Registra un proyecto o le suma alias")
     accion.add_argument("--link", metavar="PROYECTO", help="Guarda la ruta local del repo")
+    accion.add_argument("--unlink", metavar="PROYECTO",
+                        help="Quita la ruta local del repo (y la del vault) de esta máquina; "
+                             "con --path, solo si es la enlazada")
+    accion.add_argument("--remove", metavar="PROYECTO",
+                        help="Da de baja el proyecto del registro; se niega mientras le "
+                             "quede alguna nota (nunca borra notas)")
     accion.add_argument("--sync-status", metavar="PROYECTO",
                         help="Commits del repo enlazado pendientes de volcar al vault")
     accion.add_argument("--rebuild", action="store_true", help="Regenera project-registry.json")
@@ -474,7 +573,7 @@ def main() -> int:
     ap.add_argument("--alias", nargs="*", default=[], help="Alias del proyecto (con --add)")
     ap.add_argument("--status", default="in-progress", choices=sorted(STATUS_VOCAB),
                     help="Estado de la ficha nueva (con --add)")
-    ap.add_argument("--path", help="Ruta local del repositorio (con --link)")
+    ap.add_argument("--path", help="Ruta local del repositorio (con --link o --unlink)")
     ap.add_argument(
         "--vault",
         help=(
@@ -499,6 +598,10 @@ def main() -> int:
         r = registrar(args.add, args.title, args.alias, args.status)
     elif args.link:
         r = enlazar(args.link, args.path, args.vault)
+    elif args.unlink:
+        r = desenlazar(args.unlink, args.path)
+    elif args.remove:
+        r = retirar(args.remove)
     elif args.sync_status:
         r = estado_sync(args.sync_status)
     elif args.heal:
