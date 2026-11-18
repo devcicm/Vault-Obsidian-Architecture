@@ -404,7 +404,7 @@ def _entrada_de_la_nota(ruta: Path) -> Dict[str, Any]:
     if not meta.get("title") or not meta.get("project"):
         return {"reason": _SIN_NOMBRE}
     entrada = {
-        "path": str(ruta.relative_to(_raiz()).as_posix()),
+        "path": str(ruta.relative_to(_raiz())).replace(chr(92), "/"),
         "pattern": str(meta["title"]),
         "project": str(meta["project"]),
         "type": meta["type"],
@@ -436,7 +436,7 @@ def vault_pattern_rebuild_index() -> Dict[str, Any]:
             continue
         entrada = _entrada_de_la_nota(ruta)
         if "reason" in entrada:
-            skipped.append({"path": str(ruta.relative_to(_raiz()).as_posix()),
+            skipped.append({"path": str(ruta.relative_to(_raiz())).replace(chr(92), "/"),
                             "reason": entrada["reason"]})
         else:
             patterns.append(entrada)
