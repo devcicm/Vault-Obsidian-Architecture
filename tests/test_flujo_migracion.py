@@ -162,3 +162,33 @@ def test_el_preview_del_rollback_sigue_sin_borrar_nada(tmp_path):
     assert d["notFound"] == [], d
     assert all((vault / p).is_file() for p in migrados)
     assert (vault / _informe()).is_file()
+
+
+def test_el_rollback_no_borra_lo_que_la_migracion_encontro_y_no_creo(tmp_path):
+    """A second migration of the same project finds its destinations taken.
+
+    It leaves them untouched and declares them under `## Conflictos`, but the
+    same rows are also listed in `## Archivos Distribuidos`, which is the table
+    the rollback reads. Rolling back that report deleted the files the owner
+    already had, including edits made after the first migration (W1 advisory,
+    2026-11-17). Rollback only deletes what that migration created.
+    """
+    vault, fuente, r = _migrar(tmp_path)
+    migrados = _migrados(r)
+    editada = vault / migrados[0]
+    original = editada.read_text(encoding="utf-8")
+    editada.write_text(f"{original}\nEdicion del propietario.\n", encoding="utf-8")
+    antes = {p: (vault / p).read_bytes() for p in migrados}
+
+    segunda = _cli(vault, "vault_migrate_docs.py", "--source_path", str(fuente),
+                   "--project", "demo", "--dry_run", "false").envelope
+    assert segunda["ok"] is True, segunda
+    assert "## Conflictos" in (vault / _informe()).read_text(encoding="utf-8")
+
+    corrida = _cli(vault, "vault_migrate_rollback.py", "--report_path", _informe(),
+                   "--confirm", "true")
+    d = corrida.envelope
+    assert corrida.codigo == 0 and d["ok"] is True, d
+    assert not set(migrados) & set(d["deleted"]), d
+    assert sorted(d["keptConflicts"]) == sorted(migrados), d
+    assert {p: (vault / p).read_bytes() for p in migrados} == antes

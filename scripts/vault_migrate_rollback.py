@@ -96,6 +96,28 @@ def parse_report(report_path: Path) -> Tuple[List[str], List[str]]:
     return distributed, stubs
 
 
+#: A conflict line written by `vault_migrate_docs` since 2026-11-04:
+#: - `name` → `destPath` ya existía y **se dejó como estaba**; ...
+_PATRON_CONFLICTO = re.compile(r"→\s*`([^`]+)`\s*ya existía")
+
+
+def parse_conflicts(report_path: Path) -> List[str]:
+    """Destinations the migration found already taken and left untouched.
+
+    They are also listed in `## Archivos Distribuidos`, the table the rollback
+    reads, so deleting every row there removed files the migration did not
+    create, owner edits included (2026-11-17). The `## Conflictos` section is
+    the migration's own statement of what it did not write; nothing is guessed.
+    """
+    content = report_path.read_text(encoding="utf-8", errors="ignore")
+    return [m.strip() for m in _PATRON_CONFLICTO.findall(content)]
+
+
+def _stub_de(ruta: str) -> str:
+    carpeta, _, nombre = ruta.rpartition("/")
+    return f"{carpeta}/_stub-{nombre}" if carpeta else f"_stub-{nombre}"
+
+
 def remove_from_index(paths_to_remove: List[str]) -> int:
 
     """Remove entries from search-index.json. Returns count removed."""
@@ -179,6 +201,13 @@ def vault_migrate_rollback(report_path_str: str, confirm: bool = False) -> Dict[
         }
 
 
+    # What the migration found and did not write stays: the destination and
+    # the stub that already pointed to it belong to the earlier state.
+    kept_conflicts = parse_conflicts(report_path)
+    conservados = set(kept_conflicts) | {_stub_de(p) for p in kept_conflicts}
+    kept_stubs = [p for p in stub_paths if p in conservados]
+    all_paths = [p for p in all_paths if p not in conservados]
+
     existing_files = [_raiz() / p for p in all_paths if (_raiz() / p).exists()]
 
     not_found = [p for p in all_paths if not (_raiz() / p).exists()]
@@ -197,6 +226,10 @@ def vault_migrate_rollback(report_path_str: str, confirm: bool = False) -> Dict[
             "toDelete": [f.relative_to(_raiz()).as_posix() for f in existing_files],
 
             "notFound": not_found,
+
+            "keptConflicts": kept_conflicts,
+
+            "keptConflictStubs": kept_stubs,
 
             "totalInReport": len(all_paths),
 
@@ -283,6 +316,10 @@ def vault_migrate_rollback(report_path_str: str, confirm: bool = False) -> Dict[
         "deletedCount": len(deleted),
 
         "notFound": not_found,
+
+        "keptConflicts": kept_conflicts,
+
+        "keptConflictStubs": kept_stubs,
 
         "errors": errors,
 
