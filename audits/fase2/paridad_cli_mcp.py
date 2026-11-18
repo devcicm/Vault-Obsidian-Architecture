@@ -15,8 +15,13 @@ EFECTOS REALES. No basta con que las respuestas JSON coincidan: se mide el
 estado del runtime antes y despues de cada pasada (ficheros creados, modificados
 y eliminados, con su contenido normalizado —los campos volatiles como id,
 createdAt y updatedAt se enmascaran porque cambian entre dos ejecuciones
-identicas—) y se comparan los efectos de la CLI con los del MCP. Ademas se
-comprueba que no se modifica nada FUERA del runtime autorizado.
+identicas—) y se comparan los efectos de la CLI con los del MCP. El
+`content_hash` de cada fila del indice de busqueda es el sha256 de los bytes
+de su nota, fechas incluidas: se comprueba contra la nota del runtime y solo
+entonces se sustituye por un testigo. Ademas se
+comprueba que no se modifica nada FUERA del runtime autorizado. Las tools
+Python del servidor MCP corren con el interprete del venv medido
+(`VAULT_MCP_PYTHON`), no con el primero del PATH.
 
 Fallo cerrado: sale con codigo distinto de cero si
   - el verificador de contrato (AP-40) devuelve un codigo distinto de cero;
@@ -164,6 +169,51 @@ def _normalizar_ruta(ruta: str) -> str:
     return MARCA_TIEMPO.sub("<TS>", ruta)
 
 
+#: The search index stores, per row, the sha256 of the note's raw bytes
+#: (`content_hash`, `contentHashVersion: 1`). Those bytes carry the note's
+#: createdAt/updatedAt, so two identical writes a second apart always publish
+#: different hashes: masking the timestamps in the TEXT cannot reach a hash of
+#: them.
+INDICE_BUSQUEDA = "99_Index/search-index.json"
+HUELLA_VERIFICADA = "<content_hash:matches-note-bytes>"
+
+
+def _verificar_huellas_del_indice(texto: str, raiz: Path) -> str:
+    """Replace each search-index `content_hash` that is PROVEN against the bytes
+    of its note in `raiz` by a fixed token; leave every other value untouched.
+
+    The field means exactly "sha256 of the note at `path` as it is on disk", so
+    checking that equality keeps all its meaning: the note itself is compared
+    on its own (normalized) fingerprint. A hash that does not match its note,
+    a missing note, a path outside the runtime or a non-string value stays raw,
+    so a stale or wrong row still diverges between the two adapters.
+    """
+    try:
+        datos = json.loads(texto)
+    except json.JSONDecodeError:
+        return texto
+    notas = datos.get("notes") if isinstance(datos, dict) else None
+    if not isinstance(notas, list):
+        return texto
+    base = raiz.resolve()
+    for fila in notas:
+        if not isinstance(fila, dict):
+            continue
+        huella, relativa = fila.get("content_hash"), fila.get("path")
+        if not isinstance(huella, str) or not isinstance(relativa, str):
+            continue
+        nota = (base / relativa).resolve()
+        if base not in nota.parents:
+            continue
+        try:
+            real = hashlib.sha256(nota.read_bytes()).hexdigest()
+        except OSError:
+            continue
+        if real == huella:
+            fila["content_hash"] = HUELLA_VERIFICADA
+    return json.dumps(datos, ensure_ascii=False, indent=2)
+
+
 def _huellas(raiz: Path) -> Dict[str, str]:
     """Huella normalizada de cada fichero del arbol."""
     salida: Dict[str, str] = {}
@@ -183,6 +233,8 @@ def _huellas(raiz: Path) -> Dict[str, str]:
             texto = datos.decode("utf-8")
         except UnicodeDecodeError:
             texto = repr(datos)
+        if relativa == INDICE_BUSQUEDA:
+            texto = _verificar_huellas_del_indice(texto, raiz)
         salida[relativa] = hashlib.sha256(
             _normalizar_contenido(texto).encode("utf-8")).hexdigest()
     return salida
@@ -465,6 +517,12 @@ class Mcp:
             pass
 
 
+def mcp_env(env: Dict[str, str], python: Path) -> Dict[str, str]:
+    """The MCP server's environment: `env` with its Python tools pinned to the
+    interpreter of the measured venv (`VAULT_MCP_PYTHON`)."""
+    return {**env, "VAULT_MCP_PYTHON": str(python)}
+
+
 def _texto_mcp(sobre: Dict[str, Any]) -> str:
     if "error" in sobre:
         return json.dumps(sobre["error"], ensure_ascii=False)
@@ -503,7 +561,13 @@ def main() -> int:
                        encoding="utf-8", errors="replace", timeout=900)
     contrato = {"exit": p.returncode, "stdout": p.stdout[-600:], "stderr": p.stderr[-300:]}
 
-    mcp = Mcp(mjs, env)
+    # The MCP server runs every Python tool in a child interpreter. Without
+    # VAULT_MCP_PYTHON it takes the first `python3`/`python`/`py` of the PATH,
+    # whose `vault` package is whatever that interpreter has (in CI the
+    # editable checkout, on a workstation any other checkout): the MCP column
+    # would measure a different product than the installed wheel the CLI
+    # column runs. Same pin as `recorrido_terceros_r07`.
+    mcp = Mcp(mjs, mcp_env(env, py))
     mcp.llamar("initialize", {"protocolVersion": "2024-11-05", "capabilities": {},
                               "clientInfo": {"name": "paridad", "version": "1"}})
     mcp.avisar("notifications/initialized")
@@ -646,8 +710,11 @@ def main() -> int:
                "error) Y los EFECTOS REALES sobre el runtime: ficheros creados, "
                "modificados y eliminados, con su contenido normalizado (los campos "
                "volatiles —id, createdAt, updatedAt— se enmascaran porque cambian entre "
-               "dos ejecuciones identicas). Ademas se comprueba que no se modifica nada "
-               "FUERA del runtime autorizado.", ""]
+               "dos ejecuciones identicas; el `content_hash` de cada fila de "
+               "`99_Index/search-index.json` se sustituye por un testigo solo si "
+               "coincide con el sha256 de su nota en el runtime medido, y si no "
+               "coincide se compara tal cual). Ademas se comprueba que no se "
+               "modifica nada FUERA del runtime autorizado.", ""]
     Path(args.matriz).write_text(sin_rutas("\n".join(lineas) + "\n"), encoding="utf-8")
 
     print(f"\nparidad: {veredicto['coincidencias']}/{veredicto['casos']} | "
