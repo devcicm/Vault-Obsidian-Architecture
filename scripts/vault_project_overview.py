@@ -143,7 +143,7 @@ def collect_patterns(project: str) -> List[Dict[str, str]]:
                 if status != "deprecado":
                     patterns.append(
                         {
-                            "path": str(note_path.relative_to(_raiz())),
+                            "path": str(note_path.relative_to(_raiz())).replace("\\", "/"),
                             "title": note_path.stem.replace(f"{slugify(project)}-", ""),
                             "status": status,
                             "type": pattern_type,

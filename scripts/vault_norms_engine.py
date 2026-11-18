@@ -676,7 +676,7 @@ def _heal_ap46(raiz: Path, apply: bool, is_snapshot_path) -> Dict[str, Any]:
         "would_heal": 0 if apply else len(reparadas),
         "notes": reparadas,
         "skipped": omitidas,
-        "backup_dir": str(destino_backup.relative_to(raiz)) if apply and reparadas else None,
+        "backup_dir": str(destino_backup.relative_to(raiz)).replace("\\", "/") if apply and reparadas else None,
         "hint": None if apply else (
             "Informe en seco: no se escribió nada. Añade --apply para reparar, "
             "y sobre un vault que no generó este repo, solo si su dueño lo pide."

@@ -406,7 +406,7 @@ def vault_log_error(
     return {
         "ok": True,
         **write_report(),
-        "path": str(file_path.relative_to(get_vault_root())),
+        "path": str(file_path.relative_to(get_vault_root())).replace("\\", "/"),
         "type": error_type,
         "severity": severity,
         "title": title,

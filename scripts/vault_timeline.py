@@ -166,7 +166,7 @@ def search_sessions(
                                 "type": "log",
                                 "title": line[:80],
                                 "excerpt": line[:200],
-                                "path": str(note_path.relative_to(_raiz())),
+                                "path": str(note_path.relative_to(_raiz())).replace("\\", "/"),
                             }
                         )
 
@@ -231,7 +231,7 @@ def search_changelog(
                         "type": "version",
                         "title": f"{version} — {changes[:60]}...",
                         "excerpt": changes,
-                        "path": str(changelog_path.relative_to(_raiz())),
+                        "path": str(changelog_path.relative_to(_raiz())).replace("\\", "/"),
                     }
                 )
 

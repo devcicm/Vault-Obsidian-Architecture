@@ -379,3 +379,52 @@ def test_ningun_ejemplo_publicado_lleva_una_letra_de_unidad():
             if linea.strip().startswith("python ") and _UNIDAD.search(linea):
                 malos.append(f"{fuente.relative_to(ROOT).as_posix()}:{n}")
     assert malos == []
+
+
+# ── QA-PORT-10: the example a wheel user is shown runs where they are ──────
+
+
+def _ejemplo_mostrado(nombre: str) -> str:
+    from vault.meta_toolkit import mcp as vault_mcp
+
+    clase = next(v for v in vars(vault_mcp).values()
+                 if isinstance(v, type) and hasattr(v, "show") and v.__module__ == vault_mcp.__name__)
+    return clase.__new__(clase).show(nombre)["example"]
+
+
+def test_el_ejemplo_mostrado_corre_instalado(instalado):
+    """The catalog examples are written for a checkout (`python vault_x.py`)
+    and the audits run them from `scripts/`. A wheel has no `scripts/`: the
+    only place an installed user is shown them, `vault_mcp show`, renders each
+    line through `comando_de_tool` (QA-PORT-10, 2026-11-18)."""
+    ejemplo = _ejemplo_mostrado("vault_write")
+    lineas = [l for l in ejemplo.splitlines() if l.strip()]
+    assert lineas and all(l.startswith("vault run vault_write") for l in lineas), ejemplo
+
+
+def test_el_ejemplo_mostrado_en_el_checkout_no_cambia():
+    import vault_mcp_catalog
+
+    assert _ejemplo_mostrado("vault_write") == vault_mcp_catalog.TOOLS_CATALOG["vault_write"]["example"]
+
+
+# ── QA-PORT-14: published relative paths use `/` on every OS ───────────────
+
+_PUBLICAN_RUTAS = (
+    "scripts/vault_foreign_check.py", "scripts/vault_timeline.py",
+    "scripts/vault_project_overview.py", "vault/autoria/log_error.py",
+    "scripts/vault_norms_engine.py",
+)
+_RELATIVA_CRUDA = re.compile(r"str\([\w.]+\.relative_to\((?:[^()]|\([^()]*\))*\)\)(?!\.replace)")
+
+
+def test_las_rutas_publicadas_no_dependen_del_sistema():
+    """`str(Path.relative_to(...))` gives `\` on Windows and `/` elsewhere,
+    so the same envelope differed by OS (QA-PORT-14, 2026-11-18). These
+    modules publish such paths in their output; each one is normalized with
+    the repository's convention. Comparison-only sites elsewhere (for example
+    `vault_audit._is_skipped`, whose consumer accepts both) are not output."""
+    crudas = [f"{f}:{n}" for f in _PUBLICAN_RUTAS
+              for n, linea in enumerate((ROOT / f).read_text(encoding="utf-8").splitlines(), 1)
+              if _RELATIVA_CRUDA.search(linea)]
+    assert crudas == []

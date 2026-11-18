@@ -53,6 +53,30 @@ _RE_MCP_1 = re.compile('^\\s*-\\s*$', re.MULTILINE)
 SCRIPTS_DIR = vault_grafo_import.DIRECTORIO  # deuda #12: el dueño vive en vault/, `scripts/` lo dice el puente
 
 
+_LINEA_DE_CHECKOUT = re.compile(r"^python\s+(?:scripts/)?(vault_\w+)\.py\b(.*)$")
+
+
+def _ejemplo_para_aqui(ejemplo: str) -> str:
+    """The catalog example in the form that runs where this product runs.
+
+    The examples are written for a checkout (`python vault_x.py ...`), which is
+    also how the audits execute them from `scripts/`. A wheel has no
+    `scripts/`, and this detail view is where an installed user is shown them
+    (QA-PORT-10, 2026-11-18): each such line goes through
+    `comando_de_tool`, the owner of «checkout or wheel». Other lines (an MCP
+    `tools/call`, prose) pass unchanged.
+    """
+    from vault.kernel.registry import comando_de_tool, corre_instalado
+
+    if not corre_instalado():
+        return ejemplo  # a checkout runs the catalog form as published
+    lineas = []
+    for linea in (ejemplo or "").split("\n"):
+        m = _LINEA_DE_CHECKOUT.match(linea.strip())
+        lineas.append(comando_de_tool(f"{m.group(1)}{m.group(2)}") if m else linea)
+    return "\n".join(lineas)
+
+
 class VaultMCP:
     """Orquestador central del vault."""
 
@@ -111,7 +135,7 @@ class VaultMCP:
             "params": reconciled_params(tool),
             "guards": tool["guards"],
             "side_effects": tool["side_effects"],
-            "example": tool["example"],
+            "example": _ejemplo_para_aqui(tool["example"]),
             "related": tool.get("related", []),
         }
 

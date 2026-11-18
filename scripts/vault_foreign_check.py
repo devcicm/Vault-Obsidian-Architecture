@@ -207,16 +207,16 @@ def contrastar(destino: Path) -> Dict[str, Any]:
     # Y lo que se excluye **se cuenta y se publica**: un filtro que se lleva
     # 261 de 281 ficheros en silencio deja un informe que parece decir «este
     # vault son 20 notas» cuando lo que dice es «no miré 261».
-    ajenos = [str(p.relative_to(destino)) for p in todas
+    ajenos = [str(p.relative_to(destino)).replace("\\", "/") for p in todas
               if is_ajeno_al_vault(p.relative_to(destino))]
     todas = [p for p in todas
              if not is_ajeno_al_vault(p.relative_to(destino))]
     instantaneas = [
-        str(p.relative_to(destino)) for p in todas
+        str(p.relative_to(destino)).replace("\\", "/") for p in todas
         if is_snapshot_path(p.relative_to(destino))
     ]
     congeladas = set(instantaneas)
-    notas = [p for p in todas if str(p.relative_to(destino)) not in congeladas]
+    notas = [p for p in todas if str(p.relative_to(destino)).replace("\\", "/") not in congeladas]
 
     ilegibles: List[str] = []
     sin_frontmatter = 0
@@ -244,14 +244,14 @@ def contrastar(destino: Path) -> Dict[str, Any]:
     for p in notas:
         texto = _leer(p)
         if texto is None:
-            ilegibles.append(str(p.relative_to(destino)))
+            ilegibles.append(str(p.relative_to(destino)).replace("\\", "/"))
             continue
         textos[p] = texto
         fm = _frontmatter(texto)
         if fm is None:
             sin_frontmatter += 1
         elif fm is False:
-            frontmatter_roto.append(str(p.relative_to(destino)))
+            frontmatter_roto.append(str(p.relative_to(destino)).replace("\\", "/"))
         else:
             con_frontmatter += 1
             for alias in fm.get("aliases") or []:
@@ -272,7 +272,7 @@ def contrastar(destino: Path) -> Dict[str, Any]:
     rotos: List[Dict[str, str]] = []
     en_codigo = 0
     for p, texto in textos.items():
-        rel = str(p.relative_to(destino))
+        rel = str(p.relative_to(destino)).replace("\\", "/")
         if es_documentacion_del_estandar(rel.replace("\\", "/"), texto):
             docs.append(rel)
             continue
@@ -290,7 +290,7 @@ def contrastar(destino: Path) -> Dict[str, Any]:
             objetivo = _resolver(m.group(1), p.relative_to(destino))
             if objetivo and objetivo not in destinos:
                 rotos.append({
-                    "from": str(p.relative_to(destino)),
+                    "from": str(p.relative_to(destino)).replace("\\", "/"),
                     "target": m.group(1).strip(),
                 })
 
