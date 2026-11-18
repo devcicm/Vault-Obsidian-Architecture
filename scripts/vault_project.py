@@ -67,9 +67,9 @@ from vault_errors import emit_error, emit_fallo, wrap_main
 # superseded_by: vault_errors.proyecto_registrado (v40.34). Vivió aquí;
 # se reexporta para quien lo importara de la tool.
 from vault_errors import proyecto_registrado  # noqa: F401
-from vault_io import (atomic_write_json, atomic_write_text, escrituras_en_lote, file_lock,
-                      get_vault_root, is_snapshot_path, refrescar_indice_de_seccion,
-                      write_report)
+from vault_io import (assert_within_vault, atomic_write_json, atomic_write_text,
+                      escrituras_en_lote, file_lock, get_vault_root, is_snapshot_path,
+                      refrescar_indice_de_seccion, write_report)
 from vault_registry import es_artefacto_derivado
 from vault_lib import parse_frontmatter_with_body, utcnow
 from vault_norms_catalog import STATUS_VOCAB
@@ -429,6 +429,36 @@ def _notas_del_proyecto(raiz: Path, registro: proyectos.Registro, slug: str):
     return sorted(propias), ilegibles
 
 
+def _entradas_sin_enlaces(raiz: Path, carpeta: Path):
+    """``(entries, offender)`` for the project folder, never following a link.
+
+    AP-36: `rglob` follows directory junctions and symlinks, so `--remove`
+    deleted whatever a linked `01_Projects/<slug>` pointed at, outside the
+    vault (B1). Every entry must stay inside the vault by the containment owner
+    (`assert_within_vault`) and resolve to exactly its own place under the
+    folder: a link that points elsewhere, inside or outside the vault, is an
+    offender. The walk stops at the first one without descending into it.
+    ``offender`` is its vault-relative path, or None with every entry listed.
+    """
+    esperado = raiz.resolve() / carpeta.relative_to(raiz)
+    entradas: List[Path] = []
+    pendientes = [(carpeta, esperado)]
+    while pendientes:
+        ruta, real_esperado = pendientes.pop()
+        rel = ruta.relative_to(raiz).as_posix()
+        try:
+            real = assert_within_vault(ruta, raiz)
+        except ValueError:
+            return entradas, rel
+        if ruta.is_symlink() or real != real_esperado:
+            return entradas, rel
+        entradas.append(ruta)
+        if ruta.is_dir():
+            for hijo in sorted(ruta.iterdir()):
+                pendientes.append((hijo, real_esperado / hijo.name))
+    return entradas, None
+
+
 def retirar(nombre: str) -> Dict[str, Any]:
     """QA-FL-13: unregister a project. Never deletes a note.
 
@@ -444,6 +474,19 @@ def retirar(nombre: str) -> Dict[str, Any]:
     except FalloDeDominio as fallo:
         return emit_fallo(TOOL, fallo)
     raiz = _raiz()
+    carpeta = raiz / proyectos.CARPETA_PROYECTOS / slug
+    entradas, enlace = _entradas_sin_enlaces(raiz, carpeta)
+    if enlace is not None:
+        return {
+            **emit_error(
+                TOOL, "INVALID_PATH",
+                f"{enlace} es un enlace o sale del vault; --remove no sigue enlaces "
+                f"y no borró nada",
+                pista=(f"Quita el enlace {enlace} a mano (es una decisión sobre datos "
+                       f"que no son del vault) y repite: python vault_project.py "
+                       f"--remove {slug}")),
+            "project": slug, "link": enlace,
+        }
     propias, ilegibles = _notas_del_proyecto(raiz, registro, slug)
     if propias:
         primera = propias[0]
@@ -456,16 +499,15 @@ def retirar(nombre: str) -> Dict[str, Any]:
                        f"repite: python vault_project.py --remove {slug}")),
             "project": slug, "owned_notes": propias,
         }
-    carpeta = raiz / proyectos.CARPETA_PROYECTOS / slug
     borrados = []
-    for fichero in sorted(carpeta.rglob("*"), key=lambda p: len(p.parts), reverse=True):
-        if fichero.is_file():
-            borrados.append(fichero.relative_to(raiz).as_posix())
-            fichero.unlink()
-        elif fichero.is_dir():
-            fichero.rmdir()
-    if carpeta.is_dir():
-        carpeta.rmdir()
+    # Only the entries the walk above validated, deepest first; the folder
+    # itself is the shallowest and goes last.
+    for entrada in sorted(entradas, key=lambda p: len(p.parts), reverse=True):
+        if entrada.is_file():
+            borrados.append(entrada.relative_to(raiz).as_posix())
+            entrada.unlink()
+        elif entrada.is_dir():
+            entrada.rmdir()
     quitado = _olvidar_ruta(raiz / RUTAS_LOCALES, slug)
     vault_quitado = _olvidar_ruta(raiz / proyectos.RUTAS_DE_VAULT, slug)
     avisos = [r for r in (quitado, vault_quitado) if isinstance(r, dict)]

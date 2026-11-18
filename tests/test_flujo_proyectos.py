@@ -198,3 +198,81 @@ def test_onboard_dry_run_registers_and_links_nothing(tmp_path):
                                    "would_register": True, "would_link": str(repo.resolve())}
     assert not (vault / "01_Projects" / "repob").exists()
     assert "repob" not in _local_paths(vault)
+
+
+def _link_dir(link: Path, target: Path, kind: str) -> None:
+    """A directory junction (Windows) or a directory symlink; skip if the OS refuses."""
+    try:
+        if kind == "junction":
+            if os.name != "nt":
+                pytest.skip("directory junctions only exist on Windows")
+            import _winapi
+            _winapi.CreateJunction(str(target), str(link))
+        else:
+            link.symlink_to(target, target_is_directory=True)
+    except OSError as exc:  # symlinks need a privilege on Windows
+        pytest.skip(f"cannot create a {kind}: {exc}")
+
+
+def _outside(tmp_path: Path) -> Path:
+    out = tmp_path / "OUT"
+    (out / "sub").mkdir(parents=True)
+    (out / "index.md").write_text("x\n", encoding="utf-8")
+    (out / "sub" / "index.md").write_text("y\n", encoding="utf-8")
+    return out
+
+
+def _vault_bytes(vault: Path, skip: Path) -> dict:
+    """Every vault file except git, tool traces and anything behind ``skip``."""
+    state = {}
+    for folder, dirs, files in os.walk(vault):
+        here = Path(folder)
+        dirs[:] = [d for d in dirs if d != ".git" and here / d != skip]
+        for name in files:
+            path = here / name
+            rel = path.relative_to(vault).as_posix()
+            if ".tool-trace" in rel or "voice-counter" in rel:
+                continue
+            state[rel] = path.read_bytes()
+    return state
+
+
+@pytest.mark.parametrize("kind", ["junction", "symlink"])
+def test_remove_never_deletes_through_a_linked_project_folder(vault, tmp_path, kind):
+    out = _outside(tmp_path)
+    link = vault / "01_Projects" / "evil"
+    _link_dir(link, out, kind)
+    before = _vault_bytes(vault, link)
+
+    run = correr_tool(TOOL, "--remove", "evil", vault=vault)
+
+    env = run.envelope
+    assert run.codigo == 1
+    assert env["ok"] is False and env["error_code"] == "INVALID_PATH"
+    assert env["project"] == "evil" and env["link"] == "01_Projects/evil"
+    assert "removed_files" not in env
+    assert (out / "index.md").read_text(encoding="utf-8") == "x\n"
+    assert (out / "sub" / "index.md").read_text(encoding="utf-8") == "y\n"
+    assert os.path.lexists(link)
+    assert _vault_bytes(vault, link) == before
+
+
+@pytest.mark.parametrize("kind", ["junction", "symlink"])
+def test_remove_never_deletes_through_a_link_inside_the_project_folder(vault, tmp_path, kind):
+    out = _outside(tmp_path)
+    folder = vault / "01_Projects" / "legit"
+    folder.mkdir()
+    (folder / "index.md").write_text("# legit\n", encoding="utf-8")
+    link = folder / "sub"
+    _link_dir(link, out, kind)
+    before = _vault_bytes(vault, link)
+
+    run = correr_tool(TOOL, "--remove", "legit", vault=vault)
+
+    env = run.envelope
+    assert run.codigo == 1
+    assert env["error_code"] == "INVALID_PATH"
+    assert env["link"] == "01_Projects/legit/sub"
+    assert (out / "index.md").is_file() and (out / "sub" / "index.md").is_file()
+    assert (folder / "index.md").is_file() and os.path.lexists(link)
+    assert _vault_bytes(vault, link) == before
