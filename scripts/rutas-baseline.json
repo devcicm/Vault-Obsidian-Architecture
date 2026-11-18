@@ -8,7 +8,6 @@
   "scripts/vault_arch.py:vault/gobernanza/secret_scan:has_blocking_findings",
   "scripts/vault_arch.py:vault/gobernanza/secret_scan:vault_write_hook",
   "scripts/vault_doc_counts.py:tests",
-  "scripts/vault_errors.py:docs",
   "scripts/vault_init.py:mcp",
   "scripts/vault_metricas.py:normas",
   "scripts/vault_metricas.py:tests",
@@ -33,7 +32,6 @@
  "motivos": {
   "cli/scheduler.py:docs": "Sección de un **vault** (`00_System`, `99_Index`, `docs`…), no el directorio del repo: el planificador decide qué escrituras disparan la cascada de índices dentro de un vault. Migrarlo al dueño del layout ataría el vocabulario de un vault al layout de este repo.",
   "scripts/vault_doc_counts.py:tests": "Identificador de la unidad que se cuenta (`\"id\": \"tests\"`), no una ruta: el guard compara ese identificador con el nombre de la suite.",
-  "scripts/vault_errors.py:docs": "Clave del contrato de error (`error_code` → `docs`), no una ruta: es el campo que dice dónde está la explicación de un fallo (AP-43).",
   "scripts/vault_init.py:mcp": "Nombre de un **dominio** de vault (`mcp`, `toon`, `ansible`…), no el directorio del servidor MCP: son carpetas que el vault crea por petición de quien lo inicializa.",
   "scripts/vault_metricas.py:normas": "Unidad de una métrica (`\"unidad\": \"normas\"`), no una ruta: nombra en qué se mide, no dónde.",
   "scripts/vault_metricas.py:tests": "Unidad de una métrica (`\"unidad\": \"tests\"`), no una ruta: nombra en qué se mide, no dónde.",

@@ -153,7 +153,7 @@ Comprueban o regeneran este repositorio. **No** operan el vault de nadie y no es
 | `vault_error_contract` | Normas | no | sí | OK |
 | `vault_esquema` | Normas | no | sí | OK |
 | `vault_excepcion_declarada` | Normas | no | sí | OK |
-| `vault_fix_all` | Normas | no | sí | DEFECTO |
+| `vault_fix_all` | Normas | no | sí | OK |
 | `vault_foreign_check` | Normas | no | no | OK |
 | `vault_gate` | Normas | no | no | OK |
 | `vault_kernel` | Normas | no | sí | OK |
@@ -177,7 +177,6 @@ Activas, pero `vault_toolkit_audit` no puede ejercitarlas con un ejemplo de CLI.
 | Tool | Veredicto | Motivo |
 |---|---|---|
 | `vault_backup_base64` | NO-VERIFICABLE | c0: runtime node: su despacho lo ejercita el servidor MCP, no un smoke de CLI (vault_smoke.run_one lo exime por lo que es); c2: runtime node: su despacho lo ejercita el servidor MCP, no un smoke de CLI (vault_smoke.run_one lo exime por lo que es) |
-| `vault_fix_all` | DEFECTO | c2 |
 | `vault_gobernanza` | NO-VERIFICABLE | c0: sin script propio: invocada por __module__ desde el servidor MCP; c2: sin script propio: invocada por __module__ desde el servidor MCP |
 | `vault_restore_base64` | NO-VERIFICABLE | c0: runtime node: su despacho lo ejercita el servidor MCP, no un smoke de CLI (vault_smoke.run_one lo exime por lo que es); c2: runtime node: su despacho lo ejercita el servidor MCP, no un smoke de CLI (vault_smoke.run_one lo exime por lo que es) |
 

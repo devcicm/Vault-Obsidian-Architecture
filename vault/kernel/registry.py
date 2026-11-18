@@ -576,9 +576,11 @@ SCHEMA_POR_TIPO: Dict[str, dict] = {
     "Pattern": {
         "escritor": "vault_pattern_save",
         "prometido": ("id", "title", "status", "lifecycle_state"),
+        # `tags` since QA-FL-09 (2026-11-17): AP-26 asks every content note for
+        # one, and the product's own audit penalized every pattern note.
         "escribe": ("agent", "cia_availability", "cia_integrity", "cia_sensitivity",
-                    "createdAt", "id", "pattern_state", "project", "status", "title",
-                    "type", "updatedAt"),
+                    "createdAt", "id", "pattern_state", "project", "status", "tags",
+                    "title", "type", "updatedAt"),
     },
     "Requirement": {
         "escritor": "vault_requirement_save",

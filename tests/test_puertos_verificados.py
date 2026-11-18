@@ -68,7 +68,10 @@ def test_hay_puertos_en_los_contextos_que_publican_api():
     # conveniencia: son simbolos que otro contexto ya usaba y que el registro
     # no nombraba — la baseline de `off_port` los contaba como deuda porque el
     # registro iba por detras del codigo, igual que los 23 de v40.8.
-    assert len(PUERTOS) == 68
+    # +1 on 2026-11-17 (QA-FL-06, approved by the owner with the autoria <->
+    # durabilidad budget): `reubicar_indices`, in Autoria. Quarantine add and
+    # restore re-point the indexes through the owner of moving.
+    assert len(PUERTOS) == 69
     # `cli` queda fuera a propósito: es un adaptador de transporte y **nadie
     # importa de `cli/`**, así que no publica API. Exigirle un puerto obligaría
     # a inventar uno, que es justo lo contrario de lo que mide este fichero.

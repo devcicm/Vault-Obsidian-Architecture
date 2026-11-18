@@ -30,6 +30,9 @@ _NOMBRES = {"ORDERED_SECTIONS", "VAULT_SECTIONS", "REQUIRED_FOLDERS", "STANDARD_
 _DUENO = "vault/kernel/registry.py"
 
 PERMITIDOS = {
+    "scripts/vault_section_index.py::vault_section_index":
+        "pregunta si la sección ausente es del estándar: FOLDER_NOT_FOUND (la crea "
+        "vault_standard_upgrade) frente a UNKNOWN_SECTION (error de tecleo), QA-FL-03",
     "scripts/vault_audit.py::<module>":
         "recetas `tool_hint` por sección: solo el estándar declara receta",
     "scripts/vault_delta.py::<module>":
