@@ -2372,7 +2372,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             },
         },
         "guards": ["AP-43"],
-        "side_effects": ["00_System/.voice-counter"],
+        "side_effects": [],
         "example": "python vault_voice.py --tool vault_write\npython vault_voice.py --coverage",
         "related": ["vault_norms", "vault_errors"],
     },
@@ -3823,7 +3823,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "params": {
         },
         "guards": [],
-        "side_effects": [],
+        "side_effects": ["Escribe los flujos de tokens y los ficheros de estado del servicio en 00_System/token-usage/ (self-test, start-service, begin, event, end)"],
         "example": 'python vault_token_counter.py self-test',
         "related": ["vault_tokens", "vault_token_service"],
     },

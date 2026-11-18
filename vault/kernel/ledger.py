@@ -182,12 +182,32 @@ def record_raw_write(path: Path, text: str, encoding: str = "utf-8") -> str:
     return _record_write(path, text, encoding)
 
 
-#: Ficheros de telemetría interna que NO son trabajo de la tool. Escribir una
-#: traza no es haber hecho nada por el vault, y contarla haría que el indicador
-#: de AP-37 subiera con el número de errores registrados — justo al revés de lo
-#: que mide. Se declaran por nombre porque viven en `00_System/`, que ya está
-#: fuera de la cascada de índices por el mismo motivo.
-_NO_ES_TRABAJO = frozenset({".tool-trace.json"})
+#: Ficheros de observabilidad AMBIENTALES, relativos a la raíz del vault:
+#: cualquier ejecución de cualquier tool puede reescribirlos, así que no son
+#: trabajo de la tool que corrió. La traza de errores la escribe cada error; el
+#: contador de la voz lo avanza `vault/autoria/voz.py` (`rotacion`) en cada
+#: envelope con voz que emite `wrap_main`, también en una tool de solo lectura.
+#:
+#: Es la ÚNICA declaración (AP-57, QA-RO-02). Hasta el 2026-11-17 había dos
+#: listas que divergían: el hash del snapshot excluía los dos ficheros y el
+#: ledger solo la traza, con lo que `vault_context_pack` —de solo lectura—
+#: parecía escribir. La leen el ledger (`_NO_ES_TRABAJO`), el hash del snapshot
+#: (`vault.durabilidad.snapshot.VOLATILES`, regla `MERKLE_ALGO` 2: el conjunto
+#: es el mismo que esa regla excluye desde que existe, y cambiarlo cambiaría la
+#: huella de todo manifiesto ya escrito) y las fotos del árbol de
+#: `vault_smoke._arbol` y `vault_toolkit_audit._arbol_local`.
+FICHEROS_AMBIENTALES = frozenset({
+    "00_System/.tool-trace.json",
+    "00_System/.voice-counter",
+})
+
+#: Lo que el ledger y las fotos del árbol no cuentan como trabajo: los nombres
+#: de `FICHEROS_AMBIENTALES`. Escribir una traza no es haber hecho nada por el
+#: vault, y contarla haría que el indicador de AP-37 subiera con el número de
+#: errores registrados — justo al revés de lo que mide. Se comparan por nombre
+#: porque viven en `00_System/`, que ya está fuera de la cascada de índices por
+#: el mismo motivo.
+_NO_ES_TRABAJO = frozenset(ruta.rsplit("/", 1)[-1] for ruta in FICHEROS_AMBIENTALES)
 
 
 def _record_write(path: Path, text: str, encoding: str) -> str:

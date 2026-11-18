@@ -1807,6 +1807,17 @@ Cuenta tokens de notas usando la cadena: `anthropic` → `tiktoken` → heuríst
 ### `vault_token_counter.py`
 Contador interactivo de tokens para un archivo o string dado.
 
+Ciclo de vida de un flujo (`begin` → `event` → `end` → `report`) contra el
+servicio local; escribe en `00_System/token-usage/`:
+- Con el servicio caído, `report` lee el flujo ya persistido (`source: "persisted"`);
+  si nunca se persistió, y para `end`, responde `SERVICE_UNAVAILABLE`, cuya
+  recuperación es `start-service`.
+- Un flujo terminado rechaza eventos (`INVALID_STATUS`) hasta reabrirlo con
+  `begin --flow-id <id>`.
+- `stop-service` sin servicio es idempotente (`alreadyStopped: true`), como
+  `start-service` con `alreadyRunning`.
+- `self-test` devuelve `written` y `path` del flujo de prueba que deja.
+
 ### `vault_token_service.py`
 Servicio HTTP local de conteo de tokens por flujo, sobre `127.0.0.1:8765`. Usado internamente por `wrap_main` cuando `VAULT_COUNT_TOKENS=1`.
 

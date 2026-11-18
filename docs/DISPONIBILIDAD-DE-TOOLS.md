@@ -117,7 +117,7 @@ Las 129 activas son 97 + 2 + 30. Expuestas por el servidor MCP: **98**; las otra
 | `vault_tags` | Session Delta y Tags | sí | sí | OK |
 | `vault_test_save` | Tests | sí | sí | OK |
 | `vault_timeline` | Línea de Tiempo | sí | no | OK |
-| `vault_token_counter` | Tokens | sí | no | OK |
+| `vault_token_counter` | Tokens | sí | sí | OK |
 | `vault_token_service` | Tokens | no | sí | OK |
 | `vault_tokens` | Tokens | sí | no | OK |
 | `vault_undo` | Versionado | sí | sí | OK |
@@ -168,7 +168,7 @@ Comprueban o regeneran este repositorio. **No** operan el vault de nadie y no es
 | `vault_smoke` | Normas | no | sí | OK |
 | `vault_tests_higiene` | Normas | no | sí | OK |
 | `vault_toolkit_audit` | Normas | no | sí | OK |
-| `vault_voice` | Normas | no | sí | OK |
+| `vault_voice` | Normas | no | no | OK |
 
 ## 2. Sin evidencia de ejemplo
 

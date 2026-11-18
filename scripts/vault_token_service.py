@@ -187,6 +187,10 @@ def start_flow(payload: Dict[str, Any]) -> Dict[str, Any]:
         flow["flow_id"] = flow_id
         flow["operation"] = operation or flow.get("operation", "")
         flow["status"] = "active"
+        # QA-FL-10: `begin` is the supported way to reopen an ended flow, and
+        # an active flow has no end date. Keeping the old `endedAt` left a
+        # flow both active and ended.
+        flow["endedAt"] = ""
         flow["updatedAt"] = utcnow()
         if isinstance(payload.get("budget"), dict):
             flow["budget"] = payload["budget"]
@@ -222,6 +226,16 @@ def add_event(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     with file_lock(path):
         flow = _read_json(path, _default_flow(flow_id))
+        if flow.get("status") == "ended":
+            # QA-FL-10: an event used to reopen an ended flow in silence
+            # (`status: active` with its `endedAt` kept). The closed flow is
+            # left as it was, and the error names the way to reopen it.
+            return {**emit_error(
+                "vault_token_service", "INVALID_STATUS",
+                f"el flujo {flow_id} esta cerrado (status ended, endedAt "
+                f"{flow.get('endedAt') or '?'}): no admite eventos. Para reabrirlo, "
+                f"`begin --flow-id {flow_id}`; para contar aparte, usa otro --flow-id."),
+                "flow_id": flow_id, "status": "ended"}
         flow["status"] = "active"
         flow["updatedAt"] = utcnow()
         flow.setdefault("events", []).append(event)

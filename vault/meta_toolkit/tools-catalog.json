@@ -7285,8 +7285,10 @@
         "additionalProperties": false
       },
       "guards": [],
-      "side_effects": [],
-      "perfil_minimo": "lector",
+      "side_effects": [
+        "Escribe los flujos de tokens y los ficheros de estado del servicio en 00_System/token-usage/ (self-test, start-service, begin, event, end)"
+      ],
+      "perfil_minimo": "operador",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_token_counter",
@@ -7594,10 +7596,8 @@
       "guards": [
         "AP-43"
       ],
-      "side_effects": [
-        "00_System/.voice-counter"
-      ],
-      "perfil_minimo": "operador",
+      "side_effects": [],
+      "perfil_minimo": "lector",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,

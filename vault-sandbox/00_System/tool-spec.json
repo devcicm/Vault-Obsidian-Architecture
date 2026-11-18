@@ -4658,7 +4658,9 @@
         "ok",
         "running",
         "status",
-        "url"
+        "url",
+        "written",
+        "path"
       ],
       "dq": {
         "dq_dimensions": [],

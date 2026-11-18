@@ -213,8 +213,10 @@ def _con_json(script: str, argv: List[str]) -> List[str]:
 def _arbol(raiz: Path) -> Dict[str, str]:
     """Hash de cada fichero del vault salvo lo que no es trabajo.
 
-    Qué no cuenta como trabajo lo decide el ledger (`_NO_ES_TRABAJO`, la
-    traza), no esta función (AP-57); `.locks/` son candados efímeros.
+    Qué no cuenta como trabajo lo decide el kernel (`_NO_ES_TRABAJO`, los
+    nombres de `vault.kernel.ledger.FICHEROS_AMBIENTALES`: la traza y el
+    contador de la voz), no esta función (AP-57); `.locks/` son candados
+    efímeros.
     """
     import hashlib
 

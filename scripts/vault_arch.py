@@ -1394,7 +1394,11 @@ SUBRUTAS_DE_SISTEMA_SIN_REPOSITORIO: dict[str, dict] = {
     },
     ".voice-counter": {
         "dueno": "autoria",
-        "por_que": "Contador de `vault/autoria/voz.py`; nadie más lo escribe.",
+        "por_que": "Contador de `vault/autoria/voz.py` (`rotacion`), el único "
+                   "código que lo escribe. Lo avanza cada envelope con voz de "
+                   "`wrap_main`, sea cual sea la tool, así que es un fichero "
+                   "ambiental (`vault.kernel.ledger.FICHEROS_AMBIENTALES`), no "
+                   "trabajo ni side effect de la tool que habló.",
     },
     ".trash": {
         "dueno": "autoria",

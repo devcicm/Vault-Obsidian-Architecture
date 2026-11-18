@@ -292,8 +292,9 @@ _ARBOL_LOCAL_CACHE: Optional[Set[str]] = None
 def _arbol_local(raiz: Path) -> Dict[str, str]:
     """Hash de cada fichero del vault salvo lo que el ledger no da por trabajo.
 
-    El criterio del FT que no es trabajo lo dueñece el ledger (`_NO_ES_TRABAJO`);
-    el hash es logística. Duplicarlo con criterio propio sería AP-57.
+    El criterio del FT que no es trabajo lo dueñece el ledger (`_NO_ES_TRABAJO`,
+    derivado de `FICHEROS_AMBIENTALES`: la traza y el contador de la voz); el
+    hash es logística. Duplicarlo con criterio propio sería AP-57.
     """
     import hashlib
 

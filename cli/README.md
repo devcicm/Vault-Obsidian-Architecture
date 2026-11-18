@@ -51,7 +51,7 @@ la propia CLI: nada de documentación alucinada.
 ```bash
 python -m cli groups --pretty          # catálogo completo por grupo
 python -m cli find "backup grafo"      # búsqueda AND sobre todo el texto del fragmento
-python -m cli find "" --mode write     # las 115 tools que escriben
+python -m cli find "" --mode write     # las 116 tools que escriben
 python -m cli show vault_write --pretty
 ```
 

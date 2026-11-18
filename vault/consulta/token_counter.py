@@ -12,7 +12,7 @@ import threading
 from http.server import ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Dict, Optional
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 import vault_grafo_import
@@ -22,9 +22,11 @@ from vault_token_service import (
     DEFAULT_PORT,
     ENV_TOKEN,
     TokenHandler,
+    _flow_path,
     _port_file,
     _usage_dir,
     estimate_tokens,
+    get_flow,
     serve,
     token_del_cliente,
 )
@@ -32,6 +34,13 @@ from vault_token_service import (
 
 SCRIPTS_DIR = vault_grafo_import.DIRECTORIO  # deuda #12: el dueño vive en vault/, `scripts/` lo dice el puente
 SERVICE_SCRIPT = SCRIPTS_DIR / "vault_token_service.py"
+#: Seconds `start-service` waits for the new service to answer. Each failed
+#: probe of a port nobody listens on costs about two seconds on Windows (the
+#: SYN is retried after the reset), so the former 5 s left two probes: under
+#: load the service started and the command still said SERVICE_UNAVAILABLE,
+#: which breaks the recovery that SERVICE_UNAVAILABLE itself publishes
+#: (QA-FL-10). A healthy start answers in well under a second.
+PLAZO_ARRANQUE = 20.0
 
 
 def _base_url(port: Optional[int] = None) -> str:
@@ -51,8 +60,22 @@ def _request(method: str, path: str, payload: Optional[Dict[str, Any]] = None, p
         data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         headers["Content-Type"] = "application/json"
     req = Request(_base_url(port) + path, data=data, headers=headers, method=method)
-    with urlopen(req, timeout=5) as response:
-        return json.loads(response.read().decode("utf-8"))
+    try:
+        with urlopen(req, timeout=5) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except HTTPError as exc:
+        # QA-FL-10: the service answers its own refusals (404 for a flow it
+        # does not have, 400 for an event it does not admit) with a catalog
+        # envelope. That envelope IS the answer, not a transport failure that
+        # `main` would turn into UNEXPECTED_ERROR. A body without `error_code`
+        # (the 401/403 of SP-04) stays an exception, as before.
+        try:
+            cuerpo = json.loads(exc.read().decode("utf-8"))
+        except (OSError, ValueError):
+            raise exc
+        if isinstance(cuerpo, dict) and cuerpo.get("error_code"):
+            return cuerpo
+        raise
 
 
 def _is_running(port: Optional[int] = None) -> bool:
@@ -109,7 +132,7 @@ def start_service(port: int = DEFAULT_PORT) -> Dict[str, Any]:
                 close_fds=True,
             )
 
-    deadline = time.time() + 5
+    deadline = time.time() + PLAZO_ARRANQUE
     while time.time() < deadline:
         if _is_running(port):
             return {"ok": True, "started": True, "url": _base_url(port), "log": str(log_path), "errLog": str(err_path)}
@@ -121,6 +144,12 @@ def stop_service(port: Optional[int] = None) -> Dict[str, Any]:
     try:
         return _request("POST", "/stop", {}, port=port)
     except URLError as exc:
+        if isinstance(getattr(exc, "reason", None), ConnectionRefusedError):
+            # QA-FL-10: nothing listens, so the service is already stopped.
+            # Idempotent like `start-service` on a running service
+            # (`alreadyRunning`); a failure of another kind (timeout, a port
+            # held by someone else) is still SERVICE_UNAVAILABLE.
+            return {"ok": True, "alreadyStopped": True, "url": _base_url(port)}
         return {**emit_error("vault_token_counter", "SERVICE_UNAVAILABLE", f"El servicio no responde: {exc}", exception=exc), "detail": str(exc)}
 
 
@@ -172,10 +201,24 @@ def event(
 
 
 def report(flow_id: str, port: Optional[int] = None) -> Dict[str, Any]:
-    return _request("GET", f"/flows/{flow_id}", port=port)
+    if _is_running(port):
+        return _request("GET", f"/flows/{flow_id}", port=port)
+    # QA-FL-10: with the service down, a persisted flow is still readable.
+    # The flow file is the service's own record —`get_flow` reads that same
+    # file to answer `GET /flows/<id>`—, so this is its answer, not a rebuild.
+    if _flow_path(flow_id).is_file():
+        return {**get_flow(flow_id), "source": "persisted", "running": False}
+    return emit_error(
+        "vault_token_counter", "SERVICE_UNAVAILABLE",
+        f"El servicio no esta corriendo y el flujo {flow_id} no esta persistido; "
+        "usa start-service.")
 
 
 def end(flow_id: str, port: Optional[int] = None) -> Dict[str, Any]:
+    if not _is_running(port):
+        # QA-FL-10: closing a flow writes it, and only the service writes flows.
+        return emit_error("vault_token_counter", "SERVICE_UNAVAILABLE",
+                          "El servicio no esta corriendo; usa start-service y repite end.")
     return _request("POST", "/flows/end", {"flow_id": flow_id}, port=port)
 
 
@@ -189,6 +232,11 @@ def self_test() -> Dict[str, Any]:
     os.environ[ENV_TOKEN] = server.token
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
+    # QA-RO-01 (AP-37): the self-test writes its flow file. The in-process
+    # server writes it from its own thread, whose write ledger is not this
+    # one, so the work is measured on the file itself.
+    destino = _flow_path("self-test")
+    antes = destino.read_bytes() if destino.is_file() else None
     try:
         started = _request("POST", "/flows/start", {"flow_id": "self-test", "operation": "token counter self-test"}, port=port)
         ev = event(
@@ -205,7 +253,10 @@ def self_test() -> Dict[str, Any]:
         )
         rep = report("self-test", port=port)
         ended = end("self-test", port=port)
-        return {"ok": True, "started": started, "event": ev, "report": rep, "ended": ended}
+        despues = destino.read_bytes() if destino.is_file() else None
+        return {"ok": True, "started": started, "event": ev, "report": rep, "ended": ended,
+                "written": int(despues is not None and despues != antes),
+                "path": started.get("path")}
     finally:
         if previo is None:
             os.environ.pop(ENV_TOKEN, None)
@@ -257,6 +308,9 @@ Examples:
 Operational rule:
   Invoke begin before mass documentation. Other vault tools stay independent;
   this service receives explicit flow events and reports token usage separately.
+  event and end need the running service; report reads the persisted flow file
+  when the service is down. An ended flow admits no events until begin reopens it.
+  stop-service on a stopped service is a no-op (alreadyStopped).
 """,
         allow_abbrev=False,
     )

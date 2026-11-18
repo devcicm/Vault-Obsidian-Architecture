@@ -24,6 +24,7 @@ from typing import Sequence
 from ..kernel import rutas
 from ..kernel.contexto import VaultContext
 from ..kernel.fallos import FalloDeDominio
+from ..kernel.ledger import FICHEROS_AMBIENTALES
 from .modelo import Backup
 from .repositorio import CARPETA_BACKUPS, FICHERO_MANIFIESTO, RepositorioDurabilidad
 
@@ -34,10 +35,12 @@ MERKLE_ALGO = 2
 #: Estaban dentro del hash, así que dos copias de un vault intacto daban raíz
 #: distinta: la medida arrastraba la huella de quien mide, que es AP-44 aplicado
 #: a una métrica de integridad. Excluidos desde algo 2.
-VOLATILES = frozenset({
-    "00_System/.tool-trace.json",
-    "00_System/.voice-counter",
-})
+#:
+#: El conjunto lo declara el kernel (`vault.kernel.ledger.FICHEROS_AMBIENTALES`,
+#: QA-RO-02): esta lista y la del ledger divergían. Es el mismo conjunto que algo
+#: 2 excluyó siempre; si la declaración cambiara, cambiaría la regla del hash y
+#: habría que subir `MERKLE_ALGO` (lo vigila `tests/test_ficheros_ambientales.py`).
+VOLATILES = FICHEROS_AMBIENTALES
 
 #: Lo que no entra al snapshot: copias previas —evitaría la recursión ahora que
 #: los backups viven DENTRO del vault (AP-36)— y sandboxes.
