@@ -43,13 +43,13 @@ import subprocess
 import sys
 import uuid
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from vault_errors import emit_error, wrap_main
 from vault_entorno import agente_por_defecto
-from vault_lib import slugify_strict, utcnow
+from vault_lib import Config, slugify_strict, utcnow
 from vault_io import (
     assert_within_vault,
     atomic_write_json,
@@ -1391,7 +1391,25 @@ def _make_frontmatter(
     for k, v in extra.items():
         if k not in skip:
             fm.set(k, v, texto=isinstance(v, str))
+    if str(extra.get("status", "stub")) == "stub":
+        # PAT-2 (brownfield BF-10, 2026-11-19): every onboarding note was born
+        # `stub` without a deadline, and `vault_audit` reported 42 AP-03
+        # findings on the vault the standard had just generated. The deadline
+        # is graph_fix's, in the same field format it writes.
+        fm.set("expand_by", _plazo_de_enriquecimiento(), texto=True)
     return fm.render()
+
+
+def _plazo_de_enriquecimiento() -> str:
+    """The date a stub must be enriched by: today plus the stub deadline.
+
+    The deadline is the one graph_fix writes (`PLAZO_DE_ENRIQUECIMIENTO_DIAS`),
+    and that constant is `Config.STALE_DAYS`, whose owner is `vault_lib`: it is
+    read there, so the onboarding does not cross into the graph context
+    (`vault_arch`). A test pins that both stay the same number.
+    """
+    ahora = datetime.now(timezone.utc)
+    return (ahora + timedelta(days=Config.STALE_DAYS)).date().isoformat()
 
 
 #: Notas que el onboard **no** toco porque viven en una seccion declarada
@@ -1504,6 +1522,46 @@ def _omitir_diagrama_invalido(
     )
 
 
+def _escalonar(body: str, lead: str, falta: str = "") -> str:
+    """Put the lead (and what is missing) between the body's H1 and the rest.
+
+    nota-escalonada S4: a reader without context learns what the note is
+    before its detail. The builders keep their H2 sections, because the merge
+    of a re-onboarding matches sections by name (`_merge_stub_bajo_lock`):
+    the lead lives before the first H2, so it reaches new notes only and an
+    existing note is never rewritten. The lead and the pending marker are
+    composed by the kernel owner (`contenido.nota_escalonada`).
+    """
+    from vault.kernel.contenido import nota_escalonada
+
+    if not (lead or "").strip():
+        return body
+    cabeza = nota_escalonada("", lead, falta=falta or None).strip()
+    primera, _, resto = body.partition("\n")
+    if not primera.startswith("# "):
+        return cabeza + "\n\n" + body.lstrip("\n")
+    return primera + "\n\n" + cabeza + "\n\n" + resto.lstrip("\n")
+
+
+def _hasta_palabra(texto: str, limite: int) -> str:
+    """`texto` cut to `limite` characters on a word boundary (brownfield BF-05).
+
+    `asunto[:60]` left titles such as «...y calendario d (retroactivo)».
+    """
+    texto = " ".join((texto or "").split())
+    if len(texto) <= limite:
+        return texto
+    corte = texto[:limite + 1].rsplit(" ", 1)[0]
+    return (corte if corte and len(corte) <= limite else texto[:limite]).rstrip(" ,;:-")
+
+
+def _primera_frase(texto: str, limite: int = 200) -> str:
+    """The first sentence of `texto`, cut on a word boundary, ending in a period."""
+    frase = re.split(r"(?<=[.!?])\s", " ".join((texto or "").split()), maxsplit=1)[0]
+    frase = _hasta_palabra(frase, limite).rstrip(".!?")
+    return f"{frase}." if frase else ""
+
+
 def _write(
     folder: str,
     filename: str,
@@ -1512,7 +1570,17 @@ def _write(
     extra: Dict[str, Any],
     body: str,
     dry_run: bool,
+    lead: str = "",
+    falta: str = "",
 ) -> Tuple[str, str]:
+    """Write one onboarding note: evidence first, then the layered body.
+
+    `lead` is the note's executive summary, composed from the evidence the
+    builder holds; `falta` names what the onboarding does not know and is
+    rendered as a pending marker. Neither decides AP-45: the evidence gate and
+    the declared confidence judge the builder's `body`, so a lead never turns
+    a note without evidence into one that gets written.
+    """
     path = _raiz() / folder / filename
     rel = str(path.relative_to(_raiz())).replace("\\", "/")
 
@@ -1528,7 +1596,7 @@ def _write(
 
     content = body
     fm = _make_frontmatter(title, folder, tags, extra, content)
-    full = fm + "\n\n" + body
+    full = fm + "\n\n" + _escalonar(body, lead, falta)
     action = _merge_stub(path, full, dry_run)
     if action == "omitida_por_politica":
         _OMITIDAS_POR_POLITICA.append({
@@ -1762,6 +1830,21 @@ Ver ADR de arqueologia: [[adr-001-historia-oculta-branch-archaeology]]
 - Revisar ADRs en [[03_Decisions/index]]
 - Ver módulos en [[11_Code/index]]
 """
+    descripcion = _primera_frase(meta.get("description") or meta.get("readme_excerpt") or "")
+    stack = runtime_str or meta.get("language") or ""
+    lead = [f"Vista general del proyecto {project}"
+            + (f": {descripcion}" if descripcion else ".")]
+    lead.append("Reúne lo que el repositorio declara de él: "
+                + (f"su stack ({stack}), " if stack else "")
+                + f"su historia según {history_source}, sus versiones, "
+                "sus contribuidores y sus scripts.")
+    if first and last:
+        cuantos = history.get("total_commits") if is_git else None
+        lead.append((f"La historia registra {cuantos} commits" if cuantos else "La historia va")
+                    + f" del {first['date']} al {last['date']}.")
+    lead.append("Es la nota de entrada al proyecto en este vault.")
+    lead.append("Nació en el onboarding como esbozo, y la descripción y el stack están "
+                "por verificar con el equipo.")
     return [
         _write(
             f"01_Projects/{project}",
@@ -1782,6 +1865,9 @@ Ver ADR de arqueologia: [[adr-001-historia-oculta-branch-archaeology]]
             },
             body,
             dry_run,
+            lead=" ".join(lead),
+            falta="" if descripcion else (
+                "qué es el proyecto: ni el manifiesto de paquetes ni el README lo describen"),
         )
     ]
 
@@ -1855,6 +1941,15 @@ def _onboard_02_observability(
 
 Revisar cada item y crear issue o registrar con vault_log_error.
 """
+    ficheros = len({i["file"] for items in issues.values() for i in items})
+    lead = (
+        f"Deuda técnica que los comentarios del código del proyecto [[{_slug(project)}-overview]] "
+        f"declaran: {total} marcas TODO, FIXME, HACK, BUG o XXX en {ficheros} ficheros, "
+        f"{len(issues['high'])} de ellas de prioridad alta. "
+        "Sirve para decidir qué revisar antes de tocar esos ficheros. "
+        "Se obtuvo en el onboarding por análisis estático de los comentarios y nadie la ha "
+        "verificado a mano."
+    )
     return [
         _write(
             "02_Observability/issues",
@@ -1864,6 +1959,7 @@ Revisar cada item y crear issue o registrar con vault_log_error.
             {"agent": agent, "project": project, "cia_integrity": "high"},
             body,
             dry_run,
+            lead=lead,
         )
     ]
 
@@ -1950,6 +2046,15 @@ git log <nombre-rama-snap> --oneline --graph | head -30
 git log {current_branch}...<nombre-rama-snap> --oneline
 ```
 """
+        lead = (
+            f"Hallazgo retroactivo sobre el proyecto {project}: su historia empieza el "
+            f"{true_start} y no el {apparent}, así que {hidden_months} meses no se ven desde "
+            f"la rama `{current_branch}`. "
+            "Importa porque la antigüedad y el origen que se lean en la rama actual están "
+            "incompletos. "
+            f"Se detectó en el onboarding comparando las {len(all_branches)} ramas del "
+            f"repositorio, {len(snap_branches)} de ellas de tipo snap o backup."
+        )
         results.append(
             _write(
                 "03_Decisions",
@@ -1959,6 +2064,8 @@ git log {current_branch}...<nombre-rama-snap> --oneline
                 {"agent": agent, "project": project, "cia_integrity": "high"},
                 body,
                 dry_run,
+                lead=lead,
+                falta="qué ocurrió con esa historia: el repositorio solo muestra que existe",
             )
         )
         adr_counter[0] += 1
@@ -1982,7 +2089,7 @@ git log {current_branch}...<nombre-rama-snap> --oneline
             )
             continue
 
-        title = f"ADR-{adr_counter[0]:03d} — {asunto[:60]} (retroactivo)"
+        title = f"ADR-{adr_counter[0]:03d} — {_hasta_palabra(asunto, 60)} (retroactivo)"
         body = f"""# {title}
 
 **Fecha detectada:** {commit["date"]} (commit `{commit.get("hash", "?")}`)
@@ -2011,6 +2118,14 @@ Sin verificar. Lo que consta es el cambio, no su efecto.
 python scripts/vault_write.py --folder 03_Decisions --title "{title}"
 ```
 """
+        lead = (
+            f"Decisión retroactiva del proyecto {project}, reconstruida del commit "
+            f"`{commit.get('hash', '?')}` del {commit['date']} firmado por "
+            f"{commit.get('author') or 'un autor sin registrar'}: {asunto.rstrip('.')}. "
+            "El commit registra el cambio, pero el porqué de la decisión no está escrito en "
+            "el proyecto. "
+            "Nace como esbozo en el onboarding y no afirma consecuencias que nadie ha verificado."
+        )
         results.append(
             _write(
                 "03_Decisions",
@@ -2020,6 +2135,9 @@ python scripts/vault_write.py --folder 03_Decisions --title "{title}"
                 {"agent": agent, "project": project},
                 body,
                 dry_run,
+                lead=lead,
+                falta=("el contexto y las alternativas que motivaron la decisión: "
+                       "el commit solo registra el cambio"),
             )
         )
         adr_counter[0] += 1
@@ -2048,6 +2166,13 @@ python scripts/vault_write.py --folder 03_Decisions --title "{title}"
 
 Revisar el archivo y extraer ADRs individuales con vault_write.
 """
+            lead = (
+                f"Registro retroactivo del fichero `{fname}` que el onboarding encontró en la "
+                f"raíz del proyecto {project}, con {len(text.splitlines())} líneas. "
+                "Recoge su comienzo literal para que las decisiones que contiene se extraigan "
+                "una a una como ADR. "
+                "Nadie ha revisado todavía su contenido."
+            )
             results.append(
                 _write(
                     "03_Decisions",
@@ -2057,6 +2182,8 @@ Revisar el archivo y extraer ADRs individuales con vault_write.
                     {"agent": agent, "project": project},
                     body,
                     dry_run,
+                    lead=lead,
+                    falta="las decisiones individuales del fichero, todavía sin extraer",
                 )
             )
             adr_counter[0] += 1
@@ -2121,6 +2248,16 @@ _Enriquecer con decisiones, incidentes o hitos relevantes de este período._
 python scripts/vault_write.py --folder 04_Sessions --title "{month} sesion de trabajo"
 ```
 """
+        # An event record: short is fine, but it links its parent note
+        # (nota-escalonada S4), so the reader knows what the phase belongs to.
+        autores = ", ".join(phase["authors"]) or "autores sin registrar"
+        lead = (
+            f"Fase del proyecto [[{_slug(project)}-overview]] entre el "
+            f"{phase['first_date']} y el {phase['last_date']} ({label}): {phase['item_count']} "
+            f"{item_label.lower()} de {autores}"
+            + (f", con la versión {phase['tag']}" if phase.get("tag") else "") + ". "
+            f"Se reconstruyó en el onboarding desde {source_note}."
+        )
         results.append(
             _write(
                 "04_Sessions",
@@ -2130,6 +2267,7 @@ python scripts/vault_write.py --folder 04_Sessions --title "{month} sesion de tr
                 {"agent": agent, "project": project, "period": month},
                 body,
                 dry_run,
+                lead=lead,
             )
         )
 
@@ -2203,6 +2341,13 @@ python scripts/vault_pattern_save.py --project {project} --name "{_slug(pname)}"
   --pattern_type {pcat} --status implementado
 ```
 """
+            lead = (
+                f"Patrón {pname} ({pcat}) inferido en el proyecto {project} a partir de "
+                f"{pattern_counts[mtype]} ficheros de tipo `{mtype}`: "
+                f"{pdesc[:1].lower()}{pdesc[1:]}. "
+                "Orienta dónde vive cada responsabilidad del código antes de abrirlo. "
+                "Se infirió en el onboarding por los nombres de fichero."
+            )
             results.append(
                 _write(
                     f"05_Patterns/{pcat}",
@@ -2212,6 +2357,9 @@ python scripts/vault_pattern_save.py --project {project} --name "{_slug(pname)}"
                     {"agent": agent, "project": project, "pattern_type": pcat},
                     body,
                     dry_run,
+                    lead=lead,
+                    falta=("comprobar en el código que la implementación sigue el patrón: "
+                           "solo se infirió por los nombres de fichero"),
                 )
             )
 
@@ -2279,6 +2427,16 @@ python scripts/vault_diagram_save.py --project {project} \\
   --content "..."
 ```
 """
+    stack = " / ".join(x for x in (meta.get("language"), meta.get("framework")) if x)
+    lead = (
+        f"Diagrama de componentes del proyecto {project}"
+        + (f" ({stack})" if stack else "")
+        + f": agrupa {sum(len(n[:4]) for n in groups.values())} módulos detectados por su "
+        f"tipo ({', '.join(sorted(groups))}). "
+        "Da una primera vista de la estructura del código antes de leerlo. "
+        "Se generó en el onboarding desde la estructura de ficheros y se validó con la "
+        "gramática de Mermaid, no contra la arquitectura real."
+    )
     return [
         _write(
             "06_Diagrams/component",
@@ -2293,6 +2451,8 @@ python scripts/vault_diagram_save.py --project {project} \\
             },
             body,
             dry_run,
+            lead=lead,
+            falta="las relaciones reales entre componentes: el diagrama solo agrupa por tipo",
         )
     ]
 
@@ -2336,6 +2496,12 @@ _Pendiente. Leer la sección del README y documentar aquí._
 
 - [[{_slug(project)}-overview]]
 """
+        lead = (
+            f"Concepto {header} del proyecto [[{_slug(project)}-overview]], tomado de la "
+            f"sección `## {header}` de su README. "
+            "Se registra porque el README lo destaca como parte de lo que el proyecto es. "
+            "Se detectó en el onboarding y su contenido aún no se ha documentado aquí."
+        )
         results.append(
             _write(
                 "07_Knowledge/concepts",
@@ -2345,6 +2511,8 @@ _Pendiente. Leer la sección del README y documentar aquí._
                 {"agent": agent, "project": project, "category": "concept"},
                 body,
                 dry_run,
+                lead=lead,
+                falta="qué dice el README de este concepto: leer su sección y documentarlo",
             )
         )
 
@@ -2381,6 +2549,13 @@ python scripts/vault_knowledge_save.py --category framework \\
   --title "{dep}" --content "..." --project {project}
 ```
 """
+        lead = (
+            f"{dep} es una dependencia del proyecto [[{_slug(project)}-overview]], declarada "
+            f"en {meta.get('source', 'package.json')}. "
+            "Se registra porque el onboarding la reconoce como framework y no como una "
+            "librería auxiliar. "
+            "Su uso concreto en el proyecto aún no se ha documentado."
+        )
         results.append(
             _write(
                 "07_Knowledge/frameworks",
@@ -2390,6 +2565,8 @@ python scripts/vault_knowledge_save.py --category framework \\
                 {"agent": agent, "project": project, "category": "framework"},
                 body,
                 dry_run,
+                lead=lead,
+                falta="cómo usa el proyecto este framework y en qué versión",
             )
         )
 
@@ -2454,6 +2631,13 @@ python scripts/vault_runbook_save.py --project {project} \\
   --category {category} --steps '[{{"step":"npm run {script_name}"}}]'
 ```
 """
+        lead = (
+            f"Runbook del script `{script_name}` del proyecto {project}, que ejecuta "
+            f"`{_hasta_palabra(script_cmd, 80)}`. "
+            f"Su categoría, {category}, sale del nombre del script. "
+            f"Se generó en el onboarding desde {meta.get('source') or 'el manifiesto del proyecto'} "
+            "y sus pasos no se han verificado."
+        )
         results.append(
             _write(
                 f"08_Runbooks/{category}",
@@ -2468,6 +2652,8 @@ python scripts/vault_runbook_save.py --project {project} \\
                 },
                 body,
                 dry_run,
+                lead=lead,
+                falta="cuándo se ejecuta y cómo se comprueba que salió bien",
             )
         )
 
@@ -2494,6 +2680,12 @@ python scripts/vault_runbook_save.py --project {project} \\
 
 1. `make {target}`
 """
+                lead = (
+                    f"Runbook del objetivo `{target}` del Makefile del proyecto {project}, "
+                    f"que se ejecuta con `make {target}` desde la raíz del proyecto. "
+                    "Se generó en el onboarding leyendo el Makefile y sus pasos no se han "
+                    "verificado."
+                )
                 results.append(
                     _write(
                         "08_Runbooks/pipeline",
@@ -2503,6 +2695,8 @@ python scripts/vault_runbook_save.py --project {project} \\
                         {"agent": agent, "project": project, "category": "pipeline"},
                         body,
                         dry_run,
+                        lead=lead,
+                        falta="qué hace el objetivo y cuándo se ejecuta",
                     )
                 )
         except _OnboardNotaBloqueada:
@@ -2557,6 +2751,15 @@ python scripts/vault_infra_save.py --project {project} --name "..." --type serve
 python scripts/vault_env_save.py --project {project} --environment dev --vars '[...]'
 ```
 """
+    ficheros = infra.get("files", [])
+    lead = (
+        f"Infraestructura del proyecto {project} tal como la declaran {len(ficheros)} "
+        f"ficheros de configuración del repositorio ({', '.join(ficheros[:4])}). "
+        f"Recoge {len(infra.get('services', []))} servicios, "
+        f"{len(set(infra.get('ports', [])))} puertos expuestos y "
+        f"{len(infra.get('envs', []))} variables de entorno declaradas. "
+        "Se generó en el onboarding desde esos ficheros y no describe el despliegue real."
+    )
     return [
         _write(
             f"09_Infrastructure/{project}",
@@ -2566,6 +2769,8 @@ python scripts/vault_env_save.py --project {project} --environment dev --vars '[
             {"agent": agent, "project": project, "cia_availability": "high"},
             body,
             dry_run,
+            lead=lead,
+            falta="dónde y cómo se despliega: el repositorio solo declara la configuración",
         )
     ]
 
@@ -2599,6 +2804,13 @@ python scripts/vault_code_module.py \\
   --iso_type {mod["type"]}
 ```
 """
+        lead = (
+            f"Módulo {mod['name']} del proyecto {project}: un fichero {language} de tipo "
+            f"`{mod['type']}` con {mod['size_lines']} líneas, en `{mod['file_path']}`. "
+            "Se registra porque el onboarding lo priorizó por su tipo entre los módulos "
+            "del proyecto. "
+            "Nace como esbozo y su propósito aún no se ha documentado."
+        )
         results.append(
             _write(
                 f"11_Code/{project}",
@@ -2613,6 +2825,8 @@ python scripts/vault_code_module.py \\
                 },
                 body,
                 dry_run,
+                lead=lead,
+                falta="el propósito del módulo: leer el fichero y documentarlo con vault_code_module",
             )
         )
     return results
@@ -2651,6 +2865,18 @@ python scripts/vault_flow_save.py --project {project} \\
   --name "{wf_name}" --flow_type pipeline --description "..."
 ```
 """
+            detectado = []
+            if triggers:
+                detectado.append(f"se dispara con {', '.join(sorted(set(triggers)))}")
+            if jobs:
+                detectado.append(f"ejecuta {len(jobs)} jobs ({', '.join(jobs[:4])})")
+            lead = (
+                f"Flujo de integración continua {wf_name} del proyecto {project}, definido "
+                f"en `.github/workflows/{wf_file.name}`. "
+                + (f"Según el workflow, {' y '.join(detectado)}. " if detectado else "")
+                + "Se detectó en el onboarding leyendo el workflow y no describe qué valida "
+                "cada paso."
+            )
             results.append(
                 _write(
                     "13_Flows/pipeline",
@@ -2660,6 +2886,9 @@ python scripts/vault_flow_save.py --project {project} \\
                     {"agent": agent, "project": project, "flow_type": "pipeline"},
                     body,
                     dry_run,
+                    lead=lead,
+                    falta="" if (triggers and jobs) else (
+                        "qué lo dispara y qué jobs ejecuta: el onboarding no los detectó en el workflow"),
                 )
             )
         except _OnboardNotaBloqueada:
@@ -2723,6 +2952,13 @@ python scripts/vault_requirement_save.py --project {project} \\
   --title "{req_id} — ..." --req_type functional --priority must-have
 ```
 """
+                        lead = (
+                            f"Requerimiento funcional {req_id} del proyecto {project}, tomado "
+                            f"de la sección `## {fh}` de su README: {bullet.rstrip('.')}. "
+                            "Se registra porque el README lo declara como funcionalidad del "
+                            "proyecto. "
+                            "Se detectó en el onboarding y nadie ha verificado su implementación."
+                        )
                         results.append(
                             _write(
                                 f"14_Requirements/{project}",
@@ -2737,6 +2973,8 @@ python scripts/vault_requirement_save.py --project {project} \\
                                 },
                                 body,
                                 dry_run,
+                                lead=lead,
+                                falta="sus criterios de aceptación",
                             )
                         )
         except _OnboardNotaBloqueada:
@@ -2789,6 +3027,12 @@ python scripts/vault_test_save.py --project {project} \\
   --title "Test suite {ttype}" --test_type {ttype} --description "..."
 ```
 """
+        lead = (
+            f"Inventario de los tests de tipo {ttype} del proyecto {project}: {len(files)} "
+            "ficheros reconocidos como test por su nombre y su ubicación. "
+            "Sirve para saber qué parte de la suite existe antes de cambiar el código. "
+            "Se generó en el onboarding y no dice qué comportamiento verifica cada fichero."
+        )
         results.append(
             _write(
                 f"15_Tests/{ttype}",
@@ -2803,6 +3047,7 @@ python scripts/vault_test_save.py --project {project} \\
                 {"agent": agent, "project": project, "test_type": ttype},
                 body,
                 dry_run,
+                lead=lead,
             )
         )
 
@@ -2864,6 +3109,13 @@ python scripts/vault_ai_decision.py --project {project} \\
 python scripts/vault_privacy_save.py --project {project} --title "<tratamiento>"
 ```
 """
+    lead = (
+        f"Baseline de gobernanza del proyecto [[{_slug(project)}-overview]]: {len(hechos)} "
+        "hechos que el repositorio permite comprobar sobre su infraestructura, sus "
+        "dependencias y su licencia, y las cuatro preguntas que deja sin responder. "
+        "Es el punto de partida de una revisión de gobernanza, no una evaluación. "
+        "Se levantó en el onboarding leyendo el repositorio y nadie lo ha revisado todavía."
+    )
     return [
         _write(
             "16_AI_Governance",
@@ -2873,6 +3125,7 @@ python scripts/vault_privacy_save.py --project {project} --title "<tratamiento>"
             {"agent": agent, "project": project, "cia_integrity": "high"},
             body,
             dry_run,
+            lead=lead,
         )
     ]
 
@@ -2923,6 +3176,16 @@ python scripts/vault_preferences.py --set --title "<preferencia>" \\
   --statement "..." --strength should
 ```
 """
+    nombres = {"language": "el lenguaje", "framework": "el framework",
+               "package_manager": "el gestor de paquetes", "runtime": "el runtime"}
+    deducidas = [v for k, v in nombres.items() if meta.get(k)]
+    lead = (
+        f"Contexto estable del proyecto {project}: {len(lineas)} preferencias que el "
+        f"repositorio demuestra, sobre {', '.join(deducidas)}. "
+        "vault_context_pack lee esta nota al armar el contexto de una sesión, así que lo "
+        "que dice orienta el trabajo que venga después. "
+        "Se dedujo en el onboarding y cada preferencia tiene una evidencia en el repositorio."
+    )
     return [
         _write(
             "17_Preferences",
@@ -2932,6 +3195,7 @@ python scripts/vault_preferences.py --set --title "<preferencia>" \\
             {"agent": agent, "project": project, "strength": "should"},
             body,
             dry_run,
+            lead=lead,
         )
     ]
 

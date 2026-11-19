@@ -69,7 +69,7 @@ regenera.*
 
 *Registros: `vault_norms.NORM_CATALOG` + `vault_gate.PUERTAS` + `tests/`*
 
-96 de 96 normas tienen puerta o test que las nombre.
+97 de 97 normas tienen puerta o test que las nombre.
 **Es la única capa con baseline**, y por un motivo concreto: las demás se midieron
 en cero el día que se declararon porque sus datos ya existían y solo faltaba
 atarlos. Ésta no. Exigir cero aquí el primer día habría hecho nacer la puerta en
@@ -160,6 +160,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-76** — Nota viva con la revisión vencida | audit | — | `test_iso_15489_conservacion.py`, `test_iso_23894_riesgo_ia.py`, `test_parte_a_normas.py` |
 | **AP-77** — Registro con la conservación vencida sin disposición | audit | — | `test_iso_15489_conservacion.py` |
 | **AP-78** — Decisión de IA de impacto alto sin evaluación por afectado | audit | — | `test_iso_42005_impacto_ia.py` |
+| **AP-79** — Nota sin entrada autosuficiente | audit | — | `test_ap79_profundidad_audit.py` |
 | **PAT-6** — Semantic graph enrichment — enriquecimiento periodico del grafo | recommended | — | `test_capa4_audit_ejercitada.py` |
 | **PAT-7** — Desacuerdo legítimo declarado — contradicts entre notas | recommended | `fuente_unica` | `test_karpathy_desacuerdos.py` |
 | **PAT-8** — Respuesta compilada en el wiki | recommended | — | `test_parte_a_normas.py` |
