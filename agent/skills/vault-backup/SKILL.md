@@ -1,71 +1,90 @@
 ---
 name: vault-backup
-description: Creates a vault backup and proves it restores — rehearsal in an isolated destination, comparison and an explicit recovery report. Use before trusting any backup, before destructive maintenance, or when the owner asks whether the backups work.
+description: "Trigger: backup, respaldo, does the backup work, before destructive maintenance. Creates a vault backup, verifies its manifest and rehearses the restore on a disposable copy of the vault."
 allowed-tools: Bash(python *) Bash(vault *) Read Glob Grep
-argument-hint: "[--label LABEL] [--verify]"
-version: "1.0"
+argument-hint: "[--label LABEL] [--verify BACKUP_NAME]"
+version: "1.1"
 ---
 
 # vault-backup
 
-A backup is not evidence until it restores. This skill creates one, rehearses
-the recovery **somewhere that is not the vault**, and reports what the
+A backup is not evidence until it restores. Create one, verify its manifest,
+rehearse the restore **on a copy of the vault**, compare, and report what the
 rehearsal proved and what it did not.
 
-## Usage
+Version 1.1. The previous definition remains next to this one as `SKILL-v1.0.md`.
+
+## Hard rules
+
+- **Never run `vault_restore` against the vault in use.** It always restores
+  into the vault `VAULT_ROOT` resolves to and replaces its content; it has no
+  destination flag. Rehearse only with `VAULT_ROOT` pointing at a copy.
+- `--verify` takes the **name** of an existing backup; it does not create one.
+- Do not claim a backup works until the rehearsal ran and the comparison
+  passed. An untested backup is a stated risk, not a success.
+
+## Prerequisites
+
+- An initialized vault (`VAULT_ROOT` set) and the product installed (`vault --version`).
+- Free disk space for one more copy of the vault (the rehearsal copy).
+
+## When not to use it
+
+- To recover a single note: use `vault run vault_undo --list <path>`, then
+  `vault run vault_undo --restore <path>`.
+- To undo the last operations of the vault's git history: `vault run vault_undo --commits`.
+
+## Steps
 
 ```bash
-# Create a backup with a recognisable label
+# 1. Create the backup with a label that says why (a date alone ages without meaning)
 vault run vault_backup --label pre-mantenimiento
 
-# Create it and verify the manifest (the tool's own check)
-vault run vault_backup --verify
-
-# Inspect what exists before choosing one
+# 2. List the backups and take the exact name of the one just created
 vault run vault_backup_list --limit 10
 
-# Rehearse the recovery in an ISOLATED destination (never the vault itself)
-vault run vault_restore --confirm <destino-aislado>
+# 3. Verify that backup's manifest (integrity of the copy, not yet a restore)
+vault run vault_backup --verify <BACKUP_NAME>
+
+# 4. Rehearse on a disposable COPY: backups live in <vault>/vault-backups/,
+#    so copying the vault folder carries them along
+ENSAYO="$(mktemp -d)/vault-ensayo"
+cp -r "$VAULT_ROOT" "$ENSAYO"
+VAULT_ROOT="$ENSAYO" vault run vault_restore --backup_name <BACKUP_NAME> --confirm true
+
+# 5. Compare the restored copy with the vault: notes only, not system state
+#    (dot files such as .tool-trace.json record the restore itself)
+diff -r --exclude=vault-backups --exclude='.*' "$VAULT_ROOT" "$ENSAYO"
 ```
 
-`vault run vault_backup …` is the installed CLI (the wheel); the restore tool
-has its own arguments in `scripts/README.md`. From a checkout of the
-standard, `python scripts/vault_backup.py …` takes the same arguments as the
-CLI.
+## Decision gates
+
+| Situation | Action |
+|---|---|
+| `--verify` reports a broken manifest | Stop: the backup is not usable; create a new one and say so |
+| No space or no writable temp dir for the copy | Do not rehearse on the vault itself; report the backup as untested |
+| `diff` shows differences in notes | Report each differing file; the backup does not restore those as they were |
+| `diff` shows only derived files (indexes, graph) | Expected after a restore; say they are regenerated with `vault run vault_reindex` |
 
 ## Arguments
 
 | Argument | Description |
 |---|---|
 | `--label` | A label for the backup, so the next reader knows why it exists |
-| `--verify` | Verify the backup manifest as part of the run |
+| `--verify` | Name of an existing backup whose manifest to verify (it does not create a backup) |
 
-## Procedure
+## Output contract
 
-1. **Backup** with a label that says why: `pre-mantenimiento`,
-   `antes-de-mover`, `antes-de-release`. A date alone ages without meaning.
-2. **List** the backups and pick one — never the newest by faith: check its
-   label and date.
-3. **Rehearse** the recovery into a **disposable destination**, never the
-   vault in use. The restore mutates what it is pointed at.
-4. **Compare**: the rehearsal destination has the same notes and the same
-   content for the files you check. A note count is a start, not a proof —
-   compare content, and say which files you compared.
-5. **Report the limits**: what the rehearsal proved, what it did not (other
-   volumes, the running MCP server, the git history of the vault), and where
-   the backup lives.
-
-## Execution evidence
-
-In the result to the user, report: this skill and version, the backup label
-and path, the rehearsal destination, what was compared and the outcome. **Do
-not claim a backup works until the rehearsal ran.** If the rehearsal could not
-run (no space, no isolated destination, permissions), say so — an untested
-backup is a stated risk, not a success.
+Report: this skill and version; the backup name and its path under
+`vault-backups/`; the `--verify` result; the rehearsal copy path; what was
+compared (files or the `diff` scope) and the outcome; and the limits — what the
+rehearsal did not prove (other volumes, the running MCP server, the vault's git
+history).
 
 ## Exit codes
 
 | Code | Meaning |
 |---|---|
-| 0 | Backup created — and, if rehearsed, the recovery compared |
-| 1 | Backup or rehearsal failed; the report says which step and why |
+| 0 | Backup created, manifest verified and, if rehearsed, the restore compared |
+| 1 | A step failed; the report says which one and why |
+| 2 | Argument error (argparse) |
