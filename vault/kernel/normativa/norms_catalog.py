@@ -280,6 +280,10 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     _desde_paquete("AP-74"),
     _desde_paquete("AP-75"),
     _desde_paquete("AP-76"),
+    # ── Anti-patrón AP-77 — conservación vencida sin disposición (ISO 15489, 2026-11-18)
+    _desde_paquete("AP-77"),
+    # ── Anti-patrón AP-78 — evaluación de impacto por afectado (ISO/IEC 42005, 2026-11-18)
+    _desde_paquete("AP-78"),
     # ── Patrón PAT-6 ───────────────────────────────────────────────────────────
     _desde_paquete("PAT-6"),
     # ── Patrón PAT-7 — desacuerdo declarado (LLM Wiki, 2026-11-16) ─────────────
@@ -369,14 +373,30 @@ CADENCIA_POR_ENFORCEMENT: Dict[str, int] = {
 }
 
 
-def estado_de_revision(bruto: Any, cadencia: Any, hoy: _date) -> Dict[str, Any]:
+def hoy_utc() -> _date:
+    """«Hoy» para leer fechas de revisión, en UTC: el mismo reloj que las escribe.
+
+    Las escrituras sellan con `vault_lib.utcnow` (ISO 8601 con `Z`). Hasta el
+    2026-11-18 los lectores usaban la fecha local del sistema: entre las
+    18:00 y la medianoche en UTC-6 una revisión recién hecha era «posterior a
+    hoy» y salía como ilegible. Un solo dueño para todos los lectores.
+    """
+    from datetime import datetime, timezone
+
+    return datetime.now(timezone.utc).date()
+
+
+def estado_de_revision(bruto: Any, cadencia: Any, hoy: _date,
+                       campo: str = "revisado_en") -> Dict[str, Any]:
     """La aritmética de vencimiento de una revisión, para normas y para notas.
 
     `{"problema": motivo}` si el dato no se puede leer —cadencia que no es un
     entero positivo, `revisado_en` que no es una fecha AAAA-MM-DD o es
     posterior a `hoy`—; si no, `revisado_en`, `cadencia_dias`, `vence_en` y
     `vencida` (`revisado_en + cadencia_dias < hoy`). Un solo dueño: la usan
-    `gestion_de_normas` y `vault_drift_detect --mode antiguedad` (AP-57).
+    `gestion_de_normas`, `vault_drift_detect --mode antiguedad` (AP-57) y
+    `--mode conservacion` (AP-77), que mide un plazo desde otra fecha y pasa
+    en `campo` el nombre con que los motivos la citan.
     """
     if not (isinstance(cadencia, int) and not isinstance(cadencia, bool) and cadencia > 0):
         return {"problema": f"cadencia {cadencia!r} no es un número de días positivo"}
@@ -387,9 +407,9 @@ def estado_de_revision(bruto: Any, cadencia: Any, hoy: _date) -> Dict[str, Any]:
     except ValueError:
         revisado = None
     if revisado is None:
-        return {"problema": f"`revisado_en` debe ser una fecha AAAA-MM-DD, no {bruto!r}"}
+        return {"problema": f"`{campo}` debe ser una fecha AAAA-MM-DD, no {bruto!r}"}
     if revisado > hoy:
-        return {"problema": f"`revisado_en` {bruto} es posterior a hoy ({hoy.isoformat()})"}
+        return {"problema": f"`{campo}` {bruto} es posterior a hoy ({hoy.isoformat()})"}
     vence = revisado + _timedelta(days=cadencia)
     return {"revisado_en": bruto, "cadencia_dias": cadencia,
             "vence_en": vence.isoformat(), "vencida": vence < hoy}
@@ -405,7 +425,7 @@ def gestion_de_normas(hoy: Optional[_date] = None,
     derivable). Vencida = `revisado_en + cadencia_dias < hoy`: es trabajo
     pendiente, no una contradicción, y por eso se publica aparte.
     """
-    hoy = hoy or _date.today()
+    hoy = hoy or hoy_utc()
     normas: List[Dict[str, Any]] = []
     problemas: List[Dict[str, str]] = []
     vencidas: List[Dict[str, Any]] = []

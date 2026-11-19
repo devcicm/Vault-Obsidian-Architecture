@@ -456,10 +456,36 @@ pasada, el recuento `unverifiable`); y el ADR cerrado cuyo cuerpo cambió despu�
 primera versión cerrada en `.history/` (`rewritten`; sin versiones, `unverifiable`).
 Lo que no se puede verificar no se da por limpio.
 
+**`aiDecisionsWithoutPartyAssessment`, `aiRisksReviewOverdue` (AP-78, AP-76;
+2026-11-18).** Dos listas de trabajo de gobierno de IA, en solo lectura y sin peso: la
+decisión de `16_AI_Governance/` de impacto `critical`/`high` que ya dice a quién afecta
+(`impact_assessment: completa`) pero cuyo `evaluacion_por_afectado` no es `completa`
+(`missing`; ISO/IEC 42005), y el riesgo `risk_type: ai` no cerrado cuya revisión venció
+según `estado_de_revision` (`overdue`, con `owner` y `vence_en`; sin `revisado_en`,
+`without_review`; fecha ilegible, `unreadable`; ISO/IEC 23894).
+
 **La fila `linted`.** Solo la corrida que puede escribir en el vault —`--refresh-dq`,
 la que refresca `quality-index.json`— deja una fila `linted` en la bitácora de
 cambios, por el puerto `bitacora_cambios`; el envelope trae `change_log` o
 `change_log_error`. `vault_audit` sin esa opción sigue siendo de solo lectura.
+
+**`--procesos-iso` (ISO/IEC/IEEE 12207, ISO/IEC 33020, ISO/IEC 20000-1, ISO/IEC/IEEE 90003; 2026-11-18).**
+Informe en solo lectura de los registros de `vault/kernel/normativa/procesos_iso.py`:
+cada proceso de 12207 §6 con la tool que registra su evidencia o declarado `fuera`
+con su motivo; las cláusulas de 20000-1 §8 y las de ISO 9001 aplicadas al software
+(90003) con su ejecutor o su `hueco`; y el nivel de capacidad 0-5 (ISO/IEC 33020,
+sucesora de 15504/SPICE) por proceso, leído de los registros de evaluación de
+`19_Audits/` que declaran `process_capability:`. Gana el más reciente por
+`assessed_at`; uno inválido sale en `evaluaciones_invalidas` y no aporta nada. La
+evaluación la hacen evaluadores competentes: el vault guarda su conclusión. No se
+combina con `--project`, `--path` ni `--refresh-dq` (`CONFLICTING_ARGS`).
+
+```bash
+python vault_write.py --folder 19_Audits/runs --title "Evaluación de capacidad 2026" \
+  --agent qa --tags evaluacion --content @file:evaluacion.md \
+  --meta '{"process_capability": {"6.4.3": 2, "6.4.9": 3}, "assessment_method": "ISO/IEC 33020:2019", "assessor": "QA lead", "assessed_at": "2026-11-01"}'
+python vault_audit.py --procesos-iso
+```
 
 **El score sale del registro `PENALIZACIONES`, no de una fórmula escrita aquí.** Esta sección decía `100 - (vacías×2) - (sin_fm×3) - (broken_links×2) - (stale×1)` — cuatro términos de los veintidós que hay. Los pesos y los topes viven en el registro, agrupados por familia; copiarlos a la documentación es AP-05, y resumirlos mal es lo que ya pasó.
 
@@ -764,6 +790,20 @@ Hasta v41.3 este ejemplo usaba `--content`, que la tool no acepta (`allow_abbrev
 | `maintenance` | `08_Runbooks/maintenance/` |
 | `pipeline` | `08_Runbooks/pipeline/` |
 | `incident` | `08_Runbooks/incident/` |
+
+**`--bia` (ISO 22301:2019 §8.2.2, opcional).** El runbook que recupera una función
+crítica lleva su análisis de impacto: un objeto JSON con `critical_function`
+(obligatoria), `impact`, `rto`, `rpo` y `mtpd`, con duraciones `<n><min|m|h|d|w>`.
+El RTO no puede superar el MTPD. Se escribe como `bia_*` + `iso_bcm` en el
+frontmatter y una tabla en el cuerpo; sin `--bia`, la nota sale igual que antes.
+Un BIA inválido sale `INVALID_VALUE` y no escribe nada. Aprobar el plan de
+continuidad sigue siendo de la organización.
+
+```bash
+python vault_runbook_save.py --project mi-api --title "Restaurar checkout" --category incident \
+  --trigger "Checkout caído" --steps '[{"step":"Restaurar la base"}]' \
+  --bia '{"critical_function":"checkout","impact":"ventas perdidas","rto":"4h","rpo":"15min","mtpd":"1d"}'
+```
 
 ---
 
@@ -1261,6 +1301,12 @@ python vault_drift_detect.py --project mi-api --mode vigencia
 python vault_drift_detect.py --project "mi-proyecto" --mode antiguedad --cadencia-dias 90
 ```
 
+`--mode conservacion` (ISO 15489, AP-77) lista en `pendientes` los registros cuyo plazo de conservación venció sin disposición. El calendario es `vault_registry.conservacion_de`: por clase de documento de la sección (`CONSERVACION_POR_CLASE`, con excepciones en `CONSERVACION_POR_SECCION`), un plazo en días o `permanente` y una disposición entre `conservar`, `revisar` y `archivar`. La edad corre desde la última actividad —la más reciente de `revisado_en`, `updatedAt` y `createdAt`— con la misma aritmética (`estado_de_revision`). Un registro `permanente` cuenta en `conservados`; uno en `status: archived`, en `dispuestos`; sin fecha, en `sin_fecha`; en una sección sin clase, en `sin_calendario`. Es una lista de trabajo: `ok` no cae y la tool nunca borra ni mueve un registro; revisar es poner `revisado_en`, archivar es pasar el `status` a `archived`, y lo decide una persona.
+
+```bash
+python vault_drift_detect.py --project "mi-proyecto" --mode conservacion
+```
+
 ---
 
 ## Grupo 18 — Flujos
@@ -1329,6 +1375,15 @@ Hasta v41.3 este ejemplo usaba `--content`, `--priority high`/`medium` y `--type
 
 `--req-id REQ-NNN` (D-06) actualiza ese requisito aunque cambie el título: la identidad es el id, no el slug del título, y un id inexistente falla en vez de crear. El correlativo es monótono (`counters` en `.requirements-index.json`): podar una entrada no hace que su id se reutilice.
 
+`--quality_characteristics` (ISO/IEC 25010:2023) y `--quality_in_use` (ISO/IEC 25019:2023) son opcionales: lista separada por comas de características (`security`) o `característica.subcaracterística` (`security.confidentiality`), validada contra `vault/kernel/normativa/calidad_iso.py`. Los nombres de 2011 (`usability`, `portability`, `maturity`) y la redacción en español (`usabilidad`, `portabilidad`, `efectividad`) se aceptan y se guardan con el nombre 2023. Un término desconocido falla con `INVALID_VALUE` sin escribir; sin las opciones la nota sale igual que antes. La cobertura por característica la da `vault_quality_check --iso-quality`.
+
+```bash
+python vault_requirement_save.py --project mi-api --title "REQ-NF-002 Cifrado en reposo" \
+  --type non-functional --priority must-have \
+  --description "Los datos personales se cifran en reposo con AES-256." \
+  --quality_characteristics security.confidentiality --quality_in_use freedom_from_risk
+```
+
 ---
 
 ## Grupo 20 — Tests
@@ -1358,6 +1413,24 @@ Hasta v41.3 este ejemplo usaba `--content` y `--status passed`/`pending`, que la
 | `performance` | `15_Tests/performance/` |
 | `security` | `15_Tests/security/` |
 | `acceptance` | `15_Tests/acceptance/` |
+
+Opcionales (ISO/IEC/IEEE 29119 y SQuaRE), validados contra `vault/kernel/normativa/calidad_iso.py` y escritos solo si se dan:
+
+| Opción | Vocabulario |
+|---|---|
+| `--test_level` | 29119-1: `component`, `integration`, `system`, `system_integration`, `acceptance` (`unit` → `component`) |
+| `--test_kinds` | 29119-1, tipos de prueba: `functional`, `performance`, `security`, `usability`, `reliability`, … (se llama así porque `--test_type` ya es la carpeta) |
+| `--techniques` | 29119-4: `equivalence_partitioning`, `boundary_value_analysis`, `decision_table_testing`, `state_transition_testing`, `scenario_testing` (caso de uso), `statement_testing`, `branch_testing`, `error_guessing`, `exploratory_testing`, … |
+| `--quality_characteristics` | ISO/IEC 25010:2023, como en `vault_requirement_save` |
+| `--quality_in_use` | ISO/IEC 25019:2023, como en `vault_requirement_save` |
+
+Una nota sin `test_level` se lee por su carpeta (`unit` → `component`, `e2e` → `system`, `performance` → tipo `performance`). El recuento por nivel, tipo y técnica lo da `vault_quality_check --iso-quality`.
+
+```bash
+python vault_test_save.py --project mi-api --title "TC-002 Limites del importe" \
+  --test_type unit --status pass --description "Importes en el borde del rango" \
+  --techniques "equivalence_partitioning,boundary_value_analysis" --related_requirement REQ-001
+```
 
 ### `vault_qa_save.py`
 Registra planes de test, métricas, reportes y estrategias QA en `21_QA/` (ISO 9001, ISO 29119, ISO 25010).
@@ -1420,6 +1493,7 @@ python vault_ai_decision.py --project mi-api \
 | `--risks` | Array JSON de riesgos identificados |
 | `--impact_level` | `low \| medium \| high \| critical` (por defecto `medium`) |
 | `--affected` | Array JSON de a quién afecta. Sin él, `high` y `critical` quedan con `impact_assessment: pendiente` |
+| `--assessment` | Array JSON con la evaluación completa de ISO/IEC 42005, un objeto por afectado: `{"affected", "likelihood", "impact", "mitigation"}`, con probabilidad e impacto enteros 1–5 en las escalas de `vault_risk_save`. Una entrada mal formada se rechaza sin escribir (`INVALID_LIKELIHOOD`, `INVALID_IMPACT`, `INVALID_VALUE`). Escribe la tabla en «Evaluacion de Impacto» y `evaluacion_por_afectado: completa`, o `parcial` si un afectado de `--affected` no tiene entrada (lo nombra `hint`). Sin la opción, la nota no cambia (AP-78) |
 | `--reversible` / `--no-reversible` | Si se puede revertir (por defecto sí) |
 | `--human_approved` | Flag: una persona la revisó y aprobó; la nota nace `approved` en vez de `draft` |
 | `--related_code` | Ficheros relacionados, separados por comas |
@@ -1778,6 +1852,12 @@ python vault_quality_check.py --min-score 0.7    # falla si score < 0.7
 python vault_quality_check.py --path 01_Projects/mi-api
 ```
 
+`--iso-quality` es una vista de solo lectura sobre lo que requisitos y pruebas declaran del software que documentan: por cada característica de ISO/IEC 25010:2023 y 25019:2023, los requisitos que la declaran, las pruebas que los cubren (por `related_requirement` o por declararla) y los requisitos sin prueba (`coverage`, la medida de ISO/IEC 25023); los registros de cada paso de evaluación de ISO/IEC 25040; y las pruebas por nivel, tipo y técnica de ISO/IEC/IEEE 29119. Lista en `invalid_declarations` los términos escritos a mano fuera del modelo. No escribe nada.
+
+```bash
+python vault_quality_check.py --iso-quality
+```
+
 ### `vault_fundamentals.py`
 Registro canónico de los 8 Fundamentos de Datos (F1–F8): INTEGRIDAD, CONSISTENCIA, COMPLETITUD, EXACTITUD, VALIDEZ, ACTUALIDAD, AUTENTICIDAD, NO_REPUDIO. Cada tool está mapeada a uno o más fundamentos.
 
@@ -1899,6 +1979,16 @@ python vault_release_save.py --project my-api --version v1.2.0 --type minor \
 
 `rollback_steps` no es opcional en la práctica: una release sin vuelta atrás documentada es una release sin plan de contingencia.
 
+La release es el registro del cambio (ISO/IEC 20000-1 §8.5.1): `--change_class`
+(`standard|normal|emergency`) y `--change_approver` son opcionales y, si se dan,
+salen en el frontmatter, en la tabla de estado y en el envelope. Sin ellos la
+nota no cambia.
+
+```bash
+python vault_release_save.py --project my-api --version v1.2.1 --type hotfix \
+  --change_class emergency --change_approver "CAB semanal"
+```
+
 ---
 
 ## Grupo 30 — Riesgos/Calidad
@@ -1919,6 +2009,25 @@ python vault_risk_save.py --project my-api \
   --risk_type security --likelihood 3 --impact 5 \
   --treatment mitigate \
   --controls '["Parametrized queries","Input validation","WAF"]'
+```
+
+**Riesgos de IA (ISO/IEC 23894).** `--risk_type ai` registra un riesgo de un sistema de
+IA —sesgo, deriva, salida no fiable, uso indebido— con su ciclo completo en la nota:
+amenaza y vulnerabilidad (identificar), probabilidad × impacto (evaluar), tratamiento y
+controles (tratar) y el historial de revisiones (revisar). Un riesgo `ai` lleva siempre
+`revisado_en` y `cadencia_dias` (90 días salvo `--review_every_days`), el mismo contrato
+de revisión que lee AP-76; cualquier otro tipo lo lleva solo si se pasa
+`--review_every_days`, y sin él la nota se escribe como antes. Volver a guardar el riesgo
+es revisarlo: `revisado_en` pasa a hoy y el historial conserva sus filas y añade una
+«Riesgo revisado» con la nueva evaluación. El envelope trae `review` (`revisado_en`,
+`cadencia_dias`, `vence_en`). `vault_audit` publica las revisiones vencidas en
+`aiRisksReviewOverdue`.
+
+```bash
+python vault_risk_save.py --project my-api \
+  --title "Deriva del modelo de clasificación" \
+  --risk_type ai --likelihood 3 --impact 4 \
+  --treatment mitigate --review_every_days 60
 ```
 
 ---
@@ -2278,9 +2387,12 @@ La arquitectura de un proyecto vista en una fecha o versión, como el modo «ver
 python vault_arquitectura_en.py --fecha 2026-05-03
 python vault_arquitectura_en.py --version v1.5 --project demo
 python vault_arquitectura_en.py --desde v1.0 --hasta v1.5 --project demo
+python vault_arquitectura_en.py --intereses --project demo
 ```
 
 Lee solo lo que el vault deja escrito, sin base de datos ni git. El texto en la fecha D es la primera versión de `.history/` guardada después de D, o el fichero actual; la fecha de esa versión sale de su **nombre**, nunca del mtime, que una copia del vault reescribe entera. Una nota rige si existía (`createdAt`, o `vigente_desde:` en modo versión, que manda) y no estaba retirada: un status que desciende de `deprecated` en `STATUS_TRANSITIONS`, o una sustituta (`superseded_by`, resuelta como wikilink) que ya existía. El régimen del status separa `propuesta` de `vigente`. La fecha de una versión sale de su nota de release —un frontmatter con `version` y `deploy_at`—. Qué cuenta como arquitectura se publica en `criterio`. Lo que no se puede decidir sale en `indeterminadas` con su motivo, y un frontmatter roto en `ilegibles`: no se adivina. No escribe notas y no acepta `--root`; un error, como en toda tool, deja su entrada en `00_System/.tool-trace.json`.
+
+`--intereses` (ISO/IEC/IEEE 42010) mide los ADR no retirados contra el registro de `vault.kernel.contenido` (`INTERESES_DE_ARQUITECTURA`, `PUNTOS_DE_VISTA`, donde cada punto de vista enmarca unos intereses): `adrs_sin_intereses`, `intereses_sin_adr`, `puntos_de_vista_usados`, `adrs_sin_punto_de_vista`, `fuera_del_punto_de_vista` (un interés que su punto de vista no enmarca) y `fuera_de_vocabulario` (valores escritos a mano). Un ADR los declara con `vault_write --adr --meta '{"concerns": ["seguridad"], "viewpoint": "datos"}'`; un valor fuera del registro se rechaza con `INVALID_INPUT` en `03_Decisions/`. Es una lista de trabajo: `ok` no cae. No se combina con `--fecha`, `--version` ni el rango (`CONFLICTING_ARGS`).
 
 ---
 
@@ -2506,7 +2618,7 @@ VAULT_MCP_PERFIL=agente node mcp/nodejs/vault-mcp-server.mjs
 
 ### `vault_norms.py`
 
-Registro canónico de las 94 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
+Registro canónico de las 96 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
 
 **Desde v40.26 son tres ficheros y una sola tool.** Eran 5.158 líneas que hacían de catálogo, de motor y de fachada a la vez, con el 60% del fichero ocupado por una constante. Ahora `vault_norms_catalog.py` tiene los datos —`NORM_CATALOG` y el vocabulario de estado, sin leer el vault, sin escribir nada y sin importar ninguna tool—, `vault_norms_engine.py` tiene el motor de `--audit`, el drift del marco y el heal de AP-46, y este módulo se queda con la fachada de datos, la CLI y la **reexportación** de todo lo que el repo consumía antes. Esa reexportación es el punto: la superficie externa real son siete símbolos y los tests usan cinco privados más, así que reexportarlos hace que **ningún llamador se toque** y el diff se lea como movimiento puro. Recortar de paso la superficie que usan los tests habría mezclado dos cambios y hecho imposible saber cuál rompió qué.
 

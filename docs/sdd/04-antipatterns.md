@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-76 más
-> las familias PAT, SP y CN. Por familia: AP 76, CN 5, PAT 9, SP 4.
-> Bilingual document. Full norm catalog: antipatterns AP-01..AP-76 plus the PAT,
-> SP and CN families. By family: AP 76, CN 5, PAT 9, SP 4.
+> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-78 más
+> las familias PAT, SP y CN. Por familia: AP 78, CN 5, PAT 9, SP 4.
+> Bilingual document. Full norm catalog: antipatterns AP-01..AP-78 plus the PAT,
+> SP and CN families. By family: AP 78, CN 5, PAT 9, SP 4.
 
 ---
 
 ## ES
 
-Total de normas registradas: 94 (AP 76, CN 5, PAT 9, SP 4)
+Total de normas registradas: 96 (AP 78, CN 5, PAT 9, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -899,6 +899,28 @@ Una nota que declara cuándo se revisó (`revisado_en`) lleva más tiempo sin re
 
 **Prevención:** `vault_drift_detect --mode antiguedad` publica la lista de trabajo (`vencidas`, con su responsable) sin poner `ok` en falso. Revisar es releer la nota contra lo que describe y poner `revisado_en` con la fecha del día; la cadencia se declara en `cadencia_dias`.
 
+### AP-77: Registro con la conservación vencida sin disposición
+
+- **Severidad:** low
+- **Enforcement:** audit
+- **Detectado por:** vault_drift_detect
+
+Un registro lleva más tiempo sin actividad que el plazo de conservación de su clase de documento y nadie ha decidido su disposición (ISO 15489-1:2016). Un registro que se acumula sin calendario deja de distinguirse de la evidencia vigente: el agente consulta igual lo que ya cumplió su plazo que lo que sigue rigiendo.
+
+**Prevención:** `vault_drift_detect --mode conservacion` publica la lista de trabajo (`pendientes`, con su disposición y su responsable) sin poner `ok` en falso. Revisar es releer el registro y poner `revisado_en` con la fecha del día; archivar es pasar su `status` a `archived`. La tool nunca borra ni mueve un registro: la disposición es un acto de la organización y destruir no es una de las disposiciones del estándar.
+
+### AP-78: Decisión de IA de impacto alto sin evaluación por afectado
+
+- **Severidad:** low
+- **Enforcement:** audit
+- **Detectado por:** vault_audit
+
+ISO/IEC 42005 no se queda en a quién afecta una decisión de IA: la evaluación completa dice, por cada afectado, cuán probable es el daño, cuán grave y cómo se mitiga. AP-65 vigila lo primero; una decisión de impacto alto que nombra a sus afectados y nada más pasa AP-65 con la evaluación a medias. Desde esta norma `vault_ai_decision --assessment` registra probabilidad y severidad en las escalas 1-5 de `vault_risk_save` y la mitigación de cada afectado, y declara `evaluacion_por_afectado` (`completa` o `parcial`).
+
+**Prevención:** Al registrar una decisión de impacto alto, pasar `--assessment` con una entrada por afectado: `vault_ai_decision ... --impact_level high --assessment '[{"affected": "usuarios finales", "likelihood": 3, "impact": 4, "mitigation": "refresco silencioso del token"}]'`. Una entrada mal formada se rechaza sin escribir nada (`INVALID_LIKELIHOOD`, `INVALID_IMPACT`, `INVALID_VALUE`); un afectado sin entrada deja la evaluación `parcial` y el envelope lo nombra en `hint`. `vault_audit` publica la lista de trabajo en `aiDecisionsWithoutPartyAssessment`.
+
+Límites declarados: la norma sabe que cada afectado tiene su probabilidad, su severidad y su mitigación, no que estén bien estimadas; la evaluación del sistema de IA en su conjunto, a lo largo de su ciclo de vida, es de la organización.
+
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
 - **Severidad:** high
@@ -1083,7 +1105,7 @@ El transporte HTTP/SSE del servidor MCP acepta sesiones sin token, responde con 
 
 ## EN
 
-Total registered norms: 94 (AP 76, CN 5, PAT 9, SP 4)
+Total registered norms: 96 (AP 78, CN 5, PAT 9, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -1972,6 +1994,28 @@ Un ADR aprobado se edita en su cuerpo en vez de sustituirse. Quien consultó la 
 Una nota que declara cuándo se revisó (`revisado_en`) lleva más tiempo sin releerse que su cadencia. Torti Code: la documentación desactualizada es peor que ninguna, y lo que la evita es un dueño, una fecha de revisión y una herramienta que avise. Vencer no es estar mal: es que nadie ha comprobado que siga siendo cierta.
 
 **Prevention:** `vault_drift_detect --mode antiguedad` publica la lista de trabajo (`vencidas`, con su responsable) sin poner `ok` en falso. Revisar es releer la nota contra lo que describe y poner `revisado_en` con la fecha del día; la cadencia se declara en `cadencia_dias`.
+
+### AP-77: Registro con la conservación vencida sin disposición
+
+- **Severity:** low
+- **Enforcement:** audit
+- **Detected by:** vault_drift_detect
+
+Un registro lleva más tiempo sin actividad que el plazo de conservación de su clase de documento y nadie ha decidido su disposición (ISO 15489-1:2016). Un registro que se acumula sin calendario deja de distinguirse de la evidencia vigente: el agente consulta igual lo que ya cumplió su plazo que lo que sigue rigiendo.
+
+**Prevention:** `vault_drift_detect --mode conservacion` publica la lista de trabajo (`pendientes`, con su disposición y su responsable) sin poner `ok` en falso. Revisar es releer el registro y poner `revisado_en` con la fecha del día; archivar es pasar su `status` a `archived`. La tool nunca borra ni mueve un registro: la disposición es un acto de la organización y destruir no es una de las disposiciones del estándar.
+
+### AP-78: Decisión de IA de impacto alto sin evaluación por afectado
+
+- **Severity:** low
+- **Enforcement:** audit
+- **Detected by:** vault_audit
+
+ISO/IEC 42005 no se queda en a quién afecta una decisión de IA: la evaluación completa dice, por cada afectado, cuán probable es el daño, cuán grave y cómo se mitiga. AP-65 vigila lo primero; una decisión de impacto alto que nombra a sus afectados y nada más pasa AP-65 con la evaluación a medias. Desde esta norma `vault_ai_decision --assessment` registra probabilidad y severidad en las escalas 1-5 de `vault_risk_save` y la mitigación de cada afectado, y declara `evaluacion_por_afectado` (`completa` o `parcial`).
+
+**Prevention:** Al registrar una decisión de impacto alto, pasar `--assessment` con una entrada por afectado: `vault_ai_decision ... --impact_level high --assessment '[{"affected": "usuarios finales", "likelihood": 3, "impact": 4, "mitigation": "refresco silencioso del token"}]'`. Una entrada mal formada se rechaza sin escribir nada (`INVALID_LIKELIHOOD`, `INVALID_IMPACT`, `INVALID_VALUE`); un afectado sin entrada deja la evaluación `parcial` y el envelope lo nombra en `hint`. `vault_audit` publica la lista de trabajo en `aiDecisionsWithoutPartyAssessment`.
+
+Límites declarados: la norma sabe que cada afectado tiene su probabilidad, su severidad y su mitigación, no que estén bien estimadas; la evaluación del sistema de IA en su conjunto, a lo largo de su ciclo de vida, es de la organización.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 

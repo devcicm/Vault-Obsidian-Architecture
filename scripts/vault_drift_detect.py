@@ -43,6 +43,9 @@ Usage:
     # Notas cuyo `revisado_en` más su cadencia ya pasó (lista de trabajo)
     python vault_drift_detect.py --project "ans" --mode antiguedad --cadencia-dias 180
 
+    # AP-77 (ISO 15489): registros con el plazo de conservacion vencido; nunca borra
+    python vault_drift_detect.py --project "ans" --mode conservacion
+
 Un snapshot sobre git anota `repo.synced_commit` en la ficha del proyecto: es
 el punto hasta el que el vault documenta el código, el que lee
 `vault_project --sync-status`.
@@ -65,7 +68,7 @@ import sys
 from vault_errors import emit_error, emit_fallo, wrap_main, proyecto_registrado
 from vault_contrato_nota import es_mapa_de_versiones
 from vault_lib import parse_frontmatter, utcnow
-from vault_norms_catalog import normalize_status
+from vault_norms_catalog import hoy_utc, normalize_status
 from vault.kernel import procesos_git
 from datetime import datetime, timezone
 
@@ -983,7 +986,7 @@ def vault_drift_antiguedad(cadencia_dias: Optional[int] = None, hoy=None,
     except FalloDeDominio as fallo:
         return emit_fallo("vault_drift_detect", fallo)
     raiz = _raiz()
-    hoy = hoy or _date.today()
+    hoy = hoy or hoy_utc()
     por_defecto = CADENCIA_DE_NOTA_POR_DEFECTO if cadencia_dias is None else cadencia_dias
     es_del = _proyectos.pertenencia_en(raiz, project) if project else (lambda _p: True)
     vencidas: List[Dict[str, Any]] = []
@@ -1029,6 +1032,149 @@ def vault_drift_antiguedad(cadencia_dias: Optional[int] = None, hoy=None,
         "ilegibles": ilegibles,
         "hint": ("Revisar es releer la nota contra lo que describe y poner `revisado_en` "
                  "con la fecha del día; vencer no es fallar."),
+    }
+
+
+#: Where the age of a record is read from. The latest of them is the last time
+#: someone touched or reviewed the record.
+CAMPOS_DE_ACTIVIDAD = ("revisado_en", "updatedAt", "createdAt")
+
+
+def _fecha_de_campo(valor: Any):
+    """A frontmatter date or timestamp as a UTC `date`; None if unreadable."""
+    from datetime import date as _date
+
+    if isinstance(valor, datetime):
+        return _en_utc(valor).date()
+    if isinstance(valor, _date):
+        return valor
+    if not isinstance(valor, str):
+        return None
+    texto = valor.strip()
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", texto):
+        try:
+            return _date.fromisoformat(texto)
+        except ValueError:
+            return None
+    instante = _parse_iso(texto)
+    return instante.date() if instante else None
+
+
+def _ultima_actividad(fm: Dict[str, Any]) -> Tuple[Optional[Any], Optional[str], Optional[str]]:
+    """`(date, field, problem)`: the latest activity date of a record."""
+    mejor = None
+    for campo in CAMPOS_DE_ACTIVIDAD:
+        valor = fm.get(campo)
+        if valor in (None, ""):
+            continue
+        fecha = _fecha_de_campo(valor)
+        if fecha is None:
+            return None, campo, f"`{campo}` no es una fecha legible: {valor!r}"
+        if mejor is None or fecha > mejor[0]:
+            mejor = (fecha, campo)
+    return (mejor[0], mejor[1], None) if mejor else (None, None, None)
+
+
+def vault_drift_conservacion(hoy=None, project: Optional[str] = None) -> Dict[str, Any]:
+    """AP-77 (ISO 15489): records past their retention with a disposition pending.
+
+    The schedule is `vault_registry.conservacion_de` (per section, from its
+    document class). A record's age runs from its latest activity
+    (`CAMPOS_DE_ACTIVIDAD`: a review or an edit restarts it), and the
+    arithmetic is the norms' own, `vault_norms_catalog.estado_de_revision`
+    (AP-57). `conservar`/`permanente` never expires; a record already
+    `archived` has had its disposition applied. Anything else past its
+    retention is work: `revisar` asks a person to reread it and set
+    `revisado_en`, `archivar` asks to move its status to `archived`. The
+    product never deletes or moves a record (no-derogation): the disposition
+    is the organization's act, and the list never turns `ok` false. Read only.
+    """
+    from datetime import date as _date
+
+    from vault.kernel.fallos import FalloDeDominio
+    from vault_norms_catalog import estado_de_revision
+    from vault_registry import (DISPOSICIONES, PLAZO_PERMANENTE, SCAFFOLD_TYPE,
+                                conservacion_de)
+
+    try:
+        secciones = _repo().ctx.secciones.ordenadas()
+    except FalloDeDominio as fallo:
+        return emit_fallo("vault_drift_detect", fallo)
+    raiz = _raiz()
+    hoy = hoy or hoy_utc()
+    es_del = _proyectos.pertenencia_en(raiz, project) if project else (lambda _p: True)
+    pendientes: List[Dict[str, Any]] = []
+    ilegibles: List[Dict[str, Any]] = []
+    calendario: Dict[str, Any] = {}
+    cuenta = {"medidos": 0, "sin_fecha": 0, "sin_calendario": 0, "conservados": 0,
+              "dispuestos": 0}
+    for nota in sorted(notas_en_disco(raiz, secciones, incluir_indices=False)):
+        rel = nota.relative_to(raiz).as_posix()
+        if is_snapshot_path(rel):
+            continue
+        try:
+            texto = nota.read_text(encoding="utf-8-sig")
+        except (OSError, UnicodeDecodeError):
+            ilegibles.append({"path": rel, "problema": "la nota no se puede leer"})
+            continue
+        if es_documentacion_del_estandar(rel, texto):
+            continue
+        fm = parse_frontmatter(texto)
+        if not es_del(fm.get("project")):
+            continue
+        if str(fm.get("type") or "").strip().lower() == SCAFFOLD_TYPE:
+            continue
+        seccion = rel.split("/", 1)[0]
+        regla = conservacion_de(seccion)
+        if regla is None:
+            cuenta["sin_calendario"] += 1
+            continue
+        calendario[seccion] = regla
+        if regla["plazo_dias"] == PLAZO_PERMANENTE:
+            cuenta["conservados"] += 1
+            continue
+        if normalize_status(fm.get("status"))[0] == "archived":
+            cuenta["dispuestos"] += 1
+            continue
+        fecha, campo, problema = _ultima_actividad(fm)
+        if problema:
+            ilegibles.append({"path": rel, "problema": problema})
+            continue
+        if fecha is None:
+            cuenta["sin_fecha"] += 1
+            continue
+        cuenta["medidos"] += 1
+        estado = estado_de_revision(fecha.isoformat(), regla["plazo_dias"], hoy, campo=campo)
+        if "problema" in estado:
+            ilegibles.append({"path": rel, "problema": estado["problema"]})
+        elif estado["vencida"]:
+            pendientes.append({
+                "path": rel, "seccion": seccion, "clase": regla["clase"],
+                "disposicion": regla["disposicion"], "plazo_dias": regla["plazo_dias"],
+                "ultima_actividad": fecha.isoformat(), "campo": campo,
+                "vence_en": estado["vence_en"], "responsable": fm.get("responsable"),
+            })
+    # AP-77: a record past its retention is a disposition to decide, not a
+    # failure, and the product never applies it by deleting anything.
+    return {
+        "ok": True,
+        "mode": "conservacion",
+        "norm": "AP-77",
+        "iso": "ISO 15489-1:2016",
+        "hoy": hoy.isoformat(),
+        "disposiciones": dict(DISPOSICIONES),
+        "calendario": dict(sorted(calendario.items())),
+        "registros_medidos": cuenta["medidos"],
+        "sin_fecha": cuenta["sin_fecha"],
+        "sin_calendario": cuenta["sin_calendario"],
+        "conservados": cuenta["conservados"],
+        "dispuestos": cuenta["dispuestos"],
+        "pendientes_total": len(pendientes),
+        "pendientes": pendientes,
+        "ilegibles": ilegibles,
+        "hint": ("La disposición la decide y la aplica una persona: `revisar` es releer el "
+                 "registro y poner `revisado_en` con la fecha del día; `archivar` es pasar "
+                 "su `status` a `archived`. Esta lista nunca borra ni mueve nada."),
     }
 
 
@@ -1442,11 +1588,13 @@ Notas:
 
     parser.add_argument(
         "--mode",
-        choices=["snapshot", "status", "report", "vigencia", "antiguedad"],
+        choices=["snapshot", "status", "report", "vigencia", "antiguedad", "conservacion"],
         default="report",
         help="snapshot: save baseline | status: list changes | report: changes + vault coverage"
         " | vigencia: notas con `files:` cuyo codigo cambio despues de su updatedAt (AP-08)"
-        " | antiguedad: notas del proyecto cuyo `revisado_en` mas su cadencia ya paso (no exige --path)",
+        " | antiguedad: notas del proyecto cuyo `revisado_en` mas su cadencia ya paso (no exige --path)"
+        " | conservacion: registros cuyo plazo de conservacion (ISO 15489) vencio sin disposicion;"
+        " nunca borra ni mueve (no exige --path)",
     )
 
     parser.add_argument(
@@ -1469,6 +1617,10 @@ Notas:
                                 f"--cadencia-dias {args.cadencia_dias}: tiene que ser positivo")
         else:
             result = vault_drift_antiguedad(args.cadencia_dias, project=args.project)
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return 0 if result["ok"] else 1
+    if args.mode == "conservacion":
+        result = vault_drift_conservacion(project=args.project)
         print(json.dumps(result, indent=2, ensure_ascii=False))
         return 0 if result["ok"] else 1
     ruta = args.path

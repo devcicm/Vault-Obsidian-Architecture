@@ -888,6 +888,93 @@ def _detect_decisiones_reescritas(barrido: Optional[List[Path]] = None) -> Dict[
             "unverifiable": sin_historia}
 
 
+def _detect_impacto_sin_evaluacion_por_afectado(
+        barrido: Optional[List[Path]] = None) -> Dict[str, Any]:
+    """AP-78: high-impact AI decisions whose affected parties lack their assessment.
+
+    ISO/IEC 42005's full assessment records, per affected party, likelihood,
+    severity and mitigation (`vault_ai_decision --assessment`, which declares
+    `evaluacion_por_afectado`). This looks only at what AP-65 leaves: a
+    decision of the levels that require an assessment (the kernel's
+    `niveles_de_impacto_exigidos` on the `severidad` scale) that already says
+    who is affected (`impact_assessment: completa`) and whose per-party
+    assessment is absent or `parcial`. A decision that does not even say who
+    is affected is AP-65's, not counted twice. Read-only work list.
+    """
+    from vault.kernel.contenido import SECCION_DECISIONES_IA, niveles_de_impacto_exigidos
+    from vault_vocabulario import valores
+
+    exigidos = niveles_de_impacto_exigidos(valores("severidad"))
+    faltan: List[Dict[str, Any]] = []
+    medidas = 0
+    for nota in sorted(_barrido_md() if barrido is None else barrido):
+        rel = nota.relative_to(_raiz()).as_posix()
+        if _is_snapshot(nota) or rel.split("/", 1)[0] != SECCION_DECISIONES_IA:
+            continue
+        leida = _leer_nota_partida(nota)
+        if leida is None:
+            continue
+        fm = leida[0]
+        if (str(fm.get("impact_level") or "").strip().lower() not in exigidos
+                or str(fm.get("status") or "").strip().lower() == "template"
+                or str(fm.get("impact_assessment") or "").strip().lower() != "completa"):
+            continue
+        medidas += 1
+        estado = fm.get("evaluacion_por_afectado")
+        if str(estado or "").strip().lower() != "completa":
+            faltan.append({"path": rel, "norm": "AP-78", "impact_level": fm.get("impact_level"),
+                           "evaluacion_por_afectado": estado,
+                           "detail": "dice a quién afecta, pero no la probabilidad, la severidad "
+                                     "y la mitigación de cada afectado (ISO/IEC 42005): "
+                                     "vault_ai_decision --assessment"})
+    return {"norm": "AP-78", "checked": medidas, "missing": faltan}
+
+
+def _detect_riesgos_ia_vencidos(barrido: Optional[List[Path]] = None) -> Dict[str, Any]:
+    """ISO/IEC 23894: AI risks (`risk_type: ai`) whose review is overdue.
+
+    The AP-76 signal (a living note past its review cadence) scoped to the AI
+    risk register that `vault_risk_save --risk_type ai` writes. The
+    arithmetic has a single owner, `vault_norms_catalog.estado_de_revision`
+    (AP-57); a closed risk needs no review. An AI risk without `revisado_en`
+    is listed apart (`without_review`), never judged in date. Read-only:
+    overdue is work, not failure.
+    """
+    from datetime import date as _date
+
+    import vault_norms_catalog
+
+    hoy = vault_norms_catalog.hoy_utc()
+    vencidas: List[Dict[str, Any]] = []
+    sin_revision: List[str] = []
+    ilegibles: List[Dict[str, Any]] = []
+    medidas = 0
+    for nota in sorted(_barrido_md() if barrido is None else barrido):
+        if _is_snapshot(nota):
+            continue
+        leida = _leer_nota_partida(nota)
+        if leida is None:
+            continue
+        fm = leida[0]
+        if (str(fm.get("risk_type") or "").strip().lower() != "ai"
+                or str(fm.get("risk_state") or "").strip().lower() == "closed"
+                or str(fm.get("status") or "").strip().lower() == "template"):
+            continue
+        rel = nota.relative_to(_raiz()).as_posix()
+        medidas += 1
+        if fm.get("revisado_en") in (None, ""):
+            sin_revision.append(rel)
+            continue
+        estado = vault_norms_catalog.estado_de_revision(
+            fm.get("revisado_en"), fm.get("cadencia_dias"), hoy)
+        if "problema" in estado:
+            ilegibles.append({"path": rel, "problema": estado["problema"]})
+        elif estado["vencida"]:
+            vencidas.append({"path": rel, "norm": "AP-76", "owner": fm.get("owner"), **estado})
+    return {"norm": "AP-76", "checked": medidas, "overdue": vencidas,
+            "without_review": sin_revision, "unreadable": ilegibles}
+
+
 def _detect_stale(notes: List[Path]) -> List[Dict[str, Any]]:
     now = datetime.now(timezone.utc).replace(tzinfo=None)
 
@@ -2708,6 +2795,10 @@ def vault_audit(
     fuentes_alteradas = _detect_fuentes_alteradas(barrido)
     ingestas_sin_bitacora = _detect_ingestas_sin_bitacora(barrido)
     decisiones_reescritas = _detect_decisiones_reescritas(barrido)
+    # ISO/IEC 42005 and 23894: the AI governance records with their cycle
+    # unfinished. Informative work lists, without weight in the healthIndex.
+    impacto_sin_evaluacion = _detect_impacto_sin_evaluacion_por_afectado(barrido)
+    riesgos_ia_vencidos = _detect_riesgos_ia_vencidos(barrido)
 
     cn01_no_kebab, cn04_sin_titulo = _detect_convenciones_cn01_cn04(notas_del_vault)
 
@@ -2916,6 +3007,8 @@ def vault_audit(
         "archivedSourcesModified": fuentes_alteradas,
         "ingestsWithoutLog": ingestas_sin_bitacora,
         "closedDecisionsRewritten": decisiones_reescritas,
+        "aiDecisionsWithoutPartyAssessment": impacto_sin_evaluacion,
+        "aiRisksReviewOverdue": riesgos_ia_vencidos,
         "stats": {
             "total": len(notas_del_vault),
             "byFolder": dict(sorted(by_folder.items())),
@@ -3434,6 +3527,72 @@ def _audit_external_path(path: Path) -> Dict[str, Any]:
     }
 
 
+#: Section that holds assessment records (owner: this tool, `19_Audits/runs`).
+_SECCION_EVALUACIONES = "19_Audits"
+
+
+def informe_procesos_iso() -> Dict[str, Any]:
+    """Read-only report: 12207 process map, 20000 and 90003 clause maps, capability.
+
+    ISO/IEC 33020 capability levels come from assessment records in
+    `19_Audits/` that declare `process_capability: {<12207 process>: <0-5>}`
+    (written with `vault_write --folder 19_Audits/runs --meta ...`). The latest
+    record per process wins, by `assessed_at` and then path. A record whose
+    value does not validate is listed with its problems and contributes
+    nothing. The assessment itself is made by competent assessors (ISO/IEC
+    33002); this only records and validates what they concluded. Writes nothing.
+    """
+    from vault.kernel.normativa import procesos_iso as pi
+
+    raiz = _raiz()
+    seccion = raiz / _SECCION_EVALUACIONES
+    capacidad: Dict[str, Dict[str, Any]] = {}
+    invalidas: List[Dict[str, Any]] = []
+    registros = 0
+    notas = sorted(seccion.rglob("*.md")) if seccion.is_dir() else []
+    for nota in notas:
+        partida = _leer_nota_partida(nota)
+        if partida is None or pi.CAMPO_CAPACIDAD not in partida[0]:
+            continue
+        fm = partida[0]
+        rel = nota.relative_to(raiz).as_posix()
+        problemas = pi.validar_capacidad(fm[pi.CAMPO_CAPACIDAD])
+        if problemas:
+            invalidas.append({"path": rel, "problemas": problemas})
+            continue
+        registros += 1
+        orden = (str(fm.get("assessed_at") or ""), rel)
+        for proceso, nivel in fm[pi.CAMPO_CAPACIDAD].items():
+            previo = capacidad.get(str(proceso))
+            if previo and previo["_orden"] > orden:
+                continue
+            capacidad[str(proceso)] = {
+                "nivel": nivel,
+                "nombre": pi.nombre_de_nivel(nivel),
+                "fuente": rel,
+                **{c: str(fm[c]) for c in pi.CAMPOS_EVALUACION if fm.get(c) is not None},
+                "_orden": orden,
+            }
+    for registro in capacidad.values():
+        registro.pop("_orden")
+    datos = pi.informe(capacidad)
+    p = datos["procesos_12207"]
+    return {
+        "ok": True,
+        "mode": "procesos_iso",
+        **datos,
+        "evaluaciones": registros,
+        "evaluaciones_invalidas": invalidas,
+        "summary": (
+            f"12207: {p['con_registro']}/{p['total']} procesos con registro, "
+            f"{p['evaluados']} con nivel de capacidad · 20000: "
+            f"{datos['servicio_20000']['con_registro']}/{datos['servicio_20000']['total']} · "
+            f"90003: {datos['clausulas_90003']['con_registro']}/{datos['clausulas_90003']['total']} · "
+            f"{len(invalidas)} evaluaciones inválidas"
+        ),
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Vault Audit -- blueprint: vault-obsidian-architecture.md",
@@ -3449,6 +3608,8 @@ Ejemplos:
   python vault_audit.py --path "/ruta/a/mi-api/docs"
 
   python vault_audit.py --project "ans" --path "src/docs"
+
+  python vault_audit.py --procesos-iso
 
 
 
@@ -3474,7 +3635,27 @@ Notas:
         help="Refresh quality-index.json if stale and include dqHealth in output; this write-allowed run also logs one `linted` row in the change log",
     )
 
+    parser.add_argument(
+        "--procesos-iso",
+        action="store_true",
+        help="Read-only report: ISO/IEC/IEEE 12207 processes, ISO/IEC 20000-1 and 90003 "
+             "clauses with the tool that records each (or the declared gap), and the "
+             "ISO/IEC 33020 capability level per process from 19_Audits assessment records",
+    )
+
     args = parser.parse_args()
+
+    if args.procesos_iso:
+        otras = [f for f, v in (("--project", args.project), ("--path", args.path),
+                                ("--refresh-dq", args.refresh_dq)) if v]
+        if otras:
+            print(json.dumps(emit_error(
+                "vault_audit", "CONFLICTING_ARGS",
+                f"--procesos-iso es un informe de todo el vault y no se combina con {', '.join(otras)}",
+            ), ensure_ascii=False))
+            return 1
+        print(json.dumps(informe_procesos_iso(), indent=2, ensure_ascii=False))
+        return 0
 
     if args.path:
         ext_path = Path(args.path)

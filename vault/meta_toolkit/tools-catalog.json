@@ -77,6 +77,10 @@
           "affected": {
             "type": "string",
             "description": "JSON array of who the decision affects (ISO/IEC 42005): [\"end users - lose session on deploy\"]. Without it, a decision of the two highest impact levels is written with impact_assessment: pendiente (AP-65)"
+          },
+          "assessment": {
+            "type": "string",
+            "description": "JSON array, one object per affected party (ISO/IEC 42005): [{\"affected\": \"end users\", \"likelihood\": 3, \"impact\": 4, \"mitigation\": \"silent token refresh\"}]. likelihood and impact are integers 1-5 on the scales of vault_risk_save. Writes evaluacion_por_afectado: completa, or parcial when an affected party has no entry (AP-78)"
           }
         },
         "required": [
@@ -235,6 +239,10 @@
           "project": {
             "type": "string",
             "description": "Limita a las notas y releases de ese proyecto"
+          },
+          "intereses": {
+            "type": "boolean",
+            "description": "ISO/IEC/IEEE 42010: ADR vigentes sin concerns, intereses sin ADR y puntos de vista usados (lista de trabajo; no se combina con --fecha, --version ni el rango)"
           }
         },
         "additionalProperties": false
@@ -275,6 +283,10 @@
           "refresh-dq": {
             "type": "boolean",
             "description": "Forzar refresh de Data Quality; es la corrida que escribe en el vault y deja una fila `linted` en la bitácora de cambios"
+          },
+          "procesos-iso": {
+            "type": "boolean",
+            "description": "Informe de solo lectura: procesos de ISO/IEC/IEEE 12207, cláusulas de ISO/IEC 20000-1 y 90003 con su registro o hueco, y nivel de capacidad ISO/IEC 33020 por proceso"
           }
         },
         "additionalProperties": false
@@ -1858,13 +1870,14 @@
           },
           "mode": {
             "type": "string",
-            "description": "snapshot: save baseline | status: list changes | report: changes + vault coverage | vigencia: notas con `files:` cuyo codigo cambio despues de su updatedAt (AP-08) | antiguedad: notas del proyecto cuyo `revisado_en` mas su cadencia ya paso (no exige --path)",
+            "description": "snapshot: save baseline | status: list changes | report: changes + vault coverage | vigencia: notas con `files:` cuyo codigo cambio despues de su updatedAt (AP-08) | antiguedad: notas del proyecto cuyo `revisado_en` mas su cadencia ya paso (no exige --path) | conservacion: registros cuyo plazo de conservacion (ISO 15489) vencio sin disposicion; nunca borra ni mueve (no exige --path)",
             "enum": [
               "snapshot",
               "status",
               "report",
               "vigencia",
-              "antiguedad"
+              "antiguedad",
+              "conservacion"
             ]
           },
           "cadencia-dias": {
@@ -5415,6 +5428,10 @@
           "check": {
             "type": "boolean",
             "description": "Compute scores without writing quality-index.json"
+          },
+          "iso-quality": {
+            "type": "boolean",
+            "description": "Read-only view: ISO/IEC 25010:2023/25019:2023 coverage per characteristic (requirements declared, tests covering them), ISO/IEC 25040 evaluation records and tests per ISO/IEC/IEEE 29119 level, type and technique. Writes nothing."
           }
         },
         "additionalProperties": false
@@ -5834,6 +5851,19 @@
           "agent": {
             "type": "string",
             "description": "Agente que firma la nota (default: VAULT_AGENT o claude)"
+          },
+          "change_class": {
+            "type": "string",
+            "description": "Clase del cambio según ISO/IEC 20000-1 §8.5.1",
+            "enum": [
+              "standard",
+              "normal",
+              "emergency"
+            ]
+          },
+          "change_approver": {
+            "type": "string",
+            "description": "Quién aprobó el cambio (ISO/IEC 20000-1 §8.5.1)"
           }
         },
         "required": [
@@ -5933,6 +5963,14 @@
             "items": {
               "type": "string"
             }
+          },
+          "quality_characteristics": {
+            "type": "string",
+            "description": "Comma-separated ISO/IEC 25010:2023 characteristics or characteristic.subcharacteristic"
+          },
+          "quality_in_use": {
+            "type": "string",
+            "description": "Comma-separated ISO/IEC 25019:2023 quality-in-use characteristics"
           }
         },
         "additionalProperties": false
@@ -6049,7 +6087,8 @@
               "financial",
               "legal",
               "reputational",
-              "technical"
+              "technical",
+              "ai"
             ]
           },
           "likelihood": {
@@ -6117,6 +6156,10 @@
           "agent": {
             "type": "string",
             "description": "Agente que firma la nota (default: VAULT_AGENT o claude)"
+          },
+          "review_every_days": {
+            "type": "integer",
+            "description": "Cadencia de revisión en días (ISO/IEC 23894): escribe revisado_en y cadencia_dias; un riesgo ai la lleva siempre (default: 90). Volver a guardar el riesgo es revisarlo"
           }
         },
         "required": [
@@ -6292,6 +6335,10 @@
             "items": {
               "type": "string"
             }
+          },
+          "bia": {
+            "type": "string",
+            "description": "Análisis de impacto (ISO 22301 §8.2.2) en JSON: critical_function, impact, rto, rpo, mtpd"
           }
         },
         "required": [
@@ -7116,6 +7163,26 @@
             "items": {
               "type": "string"
             }
+          },
+          "test_level": {
+            "type": "string",
+            "description": "ISO/IEC/IEEE 29119-1 test level (component, integration, system, system_integration, acceptance)"
+          },
+          "test_kinds": {
+            "type": "string",
+            "description": "Comma-separated ISO/IEC/IEEE 29119-1 test types (functional, performance, security, ...)"
+          },
+          "techniques": {
+            "type": "string",
+            "description": "Comma-separated ISO/IEC/IEEE 29119-4 test design techniques"
+          },
+          "quality_characteristics": {
+            "type": "string",
+            "description": "Comma-separated ISO/IEC 25010:2023 characteristics or characteristic.subcharacteristic"
+          },
+          "quality_in_use": {
+            "type": "string",
+            "description": "Comma-separated ISO/IEC 25019:2023 quality-in-use characteristics"
           }
         },
         "required": [

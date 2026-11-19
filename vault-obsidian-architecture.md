@@ -387,26 +387,37 @@ Referencia única y con formato canónico de cita. Las citas locales en cada gru
 
 | ID | Norma | Cláusula / alcance | Implementado por | Tools | Cobertura |
 |---|---|---|---|---|---|
-| **ISO-25010** | ISO/IEC 25010:2023 | Modelo de calidad de producto | scoring multidimensional y no conformidades | `vault_quality_check`, `vault_ncr_save` | parcial |
-| **ISO-42001** | ISO/IEC 42001:2023 | Gobernanza de decisiones asistidas por IA | `16_AI_Governance/` | `vault_ai_decision` | parcial |
+| **ISO-25010** | ISO/IEC 25010:2023 | Modelo de calidad de producto | `quality_characteristics` en requisitos y pruebas (2023, alias 2011), cobertura por característica, scoring de notas y no conformidades | `vault_quality_check`, `vault_ncr_save`, `vault_requirement_save`, `vault_test_save` | parcial |
+| **ISO-25000** | ISO/IEC 25000:2014 | División SQuaRE: modelo, medición, requisitos y evaluación | `calidad_iso.py` y `vault_quality_check --iso-quality` | `vault_quality_check`, `vault_requirement_save`, `vault_test_save` | parcial |
+| **ISO-25019** | ISO/IEC 25019:2023 | Características de calidad en uso | `quality_in_use` en requisitos y pruebas, cobertura por característica | `vault_requirement_save`, `vault_test_save`, `vault_quality_check` | parcial |
+| **ISO-25012** | ISO/IEC 25012:2008 | Calidad del dato de las notas del vault | 15 características mapeadas a F1–F8, CIA y FAIR | `vault_quality_check`, `vault_fundamentals` | parcial |
+| **ISO-25023** | ISO/IEC 25023:2016 | Medida de cobertura de la especificación de calidad | `coverage` por característica y `requirement_coverage_ratio` | `vault_quality_check` | parcial |
+| **ISO-25040** | ISO/IEC 25040:2024 | Proceso de evaluación en cinco pasos | cada paso con su registro y su recuento | `vault_requirement_save`, `vault_test_save`, `vault_quality_check`, `vault_ncr_save` | parcial |
+| **ISO-42001** | ISO/IEC 42001:2023 | Gobernanza de decisiones asistidas por IA | `16_AI_Governance/`; registro de riesgos de IA con revisión periódica | `vault_ai_decision`, `vault_risk_save`, `vault_audit` | parcial |
 | **ISO-29148** | ISO/IEC/IEEE 29148:2018 | Especificación y trazabilidad de requerimientos | `14_Requirements/` | `vault_requirement_save` | clausula |
 | **ISO-29119** | ISO/IEC/IEEE 29119-3:2021 | Documentación de pruebas | `15_Tests/` enlazado a requerimientos | `vault_test_save`, `vault_test_runner` | clausula |
-| **ISO-20000** | ISO/IEC 20000-1:2018 | Gestión de incidentes y niveles de servicio | `02_Observability/incidents/`, SLOs | `vault_incident_save`, `vault_slo_save` | parcial |
-| **ISO-22301** | ISO 22301:2019 | Continuidad y recuperación | backups Merkle, restore verificable, runbooks de rollback | `vault_backup`, `vault_restore`, `vault_runbook_save` | parcial |
-| **ISO-12207** | ISO/IEC/IEEE 12207:2017 | Procesos de release y entornos | registro de releases y matriz de entornos | `vault_release_save`, `vault_env_matrix` | parcial |
+| **ISO-29119-1** | ISO/IEC/IEEE 29119-1:2022 | Niveles y tipos de prueba | `--test_level`, `--test_kinds` validados | `vault_test_save`, `vault_quality_check` | clausula |
+| **ISO-29119-2** | ISO/IEC/IEEE 29119-2:2021 | Procesos dinámicos de prueba y su seguimiento | cada proceso con la tool que lo registra | `vault_test_save`, `vault_test_runner`, `vault_env_matrix`, `vault_bug_save`, `vault_quality_check` | parcial |
+| **ISO-29119-4** | ISO/IEC/IEEE 29119-4:2021 | Técnica de diseño por caso de prueba | `--techniques` validado, recuento por técnica y familia | `vault_test_save`, `vault_quality_check` | parcial |
+| **ISO-29119-5** | ISO/IEC/IEEE 29119-5:2024 | Pruebas dirigidas por palabras clave | solo la tabla de contratos del propio toolkit | `vault_test_runner` | parcial |
+| **ISO-20000** | ISO/IEC 20000-1:2018 | Incidentes, niveles de servicio, cambios (§8.5.1) y capacidad (§8.4.3) | `02_Observability/incidents/`, SLOs (`throughput`, `saturation`), release con `--change_class` | `vault_incident_save`, `vault_slo_save`, `vault_release_save` | parcial |
+| **ISO-22301** | ISO 22301:2019 | Continuidad y recuperación; análisis de impacto (§8.2.2) | backups Merkle, restore verificable, runbooks con su BIA (`--bia`) | `vault_backup`, `vault_restore`, `vault_runbook_save` | parcial |
+| **ISO-12207** | ISO/IEC/IEEE 12207:2017 | §6 Procesos del ciclo de vida, cada uno con su registro o declarado fuera | `procesos_iso.PROCESOS_12207`, `vault_audit --procesos-iso` | `vault_release_save`, `vault_env_matrix`, `vault_audit` | parcial |
 | **ISO-31000** | ISO 31000:2018 | Identificación, evaluación y tratamiento de riesgos | `02_Observability/risks/` | `vault_risk_save` | clausula |
 | **ISO-27001** | ISO/IEC 27001:2022 | Controles de seguridad de la información | escaneo de secretos, `cia_sensitivity`, directivas `DS-` | `vault_security_scan`, `vault_env_save` | parcial |
 | **ISO-27005** | ISO/IEC 27005:2022 | Riesgo de seguridad de la información | asignación automática de CIA por tipo e impacto | `vault_risk_save` | clausula |
 | **ISO-27701** | ISO/IEC 27701:2019 | Tratamiento de datos personales (GDPR Art. 30 y 35) | `09_Infrastructure/privacy/` con DPIA automática | `vault_privacy_save` | parcial |
 | **ISO-9001** | ISO 9001:2015 | §9.2 Auditoría interna · §10.2 No conformidad y acción correctiva | NCR con 5-Whys y verificación de eficacia | `vault_ncr_save`, `vault_audit` | clausula |
 | **ISO-8601** | ISO 8601 | Formato de marcas temporales | todo timestamp es UTC `YYYY-MM-DDTHH:mm:ss.sssZ` (AP-13) | `vault_write`, `vault_validate`, `vault_lib` | clausula |
-| **ISO-15489** | ISO 15489-1:2016 | Autenticidad, integridad y disposición sin destrucción de los registros | no-derogación con `superseded_by:`, `.history/`, `responsable` (AP-64) | `vault_supersede`, `vault_norms`, `vault_arquitectura_en` | parcial |
+| **ISO-15489** | ISO 15489-1:2016 | Autenticidad, integridad y disposición sin destrucción de los registros | no-derogación con `superseded_by:`, `.history/`, `responsable` (AP-64); calendario de conservación por clase con disposición sin destrucción (AP-77) | `vault_supersede`, `vault_norms`, `vault_arquitectura_en`, `vault_drift_detect` | parcial |
 | **ISO-23081** | ISO 23081-1:2017 | Metadatos del registro | contrato de nota versionado publicado como JSON Schema | `vault_contrato_nota`, `vault_esquema` | clausula |
-| **ISO-42010** | ISO/IEC/IEEE 42010:2022 | Decisiones de arquitectura y su razonamiento | ADR con AP-07 y AP-64; arquitectura en una fecha o versión | `vault_norms`, `vault_arquitectura_en` | parcial |
+| **ISO-42010** | ISO/IEC/IEEE 42010:2022 | Decisiones de arquitectura y su razonamiento | ADR con AP-07 y AP-64; arquitectura en una fecha o versión; `concerns:` y `viewpoint:` contra su registro (`--intereses`) | `vault_norms`, `vault_arquitectura_en`, `vault_write` | parcial |
 | **ISO-15289** | ISO/IEC/IEEE 15289:2019 | Tipo y contenido de cada ítem de información | `SECTION_DOCUMENTACION` con ejes de trazabilidad y versión | `vault_registry`, `vault_contrato_nota` | clausula |
 | **ISO-25051** | ISO/IEC 25051:2014 | Afirmaciones verificables de la documentación de producto | cada promesa al consumidor con su ejecutor | `vault_produccion` | parcial |
-| **ISO-23894** | ISO/IEC 23894:2023 | Riesgo de entrada no confiable en la memoria del agente | pre-vuelo anti-poison no desactivable | `vault_ingest` | parcial |
-| **ISO-42005** | ISO/IEC 42005:2025 | A quién afecta una decisión de IA de impacto alto | `--affected` + `impact_assessment`; AP-65 | `vault_ai_decision`, `vault_norms` | parcial |
+| **ISO-23894** | ISO/IEC 23894:2023 | Identificación, evaluación, tratamiento y revisión de riesgos de IA; entrada no confiable en la memoria del agente | `risk_type: ai` con `revisado_en` + `cadencia_dias`; `aiRisksReviewOverdue`; pre-vuelo anti-poison no desactivable | `vault_ingest`, `vault_risk_save`, `vault_audit` | parcial |
+| **ISO-42005** | ISO/IEC 42005:2025 | A quién afecta una decisión de IA de impacto alto y, por afectado, probabilidad, severidad y mitigación | `--affected` + `impact_assessment`; `--assessment` + `evaluacion_por_afectado`; AP-65, AP-78 | `vault_ai_decision`, `vault_norms`, `vault_audit` | clausula |
+| **ISO-33000** | ISO/IEC 33020:2019 (serie ISO/IEC 33000, antes ISO/IEC 15504 SPICE) | Nivel de capacidad 0-5 por proceso de 12207 | `process_capability:` en `19_Audits/runs`, validado por `vault_audit --procesos-iso` | `vault_write`, `vault_audit` | parcial |
+| **ISO-90003** | ISO/IEC/IEEE 90003:2018 | ISO 9001 aplicada al software, cláusula a cláusula | `procesos_iso.CLAUSULAS_90003` con ejecutor o hueco | `vault_requirement_save`, `vault_release_save`, `vault_ncr_save`, `vault_quality_check`, `vault_audit` | parcial |
 | **OWASP-T10** | OWASP Top 10 2021 | Las 10 vulnerabilidades más críticas de aplicaciones web | escaneo con mapeo A01–A10, hallazgos con CWE | `vault_security_scan` | — |
 | **OWASP-API** | OWASP API Security 2023 | Las 10 vulnerabilidades más críticas de APIs | hallazgos con API-specific CWE, campos `owasp_category` + `cwe_id` | `vault_security_scan`, `vault_log_error` | — |
 
@@ -3744,7 +3755,7 @@ Registra un release y actualiza `01_Projects/{project}/changelog.md` automática
 { "ok": true, "path": "08_Runbooks/deploy/...", "version": "1.4.2", "changelog_updated": true }
 ```
 
-**Normas ISO:** 12207:2017 §6.3.7 (Release management) · 20000-1:2018 §8.5.2 (Release and deployment).
+**Normas ISO:** 12207:2017 §6.3.5 (Configuration management) y §6.4.10 (Transition) · 20000-1:2018 §8.5.1 (Change management) y §8.5.3 (Release and deployment management).
 
 ---
 
@@ -4042,7 +4053,7 @@ Lo ingerido entra con `status: draft` y `cia_integrity: low`, de modo que el rer
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **94 normas** del estándar (76 AP + 9 PAT + 4 SP + 5 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-76`. Fuente de verdad: `NORM_CATALOG` en `vault_norms_catalog.py` (`vault_norms.py` lo reexporta). Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **96 normas** del estándar (77 AP + 9 PAT + 4 SP + 5 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-77`. Fuente de verdad: `NORM_CATALOG` en `vault_norms_catalog.py` (`vault_norms.py` lo reexporta). Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -12497,6 +12508,40 @@ cuya cadencia —`cadencia_dias` de la nota o la de la llamada— ya pasó sale 
 trabajo de `vault_drift_detect --mode antiguedad`, con la aritmética de las normas
 (`estado_de_revision`). Vencer no es fallar: la lista nunca pone `ok` en falso, porque una
 puerta por fecha haría que lo barato fuera poner hoy en `revisado_en` sin releer nada.
+`vault_audit` publica además en `aiRisksReviewOverdue` la misma señal acotada al registro
+de riesgos de IA (`risk_type: ai`, ISO/IEC 23894), que `vault_risk_save` escribe siempre
+con `revisado_en` y `cadencia_dias`.
+
+### AP-78 - Decisión de IA de impacto alto sin evaluación por afectado
+
+**Enforcement:** `audit` · **Introducido:** v41.27 (2026-11-18)
+
+ISO/IEC 42005 no se queda en a quién afecta una decisión de IA: por cada afectado, la
+evaluación completa dice cuán probable es el daño, cuán grave y cómo se mitiga. AP-65
+vigila lo primero; AP-78, lo segundo, y solo sobre las decisiones que AP-65 ya da por
+buenas. `vault_ai_decision --assessment` registra por afectado `likelihood` e `impact` en
+las escalas 1-5 de `vault_risk_save` y una `mitigation`, rechaza sin escribir una entrada
+mal formada (`INVALID_LIKELIHOOD`, `INVALID_IMPACT`, `INVALID_VALUE`) y declara
+`evaluacion_por_afectado: completa | parcial`. `vault_audit` publica en
+`aiDecisionsWithoutPartyAssessment` las decisiones `critical`/`high` que nombran
+afectados sin esa evaluación. Es lista de trabajo, no puerta: un registro incompleto vale
+más que ninguno. Una decisión que no usa la opción se escribe como antes.
+
+### AP-77 - Registro con la conservación vencida sin disposición
+
+**Enforcement:** `audit` · **Introducido:** v41.27 (2026-11-18)
+
+ISO 15489 pide un calendario de conservación y una disposición para cada registro. El
+calendario vive en `vault_registry` junto a la clase de documento de cada sección
+(`CONSERVACION_POR_CLASE`, `CONSERVACION_POR_SECCION`): un plazo en días o `permanente`, y
+una disposición entre `conservar`, `revisar` y `archivar`. Ninguna destruye: la
+no-derogación vale también para las notas, y destruir es un acto de la organización que el
+producto no ejecuta. `vault_drift_detect --mode conservacion` lista en `pendientes` el
+registro cuya última actividad —la más reciente de `revisado_en`, `updatedAt` y
+`createdAt`— más su plazo ya pasó, con la aritmética de las normas (`estado_de_revision`);
+uno en `status: archived` ya tiene su disposición. Vencer no es fallar: la lista nunca pone
+`ok` en falso y nunca borra ni mueve nada. Se distingue de AP-76, que solo mira notas que
+declaran `revisado_en` y pide comprobar que siguen siendo ciertas.
 
 ### PAT-7 - Desacuerdo legítimo declarado: contradicts entre notas
 
