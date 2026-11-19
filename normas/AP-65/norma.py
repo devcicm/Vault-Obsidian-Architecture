@@ -56,6 +56,11 @@ NORMA = {
             "aprobada por una persona (`human_approved`) puede seguir sin "
             "decir a quién le cuesta."
         ),
+        "AP-78": (
+            "AP-65 pregunta si la decisión de impacto alto dice a quién afecta; "
+            "AP-78, si por cada afectado dice cuán probable y grave es el daño "
+            "y cómo se mitiga. AP-78 solo mira las que AP-65 ya da por buenas."
+        ),
     },
     "introduced_version": "v41.3",
     "revisado_en": "2026-10-09",

@@ -5,6 +5,7 @@ vault_risk_save.py — Registro y tratamiento de riesgos operativos y de segurid
 Estándar aplicado:
   ISO 31000:2018      — Risk management framework (identificación, análisis, tratamiento)
   ISO/IEC 27005:2022  — Information security risk management (amenazas, vulnerabilidades)
+  ISO/IEC 23894:2023  — AI risk management (`--risk_type ai`, revisión con cadencia)
 
 Metodología:
   Risk Score = Likelihood (1–5) × Impact (1–5) → 1–25
@@ -28,6 +29,7 @@ import argparse
 import json
 import sys
 import uuid
+from datetime import date
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -36,7 +38,12 @@ from vault_entorno import agente_por_defecto
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_encoding import sanitize_content
 from vault_io import assert_within_vault, atomic_write_text, get_vault_root, write_report
-from vault_norms_catalog import compute_norm_refs, status_frontmatter_lines
+from vault_norms_catalog import (
+    CADENCIA_POR_ENFORCEMENT,
+    compute_norm_refs,
+    estado_de_revision,
+    status_frontmatter_lines,
+)
 # Los `*_save` viven en `scripts/`; el paquete se importa desde la raiz.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -51,7 +58,16 @@ RISK_TYPES = {
     "legal": "Incumplimiento regulatorio, contractual o normativo",
     "reputational": "Daño a la imagen o confianza de stakeholders",
     "technical": "Deuda técnica, obsolescencia o dependencias críticas",
+    # ISO/IEC 23894:2023 — AI risk management. Added after the six above; a
+    # risk of another type is written exactly as before.
+    "ai": "Sistema de IA: sesgo, deriva, salida no fiable o uso indebido",
 }
+
+#: ISO/IEC 23894 treats AI risk management as iterative: an AI risk is
+#: reviewed on a cadence. Days between reviews when `--review_every_days` is
+#: not given. Declared, not calibrated: it is the cadence of a norm watched by
+#: an audit (`CADENCIA_POR_ENFORCEMENT`), read from there, not a measured figure.
+CADENCIA_RIESGO_IA_POR_DEFECTO = CADENCIA_POR_ENFORCEMENT["audit"]
 
 LIKELIHOOD_LABELS = {
     1: "Raro",
@@ -108,6 +124,35 @@ def _risk_cia(risk_type: str, impact: int) -> Dict[str, str]:
     return {"integrity": "medium", "availability": "medium", "sensitivity": "internal"}
 
 
+_HISTORIAL = "## Historial de revisiones"
+
+
+def _historial_previo(path: Path) -> Optional[Dict[str, Any]]:
+    """The earlier note's review rows and the analysis it recorded, or None.
+
+    Saving a risk that has a review cadence again is its review (ISO/IEC
+    23894 §6.6): the rows already written are kept, never regenerated away.
+    """
+    from vault.kernel.frontmatter_parsing import (
+        FrontmatterParseError, parse_frontmatter_with_body,
+    )
+
+    try:
+        fm, cuerpo = parse_frontmatter_with_body(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, FrontmatterParseError):
+        return None
+    filas: List[str] = []
+    if _HISTORIAL in cuerpo:
+        tabla = cuerpo.split(_HISTORIAL, 1)[1].strip().splitlines()
+        for linea in tabla[2:]:  # header and separator
+            if not linea.startswith("|"):
+                break
+            filas.append(linea.rstrip())
+    revisado = fm.get("revisado_en")
+    return {"filas": filas, "fm": fm or {},
+            "revisado_en": revisado.isoformat() if hasattr(revisado, "isoformat") else revisado}
+
+
 def vault_risk_save(
     project: str,
     title: str,
@@ -122,6 +167,7 @@ def vault_risk_save(
     status: str = "open",
     owner: str = "",
     agent: str = "claude",
+    review_every_days: Optional[int] = None,
 ) -> Dict[str, Any]:
     if risk_type not in RISK_TYPES:
         return {
@@ -153,6 +199,14 @@ def vault_risk_save(
             "error_code": "INVALID_STATUS",
             "message": f"status debe ser: {', '.join(VALID_STATUS)}",
         }
+    if review_every_days is not None and not (
+            isinstance(review_every_days, int) and not isinstance(review_every_days, bool)
+            and review_every_days > 0):
+        return {
+            "ok": False,
+            "error_code": "INVALID_VALUE",
+            "message": f"review_every_days debe ser un número de días positivo, no {review_every_days!r}",
+        }
 
     now = utcnow()
     score = likelihood * impact
@@ -160,16 +214,60 @@ def vault_risk_save(
     cia = _risk_cia(risk_type, impact)
     affected_assets = affected_assets or []
     controls = controls or []
+    es_ia = risk_type == "ai"
+
+    # ISO/IEC 23894 §6.6: a review cadence, declared with the contract the
+    # vault already reads for reviews (`revisado_en` + `cadencia_dias`, AP-76).
+    # An AI risk always has one; any other risk only when asked, so a risk
+    # that does not use it is written exactly as before.
+    cadencia = review_every_days or (CADENCIA_RIESGO_IA_POR_DEFECTO if es_ia else None)
+    revision: Optional[Dict[str, Any]] = None
+    if cadencia:
+        hoy = now[:10]
+        revision = estado_de_revision(hoy, cadencia, date.fromisoformat(hoy))
+        revision = {k: revision[k] for k in ("revisado_en", "cadencia_dias", "vence_en")}
+
+    filename = f"{_slug(project)}-{_slug(title)}.md"
+    path = get_vault_root() / FOLDER / filename
+    assert_within_vault(path, get_vault_root())
+
+    filas_historial = [f"| {now[:10]} | {owner or agent} | Riesgo identificado |"]
+    if revision is not None and path.exists():
+        previo = _historial_previo(path)
+        if previo and previo["filas"]:
+            filas_historial = list(previo["filas"])
+            fm_previo = previo["fm"]
+            sin_cambio = (previo["revisado_en"] == revision["revisado_en"]
+                          and fm_previo.get("likelihood") == likelihood
+                          and fm_previo.get("impact") == impact
+                          and fm_previo.get("treatment") == treatment)
+            if not sin_cambio:
+                filas_historial.append(
+                    f"| {now[:10]} | {owner or agent} | Riesgo revisado: probabilidad "
+                    f"{likelihood} × impacto {impact} = {score} ({level}), "
+                    f"tratamiento {treatment} |")
+    historial_md = "\n".join(filas_historial)
+    if revision is not None:
+        historial_md += (
+            f"\n\nPróxima revisión: **{revision['vence_en']}** (cada {cadencia} días). "
+            "Revisar es releer el riesgo, reevaluar probabilidad, impacto y tratamiento "
+            "y volver a guardarlo: `revisado_en` pasa a la fecha del día "
+            "(ISO/IEC 23894 §6.6, AP-76)."
+        )
 
     assets_md = "\n".join(f"- `{a}`" for a in affected_assets) or "— No especificados"
     controls_md = (
         "\n".join(f"- [ ] {c}" for c in controls) or "— Sin controles definidos"
     )
+    marco_ia = " | ISO/IEC 23894:2023 — AI risk management" if es_ia else ""
+    referencia_ia = (
+        "\n- ISO/IEC 23894:2023 §6.4–§6.6 — AI risk assessment, treatment, monitoring and review"
+        if es_ia else "")
 
     body = f"""# Riesgo: {title}
 
 > **{level}** — Score {score}/25 (Likelihood {likelihood} × Impact {impact})
-> ISO 31000:2018 — Risk management | ISO/IEC 27005:2022 — IS Risk management
+> ISO 31000:2018 — Risk management | ISO/IEC 27005:2022 — IS Risk management{marco_ia}
 
 ## Clasificación
 
@@ -223,14 +321,14 @@ def vault_risk_save(
 
 | Fecha | Revisor | Cambio |
 |---|---|---|
-| {now[:10]} | {owner or agent} | Riesgo identificado |
+{historial_md}
 
 ## Referencias
 
 - ISO 31000:2018 §6 — Risk management process
 - ISO 31000:2018 §6.4 — Risk analysis
 - ISO/IEC 27005:2022 §9 — Information security risk treatment
-- ISO/IEC 27005:2022 §8.2 — Threat identification
+- ISO/IEC 27005:2022 §8.2 — Threat identification{referencia_ia}
 """
 
     norm_refs = compute_norm_refs(FOLDER, body, [])
@@ -256,10 +354,14 @@ def vault_risk_save(
     fm_lines.set("cia_availability", cia['availability'])
     fm_lines.set("cia_sensitivity", cia['sensitivity'])
     fm_lines.set("agent", agent)
+    if revision is not None:
+        # Only a risk with a review cadence declares them (AP-76's contract).
+        fm_lines.set("revisado_en", revision["revisado_en"], texto=True)
+        fm_lines.set("cadencia_dias", revision["cadencia_dias"])
+    if es_ia:
+        fm_lines.set("iso_ai_risk", "ISO/IEC 23894:2023")
     full = fm_lines.render() + "\n\n" + body
 
-    filename = f"{_slug(project)}-{_slug(title)}.md"
-    path = get_vault_root() / FOLDER / filename
     path.parent.mkdir(parents=True, exist_ok=True)
     assert_within_vault(path, get_vault_root())
     atomic_write_text(path, conservar_nota_generada(path, sanitize_content(full, dry_run=False)[0]))
@@ -280,6 +382,7 @@ def vault_risk_save(
         "treatment": treatment,
         "status": status,
         "iso_standard": "ISO 31000:2018 / ISO/IEC 27005:2022",
+        **({"review": revision} if revision is not None else {}),
     }
 
 
@@ -305,6 +408,11 @@ Ejemplos:
     --title "Dependencia única en proveedor cloud" \\
     --risk_type operational --likelihood 2 --impact 4 \\
     --treatment transfer --status accepted
+
+  python vault_risk_save.py --project my-api \\
+    --title "Deriva del modelo de clasificación" \\
+    --risk_type ai --likelihood 3 --impact 4 \\
+    --treatment mitigate --review_every_days 60
 """,
         allow_abbrev=False,
     )
@@ -333,6 +441,10 @@ Ejemplos:
                         help="Propietario del riesgo; vacío lo deja sin asignar")
     parser.add_argument("--agent", default=agente_por_defecto(),
                         help="Agente que firma la nota (default: VAULT_AGENT o claude)")
+    parser.add_argument("--review_every_days", type=int, default=None,
+                        help="Cadencia de revisión en días (ISO/IEC 23894): escribe revisado_en "
+                             "y cadencia_dias; un riesgo ai la lleva siempre (default: 90). "
+                             "Volver a guardar el riesgo es revisarlo")
 
     args = parser.parse_args()
     try:
@@ -358,6 +470,7 @@ Ejemplos:
         status=args.status,
         owner=args.owner,
         agent=args.agent,
+        review_every_days=args.review_every_days,
     )
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0 if result.get("ok") else 1
