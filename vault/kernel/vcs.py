@@ -115,7 +115,7 @@ def _git(raiz: Path, *args: str, env: Optional[Dict[str, str]] = None):
                                      capture_output=True, **extra)
 
 
-def identidad_de_commit() -> Dict[str, str]:
+def identidad_de_commit(raiz: Optional[Path] = None) -> Dict[str, str]:
     """La identidad del commit, por ENTORNO y no por `config`.
 
     `git config user.name X` es un uso mutador de un verbo ambiguo y la puerta
@@ -124,10 +124,27 @@ def identidad_de_commit() -> Dict[str, str]:
     quedaba sin commits (medido en la CI del 2026-11-04). Las variables
     `GIT_AUTHOR_*`/`GIT_COMMITTER_*` dan identidad a ESE commit sin tocar la
     configuración de la máquina ni la del repo.
+
+    Who signs (owner request, 2026-11-19: his name in his vault, never in a
+    third party's, and configurable). Until then the neutral identity was
+    forced even where the repo had one. The order now:
+
+    1. `VAULT_COMMIT_NAME` + `VAULT_COMMIT_EMAIL` (env registry), both or none;
+    2. the identity git already has for that repo (`git config --get`, a read
+       use AP-68 allows): the owner's vault signs with his name, a third
+       party's with theirs;
+    3. the neutral `IDENTIDAD_LOCAL` when there is none (a CI runner).
     """
     import os
 
-    nombre, correo = IDENTIDAD_LOCAL
+    from vault.kernel.entorno import leer
+
+    nombre = str(leer("VAULT_COMMIT_NAME") or "").strip()
+    correo = str(leer("VAULT_COMMIT_EMAIL") or "").strip()
+    if not (nombre and correo):
+        nombre, correo = _identidad_del_repo(raiz) if raiz is not None else ("", "")
+    if not (nombre and correo):
+        nombre, correo = IDENTIDAD_LOCAL
     return {
         **os.environ,
         "GIT_AUTHOR_NAME": nombre,
@@ -135,6 +152,18 @@ def identidad_de_commit() -> Dict[str, str]:
         "GIT_COMMITTER_NAME": nombre,
         "GIT_COMMITTER_EMAIL": correo,
     }
+
+
+def _identidad_del_repo(raiz: Path) -> Tuple[str, str]:
+    """`user.name` and `user.email` as git resolves them for that repo, or empty."""
+    valores = []
+    for clave in ("user.name", "user.email"):
+        try:
+            r = _git(Path(raiz), "config", "--get", clave)
+        except OSError:
+            return "", ""
+        valores.append((r.stdout or "").strip() if r.returncode == 0 else "")
+    return valores[0], valores[1]
 
 
 def asegurar_ignorados(raiz: Path) -> Dict[str, Any]:
@@ -236,7 +265,7 @@ def reparar_indice(raiz: Path) -> Dict[str, Any]:
         resultado["cero"] = True
         return resultado
 
-    entorno = identidad_de_commit()
+    entorno = identidad_de_commit(raiz)
     for i in range(0, len(viejos), 400):
         lote = viejos[i:i + 400]
         r = _git(raiz, "rm", "--cached", "-q", "--", *lote, env=entorno)
@@ -277,7 +306,7 @@ def commit_de_operacion(raiz: Path, mensaje: str) -> Dict[str, Any]:
         return {"committed": False, "motivo": "el vault no tiene repositorio git"}
 
     ignore = asegurar_ignorados(raiz)
-    entorno = identidad_de_commit()
+    entorno = identidad_de_commit(raiz)
     add = _git(raiz, "add", "-A", env=entorno)
     if add.returncode != 0:
         return {"committed": False,

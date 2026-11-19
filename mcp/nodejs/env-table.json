@@ -58,6 +58,20 @@
       "purpose": "Quién firma la nota cuando no se pasa `--agent` (AP-16). Es el campo `agent:` del frontmatter, no un identificador de sesión."
     },
     {
+      "name": "VAULT_COMMIT_NAME",
+      "type": "texto",
+      "default": "",
+      "context": "autoria",
+      "purpose": "Autor de los commits que el vault hace por cada operación. Sin ella manda la identidad que git ya tiene para ese repo (`user.name`), y sin ninguna, la neutral `vault`. Va con `VAULT_COMMIT_EMAIL`: una sin la otra no se usa."
+    },
+    {
+      "name": "VAULT_COMMIT_EMAIL",
+      "type": "texto",
+      "default": "",
+      "context": "autoria",
+      "purpose": "Correo del autor de los commits del vault; acompaña a `VAULT_COMMIT_NAME`."
+    },
+    {
       "name": "VAULT_VOICE",
       "type": "texto",
       "default": "1",

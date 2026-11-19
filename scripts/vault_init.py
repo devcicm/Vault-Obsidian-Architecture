@@ -1113,7 +1113,8 @@ def _inicializar_git(destino: Path) -> Dict[str, Any]:
     # vault se quedaba sin su primer commit.
     from vault.kernel.vcs import identidad_de_commit
 
-    entorno = identidad_de_commit()
+    # The repo's own identity signs it when it has one (owner, 2026-11-19).
+    entorno = identidad_de_commit(destino)
     r = _git("commit", "-q", "-m", "vault: bootstrap del vault", env=entorno)
     if r.returncode != 0:
         return {"ok": False,

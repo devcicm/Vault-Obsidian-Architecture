@@ -373,13 +373,11 @@ def versionar_operacion(tool_name: str, writes: Dict[str, Any]) -> None:
         raiz = get_vault_root()
         if not hay_repo(raiz):
             return
-        agente = "sin-agente"
-        try:
-            from vault_entorno import leer as _leer_entorno
+        # The agent has one owner (AP-16): `VAULT_AGENT`, else the historical
+        # default. Read raw, an unset variable gave "vault: <tool> por  —".
+        from vault.kernel.entorno import agente_por_defecto
 
-            agente = str(_leer_entorno("VAULT_AGENT"))
-        except (KeyError, ValueError):
-            pass
+        agente = agente_por_defecto()
         resultado = commit_de_operacion(
             raiz,
             f"vault: {tool_name} por {agente} — "

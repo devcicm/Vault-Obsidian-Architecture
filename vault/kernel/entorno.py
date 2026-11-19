@@ -155,6 +155,18 @@ VARIABLES: Dict[str, Variable] = {
             "campo `agent:` del frontmatter, no un identificador de sesión.",
         ),
         Variable(
+            "VAULT_COMMIT_NAME", "texto", "", "autoria",
+            "Autor de los commits que el vault hace por cada operación. Sin "
+            "ella manda la identidad que git ya tiene para ese repo "
+            "(`user.name`), y sin ninguna, la neutral `vault`. Va con "
+            "`VAULT_COMMIT_EMAIL`: una sin la otra no se usa.",
+        ),
+        Variable(
+            "VAULT_COMMIT_EMAIL", "texto", "", "autoria",
+            "Correo del autor de los commits del vault; acompaña a "
+            "`VAULT_COMMIT_NAME`.",
+        ),
+        Variable(
             "VAULT_VOICE", "texto", "1", "autoria",
             "Verbosidad de la voz del vault: `0` la calla, `verbose` la "
             "amplía, cualquier otro valor deja el mensaje normal.",

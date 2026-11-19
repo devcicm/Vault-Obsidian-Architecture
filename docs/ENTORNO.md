@@ -6,12 +6,14 @@
 > una en tu shell lo da `python scripts/vault_entorno.py --filtro <nombre>`:
 > se resuelve al llamarse, no al documentarse (AP-49).
 
-Variables: 31.
+Variables: 33.
 
 | Variable | Tipo | Default | Quién la lee | Qué gobierna |
 |---|---|---|---|---|
 | `VAULT_AGENT` | texto | `''` | autoria | Quién firma la nota cuando no se pasa `--agent` (AP-16). Es el campo `agent:` del frontmatter, no un identificador de sesión. |
 | `VAULT_CLIENT_CWD` | ruta | — | kernel | El directorio del cliente MCP, que el servidor no comparte con el proceso Python. Sin ella la autodetección mira el CWD del servidor, que no es el del usuario. |
+| `VAULT_COMMIT_EMAIL` | texto | `''` | autoria | Correo del autor de los commits del vault; acompaña a `VAULT_COMMIT_NAME`. |
+| `VAULT_COMMIT_NAME` | texto | `''` | autoria | Autor de los commits que el vault hace por cada operación. Sin ella manda la identidad que git ya tiene para ese repo (`user.name`), y sin ninguna, la neutral `vault`. Va con `VAULT_COMMIT_EMAIL`: una sin la otra no se usa. |
 | `VAULT_CONCURRENCY` | entero | `4` | meta_toolkit | Cuántas tools audita a la vez el banco de `vault_toolkit_audit` y el de `vault_noop_audit` (C-2 tanda 2a). Cada corrida usa su propia copia del sandbox, así que el paralelismo no comparte estado; las tools de gobernanza, que escriben en el repo, siguen en serie. Con `1` el banco vuelve a ser el de antes. |
 | `VAULT_COUNT_TOKENS` | bandera | `False` | kernel | Añade el conteo de tokens al envelope de error. Apagado por defecto: contar cuesta más que el propio error. |
 | `VAULT_DEBUG` | bandera | `False` | kernel | Adjunta el traceback a los envelopes de error. Apagada por defecto: el traceback lleva rutas absolutas del intérprete y del usuario, y por MCP llega al agente y a sus logs. |
