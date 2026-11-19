@@ -121,7 +121,9 @@ from vault.kernel import historia  # noqa: E402
 from vault.kernel.contenido import (  # noqa: E402
     CARPETA_DECISIONES,
     con_titulo,
+    lineas_reales,
     meta_adr,
+    palabras_reales,
     pista_de_intereses,
     plantilla_adr,
     problemas_de_intereses,
@@ -135,7 +137,6 @@ from vault.kernel.frontmatter_escritura import (  # noqa: E402
 )
 from vault.kernel.indices_structural import describir_reserva, es_nombre_reservado  # noqa: E402
 
-_RE_VAULT_WRITE_1 = re.compile('^[#\\-\\*\\s|>]+')
 _RE_VAULT_WRITE_2 = re.compile('^#\\s+(.+)$', re.MULTILINE)
 
 
@@ -181,26 +182,13 @@ def _check_content_gate(content: str, folder: str) -> bool:
     """
     if folder.startswith("00_System"):
         return True
-    # AP-45: sin líneas ni palabras reales la nota no llega a escribirse.
-    real_lines = [
-        l
-        for l in content.split("\n")
-        if l.strip()
-        and not l.strip().startswith("TODO")
-        and l.strip() not in ("-", "- ", "---")
-        and not re.match(r"^#+\s*$", l.strip())
-    ]
+    # AP-45: sin líneas ni palabras reales la nota no llega a escribirse. The
+    # rule has one owner, shared with the depth measure of the audit
+    # (`vault.kernel.contenido`, nota-escalonada): same lines, same words.
+    real_lines = lineas_reales(content)
     if len(real_lines) < 3:
         return False
-    # Word count: split on whitespace, ignore markdown markers and pipes
-    words: List[str] = []
-    for line in real_lines:
-        # strip heading markers, bullets, table pipes
-        cleaned = _RE_VAULT_WRITE_1.sub('', line)
-        for tok in cleaned.split():
-            tok = tok.strip("`*~_[]()#").strip(".,;:!?")
-            if tok and len(tok) > 1:
-                words.append(tok)
+    words = palabras_reales(content)
     if len(words) < 10:
         return False
     # Reject minified blobs
@@ -240,23 +228,10 @@ def _content_gate_reason(content: str, folder: str) -> Optional[str]:
     """Return human-readable reason why content failed the gate, or None if it passes."""
     if folder.startswith("00_System"):
         return None
-    real_lines = [
-        l
-        for l in content.split("\n")
-        if l.strip()
-        and not l.strip().startswith("TODO")
-        and l.strip() not in ("-", "- ", "---")
-        and not re.match(r"^#+\s*$", l.strip())
-    ]
+    real_lines = lineas_reales(content)  # one owner with the gate (AP-57)
     if len(real_lines) < 3:
         return f"only {len(real_lines)} real line(s) (need ≥3)"
-    words: List[str] = []
-    for line in real_lines:
-        cleaned = _RE_VAULT_WRITE_1.sub('', line)
-        for tok in cleaned.split():
-            tok = tok.strip("`*~_[]()#").strip(".,;:!?")
-            if tok and len(tok) > 1:
-                words.append(tok)
+    words: List[str] = palabras_reales(content)
     if len(words) < 10:
         return f"only {len(words)} real word(s) (need ≥10)"
     if any(len(l) > 800 for l in real_lines):

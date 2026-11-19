@@ -489,3 +489,134 @@ def falta_de_evaluacion_de_impacto(rel: str, fm, exigidos) -> str:
         return ""
     return (f"decisión de IA de impacto `{nivel}` sin evaluación de impacto completa "
             f"(`impact_assessment: {estado or '—'}`): no dice a quién afecta")
+
+
+# ── Nota escalonada: el lead y la profundidad (nota-escalonada S4) ─────────
+#
+# Measured on 2026-11-19: the vault the onboarding generates for a third party
+# had a median of 5 content lines and 28 words per note, and nothing in it
+# told a reader without context what a note was before its detail. The
+# owner's reference (`notas data.txt`) is the Wikipedia article: a lead that
+# works as an executive summary, then the synthesis, then the report, and the
+# short report only as a linked event record. The generators compose that
+# note with `nota_escalonada` and the audit measures it with
+# `profundidad_de_nota`: one criterion for the writer and the reader (AP-57).
+
+#: The layers below the lead, in reading order: synthesis, report, references.
+CAPAS_ESCALONADAS = ("Contexto", "Detalle", "Fuentes")
+
+#: A lead stands alone with at least two sentences and twenty real words: one
+#: sentence names the thing, the second says why it matters or where it is.
+LEAD_MIN_ORACIONES = 2
+LEAD_MIN_PALABRAS = 20
+
+_RE_MARCAS_DE_LINEA = re.compile(r"^[#\-\*\s|>]+")
+_RE_ENLACE_WIKI = re.compile(r"\[\[[^\]\n]+\]\]")
+_RE_FIN_DE_ORACION = re.compile(r"(?<=[.!?])\s+")
+#: Lines in the lead zone that are not prose: provenance quotes, `**Key:**`
+#: metadata, lists, tables and HTML comments.
+_NO_ES_PROSA = re.compile(r"^\s*(?:>|\*\*[^*\n]+:\*\*|[-*+]\s|\d+[.)]\s|\||<!--)")
+
+
+def lineas_reales(texto: str) -> list:
+    """The content gate's real lines: no blanks, TODO-only, lone dashes or bare headings."""
+    return [
+        linea for linea in (texto or "").split("\n")
+        if linea.strip()
+        and not linea.strip().startswith("TODO")
+        and linea.strip() not in ("-", "- ", "---")
+        and not re.match(r"^#+\s*$", linea.strip())
+    ]
+
+
+def palabras_reales(texto: str) -> list:
+    """The content gate's real words (AP-11/AP-20), lifted from `vault_write`.
+
+    Heading markers, bullets, quotes and table pipes do not count, and neither
+    do one-character tokens: the rule `vault_write` has applied since v38.
+    """
+    palabras = []
+    for linea in lineas_reales(texto):
+        for token in _RE_MARCAS_DE_LINEA.sub("", linea).split():
+            token = token.strip("`*~_[]()#").strip(".,;:!?")
+            if token and len(token) > 1:
+                palabras.append(token)
+    return palabras
+
+
+def lead_de(cuerpo: str) -> str:
+    """The note's lead: the prose between its H1 (if any) and its first heading.
+
+    Provenance quotes, `**Key:**` metadata, lists, tables and pending markers
+    are not a lead: they tell the reader where a note comes from or what it
+    lists, not what it is.
+    """
+    lineas = (cuerpo or "").lstrip("﻿").splitlines()
+    i = 0
+    while i < len(lineas) and not lineas[i].strip():
+        i += 1
+    if i < len(lineas) and _H1.match(lineas[i]):
+        i += 1
+    prosa = []
+    for linea in lineas[i:]:
+        if _ENCABEZADO.match(linea):
+            break
+        if (not linea.strip() or _NO_ES_PROSA.match(linea) or _LINEA_ANDAMIO.match(linea)
+                or _MARCADORES_PENDIENTE.match(linea) or _APARTE_PENDIENTE.match(linea)):
+            continue
+        prosa.append(linea.strip())
+    return " ".join(prosa)
+
+
+def _oraciones(texto: str) -> int:
+    return sum(1 for trozo in _RE_FIN_DE_ORACION.split(texto.strip()) if palabras_reales(trozo))
+
+
+def profundidad_de_nota(cuerpo: str) -> dict:
+    """How far a note goes from its lead to its detail.
+
+    `nivel`: 0 without a self-sufficient lead; 1 lead only; 2 lead and
+    `Contexto` or `Detalle`; 3 that and `Fuentes`.
+    """
+    lead = lead_de(cuerpo)
+    palabras_lead = len(palabras_reales(lead))
+    oraciones = _oraciones(lead) if lead else 0
+    tiene_lead = oraciones >= LEAD_MIN_ORACIONES and palabras_lead >= LEAD_MIN_PALABRAS
+    titulos = [_sin_tildes(m.group(1)) for m in _ENCABEZADO.finditer(cuerpo or "")
+               if m.group(0).lstrip().startswith("## ")]
+    capas = [capa for capa in CAPAS_ESCALONADAS
+             if any(t == _sin_tildes(capa) or t.startswith(_sin_tildes(capa) + " ") for t in titulos)]
+    nivel = 0
+    if tiene_lead:
+        nivel = 1
+        if "Contexto" in capas or "Detalle" in capas:
+            nivel = 3 if "Fuentes" in capas else 2
+    return {
+        "tiene_lead": tiene_lead,
+        "lead_oraciones": oraciones,
+        "lead_palabras": palabras_lead,
+        "capas": capas,
+        "secciones": len(titulos),
+        "lineas_reales": len(lineas_reales(cuerpo_sin_marcadores(cuerpo))),
+        "palabras_reales": len(palabras_reales(cuerpo_sin_marcadores(cuerpo))),
+        "enlaces": len(_RE_ENLACE_WIKI.findall(cuerpo or "")),
+        "nivel": nivel,
+    }
+
+
+def nota_escalonada(titulo: str, lead: str, contexto: str = None, detalle: str = None,
+                    fuentes: str = None, falta: str = None) -> str:
+    """Compose a layered note: H1, lead, what is missing, and the layers that have content.
+
+    A layer without content is not written (AP-45: no filler). What is missing
+    is written as a pending marker (`> _Pendiente: ..._`), so the reader sees
+    it and the evidence criterion (`cuerpo_sin_marcadores`) does not count it.
+    """
+    partes = [" ".join(str(lead or "").split())]
+    if falta and str(falta).strip():
+        motivo = " ".join(str(falta).split()).rstrip(".")
+        partes.append(f"> _Pendiente: {motivo}._")
+    for capa, texto in zip(CAPAS_ESCALONADAS, (contexto, detalle, fuentes)):
+        if texto and str(texto).strip():
+            partes.append(f"## {capa}\n\n{str(texto).strip()}")
+    return con_titulo(titulo, "\n\n".join(p for p in partes if p) + "\n")
