@@ -52,9 +52,19 @@ def _tool(vault, nombre, *argv):
 
 
 def _encontradas(vault):
-    codigo, env = _tool(vault, "vault_search", "--query", "zebrafish")
+    """Every search row for the note, history included: these tests pin that
+    the index row follows the note (quarantine is history since producto-usable
+    S4, and the default search leaves it out; see `_vigentes`)."""
+    codigo, env = _tool(vault, "vault_search", "--query", "zebrafish", "--incluir-historico")
     assert codigo == 0, env
     return sorted(r["path"] for r in env["results"])
+
+
+def _vigentes(vault):
+    """What the default (current-only) search answers."""
+    codigo, env = _tool(vault, "vault_search", "--query", "zebrafish")
+    assert codigo == 0, env
+    return sorted(r["path"] for r in env["results"]), env.get("history_excluded")
 
 
 def _coherente(vault):
@@ -84,6 +94,8 @@ def test_trash_only_queda_retenida_y_su_restauracion_la_devuelve(vault):
     assert [(e["origin"], e["path"], e["restored"]) for e in _ledger(vault)] == [
         (NOTA, retenida, False)]
     assert _encontradas(vault) == [retenida]
+    vigentes, apartadas = _vigentes(vault)
+    assert vigentes == [] and apartadas["by_reason"] == {"quarantine": 1}, apartadas
     _coherente(vault)
 
     codigo, env = _tool(vault, "vault_quarantine", "--list")

@@ -103,6 +103,10 @@ donde importa, y prefiero decirlas aquí que dejar que las descubras tú.
 - **La búsqueda por defecto pondera título, tags y vista previa**; `--ranking bm25`
   puntúa la nota entera, pero en las medidas de 2026-11-16 empeoró el primer acierto,
   así que es opcional.
+- **La búsqueda y el paquete de contexto responden con lo vigente.** Lo histórico
+  (ADR sustituidos, notas `archived`/`deprecated`/`obsolete`/`revoked`, fuentes
+  archivadas, copias en cuarentena) no se borra ni se oculta: sale de la respuesta,
+  se cuenta en `history_excluded` y vuelve con `--incluir-historico`.
 
 Los huecos conocidos no están escondidos: están **medidos** y publicados en
 [`docs/GUIA-DE-PRODUCCION.md`](./docs/GUIA-DE-PRODUCCION.md), que se genera desde
@@ -127,6 +131,7 @@ Fallos de **seguridad** en privado, nunca en un issue: [SECURITY.md](SECURITY.md
 
 | Si necesitas… | Sigue con… |
 |---|---|
+| Probarlo por primera vez, de principio a fin | [Tutorial](./docs/TUTORIAL.md): quince minutos, ejecutado por un test en cada cambio |
 | Entender el propósito, las promesas y los límites | [Visión de producto](./docs/product/overview.md) |
 | Situar las piezas y sus responsabilidades | [Seis capas conceptuales](./docs/architecture/layers.md) |
 | Poblar memoria desde un proyecto sin vault | [Onboarding](./docs/MODO-AGENTICO-ONBOARDING.md) |
@@ -141,6 +146,10 @@ Fallos de **seguridad** en privado, nunca en un issue: [SECURITY.md](SECURITY.md
 ---
 
 ## Quick Start
+
+¿Primera vez? El [Tutorial](./docs/TUTORIAL.md) hace el recorrido completo con el
+producto instalado. Esta sección es la referencia de instalación y de las
+primeras tools desde un checkout.
 
 ### 1. Clonar e instalar
 
@@ -259,7 +268,7 @@ vault mcp-path                           # servidor MCP + entrada del cliente
 #     --title "Vault Identity" --meta '{"type":"identity"}' --content "..."
 # Las notas de contenido exigen etiquetas (AP-26) y autor (AP-16):
 #   vault run vault_write --folder 07_Knowledge --title "Primera nota" \
-#     --tags demo inicio --content "linea uno`nlinea dos`nlinea tres"
+#     --tags demo inicio --content "$(printf '%s\n' 'linea uno' 'linea dos' 'linea tres')"
 
 # Identidad del vault — con autor: VAULT_AGENT o --agent (00_System queda
 # exento, pero las notas de contenido no). El content gate exige ≥3 líneas

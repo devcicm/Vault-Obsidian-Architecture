@@ -185,3 +185,32 @@ def test_con_otra_candidata_ademas_de_la_sombra_sigue_siendo_ambiguo(raiz):
     r = _ejecutar(raiz, "--path", "10_Migrated/GUIA.md", "--by", "guia")
     assert r["ok"] is False and r["error_code"] == "INVALID_VALUE", r
     assert sorted(r["candidates"]) == ["07_Knowledge/guia.md", "13_Flows/guia.md"]
+
+
+def test_apply_guarda_la_version_anterior_y_deja_fila_en_el_registro(raiz):
+    """Tutorial walk (2026-11-19, producto-usable S2): substituting a decision
+    rewrote the note with no `.history/` version (nothing for `vault_undo`) and
+    no change-log row (the log showed only the two creations). Every other
+    rewriting tool versions first (`vault_io.guardar_version_actual`) and logs
+    through the port (`vault.runtime.anotar_operacion`)."""
+    from apoyo import filas_de_bitacora
+
+    gemela = _nota(raiz, "10_Migrated/MCP_AGENT_GUIDE.md", "title: Mcp Agent Guide")
+    antes = gemela.read_text(encoding="utf-8")
+    r = _ejecutar(raiz, "--path", "10_Migrated/MCP_AGENT_GUIDE.md", "--by", "mcp-agent-guide", "--apply")
+    assert r["ok"] and r["written"] is True, r
+    versiones = list((raiz / ".history").rglob("*.md"))
+    assert len(versiones) == 1 and versiones[0].read_text(encoding="utf-8") == antes, versiones
+    assert r["version_saved"] == versiones[0].name
+    filas = filas_de_bitacora(raiz)
+    filas = filas if isinstance(filas, list) else filas.get("entries", [])
+    assert [(f["action"], f["path"], f["agent"]) for f in filas] == [
+        ("updated", "10_Migrated/MCP_AGENT_GUIDE.md", "system")], filas
+    assert "superseded_by" in filas[0]["reason"] and r["change_log"]["action"] == "updated"
+
+
+def test_el_dry_run_no_versiona_ni_registra(raiz):
+    _nota(raiz, "10_Migrated/MCP_AGENT_GUIDE.md", "title: Mcp Agent Guide")
+    r = _ejecutar(raiz, "--path", "10_Migrated/MCP_AGENT_GUIDE.md", "--by", "mcp-agent-guide")
+    assert r["written"] is False and "version_saved" not in r and "change_log" not in r
+    assert not (raiz / ".history").exists()

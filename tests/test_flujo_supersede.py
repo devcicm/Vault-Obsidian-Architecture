@@ -92,6 +92,10 @@ def test_inmutable_entera_responde_immutable_note_con_el_modo_soportado(vault):
     assert "00_System/inmutable.json" in pista, env
     assert (vault / VIEJA).read_bytes() == antes
     assert sucesora == "03_Decisions/adr-002-dos.md"
+    # The version saved before the refused write is withdrawn: a refusal
+    # leaves no trace of a write that never happened (producto-usable S2).
+    from vault.kernel import historia
+    assert historia.versiones(vault / ".history", VIEJA) == []
 
 
 def test_siguiendo_la_pista_la_sucesora_queda_enlazada(vault):

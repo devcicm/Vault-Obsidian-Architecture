@@ -183,6 +183,12 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "pesos (título, tags y extracto; por defecto) o bm25 (nota entera, estadísticas del índice)",
                 "validators": [],
             },
+            "incluir_historico": {
+                "type": "bool",
+                "required": False,
+                "description": "Devuelve también las notas históricas (superseded_by, archived, deprecated, obsolete, revoked, fuentes archivadas, cuarentena). Por defecto solo verdad vigente; history_excluded cuenta lo que quedó fuera.",
+                "validators": [],
+            },
         },
         "guards": [],
         "side_effects": [],

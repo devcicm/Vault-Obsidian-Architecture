@@ -202,13 +202,15 @@ def _docs_publicadas(docs: str) -> str:
     its published copy under the Homepage and the section text stays; in a
     checkout the repository path is the right pointer and nothing changes.
     """
-    from importlib import metadata
-
     from vault.kernel.registry import corre_instalado
 
     fichero, _, seccion = docs.partition(" ")
     if not corre_instalado() or not fichero.endswith(".md"):
         return docs
+    # Imported only when installed: `importlib.metadata` pulls the whole
+    # `email` package, and a checkout's error envelope must not pay for it.
+    from importlib import metadata
+
     try:
         inicio = pagina_del_proyecto()
     except metadata.PackageNotFoundError:

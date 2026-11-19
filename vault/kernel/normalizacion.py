@@ -158,3 +158,27 @@ def es_union_ortografica(texto: str, i: int) -> bool:
     """¿El ZWNJ/ZWJ en ``texto[i]`` forma parte de la palabra que lo rodea?"""
     return (texto[i] in UNIONES_ORTOGRAFICAS and 0 < i < len(texto) - 1
             and _une_escritura(texto[i - 1]) and _une_escritura(texto[i + 1]))
+
+
+#: Words that carry no meaning in a query (Spanish and English). One owner for
+#: every reader: the query parser of the context pack (`vault.consulta.
+#: query_parse`) and the weighted search (`vault_search`), where a stopword
+#: scored as a substring of every title ("de" inside "decisions", "index").
+STOPWORDS = {
+    # español
+    "a", "al", "algo", "ante", "aqui", "asi", "como", "con", "cual", "cuando",
+    "cuanto", "de", "del", "desde", "donde", "dos", "el", "ella", "ellos", "en",
+    "entre", "era", "es", "esa", "ese", "eso", "esta", "estan", "este", "esto",
+    "fue", "ha", "hay", "la", "las", "le", "les", "lo", "los", "mas", "me", "mi",
+    "muy", "no", "nos", "o", "para", "pero", "por", "porque", "que", "quien", "se",
+    "ser", "si", "sin", "sobre", "solo", "son", "su", "sus", "tan", "te", "tiene",
+    "todo", "todos", "un", "una", "uno", "y", "ya", "yo", "nuestro", "nuestra",
+    "hicimos", "tenemos", "hacer", "dime", "dame", "busca", "buscar", "muestrame",
+    # inglés
+    "about", "all", "an", "and", "any", "are", "as", "at", "be", "been", "but",
+    "by", "can", "did", "do", "does", "for", "from", "had", "has", "have", "how",
+    "i", "if", "in", "is", "it", "its", "me", "my", "of", "on", "or", "our", "she",
+    "show", "so", "than", "that", "the", "their", "them", "then", "there", "these",
+    "they", "this", "to", "up", "us", "was", "we", "were", "what", "when", "where",
+    "which", "who", "why", "will", "with", "you", "your",
+}

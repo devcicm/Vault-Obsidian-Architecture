@@ -8,14 +8,15 @@ deriva o lo archiva.
 
 La clase de cada documento —tutorial, guía, referencia o explicación, más
 `registro` e `indice`— la declara `vault_registry.DOCS_DEL_REPO`, y no se
-mezclan en un mismo documento. Falta un **tutorial** propio: el hueco está
-declarado en `vault_registry.HUECOS_DOCS_DEL_REPO`, y mientras tanto el recorrido
-guiado es el [Quick Start](../README.md#quick-start) del README.
+mezclan en un mismo documento. Si es tu primera vez, empieza por el
+[Tutorial](TUTORIAL.md): un recorrido de quince minutos que un test ejecuta en
+cada cambio.
 
 ## Instalar y operar
 
 | Documento | Para qué |
 |---|---|
+| [Tutorial](TUTORIAL.md) | Primer uso de principio a fin: crear un vault, guardar, buscar, sustituir una decisión, contexto e historia |
 | [Instalación limpia](INSTALACION-LIMPIA.md) | Quitar instalaciones previas, instalar la wheel, registrar el MCP y comprobar el handshake |
 | [Variables de entorno](ENTORNO.md) | Cada variable que el estándar lee, con tipo, default y quién la lee (derivado del registro) |
 | [Guía de construcción](GUIA-DE-PRODUCCION.md) | Las promesas hechas a quien instala, y quién las ejerce |

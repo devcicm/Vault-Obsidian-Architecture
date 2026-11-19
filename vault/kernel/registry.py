@@ -424,18 +424,16 @@ DOCS_DEL_REPO: Dict[str, tuple] = {
     "README.md": ("indice", "índice de docs/, escrito a mano"),
     "RELEASE-EVIDENCE.md": ("referencia", "evidencia que exige el flujo de release"),
     "SKILLS.md": ("referencia", "skills que el vault ofrece a un agente"),
+    "TUTORIAL.md": ("tutorial", "primer uso de principio a fin; lo ejecuta "
+                    "tests/test_tutorial_ejecutable.py"),
 }
 
 #: Las clases de `DIATAXIS` sin documento propio en `docs/`, con su candidato.
 #: Declarar el hueco es publicarlo: `docs/README.md` lo nombra y un test lo
 #: comprueba. Se salda escribiendo el documento y quitando la entrada.
-HUECOS_DOCS_DEL_REPO: Dict[str, dict] = {
-    "tutorial": {
-        "motivo": ("no hay un recorrido guiado propio de principio a fin; lo más "
-                   "cercano lleva de clonar a la primera nota documentada"),
-        "candidato": "README.md#quick-start",
-    },
-}
+#: The tutorial gap was closed on 2026-11-19 by `docs/TUTORIAL.md`
+#: (producto-usable S2); the README Quick Start was its candidate.
+HUECOS_DOCS_DEL_REPO: Dict[str, dict] = {}
 
 #: **Eje de versionado: cómo cambia una nota sin perder lo que fue.** Cada modo
 #: nombra las tools que lo realizan y cuánto obliga: `guard` si la tool lo hace

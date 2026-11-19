@@ -96,24 +96,9 @@ DEPTH_HINTS: List[Tuple[int, List[str]]] = [
 ]
 DEFAULT_HOPS = 1
 
-STOPWORDS = {
-    # español
-    "a", "al", "algo", "ante", "aqui", "asi", "como", "con", "cual", "cuando",
-    "cuanto", "de", "del", "desde", "donde", "dos", "el", "ella", "ellos", "en",
-    "entre", "era", "es", "esa", "ese", "eso", "esta", "estan", "este", "esto",
-    "fue", "ha", "hay", "la", "las", "le", "les", "lo", "los", "mas", "me", "mi",
-    "muy", "no", "nos", "o", "para", "pero", "por", "porque", "que", "quien", "se",
-    "ser", "si", "sin", "sobre", "solo", "son", "su", "sus", "tan", "te", "tiene",
-    "todo", "todos", "un", "una", "uno", "y", "ya", "yo", "nuestro", "nuestra",
-    "hicimos", "tenemos", "hacer", "dime", "dame", "busca", "buscar", "muestrame",
-    # inglés
-    "about", "all", "an", "and", "any", "are", "as", "at", "be", "been", "but",
-    "by", "can", "did", "do", "does", "for", "from", "had", "has", "have", "how",
-    "i", "if", "in", "is", "it", "its", "me", "my", "of", "on", "or", "our", "she",
-    "show", "so", "than", "that", "the", "their", "them", "then", "there", "these",
-    "they", "this", "to", "up", "us", "was", "we", "were", "what", "when", "where",
-    "which", "who", "why", "will", "with", "you", "your",
-}
+# The stopword list has one owner, shared with `vault_search` (producto-usable):
+# re-exported here so `query_parse.STOPWORDS` keeps its name.
+from vault.kernel.normalizacion import STOPWORDS  # noqa: E402,F401
 
 MONTHS_ES = {
     "enero": 1, "febrero": 2, "marzo": 3, "abril": 4, "mayo": 5, "junio": 6,

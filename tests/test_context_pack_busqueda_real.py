@@ -109,7 +109,10 @@ def test_error_en_reintento_de_busqueda_no_se_oculta(corpus_real, monkeypatch):
         resultado["structured"]["sections_named"] = ["11_Code"]
         return resultado
 
-    def buscar(_query, folder=None):
+    def buscar(_query, folder=None, incluir_historico=False):
+        # The pack asks the search for history too: it applies its own,
+        # richer history filter (producto-usable S4).
+        assert incluir_historico is True
         if folder:
             return {"ok": True, "results": []}
         return {"ok": False, "error_code": "INDEX_NOT_FOUND",

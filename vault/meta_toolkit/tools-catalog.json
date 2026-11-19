@@ -6470,6 +6470,10 @@
             "type": "string",
             "description": "Filter by tag"
           },
+          "incluir-historico": {
+            "type": "boolean",
+            "description": "Devuelve también las notas históricas (superseded_by, archived, deprecated, obsolete, revoked, fuentes archivadas, cuarentena). Por defecto solo verdad vigente; history_excluded cuenta lo que quedó fuera."
+          },
           "ranking": {
             "type": "string",
             "description": "pesos (título, tags y extracto; por defecto) o bm25 (nota entera, estadísticas del índice)",

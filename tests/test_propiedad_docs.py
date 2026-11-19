@@ -234,11 +234,12 @@ def test_cada_clase_diataxis_tiene_doc_o_hueco_declarado():
         assert (clase in con_doc) != (clase in HUECOS_DOCS_DEL_REPO), clase
 
 
-def test_el_tutorial_que_falta_esta_publicado_con_su_candidato():
-    from vault_registry import HUECOS_DOCS_DEL_REPO
+def test_el_tutorial_existe_y_lo_enlazan_el_indice_y_el_readme():
+    """The gap was saldado by writing the document and removing the entry
+    (producto-usable S2): the index and the README send a newcomer to it."""
+    from vault_registry import DOCS_DEL_REPO, HUECOS_DOCS_DEL_REPO
 
-    hueco = HUECOS_DOCS_DEL_REPO["tutorial"]
-    assert hueco["candidato"] == "README.md#quick-start"
-    assert "## Quick Start" in (RAIZ / "README.md").read_text(encoding="utf-8")
-    indice = (DOCS / "README.md").read_text(encoding="utf-8")
-    assert "HUECOS_DOCS_DEL_REPO" in indice and "Quick Start" in indice
+    assert "tutorial" not in HUECOS_DOCS_DEL_REPO
+    assert DOCS_DEL_REPO["TUTORIAL.md"][0] == "tutorial"
+    assert "](TUTORIAL.md)" in (DOCS / "README.md").read_text(encoding="utf-8")
+    assert "](./docs/TUTORIAL.md)" in (RAIZ / "README.md").read_text(encoding="utf-8")

@@ -49,8 +49,10 @@ from typing import Any, Dict, List
 from vault_errors import emit_error, fuera_de_sesion, wrap_main
 from vault_io import (  # NotaInmutableError: el veto del dueño de la escritura
     FICHERO_INMUTABILIDAD, FICHERO_REGLAS, NotaInmutableError, assert_within_vault,
-    atomic_write_text, get_vault_root, is_snapshot_path, nota_es_inmutable, tomar_lock,
+    atomic_write_text, get_vault_root, guardar_version_actual, is_snapshot_path,
+    nota_es_inmutable, tomar_lock,
 )
+from vault.kernel.entorno import agente_por_defecto
 from vault_lib import destino_mas_corto, indice_de_nombres, inventario_de_nombres, resolver_sustitucion
 from vault.kernel.frontmatter_escritura import Frontmatter
 from vault.kernel.frontmatter_parsing import (
@@ -198,8 +200,17 @@ def supersede(path: str, by: str, apply: bool = False, replace: bool = False) ->
         if nota.read_bytes() != crudo:
             return {**emit_error(TOOL, "NOTE_LOCKED", f"{rel} cambió mientras se anotaba"),
                     "path": rel}
+        # The previous version first, by its owner: without it a substitution
+        # had nothing for `vault_undo` (tutorial walk, 2026-11-19). Whether the
+        # note may be rewritten is decided by the write owner below; when it
+        # refuses, the version saved for a write that never happened goes.
+        version = guardar_version_actual(nota)
         try:
-            atomic_write_text(nota, nuevo)
+            try:
+                atomic_write_text(nota, nuevo)
+            except BaseException:
+                (raiz / ".history" / version).unlink(missing_ok=True)
+                raise
         except NotaInmutableError as exc:
             # QA-FL-07: the write owner's refusal is governance, not a disk
             # problem; as WRITE_ERROR its recovery sent the agent to check
@@ -209,7 +220,14 @@ def supersede(path: str, by: str, apply: bool = False, replace: bool = False) ->
                                  pista=_pista_inmutable(nota, raiz)), "path": rel}
         except (PermissionError, ValueError) as exc:
             return {**emit_error(TOOL, "WRITE_ERROR", str(exc), exception=exc), "path": rel}
-    return {**base, "written": True}
+    # F8 (no repudio): the row of the substitution, through the operation-log
+    # port (like `vault_ingest`), not by importing its owner. After writing; a
+    # failure is published as `change_log_error` and never takes the write down.
+    from vault.runtime import anotar_operacion
+
+    registro = anotar_operacion("updated", rel, f"vault_supersede: {CLAVE} {valor}",
+                                agente_por_defecto())
+    return {**base, "written": True, "version_saved": version, **registro}
 
 
 def main() -> int:

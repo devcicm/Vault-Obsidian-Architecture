@@ -23,6 +23,7 @@ from ..kernel.frontmatter_parsing import separar_frontmatter
 from .bm25 import estadisticas
 from .enumeracion import es_nota_indexable, notas_en_disco
 from .repositorio import RepositorioIndices
+from ..kernel.vigencia import ciclo_de_vida
 
 #: Longitud del extracto que se guarda por nota. Va al índice, así que es
 #: contrato con quien lo lee: recortarlo cambia lo que el agente ve al buscar.
@@ -92,6 +93,10 @@ class ServicioReindex:
             },
             "terms": terminos["terms"],
             "length": terminos["length"],
+            # What decides current truth or history (`vault.kernel.vigencia`),
+            # status already normalized: the search filters history without
+            # reading the note or loading the normalizer (producto-usable S4).
+            "lifecycle": ciclo_de_vida(meta),
         }
 
     def refrescar(self, *rutas_escritas: Path, existentes: Sequence[Path] = ()) -> Dict[str, Any]:

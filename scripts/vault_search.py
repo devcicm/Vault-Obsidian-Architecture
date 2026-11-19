@@ -46,10 +46,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
-from vault.kernel.normalizacion import fold_accents  # noqa: E402
+from vault.kernel.normalizacion import STOPWORDS, fold_accents  # noqa: E402
 from vault_io import assert_within_vault, is_snapshot_path  # noqa: E402
 from vault_lib import parse_frontmatter, separar_frontmatter  # noqa: E402
 from vault_entorno import leer as leer_entorno  # dueño del registro (AP-49/05)
+from vault.kernel.vigencia import (  # noqa: E402
+    ciclo_de_vida, es_seccion_historica, motivo_de_fila, motivo_historico)
 
 
 def _notas_visibles_en_vivo(root: Path):
@@ -78,7 +80,8 @@ def _notas_visibles_en_vivo(root: Path):
                               'title': titulo,
                               'preview': cuerpo.strip()[:200].replace('\n', ' '),
                               'tags': tags, 'updatedAt': meta.get('updatedAt') or meta.get('createdAt') or '',
-                              **_repo(root).estadisticas_bm25(str(titulo), cuerpo)})
+                              **_repo(root).estadisticas_bm25(str(titulo), cuerpo),
+                              'lifecycle': ciclo_de_vida(meta)})
             except (OSError, UnicodeError, ValueError) as exc:
                 skipped.append(f'{path.relative_to(root).as_posix()}: {type(exc).__name__}')
     return notes, skipped
@@ -147,7 +150,10 @@ def score_note(note: Dict[str, Any], query: str, folder: Optional[str], tag: Opt
 
     query_lower = _forma(query)
 
-    query_words = query_lower.split()
+    # Each word scores as a substring, so a stopword matched almost every
+    # title ("de" inside "decisions", "index"). Same list as the query parser;
+    # a query made only of stopwords keeps them (it is still a question).
+    query_words = [w for w in query_lower.split() if w not in STOPWORDS] or query_lower.split()
 
 
     score = 0
@@ -203,6 +209,65 @@ def score_note(note: Dict[str, Any], query: str, folder: Optional[str], tag: Opt
     return score
 
 
+def _pide_historia(folder: Optional[str]) -> bool:
+    """Searching inside a section that holds history is asking for history."""
+    if not folder:
+        return False
+    from vault.kernel.contenido import CARPETA_FUENTES
+
+    carpeta = folder.replace("\\", "/").strip("/")
+    return es_seccion_historica(carpeta) or _en_carpeta(carpeta + "/x.md", CARPETA_FUENTES)
+
+
+class _FiltroDeHistoria:
+    """Leaves history out of the matches, counting it by reason.
+
+    The rule is `vault.kernel.vigencia` (shared with the context pack); it
+    reads the row's `lifecycle`, so no note is read. A row written before the
+    row carried it is decided by reading that one matching note.
+    """
+
+    def __init__(self, activo: bool) -> None:
+        self.activo = activo
+        self.excluidas: Dict[str, str] = {}
+        self.sin_ciclo = 0
+
+    def _motivo(self, path: str, fila: Dict[str, Any]) -> Optional[str]:
+        try:
+            return motivo_de_fila(fila)
+        except KeyError:
+            self.sin_ciclo += 1
+        ruta = _raiz() / path
+        try:
+            assert_within_vault(ruta, _raiz())
+            meta = parse_frontmatter(ruta.read_text(encoding="utf-8")) or {}
+        except (OSError, UnicodeError, ValueError):
+            meta = {}
+        return motivo_historico(path, meta)
+
+    def excluye(self, nota: Dict[str, Any], filas: Dict[str, Dict[str, Any]]) -> bool:
+        path = nota.get("path", "")
+        if not self.activo or Path(path).name.lower() == "index.md":
+            return False
+        motivo = self._motivo(path, filas.get(path, {"path": path}))
+        if motivo:
+            self.excluidas[path] = motivo
+        return bool(motivo)
+
+    def informe(self) -> Dict[str, Any]:
+        """Additive envelope field; absent when nothing was left out."""
+        if not self.excluidas:
+            return {}
+        por_motivo: Dict[str, int] = {}
+        for motivo in self.excluidas.values():
+            por_motivo[motivo] = por_motivo.get(motivo, 0) + 1
+        return {"history_excluded": {
+            "total": len(self.excluidas),
+            "by_reason": dict(sorted(por_motivo.items())),
+            "hint": "solo verdad vigente: --incluir-historico devuelve también estas notas",
+        }}
+
+
 def _carpeta_inexistente(folder: str) -> Dict[str, Any]:
     """The error for a `--folder` that is not on disk, by what can fix it.
 
@@ -229,7 +294,8 @@ def _carpeta_inexistente(folder: str) -> Dict[str, Any]:
 
 
 def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = None,
-                 ranking: Optional[str] = None) -> Dict[str, Any]:
+                 ranking: Optional[str] = None,
+                 incluir_historico: bool = False) -> Dict[str, Any]:
 
     """
 
@@ -246,6 +312,10 @@ def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = 
         tag: Filter by frontmatter tag
 
         ranking: `pesos` or `bm25` (default `RANKING_POR_DEFECTO`)
+
+        incluir_historico: also return history (superseded, archived,
+            deprecated, obsolete, revoked, archived sources, quarantine);
+            by default only current truth, the rule of the context pack
 
 
 
@@ -329,6 +399,7 @@ def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = 
             puntos_bm25 = _repo().puntuar_bm25(query, notes)
 
     scored_notes = []
+    filas = {n.get("path", ""): n for n in notes}
 
     for note in notes:
 
@@ -362,6 +433,13 @@ def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = 
 
             )
 
+
+    # Current truth only (producto-usable S4), before sorting and the cut at 20.
+    historia = _FiltroDeHistoria(activo=not incluir_historico and not _pide_historia(folder))
+    scored_notes = [n for n in scored_notes if not historia.excluye(n, filas)]
+    if historia.sin_ciclo:
+        avisos.append(f"vigencia: {historia.sin_ciclo} coincidencia(s) del índice sin ciclo de "
+                      "vida; se leyó su nota para filtrar lo histórico. Ejecuta vault_reindex")
 
     # Sort by score descending
 
@@ -401,6 +479,8 @@ def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = 
 
         "results": results,
 
+        **historia.informe(),
+
         "hint": "Use vault_read(path) to get full note content",
 
     }
@@ -425,6 +505,7 @@ Ejemplos:
   python vault_search.py --query "api" --tag "mcp"
 
   python vault_search.py --query "circuit breaker" --folder "05_Patterns"
+  python vault_search.py --query "transporte" --incluir-historico
 
 
 
@@ -436,6 +517,7 @@ Notas:
 
   - Score: title×4 + word matches + preview matches (--ranking pesos)
   - --ranking bm25: BM25 sobre la nota entera con las estadisticas del indice
+  - Por defecto solo verdad vigente: lo historico sale y se cuenta en history_excluded
 
 """,
 
@@ -448,6 +530,11 @@ Notas:
 
     parser.add_argument("--tag", help="Filter by tag")
 
+    parser.add_argument("--incluir-historico", action="store_true",
+                        help=("devuelve también lo histórico (superseded_by, archived, "
+                              "deprecated, obsolete, revoked, fuentes archivadas, cuarentena); "
+                              "por defecto solo verdad vigente"))
+
     parser.add_argument("--ranking", choices=RANKINGS, default=None,
                         help=("pesos (titulo, tags y extracto) o bm25 (nota entera); "
                               f"por defecto {RANKING_POR_DEFECTO}"))
@@ -455,7 +542,8 @@ Notas:
 
     args = parser.parse_args()
 
-    result = vault_search(args.query, args.folder, args.tag, ranking=args.ranking)
+    result = vault_search(args.query, args.folder, args.tag, ranking=args.ranking,
+                          incluir_historico=args.incluir_historico)
 
 
     print(json.dumps(result, indent=2, ensure_ascii=False))

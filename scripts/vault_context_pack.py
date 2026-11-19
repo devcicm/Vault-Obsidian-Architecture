@@ -82,16 +82,6 @@ INTENTOS = ("explorar", "documentar", "cambiar", "depurar", "revisar")
 # vocabulario copiado: `superseded` y `revoked` no están en STATUS_VOCAB y
 # `obsolete`, que sí, no pesaba. Se conserva como lectura del valor crudo que
 # un vault heredado pueda traer escrito.
-STATUS_PENALTY: Dict[str, float] = {
-    "deprecated": 0.4, "superseded": 0.3, "revoked": 0.2, "archived": 0.5,
-}
-
-# Claves del vocabulario canónico, que normaliza su dueño (`normalize_status`).
-# `obsolete` pesa como `deprecated`: el vocabulario no distingue más entre los dos.
-PENALIZACION_POR_STATUS: Dict[str, float] = {
-    "deprecated": 0.4, "obsolete": 0.4, "archived": 0.5,
-}
-
 RECENCY_HALFLIFE_DAYS = 90.0
 
 
@@ -100,6 +90,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.consulta.repositorio import RepositorioConsulta  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+# The rule and its weights have one owner, shared with `vault_search`
+# (producto-usable S4): re-exported so `vault_context_pack.penalizacion` and
+# friends keep working for their callers.
+from vault.kernel.vigencia import (  # noqa: E402
+    PENALIZACION_POR_STATUS, STATUS_PENALTY, motivo_historico, penalizacion)
 
 
 def index_coherence():
@@ -117,7 +112,6 @@ def index_coherence():
 # El vocabulario se declara una vez y se consume, no se copia. Ver
 # `vault_vocabulario.py` para el registro y su contexto dueno.
 from vault_vocabulario import peso as _peso
-from vault_norms_catalog import normalize_status
 
 CIA_WEIGHT: Dict[str, float] = _peso("severidad")
 
@@ -174,25 +168,6 @@ def _days_since(timestamp: str, now: datetime) -> Optional[float]:
     return max(0.0, (now - parsed).total_seconds() / 86400.0)
 
 
-def penalizacion(frontmatter: Dict[str, Any]) -> float:
-    """Factor del rerank para una nota que ya no es la vigente (AP-17).
-
-    Una nota anotada con `superseded_by:` —lo que la sanación escribe en vez de
-    borrar la gemela— pesa como `superseded`: sin esto la anotación no cambiaba
-    nada y la gemela competía de igual a igual con su canónica. El `status` se
-    lee normalizado por su dueño; si no es canónico, por su valor crudo."""
-    factores = []
-    if str(frontmatter.get("superseded_by") or "").strip():
-        factores.append(STATUS_PENALTY["superseded"])
-    crudo = str(frontmatter.get("status") or "").strip().lower()
-    if crudo:
-        canonico = normalize_status(crudo)[0]
-        factor = PENALIZACION_POR_STATUS.get(canonico) or STATUS_PENALTY.get(crudo)
-        if factor:
-            factores.append(factor)
-    return min(factores, default=1.0)
-
-
 def _recency_score(timestamp: str, now: datetime) -> float:
     """Decaimiento exponencial con vida media de 90 días.
 
@@ -220,44 +195,6 @@ def _read_note(path: str) -> Dict[str, Any]:
         return emit_error("vault_context_pack", "FILE_READ_ERROR", str(exc), exception=exc)
     frontmatter, body = parse_frontmatter_with_body(raw)
     return {"ok": True, "frontmatter": frontmatter, "body": body.strip()}
-
-
-def motivo_historico(rel: str, frontmatter: Dict[str, Any]) -> Optional[str]:
-    """Why a note is history rather than current truth, or `None` (S4, bigo).
-
-    Each class is decided by its owner, never by a list copied here:
-
-    - `quarantine`: the note lives in the section the registry declares for the
-      `quarantine` type (`vault.kernel.registry.SECTION_TYPES`; the folder that
-      `vault.durabilidad.cuarentena` writes), held "without a safe destination"
-      (unknown origin, suspected injection); that module says a doubtful copy
-      must not be read as valid context. Read from the kernel registry, not from
-      `vault.durabilidad`, so `consulta` gains no dependency on `durabilidad`.
-    - `archived_source`: `vault.kernel.contenido.es_fuente_archivada` (AP-73),
-      the raw source kept verbatim; the compiled knowledge lives elsewhere.
-    - `superseded`: the note carries `superseded_by:`, the decision of which
-      note rules (AP-17).
-    - otherwise the status the rerank already treats as "no longer current"
-      (`penalizacion() < 1.0`): `deprecated`, `obsolete`, `archived` and the
-      legacy raw `superseded`/`revoked`, reported by that status.
-    """
-    from vault.kernel.contenido import es_fuente_archivada
-    from vault.kernel.registry import SECTION_TYPES
-
-    rel = str(rel).replace("\\", "/")
-    frontmatter = frontmatter or {}
-    if any(rel.startswith(seccion + "/") for seccion, tipos in SECTION_TYPES.items()
-           if "quarantine" in tipos):
-        return "quarantine"
-    if es_fuente_archivada(rel, frontmatter):
-        return "archived_source"
-    if str(frontmatter.get("superseded_by") or "").strip():
-        return "superseded"
-    if penalizacion(frontmatter) < 1.0:
-        crudo = str(frontmatter.get("status") or "").strip().lower()
-        canonico = normalize_status(crudo)[0]
-        return canonico if canonico in PENALIZACION_POR_STATUS else crudo
-    return None
 
 
 def _consulta_pide_historia(statuses: List[str]) -> bool:
@@ -593,7 +530,11 @@ paquete de antes: compiten, penalizadas."""
     named = structured.get("sections_named", [])
     if terms:
         section = named[0] if named else None
-        found = vault_search(" ".join(terms[:8]), folder=section)
+        # Every match, history included: the pack applies its own history
+        # filter (`_FiltroDeHistoria`), which counts what it leaves out and
+        # hands a superseded note's signals to its successor. The search's
+        # current-only default would hide them before the pack saw them.
+        found = vault_search(" ".join(terms[:8]), folder=section, incluir_historico=True)
         if not found.get("ok"):
             search_error = codigo_busqueda(found)
         elif found.get("source") != "live_visible_markdown":
@@ -605,7 +546,7 @@ paquete de antes: compiten, penalizadas."""
         # reintenta sin ella antes que responder "no hay contexto" teniendo el
         # vault la nota en otra sección.
         if section and not lexical:
-            retry = vault_search(" ".join(terms[:8]))
+            retry = vault_search(" ".join(terms[:8]), incluir_historico=True)
             if not retry.get("ok"):
                 detalle = codigo_busqueda(retry)
                 search_error = f"{search_error}; reintento: {detalle}" if search_error else detalle
