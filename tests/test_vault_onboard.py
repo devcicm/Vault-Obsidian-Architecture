@@ -205,6 +205,12 @@ def test_no_se_escriben_notas_sin_evidencia(vault):
 
         if nota.parent.name in ("18_Bugs", "19_Audits", "20_Quarantine"):
             continue
+        # 00_System belongs to vault_init, not to the onboarding (the envelope's
+        # `sections_left_empty_by_design` says so) and the content gate exempts
+        # it: since the change log is born with the vault (e259f661) its
+        # header-only change-log.md lives there and asserts nothing yet.
+        if nota.relative_to(v).parts[0] == "00_System":
+            continue
         if "template" in nota.read_text(encoding="utf-8")[:400] or nota.stem == "index":
             continue
         assert vault_lib.extract_wikilinks(cuerpo) or cuerpo_sin_marcadores(cuerpo), (
