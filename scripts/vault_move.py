@@ -141,7 +141,11 @@ def save_move_log(log: List[Dict[str, Any]]) -> None:
 
 def append_move_log(record: Dict[str, Any]) -> None:
     """Añade una entrada al historial bajo su lock: dos moves en paralelo no se
-    comen la entrada del otro (F1). El lock y la escritura son del dueño."""
+    comen la entrada del otro (F1). El lock y la escritura son del dueño.
+
+    superseded_by: la fila `moved` del change log, con `moved_at`
+    (bigo-inmutabilidad, S8 b). `move_note` ya no la llama: `move-log.json`
+    queda congelado. Se conserva el contrato por no-derogación."""
     _repo().anotar_movimiento(record, timeout=_LOCK_TIMEOUT)
 
 
@@ -637,6 +641,14 @@ def _mover_nota(
     dry_run: bool, backup: bool, reclasificado: Optional[Dict[str, Any]] = None,
     refrescar_secciones: bool = True,
 ) -> Dict[str, Any]:
+    # The instant of the move, taken before anything changes on disk
+    # (bigo-inmutabilidad, S8 b). The audit asks for `vault_graph` only while
+    # the graph is older than this instant (QA-FL-08), and this move refreshes
+    # the graph below: taken after that refresh, as it was until 2026-11-19,
+    # every move on a vault whose change log already existed reported its own
+    # refreshed graph as stale. Only the first move of a vault escaped it — it
+    # created `change-log.md`, and that write refreshed the graph again.
+    instante = datetime.now(timezone.utc).isoformat()
     # Con --dry-run nada toca el disco: ni la carpeta destino, ni los enlaces
     # de otras notas, ni el índice. Medido en v40.34: la simulación reescribía
     # `[[a]]` → `[[z]]` en las notas que enlazaban y creaba la carpeta destino
@@ -751,7 +763,7 @@ def _mover_nota(
     move_record = {
         "from": from_path,
         "to": to_path,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": instante,
         "links_updated": links_updated,
         "files_checked": files_checked,
         "dry_run": dry_run,
@@ -759,14 +771,18 @@ def _mover_nota(
 
     change_log = None
     if not dry_run:
-        _safe("move-log", lambda: append_move_log(move_record))
         # SP-01: la fila `moved` del change-log legible (`00_System/change-log.md`
         # y `.change-log.jsonl`, append-only). `vault_write`, `vault_delete`, `vault_undo` y el
         # append dejan la suya — hasta v41.17 el movimiento solo quedaba en el
         # move-log y en `.tool-trace.json`, y la acción `moved` existía en el
         # contrato del log pero nadie la emitía (medido contra un vault ajeno
         # al estándar, 2026-10-22).
-        hecho = _safe("change-log", lambda: _entrada_change_log(from_path, to_path))
+        # bigo-inmutabilidad, S8 (b): esa fila es el ÚNICO registro del
+        # movimiento. `move-log.json` guardaba el mismo hecho otra vez; ya no
+        # se escribe (queda congelado y se sigue leyendo, por su dueño), y la
+        # fila lleva el instante del movimiento (`moved_at`) que el audit y el
+        # grafo leían de él.
+        hecho = _safe("change-log", lambda: _entrada_change_log(from_path, to_path, instante))
         if hecho.get("id"):
             change_log = {"id": hecho["id"], "action": "moved"}
 
@@ -793,7 +809,8 @@ def _mover_nota(
     }
 
 
-def _entrada_change_log(from_path: str, to_path: str) -> Dict[str, Any]:
+def _entrada_change_log(from_path: str, to_path: str,
+                        moved_at: Optional[str] = None) -> Dict[str, Any]:
     """La constancia de SP-01 para un movimiento, por el dueño del log.
 
     Import diferido (AP-58): arista unidireccional — `vault_change_log` no
@@ -806,6 +823,7 @@ def _entrada_change_log(from_path: str, to_path: str) -> Dict[str, Any]:
         new_path=to_path,
         reason="moved by vault_move",
         agent="vault_move",
+        moved_at=moved_at,
     )
 
 

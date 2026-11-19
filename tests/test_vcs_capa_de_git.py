@@ -326,9 +326,15 @@ def test_reparar_indice_saca_lo_ignorado_del_index_y_nada_del_disco(vault_con_re
     # El índice ya cumple la política y el commit de la reparación es visible.
     despues = [l for l in _git(vault_con_repo, "ls-files").splitlines()
                if l.strip()]
+    # Rule 5 of the policy versions the change log, and a vault is born with
+    # it since bigo-inmutabilidad (S8 a): it is not an intruder, as in
+    # `test_el_repo_del_vault_solo_versiona_notas`.
     intrusos = [f for f in despues
-                if not f.endswith(".md") and f != ".gitignore"]
+                if not f.endswith(".md") and f != ".gitignore"
+                and f not in ("00_System/.change-log.json", "00_System/.change-log.jsonl")]
     assert not intrusos, despues
+    assert "00_System/.change-log.jsonl" in despues, (
+        "la reparación sacó del índice la bitácora, que la política versiona")
     mensajes = _git(vault_con_repo, "log", "--format=%s")
     assert "reparacion del indice: 2 ficheros destrackeados" in mensajes
 

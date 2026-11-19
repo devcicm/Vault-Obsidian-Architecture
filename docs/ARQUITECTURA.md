@@ -94,7 +94,7 @@ Fronteras que hoy cruza (2), deuda declarada:
 | Módulo | Importa | Contexto destino |
 |---|---|---|
 | `vault_code_tag` | `vault_write` | Autoría |
-| `vault/grafo/repositorio.py` | `vault/gobernanza` (3 imports) | Gobernanza |
+| `vault/grafo/repositorio.py` | `vault/gobernanza` (4 imports) | Gobernanza |
 
 ## Gobernanza
 
@@ -266,7 +266,7 @@ Quién escribe qué. Derivado del catálogo (`side_effects`): es el inventario q
 - `vault_migrate_docs` (Migración): Copia/move archivos
 - `vault_migrate_rollback` (Migración): Revierte archivos migrados
 - `vault_model_profile` (Memoria de Contexto): Actualiza 17_Preferences/model_profile.active
-- `vault_move` (Core): Actualiza wiki-links, search-index, graph.json, move-log
+- `vault_move` (Core): Actualiza wiki-links, search-index, graph.json y la fila moved del change-log (move-log.json queda congelado)
 - `vault_ncr_save` (Riesgos/Calidad): Crea nota en 02_Observability/ncr/
 - `vault_noop_audit` (Normas): Con --freeze reescribe scripts/noop-baseline.json
 - `vault_norms` (Normas): Con --apply/--apply-heal edita las notas de norma del vault; Con --rebuild/--audit escribe el registro de normas y sus artefactos derivados

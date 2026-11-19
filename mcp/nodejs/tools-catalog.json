@@ -741,6 +741,10 @@
             "type": "boolean",
             "description": "Query mode: return recent log entries"
           },
+          "init": {
+            "type": "boolean",
+            "description": "Create the log's initial state when it is missing (Markdown header, empty .change-log.jsonl); records nothing. vault_init runs it"
+          },
           "project": {
             "type": "string",
             "description": "Proyecto específico"
@@ -4124,7 +4128,7 @@
         "Confimar antes de sobreescribir"
       ],
       "side_effects": [
-        "Actualiza wiki-links, search-index, graph.json, move-log"
+        "Actualiza wiki-links, search-index, graph.json y la fila moved del change-log (move-log.json queda congelado)"
       ],
       "perfil_minimo": "operador",
       "status": "active",

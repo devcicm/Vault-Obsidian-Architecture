@@ -238,7 +238,7 @@ python vault_merge.py --action dedup   # hacer vault_backup primero
 ---
 
 ### `vault_move.py`
-Reubica una nota o una carpeta entera y **arrastra las referencias**: reescribe los wiki-links que apuntaban al origen, y regenera `search-index.json`, `graph.json` y el move-log. Mover un `.md` a mano rompe el grafo en silencio; esta tool es la forma soportada de hacerlo.
+Reubica una nota o una carpeta entera y **arrastra las referencias**: reescribe los wiki-links que apuntaban al origen, regenera `search-index.json` y `graph.json`, y anota el movimiento en el change log (fila `moved` con `moved_at`, el instante del movimiento), que es su **único registro**: `00_System/move-log.json` ya no se escribe (bigo-inmutabilidad, 2026-11-19); el de un vault anterior queda congelado y `vault_graph` y `vault_audit` lo siguen leyendo, antes que las filas del log. Mover un `.md` a mano rompe el grafo en silencio; esta tool es la forma soportada de hacerlo.
 
 ```bash
 python vault_move.py --from "01_Projects/old/note.md" --to "03_Decisions/note.md"
@@ -1626,6 +1626,20 @@ escrito (`00_System/.change-log.jsonl`).
 - **Comillas tipográficas.** El saneo se aplica a los valores antes de serializar la
   línea: sanear el JSON ya serializado convertía `“` en `"` y dejaba el array ilegible
   para la siguiente anotación.
+- **Nace con el vault** (2026-11-19). `vault_init` escribe su estado inicial con
+  `vault_change_log --init` (`sembrar_bitacora()`) antes del primer reindex: la cabecera de `change-log.md` y un
+  `.change-log.jsonl` vacío, sin ninguna entrada. El primer índice ya cuenta el log y
+  la primera operación anotada es un anexo, así que `vault_reindex --check` sigue en
+  `index_ok` (antes esa operación creaba el `.md` y el índice quedaba en
+  `index_stale`). Un vault que ya tiene log, en cualquiera de los dos formatos, no se
+  toca. En un vault con repo, el log viaja desde el primer commit.
+- **Único registro de los movimientos.** La fila `moved` que deja `vault_move` lleva
+  `moved_at` (el instante del movimiento, con la precisión de `move-log.json`, que ya
+  no se escribe). `RepositorioGobernanza.leer_movimientos()` da el historial de
+  movimientos: el `move-log.json` congelado primero y después las filas con
+  `moved_at`; las filas `moved` anteriores no lo llevan porque su movimiento ya está
+  en ese fichero, y una fila anotada a mano con `--action moved` tampoco cuenta como
+  movimiento del grafo.
 
 Acciones válidas (`VALID_ACTIONS`): `created`, `updated`, `deleted`, `moved`,
 `transition` y, desde 2026-11-16, `ingested` (una pasada de ingesta) y `linted`
@@ -1656,6 +1670,9 @@ python vault_change_log.py --action moved \
 
 # Consultar últimas 20 entradas
 python vault_change_log.py --query --last 20
+
+# Estado inicial del log, solo lo que falta (lo ejecuta vault_init); no anota nada
+python vault_change_log.py --init
 
 # Consultar por proyecto
 python vault_change_log.py --query --project "mi-api" --last 10
@@ -2101,6 +2118,8 @@ python vault_init.py --no-audit         # omite el vault_audit final
 ```
 
 `--clean` **borra todo el contenido del vault actual** antes de inicializar (salvo `.locks`). No se ejecuta sin haber mirado antes qué hay en el destino.
+
+El change log nace con el vault (paso `change_log` del sobre, con `created`): la cabecera de `00_System/change-log.md` y un `00_System/.change-log.jsonl` vacío, escritos por su dueño (`vault_change_log --init`) antes del primer reindex. Solo se escribe lo que falta: a un vault que tiene un solo formato se le agrega el que no tiene, y ningún byte existente cambia. `--init` no se combina con las opciones de alta ni de consulta (sale con código 2).
 
 ### `vault_onboard.py`
 Puebla un vault recién inicializado desde un **proyecto de código que nunca tuvo uno**. Lee el repo —estructura, manifiestos de dependencias, README, tests, scripts— y reconstruye su historia con git: detecta ramas snap/archive, contrasta la fecha del primer commit alcanzable contra la real y separa fases por tags en vez de por huecos en el calendario.

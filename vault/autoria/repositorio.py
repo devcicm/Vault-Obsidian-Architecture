@@ -154,7 +154,10 @@ class RepositorioAutoria:
         RepositorioGrafo(self._ctx).escribir_bitacora_movimientos(registros)
 
     def anotar_movimiento(self, registro: dict, timeout: float = 10.0) -> None:
-        """`vault_move` anota por aquí; escribe el dueño (deuda #3, residuo)."""
+        """`vault_move` anotaba por aquí; escribe el dueño (deuda #3, residuo).
+
+        superseded_by: la fila `moved` del change log (bigo-inmutabilidad,
+        S8 b): `move-log.json` queda congelado. No-derogación."""
         from ..grafo.repositorio import RepositorioGrafo
 
         RepositorioGrafo(self._ctx).anotar_movimiento(registro, timeout=timeout)

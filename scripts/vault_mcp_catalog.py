@@ -1144,7 +1144,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             },
         },
         "guards": ["Confimar antes de sobreescribir"],
-        "side_effects": ["Actualiza wiki-links, search-index, graph.json, move-log"],
+        "side_effects": ["Actualiza wiki-links, search-index, graph.json y la fila moved del change-log (move-log.json queda congelado)"],
         "example": 'python vault_move.py --from "01_Projects/foo.md" --to "03_Decisions/foo.md"\npython vault_move.py --folder "01_Projects/old" --to-folder "01_Projects/new"',
         "related": ["vault_write", "vault_graph", "vault_reindex"],
     },

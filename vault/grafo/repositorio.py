@@ -96,6 +96,10 @@ class RepositorioGrafo:
         Hasta 2026-10-08 lo escribía `vault_move`, de Autoría, con la ruta
         literal. Autoría delega aquí por `RepositorioAutoria`, que ya cablea
         Grafo (par `autoria → grafo` del presupuesto).
+
+        superseded_by: la fila `moved` del change log (bigo-inmutabilidad,
+        S8 b). Ninguna tool escribe ya `move-log.json`: queda congelado y se lee
+        por `leer_movimientos`. Se conserva el contrato por no-derogación.
         """
         self._ctx.escritor.escribir(
             self.bitacora_movimientos,
@@ -104,13 +108,28 @@ class RepositorioGrafo:
     def anotar_movimiento(self, registro: dict, timeout: float = 10.0) -> None:
         """Añade una entrada bajo el lock de la bitácora: dos moves en
         paralelo no se comen la entrada del otro (F1). Un JSON corrupto no se
-        sobrescribe: el error sube, como hacía `vault_move.load_move_log`."""
+        sobrescribe: el error sube, como hacía `vault_move.load_move_log`.
+
+        superseded_by: la fila `moved` del change log (bigo-inmutabilidad,
+        S8 b); `vault_move` ya no anota aquí. No-derogación."""
         ruta = self.bitacora_movimientos
         with self._ctx.escritor.bloquear(ruta, timeout=timeout):
             registros = (json.loads(ruta.read_text(encoding="utf-8"))
                          if ruta.exists() else [])
             registros.append(registro)
             self.escribir_bitacora_movimientos(registros)
+
+    def leer_movimientos(self) -> list:
+        """Every recorded move, oldest first: frozen `move-log.json`, then the log.
+
+        The change log is the single record of a move (bigo-inmutabilidad,
+        S8 b) and its owner, Gobernanza, reads both: this context only names
+        the frozen file it declares. Read errors of that file propagate, as
+        `json.loads(read_text())` raised them for `vault_graph`.
+        """
+        from ..gobernanza.repositorio import RepositorioGobernanza
+
+        return RepositorioGobernanza(self._ctx).leer_movimientos(self.bitacora_movimientos)
 
     @property
     def bitacora_cambios(self) -> Path:

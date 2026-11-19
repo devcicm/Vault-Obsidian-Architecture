@@ -55,9 +55,10 @@ from vault_errors import emit_error, emit_fallo, mensaje_de, wrap_main, proyecto
 from vault_entorno import agente_por_defecto
 from vault_lib import utcnow
 from vault_io import (IndiceIlegible, append_line, atomic_write_text, file_lock,
-                      identidad_requisito)
+                      identidad_requisito, write_report)
 import uuid
 
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -243,6 +244,31 @@ def _append_md_log(entry: Dict[str, Any]) -> bool:
     return True
 
 
+def sembrar_bitacora() -> Dict[str, Any]:
+    """The change log is born with the vault (bigo-inmutabilidad, S8 a).
+
+    `vault_init` calls this before its reindex, so the first index already
+    holds `00_System/change-log.md` and the first logged operation is an
+    append that keeps the index current. Until then a freshly indexed vault
+    went `index_stale` on its first logged operation: the operation created
+    the Markdown log, and an append only refreshes rows that already exist.
+
+    Only what is missing is written, under the log lock: the Markdown header
+    when there is no Markdown log, and the empty line file when the vault holds
+    no log in either format. Nothing is recorded: the history starts empty.
+    `created` lists the paths written, relative to the vault.
+    """
+    creados: List[str] = []
+    with file_lock(_log_json()):
+        if not _log_md().exists():
+            _system_dir().mkdir(parents=True, exist_ok=True)
+            atomic_write_text(_log_md(), MD_HEADER)
+            creados.append(str(_log_md().relative_to(_raiz())).replace("\\", "/"))
+        if _gobernanza().iniciar_bitacora_cambios():
+            creados.append(str(_log_lines().relative_to(_raiz())).replace("\\", "/"))
+    return {"created": creados}
+
+
 def _refrescar_busqueda_del_log() -> None:
     """The Markdown log is an indexed note: keep its search fingerprint current.
 
@@ -296,6 +322,7 @@ def vault_change_log_add(
     propagate: Optional[str] = None,
     requirement: Optional[Dict[str, Any]] = None,
     event_id: Optional[str] = None,
+    moved_at: Optional[str] = None,
 ) -> Dict[str, Any]:
     """El registro que **SP-01** exige antes de eliminar una nota.
 
@@ -349,6 +376,18 @@ def vault_change_log_add(
     elif event_id is not None:
         return emit_error("vault_change_log", "INVALID_VALUE", "Event identity requires a structured transition")
 
+    # bigo-inmutabilidad, S8 (b): the log is the single record of a move.
+    # `vault_move` passes the instant of the move, at the precision the frozen
+    # `move-log.json` kept it: the audit compares it with the graph's mtime,
+    # and the row's own `timestamp` is whole seconds.
+    if moved_at is not None:
+        try:
+            datetime.fromisoformat(str(moved_at).replace("Z", "+00:00"))
+        except ValueError:
+            return emit_error("vault_change_log", "INVALID_VALUE", "Invalid move instant")
+        if action != "moved":
+            return emit_error("vault_change_log", "INVALID_VALUE", "A move instant requires the action 'moved'")
+
     entry: Dict[str, Any] = {
         "id": event_id or str(uuid.uuid4()),
         "action": action,
@@ -360,6 +399,8 @@ def vault_change_log_add(
     }
     if requirement is not None:
         entry["requirement"] = requirement
+    if moved_at is not None:
+        entry["moved_at"] = str(moved_at)
 
     # Serialize the appends against concurrent writers: one line each, in lock
     # order, and the JSON and Markdown rows of one entry together. The log is
@@ -524,6 +565,12 @@ Ejemplos:
 
 
 
+  # Estado inicial del log, si falta (lo ejecuta vault_init al crear el vault)
+
+  python vault_change_log.py --init
+
+
+
 Notas:
 
   - VAULT_ROOT se detecta automaticamente desde la ubicacion del script
@@ -565,6 +612,13 @@ Notas:
     )
 
     parser.add_argument(
+        "--init",
+        action="store_true",
+        help=("Create the log's initial state when it is missing (Markdown header, "
+              "empty .change-log.jsonl); records nothing. vault_init runs it"),
+    )
+
+    parser.add_argument(
         "--project", type=proyecto_registrado("vault_change_log"), help="Filter query by project name (substring match on path)"
     )
 
@@ -581,7 +635,24 @@ Notas:
 
     reason = args.reason or args.summary
 
-    if args.query:
+    if args.init:
+        # `--init` records nothing and queries nothing: combined with an option
+        # of those modes it would answer ok and ignore it (independent
+        # verifier, 2026-11-19, B1). Refused before anything is written.
+        otras = [flag for flag, valor in (
+            ("--query", args.query), ("--action", args.action), ("--path", args.path),
+            ("--new_path", args.new_path), ("--reason", args.reason),
+            ("--summary", args.summary), ("--propagate", args.propagate),
+            ("--project", args.project)) if valor]
+        if otras:
+            parser.error(f"--init no se combina con {', '.join(otras)}: crea el estado "
+                         "inicial del log y no registra ni consulta nada")
+        # bigo-inmutabilidad, S8 (a): `vault_init` runs this mode as one of its
+        # steps, as it runs the reindex: a subprocess, not an import.
+        sembrado = sembrar_bitacora()
+        result = {"ok": True, **write_report(), "seeded": sembrado["created"]}
+
+    elif args.query:
         result = vault_change_log_query(
             project=args.project,
             action_filter=args.action,

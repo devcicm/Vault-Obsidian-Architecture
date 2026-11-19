@@ -266,20 +266,20 @@ def vault_graph() -> Dict[str, Any]:
         except (json.JSONDecodeError, PermissionError):
             pass
 
-    # Check for moved nodes from move-log
-    move_log = _system_dir() / "move-log.json"
-    if move_log.exists():
-        try:
-            move_data = json.loads(move_log.read_text(encoding="utf-8"))
-            for move in move_data:
-                old_path = move.get("from")
-                new_path = move.get("to")
-                if old_path in nodes:
-                    nodes[old_path]["status"] = "moved"
-                    nodes[old_path]["moved_to"] = new_path
-                    nodes[old_path]["moved_at"] = move.get("timestamp")
-        except (json.JSONDecodeError, PermissionError):
-            pass
+    # Moved nodes: the frozen move-log first, then the `moved` rows of the
+    # change log, its single record since bigo-inmutabilidad (S8 b). Both are
+    # read by the log's owner; the frozen file's errors are handled as before.
+    try:
+        move_data = _repo().leer_movimientos()
+        for move in move_data:
+            old_path = move.get("from")
+            new_path = move.get("to")
+            if old_path in nodes:
+                nodes[old_path]["status"] = "moved"
+                nodes[old_path]["moved_to"] = new_path
+                nodes[old_path]["moved_at"] = move.get("timestamp")
+    except (json.JSONDecodeError, PermissionError, TypeError):
+        pass
 
     graph_data = ensamblar_grafo(
         nodes, escaneo, extras, colisiones_de_nombre(relativas)

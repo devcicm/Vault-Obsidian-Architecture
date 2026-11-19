@@ -3270,34 +3270,33 @@ def vault_audit(
         except (FileNotFoundError, json.JSONDecodeError, UnicodeDecodeError, OSError):
             pass
 
-    # Moved nodes: detectar notas reubicadas
-    move_log = _system_dir() / "move-log.json"
-    if move_log.exists():
-        try:
-            # `json` del módulo: hasta v41.2 aquí se usaba el `json_module` que
-            # solo importaba el bloque del grafo, y sin graph.json el audit caía.
-            move_data = json.loads(move_log.read_text(encoding="utf-8"))
-            for move in move_data[-5:]:
-                # Flow QA 2026-11-17 (QA-FL-08): the last five moves were
-                # echoed forever, also after `vault_graph` had done what the
-                # action asks. A graph written after the move already has it.
-                if _grafo_posterior_a(move.get("timestamp")):
-                    continue
-                next_actions.append(
-                    {
-                        "priority": "low",
-                        "category": "moved_node",
-                        "from": move.get("from", ""),
-                        "to": move.get("to", ""),
-                        "description": f"Nota movida de `{move.get('from', '')}` a `{move.get('to', '')}`.",
-                        "command": f"Ejecutar `python scripts/vault_graph.py` para actualizar el grafo.",
-                        # El grafo es un artefacto derivado que puede haber quedado
-                        # atrás: AP-47. Hasta v41.2 citaba AP-16 (campo `agent`).
-                        "norm": "AP-47",
-                    }
-                )
-        except (FileNotFoundError, json.JSONDecodeError, UnicodeDecodeError, OSError):
-            pass
+    # Moved nodes: detectar notas reubicadas. El change log es el único
+    # registro de un movimiento desde bigo-inmutabilidad (S8 b): su dueño lee
+    # el `move-log.json` congelado (de Grafo, que no se importa aquí: se nombra
+    # el fichero, como antes) y después las filas `moved` del log.
+    try:
+        move_data = _repo().leer_movimientos(_system_dir() / "move-log.json")
+        for move in move_data[-5:]:
+            # Flow QA 2026-11-17 (QA-FL-08): the last five moves were
+            # echoed forever, also after `vault_graph` had done what the
+            # action asks. A graph written after the move already has it.
+            if _grafo_posterior_a(move.get("timestamp")):
+                continue
+            next_actions.append(
+                {
+                    "priority": "low",
+                    "category": "moved_node",
+                    "from": move.get("from", ""),
+                    "to": move.get("to", ""),
+                    "description": f"Nota movida de `{move.get('from', '')}` a `{move.get('to', '')}`.",
+                    "command": f"Ejecutar `python scripts/vault_graph.py` para actualizar el grafo.",
+                    # El grafo es un artefacto derivado que puede haber quedado
+                    # atrás: AP-47. Hasta v41.2 citaba AP-16 (campo `agent`).
+                    "norm": "AP-47",
+                }
+            )
+    except (FileNotFoundError, json.JSONDecodeError, UnicodeDecodeError, OSError, TypeError):
+        pass
 
     # AP-25: Mermaid diagram errors - suggest running mermaid check with fix
     if mermaid_errors:

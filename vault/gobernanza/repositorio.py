@@ -185,6 +185,59 @@ class RepositorioGobernanza:
             self.bitacora_cambios_lineas, json.dumps(limpia, ensure_ascii=False),
             continua=self.bitacora_cambios)
 
+    def iniciar_bitacora_cambios(self) -> bool:
+        """The change log is born with the vault: an empty `.change-log.jsonl`.
+
+        bigo-inmutabilidad, S8 (a): `vault_init` creates it so the log is part
+        of the vault from its first commit (rule 5 of `vault.kernel.vcs`
+        versions it) and every later row is an append. True when it was
+        created. A vault that already holds a log in either format is left as
+        it is: a legacy array without the line file keeps the one-time check
+        of its history before the first append (AP-51). The caller holds the
+        log lock.
+        """
+        if self.hay_bitacora_cambios():
+            return False
+        self._ctx.escritor.escribir(self.bitacora_cambios_lineas, "")
+        return True
+
+    def leer_movimientos(self, congelada: Path) -> list:
+        """Every recorded move, oldest first: the frozen `move-log.json`, then the log.
+
+        bigo-inmutabilidad, S8 (b): the change log is the single record of a
+        move. `vault_move` no longer writes `move-log.json` (its owner, Grafo,
+        declares the path the caller passes as `congelada`); a vault from before
+        keeps it, frozen, and it is read first and as it always was — its read
+        errors propagate as `json.loads(read_text())` raised them, so its
+        readers keep their handling. A value that is not a list is a
+        `TypeError`.
+
+        Then the moves the log holds: the `moved` rows that carry `moved_at`,
+        the instant of the move that only `vault_move` records, in the record
+        shape of the frozen file (`from`, `to`, `timestamp`). Older `moved`
+        rows, written next to a `move-log.json` record, carry no `moved_at`:
+        that record already holds them, and counting them again would show one
+        move twice. A log that cannot be read adds no moves; the log's own
+        readers (`vault_change_log --query`) report it.
+        """
+        movimientos: list = []
+        if congelada.exists():
+            datos = json.loads(congelada.read_text(encoding="utf-8"))
+            if not isinstance(datos, list):
+                raise TypeError(f"se esperaba una lista, hay {type(datos).__name__}")
+            movimientos.extend(datos)
+        try:
+            entradas = self.leer_bitacora_cambios().entradas
+        except (OSError, ValueError, TypeError):
+            entradas = []
+        for entrada in entradas:
+            if (isinstance(entrada, dict) and entrada.get("action") == "moved"
+                    and entrada.get("moved_at")):
+                movimientos.append({"from": entrada.get("path"),
+                                    "to": entrada.get("new_path"),
+                                    "timestamp": entrada["moved_at"]})
+        return movimientos
+
     @property
     def fundamentos_json(self) -> Path:
         return self._ctx.ruta(CARPETA_SISTEMA, FICHERO_FUNDAMENTOS_JSON)

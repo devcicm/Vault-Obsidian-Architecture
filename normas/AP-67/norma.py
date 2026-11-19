@@ -66,7 +66,7 @@ NORMA = {
         "material se documenta con las tools que dejan rastro: "
         "`vault_code_module` (nota de módulo con `source_file:`), "
         "`vault_test_save` (técnica de prueba), `vault_write` (concepto), "
-        "`vault_move` (lo que se reubica, que deja `move-log.json`). El "
+        "`vault_move` (lo que se reubica, que deja su fila `moved` en el change-log). El "
         "enlace va en los dos sentidos: la nota declara `source_file:` y el "
         "fichero lleva su `@vault:` — `vault_code_sync --fix` inyecta la mitad "
         "que falta. Lo que entra al vault entra por una tool; lo que sale, con "

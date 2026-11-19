@@ -264,6 +264,30 @@ def _vault_init_sin_clean(
         }
     )
 
+    # Step 1.05: el change log nace con el vault (bigo-inmutabilidad, S8 a),
+    # antes que cualquier índice: el primer reindex ya lo cuenta y la primera
+    # operación anotada es un append. Hasta aquí la creaba esa operación, y un
+    # vault recién indexado pasaba a `index_stale`. Lo escribe su dueño, y solo
+    # lo que falta, sin cambiar un byte de lo que existe. Por subproceso,
+    # como el reindex: importarlo sería un cruce ciclo_de_vida -> autoría.
+    import vault_subproceso
+
+    change_log_script = Path(__file__).parent / "vault_change_log.py"
+    proc = vault_subproceso.ejecutar(
+        [sys.executable, str(change_log_script), "--init"],
+        capture_output=True,
+        env=_entorno_de_hijos(),
+    )
+    try:
+        sembrado = json.loads(proc.stdout)
+        result["steps"].append({"step": "change_log", "ok": bool(sembrado.get("ok")),
+                                "created": sembrado.get("seeded", [])})
+    except json.JSONDecodeError:
+        result["steps"].append(
+            {"step": "change_log", "ok": False,
+             "raw_stdout": proc.stdout, "raw_stderr": proc.stderr}
+        )
+
     # Step 1.1: la política de inmutabilidad del vault, declarada al nacer.
     # Las secciones de clase `registro` —lo que ocurrió, anotado cuando
     # ocurrió— son histórico: no se reescriben, se continua con una nota
