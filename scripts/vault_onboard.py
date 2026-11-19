@@ -228,14 +228,16 @@ _RE_VAULT_ONBOARD_1 = re.compile('name\\s*=\\s*["\\\']([^"\\\']+)')
 _RE_VAULT_ONBOARD_2 = re.compile('description\\s*=\\s*["\\\']([^"\\\']+)')
 _RE_VAULT_ONBOARD_3 = re.compile('version\\s*=\\s*["\\\']([^"\\\']+)')
 _RE_VAULT_ONBOARD_4 = re.compile('<TargetFramework>([^<]+)')
-_RE_VAULT_ONBOARD_5 = re.compile('^#\\s+(.+)$')
-_RE_VAULT_ONBOARD_6 = re.compile('^## (.+)$')
-_RE_VAULT_ONBOARD_7 = re.compile('^\\s{2}(\\w[\\w-]+):\\s*$')
+# MULTILINE belongs to the compiled pattern: passed to `findall`/`search` it
+# is the `pos` argument (8), and `^` never matched (writer U2, 2026-11-19).
+_RE_VAULT_ONBOARD_5 = re.compile('^#\\s+(.+)$', re.MULTILINE)
+_RE_VAULT_ONBOARD_6 = re.compile('^## (.+)$', re.MULTILINE)
+_RE_VAULT_ONBOARD_7 = re.compile('^\\s{2}(\\w[\\w-]+):\\s*$', re.MULTILINE)
 _RE_VAULT_ONBOARD_8 = re.compile('"?(\\d+:\\d+)"?')
-_RE_VAULT_ONBOARD_9 = re.compile('^FROM\\s+(\\S+)')
-_RE_VAULT_ONBOARD_10 = re.compile('^EXPOSE\\s+(\\d+)')
+_RE_VAULT_ONBOARD_9 = re.compile('^FROM\\s+(\\S+)', re.MULTILINE)
+_RE_VAULT_ONBOARD_10 = re.compile('^EXPOSE\\s+(\\d+)', re.MULTILINE)
 _RE_VAULT_ONBOARD_11 = re.compile('^## (.+)')
-_RE_VAULT_ONBOARD_12 = re.compile('^\\s{2}([\\w-]+):\\s*$')
+_RE_VAULT_ONBOARD_12 = re.compile('^\\s{2}([\\w-]+):\\s*$', re.MULTILINE)
 _RE_VAULT_ONBOARD_13 = re.compile(r"^\s+(push|pull_request|workflow_dispatch|schedule|release):", re.MULTILINE)
 _RE_VAULT_ONBOARD_14 = re.compile(r"^[-*]\s+(.+)$", re.MULTILINE)
 
@@ -911,10 +913,10 @@ def _read_readme(project_path: Path) -> Tuple[str, List[str]]:
                 continue  # symlink fuera del proyecto: no es su README
             text = fp.read_text(encoding="utf-8-sig", errors="replace")
             _README_H1.clear()
-            h1 = _RE_VAULT_ONBOARD_5.search(text, re.MULTILINE)
+            h1 = _RE_VAULT_ONBOARD_5.search(text)
             if h1:
                 _README_H1.append(h1.group(1).strip())
-            headers = _RE_VAULT_ONBOARD_6.findall(text, re.MULTILINE)
+            headers = _RE_VAULT_ONBOARD_6.findall(text)
             lines = [
                 l for l in text.splitlines() if l.strip() and not l.startswith("#")
             ]
@@ -1039,7 +1041,7 @@ def _detect_infra(project_path: Path) -> Dict[str, Any]:
         try:
             text = fp.read_text(encoding="utf-8", errors="replace")
             infra["services"].extend(
-                _RE_VAULT_ONBOARD_7.findall(text, re.MULTILINE)
+                _RE_VAULT_ONBOARD_7.findall(text)
             )
             infra["ports"].extend(_RE_VAULT_ONBOARD_8.findall(text)[:10])
         except Exception as exc:
@@ -1050,11 +1052,11 @@ def _detect_infra(project_path: Path) -> Dict[str, Any]:
             infra["files"].append(df)
             try:
                 text = (project_path / df).read_text(encoding="utf-8", errors="replace")
-                m = _RE_VAULT_ONBOARD_9.search(text, re.MULTILINE)
+                m = _RE_VAULT_ONBOARD_9.search(text)
                 if m:
                     infra["base_image"] = m.group(1)
                 infra["ports"].extend(
-                    _RE_VAULT_ONBOARD_10.findall(text, re.MULTILINE)
+                    _RE_VAULT_ONBOARD_10.findall(text)
                 )
             except Exception as exc:
                 _registrar_degradacion("leer_dockerfile", exc)
@@ -2843,7 +2845,7 @@ def _onboard_13_flows(
         try:
             text = wf_file.read_text(encoding="utf-8", errors="replace")
             triggers = _RE_VAULT_ONBOARD_13.findall(text)
-            jobs = _RE_VAULT_ONBOARD_12.findall(text, re.MULTILINE)
+            jobs = _RE_VAULT_ONBOARD_12.findall(text)
             jobs_md = "\n".join(f"- `{j}`" for j in jobs[:8]) or "— No detectados"
             triggers_md = ", ".join(set(triggers)) or "— No detectados"
             wf_name = wf_file.stem
