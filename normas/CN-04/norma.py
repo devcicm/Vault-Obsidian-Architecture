@@ -24,6 +24,11 @@ NORMA = {
             "cuerpo de código. Una es convención de escritura y la otra de "
             "estructura del repo: no se solapan ni se contradicen."
         ),
+        "AP-79": (
+            "CN-04 fija que la nota abre con su título como H1; AP-79, que "
+            "debajo del título haya una entrada que diga qué es. El H1 nombra "
+            "la nota; la entrada la explica."
+        ),
     },
     "name": "Note opens with its title — la nota abre con su título como H1",
     "type": "antipattern",

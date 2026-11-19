@@ -4053,7 +4053,7 @@ Lo ingerido entra con `status: draft` y `cia_integrity: low`, de modo que el rer
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **96 normas** del estándar (78 AP + 9 PAT + 4 SP + 5 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-78`. Fuente de verdad: `NORM_CATALOG` en `vault_norms_catalog.py` (`vault_norms.py` lo reexporta). Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **97 normas** del estándar (79 AP + 9 PAT + 4 SP + 5 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-79`. Fuente de verdad: `NORM_CATALOG` en `vault_norms_catalog.py` (`vault_norms.py` lo reexporta). Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -12542,6 +12542,23 @@ registro cuya última actividad —la más reciente de `revisado_en`, `updatedAt
 uno en `status: archived` ya tiene su disposición. Vencer no es fallar: la lista nunca pone
 `ok` en falso y nunca borra ni mueve nada. Se distingue de AP-76, que solo mira notas que
 declaran `revisado_en` y pide comprobar que siguen siendo ciertas.
+
+### AP-79 - Nota sin entrada autosuficiente
+
+**Enforcement:** `audit` · **Introducido:** v41.27 (2026-11-19)
+
+Una nota de una a tres líneas cortas obliga a quien no estuvo en la conversación que la
+escribió —un auditor humano, un agente externo— a reconstruir el contexto antes de
+entenderla. La nota escalonada se lee como un artículo de enciclopedia: una entrada de
+dos a cuatro oraciones que se sostiene sola —qué es, por qué importa, en qué estado está,
+de dónde sale— y debajo las capas que crecen con el conocimiento, `## Contexto`,
+`## Detalle` y `## Fuentes`, nunca relleno (AP-45): lo que falta se declara como esbozo
+con `expand_by`. El criterio es uno, `vault.kernel.contenido.profundidad_de_nota`, para
+los generadores que componen la nota y para `vault_audit`, que publica en `notesDepth` la
+profundidad por nivel y por tipo, en `issues.notesWithoutLead` la nota de artículo sin
+entrada y el registro de evento sin entrada ni enlace a su nota padre, y las primeras en
+`nextActions`. Es lista de trabajo, no puerta: no pesa en el `healthScore` ni en el
+`healthIndex`, y `vault_write` no rechaza las notas que ya existen.
 
 ### PAT-7 - Desacuerdo legítimo declarado: contradicts entre notas
 

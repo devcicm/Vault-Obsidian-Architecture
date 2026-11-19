@@ -607,6 +607,95 @@ def _detect_convenciones_cn01_cn04(
     return cn01, cn04
 
 
+def _detect_profundidad(
+    notes: List[Path],
+) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+    """AP-79: how far each note goes from its lead to its detail (nota escalonada).
+
+    The criterion belongs to the kernel owner, `profundidad_de_nota`, the same
+    one the generators compose with (AP-57). An article note is a finding
+    without a self-sufficient lead; an event record (a section whose document
+    class is `registro`) may be short and is a finding only with neither a
+    lead nor any wikilink to its parent note. Scaffolds, templates,
+    `00_System/`, standard documentation and archived raw sources (AP-73:
+    kept as they arrived) are not measured. Informative: no row in
+    `PENALIZACIONES`, so neither `healthScore` nor `healthIndex` moves;
+    existing notes are reported to be raised, never rejected.
+
+    Returns the summary (`notesDepth`) and the findings, sorted by path.
+    """
+    from statistics import median
+
+    from vault.kernel.contenido import (
+        CAPAS_ESCALONADAS,
+        LEAD_MIN_ORACIONES,
+        LEAD_MIN_PALABRAS,
+        es_fuente_archivada,
+        profundidad_de_nota,
+    )
+    from vault_registry import section_default_type, section_documentacion
+
+    niveles = ("0", "1", "2", "3")
+    por_nivel: Dict[str, int] = {n: 0 for n in niveles}
+    por_tipo: Dict[str, Dict[str, Any]] = {}
+    palabras_por_tipo: Dict[str, List[int]] = defaultdict(list)
+    hallazgos: List[Dict[str, Any]] = []
+    for n in sorted(notes):
+        rel = n.relative_to(_raiz()).as_posix()
+        if rel.startswith("00_System"):
+            continue
+        texto = _leer_nota(n, errors="replace")
+        if texto is None or es_andamio(texto) or es_documentacion_del_estandar(rel, texto):
+            continue
+        leida = _leer_nota_partida(n)
+        if leida is None:
+            continue
+        fm, cuerpo = leida
+        if (str(fm.get("status") or "").strip().lower() == "template"
+                or es_fuente_archivada(rel, fm)):
+            continue
+        medida = profundidad_de_nota(cuerpo)
+        tipo = (str(fm.get("type") or "").strip()
+                or section_default_type(rel.split("/", 1)[0], _raiz()) or "sin_tipo")
+        nivel = str(medida["nivel"])
+        por_nivel[nivel] += 1
+        palabras_por_tipo[tipo].append(medida["lead_palabras"])
+        cuenta = por_tipo.setdefault(
+            tipo, {"checked": 0, "withoutLead": 0, "byLevel": {k: 0 for k in niveles}})
+        cuenta["checked"] += 1
+        cuenta["byLevel"][nivel] += 1
+        registro = section_documentacion(rel) == "registro"
+        if medida["tiene_lead"] or (registro and medida["enlaces"]):
+            continue
+        cuenta["withoutLead"] += 1
+        hallazgos.append({
+            "norm_code": "AP-79", "path": rel,
+            "title": str(fm.get("title") or n.stem),
+            "kind": "record" if registro else "article", "type": tipo,
+            "nivel": medida["nivel"], "lead_words": medida["lead_palabras"],
+            "lead_sentences": medida["lead_oraciones"], "links": medida["enlaces"],
+            "detail": ("registro de evento sin entrada ni enlace a su nota padre" if registro
+                       else "sin entrada autosuficiente: un lector sin contexto no sabe "
+                            "qué es la nota antes de su detalle"),
+        })
+    for tipo, cuenta in por_tipo.items():
+        cuenta["medianLeadWords"] = median(palabras_por_tipo[tipo])
+    todas = [p for lista in palabras_por_tipo.values() for p in lista]
+    resumen = {
+        "norm": "AP-79",
+        "checked": len(todas),
+        "criterion": {"lead_min_sentences": LEAD_MIN_ORACIONES,
+                      "lead_min_words": LEAD_MIN_PALABRAS,
+                      "layers": list(CAPAS_ESCALONADAS)},
+        "byLevel": por_nivel,
+        "medianLeadWords": median(todas) if todas else 0,
+        "articlesWithoutLead": sum(1 for h in hallazgos if h["kind"] == "article"),
+        "recordsWithoutLeadOrLink": sum(1 for h in hallazgos if h["kind"] == "record"),
+        "byType": dict(sorted(por_tipo.items())),
+    }
+    return resumen, hallazgos
+
+
 def _detect_no_integradas(
     notes: List[Path], backlinks: Dict[str, Set[str]], all_notes: List[Path]
 ) -> List[Dict[str, Any]]:
@@ -2419,6 +2508,47 @@ def _acciones_de_conceptos(conceptos: List[Dict[str, Any]]) -> List[Dict[str, An
     return acciones
 
 
+#: How many AP-79 notes reach `nextActions`; the rest stay in
+#: `issues.notesWithoutLead`.
+MAX_ACCIONES_DE_PROFUNDIDAD = 5
+
+
+def _acciones_de_profundidad(hallazgos: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """AP-79: one next action per note without a lead, articles first, thinnest first."""
+    from vault_registry import comando_de_tool
+
+    orden = sorted(hallazgos, key=lambda h: (h["kind"] != "article", h["lead_words"], h["path"]))
+    acciones = []
+    for h in orden[:MAX_ACCIONES_DE_PROFUNDIDAD]:
+        carpeta, _, fichero = h["path"].rpartition("/")
+        carpeta = carpeta or "."
+        stem = fichero[:-3] if fichero.endswith(".md") else fichero
+        # vault_write names the file by the slug of the title: a title whose
+        # slug is not this file's name would write a second note beside this one.
+        titulo = str(h["title"]).replace("'", "")
+        if slugify_strict(titulo) != stem:
+            titulo = stem.replace("'", "")
+        if h["kind"] == "record":
+            que_hacer = ("es un registro de evento sin entrada ni enlace: enlázalo a la "
+                         "nota completa de la que forma parte ([[nota-padre]]) o escribe "
+                         "su entrada")
+        else:
+            que_hacer = ("escribe primero su entrada —dos a cuatro oraciones: qué es, por "
+                         "qué importa, en qué estado está y de dónde sale— y después "
+                         "## Contexto, ## Detalle y ## Fuentes cuando haya algo que decir "
+                         "en ellas; lo que falta se declara como esbozo, nunca se rellena")
+        acciones.append({
+            "priority": "low",
+            "category": "note_without_lead",
+            "path": h["path"],
+            "description": f"'{titulo}' no se entiende sin contexto: {que_hacer} (AP-79).",
+            "command": comando_de_tool(
+                f"vault_write --folder {carpeta} --title '{titulo}' --content '...'"),
+            "norm": "AP-79",
+        })
+    return acciones
+
+
 def _read_quality_index() -> Optional[Dict[str, Any]]:
     qi = _leer_artefacto_json(_quality_index())
     return qi if isinstance(qi, dict) else None
@@ -2805,6 +2935,10 @@ def vault_audit(
 
     cn01_no_kebab, cn04_sin_titulo = _detect_convenciones_cn01_cn04(notas_del_vault)
 
+    # AP-79: the layered note, measured by the kernel owner. Informative and
+    # without weight: it never enters `calcular_salud` below.
+    profundidad, sin_lead = _detect_profundidad(notas_del_vault)
+
     stale = _detect_stale(notas_del_vault)
 
     stuck_patterns = _detect_stuck_patterns(notas_del_vault)
@@ -3012,6 +3146,9 @@ def vault_audit(
         "closedDecisionsRewritten": decisiones_reescritas,
         "aiDecisionsWithoutPartyAssessment": impacto_sin_evaluacion,
         "aiRisksReviewOverdue": riesgos_ia_vencidos,
+        # AP-79, informative and without weight: how far the notes go from
+        # their lead to their detail, by level and by type.
+        "notesDepth": profundidad,
         "stats": {
             "total": len(notas_del_vault),
             "byFolder": dict(sorted(by_folder.items())),
@@ -3022,6 +3159,8 @@ def vault_audit(
             # Informativas, sin peso: ver `_detect_convenciones_cn01_cn04`.
             "cn01NotKebab": len(cn01_no_kebab),
             "cn04NoTitle": len(cn04_sin_titulo),
+            # Informativa, sin peso: ver `_detect_profundidad` (AP-79).
+            "notesWithoutLead": len(sin_lead),
         },
         # Notas sobre las que el audit NO se pronunció, por no poder leerlas.
         # Va junto al score y no enterrado en `issues` porque no es un hallazgo
@@ -3034,6 +3173,7 @@ def vault_audit(
             "notIntegrated": no_integradas,
             "cn01NotKebab": cn01_no_kebab,
             "cn04NoTitle": cn04_sin_titulo,
+            "notesWithoutLead": sin_lead,
             "stale": stale,
             "stuckPatterns": stuck_patterns,
             "staleProjects": stale_projects,
@@ -3431,6 +3571,10 @@ def vault_audit(
     # not an action, it is a backlog, and the full list is in
     # `conceptsWithoutPage`.
     next_actions.extend(_acciones_de_conceptos(conceptos))
+
+    # AP-79: the notes a reader without context cannot follow, capped like
+    # AP-71's; the full list is in `issues.notesWithoutLead`.
+    next_actions.extend(_acciones_de_profundidad(sin_lead))
 
     if next_actions:
         result["nextActions"] = next_actions

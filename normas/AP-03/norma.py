@@ -16,6 +16,11 @@ NORMA = {
             "Saldar AP-03 es aplicar PAT-2; no son dos hallazgos sobre la misma "
             "nota."
         ),
+        "AP-79": (
+            "AP-03 es el esbozo sin plazo para crecer; AP-79, la nota sin "
+            "entrada autosuficiente. Un esbozo escalonado —entrada, lo que "
+            "falta declarado y `expand_by`— cumple las dos."
+        ),
     },
     "name": "Stubs sin política de expansión",
     "type": "antipattern",

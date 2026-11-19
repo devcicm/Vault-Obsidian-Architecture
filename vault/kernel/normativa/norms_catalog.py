@@ -284,6 +284,8 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     _desde_paquete("AP-77"),
     # ── Anti-patrón AP-78 — evaluación de impacto por afectado (ISO/IEC 42005, 2026-11-18)
     _desde_paquete("AP-78"),
+    # ── Anti-patrón AP-79 — nota sin entrada autosuficiente (nota escalonada, 2026-11-19)
+    _desde_paquete("AP-79"),
     # ── Patrón PAT-6 ───────────────────────────────────────────────────────────
     _desde_paquete("PAT-6"),
     # ── Patrón PAT-7 — desacuerdo declarado (LLM Wiki, 2026-11-16) ─────────────

@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-78 más
-> las familias PAT, SP y CN. Por familia: AP 78, CN 5, PAT 9, SP 4.
-> Bilingual document. Full norm catalog: antipatterns AP-01..AP-78 plus the PAT,
-> SP and CN families. By family: AP 78, CN 5, PAT 9, SP 4.
+> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-79 más
+> las familias PAT, SP y CN. Por familia: AP 79, CN 5, PAT 9, SP 4.
+> Bilingual document. Full norm catalog: antipatterns AP-01..AP-79 plus the PAT,
+> SP and CN families. By family: AP 79, CN 5, PAT 9, SP 4.
 
 ---
 
 ## ES
 
-Total de normas registradas: 96 (AP 78, CN 5, PAT 9, SP 4)
+Total de normas registradas: 97 (AP 79, CN 5, PAT 9, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -921,6 +921,18 @@ ISO/IEC 42005 no se queda en a quién afecta una decisión de IA: la evaluación
 
 Límites declarados: la norma sabe que cada afectado tiene su probabilidad, su severidad y su mitigación, no que estén bien estimadas; la evaluación del sistema de IA en su conjunto, a lo largo de su ciclo de vida, es de la organización.
 
+### AP-79: Nota sin entrada autosuficiente
+
+- **Severidad:** low
+- **Enforcement:** audit
+- **Detectado por:** vault_audit
+
+Una nota que abre con una o tres líneas cortas obliga a quien no estuvo en la conversación que la escribió --un auditor humano, un agente externo-- a reconstruir el contexto antes de entenderla. La nota escalonada lo evita como un artículo de enciclopedia: una entrada (lead) de dos a cuatro oraciones que se sostiene sola --qué es, por qué importa, en qué estado está, de dónde sale-- y debajo las capas que crecen con el conocimiento: `## Contexto` (síntesis, antecedentes, relaciones), `## Detalle` (desarrollo, evidencia, consecuencias) y `## Fuentes`. El informe corto de dos o tres líneas solo vale para un registro de evento, y siempre enlaza con la nota completa de la que forma parte.
+
+**Prevención:** Escribir primero la entrada y después las capas, solo cuando hay algo que decir en ellas: lo que todavía falta se declara en la nota como esbozo (`status: stub` con `expand_by`, PAT-2) y no se rellena (AP-45). Un registro de evento corto enlaza con su nota padre. `vault_audit` publica la profundidad en `notesDepth` (recuento por nivel, por tipo y la mediana de palabras de la entrada), la lista en `issues.notesWithoutLead` y las primeras en `nextActions` (categoría `note_without_lead`).
+
+Límites declarados: la norma sabe que la entrada existe y tiene cuerpo, no que sea cierta ni que resuma bien la nota; las notas que ya existían se informan para subirlas, nunca se rechazan, y `vault_write` no gana ninguna puerta nueva.
+
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
 - **Severidad:** high
@@ -1105,7 +1117,7 @@ El transporte HTTP/SSE del servidor MCP acepta sesiones sin token, responde con 
 
 ## EN
 
-Total registered norms: 96 (AP 78, CN 5, PAT 9, SP 4)
+Total registered norms: 97 (AP 79, CN 5, PAT 9, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -2016,6 +2028,18 @@ ISO/IEC 42005 no se queda en a quién afecta una decisión de IA: la evaluación
 **Prevention:** Al registrar una decisión de impacto alto, pasar `--assessment` con una entrada por afectado: `vault_ai_decision ... --impact_level high --assessment '[{"affected": "usuarios finales", "likelihood": 3, "impact": 4, "mitigation": "refresco silencioso del token"}]'`. Una entrada mal formada se rechaza sin escribir nada (`INVALID_LIKELIHOOD`, `INVALID_IMPACT`, `INVALID_VALUE`); un afectado sin entrada deja la evaluación `parcial` y el envelope lo nombra en `hint`. `vault_audit` publica la lista de trabajo en `aiDecisionsWithoutPartyAssessment`.
 
 Límites declarados: la norma sabe que cada afectado tiene su probabilidad, su severidad y su mitigación, no que estén bien estimadas; la evaluación del sistema de IA en su conjunto, a lo largo de su ciclo de vida, es de la organización.
+
+### AP-79: Nota sin entrada autosuficiente
+
+- **Severity:** low
+- **Enforcement:** audit
+- **Detected by:** vault_audit
+
+Una nota que abre con una o tres líneas cortas obliga a quien no estuvo en la conversación que la escribió --un auditor humano, un agente externo-- a reconstruir el contexto antes de entenderla. La nota escalonada lo evita como un artículo de enciclopedia: una entrada (lead) de dos a cuatro oraciones que se sostiene sola --qué es, por qué importa, en qué estado está, de dónde sale-- y debajo las capas que crecen con el conocimiento: `## Contexto` (síntesis, antecedentes, relaciones), `## Detalle` (desarrollo, evidencia, consecuencias) y `## Fuentes`. El informe corto de dos o tres líneas solo vale para un registro de evento, y siempre enlaza con la nota completa de la que forma parte.
+
+**Prevention:** Escribir primero la entrada y después las capas, solo cuando hay algo que decir en ellas: lo que todavía falta se declara en la nota como esbozo (`status: stub` con `expand_by`, PAT-2) y no se rellena (AP-45). Un registro de evento corto enlaza con su nota padre. `vault_audit` publica la profundidad en `notesDepth` (recuento por nivel, por tipo y la mediana de palabras de la entrada), la lista en `issues.notesWithoutLead` y las primeras en `nextActions` (categoría `note_without_lead`).
+
+Límites declarados: la norma sabe que la entrada existe y tiene cuerpo, no que sea cierta ni que resuma bien la nota; las notas que ya existían se informan para subirlas, nunca se rechazan, y `vault_write` no gana ninguna puerta nueva.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 

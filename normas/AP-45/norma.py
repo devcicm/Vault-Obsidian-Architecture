@@ -20,6 +20,12 @@ NORMA = {
             "abre diciendo qué es. Poner el H1 no salda AP-45: una nota con "
             "título y sin evidencia sigue incumpliéndola."
         ),
+        "AP-79": (
+            "AP-45 mide si el cuerpo tiene evidencia; AP-79, si un lector sin "
+            "contexto entiende la nota desde su entrada. Una entrada larga sin "
+            "evidencia debajo no salda AP-45, y la evidencia sin entrada no "
+            "salda AP-79."
+        ),
     },
     "name": "Cobertura sin evidencia — la nota existe para llenar la sección",
     "type": "antipattern",

@@ -464,6 +464,24 @@ decisión de `16_AI_Governance/` de impacto `critical`/`high` que ya dice a qui�
 según `estado_de_revision` (`overdue`, con `owner` y `vence_en`; sin `revisado_en`,
 `without_review`; fecha ilegible, `unreadable`; ISO/IEC 23894).
 
+**`notesDepth`, `issues.notesWithoutLead` (AP-79, 2026-11-19).** La nota escalonada,
+medida con el criterio del núcleo (`vault.kernel.contenido.profundidad_de_nota`, el
+mismo con el que la componen los generadores): una entrada autosuficiente —al menos
+`LEAD_MIN_ORACIONES` (2) oraciones y `LEAD_MIN_PALABRAS` (20) palabras reales entre el
+H1 y el primer encabezado— y debajo `## Contexto`, `## Detalle` y `## Fuentes`.
+`notesDepth` publica `checked`, el `criterion`, el recuento por `nivel` (`byLevel`: 0 sin
+entrada, 1 solo entrada, 2 con Contexto o Detalle, 3 además Fuentes), `medianLeadWords`,
+`articlesWithoutLead`, `recordsWithoutLeadOrLink` y el desglose `byType` (por `type:` del
+frontmatter o, sin él, el de su sección). `issues.notesWithoutLead` lista la nota de
+artículo sin entrada (`kind: article`) y el registro de evento —sección de clase
+`registro`— sin entrada ni ningún wikilink (`kind: record`); `stats.notesWithoutLead`, su
+recuento. Quedan fuera andamios, plantillas, `00_System/` y fuentes archivadas (AP-73).
+Sin penalización: `healthScore` y `healthIndex` no se mueven. Las cinco primeras
+(`MAX_ACCIONES_DE_PROFUNDIDAD`; artículos antes que registros, las más delgadas primero)
+entran en `nextActions` con la categoría `note_without_lead` y el `vault_write` que
+reescribe esa misma nota: primero la entrada, después las capas cuando haya algo que
+decir en ellas, nunca relleno.
+
 **La fila `linted`.** Solo la corrida que puede escribir en el vault —`--refresh-dq`,
 la que refresca `quality-index.json`— deja una fila `linted` en la bitácora de
 cambios, por el puerto `bitacora_cambios`; el envelope trae `change_log` o
@@ -2683,7 +2701,7 @@ VAULT_MCP_PERFIL=agente node mcp/nodejs/vault-mcp-server.mjs
 
 ### `vault_norms.py`
 
-Registro canónico de las 96 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
+Registro canónico de las 97 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
 
 **Desde v40.26 son tres ficheros y una sola tool.** Eran 5.158 líneas que hacían de catálogo, de motor y de fachada a la vez, con el 60% del fichero ocupado por una constante. Ahora `vault_norms_catalog.py` tiene los datos —`NORM_CATALOG` y el vocabulario de estado, sin leer el vault, sin escribir nada y sin importar ninguna tool—, `vault_norms_engine.py` tiene el motor de `--audit`, el drift del marco y el heal de AP-46, y este módulo se queda con la fachada de datos, la CLI y la **reexportación** de todo lo que el repo consumía antes. Esa reexportación es el punto: la superficie externa real son siete símbolos y los tests usan cinco privados más, así que reexportarlos hace que **ningún llamador se toque** y el diff se lea como movimiento puro. Recortar de paso la superficie que usan los tests habría mezclado dos cambios y hecho imposible saber cuál rompió qué.
 
