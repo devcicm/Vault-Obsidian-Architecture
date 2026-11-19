@@ -2308,7 +2308,26 @@ siempre primero.
 python vault_context_pack.py "qué decidimos sobre el transporte MCP"
 python vault_context_pack.py "errores del proyecto ans" --budget 2000
 python vault_context_pack.py "auth" --format markdown --no-preferences
+python vault_context_pack.py "auth" --incluir-historico
 ```
+
+**Solo verdad vigente por defecto (2026-11-18).** La historia no se borra, pero
+tampoco compite: antes de puntuar, salen de las candidatas las notas con
+`superseded_by:`, las de un `status` que el rerank ya trataba como no vigente
+(`deprecated`, `obsolete`, `archived` y los heredados `superseded`/`revoked`),
+las fuentes archivadas de `10_Migrated/fuentes/` (AP-73) y lo retenido en
+`20_Quarantine/`. Así no gastan trabajo de ranking ni presupuesto: medido con
+`audits/rendimiento/banco_contexto.py`, con 1 000 notas históricas relevantes el
+rerank puntuaba 45 candidatas y la mitad de lo incluido era historia. Una nota
+sustituida apunta a su sucesora (resuelta por `vault_lib.resolver_sustitucion`,
+siguiendo la cadena): si la sucesora es vigente entra como candidata heredando
+la señal léxica y de grafo de la que sustituye, y lleva `supersedes`. El
+envelope trae `history_excluded` (`total`, `by_reason`, los punteros
+`superseded_by` con su `successor` —`null` si no resuelve a una vigente— y una
+pista); el campo no aparece si no se dejó nada fuera, así que un vault sin
+historia recibe el mismo paquete que antes. `--incluir-historico` devuelve el
+paquete anterior (compiten, penalizadas), y una pregunta que nombra un estado
+histórico («deprecated», «revocado») se trata igual: pide historia.
 
 **Los dos lados de un desacuerdo (PAT-7).** Si una nota seleccionada está unida
 a otra por `contradicts:` (declarado en cualquiera de las dos), la otra entra

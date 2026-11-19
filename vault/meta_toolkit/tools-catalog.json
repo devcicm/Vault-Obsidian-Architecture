@@ -1359,6 +1359,10 @@
           "explain": {
             "type": "boolean",
             "description": "Incluye las señales del rerank por nota"
+          },
+          "incluir-historico": {
+            "type": "boolean",
+            "description": "Devuelve las notas históricas (superseded_by, archived, deprecated, obsolete, revoked, fuentes archivadas, cuarentena) al ranking, penalizadas. Por defecto solo verdad vigente."
           }
         },
         "additionalProperties": false

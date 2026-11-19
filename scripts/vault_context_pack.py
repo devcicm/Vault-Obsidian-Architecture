@@ -28,6 +28,7 @@ Usage:
     python vault_context_pack.py "errores del proyecto ans" --budget 2000
     python vault_context_pack.py "auth" --format markdown --no-preferences
     python vault_context_pack.py "mcp" --explain
+    python vault_context_pack.py "mcp" --incluir-historico
 """
 
 import argparse
@@ -221,17 +222,167 @@ def _read_note(path: str) -> Dict[str, Any]:
     return {"ok": True, "frontmatter": frontmatter, "body": body.strip()}
 
 
-def _pares_en_desacuerdo() -> set:
-    """PAT-7: every declared `contradicts` pair in the vault, symmetric.
+def motivo_historico(rel: str, frontmatter: Dict[str, Any]) -> Optional[str]:
+    """Why a note is history rather than current truth, or `None` (S4, bigo).
 
-    Declaring it on either note is enough, so the whole vault is read, and
-    names resolve the Obsidian way (file name and `aliases:`). The reader of
-    the declaration is its single owner, shared with the AP-05 detector
-    (`vault.kernel.normativa.desacuerdos`).
+    Each class is decided by its owner, never by a list copied here:
+
+    - `quarantine`: the note lives in the section the registry declares for the
+      `quarantine` type (`vault.kernel.registry.SECTION_TYPES`; the folder that
+      `vault.durabilidad.cuarentena` writes), held "without a safe destination"
+      (unknown origin, suspected injection); that module says a doubtful copy
+      must not be read as valid context. Read from the kernel registry, not from
+      `vault.durabilidad`, so `consulta` gains no dependency on `durabilidad`.
+    - `archived_source`: `vault.kernel.contenido.es_fuente_archivada` (AP-73),
+      the raw source kept verbatim; the compiled knowledge lives elsewhere.
+    - `superseded`: the note carries `superseded_by:`, the decision of which
+      note rules (AP-17).
+    - otherwise the status the rerank already treats as "no longer current"
+      (`penalizacion() < 1.0`): `deprecated`, `obsolete`, `archived` and the
+      legacy raw `superseded`/`revoked`, reported by that status.
+    """
+    from vault.kernel.contenido import es_fuente_archivada
+    from vault.kernel.registry import SECTION_TYPES
+
+    rel = str(rel).replace("\\", "/")
+    frontmatter = frontmatter or {}
+    if any(rel.startswith(seccion + "/") for seccion, tipos in SECTION_TYPES.items()
+           if "quarantine" in tipos):
+        return "quarantine"
+    if es_fuente_archivada(rel, frontmatter):
+        return "archived_source"
+    if str(frontmatter.get("superseded_by") or "").strip():
+        return "superseded"
+    if penalizacion(frontmatter) < 1.0:
+        crudo = str(frontmatter.get("status") or "").strip().lower()
+        canonico = normalize_status(crudo)[0]
+        return canonico if canonico in PENALIZACION_POR_STATUS else crudo
+    return None
+
+
+def _consulta_pide_historia(statuses: List[str]) -> bool:
+    """The query names a status that is history (`deprecated`, `revoked`…).
+
+    Then history is what was asked for, and the pack behaves as with
+    `--incluir-historico`: filtering it out would answer a different question.
+    """
+    return any(penalizacion({"status": s}) < 1.0 for s in statuses or [])
+
+
+class _FiltroDeHistoria:
+    """S4: history leaves the candidate set before the rerank scores it.
+
+    The penalty (`penalizacion`) kept historic notes competing for the budget
+    and costing ranking work: with h of them relevant to a query, the rerank
+    scored them all and the pack spent tokens on them. Inactive (with
+    `--incluir-historico`, or when the query names a historic status), nothing
+    is classified as history and the pack is the one before this filter.
+
+    A note left out that declares `superseded_by:` points to its successor;
+    when that successor is current it enters the candidates inheriting the
+    predecessor's lexical and graph signals (it answers what the predecessor
+    answered) and carries `supersedes`.
+    """
+
+    def __init__(self, activo: bool) -> None:
+        self.activo = activo
+        self.censo = None
+        self._indice: Optional[Dict[str, List[str]]] = None
+        self._notas: Dict[str, Dict[str, Any]] = {}
+        self._motivos: Dict[str, Optional[str]] = {}
+        self._sucesoras: Dict[str, Optional[str]] = {}
+        self.excluidas: Dict[str, str] = {}
+        self.punteros: Dict[str, Dict[str, Any]] = {}
+        self.herencia: Dict[str, Dict[str, Any]] = {}
+
+    def leer(self, path: str) -> Dict[str, Any]:
+        """`_read_note`, once per path and pack."""
+        if path not in self._notas:
+            self._notas[path] = _read_note(path)
+        return self._notas[path]
+
+    def _fm(self, path: str) -> Dict[str, Any]:
+        nota = self.leer(path)
+        return nota.get("frontmatter", {}) if nota.get("ok") else {}
+
+    def motivo(self, path: str) -> Optional[str]:
+        """The reason `path` is history, or `None` (also for index.md, never scored)."""
+        if not self.activo or Path(path).name.lower() == "index.md":
+            return None
+        if path not in self._motivos:
+            self._motivos[path] = motivo_historico(path, self._fm(path))
+        return self._motivos[path]
+
+    def sucesora(self, path: str) -> Optional[str]:
+        """The current note `superseded_by:` leads to from `path`, following a chain.
+
+        Resolved by the owner (`vault_lib.resolver_sustitucion`): a broken or
+        ambiguous target, a cycle, or a chain that ends in history has none.
+        """
+        if path in self._sucesoras:
+            return self._sucesoras[path]
+        from vault_lib import indice_de_nombres, resolver_sustitucion
+
+        destino: Optional[str] = None
+        vistas, actual = {path}, path
+        while True:
+            valor = self._fm(actual).get("superseded_by")
+            if not str(valor or "").strip():
+                break
+            if self._indice is None:
+                self.censo = self.censo or _censo()
+                self._indice = indice_de_nombres(self.censo[0], self.censo[1])
+            siguiente = resolver_sustitucion(valor, Path(actual), self._indice)[0]
+            if (not siguiente or siguiente in vistas
+                    or Path(siguiente).name.lower() == "index.md"):
+                break
+            if self.motivo(siguiente) is None:
+                destino = siguiente if self.leer(siguiente).get("ok") else None
+                break
+            vistas.add(siguiente)
+            actual = siguiente
+        self._sucesoras[path] = destino
+        return destino
+
+    def excluir(self, path: str, lexical: float, graph: float) -> None:
+        """Leave `path` out, record why, and hand its signals to its successor."""
+        self.excluidas[path] = self._motivos[path] or ""
+        declarado = str(self._fm(path).get("superseded_by") or "").strip()
+        if not declarado:
+            return
+        destino = self.sucesora(path)
+        self.punteros[path] = {"path": path, "superseded_by": declarado, "successor": destino}
+        if destino:
+            h = self.herencia.setdefault(destino, {"lexical": 0.0, "graph": 0.0, "supersedes": []})
+            h["lexical"] = max(h["lexical"], lexical)
+            h["graph"] = max(h["graph"], graph)
+            h["supersedes"].append(path)
+
+    def informe(self) -> Dict[str, Any]:
+        """Additive envelope field; absent when nothing was left out."""
+        if not self.excluidas:
+            return {}
+        por_motivo: Dict[str, int] = {}
+        for motivo in self.excluidas.values():
+            por_motivo[motivo] = por_motivo.get(motivo, 0) + 1
+        return {"history_excluded": {
+            "total": len(self.excluidas),
+            "by_reason": dict(sorted(por_motivo.items())),
+            "superseded_by": [self.punteros[p] for p in sorted(self.punteros)],
+            "hint": ("solo verdad vigente: --incluir-historico devuelve estas notas "
+                     "al ranking, penalizadas"),
+        }}
+
+
+def _censo() -> Tuple[List[str], Dict[str, List[str]], Dict[str, Dict[str, Any]]]:
+    """One read of the vault: every note, its `aliases:` and the PAT-7 declarers.
+
+    Shared by the disagreement pairs and the `superseded_by:` resolution, so a
+    pack that needs both walks the disk once.
     """
     from vault.kernel.enumeracion import notas_en_disco
-    from vault.kernel.normativa.desacuerdos import PREDICADO, pares_declarados
-    from vault_lib import indice_de_nombres, parse_frontmatter
+    from vault.kernel.normativa.desacuerdos import PREDICADO
+    from vault_lib import parse_frontmatter
 
     raiz = _raiz()
     relativas: List[str] = []
@@ -250,12 +401,28 @@ def _pares_en_desacuerdo() -> set:
                         if isinstance(alias, list) else [])
         if fm.get(PREDICADO):
             declarantes[rel] = fm
+    return relativas, aliases, declarantes
+
+
+def _pares_en_desacuerdo(censo=None) -> set:
+    """PAT-7: every declared `contradicts` pair in the vault, symmetric.
+
+    Declaring it on either note is enough, so the whole vault is read, and
+    names resolve the Obsidian way (file name and `aliases:`). The reader of
+    the declaration is its single owner, shared with the AP-05 detector
+    (`vault.kernel.normativa.desacuerdos`).
+    """
+    from vault.kernel.normativa.desacuerdos import pares_declarados
+    from vault_lib import indice_de_nombres
+
+    relativas, aliases, declarantes = censo or _censo()
     if not declarantes:
         return set()
     return pares_declarados(declarantes, indice_de_nombres(relativas, aliases))
 
 
-def _con_los_dos_lados(cabeza: List[Dict[str, Any]], now: datetime) -> List[Dict[str, Any]]:
+def _con_los_dos_lados(cabeza: List[Dict[str, Any]], now: datetime,
+                       censo=None) -> List[Dict[str, Any]]:
     """PAT-7: a selected note that declares a disagreement brings the other side.
 
     The counterpart enters right after the note that names it, with the same
@@ -263,7 +430,7 @@ def _con_los_dos_lados(cabeza: List[Dict[str, Any]], now: datetime) -> List[Dict
     together; both carry `disagrees_with`. Without any declaration in the vault
     the selection is returned unchanged.
     """
-    pares = _pares_en_desacuerdo()
+    pares = _pares_en_desacuerdo(censo)
     if not pares:
         return cabeza
     elegidas = {c["path"] for c in cabeza}
@@ -367,9 +534,15 @@ def vault_context_pack(
     min_score: float = 0.0,
     now: Optional[datetime] = None,
     intento: Optional[str] = None,
+    incluir_historico: bool = False,
 ) -> Dict[str, Any]:
     """
-Recupera, rerankea y empaqueta el contexto para responder `query`."""
+Recupera, rerankea y empaqueta el contexto para responder `query`.
+
+Por defecto el paquete es verdad vigente: las notas históricas
+(`motivo_historico`) salen de las candidatas antes del rerank y el envelope
+dice cuántas y por qué (`history_excluded`). `incluir_historico=True` es el
+paquete de antes: compiten, penalizadas."""
 
     if intento is not None and intento not in INTENTOS:
         return emit_error(
@@ -393,6 +566,8 @@ Recupera, rerankea y empaqueta el contexto para responder `query`."""
     if not parsed.get("ok"):
         return parsed
     structured = parsed["structured"]
+    filtro = _FiltroDeHistoria(
+        not incluir_historico and not _consulta_pide_historia(structured["status"]))
 
     # ── 1. recuperación léxica ───────────────────────────────────────────────
     terms = structured["phrases"] + structured["terms"] + structured["tags"]
@@ -452,12 +627,18 @@ Recupera, rerankea y empaqueta el contexto para responder `query`."""
         except Exception:
             index_warning = "no se pudo verificar el índice de búsqueda; revisa vault_reindex"
 
-    max_lexical = max((h["score"] for h in lexical.values()), default=0.0) or 1.0
+    # The scale is the current notes' own: history neither scores nor rescales them.
+    max_lexical = max((h["score"] for p, h in lexical.items() if filtro.motivo(p) is None),
+                      default=0.0) or 1.0
 
     # ── 2. expansión por grafo ───────────────────────────────────────────────
     seeds = list(structured["seeds"])
     if not seeds:
-        seeds = [p for p in list(lexical)[:3]]
+        seeds = [p for p in lexical if filtro.motivo(p) is None][:3]
+    if not seeds and filtro.activo:
+        # Every lexical hit is history: expand from what replaced it.
+        seeds = list(dict.fromkeys(
+            s for s in (filtro.sucesora(p) for p in lexical) if s))[:3]
     graph_rel: Dict[str, float] = {}
     graph_via: Dict[str, Any] = {}
     graph_error: Optional[str] = None
@@ -480,15 +661,26 @@ Recupera, rerankea y empaqueta el contexto para responder `query`."""
 
     # ── 3. rerank ────────────────────────────────────────────────────────────
     candidates: List[Dict[str, Any]] = []
-    for path in set(lexical) | set(graph_rel):
+    caminos = set(lexical) | set(graph_rel)
+    if filtro.activo:
+        # S4: history leaves before scoring, so it costs neither ranking work nor
+        # budget; its successor takes its place.
+        for path in sorted(caminos):
+            if filtro.motivo(path) is not None:
+                hit = lexical.get(path)
+                filtro.excluir(path, min(1.0, hit["score"] / max_lexical) if hit else 0.0,
+                               graph_rel.get(path, 0.0))
+        caminos = (caminos - set(filtro.excluidas)) | set(filtro.herencia)
+    for path in caminos:
         # Los index.md son artefactos regenerados, no conocimiento: entregarlos
         # como contexto gasta presupuesto en una lista de enlaces que el agente
         # ya puede recorrer con vault_subgraph.
         if Path(path).name.lower() == "index.md":
             continue
         hit = lexical.get(path, {})
-        note = _read_note(path)
+        note = filtro.leer(path)
         frontmatter = note.get("frontmatter", {}) if note.get("ok") else {}
+        heredado = filtro.herencia.get(path)
 
         if structured["status"]:
             if str(frontmatter.get("status", "")).lower() not in structured["status"]:
@@ -506,6 +698,9 @@ Recupera, rerankea y empaqueta el contexto para responder `query`."""
 
         lex = (hit.get("score", 0.0) / max_lexical) if hit else 0.0
         graph = graph_rel.get(path, 0.0)
+        if heredado:
+            lex = max(lex, heredado["lexical"])
+            graph = max(graph, heredado["graph"])
         recency = _recency_score(updated, now)
         cia = CIA_WEIGHT.get(str(frontmatter.get("cia_integrity", "medium")).lower(), 0.5)
 
@@ -529,6 +724,7 @@ Recupera, rerankea y empaqueta el contexto para responder `query`."""
             "via": graph_via.get(path),
             "readable": note.get("ok", False),
             "body": note.get("body", "") if note.get("ok") else "",
+            **({"supersedes": sorted(heredado["supersedes"])} if heredado else {}),
         })
 
     candidates.sort(key=lambda c: (-c["score"], c["path"]))
@@ -563,7 +759,7 @@ Recupera, rerankea y empaqueta el contexto para responder `query`."""
         blocks.append(block)
         used += cost
 
-    seleccion = _con_los_dos_lados(candidates[:top_k], now)
+    seleccion = _con_los_dos_lados(candidates[:top_k], now, filtro.censo)
     traidas = {c["path"] for c in seleccion}
     for candidate in seleccion:
         if not candidate["readable"]:
@@ -648,6 +844,7 @@ Recupera, rerankea y empaqueta el contexto para responder `query`."""
 
         ),
         "warnings": warnings,
+        **filtro.informe(),
     }
 
 
@@ -668,6 +865,8 @@ Notas:
   - Las preferencias 'must' entran siempre primero (--no-preferences las omite);
     si no caben íntegras con la cabecera, devuelve INVALID_BUDGET
   - `excluded` dice que se dejo fuera y por que: el recorte es auditable
+  - Por defecto solo verdad vigente: lo historico sale antes del rerank y
+    `history_excluded` lo cuenta por motivo; --incluir-historico lo devuelve
 """,
         allow_abbrev=False,
     )
@@ -704,6 +903,11 @@ Notas:
     parser.add_argument("--format", default="json", choices=["json", "markdown"])
     parser.add_argument("--explain", action="store_true",
                         help="Incluye las señales del rerank por nota")
+    parser.add_argument(
+        "--incluir-historico", action="store_true",
+        help="Devuelve las notas históricas (superseded_by, archived, deprecated, "
+             "obsolete, revoked, fuentes archivadas, cuarentena) al ranking, "
+             "penalizadas como antes. Por defecto el paquete es solo verdad vigente.")
 
     args = parser.parse_args()
     pregunta = args.query_flag or args.query
@@ -717,7 +921,7 @@ Notas:
         query=args.query, budget_tokens=budget, top_k=args.top_k,
         excerpt_tokens=args.excerpt_tokens, min_score=args.min_score,
         include_preferences=not args.no_preferences,
-        intento=args.intento,
+        intento=args.intento, incluir_historico=args.incluir_historico,
     )
 
     if args.format == "markdown" and result.get("ok"):
