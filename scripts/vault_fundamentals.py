@@ -10,7 +10,7 @@ Defines and verifies the 8 fundamental data principles for the vault:
   F5 VALIDEZ          — field values within allowed sets (status/type/CIA)
   F6 ACTUALIDAD       — updated within threshold or evergreen
   F7 AUTENTICIDAD     — agent field present (who created/modified)
-  F8 NO_REPUDIO       — at least one entry in change-log.json references this note
+  F8 NO_REPUDIO       — at least one change-log entry references this note
 
 Writes 00_System/data-fundamentals.json (canonical registry consumed by other tools).
 
@@ -102,15 +102,14 @@ def framework_ids() -> List[str]:
 
 
 def _has_change_log_entry(rel_path: str) -> bool:
-    if not _change_log_json().exists():
+    # Through the log's owner, both formats (bigo-inmutabilidad, S6). An
+    # unreadable log raises, as it always did.
+    repo = _repo()
+    if not repo.hay_bitacora_cambios():
         return False
-    try:
-        entries = json.loads(_change_log_json().read_text(encoding="utf-8"))
-        for e in entries:
-            if e.get("path") == rel_path or e.get("new_path") == rel_path:
-                return True
-    except (json.JSONDecodeError, OSError):
-        raise
+    for e in repo.leer_bitacora_cambios().entradas:
+        if e.get("path") == rel_path or e.get("new_path") == rel_path:
+            return True
     return False
 
 

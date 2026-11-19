@@ -49,6 +49,8 @@ GUARDED_ARTIFACTS = frozenset({
     "00_System/quality-index.json",
     "00_System/tools-manifest.json",
     "00_System/.change-log.json",
+    # The append-only change log (bigo-inmutabilidad): same owner, same lock.
+    "00_System/.change-log.jsonl",
     "00_System/.tool-trace.json",
     "00_System/tags-index.json",
     "99_Index/index.md",

@@ -95,8 +95,9 @@ def _propagation_queue() -> Path:
     return RepositorioGobernanza(construir()).cola_propagacion
 
 
-def _change_log() -> Path:
-    return RepositorioGobernanza(construir()).bitacora_cambios
+def _change_log() -> RepositorioGobernanza:
+    """The change log's owner: it reads both formats (bigo-inmutabilidad, S6)."""
+    return RepositorioGobernanza(construir())
 
 
 def _standard_version_file() -> Path:
@@ -167,8 +168,10 @@ def _read_propagation_memory() -> Dict[str, Any]:
 
 def _read_change_memory() -> Dict[str, Any]:
     try:
-        data = json.loads(_change_log().read_text(encoding="utf-8"))
-        entries = data.get("entries", [])
+        repo = _change_log()
+        if not repo.hay_bitacora_cambios():
+            raise FileNotFoundError(repo.bitacora_cambios_lineas)
+        entries = [e for e in repo.leer_bitacora_cambios().entradas if isinstance(e, dict)]
         recent = entries[-10:] if len(entries) > 10 else entries
         return {
             "total_changes": len(entries),

@@ -14,6 +14,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from apoyo import filas_de_bitacora
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "vault_move.py"
 
@@ -51,8 +52,7 @@ def test_la_fila_moved_queda_en_el_change_log(tmp_path):
     assert sobre["change_log"]["id"]
 
     # La fila existe en las dos caras de SP-01, con origen y destino.
-    filas = json.loads((raiz / "00_System" / ".change-log.json")
-                       .read_text(encoding="utf-8"))
+    filas = filas_de_bitacora(raiz)
     moved = [e for e in filas if e["action"] == "moved"]
     assert len(moved) == 1
     assert moved[0]["path"] == "07_Knowledge/a.md"
@@ -70,9 +70,8 @@ def test_el_dry_run_no_deja_fila_de_moved(tmp_path):
     assert p.returncode == 0
     sobre = json.loads(p.stdout)
     assert sobre["change_log"] is None
-    jsonl = raiz / "00_System" / ".change-log.json"
-    if jsonl.exists():
-        filas = json.loads(jsonl.read_text(encoding="utf-8"))
+    filas = filas_de_bitacora(raiz)
+    if filas:
         assert [e for e in filas if e["action"] == "moved"] == []
     else:
         # Ni change-log: la simulación ni por ración escribe.

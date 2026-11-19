@@ -805,14 +805,17 @@ def _detect_ingestas_sin_bitacora(barrido: Optional[List[Path]] = None) -> Dict[
     written before that id existed is counted as `unverifiable`, not matched by
     a guessed time window. Read-only: the log is read, never repaired.
     """
-    ruta = _repo().bitacora_cambios
+    repo = _repo()
     filas: List[Dict[str, Any]] = []
-    if ruta.exists():
+    if repo.hay_bitacora_cambios():
+        # Through the log's owner, both formats (bigo-inmutabilidad, S6).
         try:
-            datos = json.loads(ruta.read_text(encoding="utf-8"))
+            datos = repo.leer_bitacora_cambios().entradas
         except (OSError, UnicodeDecodeError, ValueError) as exc:
             return {"norm": "AP-74", "unavailable": f"change log ilegible: {type(exc).__name__}"}
-        filas = [f for f in datos if isinstance(f, dict)] if isinstance(datos, list) else []
+        except TypeError:
+            datos = []  # not a list of rows: nothing to match, as before
+        filas = [f for f in datos if isinstance(f, dict)]
     razones = [str(f.get("reason") or "") for f in filas if f.get("action") == "ingested"]
     faltan: List[Dict[str, Any]] = []
     sin_pasada = 0

@@ -14,6 +14,7 @@ import json
 from pathlib import Path
 
 import pytest
+from apoyo import filas_de_bitacora
 
 
 @pytest.fixture(autouse=True)
@@ -49,10 +50,7 @@ TEXTO = "\n".join([
 
 
 def _filas(raiz: Path, accion: str) -> list:
-    log = raiz / "00_System" / ".change-log.json"
-    if not log.exists():
-        return []
-    return [f for f in json.loads(log.read_text(encoding="utf-8")) if f["action"] == accion]
+    return [f for f in filas_de_bitacora(raiz) if f["action"] == accion]
 
 
 def test_el_runtime_compone_el_puerto_de_la_bitacora():

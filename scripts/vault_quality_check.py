@@ -14,7 +14,7 @@ by another instance, reports dq_status: "update_in_progress" and uses cached sco
   F5 validity        — CIA/status/type values within allowed sets
   F6 timeliness      — updatedAt within threshold (15d high/critical, 30d default) or evergreen
   F7 authenticity    — agent field present in frontmatter (AP-16)
-  F8 non_repudiation — at least one entry in .change-log.json references this note
+  F8 non_repudiation — at least one change-log entry references this note
 
 Supplementary:
   uniqueness         — not in AP-17 title-similar pair, not in AP-18 content-duplicate
@@ -447,11 +447,12 @@ def _score_non_repudiation(
 
 
 def _load_change_log_paths() -> Set[str]:
-    """Load all unique paths referenced in .change-log.json."""
-    if not _change_log_json().exists():
+    """Load all unique paths referenced in the change log (its owner reads both formats)."""
+    repo = _repo()
+    if not repo.hay_bitacora_cambios():
         return set()
     try:
-        entries = json.loads(_change_log_json().read_text(encoding="utf-8"))
+        entries = repo.leer_bitacora_cambios().entradas
         paths: Set[str] = set()
         for e in entries:
             if e.get("path"):
@@ -861,7 +862,7 @@ Notas:
   - Suplementario: uniqueness (AP-17/AP-18 detection)
   - Global = media de 9 dimensiones (8 fundamentos + uniqueness)
   - CIA: cia_integrity critical/high -> timeliness umbral 15d (vs 30d por defecto)
-  - F8 NO_REPUDIO: requiere entrada en 00_System/.change-log.json para la nota
+  - F8 NO_REPUDIO: requiere entrada en el change log (00_System/.change-log.jsonl) para la nota
   - --iso-quality: vista de solo lectura; cobertura por caracteristica ISO/IEC
     25010:2023 y 25019:2023 (requisitos que la declaran, pruebas que los cubren),
     registros de evaluacion ISO/IEC 25040 y pruebas por nivel, tipo y tecnica

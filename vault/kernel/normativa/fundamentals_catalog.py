@@ -250,7 +250,7 @@ FUNDAMENTALS: List[Dict[str, Any]] = [
         "description": "El autor de una acción o cambio en los datos no puede negar su autoría, dejando un rastro auditable.",
         "dq_dimension": "non_repudiation",
         "verifies": [
-            "Al menos una entrada en .change-log.json referencia la ruta de la nota",
+            "Al menos una entrada en .change-log.jsonl referencia la ruta de la nota",
             "El cambio incluye timestamp, agent y reason inmutables",
             "Eliminaciones registradas obligatoriamente antes de borrar",
         ],
@@ -415,7 +415,7 @@ BIGDATA_VS: List[Dict[str, Any]] = [
         "english": "velocity",
         "description": "A qué ritmo cambia el conocimiento entre sesiones.",
         "metric": "cambios por sesión y por ventana temporal",
-        "artifact": "00_System/.change-log.json · session-delta",
+        "artifact": "00_System/.change-log.jsonl · session-delta",
         "control": "SP-03 exige snapshot antes de operaciones masivas; vault_impact propaga el cambio a los nodos dependientes.",
         "tools": ["vault_change_log", "vault_delta", "vault_impact", "vault_timeline"],
     },

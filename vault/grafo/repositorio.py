@@ -119,6 +119,17 @@ class RepositorioGrafo:
 
         return RepositorioGobernanza(self._ctx).bitacora_cambios
 
+    def hay_bitacora_cambios(self) -> bool:
+        from ..gobernanza.repositorio import RepositorioGobernanza
+
+        return RepositorioGobernanza(self._ctx).hay_bitacora_cambios()
+
+    def leer_bitacora_cambios(self):
+        """The log read by its owner, both formats (bigo-inmutabilidad, S6)."""
+        from ..gobernanza.repositorio import RepositorioGobernanza
+
+        return RepositorioGobernanza(self._ctx).leer_bitacora_cambios()
+
     # ── Lectura tolerante ────────────────────────────────────────────────────
 
     def relativa(self, ruta: Path) -> str:

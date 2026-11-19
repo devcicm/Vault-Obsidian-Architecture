@@ -619,17 +619,17 @@ def auditar_runtime(
 
     # ── SP-01: eliminaciones sin change_log ───────────────────────────────────
     graph_file = root / "99_Index" / "graph.json"
-    change_log = root / "00_System" / ".change-log.json"
+    bitacora = RepositorioGobernanza(construir(root))
     if graph_file.exists():
         try:
             graph = json.loads(graph_file.read_text(encoding="utf-8"))
             deleted = [e.get("from", "") for e in graph.get("edges", []) if e.get("to") == "__deleted__"]
             if deleted:
                 logged: set = set()
-                if change_log.exists():
+                if bitacora.hay_bitacora_cambios():
                     try:
                         logged = {
-                            str(e.get("path", "")) for e in json.loads(change_log.read_text(encoding="utf-8"))
+                            str(e.get("path", "")) for e in bitacora.leer_bitacora_cambios().entradas
                         }
                     except (json.JSONDecodeError, TypeError):
                         pass

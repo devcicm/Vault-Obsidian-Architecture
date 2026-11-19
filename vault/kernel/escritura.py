@@ -132,6 +132,44 @@ def escritura_atomica(
             pass
 
 
+def anexar_linea(
+    path: Path,
+    linea: str,
+    encoding: str = "utf-8",
+    guardas: Sequence[Guarda] = (),
+) -> None:
+    """Appends one line at the end of ``path``; written bytes are never rewritten.
+
+    The append-only counterpart of ``escritura_atomica`` for line-oriented
+    logs: the cost is the line, not the file. ``linea`` must not contain a
+    newline; the terminator is added here. A file whose last byte is not a
+    newline ends in a torn line (a crash mid-append): the new line starts on a
+    line of its own, so the torn one stays visible to its reader and is never
+    merged with the next record. One ``write`` per call under the caller's lock;
+    ``VAULT_FSYNC=1`` syncs the descriptor, as for the atomic writer.
+    """
+    if "\n" in linea or "\r" in linea:
+        raise ValueError("anexar_linea: the line must not contain a line break")
+    exigir_escritura_permitida()
+    for guarda in guardas:
+        guarda(path, linea)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    datos = (linea + "\n").encode(encoding)
+    # The fencing check, as before every replace: whoever lost the lock does
+    # not append after the one that took it.
+    comprobar_toma(path)
+    with open(path, "a+b") as handle:
+        handle.seek(0, os.SEEK_END)
+        if handle.tell():
+            handle.seek(-1, os.SEEK_END)
+            if handle.read(1) != b"\n":
+                datos = b"\n" + datos
+        handle.write(datos)
+        if _fsync_enabled():
+            handle.flush()
+            os.fsync(handle.fileno())
+
+
 #: El nombre exacto del temporal que escribe esta casa. Solo se borran
 #: ficheros que lo cumplen: **sin esa prueba, el fichero es de alguien**
 #: (hallazgo 4.2 del paper de la re-auditoría del vault).

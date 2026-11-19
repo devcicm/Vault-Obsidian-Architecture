@@ -22,7 +22,7 @@ La frontera precisa, y ya ejecutable (`vault_arch --check`):
   contenido. Ese es el límite que importa y el que ahora falla si se cruza.
 
 Tampoco declara rutas ajenas: `quality-index.json`, `propagation-queue.json`,
-`.change-log.json` y `standard-version.json` los **lee** de los contextos que
+la bitácora de cambios y `standard-version.json` los **lee** de los contextos que
 los escriben. `vault_spec_memory` los derivaba por su cuenta, con lo que
 `quality-index.json` llegó a calcularse en cuatro módulos de tres contextos.
 """

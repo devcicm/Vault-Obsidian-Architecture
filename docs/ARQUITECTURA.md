@@ -94,7 +94,7 @@ Fronteras que hoy cruza (2), deuda declarada:
 | Módulo | Importa | Contexto destino |
 |---|---|---|
 | `vault_code_tag` | `vault_write` | Autoría |
-| `vault/grafo/repositorio.py` | `vault/gobernanza` | Gobernanza |
+| `vault/grafo/repositorio.py` | `vault/gobernanza` (3 imports) | Gobernanza |
 
 ## Gobernanza
 
@@ -227,7 +227,7 @@ Quién escribe qué. Derivado del catálogo (`side_effects`): es el inventario q
 - `vault_code_sync` (Código): Actualiza 11_Code/{project}/index.json; Con --fix: inyecta @vault: en los ficheros fuente del proyecto, FUERA del vault (AP-36: el side effect se declara para poder revisarlo)
 - `vault_code_tag` (Normas): Actualiza frontmatter del módulo
 - `vault_criterios` (Normas): scripts/criterios-baseline.json
-- `vault_delete` (Change Log): Escribe entrada en 00_System/.change-log.json; Escribe entrada en 00_System/change-log.md; Elimina o mueve a 20_Quarantine/; Guarda la versión borrada en .history/ (la restaura vault_undo --restore)
+- `vault_delete` (Change Log): Escribe entrada en 00_System/.change-log.jsonl (append-only; lee también el .change-log.json congelado); Escribe entrada en 00_System/change-log.md; Elimina o mueve a 20_Quarantine/; Guarda la versión borrada en .history/ (la restaura vault_undo --restore)
 - `vault_delta` (Session Delta y Tags): Crea 00_System/delta-snapshot.json
 - `vault_diagram_export` (Diagramas): Genera archivos exportados
 - `vault_diagram_save` (Diagramas): Crea nota en 06_Diagrams/{category}/

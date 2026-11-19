@@ -80,7 +80,9 @@ def test_la_memoria_spec_pide_las_rutas_ajenas_a_su_dueno(tmp_path):
 
     assert vault_spec_memory._quality_index() == gob.indice_calidad
     assert vault_spec_memory._propagation_queue() == gob.cola_propagacion
-    assert vault_spec_memory._change_log() == gob.bitacora_cambios
+    # The change log is read through its owner, which holds both formats.
+    assert isinstance(vault_spec_memory._change_log(), RepositorioGobernanza)
+    assert vault_spec_memory._change_log().bitacora_cambios == gob.bitacora_cambios
     assert vault_spec_memory._standard_version_file() == ciclo.fichero_version
 
 

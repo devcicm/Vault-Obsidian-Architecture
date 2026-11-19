@@ -51,14 +51,19 @@ from vault.kernel.procesos_git import es_hash
 #: 2. `!*/` deja recorrer las carpetas: sin esto git no baja a buscar notas.
 #: 3. `!*.md` devuelve las notas.
 #: 4. `!.gitignore` versiona la política para que viaje con el vault.
-#: 5. `!00_System/.change-log.json` es la única excepción no-`.md`, y es
+#: 5. `!00_System/.change-log.json(l)` es la única excepción no-`.md`, y es
 #:    **dato, no derivado**: ninguna nota la produce. La leen `vault_impact`
 #:    (qué cambió desde una fecha), SP-01 y la métrica F8 del marco de datos
 #:    (no-repudio: una entrada por nota). Sin ella, una copia del vault
 #:    pierde la autoría de cada nota y no hay de dónde reconstruirla: los
 #:    mensajes de los commits son genéricos y no nombraban al agente. Un
 #:    JSON que se regenera de las notas (`graph.json`, `hash-index.json`)
-#:    no entra ni entra este.
+#:    no entra ni entra este. Desde el registro append-only
+#:    (bigo-inmutabilidad) son dos ficheros del mismo dato:
+#:    `.change-log.json`, el array congelado de los vaults anteriores, y
+#:    `.change-log.jsonl`, donde se anexan las entradas nuevas. Un
+#:    `.gitignore` existente lo recibe al final (`asegurar_ignorados` es
+#:    aditivo), y ahí gana a `*` porque es el último patrón que casa.
 #: 6. Las carpetas de abajo van **después** de las negaciones porque contienen
 #:    `.md` que no son notas: `.history/` son copias de versión (su nombre
 #:    acaba en `.md`), `vault-backups/` son copias del vault entero y
@@ -75,6 +80,7 @@ IGNORADOS_EN_GIT = (
     "!*.md",
     "!.gitignore",
     "!00_System/.change-log.json",
+    "!00_System/.change-log.jsonl",
     ".history/",
     "vault-backups/",
     ".locks/",

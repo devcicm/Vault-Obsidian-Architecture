@@ -224,6 +224,8 @@ from vault_ledger import (  # noqa: F401  (reexport deliberado)
     write_ledger_reset,
     write_report,
 )
+from vault.kernel.escritura import anexar_linea  # noqa: E402
+from vault.kernel.ledger import record_append  # noqa: E402
 
 
 
@@ -799,6 +801,49 @@ def atomic_write_text(
     _auto_grafo(path)
 
     _auto_tag_ledger(path, text)
+
+
+def append_line(path: Path, line: str, encoding: str = "utf-8",
+                continua: Optional[Path] = None) -> None:
+    """Append one line to a line-oriented log, never rewriting written bytes.
+
+    The append-only sibling of `atomic_write_text` (bigo-inmutabilidad, S3):
+    a log that is read whole and rewritten on every row costs O(h) per write
+    and O(h^2) over the vault's life. Here the cost is the line.
+
+    The same owner, the same guards, applied to what is written — the line:
+    the cancellation fence, the immutability policy, the secret scan (a broken
+    scanner is recorded, as above), the root/traversal/reserved-name checks and
+    the encoding sanitation. The write is classified for AP-37 without reading
+    the file (`record_append`; `continua` names the file this one continues,
+    so its first append counts as an update). The frontmatter and closed-decision checks do
+    not apply: an append never touches the head of the file. The section-index
+    and graph hooks run as after any write.
+    """
+    exigir_escritura_permitida()
+    _exigir_politica_de_inmutabilidad(path, None)
+    if line and not _env("VAULT_SKIP_SECRET_SCAN"):
+        try:
+            guarda_secretos(path, line)
+        except PermissionError:
+            raise
+        except Exception as exc:
+            _registrar_escaner_degradado(path, exc)
+    _rechazar_raiz_insegura(path)
+    _rechazar_traversal(path)
+    _rechazar_nombre_reservado(path)
+    if line:
+        line, _bom = strip_bom(line)
+        line, fixes = sanitize_content(line, dry_run=False)
+        if fixes:
+            # Never raises: the trace owner swallows its own failure (AP-37).
+            from vault_encoding import log_encoding_fixes
+
+            log_encoding_fixes(fixes, path, "append_line")
+    record_append(path, continua)
+    anexar_linea(path, line, encoding)
+    _auto_section_index(path)
+    _auto_grafo(path)
 
 
 # Carpetas que no disparan la cascada de índices. Son dos cosas distintas y

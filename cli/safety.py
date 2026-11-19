@@ -287,6 +287,8 @@ def snapshot(vault_root: Path, *, include_history: bool = False) -> Dict[str, st
 AMBIENT_ARTIFACTS = frozenset({
     "00_System/.tool-trace.json",
     "00_System/.change-log.json",
+    # Where every logged operation appends since bigo-inmutabilidad.
+    "00_System/.change-log.jsonl",
     "00_System/token-usage.json",
 })
 

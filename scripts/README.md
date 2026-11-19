@@ -1598,7 +1598,34 @@ python vault_history_compact.py --apply --note "01_Projects/ans/status.md"
 ## Grupo 23 — Change Log
 
 ### `vault_change_log.py`
-Registra el ciclo de vida de las notas: creadas, actualizadas, eliminadas, movidas. Escribe en `00_System/change-log.md` y `00_System/.change-log.json`.
+Registra el ciclo de vida de las notas: creadas, actualizadas, eliminadas, movidas. Escribe en `00_System/change-log.md` y `00_System/.change-log.jsonl`.
+
+**Append-only (bigo-inmutabilidad).** Cada entrada es **una línea** JSON que se anexa
+a `00_System/.change-log.jsonl` bajo el mismo `file_lock`, y una fila más en la tabla de
+`change-log.md`: anotar cuesta la entrada, no la historia (antes cada anotación leía,
+ampliaba y reescribía todo `.change-log.json` y todo el `.md` — O(h) por escritura,
+O(h²) en la vida del vault). Un vault anterior conserva su `.change-log.json` (un array
+JSON): se **lee**, antes que las líneas, y **no se reescribe nunca**; nada se migra. El
+único lector de los dos formatos es `RepositorioGobernanza.leer_bitacora_cambios()` —
+`vault_fundamentals`, `vault_quality_check`, `vault_impact --since`, AP-74, SP-01,
+`vault_spec_memory` y el replay de requisitos leen por él, y un test estático
+(`tests/test_log_append_only.py`) prueba que ningún otro código abre los ficheros.
+Los campos de cada entrada no cambian; `log_json` del envelope nombra el fichero
+escrito (`00_System/.change-log.jsonl`).
+
+- **Línea rota.** Un corte entre el primer byte y el salto de línea deja una línea
+  que no se lee: se omite, nunca se fusiona con la siguiente, y `--query` la nombra
+  en `torn_lines` (números de línea) y `torn_log`. El siguiente anexo empieza en una
+  línea nueva; los bytes rotos quedan en disco para inspeccionarlos.
+- **Lo que sigue leyendo la historia.** Un evento de requisito (`transition` con
+  identidad) busca su id para no anotarse dos veces, y el primer anexo de un vault que
+  solo tiene el array lo valida una vez: un `.change-log.json` ilegible sigue siendo
+  `DATA_FILE_CORRUPT` y no se empieza el fichero nuevo (AP-51). La fila del `.md`
+  sigue refrescando su huella en `search-index.json` y su nodo del grafo, que releen
+  la nota entera: es lectura, no reescritura, y es el coste que queda.
+- **Comillas tipográficas.** El saneo se aplica a los valores antes de serializar la
+  línea: sanear el JSON ya serializado convertía `“` en `"` y dejaba el array ilegible
+  para la siguiente anotación.
 
 Acciones válidas (`VALID_ACTIONS`): `created`, `updated`, `deleted`, `moved`,
 `transition` y, desde 2026-11-16, `ingested` (una pasada de ingesta) y `linted`
@@ -2497,7 +2524,7 @@ baseline: se midió cero al declararla, y una lista de excepciones vacía solo i
 estrenarla.
 
 **Rutas ajenas.** `vault_spec_memory` derivaba por su cuenta `quality-index.json`,
-`propagation-queue.json`, `.change-log.json` y `standard-version.json`, que **lee** pero
+`propagation-queue.json`, la bitácora de cambios y `standard-version.json`, que **lee** pero
 no escribe. Con eso `quality-index.json` llegaba a calcularse en cuatro módulos de tres
 contextos: AP-05 multiplicado, y el día que se moviera solo se habrían enterado los que
 lo escriben. Ahora se piden a `RepositorioGobernanza` y `RepositorioCicloDeVida`, y los

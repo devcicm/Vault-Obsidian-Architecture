@@ -595,7 +595,7 @@ def generate_implementation(vault_root: Path, drift: dict) -> str:
 | Archivo | Lock timeout | Estado |
 |---|---|---|
 | `00_System/.tool-trace.json` | 5s | ✅ |
-| `00_System/.change-log.json` | 5s | ⚠️ falta |
+| `00_System/.change-log.jsonl` | 5s | ⚠️ falta |
 | `00_System/propagation-queue.json` | 30s | ✅ |
 | `00_System/quality-index.json` | 30s | ✅ |
 | `09_Infrastructure/.infra-index.json` | 10s | ✅ (v36) |
@@ -1118,7 +1118,7 @@ def generate_process_antipatterns(vault_root: Path, drift: dict) -> str:
 
 ### SP-01: Delete sin change_log
 
-**Síntoma**: Nota eliminada que no aparece en `.change-log.json`.
+**Síntoma**: Nota eliminada que no aparece en `.change-log.jsonl`.
 
 **Prevención**: Antes de eliminar, llamar `vault_change_log --action deleted`.
 

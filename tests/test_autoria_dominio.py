@@ -86,7 +86,7 @@ def test_el_repositorio_no_declara_rutas_ajenas():
         if isinstance(n, ast.Constant) and isinstance(n.value, str)
     }
     for ajeno in ("search-index.json", "hash-index.json", "tag-registry.json",
-                  "graph.json", ".change-log.json"):
+                  "graph.json", ".change-log.json", ".change-log.jsonl"):
         assert ajeno not in literales, ajeno
 
 

@@ -47,7 +47,7 @@ def test_la_escritura_por_el_puerto_cuenta_y_apunta_a_su_primer_argumento():
         "move-log.json"]
 
 
-@pytest.mark.parametrize("subruta", ["move-log.json", ".change-log.json",
+@pytest.mark.parametrize("subruta", ["move-log.json", ".change-log.jsonl",
                                      "propagation-queue.json", "tag-registry.json",
                                      ".tool-tokens.json", "scanner-degraded.jsonl"])
 def test_la_subruta_la_escribe_solo_su_dueno(subruta):
@@ -77,10 +77,16 @@ def test_la_bitacora_de_cambios_la_escribe_gobernanza(tmp_path):
     from vault.kernel import construir
 
     repo = RepositorioGobernanza(construir(tmp_path))
-    repo.escribir_bitacora_cambios([{"action": "create", "path": "a.md"}])
-    texto = repo.bitacora_cambios.read_text(encoding="utf-8")
-    assert json.loads(texto) == [{"action": "create", "path": "a.md"}]
-    assert texto == json.dumps(json.loads(texto), indent=2, ensure_ascii=False)
+    repo.anexar_bitacora_cambios({"action": "create", "path": "a.md"})
+    repo.anexar_bitacora_cambios({"action": "update", "path": "a.md"})
+    # The append-only format is contract with the user's disk: one JSON object
+    # per line, the legacy array is never written.
+    texto = repo.bitacora_cambios_lineas.read_text(encoding="utf-8")
+    assert texto == ('{"action": "create", "path": "a.md"}\n'
+                     '{"action": "update", "path": "a.md"}\n')
+    assert not repo.bitacora_cambios.exists()
+    assert repo.leer_bitacora_cambios().entradas == [
+        {"action": "create", "path": "a.md"}, {"action": "update", "path": "a.md"}]
 
 
 def test_la_cola_de_propagacion_la_escribe_gobernanza(tmp_path):

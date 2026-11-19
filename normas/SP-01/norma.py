@@ -26,9 +26,9 @@ NORMA = {
         "vault_change_log --action deleted --path <nota> --reason <motivo>. "
         "Sin este registro, la nota desaparece sin rastro auditado."
     ),
-    "signal": "Nota eliminada que no aparece en 00_System/.change-log.json con action: deleted.",
+    "signal": "Nota eliminada que no aparece en 00_System/.change-log.jsonl con action: deleted.",
     "prevention": (
-        "Regla de gobernanza: verificar en .change-log.json antes de delete. "
+        "Regla de gobernanza: verificar en .change-log.jsonl antes de delete. "
         "Si no hay entrada → llamar vault_change_log primero, luego eliminar."
     ),
     "tools_enforcing": ["vault_change_log"],

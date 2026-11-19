@@ -4,10 +4,11 @@
 Run from repo root:
     python -m pytest tests/test_vault_changelog_concurrency.py -v
 
-vault_change_log_add does a read-append-write of .change-log.json. Before the
-file_lock fix, two processes could read the same log, each append, and the
-second write would clobber the first (lost entry). This test drives many
-concurrent adds and asserts every entry survives.
+vault_change_log_add appends one line to .change-log.jsonl under file_lock
+(append-only since bigo-inmutabilidad). Before the file_lock fix, the old
+read-append-write of .change-log.json let two processes read the same log,
+each append, and the second write clobbered the first (lost entry). This test
+drives many concurrent adds and asserts every entry survives, whole.
 """
 
 import os
@@ -40,7 +41,10 @@ print(json.dumps(result))
     with ThreadPoolExecutor(max_workers=3) as pool:
         results = list(pool.map(run, range(3)))
     assert all(result.returncode == 0 and json.loads(result.stdout)["ok"] for result in results)
-    rows = json.loads((root / "00_System" / ".change-log.json").read_text(encoding="utf-8"))
+    import vault_io
+
+    vault_io.set_vault_root(root)
+    rows = cl.leer_historial_completo()
     assert len(rows) == 1
     markdown = (root / "00_System" / "change-log.md").read_text(encoding="utf-8")
     assert markdown.count("requirement-event:40546746-302c-450e-a080-30a455674ff6") == 1
@@ -80,7 +84,9 @@ def test_concurrent_change_log_no_lost_entries(tmp_test_dir):
     for t in threads:
         t.join()
 
-    entries = json.loads(cl._log_json().read_text(encoding="utf-8"))
+    lectura = cl.leer_bitacora()
+    assert lectura.lineas_rotas == (), "an append left a torn line"
+    entries = lectura.entradas
     assert len(entries) == n, f"Lost updates: {len(entries)} of {n} entries recorded"
     # Every writer's unique path is present exactly once.
     paths = {e["path"] for e in entries}

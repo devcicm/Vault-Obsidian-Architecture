@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from vault_base import copiar_vault
+from apoyo import filas_de_bitacora, reescribir_bitacora
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "scripts" / "vault_requirement_save.py"
@@ -52,7 +53,7 @@ def test_cada_cambio_de_estado_deja_fila_y_evento(tmp_path):
     ev = indice["requirements"][0]["events"]
     assert [(e["from"], e["to"]) for e in ev] == [(None, "draft"), ("draft", "reviewed")]
 
-    log = json.loads((raiz / "00_System" / ".change-log.json").read_text(encoding="utf-8"))
+    log = filas_de_bitacora(raiz)
     filas = [e for e in log if e["action"] == "transition"]
     assert [e["reason"] for e in filas] == ["REQ-001: (nuevo) -> draft", "REQ-001: draft -> reviewed"]
     assert [e["requirement"]["identity"] for e in filas] == ["demo/REQ-001"] * 2
@@ -66,8 +67,7 @@ def test_requirement_projection_replays_complete_log_and_is_idempotent(tmp_path)
 
     root = copiar_vault(tmp_path / "vault", "demo")
     assert _guardar(root, "reviewed")[0] == 0
-    log_path = root / "00_System" / ".change-log.json"
-    log = json.loads(log_path.read_text(encoding="utf-8"))
+    log = filas_de_bitacora(root)
     event = next(e for e in log if e["action"] == "transition")
     rows = []
     for number in range(31):
@@ -77,7 +77,7 @@ def test_requirement_projection_replays_complete_log_and_is_idempotent(tmp_path)
                "requirement": {**event["requirement"], "from": None if number == 0 else previous,
                                "to": state}}
         rows.append(row)
-    log_path.write_text(json.dumps(rows), encoding="utf-8")
+    log_path = reescribir_bitacora(root, rows)
     index = root / "14_Requirements" / ".requirements-index.json"
     index.unlink()
     code, saved = _guardar(root, "reviewed")
@@ -90,7 +90,7 @@ def test_requirement_projection_replays_complete_log_and_is_idempotent(tmp_path)
     before = index.read_bytes()
     assert requirements.reconstruir_indice_requisitos()["ok"]
     assert index.read_bytes() == before
-    assert json.loads(log_path.read_text(encoding="utf-8")) == rows
+    assert filas_de_bitacora(root) == rows
 
 
 def test_legacy_requirement_history_is_reported_not_guessed(tmp_path):
@@ -99,11 +99,10 @@ def test_legacy_requirement_history_is_reported_not_guessed(tmp_path):
 
     root = copiar_vault(tmp_path / "vault", "demo")
     assert _guardar(root, "draft")[0] == 0
-    log_path = root / "00_System" / ".change-log.json"
-    rows = json.loads(log_path.read_text(encoding="utf-8"))
+    rows = filas_de_bitacora(root)
     for row in rows:
         row.pop("requirement", None)
-    log_path.write_text(json.dumps(rows), encoding="utf-8")
+    reescribir_bitacora(root, rows)
     vault_io.set_vault_root(root)
     result = requirements.reconstruir_indice_requisitos()
     assert not result["ok"]
@@ -135,7 +134,7 @@ def test_durable_event_retry_does_not_duplicate_after_markdown_failure(tmp_path,
     result = requirements.vault_requirement_save(**arguments)
     assert result["ok"] and result["transition_logged"]
     assert requirements.vault_requirement_save(**arguments)["transition_logged"] is False
-    rows = json.loads((root / "00_System" / ".change-log.json").read_text(encoding="utf-8"))
+    rows = filas_de_bitacora(root)
     assert len([row for row in rows if row.get("requirement")]) == 1
     index = json.loads((root / "14_Requirements" / ".requirements-index.json").read_text(encoding="utf-8"))
     assert len(index["requirements"][0]["events"]) == 1
@@ -165,7 +164,7 @@ def test_retry_after_projection_failure_converges_without_duplicate_events(tmp_p
             requirements.vault_requirement_save(**arguments, status="reviewed")
     for _ in range(3):
         assert requirements.vault_requirement_save(**arguments, status="reviewed")["ok"]
-    rows = json.loads((root / "00_System" / ".change-log.json").read_text(encoding="utf-8"))
+    rows = filas_de_bitacora(root)
     transitions = [(r["requirement"]["from"], r["requirement"]["to"]) for r in rows if r.get("requirement")]
     assert transitions == [(None, "draft"), ("draft", "reviewed")]
     index = json.loads((root / "14_Requirements" / ".requirements-index.json").read_text(encoding="utf-8"))

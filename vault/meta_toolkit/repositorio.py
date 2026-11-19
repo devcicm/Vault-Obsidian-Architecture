@@ -2,7 +2,7 @@
 
 Solo dos ficheros son suyos: `tools-manifest.json` y `spec-memory.json`. Los
 otros cuatro que `vault_spec_memory` derivaba —`quality-index.json`,
-`propagation-queue.json`, `.change-log.json`, `standard-version.json`— son de
+`propagation-queue.json`, la bitácora de cambios, `standard-version.json`— son de
 Gobernanza y de Ciclo de vida, y se leen de allí. Declararlos aquí habría hecho
 que `quality-index.json` se calculara en cuatro módulos de tres contextos: AP-05
 multiplicado, no un atajo.

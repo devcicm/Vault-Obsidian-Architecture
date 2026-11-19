@@ -272,7 +272,7 @@ python -m cli batch --file lote.json --parallel 4 --verify-integrity --pretty
 ```
 
 - **`ambient_changes`** — instrumentación que escribe toda tool vía `wrap_main`
-  (`.tool-trace.json`, `.change-log.json`, `token-usage.json`, `*.locks`). No cuenta
+  (`.tool-trace.json`, `.change-log.jsonl`, `token-usage.json`, `*.locks`). No cuenta
   como cambio inesperado.
 - **`unexpected_changes`** no vacío marca el lote `ok: false`. Significa que alguna
   tool tocó algo que no declara en su catálogo: revísalo antes de seguir escribiendo.

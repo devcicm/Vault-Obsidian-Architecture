@@ -12,7 +12,10 @@ Writes to two targets:
 
   - 00_System/change-log.md  (Markdown table, readable in Obsidian)
 
-  - 00_System/.change-log.json  (JSON array, queryable by agents)
+  - 00_System/.change-log.jsonl  (JSON Lines, append-only, queryable by agents)
+
+  A vault from before the append-only log keeps its 00_System/.change-log.json
+  (one JSON array): it is read, legacy first, and never written again.
 
 
 
@@ -51,7 +54,8 @@ import sys
 from vault_errors import emit_error, emit_fallo, mensaje_de, wrap_main, proyecto_registrado
 from vault_entorno import agente_por_defecto
 from vault_lib import utcnow
-from vault_io import IndiceIlegible, atomic_write_text, file_lock, identidad_requisito
+from vault_io import (IndiceIlegible, append_line, atomic_write_text, file_lock,
+                      identidad_requisito)
 import uuid
 
 from pathlib import Path
@@ -95,98 +99,146 @@ def _log_md() -> Path:
     return _repo().dir_sistema / "change-log.md"
 
 
-def _log_json() -> Path:
+def _gobernanza() -> RepositorioGobernanza:
     """La bitacora no es de Autoria: se recibe del contexto que la declara.
 
     `vault_fundamentals` y `vault_quality_check` (Gobernanza) leen el mismo
-    fichero. Que la ubicacion venga de `RepositorioGobernanza` y no de una
-    constante propia es deliberado — tres sitios decidiendo donde vive la
-    bitacora es AP-05, y el dia que se moviera solo se enteraria el que
+    registro. Que la ubicacion y el formato vengan de `RepositorioGobernanza` y
+    no de una constante propia es deliberado — tres sitios decidiendo donde
+    vive la bitacora es AP-05, y el dia que se moviera solo se enteraria el que
     escribe: el que lee devuelve {} sin fallar.
     """
-    return RepositorioGobernanza(construir()).bitacora_cambios
+    return RepositorioGobernanza(construir())
+
+
+def _log_json() -> Path:
+    """The frozen legacy log (`.change-log.json`); also the log lock's target.
+
+    The lock keeps its historical target so every writer of the log, before
+    and after the append-only format, serializes on the same lock.
+    """
+    return _gobernanza().bitacora_cambios
+
+
+def _log_lines() -> Path:
+    """The append-only log (`.change-log.jsonl`), where new entries go."""
+    return _gobernanza().bitacora_cambios_lineas
+
+
+def leer_bitacora():
+    """One read of the whole log through its owner; `IndiceIlegible` if unreadable.
+
+    Absent and empty are the same: no history yet. Unreadable is not: until
+    2026-10-15 a broken JSON read as `[]`, the next `add` rewrote the file with
+    a single entry and answered ok:true, and the non-repudiation history (F8)
+    disappeared without anyone saying so (AP-51). A torn appended line is not
+    unreadable history: it is left out and named in `lineas_rotas`.
+    """
+    repo = _gobernanza()
+    try:
+        return repo.leer_bitacora_cambios()
+    except (OSError, ValueError, TypeError) as exc:
+        ruta = repo.bitacora_cambios if repo.bitacora_cambios.exists() else repo.bitacora_cambios_lineas
+        raise IndiceIlegible(ruta, exc) from exc
 
 
 def _read_json_log() -> List[Dict[str, Any]]:
-    """Las entradas de la bitacora; `IndiceIlegible` si existe y no se lee.
-
-    Ausente y vacia son lo mismo: aun no hay historia. Ilegible no: hasta el
-    2026-10-15 un JSON roto se leia como `[]`, el siguiente `add` reescribia el
-    fichero con una sola entrada y respondia ok:true, y el historial de no
-    repudio (F8) desaparecia sin que nadie lo dijera (AP-51). Lo que no es una
-    lista tampoco se lee como bitacora: `append` habria fallado despues de
-    escribir la nota.
-    """
-    log = _log_json()
-    if not log.exists():
-        return []
-    try:
-        entries = json.loads(log.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as exc:
-        raise IndiceIlegible(log, exc) from exc
-    if not isinstance(entries, list):
-        raise IndiceIlegible(log, TypeError(f"se esperaba una lista, hay {type(entries).__name__}"))
-    return entries
-
-
-def _write_json_log(entries: List[Dict[str, Any]]) -> None:
-    RepositorioGobernanza(construir()).escribir_bitacora_cambios(entries)
+    """Las entradas de la bitacora; `IndiceIlegible` si existe y no se lee."""
+    return leer_bitacora().entradas
 
 
 def leer_historial_completo() -> List[Dict[str, Any]]:
-    """Read one atomic log snapshot without the query API's latest-20 limit."""
+    """Read one log snapshot without the query API's latest-20 limit."""
     entries = _read_json_log()
     if any(not isinstance(entry, dict) for entry in entries):
         raise IndiceIlegible(_log_json(), ValueError("Invalid history entry"))
     return entries
 
 
-def _append_md_log(entry: Dict[str, Any]) -> bool:
-    _system_dir().mkdir(parents=True, exist_ok=True)
+MD_HEADER = (
+    "# Change Log\n\n"
+    "Registro automatico de cambios en el vault.\n\n"
+    "| Timestamp | Action | Path | New Path | Reason | Agent |\n"
+    "|---|---|---|---|---|---|\n"
+)
 
-    HEADER = (
-        "# Change Log\n\n"
-        "Registro automatico de cambios en el vault.\n\n"
-        "| Timestamp | Action | Path | New Path | Reason | Agent |\n"
-        "|---|---|---|---|---|---|\n"
-    )
+#: Bytes read from the start of `change-log.md` to find its table header. The
+#: header is written once, at the top; a file whose head does not hold it
+#: takes the old whole-file path, so its behaviour is unchanged.
+_MD_HEAD_BYTES = 4096
 
-    existing = ""
 
-    if _log_md().exists():
-        try:
-            existing = _log_md().read_text(encoding="utf-8")
+def _celda(valor: Any) -> str:
+    """One Markdown table cell: a line break would end the row (and the O(1)
+    append refuses multi-line lines), so CR, LF and CRLF become `<br>`.
 
-        except OSError:
-            if "requirement" in entry:
-                raise
-            pass
+    Independent verifier (2026-11-18): a reason with a line break made the
+    append raise after the JSON row was written, leaving a half-written entry
+    and, for `vault_delete`, a `deleted` row for a note still on disk.
+    """
+    texto = str(valor or "")
+    return texto.replace("\r\n", "<br>").replace("\r", "<br>").replace("\n", "<br>")
 
-    marker = f"<!-- requirement-event:{entry['id']} -->" if "requirement" in entry else ""
-    if marker and marker in existing:
-        return False
 
-    if "| Timestamp |" not in existing:
-        existing = HEADER
-
-    ts = entry.get("timestamp", "")[:19]
-
-    action = entry.get("action", "")
-
-    path = entry.get("path", "")
-
-    new_path = entry.get("new_path") or ""
-
-    reason = entry.get("reason", "").replace("|", "\\|")
-
-    agent = entry.get("agent", "")
-
+def _md_row(entry: Dict[str, Any], marker: str) -> str:
+    ts = _celda(entry.get("timestamp", ""))[:19]
+    action = _celda(entry.get("action", ""))
+    path = _celda(entry.get("path", ""))
+    new_path = _celda(entry.get("new_path") or "")
+    reason = _celda(entry.get("reason", "")).replace("|", "\\|")
+    agent = _celda(entry.get("agent", ""))
     # The marker lives inside the last cell: an HTML block on its own line
     # ends a GFM table, and every later row would render as plain text.
     suffix = f" {marker}" if marker else ""
-    row = f"| {ts} | `{action}` | `{path}` | `{new_path}` | {reason} | {agent}{suffix} |\n"
+    return f"| {ts} | `{action}` | `{path}` | `{new_path}` | {reason} | {agent}{suffix} |"
 
-    atomic_write_text(_log_md(), existing + row)
+
+def _md_head() -> Optional[str]:
+    """The first bytes of the Markdown log, or None when it cannot be read."""
+    try:
+        with open(_log_md(), "rb") as fh:
+            return fh.read(_MD_HEAD_BYTES).decode("utf-8", errors="replace")
+    except FileNotFoundError:
+        return ""
+    except OSError:
+        return None
+
+
+def _append_md_log(entry: Dict[str, Any]) -> bool:
+    """Append the entry's row to `change-log.md`; False when it is already there.
+
+    O(1) on the common path: the row is appended and the header, written once,
+    is only looked for in the head of the file. Two cases still read the whole
+    file, as before: a requirement event, whose marker is looked for so a
+    replay never writes the row twice, and a file whose head holds no header,
+    which keeps the old behaviour (the table is started again).
+    """
+    _system_dir().mkdir(parents=True, exist_ok=True)
+    marker = f"<!-- requirement-event:{entry['id']} -->" if "requirement" in entry else ""
+    row = _md_row(entry, marker)
+
+    head = _md_head()
+    if marker or head is None or (head and "| Timestamp |" not in head):
+        existing = ""
+        if _log_md().exists():
+            try:
+                existing = _log_md().read_text(encoding="utf-8")
+            except OSError:
+                if marker:
+                    raise
+        if marker and marker in existing:
+            return False
+        if "| Timestamp |" not in existing:
+            atomic_write_text(_log_md(), MD_HEADER + row + "\n")
+            _refrescar_busqueda_del_log()
+            return True
+    elif not head:
+        # A new (or empty) log: the header and the first row, once.
+        atomic_write_text(_log_md(), MD_HEADER + row + "\n")
+        _refrescar_busqueda_del_log()
+        return True
+
+    append_line(_log_md(), row)
     _refrescar_busqueda_del_log()
     return True
 
@@ -309,16 +361,26 @@ def vault_change_log_add(
     if requirement is not None:
         entry["requirement"] = requirement
 
-    # Serialize the read-append-write against concurrent writers. Without the lock,
-    # two processes could both read the same log, each append their entry, and the
-    # second write clobbers the first → lost entry. file_lock(LOG_JSON) makes the
-    # whole critical section (JSON + MD append) atomic across processes.
+    # Serialize the appends against concurrent writers: one line each, in lock
+    # order, and the JSON and Markdown rows of one entry together. The log is
+    # append-only (bigo-inmutabilidad, S3): an ordinary row reads nothing and
+    # rewrites nothing. Two cases read the history first. A requirement event,
+    # whose identity is looked up so a replay never records it twice. And the
+    # first append of a vault that only has the legacy array: it is checked
+    # once, so an unreadable history is reported before the new file starts,
+    # as before (AP-51) — afterwards the legacy file is never written again,
+    # so an append cannot destroy it.
     with file_lock(_log_json()):
-        try:
-            entries = leer_historial_completo()
-        except IndiceIlegible as exc:
-            # No se escribe nada: el fichero queda como estaba para repararlo.
-            return emit_fallo("vault_change_log", exc)
+        repo = _gobernanza()
+        if requirement is not None or (
+                repo.bitacora_cambios.exists() and not repo.bitacora_cambios_lineas.exists()):
+            try:
+                entries = leer_historial_completo()
+            except IndiceIlegible as exc:
+                # No se escribe nada: el fichero queda como estaba para repararlo.
+                return emit_fallo("vault_change_log", exc)
+        else:
+            entries = []
 
         if requirement is not None:
             previous = next((row for row in entries if row.get("id") == entry["id"]), None)
@@ -329,9 +391,8 @@ def vault_change_log_add(
                 repaired = _append_md_log(previous)
                 return {"ok": True, "id": previous["id"], "action": action,
                         "path": path, "written": int(repaired), "entry": previous}
-        entries.append(entry)
 
-        _write_json_log(entries)
+        repo.anexar_bitacora_cambios(entry)
 
         _append_md_log(entry)
 
@@ -346,7 +407,7 @@ def vault_change_log_add(
         # devolvían la misma forma de envelope.
         "written": 2,
         "log_md": str(_log_md().relative_to(_raiz())).replace("\\", "/"),
-        "log_json": str(_log_json().relative_to(_raiz())).replace("\\", "/"),
+        "log_json": str(_log_lines().relative_to(_raiz())).replace("\\", "/"),
     }
     if requirement is not None:
         response["entry"] = entry
@@ -372,10 +433,11 @@ def vault_change_log_query(
     last: int = 20,
 ) -> Dict[str, Any]:
     try:
-        entries = _read_json_log()
+        lectura = leer_bitacora()
     except IndiceIlegible as exc:
         # `total: 0` diria que nunca hubo cambios.
         return emit_fallo("vault_change_log", exc)
+    entries = lectura.entradas
 
     if action_filter:
         entries = [e for e in entries if e.get("action") == action_filter.lower()]
@@ -393,12 +455,17 @@ def vault_change_log_query(
 
     page = entries_sorted[:last]
 
-    return {
+    response: Dict[str, Any] = {
         "ok": True,
         "total": len(entries),
         "returned": len(page),
         "entries": page,
     }
+    if lectura.lineas_rotas:
+        # A torn append (crash mid-line) is left out, never merged: say so.
+        response["torn_lines"] = list(lectura.lineas_rotas)
+        response["torn_log"] = str(_log_lines().relative_to(_raiz())).replace("\\", "/")
+    return response
 
 
 def main() -> int:
@@ -461,7 +528,8 @@ Notas:
 
   - VAULT_ROOT se detecta automaticamente desde la ubicacion del script
 
-  - Guarda en 00_System/change-log.md y 00_System/.change-log.json
+  - Guarda en 00_System/change-log.md y 00_System/.change-log.jsonl (append-only);
+    un vault anterior conserva 00_System/.change-log.json, que se lee y no se reescribe
 
   - --query retorna JSON ordenado por timestamp desc
 

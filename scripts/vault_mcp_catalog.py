@@ -588,7 +588,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": ["SP-01: change_log obligatorio antes de delete"],
         "side_effects": [
-            "Escribe entrada en 00_System/.change-log.json",
+            "Escribe entrada en 00_System/.change-log.jsonl (append-only; lee también el .change-log.json congelado)",
             "Escribe entrada en 00_System/change-log.md",
             "Elimina o mueve a 20_Quarantine/",
             "Guarda la versión borrada en .history/ (la restaura vault_undo --restore)",

@@ -50,7 +50,9 @@ def test_delete_rechaza_el_indice_de_seccion(raiz, ruta):
     assert env["ok"] is False and env["error_code"] == "INVALID_PATH", env
     assert "AP-47" in env["message"]
     assert (raiz / "07_Knowledge" / "index.md").is_file()
+    # A refused delete logs nothing, in the frozen legacy file or the append-only one.
     assert not (raiz / "00_System" / ".change-log.json").exists()
+    assert not (raiz / "00_System" / ".change-log.jsonl").exists()
 
 
 def test_delete_dry_run_tampoco_lo_acepta(raiz):

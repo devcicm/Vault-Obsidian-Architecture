@@ -20,7 +20,7 @@ from typing import Dict
 
 import pytest
 
-from apoyo import correr_tool, entorno, git_en
+from apoyo import correr_tool, entorno, filas_de_bitacora, git_en
 from vault_base import copiar_vault
 from vault_lib import parse_frontmatter_with_body
 from vault_norms_catalog import STATUS_TRANSITIONS
@@ -46,7 +46,8 @@ def _ledger_state(vault: Path) -> Dict[str, str]:
     Tool traces and the voice counter are written by `wrap_main` on every call,
     successful or not; they are not requirement state and are left out.
     """
-    owned = [vault / "00_System" / ".change-log.json", vault / "00_System" / "change-log.md"]
+    owned = [vault / "00_System" / ".change-log.json", vault / "00_System" / ".change-log.jsonl",
+             vault / "00_System" / "change-log.md"]
     owned += sorted(p for p in (vault / "14_Requirements").rglob("*") if p.is_file())
     state = {p.relative_to(vault).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
              for p in owned if p.is_file()}
@@ -55,7 +56,7 @@ def _ledger_state(vault: Path) -> Dict[str, str]:
 
 
 def _transition_rows(vault: Path):
-    rows = json.loads((vault / "00_System" / ".change-log.json").read_text(encoding="utf-8"))
+    rows = filas_de_bitacora(vault)
     return [row for row in rows if isinstance(row.get("requirement"), dict)]
 
 

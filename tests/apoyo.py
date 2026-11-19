@@ -272,3 +272,33 @@ def escribir_nota(raiz: Path, relativa: str, frontmatter: Mapping[str, Any],
     # Bytes: `write_text(newline=)` no existe en el piso (3.9).
     ruta.write_bytes(nota(frontmatter, cuerpo).encode("utf-8"))
     return ruta
+
+
+def filas_de_bitacora(raiz: Path) -> list:
+    """Every change-log row of `raiz`, read by the log's owner (both formats).
+
+    The log is append-only since bigo-inmutabilidad: new rows live in
+    `.change-log.jsonl` and an older vault keeps its frozen `.change-log.json`.
+    A test that opened one of them would see half the history.
+    """
+    from vault.gobernanza.repositorio import RepositorioGobernanza
+    from vault.kernel import construir
+
+    return RepositorioGobernanza(construir(raiz)).leer_bitacora_cambios().entradas
+
+
+def reescribir_bitacora(raiz: Path, filas: list) -> Path:
+    """Fixture: replace the vault's change log with `filas`, in the line format.
+
+    For tests that fabricate a history (a replay, a missing row). The frozen
+    legacy array is removed so the fabricated rows are the whole history.
+    """
+    from vault.gobernanza.repositorio import RepositorioGobernanza
+    from vault.kernel import construir
+
+    repo = RepositorioGobernanza(construir(raiz))
+    repo.bitacora_cambios.unlink(missing_ok=True)
+    destino = repo.bitacora_cambios_lineas
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    destino.write_bytes("".join(json.dumps(f, ensure_ascii=False) + "\n" for f in filas).encode("utf-8"))
+    return destino

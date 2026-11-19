@@ -875,7 +875,7 @@ Una fuente que `vault_ingest --archivar-fuente` guardó literal en `10_Migrated/
 - **Enforcement:** audit
 - **Detectado por:** vault_audit
 
-Una nota que entró por `vault_ingest --commit` no tiene la fila `ingested` de la pasada que la escribió en `00_System/.change-log.json`. La bitácora es la historia de las operaciones del vault --qué entró, cuándo y quién lo trajo--, y una ingesta sin su fila es material sin procedencia operativa: la nota existe y nadie puede decir en qué operación llegó. Es el log append-only de la LLM Wiki de Karpathy.
+Una nota que entró por `vault_ingest --commit` no tiene la fila `ingested` de la pasada que la escribió en `00_System/.change-log.jsonl`. La bitácora es la historia de las operaciones del vault --qué entró, cuándo y quién lo trajo--, y una ingesta sin su fila es material sin procedencia operativa: la nota existe y nadie puede decir en qué operación llegó. Es el log append-only de la LLM Wiki de Karpathy.
 
 **Prevención:** `vault_ingest` escribe el mismo id de pasada en cada nota y en la fila `ingested` que anota por el puerto `bitacora_cambios`; si la fila no se pudo anotar, su envelope lo dice en `change_log_error`. `vault_audit` lista en `ingestsWithoutLog` las notas cuya pasada no tiene fila. Solo lectura: la bitácora no se repara reescribiéndola.
 
@@ -1069,7 +1069,7 @@ El fichero que un agente lee en cada tarea --`AGENTS.md`, `CLAUDE.md`…-- se ge
 
 Antes de eliminar cualquier nota del vault, el agente DEBE llamar: vault_change_log --action deleted --path <nota> --reason <motivo>. Sin este registro, la nota desaparece sin rastro auditado.
 
-**Prevención:** Regla de gobernanza: verificar en .change-log.json antes de delete. Si no hay entrada → llamar vault_change_log primero, luego eliminar.
+**Prevención:** Regla de gobernanza: verificar en .change-log.jsonl antes de delete. Si no hay entrada → llamar vault_change_log primero, luego eliminar.
 
 ### SP-02: Forward-link verification -- buscar antes de linkar
 
@@ -1971,7 +1971,7 @@ Una fuente que `vault_ingest --archivar-fuente` guardó literal en `10_Migrated/
 - **Enforcement:** audit
 - **Detected by:** vault_audit
 
-Una nota que entró por `vault_ingest --commit` no tiene la fila `ingested` de la pasada que la escribió en `00_System/.change-log.json`. La bitácora es la historia de las operaciones del vault --qué entró, cuándo y quién lo trajo--, y una ingesta sin su fila es material sin procedencia operativa: la nota existe y nadie puede decir en qué operación llegó. Es el log append-only de la LLM Wiki de Karpathy.
+Una nota que entró por `vault_ingest --commit` no tiene la fila `ingested` de la pasada que la escribió en `00_System/.change-log.jsonl`. La bitácora es la historia de las operaciones del vault --qué entró, cuándo y quién lo trajo--, y una ingesta sin su fila es material sin procedencia operativa: la nota existe y nadie puede decir en qué operación llegó. Es el log append-only de la LLM Wiki de Karpathy.
 
 **Prevention:** `vault_ingest` escribe el mismo id de pasada en cada nota y en la fila `ingested` que anota por el puerto `bitacora_cambios`; si la fila no se pudo anotar, su envelope lo dice en `change_log_error`. `vault_audit` lista en `ingestsWithoutLog` las notas cuya pasada no tiene fila. Solo lectura: la bitácora no se repara reescribiéndola.
 
@@ -2165,7 +2165,7 @@ El fichero que un agente lee en cada tarea --`AGENTS.md`, `CLAUDE.md`…-- se ge
 
 Antes de eliminar cualquier nota del vault, el agente DEBE llamar: vault_change_log --action deleted --path <nota> --reason <motivo>. Sin este registro, la nota desaparece sin rastro auditado.
 
-**Prevention:** Regla de gobernanza: verificar en .change-log.json antes de delete. Si no hay entrada → llamar vault_change_log primero, luego eliminar.
+**Prevention:** Regla de gobernanza: verificar en .change-log.jsonl antes de delete. Si no hay entrada → llamar vault_change_log primero, luego eliminar.
 
 ### SP-02: Forward-link verification -- buscar antes de linkar
 

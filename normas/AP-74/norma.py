@@ -14,7 +14,7 @@ NORMA = {
     "enforcement": "audit",
     "description": (
         "Una nota que entró por `vault_ingest --commit` no tiene la fila "
-        "`ingested` de la pasada que la escribió en `00_System/.change-log.json`. "
+        "`ingested` de la pasada que la escribió en `00_System/.change-log.jsonl`. "
         "La bitácora es la historia de las operaciones del vault —qué entró, "
         "cuándo y quién lo trajo—, y una ingesta sin su fila es material sin "
         "procedencia operativa: la nota existe y nadie puede decir en qué "

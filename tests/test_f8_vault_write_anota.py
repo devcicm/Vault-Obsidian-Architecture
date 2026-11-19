@@ -20,6 +20,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from apoyo import filas_de_bitacora
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
@@ -50,7 +51,7 @@ def test_vault_write_anota_la_creacion_y_la_actualizacion(tmp_path):
     raiz = _vault(tmp_path)
     alta = _escribir(raiz, "Primera versión.")
     cambio = _escribir(raiz, "Segunda versión.")
-    log = json.loads((raiz / "00_System" / ".change-log.json").read_text(encoding="utf-8"))
+    log = filas_de_bitacora(raiz)
     assert [(e["action"], e["path"], e["agent"]) for e in log] == [
         ("created", alta["path"], "agente-f8"),
         ("updated", alta["path"], "agente-f8"),
@@ -64,7 +65,7 @@ def test_una_nota_escrita_por_vault_write_puntua_en_no_repudio(tmp_path):
 
     raiz = _vault(tmp_path)
     alta = _escribir(raiz, "Contenido.")
-    log = json.loads((raiz / "00_System" / ".change-log.json").read_text(encoding="utf-8"))
+    log = filas_de_bitacora(raiz)
     rutas = {e["path"] for e in log}
     assert q._score_non_repudiation(alta["path"], rutas)[0] == 1.0
 

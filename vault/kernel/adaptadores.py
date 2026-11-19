@@ -15,7 +15,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterator, Sequence
+from typing import Iterator, Optional, Sequence
 
 from .contexto import VaultContext
 from .fallos import FalloDeDominio
@@ -43,6 +43,11 @@ class EscritorAtomico:
         io = _kernel()
         ruta.parent.mkdir(parents=True, exist_ok=True)
         io.atomic_write_json(ruta, datos)
+
+    def anexar_linea(self, ruta: Path, linea: str, continua: Optional[Path] = None) -> None:
+        io = _kernel()
+        ruta.parent.mkdir(parents=True, exist_ok=True)
+        io.append_line(ruta, linea, continua=continua)
 
     @contextmanager
     def bloquear(self, objetivo: Path, timeout: float = 30.0) -> Iterator[Path]:

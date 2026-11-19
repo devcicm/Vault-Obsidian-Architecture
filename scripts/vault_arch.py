@@ -1220,11 +1220,11 @@ def contrato_del_puente(sin_hogar=None) -> dict:
 _LLAMADAS_DE_ESCRITURA = frozenset({
     "write_text", "write_bytes", "mkdir", "touch", "rename", "replace",
     "unlink", "rmtree", "atomic_write_text", "atomic_write_json",
-    "escribir", "escribir_json",
+    "escribir", "escribir_json", "anexar_linea", "append_line",
 })
 
 #: Las escrituras cuyo destino es el primer argumento y no el receptor.
-_ESCRITURAS_POR_ARGUMENTO = ("atomic_write", "escribir")
+_ESCRITURAS_POR_ARGUMENTO = ("atomic_write", "escribir", "anexar_linea", "append_line")
 
 
 def llamada_de_escritura(nodo: ast.AST) -> str | None:

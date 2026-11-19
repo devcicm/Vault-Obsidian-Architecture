@@ -23,7 +23,7 @@
 | Archivo | Lock timeout | Estado |
 |---|---|---|
 | `00_System/.tool-trace.json` | 5s | ✅ |
-| `00_System/.change-log.json` | 5s | ⚠️ falta |
+| `00_System/.change-log.jsonl` | 5s | ⚠️ falta |
 | `00_System/propagation-queue.json` | 30s | ✅ |
 | `00_System/quality-index.json` | 30s | ✅ |
 | `09_Infrastructure/.infra-index.json` | 10s | ✅ (v36) |

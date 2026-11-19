@@ -1182,7 +1182,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "que": (
             "F8 (no repudio) se mide con un criterio que el manifiesto no "
             "publica. El registro (`vault_fundamentals_catalog`, F8) verifica "
-            "que «al menos una entrada en .change-log.json referencia la ruta "
+            "que «al menos una entrada en .change-log.jsonl referencia la ruta "
             "de la nota» y `vault_quality_check._score_non_repudiation` lo "
             "aplica a toda nota viva; la tabla de dimensiones del manifiesto "
             "pide «1 por borrado». Como `vault_write` no anota creaciones en el "
@@ -1199,7 +1199,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "test_limite_declarado_f8_registro_y_manifiesto_divergen` fija la "
             "divergencia y falla el día que los dos digan lo mismo. (Saldada "
             "el 2026-10-15: el usuario eligió (a). `vault_write` anota cada "
-            "alta y cada cambio en `.change-log.json` y lo publica en el campo "
+            "alta y cada cambio en `.change-log.jsonl` y lo publica en el campo "
             "nuevo `change_log` de su envelope —`change_log_error` si la "
             "bitácora falla, sin tumbar la escritura—; la matriz y el "
             "manifiesto pasan a «1 por nota», que es lo que el registro ya "

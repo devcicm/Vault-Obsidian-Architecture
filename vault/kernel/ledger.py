@@ -210,6 +210,27 @@ FICHEROS_AMBIENTALES = frozenset({
 _NO_ES_TRABAJO = frozenset(ruta.rsplit("/", 1)[-1] for ruta in FICHEROS_AMBIENTALES)
 
 
+def record_append(path: Path, continua: Optional[Path] = None) -> str:
+    """Classifies an append before it happens, without reading the file.
+
+    An append always changes the file: ``created`` when it does not exist yet,
+    ``updated`` otherwise. ``continua`` is the file this one continues (the
+    frozen legacy change log): when it exists, the first append is an update of
+    the same record, as it was counted before the append-only format. Reading
+    the file to compare, as ``_record_write`` does, would make every append cost
+    the whole file. Never raises.
+    """
+    if path.name in _NO_ES_TRABAJO:
+        return "unchanged"
+    try:
+        existia = path.exists() or (continua is not None and continua.exists())
+        resultado = "updated" if existia else "created"
+    except OSError:
+        resultado = "updated"
+    _ledger()[resultado] += 1
+    return resultado
+
+
 def _record_write(path: Path, text: str, encoding: str) -> str:
     """Clasifica la escritura antes de hacerla. Nunca propaga errores."""
     if path.name in _NO_ES_TRABAJO:

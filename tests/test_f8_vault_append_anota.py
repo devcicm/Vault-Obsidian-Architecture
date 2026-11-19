@@ -17,6 +17,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from apoyo import filas_de_bitacora
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
@@ -40,7 +41,7 @@ def test_vault_append_anota_el_anadido(tmp_path):
                  "--tags", "f8", "--content",
                  "Primera línea de la nota.\n\nSegunda línea con contexto real.\n\nTercera línea.")
     anadido = _tool(raiz, "vault_append.py", "--path", alta["path"], "--content", "Añadido al final.")
-    log = json.loads((raiz / "00_System" / ".change-log.json").read_text(encoding="utf-8"))
+    log = filas_de_bitacora(raiz)
     assert [(e["action"], e["path"], e["agent"]) for e in log] == [
         ("created", alta["path"], "agente-append"),
         ("updated", alta["path"], "agente-append"),

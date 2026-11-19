@@ -144,11 +144,12 @@ def _compute_stale_risk(distance: int, integrity: str) -> str:
 
 
 def _notes_changed_since(since_date: str) -> List[str]:
-    """Read .change-log.json and return paths changed on or after since_date."""
-    if not _change_log_json().exists():
+    """Read the change log and return paths changed on or after since_date."""
+    repo = _repo()
+    if not repo.hay_bitacora_cambios():
         return []
     try:
-        entries = json.loads(_change_log_json().read_text(encoding="utf-8"))
+        entries = repo.leer_bitacora_cambios().entradas
     except (json.JSONDecodeError, UnicodeDecodeError, OSError) as exc:
         emit_error("vault_impact", "CHANGELOG_READ_ERROR", str(exc))
         return []

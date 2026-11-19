@@ -25,7 +25,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from apoyo import escribir_nota, nota
+from apoyo import escribir_nota, filas_de_bitacora, nota, reescribir_bitacora
 
 import vault_io
 
@@ -160,10 +160,8 @@ def test_ap74_an_ingest_with_its_row_is_clean_and_without_it_is_listed(vault, tm
     assert limpio["norm"] == "AP-74" and limpio["missing"] == []
     assert limpio["checked"] == len(r["written"])
 
-    bitacora = vault / "00_System" / ".change-log.json"
-    filas = json.loads(bitacora.read_text(encoding="utf-8"))
-    bitacora.write_text(json.dumps([f for f in filas if f["action"] != "ingested"]),
-                        encoding="utf-8")
+    filas = filas_de_bitacora(vault)
+    bitacora = reescribir_bitacora(vault, [f for f in filas if f["action"] != "ingested"])
     antes = bitacora.read_bytes()
 
     sucio = _auditar()["ingestsWithoutLog"]

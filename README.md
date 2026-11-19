@@ -365,7 +365,7 @@ Detalle completo en [Marco de Datos y Gobernanza](./vault-obsidian-architecture.
 | **9 dimensiones DQ** | Los 8 fundamentos + unicidad, escala 0.0–1.0, umbral 0.7 | `vault_quality_check`, `00_System/quality-index.json` |
 | **Principios FAIR** | Findable, Accessible, Interoperable, Reusable — con el mecanismo concreto que ya los cumple | `vault_search`, `vault_master_index`, `.history/` |
 | **V's del Big Data** | Volumen, velocidad, variedad, veracidad, valor, variabilidad — cada V apunta a un número real | `vault_audit`, `vault_change_log`, `vault_delta` |
-| **Trazabilidad** | Cadena verificable `agent:` → `.change-log.json` → `.tool-trace.json` → `.history/` → manifiesto Merkle | `vault_audit --trace` |
+| **Trazabilidad** | Cadena verificable `agent:` → `.change-log.jsonl` → `.tool-trace.json` → `.history/` → manifiesto Merkle | `vault_audit --trace` |
 | **Gobernanza** | 96 normas AP/PAT/SP/CN, 0 con enforcement manual | `vault_norms --audit` |
 | **Alineación ISO** | 13 normas mapeadas cláusula → implementación → tool | `vault_fundamentals --framework` |
 

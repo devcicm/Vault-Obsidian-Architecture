@@ -16,7 +16,7 @@ puedes saltarte es lo que hace que el orden sea seguro.
 
 **No escribe. Nunca.** Es la regla 2 del modo agéntico —el subagente propone, no
 escribe— aplicada a la tool que propone: cada fase nombra la tool del estándar
-que sí escribe, con su guard y su entrada en `.change-log.json`. Una tool de
+que sí escribe, con su guard y su entrada en la bitácora de cambios. Una tool de
 diagnóstico con permiso de escritura es un segundo autor sin norma que lo
 gobierne.
 

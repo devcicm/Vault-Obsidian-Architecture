@@ -273,7 +273,7 @@ El vault no maneja petabytes, pero sí las mismas tensiones a su escala. Cada V 
 | ID | V | Qué mide | Métrica / Artefacto | Control que la contiene |
 |---|---|---|---|---|
 | **V1** | **Volumen** | cuánto conocimiento acumula sin degradar la navegación | total de notas y tamaño del grafo · `graph.json` | AP-23 (techo de complejidad por nota) + índices por sección |
-| **V2** | **Velocidad** | a qué ritmo cambia el conocimiento entre sesiones | cambios por sesión · `.change-log.json`, session-delta | SP-03 (snapshot antes de operación masiva) + `vault_impact` |
+| **V2** | **Velocidad** | a qué ritmo cambia el conocimiento entre sesiones | cambios por sesión · `.change-log.jsonl`, session-delta | SP-03 (snapshot antes de operación masiva) + `vault_impact` |
 | **V3** | **Variedad** | cuántas naturalezas de conocimiento conviven bajo un esquema | 23 secciones canónicas × vocabulario `type` · `vault_registry.SECTIONS` | CN-02 (destinos restringidos) + F4 (exactitud) |
 | **V4** | **Veracidad** | cuánto se puede confiar en lo que el vault afirma — **la V que más importa a un agente LLM** | `overall_dq_score` 0.0–1.0, umbral 0.7 · `quality-index.json` | AP-01 (alucinación), AP-04 (aspiracional), AP-11 (skeleton) + content gate |
 | **V5** | **Valor** | cuánto del conocimiento se convierte en decisión útil | health score 0–100 · `vault_audit.nextActions` | el audit emite la lista ejecutable de comandos para recuperar 100/100 |
@@ -352,7 +352,7 @@ código fuente (@vault: tag)
          ├─ norm_refs:        ← bajo qué normas             (gobernanza)
          ├─ .history/         ← todas sus versiones previas (CIA-A)
          ├─ .git/             ← una entrada por operación    (deshacer de vault)
-         ├─ .change-log.json  ← qué se creó/movió/borró     (F8 No repudio, SP-01)
+         ├─ .change-log.jsonl  ← qué se creó/movió/borró     (F8 No repudio, SP-01)
          ├─ .tool-trace.json  ← qué tool tocó qué y cuándo  (auditabilidad)
          └─ vault-backups/    ← manifiesto Merkle verificable
 ```
@@ -438,7 +438,7 @@ La vista de una pantalla que hace verificable todo lo anterior. Generada por `va
 | Validez (F5) | `status` dentro de `STATUS_VOCAB` | 12 valores | `vault_norms --audit` | `vault_norms.STATUS_VOCAB` | audit (CN-03) |
 | Oportunidad / Actualidad (F6) | antigüedad de `updatedAt` | 30d · 15d si CIA `critical\|high` | `vault_audit` | bloque `stale` | audit |
 | Autenticidad (F7) | cobertura del campo `agent` | 100% | `vault_quality_check` | frontmatter `agent:` | audit (AP-16) |
-| No repudio (F8) | entradas en change-log | 1 por nota | `vault_change_log` | `00_System/.change-log.json` | audit (SP-01) |
+| No repudio (F8) | entradas en change-log | 1 por nota | `vault_change_log` | `00_System/.change-log.jsonl` | audit (SP-01) |
 | Unicidad (DQ-9) | duplicados canonical-shadow | 0 | `vault_merge --action detect` | `quality-index.json` | audit (AP-17/18) |
 | Localizable (FAIR-F) | notas huérfanas | 0 | `vault_audit` | `99_Index/index.md` | audit |
 | Interoperable (FAIR-I) | errores de sintaxis de wiki-link | 0 | `vault_graph_inspect` | `graph.json` | guard (AP-22/24) |
@@ -3539,7 +3539,7 @@ Documenta un proyecto **existente** al vault en un solo paso. Cubre 13 secciones
 
 #### `vault_change_log(action, path, reason, agent?, new_path?)`
 
-Registra un evento de cambio en el vault. Escribe en dos destinos: `00_System/change-log.md` (tabla Markdown, legible en Obsidian) y `00_System/.change-log.json` (array JSON, queryable por agentes).
+Registra un evento de cambio en el vault. Escribe en dos destinos: `00_System/change-log.md` (tabla Markdown, legible en Obsidian) y `00_System/.change-log.jsonl` (JSON Lines append-only, queryable por agentes: cada operación agrega una línea y nunca reescribe las anteriores, O(1) por escritura). El `00_System/.change-log.json` de vaults anteriores queda congelado: se sigue leyendo antes que el `.jsonl` y no se vuelve a escribir (2026-11-18).
 
 **Parámetros:**
 | Parámetro | Tipo | Default | Descripción |
@@ -3552,7 +3552,7 @@ Registra un evento de cambio en el vault. Escribe en dos destinos: `00_System/ch
 
 **Retorna:**
 ```json
-{ "ok": true, "id": "uuid", "action": "deleted", "path": "07_Knowledge/old.md", "log_md": "00_System/change-log.md", "log_json": "00_System/.change-log.json" }
+{ "ok": true, "id": "uuid", "action": "deleted", "path": "07_Knowledge/old.md", "log_md": "00_System/change-log.md", "log_json": "00_System/.change-log.jsonl" }
 ```
 
 #### `vault_change_log(query, project?, action?, last?)`
@@ -7484,7 +7484,7 @@ Sin este registro, la nota desaparece sin rastro auditado. Los agentes futuros n
 
 **Enforcement:** manual — el guard no existe en vault_write (que no borra), sino como gobernanza declarada.
 
-**Señal de violación:** Nota que no aparece en `00_System/.change-log.json` con `action: deleted` antes de su desaparición.
+**Señal de violación:** Nota que no aparece en `00_System/.change-log.jsonl` con `action: deleted` antes de su desaparición.
 
 **norm_refs:** `SP-01` se incluye automáticamente en el `norm_refs` de todas las notas creadas por `vault_write` — indica que esa nota está sujeta al delete protocol.
 
@@ -7766,7 +7766,7 @@ herramienta vieja y el "después" con la nueva mide la herramienta, no el vault.
 asociado, clasificar notas o proponer tags. La escritura pasa siempre por una tool
 del estándar, con su guard. Un subagente con permiso de escritura es un segundo
 autor sin norma que lo gobierne, y su error no queda atribuido a nadie en
-`.change-log.json`.
+`.change-log.jsonl`.
 
 **3. Nada se borra** (política de no-derogación aplicada a notas). Lo que estorba
 se anota: `superseded_by:`, `status: archived`, o una nota de sanación que
@@ -9084,7 +9084,7 @@ tocó cada `norma.py`: no afirma una revisión de contenido que no se hizo. `vau
 vencida o código de sostén cambiado en git después de `revisado_en`—; una tool cuya
 fecha no se puede medir sale en `codigo_sin_medir` (AP-60). Disparar no es fallar.
 
-**No repudio (F8).** `vault_write` anota cada alta y cada cambio en `.change-log.json` y
+**No repudio (F8).** `vault_write` anota cada alta y cada cambio en `.change-log.jsonl` y
 `vault_append` cada añadido; los dos lo publican en el campo nuevo `change_log` de su
 envelope, o en `change_log_error` si la bitácora falla, sin tumbar la escritura. La
 matriz y el manifiesto pasan a «1 por nota», que es lo que el registro ya medía, y la

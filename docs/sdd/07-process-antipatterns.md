@@ -8,7 +8,7 @@
 
 ### SP-01: Delete sin change_log
 
-**Síntoma**: Nota eliminada que no aparece en `.change-log.json`.
+**Síntoma**: Nota eliminada que no aparece en `.change-log.jsonl`.
 
 **Prevención**: Antes de eliminar, llamar `vault_change_log --action deleted`.
 

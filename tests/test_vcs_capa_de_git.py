@@ -68,8 +68,10 @@ def test_el_vault_ignora_las_versiones_las_copias_y_la_traza(vault_con_repo):
     assert "*" in lineas
     assert "!*.md" in lineas
     assert "!.gitignore" in lineas
-    # La única excepción no-`.md`: la bitácora de autoría (dato, no derivado).
+    # La única excepción no-`.md`: la bitácora de autoría (dato, no derivado),
+    # el array congelado y el registro append-only.
     assert "!00_System/.change-log.json" in lineas
+    assert "!00_System/.change-log.jsonl" in lineas
     # Las carpetas que contienen `.md` que no son notas van detrás.
     assert lineas.index(".history/") > lineas.index("!*.md")
     assert lineas.index("vault-backups/") > lineas.index("!*.md")
@@ -98,10 +100,10 @@ def test_el_repo_del_vault_solo_versiona_notas(vault_con_repo):
                    if l.strip()]
     intrusos = [f for f in versionados
                 if not f.endswith(".md") and f != ".gitignore"
-                and f != "00_System/.change-log.json"]
+                and f not in ("00_System/.change-log.json", "00_System/.change-log.jsonl")]
     assert not intrusos, f"el repo versiona algo que no es una nota: {intrusos}"
     assert any(f.endswith("nota-versionada.md") for f in versionados), versionados
-    assert "00_System/.change-log.json" in versionados, (
+    assert "00_System/.change-log.jsonl" in versionados, (
         "la bitácora de autoría es dato del vault y tiene que viajar con él")
 
     # Una copia de versión existe en disco y no se versiona: se fabrica una y

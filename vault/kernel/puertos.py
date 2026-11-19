@@ -41,6 +41,16 @@ class Escritor(Protocol):
         fichero que ya existe en disco de los usuarios.
         """
 
+    def anexar_linea(self, ruta: Path, linea: str, continua: Optional[Path] = None) -> None:
+        """Añade una línea al final de un registro sin reescribir lo escrito.
+
+        Para los registros append-only (la bitácora de cambios): el coste es la
+        línea, no el fichero. Las guardas y el saneo son los de `escribir`,
+        aplicados a la línea. `continua` es el fichero al que este continúa
+        (la bitácora congelada): si existe, el primer anexo cuenta como
+        actualización del mismo registro (AP-37).
+        """
+
     def bloquear(self, objetivo: Path, timeout: float = 30.0) -> Iterator[Path]:
         """Bloqueo de directorio junto al objetivo, para índices compartidos."""
 

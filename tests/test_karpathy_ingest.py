@@ -11,7 +11,7 @@ from pathlib import Path
 
 import yaml
 
-from apoyo import correr_en_proceso, escribir_nota
+from apoyo import correr_en_proceso, escribir_nota, filas_de_bitacora
 
 TEXTO = "\n".join([
     "# Zarzaparrilla operativa",
@@ -174,7 +174,7 @@ def test_la_bitacora_admite_ingested_y_linted(tmp_path, monkeypatch):
         r = vault_change_log.vault_change_log_add(accion, "07_Knowledge/x.md",
                                                   f"prueba {accion}", agent="pytest")
         assert r["ok"], r
-    filas = json.loads((raiz / "00_System" / ".change-log.json").read_text(encoding="utf-8"))
+    filas = filas_de_bitacora(raiz)
     assert [f["action"] for f in filas] == ["ingested", "linted"]
 
 
