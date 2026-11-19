@@ -63,6 +63,7 @@ from vault.autoria.frontmatter import firmante as _agente  # noqa: E402
 
 
 from vault.kernel.frontmatter_escritura import conservar_nota_generada  # noqa: E402
+from vault.kernel.normativa.procesos_iso import CAMPOS_BIA, validar_bia  # noqa: E402
 
 def _raiz() -> Path:
     """La raiz del vault, resuelta al usarse."""
@@ -86,8 +87,19 @@ def vault_runbook_save(
     steps: List[Dict[str, Any]],
     estimated_time: Optional[str] = None,
     prerequisites: Optional[List[str]] = None,
+    bia: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     category = category.lower()
+
+    # ISO 22301:2019 §8.2.2: the recovery procedure carries the business
+    # impact analysis of the function it recovers. Optional and additive: a
+    # runbook without it is written byte for byte as before.
+    if bia is not None:
+        problemas = validar_bia(bia)
+        if problemas:
+            return emit_error("vault_runbook_save", "INVALID_VALUE",
+                              "--bia inválido: " + "; ".join(problemas))
+        bia = {k: str(bia[k]).strip() for k in CAMPOS_BIA if str(bia.get(k) or "").strip()}
 
     if category not in CATEGORIES:
         return emit_error("vault_runbook_save", "INVALID_VALUE", f"Categoría inválida: {category}. Válidas: {CATEGORIES}")
@@ -150,12 +162,23 @@ def vault_runbook_save(
 
     frontmatter.set("tags", [safe_project, "runbook", category])
 
+    if bia:
+        for campo, valor in bia.items():
+            frontmatter.set(f"bia_{campo}", valor, texto=True)
+        frontmatter.set("iso_bcm", "ISO 22301:2019 §8.2.2")
+
     frontmatter.set("agent", _agente())
 
 
     body_sections = []
 
     body_sections.append(f"## Trigger\n\n>{trigger}")
+
+    if bia:
+        body_sections.append(
+            "## Análisis de impacto (BIA)\n\n> ISO 22301:2019 §8.2.2\n\n| Campo | Valor |\n|---|---|\n"
+            + "\n".join(f"| **{campo}** | {valor} |" for campo, valor in bia.items())
+        )
 
     if prerequisites:
         body_sections.append(
@@ -197,6 +220,7 @@ def vault_runbook_save(
         "path": str(note_path.relative_to(_raiz())).replace("\\", "/"),
         "category": category,
         "steps": len(steps),
+        **({"bia": bia} if bia else {}),
         "message": f"Runbook '{title}' saved to {category}/",
     }
 
@@ -216,6 +240,8 @@ Ejemplos:
   python vault_runbook_save.py --project "backend" --title "DB Migration" --trigger "Schema changes" --category "maintenance" --steps '[{"step":"Backup DB","command":"pg_dump ..."}]'
 
   python vault_runbook_save.py --project "ans" --title "Rollback Deploy" --trigger "Failed deployment" --category "rollback" --prerequisites "Access to server" "Git installed"
+
+  python vault_runbook_save.py --project "ans" --title "Restore checkout" --trigger "Checkout down" --category "incident" --steps '[{"step":"Restore DB"}]' --bia '{"critical_function":"checkout","impact":"lost sales","rto":"4h","rpo":"15min","mtpd":"1d"}'
 
 
 
@@ -247,7 +273,22 @@ Notas:
 
     parser.add_argument("--prerequisites", nargs="*", help="Prerequisites list")
 
+    parser.add_argument(
+        "--bia",
+        help="Business impact analysis (ISO 22301 §8.2.2) as a JSON object: "
+             "critical_function (required), impact, rto, rpo, mtpd (durations like 4h, 30min, 2d)",
+    )
+
     args = parser.parse_args()
+
+    bia = None
+    if args.bia is not None:
+        try:
+            bia = json.loads(args.bia)
+        except json.JSONDecodeError:
+            print(json.dumps(emit_error("vault_runbook_save", "ARG_JSON_INVALID",
+                                        "Invalid JSON in --bia parameter"), ensure_ascii=False))
+            return 1
 
     try:
         steps = json.loads(args.steps)
@@ -285,6 +326,7 @@ Notas:
         steps,
         args.estimated_time,
         args.prerequisites,
+        bia=bia,
     )
 
     print(json.dumps(result, indent=2, ensure_ascii=False))

@@ -3,8 +3,8 @@
 vault_release_save.py — Documenta releases y deploys de producción.
 
 Estándar aplicado:
-  ISO/IEC 12207:2017 §6.3.7 — Software release management process
-  ISO 20000-1:2018 §8.5.2   — Change and release management
+  ISO/IEC/IEEE 12207:2017 §6.3.5 — Configuration management · §6.4.10 — Transition
+  ISO/IEC 20000-1:2018 §8.5.1 — Change management · §8.5.3 — Release and deployment management
   ISO/IEC 25010:2023 §4.5   — Maintainability (deployability)
 
 Crea o actualiza el changelog del proyecto y genera la nota de release.
@@ -28,7 +28,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from vault_errors import wrap_main, proyecto_registrado
+from vault_errors import emit_error, wrap_main, proyecto_registrado
 from vault_entorno import agente_por_defecto
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_io import assert_within_vault, atomic_write_text, file_lock, get_vault_root, write_report
@@ -37,6 +37,7 @@ from vault_norms_catalog import compute_norm_refs, status_frontmatter_lines
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
+from vault.kernel.normativa.procesos_iso import CLASES_DE_CAMBIO  # noqa: E402
 
 RELEASE_FOLDER = "08_Runbooks/deploy"
 CHANGELOG_PATH = "01_Projects/{project}/changelog.md"
@@ -84,7 +85,18 @@ def vault_release_save(
     migrations: Optional[List[str]] = None,
     deploy_at: Optional[str] = None,
     agent: str = "claude",
+    change_class: Optional[str] = None,
+    change_approver: Optional[str] = None,
 ) -> Dict[str, Any]:
+    # ISO/IEC 20000-1:2018 §8.5.1: the release is the change record. Both
+    # fields are optional and additive: a release without them is written
+    # byte for byte as before.
+    if change_class is not None and change_class not in CLASES_DE_CAMBIO:
+        return emit_error(
+            "vault_release_save", "INVALID_VALUE",
+            f"change_class debe ser uno de: {', '.join(CLASES_DE_CAMBIO)}",
+        )
+    change_approver = (change_approver or "").strip() or None
     if release_type not in RELEASE_TYPES:
         return {
             "ok": False,
@@ -108,6 +120,12 @@ def vault_release_save(
     migrations = migrations or []
 
     changes_md = "\n".join(f"- {c}" for c in changes) or "— Sin cambios documentados"
+    filas_de_cambio = "".join(
+        f"| **{etiqueta}** | {valor} |\n"
+        for etiqueta, valor in (("Clase de cambio", change_class),
+                                ("Cambio aprobado por", change_approver))
+        if valor
+    )
     breaking_md = (
         "\n".join(f"- **BREAKING**: {c}" for c in breaking_changes)
         or "— Sin breaking changes"
@@ -128,8 +146,8 @@ def vault_release_save(
     body = f"""# Release {version} — {project}
 
 > **Tipo:** {release_type} — {RELEASE_TYPES[release_type]}
-> ISO/IEC 12207:2017 §6.3.7 — Release management
-> ISO 20000-1:2018 §8.5.2 — Change and release management
+> ISO/IEC/IEEE 12207:2017 §6.3.5 — Configuration management · §6.4.10 — Transition
+> ISO/IEC 20000-1:2018 §8.5.1 — Change management · §8.5.3 — Release and deployment management
 
 ## Estado del release
 
@@ -139,8 +157,8 @@ def vault_release_save(
 | **Tipo** | {release_type} |
 | **Status** | {status} |
 | **Deploy planificado** | {deploy_at} |
-| **ISO process** | ISO/IEC 12207:2017 §6.3.7 |
-
+| **ISO process** | ISO/IEC/IEEE 12207:2017 §6.3.5 · §6.4.10 |
+{filas_de_cambio}
 ## Cambios incluidos
 
 {changes_md}
@@ -186,8 +204,8 @@ def vault_release_save(
 
 ## Referencias
 
-- ISO/IEC 12207:2017 §6.3.7 — Software release management process
-- ISO 20000-1:2018 §8.5.2 — Change and release management
+- ISO/IEC/IEEE 12207:2017 §6.3.5 — Configuration management · §6.4.10 — Transition
+- ISO/IEC 20000-1:2018 §8.5.1 — Change management · §8.5.3 — Release and deployment management
 - ISO/IEC 25010:2023 §4.5 — Maintainability / Deployability
 """
 
@@ -207,7 +225,11 @@ def vault_release_save(
     fm_lines.set("deploy_at", deploy_at)
     fm_lines.set("breaking_changes", bool(breaking_changes))
     fm_lines.set("migrations_required", bool(migrations))
-    fm_lines.set("iso_standard", "ISO 20000-1:2018 §8.5.2")
+    if change_class:
+        fm_lines.set("change_class", change_class)
+    if change_approver:
+        fm_lines.set("change_approver", change_approver, texto=True)
+    fm_lines.set("iso_standard", "ISO/IEC 20000-1:2018 §8.5.3")
     fm_lines.set("cia_integrity", "high")
     fm_lines.set("cia_availability", "high")
     fm_lines.set("cia_sensitivity", "internal")
@@ -250,7 +272,7 @@ def vault_release_save(
             changelog_header = f"""# {project} — Changelog
 
 > Historial de versiones del proyecto.
-> ISO/IEC 12207:2017 §6.3.7 — Release management
+> ISO/IEC/IEEE 12207:2017 §6.3.5 — Configuration management · §6.4.10 — Transition
 
 """
             atomic_write_text(changelog_path, changelog_header + changelog_entry)
@@ -273,7 +295,9 @@ def vault_release_save(
         "changes_count": len(changes),
         "breaking_changes": bool(breaking_changes),
         "migrations_required": bool(migrations),
-        "iso_standard": "ISO 20000-1:2018 §8.5.2 / ISO/IEC 12207:2017 §6.3.7",
+        "iso_standard": "ISO/IEC 20000-1:2018 §8.5.3 / ISO/IEC/IEEE 12207:2017 §6.4.10",
+        **({"change_class": change_class} if change_class else {}),
+        **({"change_approver": change_approver} if change_approver else {}),
     }
 
 
@@ -318,6 +342,10 @@ Ejemplos:
                         help="Momento del despliegue en ISO 8601; por defecto, ahora")
     parser.add_argument("--agent", default=agente_por_defecto(),
                         help="Agente que firma la nota (default: VAULT_AGENT o claude)")
+    parser.add_argument("--change_class", default=None, choices=list(CLASES_DE_CAMBIO),
+                        help="Clase del cambio según ISO/IEC 20000-1 §8.5.1 (opcional)")
+    parser.add_argument("--change_approver", default=None,
+                        help="Quién aprobó el cambio (opcional; ISO/IEC 20000-1 §8.5.1)")
 
     args = parser.parse_args()
     try:
@@ -346,6 +374,8 @@ Ejemplos:
         migrations=migrations,
         deploy_at=args.deploy_at,
         agent=args.agent,
+        change_class=args.change_class,
+        change_approver=args.change_approver,
     )
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0 if result.get("ok") else 1
