@@ -562,6 +562,63 @@ def cambio_de_cuerpo_exige_nota_nueva(seccion: str, status: str,
         "sustitucion", "inmutable")
 
 
+#: **Calendario de conservación (ISO 15489-1:2016).** Cuánto tiempo se conserva
+#: un registro de cada clase de documento antes de decidir su disposición, y
+#: cuál es esa disposición. Ninguna destruye: la no-derogación del estándar
+#: vale también para las notas, y destruir un registro es un acto de la
+#: organización que el producto no ejecuta. Vencer el plazo produce trabajo en
+#: la lista de `vault_drift_detect --mode conservacion` (AP-77), nunca un
+#: borrado ni un movimiento. Plazos declarados, no calibrados: el punto de
+#: partida que una organización ajusta, como `CADENCIA_DE_NOTA_POR_DEFECTO`.
+DISPOSICIONES: Dict[str, str] = {
+    "conservar": "se mantiene sin plazo: es evidencia que se sigue consultando",
+    "revisar": ("vencido el plazo, una persona relee el registro y decide si sigue "
+                "vigente; poner `revisado_en` con la fecha del día reinicia el plazo"),
+    "archivar": ("vencido el plazo, el registro pasa a `status: archived` (estado "
+                 "terminal); no se borra ni se mueve"),
+}
+
+#: El plazo de lo que se conserva sin vencimiento.
+PLAZO_PERMANENTE = "permanente"
+
+#: Plazo (días o `PLAZO_PERMANENTE`) y disposición por clase de documento
+#: (`DOCUMENTACION_CLASES`).
+CONSERVACION_POR_CLASE: Dict[str, dict] = {
+    "tutorial": {"plazo_dias": 730, "disposicion": "revisar"},
+    "guia": {"plazo_dias": 730, "disposicion": "revisar"},
+    "referencia": {"plazo_dias": 730, "disposicion": "revisar"},
+    "explicacion": {"plazo_dias": PLAZO_PERMANENTE, "disposicion": "conservar"},
+    "registro": {"plazo_dias": 1095, "disposicion": "archivar"},
+    "indice": {"plazo_dias": PLAZO_PERMANENTE, "disposicion": "conservar"},
+}
+
+#: Secciones cuyo calendario no es el de su clase, con el motivo.
+CONSERVACION_POR_SECCION: Dict[str, dict] = {
+    "10_Migrated": {"plazo_dias": PLAZO_PERMANENTE, "disposicion": "conservar",
+                    "motivo": "lo importado se conserva como llegó (AP-73)"},
+    "16_AI_Governance": {"plazo_dias": PLAZO_PERMANENTE, "disposicion": "conservar",
+                         "motivo": "evidencia de las decisiones de IA (ISO/IEC 42001)"},
+    "20_Quarantine": {"plazo_dias": 90, "disposicion": "revisar",
+                      "motivo": "lo retenido en cuarentena se resuelve, no se olvida"},
+}
+
+
+def conservacion_de(seccion: str) -> Optional[dict]:
+    """El calendario de conservación de `seccion`, o None si no tiene clase.
+
+    `{"clase", "plazo_dias", "disposicion", "origen"}`; `origen` dice si
+    manda la sección (`CONSERVACION_POR_SECCION`) o su clase. Una sección
+    sin clase registrada no tiene calendario: el criterio no adivina.
+    """
+    clase = (SECTION_DOCUMENTACION.get(seccion) or (None,))[0]
+    if clase is None:
+        return None
+    propia = CONSERVACION_POR_SECCION.get(seccion)
+    regla = propia or CONSERVACION_POR_CLASE[clase]
+    return {"clase": clase, "plazo_dias": regla["plazo_dias"],
+            "disposicion": regla["disposicion"], "origen": "seccion" if propia else "clase"}
+
+
 
 #: **Schema por tipo, medido sobre lo que se escribe (v41.3).** La tabla
 #: «Schema canónico por tipo (regla dura)» del SDD 06 estaba escrita a mano y

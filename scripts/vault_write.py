@@ -122,7 +122,9 @@ from vault.kernel.contenido import (  # noqa: E402
     CARPETA_DECISIONES,
     con_titulo,
     meta_adr,
+    pista_de_intereses,
     plantilla_adr,
+    problemas_de_intereses,
     secciones_adr_faltantes,
     siguiente_numero_adr,
 )
@@ -642,6 +644,11 @@ def problemas_de_meta(meta: Any, folder: str = "", raiz: Optional[Path] = None) 
                 f"{folder.split('/')[0]} (CN-02): escribe la nota allí o deja que el "
                 "tipo se derive de la carpeta"
             )
+
+    # ISO/IEC/IEEE 42010: `concerns:`/`viewpoint:` of a decision are optional,
+    # but a value outside their registry would become a private vocabulary.
+    if folder.replace("\\", "/").split("/", 1)[0] == CARPETA_DECISIONES:
+        problemas.extend(problemas_de_intereses(meta))
 
     # D-07: el patrón es del contrato de nota; un `round_id` que no lo cumple
     # no enlazaría la nota con ninguna ronda y nadie lo notaría.
@@ -1564,6 +1571,8 @@ def vault_write_adr(
       encabezado vacío pasaría AP-07 sin que nadie hubiera escrito el porqué.
     - El frontmatter es `meta_adr()`: nace en `draft`. Pedir otro `status` es
       un conflicto, no un valor que se ignora en silencio.
+    - `concerns:` y `viewpoint:` (ISO/IEC/IEEE 42010) llegan por `--meta`, son
+      opcionales y se validan contra su registro en `problemas_de_meta`.
     """
     carpeta = folder.replace("\\", "/").strip("/")
     if carpeta != CARPETA_ADR and not carpeta.startswith(CARPETA_ADR + "/"):
@@ -1584,7 +1593,8 @@ def vault_write_adr(
         return emit_error(
             "vault_write", "VALIDATION_FAILED",
             f"AP-07: al ADR le faltan {', '.join(faltan)}",
-            pista="Escribir el porqué con esta plantilla:\n" + plantilla_adr())
+            pista="Escribir el porqué con esta plantilla:\n" + plantilla_adr()
+                  + "\n" + pista_de_intereses())
     destino = _raiz() / carpeta
     with file_lock(destino / ".adr-numero", timeout=10.0):
         stems = [p.stem for p in destino.glob("*.md")] if destino.is_dir() else []

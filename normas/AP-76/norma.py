@@ -40,6 +40,13 @@ NORMA = {
             "dice que nadie ha comprobado la nota en su plazo, cambiara algo "
             "o no. Una revisión vencida puede seguir siendo cierta."
         ),
+        "AP-77": (
+            "AP-77 es el plazo de conservación de la clase de documento, "
+            "medido desde la última actividad del registro aunque nunca "
+            "declarase `revisado_en`, y pide decidir su disposición —revisar "
+            "o archivar—. AP-76 solo mira notas que declaran `revisado_en` y "
+            "pide comprobar que siguen siendo ciertas."
+        ),
     },
     "introduced_version": "v41.27",
     "revisado_en": "2026-11-17",

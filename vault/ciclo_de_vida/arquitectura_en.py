@@ -37,6 +37,11 @@ Lo que no se puede decidir no se adivina: una nota sin fecha de creación ni
     python scripts/vault_arquitectura_en.py --fecha 2026-05-03
     python scripts/vault_arquitectura_en.py --version v1.5 --project ans
     python scripts/vault_arquitectura_en.py --desde v1.0 --hasta v1.5 --project ans
+    python scripts/vault_arquitectura_en.py --intereses --project ans
+
+`--intereses` (ISO/IEC/IEEE 42010) lista, de los ADR no retirados, los que no
+declaran `concerns:`, los intereses del registro que ninguno atiende y los
+puntos de vista (`viewpoint:`) usados. Es una lista de trabajo: `ok` no cae.
 
 No escribe notas. No acepta `--root` (regla 1): el vault sale de `vault_io.get_vault_root()`.
 Un error deja su entrada en `00_System/.tool-trace.json`, como en toda tool que emite por
@@ -62,6 +67,9 @@ from vault_lib import Config, indice_de_nombres, resolver_sustitucion
 from vault_norms_catalog import STATUS_TRANSITIONS, normalize_status
 from vault_registry import (SCAFFOLD_TYPE, SECTION_TYPES, SUBFOLDERS, es_artefacto_derivado,
                             regimen_de_estado)
+from vault.kernel.contenido import (CAMPO_INTERESES, CAMPO_PUNTO_DE_VISTA,
+                                    INTERESES_DE_ARQUITECTURA, PUNTOS_DE_VISTA, es_adr,
+                                    intereses_fuera_del_punto_de_vista, problemas_de_intereses)
 from vault.kernel.frontmatter_parsing import (FrontmatterParseError, parse_frontmatter)
 
 TOOL = "vault_arquitectura_en"
@@ -393,6 +401,76 @@ def _eventos(inv: Inventario, a: datetime, b: datetime) -> List[Dict[str, Any]]:
     return [{**e, "fecha": e["fecha"].isoformat()} for e in ev]
 
 
+# ── ISO/IEC/IEEE 42010: concerns and viewpoints ─────────────────────────────
+
+def intereses(project: Optional[str] = None, hoy: Optional[date] = None) -> Dict[str, Any]:
+    """Which concerns the live decisions address, and from which viewpoint.
+
+    Reads the ADRs (`es_adr`) of the inventory that are not retired today
+    (`estado_en`, the same criterion as the snapshot) and their optional
+    `concerns:`/`viewpoint:`. It is a work list, never a gate: an ADR without
+    concerns or a concern no ADR addresses is published, `ok` stays true.
+    The registry is `vault.kernel.contenido`. Read only.
+    """
+    inv = Inventario(get_vault_root(), project)
+    hoy = hoy or datetime.now(UTC).date()
+    punto = {"valor": hoy.isoformat(), "version": None, "release": None,
+             "fecha": datetime.combine(hoy, time.max, tzinfo=UTC)}
+    adrs: List[str] = []
+    sin_intereses: List[str] = []
+    sin_punto: List[str] = []
+    usados: Dict[str, List[str]] = {}
+    por_punto: Dict[str, List[str]] = {}
+    fuera_de_vocabulario: List[Dict[str, Any]] = []
+    fuera_del_punto: List[Dict[str, Any]] = []
+    for rel in sorted(inv.notas):
+        datos = inv.notas[rel]["actual"]
+        if not es_adr(rel, str(datos.get("type") or ""), Path(rel).stem):
+            continue
+        if estado_en(inv, rel, punto)["estado"] == "retirada":
+            continue
+        adrs.append(rel)
+        problemas = problemas_de_intereses(datos)
+        if problemas:
+            fuera_de_vocabulario.append({"path": rel, "problemas": problemas})
+        declarados = datos.get(CAMPO_INTERESES)
+        validos = [i for i in declarados if i in INTERESES_DE_ARQUITECTURA] if isinstance(
+            declarados, list) else []
+        if not validos:
+            sin_intereses.append(rel)
+        for i in validos:
+            usados.setdefault(i, []).append(rel)
+        punto_de_vista = datos.get(CAMPO_PUNTO_DE_VISTA)
+        if isinstance(punto_de_vista, str) and punto_de_vista in PUNTOS_DE_VISTA:
+            por_punto.setdefault(punto_de_vista, []).append(rel)
+        else:
+            sin_punto.append(rel)
+        fuera = intereses_fuera_del_punto_de_vista(datos)
+        if fuera:
+            fuera_del_punto.append({"path": rel, CAMPO_PUNTO_DE_VISTA: punto_de_vista,
+                                    "intereses": fuera})
+    return {
+        "ok": True, "tool": TOOL, "modo": "intereses", "project": project,
+        "norma": "ISO/IEC/IEEE 42010:2022", "hoy": hoy.isoformat(),
+        "registro": {"intereses": dict(INTERESES_DE_ARQUITECTURA),
+                     "puntos_de_vista": {k: {"que": v["que"], "enmarca": list(v["enmarca"])}
+                                         for k, v in PUNTOS_DE_VISTA.items()}},
+        "adrs": len(adrs),
+        "adrs_sin_intereses": sin_intereses,
+        "intereses_sin_adr": [i for i in INTERESES_DE_ARQUITECTURA if i not in usados],
+        "intereses_atendidos": {i: usados[i] for i in INTERESES_DE_ARQUITECTURA if i in usados},
+        "puntos_de_vista_usados": {p: por_punto[p] for p in PUNTOS_DE_VISTA if p in por_punto},
+        "adrs_sin_punto_de_vista": sin_punto,
+        "fuera_del_punto_de_vista": fuera_del_punto,
+        "fuera_de_vocabulario": fuera_de_vocabulario,
+        "ilegibles": inv.ilegibles,
+        "hint": ("Lista de trabajo, no una puerta: una decisión declara a qué interés responde "
+                 f"con `{CAMPO_INTERESES}:` y desde qué punto de vista con "
+                 f"`{CAMPO_PUNTO_DE_VISTA}:`; un interés sin ADR es una pregunta de "
+                 "arquitectura que nadie ha contestado por escrito."),
+    }
+
+
 # ── Envelope ─────────────────────────────────────────────────────────────────
 
 def _criterio_publico() -> Dict[str, Any]:
@@ -465,7 +543,21 @@ def main() -> int:
     # de un proyecto que no decidió nada.
     ap.add_argument("--project", type=proyecto_registrado(TOOL),
                     help="limita a las notas y releases de ese proyecto")
+    ap.add_argument("--intereses", action="store_true",
+                    help="ISO/IEC/IEEE 42010: ADR vigentes sin concerns, intereses sin ADR y "
+                         "puntos de vista usados (lista de trabajo; no se combina con "
+                         "--fecha, --version ni el rango)")
     args = ap.parse_args()
+    if args.intereses:
+        if args.fecha or args.version or args.desde or args.hasta:
+            r = emit_error(TOOL, "CONFLICTING_ARGS",
+                           "--intereses mide las decisiones de hoy: no se combina con "
+                           "--fecha, --version, --desde ni --hasta",
+                           pista="--intereses [--project <slug>]")
+        else:
+            r = intereses(project=args.project)
+        print(json.dumps(r, ensure_ascii=False, default=str))
+        return 0 if r.get("ok") else 1
     r = arquitectura_en(fecha=args.fecha, version=args.version, desde=args.desde,
                         hasta=args.hasta, project=args.project)
     print(json.dumps(r, ensure_ascii=False, default=str))

@@ -205,6 +205,107 @@ def plantilla_adr() -> str:
     return "\n\n".join(f"## {s}" for s in orden) + "\n"
 
 
+# ── ISO/IEC/IEEE 42010: concerns and viewpoints of a decision ──────────────
+#
+# 42010 describes an architecture through its stakeholders' concerns: a
+# viewpoint frames some concerns, and a view that conforms to it addresses
+# them. An ADR records a decision and its why (AP-07); until now it could not
+# say which concern it answers nor from which viewpoint it was taken, so
+# nothing measured which concerns the architecture leaves unanswered.
+#
+# The fields are optional and additive: an ADR that does not declare them is
+# written and read exactly as before. They are frontmatter, not body
+# sections, so `plantilla_adr()` (the body skeleton AP-07 measures, shared by
+# the audit guidance and the write-path hints) does not carry them;
+# `pista_de_intereses()` names them where an ADR is written. The registry is
+# small and declared, not calibrated; a value outside it is refused at write
+# time instead of becoming a private vocabulary in each vault.
+
+#: Frontmatter field with the concerns the decision addresses (a list).
+CAMPO_INTERESES = "concerns"
+
+#: Frontmatter field with the viewpoint the decision is taken from.
+CAMPO_PUNTO_DE_VISTA = "viewpoint"
+
+#: Concern → what it covers. Closed vocabulary of `concerns:`.
+INTERESES_DE_ARQUITECTURA = {
+    "seguridad": "confidencialidad, integridad y control de acceso",
+    "rendimiento": "tiempos de respuesta, capacidad y uso de recursos",
+    "mantenibilidad": "facilidad de cambiar, probar y entender el sistema",
+    "disponibilidad": "continuidad del servicio y recuperación ante fallos",
+    "coste": "coste de construir, operar y cambiar",
+    "cumplimiento": "obligaciones legales, normativas y contractuales",
+    "datos": "modelo, calidad, ciclo de vida y propiedad de los datos",
+}
+
+#: Viewpoint → what its views show and the concerns it frames (42010: a
+#: viewpoint frames concerns). Closed vocabulary of `viewpoint:`.
+PUNTOS_DE_VISTA = {
+    "logico": {"que": "módulos, responsabilidades y dependencias",
+               "enmarca": ("mantenibilidad", "rendimiento", "coste")},
+    "despliegue": {"que": "nodos, entornos y cómo se instala y escala",
+                   "enmarca": ("disponibilidad", "rendimiento", "coste")},
+    "datos": {"que": "entidades, almacenes y flujos de datos",
+              "enmarca": ("datos", "cumplimiento", "seguridad")},
+    "seguridad": {"que": "fronteras de confianza, identidades y controles",
+                  "enmarca": ("seguridad", "cumplimiento")},
+    "operacion": {"que": "monitorización, incidentes y mantenimiento en marcha",
+                  "enmarca": ("disponibilidad", "mantenibilidad", "coste")},
+}
+
+
+def problemas_de_intereses(fm) -> list:
+    """42010: what `concerns:`/`viewpoint:` say that the registry does not know.
+
+    Empty when neither field is declared: both are optional. The writer
+    refuses with these messages and the report lists them for notes written
+    by hand.
+    """
+    fm = fm or {}
+    problemas = []
+    if CAMPO_INTERESES in fm:
+        valor = fm[CAMPO_INTERESES]
+        if not isinstance(valor, list) or not all(isinstance(v, str) for v in valor):
+            problemas.append(f"`{CAMPO_INTERESES}` tiene que ser una lista de textos")
+        else:
+            fuera = [v for v in valor if v not in INTERESES_DE_ARQUITECTURA]
+            if fuera:
+                problemas.append(
+                    f"{CAMPO_INTERESES} {fuera} fuera de {sorted(INTERESES_DE_ARQUITECTURA)} "
+                    "(ISO/IEC/IEEE 42010)")
+    if CAMPO_PUNTO_DE_VISTA in fm:
+        valor = fm[CAMPO_PUNTO_DE_VISTA]
+        if not isinstance(valor, str) or valor not in PUNTOS_DE_VISTA:
+            problemas.append(
+                f"{CAMPO_PUNTO_DE_VISTA} {valor!r} fuera de {sorted(PUNTOS_DE_VISTA)} "
+                "(ISO/IEC/IEEE 42010)")
+    return problemas
+
+
+def intereses_fuera_del_punto_de_vista(fm) -> list:
+    """The declared concerns that the declared viewpoint does not frame.
+
+    Empty when either field is missing or invalid: correspondence is only
+    measured between known values.
+    """
+    fm = fm or {}
+    intereses = fm.get(CAMPO_INTERESES)
+    punto = fm.get(CAMPO_PUNTO_DE_VISTA)
+    marco = PUNTOS_DE_VISTA.get(punto) if isinstance(punto, str) else None
+    if marco is None or not isinstance(intereses, list):
+        return []
+    return [i for i in intereses
+            if i in INTERESES_DE_ARQUITECTURA and i not in marco["enmarca"]]
+
+
+def pista_de_intereses() -> str:
+    """How an ADR declares its concerns and viewpoint, for the write-path hint."""
+    return (f"Opcional (ISO/IEC/IEEE 42010): --meta '{{\"{CAMPO_INTERESES}\": [...], "
+            f"\"{CAMPO_PUNTO_DE_VISTA}\": \"...\"}}' con {CAMPO_INTERESES} de "
+            f"{sorted(INTERESES_DE_ARQUITECTURA)} y {CAMPO_PUNTO_DE_VISTA} de "
+            f"{sorted(PUNTOS_DE_VISTA)}.")
+
+
 # ── AP-64: quién responde del porqué de una decisión cerrada ───────────────
 #
 # Un ADR aprobado es lo que un agente consulta antes de actuar. Si nadie
