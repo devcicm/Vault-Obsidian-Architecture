@@ -63,6 +63,7 @@ from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 from vault.kernel.frontmatter_escritura import conservar_nota_generada  # noqa: E402
 
 from vault_encoding import sanitize_content  # noqa: E402
+from vault.kernel.normativa import calidad_iso  # noqa: E402
 
 def _raiz() -> Path:
     """La raiz del vault, resuelta al usarse."""
@@ -132,6 +133,11 @@ def vault_test_save(
     related_code: Optional[List[str]] = None,
     status: str = "not_run",
     tags: Optional[List[str]] = None,
+    test_level: Optional[str] = None,
+    test_kinds: Optional[List[str]] = None,
+    techniques: Optional[List[str]] = None,
+    quality_characteristics: Optional[List[str]] = None,
+    quality_in_use: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     es_del = _proyectos.pertenencia_en(_raiz(), project)
     if test_type not in TEST_TYPES:
@@ -139,6 +145,12 @@ def vault_test_save(
 
     if status not in STATUSES:
         return emit_error("vault_test_save", "INVALID_VALUE", f"status '{status}' not valid. Use: {STATUSES}")
+
+    declarado = _declaraciones_iso(test_level, test_kinds, techniques,
+                                   quality_characteristics, quality_in_use)
+    if not declarado["ok"]:
+        return declarado
+    declarado = declarado["campos"]
 
     safe_project = slugify_strict(project)
 
@@ -218,6 +230,11 @@ def vault_test_save(
 
         if related_requirement:
             frontmatter.set("related_requirement", related_requirement)
+
+        # Optional ISO/IEC/IEEE 29119 and ISO/IEC 25010/25019 declarations:
+        # written only when given, so a note without them is unchanged.
+        for campo, valor in declarado.items():
+            frontmatter.set(campo, valor)
 
         frontmatter.set("createdAt", now)
 
@@ -324,6 +341,44 @@ def vault_test_save(
     }
 
 
+def _declaraciones_iso(
+    test_level: Optional[str],
+    test_kinds: Optional[List[str]],
+    techniques: Optional[List[str]],
+    quality_characteristics: Optional[List[str]],
+    quality_in_use: Optional[List[str]],
+) -> Dict[str, Any]:
+    """Validate the optional 29119-1/-4 and 25010/25019 fields against their registry.
+
+    Returns `{"ok": True, "campos": {field: canonical}}` with only the fields
+    given, or the `INVALID_VALUE` envelope naming the first unknown term.
+    """
+    campos: Dict[str, Any] = {}
+    pedidos = (
+        ("test_level", calidad_iso.split_terms(test_level), "vocab"),
+        ("test_kinds", calidad_iso.split_terms(test_kinds), "vocab"),
+        ("techniques", calidad_iso.split_terms(techniques), "vocab"),
+        ("quality_characteristics", calidad_iso.split_terms(quality_characteristics), "product"),
+        ("quality_in_use", calidad_iso.split_terms(quality_in_use), "in_use"),
+    )
+    for campo, terminos, origen in pedidos:
+        if not terminos:
+            continue
+        if origen == "vocab":
+            canonicos, desconocidos = calidad_iso.resolve_terms(campo, terminos)
+            validos = calidad_iso.vocabulary_ids(campo)
+        else:
+            canonicos, desconocidos = calidad_iso.resolve_quality(origen, terminos)
+            validos = calidad_iso.characteristic_ids(origen)
+        if campo == "test_level" and len(canonicos) > 1:
+            desconocidos = desconocidos or terminos[1:]
+        if desconocidos:
+            return emit_error("vault_test_save", "INVALID_VALUE",
+                              f"{campo} {desconocidos} not valid. Use: {validos}")
+        campos[campo] = canonicos[0] if campo == "test_level" else canonicos
+    return {"ok": True, "campos": campos}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Vault Test Save Tool -- ISO/IEC/IEEE 29119-3 test case documentation",
@@ -355,6 +410,23 @@ Notes:
   - --steps JSON format: [{"step": 1, "action": "...", "expected": "..."}]
 
   - test_id is auto-generated as TEST-001, TEST-002, etc. per project
+
+  - Optional, validated against vault/kernel/normativa/calidad_iso.py and
+    written only when given (comma-separated; aliases resolve to the canonical id):
+      --test_level  ISO/IEC/IEEE 29119-1 level: component | integration | system |
+                    system_integration | acceptance  (unit -> component)
+      --test_kinds  29119-1 test types (functional, performance, security, usability, ...)
+      --techniques  29119-4 design techniques (equivalence_partitioning,
+                    boundary_value_analysis, decision_table_testing,
+                    state_transition_testing, scenario_testing, branch_testing,
+                    statement_testing, error_guessing, exploratory_testing, ...)
+      --quality_characteristics  ISO/IEC 25010:2023 characteristics or
+                    characteristic.subcharacteristic (2011 names accepted:
+                    usability, portability)
+      --quality_in_use  ISO/IEC 25019:2023 characteristics (effectiveness,
+                    efficiency, satisfaction, freedom_from_risk, context_coverage)
+    Coverage per characteristic and tests per level/type/technique:
+      vault_quality_check --iso-quality
 
 """,
         allow_abbrev=False,
@@ -395,6 +467,16 @@ Notes:
 
     parser.add_argument("--tags", nargs="*", help="Additional tags")
 
+    parser.add_argument("--test_level", help="ISO/IEC/IEEE 29119-1 test level (component, integration, system, system_integration, acceptance)")
+
+    parser.add_argument("--test_kinds", help="Comma-separated ISO/IEC/IEEE 29119-1 test types (functional, performance, security, ...)")
+
+    parser.add_argument("--techniques", help="Comma-separated ISO/IEC/IEEE 29119-4 test design techniques")
+
+    parser.add_argument("--quality_characteristics", help="Comma-separated ISO/IEC 25010:2023 characteristics or characteristic.subcharacteristic")
+
+    parser.add_argument("--quality_in_use", help="Comma-separated ISO/IEC 25019:2023 quality-in-use characteristics")
+
     args = parser.parse_args()
 
     def parse_json_arg(val: Optional[str], name: str) -> Optional[Any]:
@@ -430,6 +512,11 @@ Notes:
         related_code=related_code_list,
         status=args.status,
         tags=args.tags,
+        test_level=args.test_level,
+        test_kinds=args.test_kinds,
+        techniques=args.techniques,
+        quality_characteristics=args.quality_characteristics,
+        quality_in_use=args.quality_in_use,
     )
 
     print(json.dumps(result, indent=2, ensure_ascii=False))

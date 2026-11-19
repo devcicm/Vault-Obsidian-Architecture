@@ -69,6 +69,7 @@ from vault.autoria.frontmatter import Frontmatter, firmante  # noqa: E402
 
 
 from vault_encoding import sanitize_content  # noqa: E402
+from vault.kernel.normativa import calidad_iso  # noqa: E402
 
 def _raiz() -> Path:
     """La raiz del vault, resuelta al usarse."""
@@ -277,6 +278,8 @@ def vault_requirement_save(
     related_code: Optional[List[str]] = None,
     tags: Optional[List[str]] = None,
     req_id: Optional[str] = None,
+    quality_characteristics: Optional[List[str]] = None,
+    quality_in_use: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     es_del = _proyectos.pertenencia_en(_raiz(), project)
     if req_type not in REQ_TYPES:
@@ -287,6 +290,21 @@ def vault_requirement_save(
 
     if status not in STATUSES:
         return emit_error("vault_requirement_save", "INVALID_VALUE", f"status '{status}' not valid. Use: {STATUSES}")
+
+    # ISO/IEC 25010:2023 / 25019:2023 (optional): validated before anything
+    # is reserved or written; written only when given.
+    calidad: Dict[str, List[str]] = {}
+    for campo, modelo, valores in (("quality_characteristics", "product", quality_characteristics),
+                                   ("quality_in_use", "in_use", quality_in_use)):
+        terminos = calidad_iso.split_terms(valores)
+        if not terminos:
+            continue
+        canonicos, desconocidos = calidad_iso.resolve_quality(modelo, terminos)
+        if desconocidos:
+            return emit_error("vault_requirement_save", "INVALID_VALUE",
+                              f"{campo} {desconocidos} not valid. Use: "
+                              f"{calidad_iso.characteristic_ids(modelo)}")
+        calidad[campo] = canonicos
 
     safe_project = slugify_strict(project)
 
@@ -414,6 +432,9 @@ def vault_requirement_save(
         frontmatter.set("priority", priority)
 
         frontmatter.lineas(status_frontmatter_lines("vault_requirement_save", status))
+
+        for campo, valor in calidad.items():
+            frontmatter.set(campo, valor)
 
         frontmatter.set("createdAt", now)
 
@@ -615,6 +636,17 @@ Notes:
 
   - req_id is auto-generated as REQ-001, REQ-002, etc. per project
 
+  - --quality_characteristics (optional, comma-separated): ISO/IEC 25010:2023
+    characteristics (functional_suitability, performance_efficiency,
+    compatibility, interaction_capability, reliability, security,
+    maintainability, flexibility, safety) or characteristic.subcharacteristic;
+    the 2011 names (usability, portability) resolve to their 2023 successor
+
+  - --quality_in_use (optional, comma-separated): ISO/IEC 25019:2023
+    (effectiveness, efficiency, satisfaction, freedom_from_risk, context_coverage)
+
+  - Coverage per characteristic: vault_quality_check --iso-quality
+
 """,
         allow_abbrev=False,
     )
@@ -658,6 +690,10 @@ Notes:
     )
 
     parser.add_argument("--tags", nargs="*", help="Additional tags")
+
+    parser.add_argument("--quality_characteristics", help="Comma-separated ISO/IEC 25010:2023 characteristics or characteristic.subcharacteristic")
+
+    parser.add_argument("--quality_in_use", help="Comma-separated ISO/IEC 25019:2023 quality-in-use characteristics")
 
     args = parser.parse_args()
 
@@ -703,6 +739,8 @@ Notes:
         related_code=related_code_list,
         tags=args.tags,
         req_id=args.req_id,
+        quality_characteristics=args.quality_characteristics,
+        quality_in_use=args.quality_in_use,
     )
 
     print(json.dumps(result, indent=2, ensure_ascii=False))

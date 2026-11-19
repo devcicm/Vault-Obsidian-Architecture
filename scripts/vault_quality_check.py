@@ -671,6 +671,176 @@ def vault_quality_check(
     return result
 
 
+# ─── ISO/IEC 25010/25019/25040 and ISO/IEC/IEEE 29119: read-only coverage view ─
+#
+# The DQ scorer above measures the vault's own notes (ISO/IEC 25012 through the
+# fundamentals). This view measures what those notes declare about the
+# software they document: which ISO/IEC 25010:2023 and 25019:2023
+# characteristics the requirements specify, which tests cover them, and how
+# the tests spread over the 29119-1 levels/types and 29119-4 techniques. It
+# writes nothing. The vocabularies live in `vault.kernel.normativa.calidad_iso`.
+
+_EJECUTADOS = ("pass", "fail", "blocked", "skip")
+
+
+def _terminos_declarados(fm: Dict[str, Any], campo: str,
+                         modelo: Optional[str]) -> Tuple[List[str], List[str]]:
+    """Canonical and unknown terms of one optional ISO field of a note."""
+    from vault.kernel.normativa import calidad_iso
+
+    valores = calidad_iso.split_terms(fm.get(campo))
+    if not valores:
+        return [], []
+    if modelo:
+        return calidad_iso.resolve_quality(modelo, valores)
+    return calidad_iso.resolve_terms(campo, valores)
+
+
+def _notas_iso(raiz: Path) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """(requirements, tests, invalid declarations) read from the notes' frontmatter."""
+    from vault.kernel.normativa import calidad_iso
+    from vault_lib import slugify_strict
+
+    invalidas: List[Dict[str, Any]] = []
+    requisitos: List[Dict[str, Any]] = []
+    pruebas: List[Dict[str, Any]] = []
+
+    def _declaraciones(fm, rel, campos):
+        salida = {}
+        for campo, modelo in campos:
+            canonicos, desconocidos = _terminos_declarados(fm, campo, modelo)
+            if desconocidos:
+                invalidas.append({"path": rel, "field": campo, "values": desconocidos})
+            salida[campo] = canonicos
+        return salida
+
+    calidad = (("quality_characteristics", "product"), ("quality_in_use", "in_use"))
+    for nota in _get_content_notes("14_Requirements"):
+        fm = read_frontmatter(nota)
+        if not fm.get("req_id"):
+            continue
+        rel = nota.relative_to(raiz).as_posix()
+        proyecto = slugify_strict(str(fm.get("project") or ""))
+        requisitos.append({"id": f"{proyecto}/{fm['req_id']}", "project": proyecto,
+                           "req_id": str(fm["req_id"]), **_declaraciones(fm, rel, calidad)})
+    for nota in _get_content_notes("15_Tests"):
+        fm = read_frontmatter(nota)
+        if not (fm.get("test_id") or fm.get("type") == "test"):
+            continue
+        rel = nota.relative_to(raiz).as_posix()
+        proyecto = slugify_strict(str(fm.get("project") or ""))
+        decl = _declaraciones(fm, rel, (*calidad, ("test_level", None), ("test_kinds", None),
+                                        ("techniques", None)))
+        # A note without the 29119-1 fields is read through its folder type.
+        nivel, tipo = calidad_iso.LEGACY_TEST_TYPE.get(str(fm.get("test_type") or ""), (None, None))
+        decl["test_level"] = decl["test_level"][0] if decl["test_level"] else nivel
+        if tipo and tipo not in decl["test_kinds"]:
+            decl["test_kinds"] = [*decl["test_kinds"], tipo]
+        pruebas.append({"id": f"{proyecto}/{fm.get('test_id') or rel}", "project": proyecto,
+                        "related_requirement": str(fm.get("related_requirement") or ""),
+                        "result": str(fm.get("test_result") or ""), **decl})
+    return requisitos, pruebas, invalidas
+
+
+def _cubre(prueba: Dict[str, Any], requisito: Dict[str, Any]) -> bool:
+    return (prueba["project"] == requisito["project"]
+            and prueba["related_requirement"] == requisito["req_id"])
+
+
+def _cobertura_por_caracteristica(requisitos, pruebas, campo: str, modelo: str) -> List[Dict[str, Any]]:
+    """One row per characteristic of the model, declared or not (a zero row is a gap in sight)."""
+    from vault.kernel.normativa import calidad_iso
+
+    filas = []
+    for car in calidad_iso.characteristic_ids(modelo):
+        def declara(nota):
+            return any(calidad_iso.characteristic_of(t) == car for t in nota[campo])
+
+        reqs = [r for r in requisitos if declara(r)]
+        cubiertos = [r["id"] for r in reqs if any(_cubre(p, r) for p in pruebas)]
+        tests = {p["id"] for p in pruebas if declara(p) or any(_cubre(p, r) for r in reqs)}
+        filas.append({
+            "characteristic": car,
+            "requirements": [r["id"] for r in reqs],
+            "tests": sorted(tests),
+            "uncovered_requirements": [r["id"] for r in reqs if r["id"] not in cubiertos],
+            "coverage": round(len(cubiertos) / len(reqs), 3) if reqs else None,
+        })
+    return filas
+
+
+def informe_iso_calidad() -> Dict[str, Any]:
+    """Coverage per quality characteristic and tests per level/type/technique (read-only)."""
+    from vault.kernel.normativa import calidad_iso
+
+    requisitos, pruebas, invalidas = _notas_iso(_raiz())
+    producto = _cobertura_por_caracteristica(requisitos, pruebas, "quality_characteristics", "product")
+    en_uso = _cobertura_por_caracteristica(requisitos, pruebas, "quality_in_use", "in_use")
+
+    def conteo(clave: str) -> Dict[str, int]:
+        cuenta = {t: 0 for t in calidad_iso.vocabulary_ids(clave)}
+        for p in pruebas:
+            valores = p[clave] if isinstance(p[clave], list) else [p[clave]]
+            for v in valores:
+                if v in cuenta:
+                    cuenta[v] += 1
+        return cuenta
+
+    por_categoria: Dict[str, int] = {}
+    por_resultado: Dict[str, int] = {}
+    for p in pruebas:
+        for cat in {calidad_iso.technique_category(t) for t in p["techniques"]}:
+            por_categoria[cat] = por_categoria.get(cat, 0) + 1
+        resultado = p["result"] or "unknown"
+        por_resultado[resultado] = por_resultado.get(resultado, 0) + 1
+
+    declarados = [r for r in requisitos if r["quality_characteristics"] or r["quality_in_use"]]
+    cubiertos = [r for r in declarados if any(_cubre(p, r) for p in pruebas)]
+    de_evaluacion = [p for p in pruebas
+                     if p["quality_characteristics"] or p["quality_in_use"]
+                     or any(_cubre(p, r) for r in declarados)]
+    registros = {
+        "establish_evaluation_requirements": len(declarados),
+        "specify_evaluation": len(declarados),
+        "design_evaluation": len(de_evaluacion),
+        "execute_evaluation": sum(1 for p in de_evaluacion if p["result"] in _EJECUTADOS),
+        "conclude_evaluation": sum(1 for f in producto + en_uso if f["coverage"] is not None),
+    }
+    return {
+        "ok": True,
+        "tool": "vault_quality_check",
+        "view": "iso_quality",
+        "read_only": True,
+        "editions": {"product_quality": calidad_iso.PRODUCT_QUALITY_EDITION,
+                     "quality_in_use": calidad_iso.QUALITY_IN_USE_EDITION},
+        "product_quality": producto,
+        "quality_in_use": en_uso,
+        "measures": {
+            "requirements": len(requisitos),
+            "requirements_with_characteristic": len(declarados),
+            "requirements_covered_by_tests": len(cubiertos),
+            "requirement_coverage_ratio": (round(len(cubiertos) / len(declarados), 3)
+                                           if declarados else None),
+            "tests": len(pruebas),
+        },
+        "testing": {
+            "by_level": conteo("test_level"),
+            "without_level": sorted(p["id"] for p in pruebas if not p["test_level"]),
+            "by_type": conteo("test_kinds"),
+            "by_technique": conteo("techniques"),
+            "by_technique_category": por_categoria,
+            "without_technique": sorted(p["id"] for p in pruebas if not p["techniques"]),
+            "by_result": por_resultado,
+        },
+        "evaluation_25040": [
+            {"step": s["id"], "tools": s["tools"], "records": registros[s["id"]],
+             "outside_product": s["outside_product"]}
+            for s in calidad_iso.EVALUATION_25040
+        ],
+        "invalid_declarations": invalidas,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="vault_quality_check — DQ scorer for vault notes",
@@ -692,6 +862,10 @@ Notas:
   - Global = media de 9 dimensiones (8 fundamentos + uniqueness)
   - CIA: cia_integrity critical/high -> timeliness umbral 15d (vs 30d por defecto)
   - F8 NO_REPUDIO: requiere entrada en 00_System/.change-log.json para la nota
+  - --iso-quality: vista de solo lectura; cobertura por caracteristica ISO/IEC
+    25010:2023 y 25019:2023 (requisitos que la declaran, pruebas que los cubren),
+    registros de evaluacion ISO/IEC 25040 y pruebas por nivel, tipo y tecnica
+    ISO/IEC/IEEE 29119. No escribe nada.
 """,
         allow_abbrev=False,
     )
@@ -719,8 +893,18 @@ Notas:
         action="store_true",
         help="Compute scores without writing quality-index.json",
     )
+    parser.add_argument(
+        "--iso-quality",
+        action="store_true",
+        help="Read-only view: ISO/IEC 25010:2023/25019:2023 coverage per characteristic "
+             "(requirements declared, tests covering them), ISO/IEC 25040 evaluation records "
+             "and tests per ISO/IEC/IEEE 29119 level, type and technique. Writes nothing.",
+    )
 
     args = parser.parse_args()
+    if args.iso_quality:
+        print(json.dumps(informe_iso_calidad(), indent=2, ensure_ascii=False))
+        return 0
     result = vault_quality_check(
         scope=args.scope,
         min_score=args.min_score,
