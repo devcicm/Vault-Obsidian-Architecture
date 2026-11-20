@@ -511,7 +511,9 @@ LEAD_MIN_ORACIONES = 2
 LEAD_MIN_PALABRAS = 20
 
 _RE_MARCAS_DE_LINEA = re.compile(r"^[#\-\*\s|>]+")
-_RE_ENLACE_WIKI = re.compile(r"\[\[[^\]\n]+\]\]")
+# `[` is excluded too: with it allowed, a run of unclosed `[[` made every start
+# scan to the end (1840 ms on 20 000 hostile characters, quadratic).
+_RE_ENLACE_WIKI = re.compile(r"\[\[[^\[\]\n]+\]\]")
 _RE_FIN_DE_ORACION = re.compile(r"(?<=[.!?])\s+")
 #: Lines in the lead zone that are not prose: provenance quotes, `**Key:**`
 #: metadata, lists, tables and HTML comments.
