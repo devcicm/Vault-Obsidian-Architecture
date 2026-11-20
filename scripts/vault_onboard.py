@@ -1161,6 +1161,42 @@ def _merge_stub(vault_path: Path, new_content: str, dry_run: bool) -> str:
         return _merge_stub_bajo_lock(vault_path, new_content)
 
 
+#: Envelope keys whose notes the overview's map links: the ones nothing else
+#: links in a fresh vault (README concepts and module notes).
+_CLAVES_DEL_MAPA = ("knowledge", "modules")
+SECCION_MAPA = "## Mapa del proyecto"
+
+
+def _rutas_de(mapa: Dict[str, Any], clave: str) -> List[str]:
+    valor = mapa.get(clave)
+    if isinstance(valor, str):
+        return [valor]
+    return [v for v in (valor or []) if isinstance(v, str)]
+
+
+def _mapa_del_overview(created: Dict[str, Any], unchanged: Dict[str, Any],
+                       dry_run: bool) -> Optional[Tuple[str, str]]:
+    """Append to the overview a section linking the concept and module notes.
+
+    Path-form links (`[[11_Code/p/x|x]]`): stems repeat across projects. The
+    merge appends only missing H2 sections, so the map is written once and a
+    second onboarding leaves the overview as it was.
+    """
+    overview = (_rutas_de(created, "overview") or _rutas_de(unchanged, "overview") or [None])[0]
+    if not overview:
+        return None
+    notas = sorted({r for clave in _CLAVES_DEL_MAPA
+                    for r in _rutas_de(created, clave) + _rutas_de(unchanged, clave)
+                    if r.endswith(".md") and Path(r).name != "index.md"})
+    if not notas:
+        return None
+    lineas = [f"- [[{r[:-3]}|{Path(r).stem}]]" for r in notas]
+    contenido = (f"# Overview\n\n{SECCION_MAPA}\n\n"
+                 "Las notas de conceptos y de modulos que el onboarding escribio, "
+                 "para leerlas desde aqui:\n\n" + "\n".join(lineas) + "\n")
+    return overview, _merge_stub(_raiz() / overview, contenido, dry_run)
+
+
 def _merge_stub_bajo_lock(vault_path: Path, new_content: str) -> str:
     """Fusiona una nota mientras el llamante mantiene el lock por archivo."""
 
@@ -3444,6 +3480,12 @@ def vault_onboard(
             )
         if "17" not in skip:
             _record(_onboard_17_preferences(project, meta, agent, dry_run), "preferences")
+        # 4a. The overview links what the onboarding wrote (2026-11-20): an index
+        # does not integrate a note, and README concepts and module notes were
+        # orphans in a fresh vault (health 74 instead of 100).
+        mapa = _mapa_del_overview(created, unchanged, dry_run)
+        if mapa:
+            _record([mapa], "overview_map")
         # 4b. QA-FL-13: register the project and link the scanned repository,
         # inside the batch so the card is indexed with the rest.
         project_link = _registrar_y_enlazar(project, project_path, dry_run, agent, skip,
