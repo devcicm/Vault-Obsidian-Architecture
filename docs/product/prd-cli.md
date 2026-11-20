@@ -79,7 +79,10 @@ CLI robusta para pipelines y sistemas desatendidos. Cada operación es
 Hereda de `GobernanzaBase`; override en `cli_gobernanza.py`.
 
 **Pre-flight específico:**
-- `AP-36 containment`: rutas absolutas, traversal a parent, escape del vault
+- `AP-36 containment`: rutas absolutas, traversal a parent, escape del vault, salvo en
+  los parámetros que el catálogo declara externos (`x-ruta: externa`: el repo que lee
+  `vault_onboard`, el código que escanea `vault_drift_detect`…); `@file:` y anti-poison
+  se aplican igual a todos
 - `anti-poison`: directivas de inyección, caracteres invisibles
 - Validación de `required_args` del tool-spec
 

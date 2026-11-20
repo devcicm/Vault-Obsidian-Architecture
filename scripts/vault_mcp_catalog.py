@@ -375,6 +375,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "seis familias normalizadas cada una contra su propio tope."
         ),
         "params": {
+            "path": {"ruta": "externa"},
             "project": {
                 "type": "string",
                 "required": False,
@@ -843,6 +844,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "validators": ["non_empty"],
             },
             "path": {
+                "ruta": "externa",
                 "type": "string",
                 "required": True,
                 "description": "Ruta del repositorio a leer (solo lectura)",
@@ -1446,6 +1448,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "group": "Código",
         "purpose": "Genera templates de módulos de código con IEEE 1016.",
         "params": {
+            "scan-path": {"ruta": "externa"},
             "project": {
                 "type": "string",
                 "required": True,
@@ -1524,6 +1527,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "group": "Código",
         "purpose": "Sincroniza estado del código con el vault.",
         "params": {
+            "scan-dir": {"ruta": "externa"},
             "project": {
                 "type": "string",
                 "required": True,
@@ -1543,6 +1547,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "group": "Normas",
         "purpose": "Etiqueta módulos de código por funcionalidad.",
         "params": {
+            "file": {"ruta": "externa"},
         },
         "guards": [],
         "side_effects": ["Actualiza frontmatter del módulo"],
@@ -1844,6 +1849,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "extensión de código; las notas .md no se escanean."
         ),
         "params": {
+            "path": {"ruta": "externa"},
             "project": {
                 "type": "string",
                 "required": False,
@@ -1873,6 +1879,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "validators": [],
             },
             "path": {
+                "ruta": "externa",
                 "type": "string",
                 "required": False,
                 "description": "Raíz del código a escanear; por defecto, el repo enlazado con vault_project --link",
@@ -2010,7 +2017,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "status": {"type": "string", "required": False, "description": "Estado de la ficha nueva (con add; default in-progress)", "validators": ["enum:approved,archived,deprecated,draft,implemented,in-progress,obsolete,planned,reviewed,stub,template,verified"]},
             "unlink": {"type": "string", "required": False, "description": "Proyecto cuya ruta local (y la del vault) se quita de esta máquina; con path, solo si es la enlazada", "validators": []},
             "remove": {"type": "string", "required": False, "description": "Da de baja el proyecto del registro; se niega mientras le quede alguna nota (nunca borra notas)", "validators": []},
-            "path": {"type": "string", "required": False, "description": "Ruta local del repositorio (con link o unlink)", "validators": []},
+            "path": {"type": "string", "required": False, "description": "Ruta local del repositorio (con link o unlink)", "validators": [], "ruta": "externa"},
         },
         "guards": ["AP-63: un nombre de proyecto resuelve a un único slug o la tool falla"],
         "side_effects": [
@@ -4191,6 +4198,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "group": "Migración",
         "purpose": "Migra documentación entre vaults o estructuras.",
         "params": {
+            "source_path": {"ruta": "externa"},
             "dry_run": {
                 "type": "boolean",
                 "required": False,
@@ -4646,7 +4654,8 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "purpose": "Ingesta gobernada de conversaciones, ficheros y URLs con extracción de entidades. Dry-run por defecto; pre-vuelo anti-poison no desactivable.",
         "params": {
             "file": {"type": "string", "required": False,
-                     "description": "Fichero de origen", "validators": ["file_exists"]},
+                     "description": "Fichero de origen", "validators": ["file_exists"],
+                     "ruta": "externa"},
             "text": {"type": "string", "required": False,
                      "description": "Texto literal", "validators": []},
             "stdin": {"type": "bool", "required": False,
@@ -5169,6 +5178,9 @@ def reconciled_params(py_tool: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
             # contra el esquema no podía enviar `nested_open`, que sí acepta.
             if declarado.get("validators") and not real.get("validators"):
                 entrada["validators"] = declarado["validators"]
+            # argparse cannot say where a path lives: only the registry can.
+            if "ruta" in declarado:
+                entrada["ruta"] = declarado["ruta"]
         salida[nombre] = entrada
     return salida
 
@@ -5242,6 +5254,19 @@ def _convert_to_json_schema(py_tool: Dict[str, Any]) -> Dict[str, Any]:
             # servidor solo sabe omitir el flag, y el default de un negable
             # puede ser `True`.
             prop["x-negable"] = True
+        if "ruta" in pinfo:
+            # AP-36 exemption (BF-01): the param takes a path OUTSIDE the
+            # vault by design. `vault run` reads this marker from the published
+            # schema (consumer constants `vault.gobernanza.base.CLAVE_RUTA` /
+            # `RUTA_EXTERNA`, pinned equal to these by
+            # tests/test_preflight_rutas_externas.py; imported here they were
+            # a new meta_toolkit -> gobernanza crossing). A value other than
+            # `externa` is a registry typo that would silently grant nothing.
+            if pinfo["ruta"] != "externa":
+                raise ValueError(
+                    f"{py_tool.get('name')}.{pname}: ruta={pinfo['ruta']!r}; "
+                    "the only declaration is 'externa'")
+            prop["x-ruta"] = "externa"
         if pinfo.get("required"):
             schema["required"].append(pname)
         if "enum" in str(pinfo.get("validators", [])) or any(v.startswith("enum:") for v in pinfo.get("validators", [])):

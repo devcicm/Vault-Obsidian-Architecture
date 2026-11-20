@@ -1,7 +1,8 @@
 """GobernanzaCLI — override de gobernanza para la CLI.
 
 Aplica las validaciones específicas de la CLI:
-- AP-36 containment (rutas absolutas, traversal, escape del vault)
+- AP-36 containment (rutas absolutas, traversal, escape del vault), salvo en
+  los params que el catálogo declara rutas externas de esa tool (`x-ruta`)
 - Anti-poisoning (directivas de inyección, caracteres invisibles)
 - Validación de contrato (required_args)
 - Verificación de integridad (hash antes/después) si --verify-integrity
@@ -81,13 +82,18 @@ class GobernanzaCLI(GobernanzaBase):
     ) -> ValidationResult:
         """Validaciones específicas de la CLI."""
         findings = []
+        # BF-01: a param the catalog declares external for THIS tool (the repo
+        # to onboard, the code to scan) is a path on the user's disk, not in
+        # the vault. Only the name-based AP-36 check skips it: `@file:` keeps
+        # AP-36 on every param, and the anti-poison checks below run on all.
+        externas = fragment.params_de_ruta_externa()
 
         for key, value in args.items():
             if not isinstance(value, str):
                 continue
             if value.startswith(PREFIJO_FICHERO):
                 ruta = value[len(PREFIJO_FICHERO):]
-            elif es_argumento_de_ruta(key):
+            elif es_argumento_de_ruta(key) and key.replace("-", "_") not in externas:
                 ruta = value
             else:
                 continue

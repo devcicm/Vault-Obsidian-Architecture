@@ -49,6 +49,9 @@ class ToolsCatalogAdapter:
             name=producto.nombre,
             group=producto.grupo,
             purpose=producto.proposito,
+            # The published properties: the pre-flight reads per-param
+            # declarations (`x-ruta`) from here, the same ones MCP receives.
+            params=dict((producto.esquema or {}).get("properties") or {}),
             execution_module=producto.execution_module,
             guards=[],
             side_effects=[],

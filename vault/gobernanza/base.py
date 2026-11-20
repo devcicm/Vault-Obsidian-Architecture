@@ -87,6 +87,18 @@ class ToolNature(Enum):
     DESCONOCIDA = "desconocida"
 
 
+#: AP-36 exemption marker. A few params take, by design, a path OUTSIDE the
+#: vault: the repository `vault_onboard` reads, the code `vault_security_scan`
+#: scans, the file `vault_ingest` imports. The registry declares them
+#: (`"ruta": "externa"` on the param in `scripts/vault_mcp_catalog.py`), the
+#: generated catalog publishes the declaration in the param's `inputSchema`
+#: property under `CLAVE_RUTA`, and the CLI pre-flight exempts exactly those
+#: params of that tool from the absolute/traversal check (BF-01, 2026-11-19).
+#: The param name alone never grants it.
+CLAVE_RUTA = "x-ruta"
+RUTA_EXTERNA = "externa"
+
+
 @dataclass(frozen=True)
 class ToolFragment:
     """Fragmento de tool resuelto desde el catálogo."""
@@ -94,6 +106,7 @@ class ToolFragment:
     name: str
     group: str
     purpose: str
+    #: The published `inputSchema` properties, by param name.
     params: Dict[str, Any] = field(default_factory=dict)
     guards: List[str] = field(default_factory=list)
     side_effects: List[str] = field(default_factory=list)
@@ -103,6 +116,18 @@ class ToolFragment:
     required_args: List[str] = field(default_factory=list)
     execution_module: Optional[str] = None
     runtime: str = "python"
+
+    def params_de_ruta_externa(self) -> frozenset:
+        """The params this tool declares as external paths, in `_` form.
+
+        `_` form because that is how `vault run` parses `--scan-dir` (and the
+        published name keeps its `-`): both sides are compared normalized.
+        """
+        return frozenset(
+            nombre.replace("-", "_")
+            for nombre, prop in (self.params or {}).items()
+            if isinstance(prop, dict) and prop.get(CLAVE_RUTA) == RUTA_EXTERNA
+        )
 
 
 class ToolsCatalog(CatalogoTools, Protocol):

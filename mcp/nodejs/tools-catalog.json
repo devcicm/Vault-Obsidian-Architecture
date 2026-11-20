@@ -278,7 +278,8 @@
           },
           "path": {
             "type": "string",
-            "description": "External directory path to audit instead of vault"
+            "description": "External directory path to audit instead of vault",
+            "x-ruta": "externa"
           },
           "refresh-dq": {
             "type": "boolean",
@@ -1033,7 +1034,8 @@
           },
           "scan-path": {
             "type": "string",
-            "description": "Directory to scan recursively for code files and document each one"
+            "description": "Directory to scan recursively for code files and document each one",
+            "x-ruta": "externa"
           },
           "tag-source": {
             "type": "boolean",
@@ -1191,7 +1193,8 @@
           },
           "scan-dir": {
             "type": "string",
-            "description": "Directorio de código fuente a escanear para refs huérfanas"
+            "description": "Directorio de código fuente a escanear para refs huérfanas",
+            "x-ruta": "externa"
           },
           "fix": {
             "type": "boolean",
@@ -1264,7 +1267,8 @@
           },
           "file": {
             "type": "string",
-            "description": "Ruta al archivo de código (absoluta o relativa al CWD)"
+            "description": "Ruta al archivo de código (absoluta o relativa al CWD)",
+            "x-ruta": "externa"
           },
           "title": {
             "type": "string",
@@ -1870,7 +1874,8 @@
         "properties": {
           "path": {
             "type": "string",
-            "description": "Raíz del código a escanear; por defecto, el repo enlazado con vault_project --link"
+            "description": "Raíz del código a escanear; por defecto, el repo enlazado con vault_project --link",
+            "x-ruta": "externa"
           },
           "project": {
             "type": "string",
@@ -3248,7 +3253,8 @@
         "properties": {
           "file": {
             "type": "string",
-            "description": "Fichero de origen (obligatorio uno de: file | text | stdin | url)"
+            "description": "Fichero de origen (obligatorio uno de: file | text | stdin | url)",
+            "x-ruta": "externa"
           },
           "text": {
             "type": "string",
@@ -3921,7 +3927,8 @@
         "properties": {
           "source_path": {
             "type": "string",
-            "description": "Source directory"
+            "description": "Source directory",
+            "x-ruta": "externa"
           },
           "project": {
             "type": "string",
@@ -4489,7 +4496,8 @@
           },
           "path": {
             "type": "string",
-            "description": "Ruta del repositorio a leer (solo lectura)"
+            "description": "Ruta del repositorio a leer (solo lectura)",
+            "x-ruta": "externa"
           },
           "depth": {
             "type": "integer",
@@ -5082,7 +5090,8 @@
           },
           "path": {
             "type": "string",
-            "description": "Ruta local del repositorio (con link o unlink)"
+            "description": "Ruta local del repositorio (con link o unlink)",
+            "x-ruta": "externa"
           },
           "vault": {
             "type": "string",
@@ -6611,7 +6620,8 @@
         "properties": {
           "path": {
             "type": "string",
-            "description": "Code to scan: absolute, relative to the vault root, or else to the current directory"
+            "description": "Code to scan: absolute, relative to the vault root, or else to the current directory",
+            "x-ruta": "externa"
           },
           "project": {
             "type": "string",
