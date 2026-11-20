@@ -3,7 +3,7 @@ name: vault-onboard
 description: Populates a vault from a code project that has none — git archaeology, module map, retroactive ADRs, environment and infrastructure notes. Use when a project has code but no vault, when the user asks to "onboard", "bootstrap a vault", "poblar el vault" or "document this repo", or right after vault_init on an empty vault.
 allowed-tools: Bash(python *) Bash(vault *) Read Glob Grep
 argument-hint: "--project NAME --path REPO [--dry-run] [--depth N] [--max-commits N] [--skip NN ...]"
-version: "2.1"
+version: "2.2"
 ---
 
 # vault-onboard
@@ -11,8 +11,8 @@ version: "2.1"
 Take a code project with no vault and populate one, respecting the norms from
 the first note.
 
-Version 2.1. Previous definitions remain next to this one as `SKILL-v1.0.md`
-and `SKILL-v2.0.md`.
+Version 2.2. Previous definitions remain next to this one as `SKILL-v1.0.md`,
+`SKILL-v2.0.md` and `SKILL-v2.1.md`.
 
 ## Usage
 
@@ -21,8 +21,8 @@ and `SKILL-v2.0.md`.
 vault run vault_onboard --project mi-api --path /ruta/al/repo --dry-run
 
 # The vault's home: create it once, with its own git history
-python scripts/vault_init.py --name mi-api   # ~/.vault-master/mi-api/ (Windows: %USERPROFILE%\.vault-master\mi-api\)
-python scripts/vault_init.py --list          # the vaults of the home
+vault run vault_init --name mi-api   # ~/.vault-master/mi-api/ (Windows: %USERPROFILE%\.vault-master\mi-api\)
+vault run vault_init --list          # the vaults of the home
 
 # For real, into the vault VAULT_ROOT points at
 VAULT_ROOT=$HOME/.vault-master/mi-api vault run vault_onboard \
@@ -86,6 +86,22 @@ The resulting vault should need no healing. If `vault_audit` reports metadata
 debt over it, the generator is broken, not the vault. Check with
 `vault_sanacion` and `vault_audit`.
 
+## After the onboarding
+
+Running the onboarding again does not move the vault to a later state of the
+repository: on a populated vault it writes nothing new. To see what changed
+since the onboarding, record a snapshot of the code right after it and, later,
+ask for the report:
+
+```bash
+vault run vault_drift_detect --project mi-api --path /ruta/al/repo --mode snapshot
+vault run vault_drift_detect --project mi-api --path /ruta/al/repo --mode report
+```
+
+The report lists each changed file and a suggested tool. Before following a
+suggestion, check whether a note for that file already exists (a module note
+declares `source_file:`): update it instead of creating a second one.
+
 ## Nothing is invented
 
 Healing preserves; onboarding does not invent. There is no prior content to
@@ -109,5 +125,5 @@ existing notes and use recorded evidence before attributing any output.
 
 ## Reference
 
-`docs/MODO-AGENTICO-ONBOARDING.md` — the 7 phases and the decisions no tool
+`docs/MODO-AGENTICO-ONBOARDING.md` — phases 0 to 7 and the decisions no tool
 takes. `docs/SKILLS.md` — the skill layer itself.

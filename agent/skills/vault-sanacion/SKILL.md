@@ -3,7 +3,7 @@ name: vault-sanacion
 description: Diagnoses a pre-existing vault and returns the 12-phase healing plan with a per-phase verdict and the evidence behind it. Read-only — it never writes. Use when taking over a vault written without the standard, when the user asks to "heal", "sanar", "clean up" or "audit" an existing vault, or before deciding which corrective tools to run and in what order.
 allowed-tools: Bash(python *) Bash(vault *) Read Glob Grep
 argument-hint: "[--phase N] [--strict]"
-version: "2.1"
+version: "2.2"
 ---
 
 # vault-sanacion
@@ -11,8 +11,8 @@ version: "2.1"
 Measure a pre-existing vault against the 12 phases of
 `docs/MODO-AGENTICO-SANACION.md`, then decide.
 
-Version 2.1. Previous definitions remain next to this one as `SKILL-v1.0.md`
-and `SKILL-v2.0.md`.
+Version 2.2. Previous definitions remain next to this one as `SKILL-v1.0.md`,
+`SKILL-v2.0.md` and `SKILL-v2.1.md`.
 
 ## Usage
 
@@ -58,7 +58,7 @@ back to the repo root. The envelope reports `vault_root` and
 **Where a vault lives.** The user's vaults live in a house —
 `~/.vault-master/<nombre>/` on Linux and macOS,
 `%USERPROFILE%\.vault-master\<nombre>\` on Windows — each with its own git
-repository. `python scripts/vault_init.py --list` shows the ones that are
+repository. `vault run vault_init --list` shows the ones that are
 there; `VAULT_MASTER` moves the house.
 
 Auto-detection follows the client: the vault the client is standing in
@@ -89,7 +89,8 @@ evidence that notes were created, repaired or removed.
 
 Ever. Rule 2 of the agentic mode — the subagent proposes, it does not write —
 applied to the tool that proposes. Every phase names the standard tool that
-performs the write, with its guard and its `.change-log.json` entry. A
+performs the write, with its guard and its entry in the append-only
+`.change-log.jsonl` (a legacy `.change-log.json` is read, never rewritten). A
 diagnostic tool holding write permission is a second author with no norm
 governing it.
 
