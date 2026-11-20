@@ -32,10 +32,16 @@ from vault_mcp_catalog import GROUPS, TOOLS_CATALOG  # noqa: E402
 import vault_grafo_import as gi  # noqa: E402
 
 def _entry_points_de_skills():
-    """Entry point de cada `agent/skills/<x>/SKILL.md`, por convención de nombre."""
+    """Entry point de cada `agent/skills/<x>/SKILL.md`: el que declara
+    `entry-point:`, o por convención de nombre. Una skill que orquesta varias
+    tools (`entry-point: none`) no añade una tool propia: MCP ve cada una de
+    las que enseña, y test_skills_contract valida sus comandos (F18)."""
+    from apoyo import script_de_skill
+
     return {
-        p.parent.name.replace("-", "_")
+        script.stem
         for p in (REPO_ROOT / "agent" / "skills").glob("*/SKILL.md")
+        if (script := script_de_skill(p)) is not None
     }
 
 

@@ -122,7 +122,14 @@ def test_las_versiones_anteriores_quedan_al_lado_y_nombradas(skill):
 
 @pytest.mark.parametrize("skill", SKILLS, ids=IDS)
 def test_la_tabla_de_argumentos_es_la_del_argparse(skill):
-    script = SCRIPTS / f"{skill.parent.name.replace('-', '_')}.py"
+    from apoyo import script_de_skill
+
+    script = script_de_skill(skill)
+    if script is None:
+        # An orchestration skill has no single argparse to mirror; its commands
+        # are validated per tool by test_skills_contract.
+        assert "## Arguments" not in skill.read_text(encoding="utf-8"), skill.parent.name
+        return
     tabla = _flags_de_la_tabla(skill.read_text(encoding="utf-8"))
     assert tabla == _flags_del_argparse(script), skill.parent.name
 

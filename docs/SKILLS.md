@@ -30,6 +30,9 @@ LLM) puede invocar. Cada skill tiene:
 | `vault-move` | v1.0 | `agent/skills/vault-move/SKILL.md` | — | `scripts/vault_move.py` | Mueve notas o carpetas con preflight de impacto y reescribe los enlaces entrantes |
 | `vault-backup` | v1.1 | `agent/skills/vault-backup/SKILL.md` | `agent/skills/vault-backup/SKILL-v1.0.md` | `scripts/vault_backup.py` | Crea un backup, verifica su manifiesto y **ensaya la restauración sobre una copia del vault** antes de afirmar que sirve |
 | `vault-toolkit-audit` | v1.0 | `agent/skills/vault-toolkit-audit/SKILL.md` | — | `scripts/vault_toolkit_audit.py` | Mide el toolkit tool por tool contra lo que declara y deja la medición registrada |
+| `vault-sesion` | v1.0 | `agent/skills/vault-sesion/SKILL.md` | — | — (orquesta el protocolo de sesión) | Inicio, escritura, borrado y cierre de una sesión con el protocolo `PROTOCOLO_DE_SESION` |
+| `vault-recordar` | v1.0 | `agent/skills/vault-recordar/SKILL.md` | — | `scripts/vault_context_pack.py` | Convierte una pregunta en el contexto vigente del vault antes de decidir o escribir |
+| `vault-decision` | v1.0 | `agent/skills/vault-decision/SKILL.md` | — | `scripts/vault_supersede.py` | Cambia una decisión sin borrar la anterior: escribe la nueva, la sustituye y muestra cómo deshacer |
 
 Lo que la wheel lleva son los **puntos de entrada** de las skills cuyo entry point es un script del catálogo
 (`vault_sanacion`, `vault_onboard`, `vault_sdd_init`): instalado el paquete se

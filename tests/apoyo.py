@@ -302,3 +302,86 @@ def reescribir_bitacora(raiz: Path, filas: list) -> Path:
     destino.parent.mkdir(parents=True, exist_ok=True)
     destino.write_bytes("".join(json.dumps(f, ensure_ascii=False) + "\n" for f in filas).encode("utf-8"))
     return destino
+
+
+# ── Skills: their entry point and the commands they teach ───────────────────
+#
+# Skills audit (2026-11-19, F18): the skill tests only checked that a flag NAME
+# existed in the skill's own script, so `vault run vault_backup --verify` with
+# no value passed (the flag takes a backup name) and a skill could not teach a
+# command of another tool. One owner here for both test modules (AP-69).
+
+#: Frontmatter value of `entry-point` for a skill that orchestrates several tools.
+SIN_ENTRY_POINT = "none"
+
+
+def script_de_skill(skill_md: Path) -> Optional[Path]:
+    """The script a skill wraps: `entry-point:` if declared, else its name; None
+    for an orchestration skill (`entry-point: none`)."""
+    texto = Path(skill_md).read_text(encoding="utf-8")
+    fm = {}
+    if texto.startswith("---\n"):
+        fm = yaml.safe_load(texto.split("---\n", 2)[1]) or {}
+    declarado = str(fm.get("entry-point") or "").strip()
+    if declarado == SIN_ENTRY_POINT:
+        return None
+    nombre = declarado or Path(skill_md).parent.name.replace("-", "_")
+    return rutas.raiz_repo() / "scripts" / f"{nombre}.py"
+
+
+def flags_de_argparse(script: Path) -> Dict[str, bool]:
+    """Every long flag of a script's argparse -> whether it requires a value.
+
+    Read from the AST of the code that owns the parser (`codigo_de` follows a
+    facade to its owner): a flag with `action=store_true/store_false/count/
+    store_const/help/version` or `nargs` `?`/`*` does not require one.
+    """
+    import ast
+
+    import vault_grafo_import as gi
+
+    arbol = ast.parse(gi.codigo_de(Path(script)).read_text(encoding="utf-8"))
+    flags: Dict[str, bool] = {}
+    for nodo in ast.walk(arbol):
+        if not (isinstance(nodo, ast.Call) and getattr(nodo.func, "attr", "") == "add_argument"):
+            continue
+        largos = [a.value for a in nodo.args
+                  if isinstance(a, ast.Constant) and str(a.value).startswith("--")]
+        if not largos:
+            continue
+        kw = {k.arg: k.value for k in nodo.keywords}
+        accion = kw.get("action")
+        nargs = kw.get("nargs")
+        sin_valor = (isinstance(accion, ast.Constant) and accion.value in (
+            "store_true", "store_false", "count", "store_const", "help", "version")) or (
+            isinstance(nargs, ast.Constant) and nargs.value in ("?", "*"))
+        for largo in largos:
+            flags[largo] = not sin_valor
+    return flags
+
+
+def comandos_vault_run(texto: str) -> list:
+    """`(tool, [tokens])` for every `vault run <tool> ...` in the ```bash blocks.
+
+    Line continuations are joined, comments dropped and `$(...)` substitutions
+    replaced by one placeholder token, so the tokens are what argparse would see.
+    """
+    import re
+    import shlex
+
+    comandos = []
+    for bloque in re.findall(r"```bash\n(.*?)```", texto, re.DOTALL):
+        logico = re.sub(r"\\n\s*", " ", bloque)
+        logico = re.sub(r"\$\((?:[^()]|\([^()]*\))*\)", "SUSTITUCION", logico)
+        for linea in logico.splitlines():
+            if "vault run " not in linea:
+                continue
+            try:
+                tokens = shlex.split(linea, comments=True, posix=True)
+            except ValueError:
+                continue
+            for i in range(len(tokens) - 2):
+                if tokens[i] == "vault" and tokens[i + 1] == "run":
+                    comandos.append((tokens[i + 2], tokens[i + 3:]))
+                    break
+    return comandos
