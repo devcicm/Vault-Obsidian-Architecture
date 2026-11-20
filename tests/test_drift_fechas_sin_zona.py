@@ -27,6 +27,7 @@ def test_la_cobertura_compara_una_nota_sin_zona_con_el_snapshot(monkeypatch):
         {"title": "modulo", "path": "01_Projects/modulo.md", "updatedAt": "2026-10-10"},
         {"title": "viejo", "path": "01_Projects/viejo.md", "updatedAt": "2020-01-01"},
     ])
-    documentadas, sin_documentar = dd._find_coverage(
+    # Since BF-08 it also returns the stale notes and the grouped tests.
+    documentadas, sin_documentar, _desactualizadas, _tests = dd._find_coverage(
         ["src/modulo.py", "src/viejo.py"], "p", "2026-10-09T00:00:00Z")
     assert [d["file"] for d in documentadas] + [u["file"] for u in sin_documentar]

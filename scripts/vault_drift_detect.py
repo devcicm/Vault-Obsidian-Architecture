@@ -584,11 +584,48 @@ def _parse_iso(ts: str) -> Optional[datetime]:
             return None
 
 
+#: Path parts and name patterns of test code. A changed test does not deserve a
+#: module note of its own (brownfield BF-09: 105 test files each got a
+#: `vault_code_module` suggestion); it is grouped for the test inventory.
+_PARTES_DE_TEST = {"tests", "test", "__tests__", "spec", "specs"}
+_NOMBRE_DE_TEST = re.compile(r"^(test_.+|.+_test\.[^.]+|.+\.(test|spec)\.[^.]+)$", re.IGNORECASE)
+SUGERENCIA_TESTS = ("vault_test_save: actualizar el inventario de tests del proyecto "
+                    "(15_Tests) con lo que cambio, no una nota por fichero")
+
+
+def _es_test(ruta: str) -> bool:
+    fp = Path(ruta)
+    return bool(_PARTES_DE_TEST & {p.lower() for p in fp.parts[:-1]}) or bool(
+        _NOMBRE_DE_TEST.match(fp.name))
+
+
+def _notas_por_fuente(notes: List[Dict]) -> Dict[str, Dict[str, str]]:
+    """`source_file:` -> the module note that declares it (11_Code), with its date.
+
+    Brownfield BF-08: an onboarded module note whose file changed was reported
+    as undocumented with the suggestion to create a module note, which
+    duplicated it. Read from the notes the search index lists under 11_Code.
+    """
+    mapa: Dict[str, Dict[str, str]] = {}
+    for nota in notes:
+        rel = str(nota.get("path", ""))
+        if not rel.startswith("11_Code/"):
+            continue
+        try:
+            fm = parse_frontmatter((_raiz() / rel).read_text(encoding="utf-8")) or {}
+        except (OSError, UnicodeError):
+            continue
+        fuente = str(fm.get("source_file") or "").strip().replace("\\", "/")
+        if fuente:
+            mapa[fuente] = {"path": rel, "updatedAt": str(fm.get("updatedAt") or nota.get("updatedAt") or "")}
+    return mapa
+
+
 def _find_coverage(
     changed_files: List[str],
     project: str,
     since_timestamp: str,
-) -> Tuple[List[Dict], List[Dict]]:
+) -> Tuple[List[Dict], List[Dict], List[Dict], List[str]]:
     """
 
     Cross-reference changed files against vault.
@@ -639,6 +676,12 @@ def _find_coverage(
 
     undocumented = []
 
+    stale: List[Dict] = []
+
+    tests_changed: List[str] = []
+
+    por_fuente = _notas_por_fuente(notes)
+
     for f in changed_files:
         fp = Path(f)
 
@@ -655,6 +698,10 @@ def _find_coverage(
             continue
 
         if any(frag in f for frag in SKIP_PATH_FRAGMENTS):
+            continue
+
+        if _es_test(f):
+            tests_changed.append(f)
             continue
 
         # Check code-index first (most precise)
@@ -679,6 +726,19 @@ def _find_coverage(
                 )
 
                 continue
+
+        # A module note declares this file: current, or stale (update it).
+        nota_fuente = por_fuente.get(f)
+        if nota_fuente:
+            fecha = _parse_iso(nota_fuente["updatedAt"])
+            if since_dt is None or (fecha is not None and fecha >= since_dt):
+                documented.append({"file": f, "vault_path": nota_fuente["path"],
+                                   "source": "source_file", "updatedAt": nota_fuente["updatedAt"]})
+            else:
+                stale.append({"file": f, "vault_path": nota_fuente["path"],
+                              "updatedAt": nota_fuente["updatedAt"],
+                              "suggestion": f"actualizar {nota_fuente['path']} (no crear otra nota)"})
+            continue
 
         # Check search-index
 
@@ -727,7 +787,7 @@ def _find_coverage(
                 }
             )
 
-    return documented, undocumented
+    return documented, undocumented, stale, tests_changed
 
 
 # ─── AP-08: notas que no acompañaron al cambio ───────────────────────────────
@@ -1499,7 +1559,8 @@ def vault_drift_detect(
 
     # mode == "report"
 
-    documented, undocumented = _find_coverage(all_changed, project, since_timestamp)
+    documented, undocumented, stale, tests_changed = _find_coverage(
+        all_changed, project, since_timestamp)
 
     coverage_pct = (
         round(len(documented) / len(all_changed) * 100) if all_changed else 100
@@ -1518,19 +1579,26 @@ def vault_drift_detect(
             "deleted": len(changes["deleted"]),
             "documented": len(documented),
             "undocumented": len(undocumented),
+            "stale": len(stale),
+            "tests_changed": len(tests_changed),
             "coverage_pct": coverage_pct,
         },
         "documented": documented,
         "undocumented": undocumented,
+        # BF-08: changed files whose note exists but is older than the snapshot.
+        "stale": stale,
+        # BF-09: changed tests, grouped for the test inventory.
+        "tests_changed": {"files": tests_changed,
+                          "suggestion": SUGERENCIA_TESTS if tests_changed else ""},
         "deleted": changes["deleted"],
     }
 
-    if undocumented:
+    if undocumented or stale:
         result["action_required"] = True
 
         result["message"] = (
-            f"{len(undocumented)} file(s) changed without vault documentation. "
-            f"Coverage: {coverage_pct}%."
+            f"{len(undocumented)} file(s) changed without vault documentation, "
+            f"{len(stale)} with a note to update. Coverage: {coverage_pct}%."
         )
 
     else:
