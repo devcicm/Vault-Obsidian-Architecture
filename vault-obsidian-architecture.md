@@ -12478,7 +12478,7 @@ decisión del dueño del vault. Dueño del criterio: `vault/kernel/contenido.py`
 
 Cada ingesta deja una fila en un log que solo crece (Karpathy). Una nota que entró por
 `vault_ingest --commit` sin la fila `ingested` de su pasada en
-`00_System/.change-log.json` es material sin procedencia operativa. `vault_ingest`
+`00_System/.change-log.jsonl` es material sin procedencia operativa. `vault_ingest`
 escribe el mismo id de pasada en cada nota (`ingest_pass`) y en la fila que anota por el
 puerto `bitacora_cambios`; `vault_audit` lista en `ingestsWithoutLog` las notas cuya
 pasada no nombra ninguna fila, en solo lectura. Una nota ingerida antes de que existiera

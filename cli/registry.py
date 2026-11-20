@@ -78,9 +78,11 @@ _ARTIFACT_HINTS = {
     "search index": "99_Index/search-index.json",
     "hash-index": "99_Index/hash-index.json",
     "quality-index": "00_System/quality-index.json",
-    "change-log": "00_System/.change-log.json",
-    "change log": "00_System/.change-log.json",
-    "changelog": "00_System/.change-log.json",
+    # The append-only log written since bigo-inmutabilidad; the legacy
+    # `.change-log.json` is frozen and no tool writes it any more.
+    "change-log": "00_System/.change-log.jsonl",
+    "change log": "00_System/.change-log.jsonl",
+    "changelog": "00_System/.change-log.jsonl",
     "trace": "00_System/.tool-trace.json",
     "tags-index": "00_System/tags-index.json",
     "master-index": "99_Index/index.md",

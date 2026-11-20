@@ -135,7 +135,7 @@ VAULT_AGENT=claude vault run vault_write --folder 07_Knowledge   --title "Primer
 ```
 
 La respuesta lleva `change_log` con la entrada que la escritura dejó en
-`00_System/.change-log.json` (F8, no repudio).
+`00_System/.change-log.jsonl`, que solo crece (F8, no repudio).
 
 ## 4. Registrar el servidor MCP
 

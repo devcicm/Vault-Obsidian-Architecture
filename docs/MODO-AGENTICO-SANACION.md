@@ -23,7 +23,7 @@ herramienta vieja y el "después" con la nueva mide la herramienta, no el vault.
 asociado, clasificar notas, proponer tags o detectar duplicados. La escritura pasa
 siempre por una tool del estándar, con su guard. Un subagente con permiso de
 escritura es un segundo autor sin norma que lo gobierne — y su error no queda en
-`.change-log.json` como error de nadie.
+`.change-log.jsonl` como error de nadie.
 
 **3. Nada se borra.** Lo que estorba se **anota**: `superseded_by:`,
 `status: archived`, o una nota de sanación que explique por qué. Un vault sanado

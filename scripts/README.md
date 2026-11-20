@@ -1923,7 +1923,7 @@ python vault_quality_check.py --iso-quality
 ### `vault_fundamentals.py`
 Registro canónico de los 8 Fundamentos de Datos (F1–F8): INTEGRIDAD, CONSISTENCIA, COMPLETITUD, EXACTITUD, VALIDEZ, ACTUALIDAD, AUTENTICIDAD, NO_REPUDIO. Cada tool está mapeada a uno o más fundamentos.
 
-Desde v39 es además la **fuente única del Marco de Datos y Gobernanza**: `CIA_TRIAD` (3), `FUNDAMENTALS` (8), `FAIR_PRINCIPLES` (4), `BIGDATA_VS` (6), `ISO_COVERAGE` (13) y `TRACEABILITY_MATRIX` (20 filas). La sección homónima del manifiesto se deriva de aquí y `vault_norms.py --check-framework` falla si divergen.
+Desde v39 es además la **fuente única del Marco de Datos y Gobernanza**: `CIA_TRIAD` (3), `FUNDAMENTALS` (8), `FAIR_PRINCIPLES` (4), `BIGDATA_VS` (6), `ISO_COVERAGE` (31) y `TRACEABILITY_MATRIX` (20 filas). La sección homónima del manifiesto se deriva de aquí y `vault_norms.py --check-framework` falla si divergen.
 
 ```bash
 python vault_fundamentals.py                      # lista F1–F8 con tools mapeadas
@@ -3622,7 +3622,7 @@ python vault_sanacion.py --phase 8
 python vault_sanacion.py --strict                            # exit 1 si algo aplica
 ```
 
-- **No escribe. Nunca.** Es la regla 2 del modo agéntico —el subagente propone, no escribe— aplicada a la tool que propone. Cada fase nombra la tool del estándar que sí escribe, con su guard y su entrada en `.change-log.json`. Una tool de diagnóstico con permiso de escritura es un segundo autor sin norma que lo gobierne.
+- **No escribe. Nunca.** Es la regla 2 del modo agéntico —el subagente propone, no escribe— aplicada a la tool que propone. Cada fase nombra la tool del estándar que sí escribe, con su guard y su entrada en `.change-log.jsonl`. Una tool de diagnóstico con permiso de escritura es un segundo autor sin norma que lo gobierne.
 - **`unknown` no es `clean`.** Una fase que no se pudo medir es una fase que sigues debiendo, y sale como tal en `phases_unknown`. El primer intento leía `issues.*` esperando cifras cuando son listas de hallazgos: siete fases quedaron en `unknown` sin que nada fallara, que es precisamente por qué `unknown` tiene que ser visible y no colapsarse a "no hay deuda".
 - **El orden es el contrato**, no una preferencia de presentación: reubicar (7) después de arreglar enlaces (8) vuelve a romper cada enlace que acabas de reparar. Saber qué fases puedes saltarte es lo que hace que el orden sea seguro de seguir.
 - **La fase 1 siempre aplica.** Ninguna medida puede confirmar que copiaste el vault antes de tocarlo, y dar la copia por hecha es el único fallo de este modo que no tiene vuelta atrás.

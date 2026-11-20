@@ -37,7 +37,7 @@ mismo árbol: el producto, la herramienta de desarrollo y la evidencia.
 **Frontera de producto.** Lo que se distribuye y se puede instalar sin el
 checkout: la wheel/sdist, sus entry points (`vault`, `vault_gobernanza`), el
 servidor MCP empaquetado y el catálogo de tools. **No** es frontera de producto
-el conjunto de scripts de mantenimiento del propio estándar: 28 módulos
+el conjunto de scripts de mantenimiento del propio estándar: 30 módulos
 (`vault_gate`, `vault_criterios`, `vault_arch`, `vault_norms`, …) que son
 *herramienta de desarrollo* y no viajan en la wheel
 (`audits/architecture/inventario-maestro.yaml` → `RES-ARTE-*` y
@@ -48,7 +48,7 @@ el conjunto de scripts de mantenimiento del propio estándar: 28 módulos
 | Cosa | Dónde vive | Regla |
 |---|---|---|
 | Código fuente | `vault/`, `scripts/`, `normas/`, `mcp/nodejs/` | es el producto o su herramental; versionado |
-| Herramienta de desarrollo | los 28 módulos de mantenimiento | gobiernan el estándar; no se distribuyen |
+| Herramienta de desarrollo | los 30 módulos de mantenimiento | gobiernan el estándar; no se distribuyen |
 | Documentación | `README.md`, `docs/`, ADR | se deriva o se declara |
 | Evidencia | `audits/**/logs/`, recibos externos |outputs de una ejecución, atados a un SHA |
 | Runtime | el vault del usuario (`~/.vault-master/…`, `vault-sandbox/`) | dato del usuario; nunca se borra en silencio |
@@ -85,17 +85,20 @@ servicio externo.
 | Promesa | Qué significa | Cómo se verifica |
 |---|---|---|
 | **CLI** | operar el vault desde la terminal sin Python | `vault init/doctor/status/run/tools/mcp-path` |
-| **MCP** | la misma capacidad por protocolo, con los mismos contratos | `initialize → tools/list → tools/call`; 97 tools |
+| **MCP** | la misma capacidad por protocolo, con los mismos contratos | `initialize → tools/list → tools/call`; 98 tools |
 | **Instalación de terceros** | instalar y usar sin el repositorio | recorrido E2E sobre wheel, 27/27 |
 | **Recuperación de datos** | ninguna operación destructiva deja datos irrecuperables | cuarentena verificada por hash + rollback; 23 pruebas |
 | **Gobernanza** | las verificaciones dicen si se ejecutaron | `checks[]` + `completo`; collector fail-closed |
 | **Verificabilidad** | la evidencia pertenece al SHA que declara | recibos con artefacto y hash por subcheck |
 
-**Límites asumidos:** compatibilidad declarada en Python 3.9–3.12 y
-Windows/Linux/macOS (**aún no acreditada por CI concluyente**); un único
-usuario local por vault; sin sincronización ni multi-tenant; el MCP expone
-herramientas locales (sin autenticación propia: la seguridad es del proceso
-que lo lanza).
+**Límites asumidos:** compatibilidad declarada en Python 3.9–3.12 sobre
+Windows y Linux (**aún no acreditada por CI concluyente**); en macOS las tools
+fallan cerradas porque no hay contención de procesos verificada; un único
+usuario local por vault; sin sincronización ni multi-tenant. El MCP por stdio
+no abre puerto; por HTTP (`--port`) escucha solo en `127.0.0.1`, exige token
+`Authorization: Bearer` y rechaza peticiones de navegador (SP-04, ver
+`SECURITY.md`): no es autenticación de red y ponerlo detrás de un proxy sigue sin
+ser un uso soportado.
 
 ---
 
@@ -172,7 +175,7 @@ Reglas de la secuencia:
 |---|---|
 | §A–F (identidad, promesas, premisas, invariantes) | `vault-obsidian-architecture.md` (manifiesto) |
 | §E (invariantes) | `normas/` (82 paquetes con guard) y sus verificadores |
-| §F (gobierno) | `scripts/vault_gate.py` (26 puertas) y `vault_arch.py` |
+| §F (gobierno) | `scripts/vault_gate.py` (29 puertas) y `vault_arch.py` |
 | Inventario maestro | `scripts/vault_arch.py:CONTEXTS`, `vault_mcp_catalog.TOOLS_CATALOG` |
 | Grafo de trazabilidad | `scripts/arch-baseline.json` (baseline de cruces) |
 | Fichas de divergencias | `audits/fase2/reconciliar_archify.py` + snapshot `.archify/` |

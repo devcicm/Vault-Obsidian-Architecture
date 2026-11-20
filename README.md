@@ -308,8 +308,8 @@ python scripts/vault_audit.py
 
 ## CLI consolidada — `vault`
 
-Las **98 operaciones de vault** (`class: runtime`) bajo un único punto de entrada,
-con búsqueda, planificación de concurrencia y guardas de seguridad. Las otras 29 tools
+Las **99 operaciones de vault** (`class: runtime`) bajo un único punto de entrada,
+con búsqueda, planificación de concurrencia y guardas de seguridad. Las otras 30 tools
 activas son de mantenimiento del estándar: viven en el checkout y la wheel no las
 instala (`vault run` las rechaza con `not_runtime_operation`). Cuál es cuál, cuáles
 tienen ejemplo verificado y cuáles no deben usarse:
@@ -376,7 +376,7 @@ Detalle completo en [Marco de Datos y Gobernanza](./vault-obsidian-architecture.
 | **V's del Big Data** | Volumen, velocidad, variedad, veracidad, valor, variabilidad — cada V apunta a un número real | `vault_audit`, `vault_change_log`, `vault_delta` |
 | **Trazabilidad** | Cadena verificable `agent:` → `.change-log.jsonl` → `.tool-trace.json` → `.history/` → manifiesto Merkle | `vault_audit --trace` |
 | **Gobernanza** | 97 normas AP/PAT/SP/CN, 0 con enforcement manual | `vault_norms --audit` |
-| **Alineación ISO** | 13 normas mapeadas cláusula → implementación → tool | `vault_fundamentals --framework` |
+| **Alineación ISO** | 31 normas mapeadas cláusula → implementación → tool | `vault_fundamentals --framework` |
 
 ```bash
 python scripts/vault_fundamentals.py --framework   # exporta el marco completo (JSON + MD)

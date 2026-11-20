@@ -231,7 +231,7 @@ manual.
 - [ ] Carril `merge` antes de integrar en `main`: `python scripts/vault_gate.py --strict`
       → todas verdes, y `python -m pytest tests/ -q -n 4 --tb=short` en verde.
 - [ ] Las dos, **en serie y no a la vez**. Las comparten el sandbox: `vault_toolkit_audit`
-      copia `vault-sandbox/` por cada línea de ejemplo de las 126 tools, y si la suite
+      copia `vault-sandbox/` por cada línea de ejemplo de las 129 tools, y si la suite
       está escribiendo ahí en ese momento la auditoría ve estado transitorio y publica
       deuda nueva que no existe. Medido el 2026-10-23: `25/26` con `toolkit_audit` en
       rojo por `DEBT_WOULD_GROW` de `vault_fix_all`, y `26/26` al correrla sola cinco

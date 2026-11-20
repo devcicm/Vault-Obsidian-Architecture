@@ -109,7 +109,7 @@ python -m cli batch --file lote.json --parallel 4 --verify-integrity
 Hashea el vault antes y después y clasifica cada cambio:
 
 - **declarado** — el plan lo anunciaba;
-- **ambient** — ruido de instrumentación (`.tool-trace.json`, `.change-log.json`,
+- **ambient** — ruido de instrumentación (`.tool-trace.json`, `.change-log.jsonl`,
   `token-usage.json`, `*.locks`), que toda tool escribe vía `wrap_main`;
 - **inesperado** — cualquier otra cosa. Marca el lote como `ok: false`.
 
@@ -144,7 +144,7 @@ Los hallazgos `high`/`critical` bloquean. `--strict` hace que también bloqueen 
 
 ## Escáner de código (`cli/analyzer.py`)
 
-Analiza los 98 scripts por AST (no por regex) buscando condiciones de carrera y
+Analiza los 172 scripts por AST (no por regex) buscando condiciones de carrera y
 antipatrones:
 
 | Código | Qué detecta |
