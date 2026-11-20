@@ -583,14 +583,18 @@ def _extract_git_history(project_path: Path, max_commits: int = 500) -> Dict[str
             _registrar_degradacion("fechar_historia_oculta", exc)
             pass
 
+    # BF-02 (brownfield, 2026-11-19): what the notes assert about the project
+    # (decisions, phases, contributors, last commit, total) is the history of
+    # the checked-out commit. Taken from every ref, an onboarding at `main`
+    # wrote ADRs from an unmerged branch signed with main's sha. The log of all
+    # refs and the reflog stay for hidden history only (dates above).
     contributors = list(
-        dict.fromkeys(c["author"] for c in commits_all if c.get("author"))
+        dict.fromkeys(c["author"] for c in commits_current if c.get("author"))
     )
     key_commits = [
-        c for c in commits_all if DECISION_KEYWORDS.search(c.get("message", ""))
+        c for c in commits_current if DECISION_KEYWORDS.search(c.get("message", ""))
     ][:10]
 
-    # Build unified commit list: all_branches + reflog for phase detection
     all_commits_unified = commits_all + reflog_commits
     all_commits_unified.sort(key=lambda c: c.get("date", ""), reverse=True)
 
@@ -600,7 +604,7 @@ def _extract_git_history(project_path: Path, max_commits: int = 500) -> Dict[str
     # historia, porque los commits antiguos —los que separan las fases— eran
     # justo los cortados. La cifra parecía un hecho del proyecto y era un
     # parámetro de la invocación.
-    ventana_truncada = len(commits_all) >= max_commits
+    ventana_truncada = len(commits_current) >= max_commits or len(commits_all) >= max_commits
     avisos: List[str] = []
     if ventana_truncada:
         avisos.append(
@@ -617,16 +621,17 @@ def _extract_git_history(project_path: Path, max_commits: int = 500) -> Dict[str
         "max_commits": max_commits,
         "warnings": avisos,
         "first_commit": {"date": true_first_date, "message": "", "author": ""},
-        "last_commit": commits_all[0] if commits_all else None,
+        "last_commit": commits_current[0] if commits_current else None,
         "apparent_first_date": apparent_first_date,
         "true_first_date": true_first_date,
         "hidden_history": hidden_history,
         "hidden_months": hidden_months,
-        "total_commits": len(commits_all),
+        "total_commits": len(commits_current),
+        "total_commits_all_refs": len(commits_all),
         "total_commits_with_reflog": len(all_commits_unified),
         "contributors": contributors[:8],
         "tags": tags,
-        "commits": all_commits_unified,  # unified for phase detection
+        "commits": commits_current,  # HEAD's history: phases describe what HEAD contains
         "commits_current": commits_current,  # current branch only
         "key_commits": key_commits,
         "branches": branches,
@@ -3308,23 +3313,33 @@ def vault_onboard(
     _OMITIDAS_POR_POLITICA.clear()
     _DETECCION_DEGRADADA.clear()  # por onboarding, no por proceso
     created: Dict[str, Any] = {}
+    # BF-03 (brownfield, 2026-11-19): a note left as it was is not "created".
+    # A second run listed every existing note under `created` while
+    # `indexes_skipped` said nothing was written (AP-37). `created` holds what
+    # was created, merged or (dry run) planned; the rest goes to `unchanged`.
+    unchanged: Dict[str, Any] = {}
     acciones_por_seccion: Dict[str, List[str]] = {}
     merge_stats = {"created": 0, "merged": 0, "skipped": 0, "dry_run": 0}
 
+    def _acumular(destino: Dict[str, Any], key: str, paths: List[str]) -> None:
+        if not paths:
+            return
+        if key in destino and isinstance(destino[key], list):
+            destino[key].extend(paths)
+        elif key in destino:
+            destino[key] = [destino[key]] + paths
+        else:
+            destino[key] = paths if len(paths) > 1 else paths[0]
+
     def _record(pairs: List[Tuple[str, str]], key: str) -> None:
-        paths = []
+        escritas, intactas = [], []
         for rel, action in pairs:
             merge_stats[action] = merge_stats.get(action, 0) + 1
-            paths.append(rel)
+            (intactas if action == "skipped" else escritas).append(rel)
             seccion = rel.replace("\\", "/").split("/", 1)[0]
             acciones_por_seccion.setdefault(seccion, []).append(action)
-        if paths:
-            if key in created and isinstance(created[key], list):
-                created[key].extend(paths)
-            elif key in created:
-                created[key] = [created[key]] + paths
-            else:
-                created[key] = paths if len(paths) > 1 else paths[0]
+        _acumular(created, key, escritas)
+        _acumular(unchanged, key, intactas)
 
     # 1. Discover meta
     meta = _detect_project_meta(project_path, lang_hint)
@@ -3565,6 +3580,7 @@ def vault_onboard(
                 history.get("last_commit") or history.get("last_modified") or {}
             ).get("date"),
             "total_commits": history.get("total_commits", 0),
+            "total_commits_all_refs": history.get("total_commits_all_refs", 0),
             "total_commits_with_reflog": history.get("total_commits_with_reflog", 0),
             "contributors": history.get("contributors", []),
             "tags": [t["name"] for t in history.get("tags", [])],
@@ -3585,6 +3601,7 @@ def vault_onboard(
             "has_infra": bool(infra.get("files")),
         },
         "created": created,
+        "unchanged": unchanged,
         "merge_stats": merge_stats,
         "project_link": project_link,
         # AP-45: lo que NO se escribió, y por qué. Es la mitad útil del informe.
