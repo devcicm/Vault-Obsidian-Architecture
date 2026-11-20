@@ -40,6 +40,8 @@ from vault_vocabulario import mapa as _mapa, opciones as _opciones
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
+from vault.kernel.contenido import nota_escalonada  # noqa: E402
+from vault.kernel.proyectos import enlace_a_ficha  # noqa: E402
 
 FOLDER = "02_Observability/incidents"
 
@@ -170,8 +172,9 @@ def vault_incident_save(
     )
     services_md = ", ".join(f"`{s}`" for s in affected_services) or "— No especificados"
 
-    body = f"""# Incidente: {title}
-
+    # nota-escalonada S4: an incident is an event record; it names its parent.
+    lead = f"Incidente {severity} del proyecto {enlace_a_ficha(project)}, en estado `{status}`."
+    body = nota_escalonada(f"Incidente: {title}", lead) + f"""
 > **{severity} — {sev_info["label"]}**: {sev_info["description"]}
 > ISO 20000-1:2018 §8.6 | ISO 22301:2019 §8.4
 

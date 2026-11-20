@@ -58,6 +58,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
+from vault.kernel.contenido import nota_escalonada  # noqa: E402
 from vault.autoria.frontmatter import firmante as _agente  # noqa: E402
 
 
@@ -168,7 +169,11 @@ def vault_bibliography_save(
     frontmatter_lines.set("cia_sensitivity", "public")
 
 
-    body = f"\n# {title}\n\n"
+    # nota-escalonada S4: the lead says what the source is from its arguments.
+    lead = (f"{title} es una fuente de tipo {source_type} consultada en {url}. "
+            "Esta nota guarda su resumen y se generó con `vault_bibliography_save` "
+            "en la bibliografía del vault.")
+    body = "\n" + nota_escalonada(title, lead) + "\n"
 
     body += f"**URL:** {url}  \n"
 

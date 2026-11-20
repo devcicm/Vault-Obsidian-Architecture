@@ -63,7 +63,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
-from vault.kernel.contenido import con_titulo  # noqa: E402
+from vault.kernel.contenido import nota_escalonada  # noqa: E402
 from vault.kernel.frontmatter_escritura import conservar_nota_generada  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter, firmante  # noqa: E402
 
@@ -481,7 +481,17 @@ def vault_requirement_save(
 
         body_sections.append(f"## Estado\n\n**Estado:** {status_line}")
 
-        final_content = frontmatter.render() + "\n\n" + con_titulo(title, "\n\n".join(body_sections))
+        # nota-escalonada S4: the lead says what the requirement is from its arguments.
+        lead = (f"{title} es un requisito de tipo {req_type} y prioridad {priority} "
+                f"del proyecto {project}, en estado {status}.")
+        if acceptance_criteria:
+            lead += f" Tiene {len(acceptance_criteria)} criterios de aceptación."
+        lead += (" Esta nota se generó con `vault_requirement_save` y vive en la "
+                 "sección de requisitos del vault.")
+        falta = None if acceptance_criteria else (
+            "faltan sus criterios de aceptación (`--acceptance_criteria`)")
+        final_content = (frontmatter.render() + "\n\n" + nota_escalonada(title, lead, falta=falta)
+                         + "\n" + "\n\n".join(body_sections))
 
         previo = ""
         if note_path.exists():

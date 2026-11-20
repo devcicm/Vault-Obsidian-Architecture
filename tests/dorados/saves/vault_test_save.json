@@ -12,5 +12,5 @@
     "updated": "<BEST-EFFORT>",
     "written": "<BEST-EFFORT>"
   },
-  "nota": "---\nid: <UUID>\ntest_id: TEST-001\ntitle: Validación de acentos\nproject: demo\ntest_type: unit\ntype: test\nstatus: planned\ntest_result: not_run\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ntags: [\"demo\", \"test\", \"unit\", \"not_run\"]\ncia_integrity: medium\ncia_availability: medium\ncia_sensitivity: internal\nagent: system\n---\n\n# Validación de acentos\n\n## Descripcion\n\nComprueba la codificación.\n\n## Estado\n\n**Estado:** **not_run** | pass | fail | blocked | skip"
+  "nota": "---\nid: <UUID>\ntest_id: TEST-001\ntitle: Validación de acentos\nproject: demo\ntest_type: unit\ntype: test\nstatus: planned\ntest_result: not_run\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ntags: [\"demo\", \"test\", \"unit\", \"not_run\"]\ncia_integrity: medium\ncia_availability: medium\ncia_sensitivity: internal\nagent: system\n---\n\n# Validación de acentos\n\nValidación de acentos es una prueba unit del proyecto demo, en estado not_run. Esta nota se generó con `vault_test_save` y vive en la sección de pruebas del vault.\n\n> _Pendiente: faltan los pasos o el resultado esperado de la prueba (`--steps`, `--expected_result`)._\n\n## Descripcion\n\nComprueba la codificación.\n\n## Estado\n\n**Estado:** **not_run** | pass | fail | blocked | skip"
 }

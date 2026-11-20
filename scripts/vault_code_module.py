@@ -39,7 +39,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
 from vault.grafo.enlace_codigo import link_vault  # noqa: E402
 from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
-from vault.kernel.contenido import con_titulo  # noqa: E402
+from vault.kernel.contenido import nota_escalonada  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 
 
@@ -429,7 +429,22 @@ def vault_code_module(
     if notes:
         body_sections.append(f"## Notas\n\n{notes}")
 
-    final_content = "\n".join(frontmatter) + "\n\n" + con_titulo(Path(file_path).name, "\n\n".join(body_sections))
+    # nota-escalonada S4: the lead says what the file is from its arguments.
+    lead = f"`{file_path}` es un fichero de código"
+    if language:
+        lead += f" {language}"
+    lead += f" del proyecto {project}"
+    if iso_type:
+        lead += f", componente {iso_type} según ISO/IEC 12207"
+    lead += ". Esta nota se generó con `vault_code_module` y vive en la sección de código del vault"
+    documenta = [f"{len(lista)} {nombre}" for lista, nombre in (
+        (exports, "exportaciones"), (methods, "métodos"), (classes, "clases"),
+        (responsibilities, "responsabilidades")) if lista]
+    lead += (": documenta " + ", ".join(documenta) + ".") if documenta else "."
+    falta = None if description else "falta el propósito del fichero (`--description`)"
+    final_content = ("\n".join(frontmatter) + "\n\n"
+                     + nota_escalonada(Path(file_path).name, lead, falta=falta)
+                     + "\n" + "\n\n".join(body_sections))
 
     note_path.parent.mkdir(parents=True, exist_ok=True)
     contenido = conservar_nota_generada(note_path, sanitize_content(final_content, dry_run=False)[0])

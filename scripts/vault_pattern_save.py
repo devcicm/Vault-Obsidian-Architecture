@@ -89,7 +89,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
-from vault.kernel.contenido import con_titulo  # noqa: E402
+from vault.kernel.contenido import nota_escalonada  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
@@ -338,7 +338,17 @@ def vault_pattern_save(
 
     body_sections.append(f"\n---\n*Última actualización: {timestamp}*")
 
-    final_content = frontmatter.render() + "\n\n" + con_titulo(name, "\n\n".join(body_sections))
+    # nota-escalonada S4: the lead says what the pattern is from its arguments;
+    # the problem it solves is the user's to tell, so it stays pending.
+    lead = f"{name} es un patrón de tipo {pattern_type} del proyecto {project}, en estado {status}."
+    if files:
+        lead += f" Se aplica en {len(files)} archivos, listados en la sección Archivos."
+    lead += " Esta nota se generó con `vault_pattern_save` y vive en la sección de patrones del vault."
+    falta = None if description else (
+        "falta describir qué problema resuelve el patrón y por qué se eligió (`--description`)")
+    final_content = (frontmatter.render() + "\n\n" + nota_escalonada(name, lead, falta=falta)
+                     # As `con_titulo` did: the body's own leading blank lines go.
+                     + "\n" + "\n\n".join(body_sections).lstrip("\n"))
 
     pattern_path.parent.mkdir(parents=True, exist_ok=True)
 

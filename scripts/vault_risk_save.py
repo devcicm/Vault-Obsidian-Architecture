@@ -48,6 +48,8 @@ from vault_norms_catalog import (
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
+from vault.kernel.contenido import nota_escalonada  # noqa: E402
+from vault.kernel.proyectos import enlace_a_ficha  # noqa: E402
 
 FOLDER = "02_Observability/risks"
 
@@ -264,8 +266,10 @@ def vault_risk_save(
         "\n- ISO/IEC 23894:2023 §6.4–§6.6 — AI risk assessment, treatment, monitoring and review"
         if es_ia else "")
 
-    body = f"""# Riesgo: {title}
-
+    # nota-escalonada S4: a risk is an event record; it names its parent.
+    lead = (f"Riesgo {level} de tipo {risk_type} del proyecto "
+            f"{enlace_a_ficha(project)}, en estado `{status}`.")
+    body = nota_escalonada(f"Riesgo: {title}", lead) + f"""
 > **{level}** — Score {score}/25 (Likelihood {likelihood} × Impact {impact})
 > ISO 31000:2018 — Risk management | ISO/IEC 27005:2022 — IS Risk management{marco_ia}
 

@@ -56,7 +56,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
-from vault.kernel.contenido import con_titulo  # noqa: E402
+from vault.kernel.contenido import nota_escalonada  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 from vault.autoria.frontmatter import firmante as _agente  # noqa: E402
 
@@ -208,7 +208,17 @@ def vault_runbook_save(
         "## Historial de Ejecuciones\n\n*Sin ejecuciones registradas.*"
     )
 
-    final_content = frontmatter.render() + "\n\n" + con_titulo(title, "\n\n".join(body_sections))
+    # nota-escalonada S4: the lead says what the runbook is from its arguments.
+    pasos = f"{len(steps)} pasos" if len(steps) != 1 else "un paso"
+    disparador = " ".join(str(trigger or "").split()).rstrip(".")
+    lead = (f"{title} es un runbook de categoría {category} del proyecto {project}, "
+            f"con {pasos}. Su disparador es «{disparador}»")
+    if estimated_time:
+        lead += f" y su duración estimada, {estimated_time}"
+    lead += (". Esta nota se generó con `vault_runbook_save` y sus ejecuciones "
+             "se anotan en el Historial de Ejecuciones.")
+    final_content = (frontmatter.render() + "\n\n" + nota_escalonada(title, lead)
+                     + "\n" + "\n\n".join(body_sections))
 
     folder.mkdir(parents=True, exist_ok=True)
 

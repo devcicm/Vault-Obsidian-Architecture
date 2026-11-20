@@ -37,6 +37,7 @@ from vault_norms_catalog import compute_norm_refs, status_frontmatter_lines
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
+from vault.kernel.contenido import nota_escalonada  # noqa: E402
 from vault.kernel.normativa.procesos_iso import CLASES_DE_CAMBIO  # noqa: E402
 
 RELEASE_FOLDER = "08_Runbooks/deploy"
@@ -143,8 +144,17 @@ def vault_release_save(
             or "— Sin pasos documentados"
         )
 
-    body = f"""# Release {version} — {project}
-
+    # nota-escalonada S4: the lead says what the release is from its arguments;
+    # what the deploy guide lacks stays pending.
+    lead = (f"Release {version} del proyecto {project}, de tipo {release_type} y en "
+            f"estado `{status}`. Esta nota es su guía de despliegue: cambios incluidos, "
+            "procedimiento de deploy y de rollback, y las comprobaciones previas y "
+            "posteriores.")
+    faltan = [texto for dato, texto in (
+        (changes, "los cambios incluidos (`--changes`)"),
+        (rollback_steps, "el procedimiento de rollback (`--rollback_steps`)")) if not dato]
+    falta = ("faltan " + " y ".join(faltan)) if faltan else None
+    body = nota_escalonada(f"Release {version} — {project}", lead, falta=falta) + f"""
 > **Tipo:** {release_type} — {RELEASE_TYPES[release_type]}
 > ISO/IEC/IEEE 12207:2017 §6.3.5 — Configuration management · §6.4.10 — Transition
 > ISO/IEC 20000-1:2018 §8.5.1 — Change management · §8.5.3 — Release and deployment management

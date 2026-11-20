@@ -46,6 +46,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
+from vault.kernel.contenido import nota_escalonada  # noqa: E402
 
 _RE_VAULT_ENV_SAVE_1 = re.compile('^## (\\w+)$')
 _RE_VAULT_ENV_SAVE_2 = re.compile(r"^\| `([^`]+)` \| ([^|]+) \| ([^|]+) \| ([^|]+) \| ([^|]+) \| ([^|]+) \|")
@@ -228,6 +229,17 @@ def vault_env_save(
         body.append(generate_envs_table(processed_envs[env_name]))
 
         body.append("")
+
+    # nota-escalonada S4: the lead says what the register holds, counted from
+    # the environments it renders.
+    entornos = ordered_envs + extra_envs
+    total = sum(len(processed_envs[e] or []) for e in entornos)
+    lead = (f"Variables de entorno del proyecto {project}: "
+            + (f"{total} variables" if total != 1 else "una variable")
+            + (f" en {len(entornos)} entornos" if len(entornos) != 1 else " en un entorno")
+            + f" ({', '.join(entornos)}). Cada tabla dice para qué sirve cada variable, "
+            "si es obligatoria, si es sensible y quién la provee.")
+    body[0] = nota_escalonada(f"Environment Variables: {project}", lead)
 
     # Mismo cuerpo ⇒ mismo documento (v41.12/O4): el registro de variables es
     # un documento generado, y su `updatedAt` es la hora de generación. La

@@ -80,7 +80,8 @@ from vault_entorno import leer as _env
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
-from vault.kernel.contenido import con_titulo  # noqa: E402
+from vault.kernel.contenido import nota_escalonada  # noqa: E402
+from vault.kernel.proyectos import enlace_a_ficha  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
@@ -264,12 +265,16 @@ def vault_bug_save(
 
         fases = " | ".join(f"**{p}**" if p == phase else p for p in PHASES)
         cuerpo.append(f"## Ciclo\n\n{fases}")
+        # nota-escalonada S4: a bug is an event record; it may stay short,
+        # but it names its parent, the project card.
+        lead = f"Defecto del proyecto {enlace_a_ficha(project)}, en fase `{phase}`."
 
         note_path.parent.mkdir(parents=True, exist_ok=True)
         contenido = conservar_nota_generada(
             note_path,
             sanitize_content(
-                frontmatter.render() + "\n\n" + con_titulo(title, "\n\n".join(cuerpo)),
+                frontmatter.render() + "\n\n" + nota_escalonada(title, lead) + "\n"
+                + "\n\n".join(cuerpo),
                 dry_run=False,
             )[0],
             campos=("bug_id",),

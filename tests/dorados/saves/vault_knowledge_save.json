@@ -22,5 +22,5 @@
     },
     "written": "<BEST-EFFORT>"
   },
-  "nota": "---\ntitle: Un concepto con acentuación\nid: <UUID>\ntype: knowledge\ncategory: concept\nstatus: draft\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ncia_integrity: medium\ncia_availability: medium\ncia_sensitivity: internal\nagent: system\n---\n\n# Un concepto con acentuación\n\nUna línea.\nOtra línea.\nY una tercera con palabras."
+  "nota": "---\ntitle: Un concepto con acentuación\nid: <UUID>\ntype: knowledge\ncategory: concept\nstatus: draft\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ncia_integrity: medium\ncia_availability: medium\ncia_sensitivity: internal\nagent: system\n---\n\n# Un concepto con acentuación\n\nUn concepto con acentuación es una nota de conocimiento de categoría concept. Esta nota se guardó con `vault_knowledge_save` y vive en la sección de conocimiento del vault.\n\nUna línea.\nOtra línea.\nY una tercera con palabras."
 }

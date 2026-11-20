@@ -47,6 +47,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
+from vault.kernel.contenido import nota_escalonada  # noqa: E402
 
 QA_TYPES = ["test-plan", "qa-metrics", "qa-report", "qa-strategy", "coverage-report"]
 
@@ -192,7 +193,12 @@ def vault_qa_save(
         )
         body_sections.append(f"## Estado\n\n**Estado:** {status_line}")
 
-        final_content = frontmatter.render() + "\n\n" + "\n\n".join(body_sections)
+        # nota-escalonada S4: a QA document is an event record; it names its
+        # parent, the project card. CN-04: it opens with its title.
+        lead = (f"Documento de QA de tipo {qa_type} del proyecto "
+                f"{_proyectos.enlace_a_ficha(project)}, en estado `{status}`.")
+        final_content = (frontmatter.render() + "\n\n" + nota_escalonada(title, lead)
+                         + "\n" + "\n\n".join(body_sections))
         note_path.parent.mkdir(parents=True, exist_ok=True)
         atomic_write_text(note_path, final_content)
 

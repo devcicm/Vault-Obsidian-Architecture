@@ -17,7 +17,7 @@ import yaml
 
 from .frontmatter import Frontmatter, firmante
 from ..kernel.bloqueo import adquirir, rutas_de_lock, soltar
-from ..kernel.contenido import con_titulo
+from ..kernel.contenido import abre_con_h1, con_titulo, nota_escalonada, profundidad_de_nota
 from ..kernel.errores import construir_error
 from ..kernel.escritura import escritura_atomica
 from ..kernel.frontmatter_escritura import conservar_nota_generada
@@ -140,7 +140,26 @@ def _render(category: str, title: str, content: str, project: Optional[str],
     if related and category not in ("dependency", "framework"):
         body += "\n\n## Relacionado\n\n" + " ".join(f"[[{item}]]" for item in related)
     # CN-04: la nota abre con su título como H1 (el dueño no duplica uno que ya esté).
-    return frontmatter.render() + "\n\n" + con_titulo(title, body)
+    titulado = con_titulo(title, body)
+    if profundidad_de_nota(titulado)["tiene_lead"]:
+        return frontmatter.render() + "\n\n" + titulado
+    # nota-escalonada S4: content that does not open with a lead of its own
+    # gets one built from the arguments of the save, between its H1 and the
+    # content; the content itself is kept as it came.
+    lead = f"{title} es una nota de conocimiento de categoría {category}"
+    if project:
+        lead += f" del proyecto {project}"
+    lead += (". Esta nota se guardó con `vault_knowledge_save` y vive en la sección "
+             "de conocimiento del vault")
+    lead += (f"; se relaciona con {len(related)} notas, enlazadas en Relacionado."
+             if related and category not in ("dependency", "framework") else ".")
+    cabeza = nota_escalonada("", lead).strip()
+    primera, _, resto = titulado.lstrip("\n").partition("\n")
+    if abre_con_h1(primera):
+        titulado = primera + "\n\n" + cabeza + "\n\n" + resto.lstrip("\n")
+    else:
+        titulado = cabeza + "\n\n" + titulado.lstrip("\n")
+    return frontmatter.render() + "\n\n" + titulado
 
 
 def guardar_conocimiento(

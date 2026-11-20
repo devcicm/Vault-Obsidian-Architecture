@@ -41,6 +41,8 @@ from vault_norms_catalog import compute_norm_refs
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
+from vault.kernel.contenido import nota_escalonada  # noqa: E402
+from vault.kernel.proyectos import enlace_a_ficha  # noqa: E402
 
 FOLDER = "02_Observability/slos"
 
@@ -212,8 +214,10 @@ def vault_slo_save(
     if percentile:
         slo_label = f"{slo_type} {percentile} {direction} {target}{unit}"
 
-    body = f"""# SLO: {service} — {slo_info["label"]}
-
+    # nota-escalonada S4: an SLO is an event record; it names its parent.
+    lead = (f"Objetivo de nivel de servicio de `{service}` en el proyecto "
+            f"{enlace_a_ficha(project)}: `{slo_label}`.")
+    body = nota_escalonada(f"SLO: {service} — {slo_info['label']}", lead) + f"""
 > {slo_info["description"]}
 > {slo_info["iso_ref"]} — {slo_info["iso_char"]}
 > ISO 20000-1:2018 §8.3 — Service level management

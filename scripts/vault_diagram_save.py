@@ -69,7 +69,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
-from vault.kernel.contenido import con_titulo  # noqa: E402
+from vault.kernel.contenido import nota_escalonada  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
@@ -217,7 +217,15 @@ def vault_diagram_save(
     else:
         body_sections.append(f"```\n{content}\n```")
 
-    final_content = frontmatter.render() + "\n\n" + con_titulo(title, "\n\n".join(body_sections))
+    # nota-escalonada S4: the lead says what the diagram is from the
+    # arguments it received; what it was not given stays pending.
+    lead = (f"{title} es un diagrama {diagram_type} de la categoría {category} "
+            f"del proyecto {project}. Se dibuja en la sección Diagrama de esta nota, "
+            "que se generó con `vault_diagram_save` en la sección de diagramas del vault.")
+    falta = None if description else (
+        "falta una descripción de qué explica el diagrama (`--description`)")
+    final_content = (frontmatter.render() + "\n\n" + nota_escalonada(title, lead, falta=falta)
+                     + "\n" + "\n\n".join(body_sections))
 
     if diagram_type == "mermaid":
         # Guard de pre-escritura AP-25: no se persiste un diagrama que el

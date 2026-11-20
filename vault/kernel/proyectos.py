@@ -40,6 +40,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Dict, Iterable, List, Mapping, Optional, Set, Tuple
 
+from .contenido import nota_escalonada
 from .errores import envelope_de_fallo
 from .escritura import escritura_atomica
 from .fallos import FalloDeDominio
@@ -410,13 +411,39 @@ def ficha_nueva(slug: str, titulo: str, alias: List[str], status: str, *,
     for campo, valor in cia.items():
         fm.set(campo, valor, texto=True)
     fm.set("agent", agente, texto=True)
+    # nota-escalonada S4: the card is the parent every event record links
+    # (`enlace_a_ficha`), so it opens with what the project is, from the facts
+    # of the registration; what the registry does not know stays pending.
+    lead = (f"{titulo} es un proyecto registrado en este vault con el slug `{slug}`, "
+            f"en estado `{status}`.")
+    if alias:
+        lead += " También se le nombra " + ", ".join(f"`{a}`" for a in alias) + "."
+    lead += (f" Las notas que declaran `project: {slug}` le pertenecen, y esta ficha "
+             "es su entrada en el registro de proyectos.")
+    cabeza = nota_escalonada(
+        titulo, lead,
+        falta="la ficha no dice todavía qué hace el proyecto; su vista general "
+              "la escribe `vault_project_overview`")
     return (
         fm.render()
-        + f"\n\n# {titulo}\n\n"
+        + "\n\n" + cabeza + "\n"
         + "Ficha del proyecto en el registro (AP-63). La ruta local del "
         + "repositorio no va aquí: es de cada máquina y vive en "
         + "`00_System/.local/project-paths.json`, fuera de git.\n"
     )
+
+
+def enlace_a_ficha(proyecto: str) -> str:
+    """The wikilink an event record uses to name its parent: the project card.
+
+    nota-escalonada S4: a short record (a bug, an incident, a risk) is only
+    readable without context if it says which note it belongs to. The card
+    is the note every registered project has (`registrar_en` writes it), and
+    the link goes in path form because every card is called `project.md`: a
+    bare `[[project]]` is ambiguous as soon as the vault has two projects.
+    """
+    slug = slugify_strict(proyecto or "")
+    return f"[[{CARPETA_PROYECTOS}/{slug}/{Path(FICHA).stem}|{slug}]]"
 
 
 def registrar_en(

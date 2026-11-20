@@ -55,7 +55,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
-from vault.kernel.contenido import con_titulo  # noqa: E402
+from vault.kernel.contenido import nota_escalonada  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
@@ -293,7 +293,15 @@ def vault_test_save(
 
         body_sections.append(f"## Estado\n\n**Estado:** {status_line}")
 
-        final_content = frontmatter.render() + "\n\n" + con_titulo(title, "\n\n".join(body_sections))
+        # nota-escalonada S4: the lead says what the test is from its arguments.
+        lead = f"{title} es una prueba {test_type} del proyecto {project}, en estado {status}."
+        if related_requirement:
+            lead += f" Verifica el requisito `{related_requirement}`."
+        lead += " Esta nota se generó con `vault_test_save` y vive en la sección de pruebas del vault."
+        falta = None if (steps or expected_result) else (
+            "faltan los pasos o el resultado esperado de la prueba (`--steps`, `--expected_result`)")
+        final_content = (frontmatter.render() + "\n\n" + nota_escalonada(title, lead, falta=falta)
+                         + "\n" + "\n\n".join(body_sections))
 
         note_path.parent.mkdir(parents=True, exist_ok=True)
 

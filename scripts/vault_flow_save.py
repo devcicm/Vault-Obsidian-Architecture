@@ -57,7 +57,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
-from vault.kernel.contenido import con_titulo  # noqa: E402
+from vault.kernel.contenido import nota_escalonada  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
@@ -228,7 +228,14 @@ def vault_flow_save(
 
         body.append("\n".join(step_rows))
 
-    final_content = frontmatter.render() + "\n\n" + con_titulo(name, "\n\n".join(body))
+    # nota-escalonada S4: the lead says what the flow is from its arguments.
+    lead = f"{name} es un flujo de tipo {flow_type} del proyecto {project}"
+    if steps:
+        lead += f", en {len(steps)} pasos" if len(steps) != 1 else ", en un paso"
+    lead += (". Su diagrama Mermaid está en la sección Diagrama de esta nota, que se "
+             "generó con `vault_flow_save` en la sección de flujos del vault.")
+    final_content = (frontmatter.render() + "\n\n" + nota_escalonada(name, lead)
+                     + "\n" + "\n\n".join(body))
 
     flow_dir.mkdir(parents=True, exist_ok=True)
 

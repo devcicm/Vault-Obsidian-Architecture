@@ -17,7 +17,7 @@ import uuid
 import re
 import sys
 from vault_errors import wrap_main, proyecto_registrado
-from vault_lib import utcnow, slugify
+from vault_lib import utcnow, slugify, slugify_strict
 from vault_lib import parse_frontmatter
 from vault_lib import separar_frontmatter
 from pathlib import Path
@@ -32,6 +32,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
+from vault.kernel.contenido import nota_escalonada  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 from vault.autoria.frontmatter import firmante as _agente  # noqa: E402
 
@@ -212,6 +213,9 @@ def vault_project_overview(
         .set("createdAt", timestamp)
         .set("updatedAt", timestamp)
         .set("tags", [safe_project, "project", "overview"])
+        # The alias vault_onboard writes and its records link ([[<slug>-overview]]):
+        # rebuilt without it, a refresh broke every one of those links.
+        .set("aliases", [f"{slugify_strict(project)}-overview"])
         .set("cia_integrity", "medium")
         .set("cia_availability", "medium")
         .set("cia_sensitivity", "internal")
@@ -220,7 +224,16 @@ def vault_project_overview(
         .render()
     ]
 
-    body_sections = [f"# Overview: {project}\n"]
+    # nota-escalonada S4: the lead says what the overview is and what it
+    # gathers, counted from the notes it collected; a project without a
+    # description says so instead of inventing one.
+    lead = (f"{project} es un proyecto del vault y esta nota es su vista general, que "
+            "`vault_project_overview` regenera a partir de las notas que lo citan. "
+            f"Hoy reúne {len(dependencies)} dependencias, {len(frameworks)} frameworks, "
+            f"{len(decisions)} decisiones de arquitectura y {len(patterns)} patrones.")
+    falta = None if final_description else (
+        "falta una descripción de qué hace el proyecto (`--description`)")
+    body_sections = [nota_escalonada(f"Overview: {project}", lead, falta=falta)]
 
     if final_description:
         body_sections.append(f"## Descripción\n\n{final_description}\n")

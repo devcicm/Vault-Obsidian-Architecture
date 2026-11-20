@@ -172,7 +172,7 @@ rojo, y una puerta en rojo se desactiva.
 | **CN-01** — Kebab-case filenames — nombres de archivo en minúsculas con guiones | guard | — | `test_ap46_escritores_migrados.py`, `test_cn01_cn04_audit_informativo.py`, `test_cn04_escritores_con_titulo.py`, `test_karpathy_adaptador.py`, `test_meta_contrato.py`, `test_vault_norms.py` |
 | **CN-02** — Numbered folder structure — secciones numeradas como únicos destinos | guard+audit | `framework` | `test_blueprint.py`, `test_fix_brackets_ruta.py`, `test_raiz_no_seccion.py`, `test_vault_norms.py`, `test_vault_norms_audit.py` |
 | **CN-03** — Standard status vocabulary — vocabulario canónico de meta.status | audit | `framework` | `test_calidad_no_castiga_el_vocabulario_canonico.py`, `test_norms_coherence.py`, `test_vault_norms.py`, `test_vault_norms_audit.py`, `test_vault_sanacion.py` |
-| **CN-04** — Note opens with its title — la nota abre con su título como H1 | guard | — | `test_cn01_cn04_audit_informativo.py`, `test_cn04_escritores_con_titulo.py`, `test_cn04_nota_abre_con_titulo.py` |
+| **CN-04** — Note opens with its title — la nota abre con su título como H1 | guard | — | `test_cn01_cn04_audit_informativo.py`, `test_cn04_escritores_con_titulo.py`, `test_cn04_nota_abre_con_titulo.py`, `test_saves_escalonados.py` |
 | **CN-05** — One body, one owner — un cuerpo, un dueño | guard | `clones` | — |
 
 ## Capa 5 — Tools → grupos → contrato

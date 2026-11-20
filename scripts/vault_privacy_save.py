@@ -46,6 +46,7 @@ from vault_norms_catalog import compute_norm_refs, status_frontmatter_lines
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
+from vault.kernel.contenido import nota_escalonada  # noqa: E402
 
 FOLDER = "09_Infrastructure/privacy"
 
@@ -192,8 +193,20 @@ def vault_privacy_save(
         else "No requerida (verificar si aplica)"
     )
 
-    body = f"""# Tratamiento de datos: {title}
-
+    # nota-escalonada S4: the lead says what the processing is from its
+    # arguments; what the record of processing lacks stays pending.
+    lead = (f"{title} es un tratamiento de datos personales del proyecto {project}, "
+            f"con el propósito «{purpose}» y la base legal `{legal_basis}`. Esta nota es "
+            "su registro de actividades de tratamiento (GDPR Art. 30) y se generó con "
+            "`vault_privacy_save`")
+    lead += ("; exige una evaluación de impacto (DPIA) antes de procesar datos."
+             if dpia_required else ".")
+    faltan = [texto for dato, texto in (
+        (pii_categories, "las categorías de datos personales (`--pii_categories`)"),
+        (data_subjects, "los interesados (`--data_subjects`)"),
+        (retention_period, "el plazo de retención (`--retention_period`)")) if not dato]
+    falta = ("faltan " + ", ".join(faltan)) if faltan else None
+    body = nota_escalonada(f"Tratamiento de datos: {title}", lead, falta=falta) + f"""
 > ISO/IEC 27701:2019 — Privacy Information Management System
 > GDPR Art. 30 — Registro de actividades de tratamiento
 > {("GDPR Art. 35 — DPIA requerida" if dpia_required else "GDPR Art. 35 — DPIA no aplicable")}

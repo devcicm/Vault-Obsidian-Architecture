@@ -550,7 +550,19 @@ def _build_note(
         .render()
     ]
 
-    body = [f"# {title}", "", chunk["body"].strip(), ""]
+    cuerpo_fuente = chunk["body"].strip()
+    # Nota escalonada (U3): an auditor without context reads first what the
+    # note is, where it came from and that it still needs review. Built only
+    # from what this call knows; a source that opens with its own lead keeps it.
+    from vault.kernel.contenido import nota_escalonada, profundidad_de_nota
+
+    entrada: List[str] = []
+    if not profundidad_de_nota(cuerpo_fuente)["tiene_lead"]:
+        lead = (f"{title} es una nota ingerida en {rel_folder} desde una fuente "
+                f"`{origin}`, en estado `draft`. Su contenido es el texto de la fuente "
+                "tal como llegó y requiere revisión antes de darse por válido.")
+        entrada = [nota_escalonada("", lead).strip(), ""]
+    body = [f"# {title}", "", *entrada, cuerpo_fuente, ""]
     if citadas is not None:
         body += ["## Notas del paquete", ""] + [f"- {_wikilink_de(c)}" for c in citadas] + [""]
     elif related:

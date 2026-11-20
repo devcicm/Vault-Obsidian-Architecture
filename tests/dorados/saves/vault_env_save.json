@@ -13,5 +13,5 @@
     "varCount": 1,
     "written": "<BEST-EFFORT>"
   },
-  "nota": "---\ntitle: Environment Variables - demo\nproject: demo\ntype: envs\nupdatedAt: <FECHA>\ncia_integrity: high\ncia_availability: medium\ncia_sensitivity: restricted\nagent: system\n---\n\n# Environment Variables: demo\n\n## staging\n\n| Nombre | Descripción | Requerida | Default | Sensible | Proveedor |\n|---|---|---|---|---|---|\n| `API_URL` | Dirección del servicio | ✓ | 🔒 (secreto) | -- | env-file |\n\n"
+  "nota": "---\ntitle: Environment Variables - demo\nproject: demo\ntype: envs\nupdatedAt: <FECHA>\ncia_integrity: high\ncia_availability: medium\ncia_sensitivity: restricted\nagent: system\n---\n\n# Environment Variables: demo\n\nVariables de entorno del proyecto demo: una variable en un entorno (staging). Cada tabla dice para qué sirve cada variable, si es obligatoria, si es sensible y quién la provee.\n\n## staging\n\n| Nombre | Descripción | Requerida | Default | Sensible | Proveedor |\n|---|---|---|---|---|---|\n| `API_URL` | Dirección del servicio | ✓ | 🔒 (secreto) | -- | env-file |\n\n"
 }

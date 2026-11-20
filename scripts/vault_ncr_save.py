@@ -46,6 +46,8 @@ from vault_norms_catalog import compute_norm_refs, status_frontmatter_lines
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
+from vault.kernel.contenido import nota_escalonada  # noqa: E402
+from vault.kernel.proyectos import enlace_a_ficha  # noqa: E402
 
 FOLDER = "02_Observability/quality"
 
@@ -161,8 +163,10 @@ def vault_ncr_save(
         or "— Sin acciones correctivas definidas aún"
     )
 
-    body = f"""# NCR: {title}
-
+    # nota-escalonada S4: a nonconformity is an event record; it names its parent.
+    lead = (f"No conformidad {ncr_id} de severidad {severity} del proyecto "
+            f"{enlace_a_ficha(project)}, en estado `{status}`.")
+    body = nota_escalonada(f"NCR: {title}", lead) + f"""
 > **{ncr_id}** | {severity.upper()} — {SEVERITY_LEVELS[severity][:60]}
 > ISO 9001:2015 §10.2 — Nonconformity and corrective action
 

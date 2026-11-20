@@ -78,9 +78,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 from vault.kernel.contenido import (  # noqa: E402
-    con_titulo,
     estado_de_evaluacion as _estado_de_evaluacion,
     niveles_de_impacto_exigidos,
+    nota_escalonada,
 )
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 from vault.autoria.frontmatter import firmante as _agente  # noqa: E402
@@ -410,7 +410,12 @@ def vault_ai_decision(
         )
 
         # CN-04: la decisión abre con su título, antes de la línea de metadatos.
-        final_content = "\n".join(frontmatter) + "\n\n" + con_titulo(title, "\n\n".join(body_sections))
+        # nota-escalonada S4: an AI decision is an event record; it names its
+        # parent, the project card, before its metadata line.
+        lead = (f"Decisión de IA de tipo {decision_type} e impacto {impact_level} "
+                f"del proyecto {_proyectos.enlace_a_ficha(project)}.")
+        final_content = ("\n".join(frontmatter) + "\n\n" + nota_escalonada(title, lead)
+                         + "\n" + "\n\n".join(body_sections))
 
         note_path.parent.mkdir(parents=True, exist_ok=True)
 

@@ -51,7 +51,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
-from vault.kernel.contenido import con_titulo  # noqa: E402
+from vault.kernel.contenido import con_titulo, nota_escalonada  # noqa: E402
 from vault.kernel.frontmatter_escritura import conservar_nota_generada  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
@@ -438,7 +438,16 @@ def vault_infra_save(
 
         body_sections.append("\n".join(conn_content))
 
-    final_content = frontmatter.render() + "\n\n" + con_titulo(name, "\n\n".join(body_sections))
+    # nota-escalonada S4: the lead says what the component is from its arguments.
+    lead = f"{name} es un componente de infraestructura de tipo {type}"
+    if project:
+        lead += f" del proyecto {project}"
+    if location:
+        lead += f", ubicado en {location}"
+    lead += (". Su configuración está en esta nota, que se generó con `vault_infra_save` "
+             "en la sección de infraestructura del vault y alimenta su mapa de infraestructura.")
+    final_content = (frontmatter.render() + "\n\n" + nota_escalonada(name, lead)
+                     + "\n" + "\n\n".join(body_sections))
 
     folder.mkdir(parents=True, exist_ok=True)
 
