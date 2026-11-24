@@ -224,6 +224,20 @@ def speak(
     severity_order = severity_order if severity_order is not None else _orden_severidad_runtime()
     runtime_root = runtime_root if runtime_root is not None else _root_runtime()
     normas = norms_for_tool(tool, catalogo, severity_order)
+    # Separación de audiencias: una tool de consumidor que ya tiene normas de
+    # consumidor no debe mezclar normas internas del desarrollo del estándar.
+    from vault_norms_catalog import audiencia_de_norma
+
+    normas_consumidor = [
+        n for n in normas if audiencia_de_norma(n) == "consumidor"
+    ]
+    if normas_consumidor:
+        normas = normas_consumidor
+        catalogo_visible = [
+            n for n in catalogo if audiencia_de_norma(n) == "consumidor"
+        ]
+    else:
+        catalogo_visible = catalogo
     datos = payload if isinstance(payload, dict) else {}
     escritas = int((writes or {}).get("written", 0))
 
@@ -272,7 +286,7 @@ def speak(
         # es la consulta. La selección por relevancia es del modo normal.
         "norms": [_etiqueta(norma) for norma in (
             normas if _modo_voz() == "verbose" else normas_visibles(
-                normas, momento, foco, catalogo, tool))],
+                normas, momento, foco, catalogo_visible, tool))],
     }
     siguiente = _siguiente(momento, tool, foco)
     if siguiente:

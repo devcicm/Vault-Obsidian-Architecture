@@ -632,7 +632,7 @@ def documento() -> str:
     `docs/METRICAS.md`).
     """
     from vault_gate import PUERTAS
-    from vault_norms_catalog import NORM_CATALOG
+    from vault_norms_catalog import NORM_CATALOG, audiencia_de_norma
 
     # El propietario del estándar se deriva del banner del manifiesto: no se
     # escribe aquí — un dueño escrito a mano en un derivado es un dueño que se
@@ -659,12 +659,16 @@ def documento() -> str:
     )
 
     filas = trazabilidad()
-    normas_por_tipo: Dict[str, int] = {}
+    normas_por_familia: Dict[str, int] = {}
     normas_por_enforcement: Dict[str, int] = {}
+    normas_por_audiencia: Dict[str, int] = {"consumidor": 0, "interno_estandar": 0}
     for n in NORM_CATALOG:
-        normas_por_tipo[n["type"]] = normas_por_tipo.get(n["type"], 0) + 1
+        prefijo = str(n["code"]).split("-", 1)[0]
+        normas_por_familia[prefijo] = normas_por_familia.get(prefijo, 0) + 1
         normas_por_enforcement[n["enforcement"]] = (
             normas_por_enforcement.get(n["enforcement"], 0) + 1)
+        aud = audiencia_de_norma(n)
+        normas_por_audiencia[aud] = normas_por_audiencia.get(aud, 0) + 1
 
     from vault.meta_toolkit.naturalezas import NATURALEZAS
     from vault.meta_toolkit.protocolo_de_sesion import _tools_del_protocolo
@@ -705,22 +709,22 @@ def documento() -> str:
         "[docs/sdd/04-antipatterns.md](sdd/04-antipatterns.md).",
         "",
     ]
-    for prefijo, tipo, titulo, que in [
-        ("AP", "antipattern", "Anti-patrón",
+    for prefijo, titulo, que in [
+        ("AP", "Anti-patrón",
          "Un fallo con nombre, señal, prevención y límites. La unidad "
          "normativa principal."),
-        ("PAT", "pattern", "Patrón",
+        ("PAT", "Patrón",
          "La forma recomendada de resolver algo que el estándar ya resolvió "
          "mal una vez."),
-        ("SP", "session_protocol", "Protocolo de sesión",
+        ("SP", "Protocolo de sesión",
          "Reglas de proceso entre el agente y el vault durante una sesión."),
-        ("CN", "convention", "Convención",
+        ("CN", "Convención",
          "Un acuerdo de nomenclatura o forma que mantiene el vault legible y "
          "predecible."),
     ]:
         lineas.append(
             f"- **{prefijo}** · {titulo} — {que} "
-            f"({normas_por_tipo.get(tipo, 0)} vigentes).")
+            f"({normas_por_familia.get(prefijo, 0)} vigentes).")
     lineas += [
         "",
         "## La escalera de enforcement",
@@ -738,14 +742,17 @@ def documento() -> str:
         "",
         "## Qué es ley para quién",
         "",
-        "- **Para quien usa el vault**: las normas, aplicadas por las tools de "
-        "escritura y consulta — contrato de nota, vocabulario de estados, "
-        "protocolo de borrado.",
+        "- **Para quien usa el vault**: las "
+        f"{normas_por_audiencia.get('consumidor', 0)} normas de consumidor, "
+        "aplicadas por las tools de escritura y consulta — contrato de nota, "
+        "vocabulario de estados, protocolo de borrado y buenas prácticas.",
         # El criterio de «esto es documentación del estándar y no una nota»
         # tiene dueño (vault_audit_catalog); aquí no se re-enuncia: se le
         # pregunta, y el mapa publica lo que responde (AP-57).
         "- **Para quien mantiene este repositorio**: la gobernanza del "
-        "meta-toolkit — el conjunto de tools cuya naturaleza es "
+        f"meta-toolkit — las {normas_por_audiencia.get('interno_estandar', 0)} "
+        "normas internas del estándar (separadas por audiencia para no mezclarse "
+        "con la superficie del consumidor) y el conjunto de tools cuya naturaleza es "
         f"`meta_estandar` ({n_herramientas_meta}), que miden este repo y no "
         f"el vault de nadie, por las {len(PUERTAS)} puertas de "
         "`docs/PUERTAS.md`.",

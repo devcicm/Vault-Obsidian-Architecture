@@ -73,6 +73,32 @@ def _leer_norma(fichero: Path) -> Dict[str, Any]:
     raise ValueError(f"{fichero}: no declara NORMA")
 
 
+#: Audiencia de una norma: si gobierna vaults/proyectos de terceros
+#: (`consumidor`) o el desarrollo interno del propio toolkit (`interno_estandar`).
+AUDIENCIAS_NORMA = ("consumidor", "interno_estandar")
+
+#: Normas que regulan el desarrollo interno del propio repositorio del estándar
+#: (puertas del mantenedor). No se derogan: se separan por audiencia para que
+#: un tercero/consumidor no reciba ruido interno de desarrollo.
+NORMAS_INTERNAS_ESTANDAR = frozenset({
+    "AP-40", "AP-42", "AP-43", "AP-46", "AP-48", "AP-49", "AP-50",
+    "AP-51", "AP-52", "AP-53", "AP-54", "AP-55", "AP-57", "AP-58",
+    "AP-59", "AP-60", "AP-61", "AP-62", "AP-66", "AP-68", "AP-69",
+})
+
+
+def audiencia_de_norma(entrada: Any) -> str:
+    """Devuelve `'consumidor'` o `'interno_estandar'` para una norma o código."""
+    if isinstance(entrada, dict):
+        declarada = str(entrada.get("audiencia") or "").strip().lower()
+        if declarada in AUDIENCIAS_NORMA:
+            return declarada
+        codigo = str(entrada.get("code") or "").upper()
+    else:
+        codigo = str(entrada or "").upper()
+    return "interno_estandar" if codigo in NORMAS_INTERNAS_ESTANDAR else "consumidor"
+
+
 def _desde_paquete(code: str) -> Dict[str, Any]:
     """La entrada de `code`, leída de su paquete. Si falta, el import falla:
     un catálogo al que le falta una norma en silencio es peor que ninguno."""

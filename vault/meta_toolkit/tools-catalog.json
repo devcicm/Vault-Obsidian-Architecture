@@ -4517,6 +4517,15 @@
               "low"
             ]
           },
+          "audience": {
+            "type": "string",
+            "description": "Filtrar por audiencia: consumidor (terceros), interno_estandar (desarrollo del toolkit) o todas",
+            "enum": [
+              "todas",
+              "consumidor",
+              "interno_estandar"
+            ]
+          },
           "sort": {
             "type": "string",
             "description": "Ordenar por (default: code)",

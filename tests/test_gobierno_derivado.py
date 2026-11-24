@@ -32,11 +32,12 @@ def test_gobierno_declara_las_cifras_del_registro():
     """Las cifras del mapa salen de los registros, no de la mano."""
     doc = (RAIZ / "docs" / "GOBIERNO.md").read_text(encoding="utf-8")
     assert f"{len(NORM_CATALOG)} normas vivas" in doc
-    por_tipo = {}
+    por_familia = {}
     for n in NORM_CATALOG:
-        por_tipo[n["type"]] = por_tipo.get(n["type"], 0) + 1
-    for tipo, n in por_tipo.items():
-        assert f"({n} vigentes)" in doc, f"{tipo}: {n}"
+        fam = str(n["code"]).split("-", 1)[0]
+        por_familia[fam] = por_familia.get(fam, 0) + 1
+    for fam, n in por_familia.items():
+        assert f"({n} vigentes)" in doc, f"{fam}: {n}"
 
 
 def test_gobierno_distingue_ley_de_mantenimiento():

@@ -71,7 +71,10 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 # en vez de borrarse, porque quitarlo rompería a 26 módulos sin que nada en este
 # fichero lo notara.
 from vault_norms_catalog import (  # noqa: F401
+    AUDIENCIAS_NORMA,
+    NORMAS_INTERNAS_ESTANDAR,
     VINETA_VACIA,
+    audiencia_de_norma,
     vinetas_de_lista,
     _NORM_BY_CODE,
     DOMAIN_STATUS_VOCABS,
@@ -115,9 +118,14 @@ def vault_norms_list(
     category: Optional[str] = None,
     severity: Optional[str] = None,
     sort_by: str = "code",
+    audience: Optional[str] = None,
 ) -> Dict[str, Any]:
     """List norms with optional filters."""
     norms = list(NORM_CATALOG)
+
+    if audience and audience.lower() in AUDIENCIAS_NORMA:
+        aud = audience.lower()
+        norms = [n for n in norms if audiencia_de_norma(n) == aud]
 
     if norm_type:
         t = norm_type.lower()
@@ -142,7 +150,10 @@ def vault_norms_list(
         norms.sort(key=lambda n: n["code"])
 
     rows = []
+    por_audiencia = {"consumidor": 0, "interno_estandar": 0}
     for n in norms:
+        aud = audiencia_de_norma(n)
+        por_audiencia[aud] = por_audiencia.get(aud, 0) + 1
         rows.append(
             {
                 "code": n["code"],
@@ -151,12 +162,14 @@ def vault_norms_list(
                 "category": n["category"],
                 "severity": n["severity"],
                 "enforcement": n["enforcement"],
+                "audience": aud,
             }
         )
 
     return {
         "ok": True,
         "total": len(rows),
+        "by_audience": por_audiencia,
         "norms": rows,
     }
 
@@ -627,6 +640,12 @@ Ejemplos:
         help="Filtrar por severidad",
     )
     parser.add_argument(
+        "--audience", "--audiencia",
+        dest="audience",
+        choices=["todas", "consumidor", "interno_estandar"],
+        help="Filtrar por audiencia: consumidor (terceros), interno_estandar (desarrollo del toolkit) o todas",
+    )
+    parser.add_argument(
         "--sort",
         choices=["code", "severity", "category", "enforcement"],
         default="code",
@@ -685,6 +704,7 @@ Ejemplos:
             category=args.category,
             severity=args.severity,
             sort_by=args.sort,
+            audience=args.audience,
         )
     else:
         parser.print_help()

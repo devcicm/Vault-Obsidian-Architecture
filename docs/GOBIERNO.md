@@ -12,10 +12,10 @@ _Derivado de los registros canónicos. Se regenera con `python scripts/vault_ser
 
 97 normas vivas, cada una un paquete en `normas/<código>/`. El catálogo derivado completo está en [docs/sdd/04-antipatterns.md](sdd/04-antipatterns.md).
 
-- **AP** · Anti-patrón — Un fallo con nombre, señal, prevención y límites. La unidad normativa principal. (88 vigentes).
+- **AP** · Anti-patrón — Un fallo con nombre, señal, prevención y límites. La unidad normativa principal. (79 vigentes).
 - **PAT** · Patrón — La forma recomendada de resolver algo que el estándar ya resolvió mal una vez. (9 vigentes).
-- **SP** · Protocolo de sesión — Reglas de proceso entre el agente y el vault durante una sesión. (0 vigentes).
-- **CN** · Convención — Un acuerdo de nomenclatura o forma que mantiene el vault legible y predecible. (0 vigentes).
+- **SP** · Protocolo de sesión — Reglas de proceso entre el agente y el vault durante una sesión. (4 vigentes).
+- **CN** · Convención — Un acuerdo de nomenclatura o forma que mantiene el vault legible y predecible. (5 vigentes).
 
 ## La escalera de enforcement
 
@@ -26,8 +26,8 @@ _Derivado de los registros canónicos. Se regenera con `python scripts/vault_ser
 
 ## Qué es ley para quién
 
-- **Para quien usa el vault**: las normas, aplicadas por las tools de escritura y consulta — contrato de nota, vocabulario de estados, protocolo de borrado.
-- **Para quien mantiene este repositorio**: la gobernanza del meta-toolkit — el conjunto de tools cuya naturaleza es `meta_estandar` (30), que miden este repo y no el vault de nadie, por las 29 puertas de `docs/PUERTAS.md`.
+- **Para quien usa el vault**: las 76 normas de consumidor, aplicadas por las tools de escritura y consulta — contrato de nota, vocabulario de estados, protocolo de borrado y buenas prácticas.
+- **Para quien mantiene este repositorio**: la gobernanza del meta-toolkit — las 21 normas internas del estándar (separadas por audiencia para no mezclarse con la superficie del consumidor) y el conjunto de tools cuya naturaleza es `meta_estandar` (30), que miden este repo y no el vault de nadie, por las 29 puertas de `docs/PUERTAS.md`.
 
 ## La superficie que ve el agente por MCP
 

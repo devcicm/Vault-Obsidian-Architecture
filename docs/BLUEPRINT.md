@@ -77,11 +77,11 @@ rojo, y una puerta en rojo se desactiva.
 
 | Norma | Enforcement | Puertas | Tests |
 |---|---|---|---|
-| **AP-01** — Documentación alucinada | audit | — | `test_ap01_codigo_inexistente.py`, `test_ap01_prosa.py`, `test_ap40_42_43_estados.py`, `test_ap46_editores.py`, `test_cifras_de_normas_y_cli_groups.py`, `test_norms_coherence.py`, `test_parte_a_normas.py`, `test_skills_catalogo.py`, `test_skills_contract.py`, `test_voz_solo_normas_relevantes.py` |
+| **AP-01** — Documentación alucinada | audit | — | `test_ap01_codigo_inexistente.py`, `test_ap01_prosa.py`, `test_ap40_42_43_estados.py`, `test_ap46_editores.py`, `test_audiencia_normas_fase_m0.py`, `test_cifras_de_normas_y_cli_groups.py`, `test_norms_coherence.py`, `test_parte_a_normas.py`, `test_skills_catalogo.py`, `test_skills_contract.py`, `test_voz_solo_normas_relevantes.py` |
 | **AP-02** — Proliferación de versiones del mismo documento | audit | — | `test_ap02_versiones_misma_carpeta.py`, `test_norms_coherence.py`, `test_skills_contract.py` |
 | **AP-03** — Stubs sin política de expansión | audit | — | `test_normas_de_audit_ejercitadas.py`, `test_pat2_stub_con_plazo.py` |
 | **AP-04** — Features aspiracionales documentadas como implementadas | audit | — | `test_parte_a_normas.py` |
-| **AP-05** — Múltiples fuentes de verdad para el mismo dato | audit | `fuente_unica` | `test_ap05_fuente_unica.py`, `test_ap46_editores.py`, `test_blueprint.py`, `test_js_native_frontera.py`, `test_norms_coherence.py` |
+| **AP-05** — Múltiples fuentes de verdad para el mismo dato | audit | `fuente_unica` | `test_ap05_fuente_unica.py`, `test_ap46_editores.py`, `test_audiencia_normas_fase_m0.py`, `test_blueprint.py`, `test_js_native_frontera.py`, `test_norms_coherence.py` |
 | **AP-06** — Templates sin instancias reales | audit | `framework` | — |
 | **AP-07** — ADRs incompletos | guard+audit | `framework` | `test_ap07_criterio_adr.py`, `test_ap64_responsable.py`, `test_parte_a_normas.py`, `test_vault_norms_audit.py` |
 | **AP-08** — Documentación anclada a versiones obsoletas | audit | — | `test_ap08_version_pinned.py`, `test_ap08_vigencia.py`, `test_parte_a_normas.py` |
@@ -99,7 +99,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-20** — Deceptive skeleton (empty-list) | guard | — | `test_ap20_esqueleto_de_lista.py` |
 | **AP-21** — Path-anchored wiki-links | guard+audit | — | `test_ap21_dentro_de_fence.py`, `test_ap21_ruta_necesaria.py`, `test_flujo_recuperaciones.py`, `test_normas_caras.py`, `test_normas_enlaces_sin_solape.py`, `test_vault_regex.py` |
 | **AP-22** — Wiki-link vacío — [[]] sin destino | guard+audit | — | `test_normas_caras.py`, `test_normas_enlaces_sin_solape.py`, `test_norms_coherence.py`, `test_vault_regex.py` |
-| **PAT-1** — Canonical source anchoring | recommended | — | `test_norms_coherence.py` |
+| **PAT-1** — Canonical source anchoring | recommended | — | `test_audiencia_normas_fase_m0.py`, `test_norms_coherence.py` |
 | **PAT-2** — Stub enrichment gradient | recommended | — | `test_pat2_stub_con_plazo.py` |
 | **PAT-3** — Duplicate chain resolution | recommended | — | `test_capa4_audit_ejercitada.py` |
 | **PAT-4** — Phased audit execution | recommended | — | `test_capa4_audit_ejercitada.py` |
@@ -122,24 +122,24 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-38** — Vocabulario validado después de escribir, no antes | guard+audit | `framework` | `test_status_vocabulary.py` |
 | **AP-39** — Vocabulario abierto sin memoria | guard+audit | `framework` | `test_ap39_registro_en_el_write_path.py`, `test_politica_certificacion_compuesta.py`, `test_tag_vocabulary.py`, `test_vault_init.py` |
 | **AP-40** — Contrato publicado que la CLI rechaza | guard+audit | `contratos`, `framework` | `test_ap40_42_43_estados.py`, `test_catalog_params.py`, `test_fase2_paridad_fail_closed.py`, `test_puerto_controles.py`, `test_vocabulario_de_controles.py` |
-| **AP-41** — Máquina de estados declarada sin verificar | guard+audit | `framework` | `test_flujo_requisitos.py`, `test_status_machine.py`, `test_voice.py` |
+| **AP-41** — Máquina de estados declarada sin verificar | guard+audit | `framework` | `test_audiencia_normas_fase_m0.py`, `test_flujo_requisitos.py`, `test_status_machine.py`, `test_voice.py` |
 | **AP-42** — Tool publicada sin haberse ejecutado nunca | guard+audit | `framework` | `test_ap40_42_43_estados.py`, `test_fase2_politica_qg.py`, `test_politica_certificacion_compuesta.py`, `test_puerto_controles.py`, `test_smoke.py`, `test_vault_norms_audit.py`, `test_vault_toolkit_audit.py`, `test_vocabulario_de_controles.py` |
 | **AP-43** — Norma sin refuerzo en el punto de uso | guard+audit | `framework` | `test_ap39_registro_en_el_write_path.py`, `test_ap40_42_43_estados.py`, `test_puerto_controles.py`, `test_vault_norms_audit.py`, `test_vocabulario_de_controles.py`, `test_voice.py` |
 | **AP-44** — Verificación autoconsistente — la tool se certifica a sí misma | guard+audit | `framework` | `test_ap44_verificacion_autoconsistente.py`, `test_changelog_check.py`, `test_kernel.py`, `test_norms_coherence.py`, `test_procesos_git.py`, `test_puente_sin_hogar.py` |
-| **AP-45** — Cobertura sin evidencia — la nota existe para llenar la sección | guard+audit | `framework` | `test_ap45_cobertura_sin_evidencia.py`, `test_patrones_diseno_detector.py` |
-| **AP-46** — Frontmatter a mano — cada tool es su propio escritor | guard+audit | `framework` | `test_ap46_escritores_migrados.py`, `test_ap46_interpolacion_cruda.py`, `test_ap46_write_path_unico.py`, `test_norms_coherence.py`, `test_vault_sanacion.py` |
+| **AP-45** — Cobertura sin evidencia — la nota existe para llenar la sección | guard+audit | `framework` | `test_ap45_cobertura_sin_evidencia.py`, `test_audiencia_normas_fase_m0.py`, `test_patrones_diseno_detector.py` |
+| **AP-46** — Frontmatter a mano — cada tool es su propio escritor | guard+audit | `framework` | `test_ap46_escritores_migrados.py`, `test_ap46_interpolacion_cruda.py`, `test_ap46_write_path_unico.py`, `test_audiencia_normas_fase_m0.py`, `test_norms_coherence.py`, `test_vault_sanacion.py` |
 | **AP-47** — Artefacto derivado desfasado — el índice dejó de reflejar el disco | guard+audit | `framework` | `test_ap47_indice_refleja_disco.py`, `test_audit_acciones_de_movimiento.py`, `test_delete_no_borra_derivados.py`, `test_grafo_refresco.py`, `test_sanadores_sin_lote.py` |
-| **AP-48** — Implementación paralela por camino de acceso | guard+audit | `contratos` | `test_ap48_implementacion_paralela.py`, `test_mcp_concurrencia_cqrs.py`, `test_voice.py` |
-| **AP-49** — Vínculo resuelto en tiempo de import | guard+audit | `arquitectura` | `test_arquitectura.py`, `test_durabilidad_dominio.py` |
+| **AP-48** — Implementación paralela por camino de acceso | guard+audit | `contratos` | `test_ap48_implementacion_paralela.py`, `test_audiencia_normas_fase_m0.py`, `test_mcp_concurrencia_cqrs.py`, `test_voice.py` |
+| **AP-49** — Vínculo resuelto en tiempo de import | guard+audit | `arquitectura` | `test_arquitectura.py`, `test_audiencia_normas_fase_m0.py`, `test_durabilidad_dominio.py` |
 | **AP-50** — Decisión duplicada sin dueño declarado | guard+audit | `arquitectura` | `test_ap57_criterios.py`, `test_norms_coherence.py` |
 | **AP-51** — La tool culpa al dato de su propio fallo | guard+audit | `blame` | `test_ap51_culpar_al_dato.py`, `test_baseline.py` |
-| **AP-52** — El error se emite fuera del contrato del catalogo | guard+audit | `contrato_error` | `test_ap52_contrato_de_error.py`, `test_regla7_contraste_ajeno.py` |
+| **AP-52** — El error se emite fuera del contrato del catalogo | guard+audit | `contrato_error` | `test_ap52_contrato_de_error.py`, `test_audiencia_normas_fase_m0.py`, `test_regla7_contraste_ajeno.py` |
 | **AP-53** — El historial se afirma a mano y nadie lo contrasta con git | guard | `changelog` | `test_changelog_check.py` |
 | **AP-54** — El lock falla y se escribe igual | guard | `arquitectura` | `test_lock_reentrante.py` |
-| **AP-55** — El catálogo de normas se certifica a sí mismo | guard+audit | `norms_coherence` | `test_norms_coherence.py` |
+| **AP-55** — El catálogo de normas se certifica a sí mismo | guard+audit | `norms_coherence` | `test_audiencia_normas_fase_m0.py`, `test_norms_coherence.py` |
 | **AP-56** — Frontmatter presente que el consumidor no puede leer | guard+audit | — | `test_ap56_frontmatter_heal.py`, `test_disparos_de_revision.py` |
-| **AP-57** — Criterio con dueño, reimplementado en la medida | guard | `criterios` | `test_ap57_criterios.py`, `test_criterios_fronteras.py`, `test_grafo_import.py` |
-| **AP-58** — Ciclo esquivado con un import diferido | guard | `ciclos` | `test_ciclos.py` |
+| **AP-57** — Criterio con dueño, reimplementado en la medida | guard | `criterios` | `test_ap57_criterios.py`, `test_audiencia_normas_fase_m0.py`, `test_criterios_fronteras.py`, `test_grafo_import.py` |
+| **AP-58** — Ciclo esquivado con un import diferido | guard | `ciclos` | `test_audiencia_normas_fase_m0.py`, `test_ciclos.py` |
 | **AP-59** — Núcleo declarado sin contraste | guard+audit | `kernel` | `test_kernel.py` |
 | **AP-60** — El guard cobra por declarar y regala el silencio | guard+audit | `norms_coherence` | `test_ap08_prosa_universo.py`, `test_noop_audit.py`, `test_norms_coherence.py` |
 | **AP-61** — El guard cae con el dato que vino a medir | guard+audit | `excepcion_declarada` | `test_excepcion_declarada.py` |
@@ -149,27 +149,27 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-65** — Decisión de IA de impacto alto sin evaluación de impacto | audit | `framework` | `test_iso42005_impacto.py`, `test_normas_caras.py`, `test_normas_paquete.py` |
 | **AP-66** — El coste crece con lo que no es trabajo | guard | `arquitectura` | — |
 | **AP-67** — El material que el agente opera, sin nota que lo apunte | guard+audit | — | `test_ap67_conocimiento_del_material.py` |
-| **AP-68** — El git que ejecuta el toolkit, sin dueño | guard | `procesos_git` | `test_procesos_git.py` |
-| **AP-69** — El test que construye a mano lo que ya tiene apoyo | guard | `tests_higiene` | `test_ap69_sin_version_publicada.py` |
+| **AP-68** — El git que ejecuta el toolkit, sin dueño | guard | `procesos_git` | `test_audiencia_normas_fase_m0.py`, `test_procesos_git.py` |
+| **AP-69** — El test que construye a mano lo que ya tiene apoyo | guard | `tests_higiene` | `test_ap69_sin_version_publicada.py`, `test_audiencia_normas_fase_m0.py` |
 | **AP-70** — Politica de mutacion ilegible o invalida | guard+audit | `framework` | `test_inmutabilidad_todos_los_escritores.py`, `test_reglas_y_adaptadores.py` |
 | **AP-71** — Concepto importante sin página propia | audit | — | `test_karpathy_conceptos.py` |
 | **AP-72** — Comentario que cita una decisión que no existe | guard | `doc_sync` | `test_torti_documentacion.py` |
 | **AP-73** — Fuente archivada modificada | guard+audit | — | `test_parte_a_normas.py` |
 | **AP-74** — Operación sin fila en la bitácora | audit | — | `test_parte_a_normas.py` |
-| **AP-75** — Decisión cerrada reescrita | guard+audit | — | `test_parte_a_normas.py` |
+| **AP-75** — Decisión cerrada reescrita | guard+audit | — | `test_audiencia_normas_fase_m0.py`, `test_parte_a_normas.py` |
 | **AP-76** — Nota viva con la revisión vencida | audit | — | `test_iso_15489_conservacion.py`, `test_iso_23894_riesgo_ia.py`, `test_parte_a_normas.py` |
 | **AP-77** — Registro con la conservación vencida sin disposición | audit | — | `test_iso_15489_conservacion.py` |
 | **AP-78** — Decisión de IA de impacto alto sin evaluación por afectado | audit | — | `test_iso_42005_impacto_ia.py` |
 | **AP-79** — Nota sin entrada autosuficiente | audit | — | `test_ap79_profundidad_audit.py` |
 | **PAT-6** — Semantic graph enrichment — enriquecimiento periodico del grafo | recommended | — | `test_capa4_audit_ejercitada.py` |
-| **PAT-7** — Desacuerdo legítimo declarado — contradicts entre notas | recommended | `fuente_unica` | `test_karpathy_desacuerdos.py` |
+| **PAT-7** — Desacuerdo legítimo declarado — contradicts entre notas | recommended | `fuente_unica` | `test_audiencia_normas_fase_m0.py`, `test_karpathy_desacuerdos.py` |
 | **PAT-8** — Respuesta compilada en el wiki | recommended | — | `test_parte_a_normas.py` |
 | **PAT-9** — Esquema del agente generado | recommended | — | `test_norms_coherence.py`, `test_parte_a_normas.py` |
-| **SP-01** — Delete protocol — change_log obligatorio antes de eliminar | audit | `framework` | `test_mermaid_reglas_parsers.py`, `test_vault_norms.py` |
+| **SP-01** — Delete protocol — change_log obligatorio antes de eliminar | audit | `framework` | `test_audiencia_normas_fase_m0.py`, `test_mermaid_reglas_parsers.py`, `test_vault_norms.py` |
 | **SP-02** — Forward-link verification — buscar antes de linkar | guard | — | `test_normas_enlaces_sin_solape.py`, `test_vault_norms.py` |
 | **SP-03** — Session snapshot pattern — delta antes de operaciones masivas | audit | — | `test_vault_norms.py` |
 | **SP-04** — Sesión MCP por HTTP sin credencial — cualquier proceso local la abre | guard | `produccion` | `test_mcp_http_seguridad.py`, `test_token_service_seguridad.py` |
-| **CN-01** — Kebab-case filenames — nombres de archivo en minúsculas con guiones | guard | — | `test_ap46_escritores_migrados.py`, `test_cn01_cn04_audit_informativo.py`, `test_cn04_escritores_con_titulo.py`, `test_karpathy_adaptador.py`, `test_meta_contrato.py`, `test_vault_norms.py` |
+| **CN-01** — Kebab-case filenames — nombres de archivo en minúsculas con guiones | guard | — | `test_ap46_escritores_migrados.py`, `test_audiencia_normas_fase_m0.py`, `test_cn01_cn04_audit_informativo.py`, `test_cn04_escritores_con_titulo.py`, `test_karpathy_adaptador.py`, `test_meta_contrato.py`, `test_vault_norms.py` |
 | **CN-02** — Numbered folder structure — secciones numeradas como únicos destinos | guard+audit | `framework` | `test_blueprint.py`, `test_fix_brackets_ruta.py`, `test_raiz_no_seccion.py`, `test_vault_norms.py`, `test_vault_norms_audit.py` |
 | **CN-03** — Standard status vocabulary — vocabulario canónico de meta.status | audit | `framework` | `test_calidad_no_castiga_el_vocabulario_canonico.py`, `test_norms_coherence.py`, `test_vault_norms.py`, `test_vault_norms_audit.py`, `test_vault_sanacion.py` |
 | **CN-04** — Note opens with its title — la nota abre con su título como H1 | guard | — | `test_cn01_cn04_audit_informativo.py`, `test_cn04_escritores_con_titulo.py`, `test_cn04_nota_abre_con_titulo.py`, `test_saves_escalonados.py` |
