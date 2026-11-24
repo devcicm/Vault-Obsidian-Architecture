@@ -4681,7 +4681,7 @@
     },
     "vault_pattern_list": {
       "name": "vault_pattern_list",
-      "description": "Lista patrones arquitectónicos disponibles.",
+      "description": "Lista patrones registrados, publica el catálogo canónico (--catalog) o detecta patrones en un repo interno o externo (--scan-path).",
       "group": "Patrones",
       "script": "vault_pattern_list.py",
       "inputSchema": {
@@ -4698,6 +4698,26 @@
           "status": {
             "type": "string",
             "description": "Filter by status"
+          },
+          "catalog": {
+            "type": "boolean",
+            "description": "List the canonical ordered catalog of detectable design and architecture patterns"
+          },
+          "scan-path": {
+            "type": "string",
+            "description": "Scan an internal or external repository or file for design/architecture patterns (read-only)",
+            "x-ruta": "externa"
+          },
+          "category": {
+            "type": "string",
+            "description": "Filter --catalog or --scan-path by pattern category: ['arquitectonicos', 'creacionales', 'estructurales', 'comportamiento', 'concurrencia_resiliencia']",
+            "enum": [
+              "arquitectonicos",
+              "creacionales",
+              "estructurales",
+              "comportamiento",
+              "concurrencia_resiliencia"
+            ]
           }
         },
         "additionalProperties": false
@@ -4716,7 +4736,7 @@
     },
     "vault_pattern_save": {
       "name": "vault_pattern_save",
-      "description": "Guarda patrones arquitectónicos en el vault.",
+      "description": "Guarda patrones arquitectónicos en el vault o persiste los detectados en un repo (--scan-path).",
       "group": "Patrones",
       "script": "vault_pattern_save.py",
       "inputSchema": {
@@ -4773,6 +4793,22 @@
             "type": "string",
             "description": "Additional notes"
           },
+          "scan-path": {
+            "type": "string",
+            "description": "Scan an internal or external repository or file and register detected patterns into 05_Patterns/",
+            "x-ruta": "externa"
+          },
+          "category": {
+            "type": "string",
+            "description": "Filter --scan-path by pattern category: ['arquitectonicos', 'creacionales', 'estructurales', 'comportamiento', 'concurrencia_resiliencia']",
+            "enum": [
+              "arquitectonicos",
+              "creacionales",
+              "estructurales",
+              "comportamiento",
+              "concurrencia_resiliencia"
+            ]
+          },
           "rebuild-index": {
             "type": "boolean",
             "description": "Rebuild 05_Patterns/index.json from the pattern notes; takes no other argument"
@@ -4783,7 +4819,8 @@
       "guards": [],
       "side_effects": [
         "Crea nota en 05_Patterns/",
-        "Reescribe 05_Patterns/index.json desde las notas (--rebuild-index)"
+        "Reescribe 05_Patterns/index.json desde las notas (--rebuild-index)",
+        "Registra patrones detectados con evidencia en 05_Patterns/ (--scan-path)"
       ],
       "perfil_minimo": "operador",
       "access_mode": "write",

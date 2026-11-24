@@ -272,7 +272,7 @@ Quién escribe qué. Derivado del catálogo (`side_effects`): es el inventario q
 - `vault_norms` (Normas): Con --apply/--apply-heal edita las notas de norma del vault; Con --rebuild/--audit escribe el registro de normas y sus artefactos derivados
 - `vault_norms_coherence` (Normas): scripts/norms-coherence-baseline.json
 - `vault_onboard` (Bootstrap): Crea notas en las secciones 01…17 del vault destino; Registra el proyecto (01_Projects/<slug>/project.md) y enlaza --path en 00_System/.local/project-paths.json; No modifica el proyecto de origen: solo lo lee
-- `vault_pattern_save` (Patrones): Crea nota en 05_Patterns/; Reescribe 05_Patterns/index.json desde las notas (--rebuild-index)
+- `vault_pattern_save` (Patrones): Crea nota en 05_Patterns/; Reescribe 05_Patterns/index.json desde las notas (--rebuild-index); Registra patrones detectados con evidencia en 05_Patterns/ (--scan-path)
 - `vault_preferences` (Memoria de Contexto): Crea/actualiza nota en 17_Preferences/{category}/; Actualiza índice de 17_Preferences
 - `vault_privacy_save` (Riesgos/Calidad): Crea nota en 02_Observability/privacy/
 - `vault_produccion` (Normas): docs/GUIA-DE-PRODUCCION.md

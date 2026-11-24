@@ -40,6 +40,11 @@ from typing import Any, Dict, List, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from vault.autoria.patrones_diseno import (  # noqa: E402
+    CATEGORIAS,
+    catalogo_ordenado,
+    detectar_patrones,
+)
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 
@@ -183,6 +188,60 @@ def vault_pattern_list(
     }
 
 
+def _patrones_registrados() -> set:
+    """Nombres de patrones ya registrados en 05_Patterns/index.json, si existe."""
+    try:
+        with open(_index_file(), "r", encoding="utf-8") as f:
+            index = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return set()
+    return {
+        str(p.get("pattern", "")).strip()
+        for p in index.get("patterns", [])
+        if p.get("pattern")
+    }
+
+
+def vault_pattern_catalog(category: Optional[str] = None) -> Dict[str, Any]:
+    """Devuelve el catalogo canonico de patrones detectables, categorizado y ordenado."""
+    try:
+        return catalogo_ordenado(categoria=category)
+    except ValueError as exc:
+        return emit_error("vault_pattern_list", "INVALID_VALUE", str(exc))
+
+
+def vault_pattern_detect(
+    scan_path: str,
+    category: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Detecta patrones de diseno y arquitectura en una ruta interna o externa (solo lectura)."""
+    objetivo = Path(scan_path)
+    if not objetivo.exists():
+        return emit_error(
+            "vault_pattern_list",
+            "FILE_NOT_FOUND",
+            f"La ruta a escanear no existe: {scan_path}",
+        )
+    resuelta = objetivo.resolve()
+    try:
+        resuelta.relative_to(_raiz().resolve())
+        scope = "interno"
+    except ValueError:
+        scope = "externo"
+
+    try:
+        resultado = detectar_patrones(
+            resuelta,
+            categoria=category,
+            registrados=_patrones_registrados(),
+        )
+    except ValueError as exc:
+        return emit_error("vault_pattern_list", "INVALID_VALUE", str(exc))
+
+    resultado["scope"] = scope
+    return resultado
+
+
 def main():
 
     parser = argparse.ArgumentParser(
@@ -203,7 +262,11 @@ Ejemplos:
 
   python vault_pattern_list.py --status "implementado"
 
-  python vault_pattern_list.py --project "ans" --status "en_progreso"
+  python vault_pattern_list.py --catalog
+
+  python vault_pattern_list.py --scan-path "/ruta/al/repo"
+
+  python vault_pattern_list.py --scan-path "/ruta/al/repo" --category "estructurales"
 
 
 
@@ -212,6 +275,10 @@ Notas:
   - VAULT_ROOT se detecta automaticamente desde la ubicacion del script
 
   - Lee 05_Patterns/index.json; si falta, vault_pattern_save --rebuild-index lo reconstruye desde las notas
+
+  - --catalog lista el catalogo canonico categorizado y ordenado (5 categorias)
+
+  - --scan-path escanea un repositorio interno o externo en solo lectura y cruza contra 05_Patterns/index.json
 
   - Estados: implementado, en_progreso, planificado, deprecado, refactoring
 
@@ -226,10 +293,35 @@ Notas:
 
     parser.add_argument("--status", help="Filter by status")
 
+    parser.add_argument(
+        "--catalog",
+        action="store_true",
+        help="List the canonical ordered catalog of detectable design and architecture patterns",
+    )
+
+    parser.add_argument(
+        "--scan-path",
+        help="Scan an internal or external repository or file for design/architecture patterns (read-only)",
+    )
+
+    parser.add_argument(
+        "--category",
+        choices=CATEGORIAS,
+        help=f"Filter --catalog or --scan-path by pattern category: {list(CATEGORIAS)}",
+    )
+
 
     args = parser.parse_args()
 
-    result = vault_pattern_list(args.project, args.type, args.status)
+    if args.catalog and args.scan_path:
+        parser.error("--catalog y --scan-path son mutuamente excluyentes")
+
+    if args.catalog:
+        result = vault_pattern_catalog(args.category)
+    elif args.scan_path:
+        result = vault_pattern_detect(args.scan_path, args.category)
+    else:
+        result = vault_pattern_list(args.project, args.type, args.status)
 
     print(json.dumps(result, indent=2, ensure_ascii=False))
 

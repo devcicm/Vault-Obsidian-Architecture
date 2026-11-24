@@ -1608,8 +1608,9 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "name": "vault_pattern_save",
         "script": "vault_pattern_save.py",
         "group": "Patrones",
-        "purpose": "Guarda patrones arquitectónicos en el vault.",
+        "purpose": "Guarda patrones arquitectónicos en el vault o persiste los detectados en un repo (--scan-path).",
         "params": {
+            "scan-path": {"ruta": "externa"},
             "name": {
                 "type": "string",
                 "required": True,
@@ -1624,7 +1625,11 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             },
         },
         "guards": [],
-        "side_effects": ["Crea nota en 05_Patterns/", "Reescribe 05_Patterns/index.json desde las notas (--rebuild-index)"],
+        "side_effects": [
+            "Crea nota en 05_Patterns/",
+            "Reescribe 05_Patterns/index.json desde las notas (--rebuild-index)",
+            "Registra patrones detectados con evidencia en 05_Patterns/ (--scan-path)",
+        ],
         "example": 'python vault_pattern_save.py --project "mi-api" --name "Repository" --type "architecture" --status "implementado" --description "Abstraccion de acceso a datos"\npython vault_pattern_save.py --rebuild-index',
         "related": ["vault_pattern_list", "vault_code_module"],
     },
@@ -1632,12 +1637,13 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "name": "vault_pattern_list",
         "script": "vault_pattern_list.py",
         "group": "Patrones",
-        "purpose": "Lista patrones arquitectónicos disponibles.",
+        "purpose": "Lista patrones registrados, publica el catálogo canónico (--catalog) o detecta patrones en un repo interno o externo (--scan-path).",
         "params": {
+            "scan-path": {"ruta": "externa"},
         },
         "guards": [],
         "side_effects": [],
-        "example": 'python vault_pattern_list.py\npython vault_pattern_list.py --type "architecture"',
+        "example": 'python vault_pattern_list.py\npython vault_pattern_list.py --type "architecture"\npython vault_pattern_list.py --catalog',
         "related": ["vault_pattern_save", "vault_search"],
     },
     "vault_knowledge_save": {

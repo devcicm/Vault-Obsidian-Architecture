@@ -292,17 +292,18 @@ python vault_log_error.py --type slo --title "API Availability" --description ".
 ## Grupo 3 — Patrones
 
 ### `vault_pattern_save.py`
-Documenta un patrón de diseño, arquitectura, código o integración en `05_Patterns/`.
+Documenta un patrón de diseño, arquitectura, código o integración en `05_Patterns/`, o escanea un repositorio (interno o externo) para registrar los patrones detectados con evidencia (`--scan-path`).
 
 ```bash
 python vault_pattern_save.py --project mi-api --name "Circuit Breaker" --type code \
   --status planificado --description "Fallos en cascada" --notes "Solución y implementación"
+python vault_pattern_save.py --project mi-api --scan-path /ruta/al/repo
 python vault_pattern_save.py --rebuild-index
 ```
 
-El estado del patrón (`--status`) se guarda en `pattern_state` y sus transiciones las valida la máquina de estados del propio patrón; volver a guardar el mismo estado no es una transición, y lo que un guardado no repite (`--description`, `--files`, `--related`, `--notes`) se conserva de la nota. La nota lleva `tags` (proyecto, tipo y `pattern`, más los que ya tuviera). `--rebuild-index` reconstruye `05_Patterns/index.json` desde las notas que declaran `pattern_state` y lista en `skipped` las que no reconoce; es la recuperación que publica `vault_pattern_list` cuando falta el índice.
+El estado del patrón (`--status`) se guarda en `pattern_state` y sus transiciones las valida la máquina de estados del propio patrón; volver a guardar el mismo estado no es una transición, y lo que un guardado no repite (`--description`, `--files`, `--related`, `--notes`) se conserva de la nota. La nota lleva `tags` (proyecto, tipo y `pattern`, más los que ya tuviera). `--scan-path` detecta patrones en código Python (AST) y multi-lenguaje y los persiste con archivo, línea y símbolo (opcionalmente filtrados con `--category`). `--rebuild-index` reconstruye `05_Patterns/index.json` desde las notas que declaran `pattern_state` y lista en `skipped` las que no reconoce; es la recuperación que publica `vault_pattern_list` cuando falta el índice.
 
-| `--category` | Carpeta |
+| `--type` | Carpeta |
 |---|---|
 | `design` | `05_Patterns/design/` |
 | `architecture` | `05_Patterns/architecture/` |
@@ -312,11 +313,13 @@ El estado del patrón (`--status`) se guarda en `pattern_state` y sus transicion
 ---
 
 ### `vault_pattern_list.py`
-Lista todos los patrones documentados, opcionalmente filtrados por proyecto o categoría.
+Lista todos los patrones documentados, publica el catálogo canónico categorizado y ordenado (`--catalog`) o detecta patrones en solo lectura en un repositorio interno o externo (`--scan-path`), cruzándolos contra `05_Patterns/index.json`.
 
 ```bash
 python vault_pattern_list.py --project mi-api
 python vault_pattern_list.py --type architecture
+python vault_pattern_list.py --catalog
+python vault_pattern_list.py --scan-path /ruta/al/repo --category estructurales
 ```
 
 ---

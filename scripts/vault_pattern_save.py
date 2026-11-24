@@ -87,6 +87,7 @@ def estado_de_la_nota(meta: Dict[str, Any]) -> Optional[str]:
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from vault.autoria.patrones_diseno import CATEGORIAS, detectar_patrones  # noqa: E402
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 from vault.kernel.contenido import nota_escalonada  # noqa: E402
@@ -467,17 +468,109 @@ def vault_pattern_rebuild_index() -> Dict[str, Any]:
     }
 
 
+def _estado_existente_para_patron(project: str, name: str, pattern_type: str) -> str:
+    """Conserva el estado previo de una nota existente para que re-escanear sea idempotente."""
+    ruta = get_pattern_path(project, name, pattern_type)
+    if not ruta.is_file():
+        return "implementado"
+    meta = parse_frontmatter(ruta.read_text(encoding="utf-8", errors="replace"))
+    actual = estado_de_la_nota(meta)
+    return actual if actual in PATTERN_STATUSES else "implementado"
+
+
+def vault_pattern_save_detected(
+    project: str,
+    scan_path: str,
+    category: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Detecta patrones en una ruta interna o externa y los guarda en 05_Patterns/."""
+    objetivo = Path(scan_path)
+    if not objetivo.exists():
+        return emit_error(
+            "vault_pattern_save",
+            "FILE_NOT_FOUND",
+            f"La ruta a escanear no existe: {scan_path}",
+        )
+    try:
+        det = detectar_patrones(objetivo.resolve(), categoria=category)
+    except ValueError as exc:
+        return emit_error("vault_pattern_save", "INVALID_VALUE", str(exc))
+
+    saved: List[Dict[str, Any]] = []
+    errors: List[Dict[str, Any]] = []
+
+    for p in det["patterns"]:
+        estado = _estado_existente_para_patron(project, p["pattern"], p["type"])
+        ev_lineas = [
+            f"- `{ev['file']}:{ev['line']}` (`{ev['symbol']}`, {ev['confidence']}): {ev['how']}"
+            for ev in p["evidence"]
+        ]
+        notas = (
+            f"Categoria: {p['category_label']} ({p['order']}). "
+            f"Confianza: {p['confidence']}. Evidencias detectadas ({p['evidence_total']}):\n"
+            + "\n".join(ev_lineas)
+        )
+        res = vault_pattern_save(
+            project=project,
+            name=p["pattern"],
+            pattern_type=p["type"],
+            status=estado,
+            description=p["summary"],
+            files=p["files"],
+            notes=notas,
+        )
+        if res.get("ok"):
+            saved.append({
+                "pattern": p["pattern"],
+                "category": p["category"],
+                "order": p["order"],
+                "type": p["type"],
+                "status": res["status"],
+                "path": res["path"],
+                "evidence_total": p["evidence_total"],
+            })
+        else:
+            errors.append({"pattern": p["pattern"], "error": res.get("message", res.get("error_code"))})
+
+    return {
+        "ok": len(errors) == 0,
+        **write_report(),
+        "action": "detect-and-save",
+        "project": project,
+        "target_name": det["target_name"],
+        "files_scanned": det["files_scanned"],
+        "detected_count": det["total_patterns"],
+        "saved_count": len(saved),
+        "saved": saved,
+        "errors": errors,
+    }
+
+
 _OBLIGATORIOS = ("project", "name", "type", "status")
 _DEL_GUARDADO = (*_OBLIGATORIOS, "description", "files", "related", "notes")
+_SOLO_GUARDADO_MANUAL = ("name", "type", "status", "description", "files", "related", "notes")
 
 
 def _validar_modo(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
-    """A save needs its four fields; a rebuild takes none of a save's."""
+    """A save needs its four fields; rebuild takes none; scan-path needs only --project."""
     if args.rebuild_index:
-        sobran = [f"--{c}" for c in _DEL_GUARDADO if getattr(args, c) is not None]
+        sobran = [
+            f"--{c.replace('_', '-')}"
+            for c in (*_DEL_GUARDADO, "scan_path", "category")
+            if getattr(args, c) is not None
+        ]
         if sobran:
             parser.error(f"--rebuild-index takes no other argument: {', '.join(sobran)}")
         return
+    if args.scan_path is not None:
+        if args.project is None:
+            parser.error("the following arguments are required with --scan-path: --project")
+        sobran = [f"--{c}" for c in _SOLO_GUARDADO_MANUAL if getattr(args, c) is not None]
+        if sobran:
+            parser.error(f"--scan-path cannot be combined with: {', '.join(sobran)}")
+        return
+    if args.category is not None:
+        parser.error("--category requires --scan-path")
     faltan = [f"--{c}" for c in _OBLIGATORIOS if getattr(args, c) is None]
     if faltan:
         parser.error(f"the following arguments are required: {', '.join(faltan)}")
@@ -499,6 +592,8 @@ Ejemplos:
 
   python vault_pattern_save.py --project "mi-api" --name "CQRS" --type "design" --status "implementado" --notes "Ver ADR-003"
 
+  python vault_pattern_save.py --project "mi-api" --scan-path "/ruta/al/repo"
+
   python vault_pattern_save.py --rebuild-index
 
 
@@ -514,6 +609,8 @@ Notas:
   - Las transiciones de estado se validan y se registran en el historial de evolucion
 
   - Al volver a guardar, lo que no se repite (--description, --files, --related, --notes) se conserva
+
+  - --scan-path detecta patrones en un repositorio interno o externo y los persiste con evidencia en 05_Patterns/
 
   - --rebuild-index reconstruye 05_Patterns/index.json desde las notas de patron
     (las que declaran pattern_state); las que no reconoce salen en `skipped`
@@ -543,6 +640,17 @@ Notas:
     parser.add_argument("--notes", help="Additional notes")
 
     parser.add_argument(
+        "--scan-path",
+        help="Scan an internal or external repository or file and register detected patterns into 05_Patterns/",
+    )
+
+    parser.add_argument(
+        "--category",
+        choices=CATEGORIAS,
+        help=f"Filter --scan-path by pattern category: {list(CATEGORIAS)}",
+    )
+
+    parser.add_argument(
         "--rebuild-index",
         action="store_true",
         help="Rebuild 05_Patterns/index.json from the pattern notes; takes no other argument",
@@ -554,6 +662,11 @@ Notas:
 
     if args.rebuild_index:
         result = vault_pattern_rebuild_index()
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return 0 if result["ok"] else 1
+
+    if args.scan_path is not None:
+        result = vault_pattern_save_detected(args.project, args.scan_path, args.category)
         print(json.dumps(result, indent=2, ensure_ascii=False))
         return 0 if result["ok"] else 1
 

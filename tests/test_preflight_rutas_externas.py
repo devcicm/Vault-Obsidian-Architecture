@@ -40,6 +40,8 @@ EXTERNAS_ESPERADAS = {
     ("vault_ingest", "file"),
     ("vault_migrate_docs", "source_path"),
     ("vault_onboard", "path"),
+    ("vault_pattern_list", "scan-path"),
+    ("vault_pattern_save", "scan-path"),
     ("vault_project", "path"),
     ("vault_security_scan", "path"),
 }
