@@ -193,6 +193,17 @@ def _escanear(
     if not path.exists():
         return results, escaneados
 
+    if path.is_file():
+        if path.suffix.lower() not in SCAN_EXTS:
+            return results, escaneados
+        escaneados = 1
+        findings = scan_file(path, active_rules)
+        for f in findings:
+            f["file"] = path.name
+        if findings:
+            results.append((path, findings))
+        return results, escaneados
+
     for item in path.rglob("*"):
         if item.is_file():
             if any(ignored in item.parts for ignored in IGNORED_DIRS):

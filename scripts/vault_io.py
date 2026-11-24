@@ -877,14 +877,17 @@ CLAVE_OBLIGATORIA = "obligatoria"
 
 
 def _cargar_politica(fichero: Path) -> Optional[dict]:
-    """The parsed policy object; None when absent. Unreadable or invalid JSON blocks."""
-    # AP-70: fallo cerrado sin inventar una politica.
+    """The parsed policy object; None when absent or empty. Unreadable or invalid JSON blocks."""
+    # AP-70: fallo cerrado sin inventar una politica. `utf-8-sig` tolera BOM de
+    # editores Windows, y un fichero vacio o solo espacios equivale a sin reglas.
     try:
-        contenido = fichero.read_text(encoding="utf-8")
+        contenido = fichero.read_text(encoding="utf-8-sig")
     except FileNotFoundError:
         return None
     except (OSError, UnicodeError) as exc:
         raise PoliticaInvalidaError(f"No se puede leer la politica {fichero}: {exc}") from exc
+    if not contenido.strip():
+        return None
     try:
         datos = json.loads(contenido)
     except (ValueError, UnicodeError) as exc:

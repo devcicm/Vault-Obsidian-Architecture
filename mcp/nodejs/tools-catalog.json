@@ -6006,6 +6006,10 @@
           "quality_in_use": {
             "type": "string",
             "description": "Comma-separated ISO/IEC 25019:2023 quality-in-use characteristics"
+          },
+          "adopt-legacy": {
+            "type": "boolean",
+            "description": "Reconstruye el indice registrando una adopcion explicita para notas legadas sin historia"
           }
         },
         "additionalProperties": false

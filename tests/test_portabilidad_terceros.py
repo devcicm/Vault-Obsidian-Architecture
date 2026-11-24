@@ -419,7 +419,7 @@ _RELATIVA_CRUDA = re.compile(r"str\([\w.]+\.relative_to\((?:[^()]|\([^()]*\))*\)
 
 
 def test_las_rutas_publicadas_no_dependen_del_sistema():
-    """`str(Path.relative_to(...))` gives `\` on Windows and `/` elsewhere,
+    r"""`str(Path.relative_to(...))` gives `\` on Windows and `/` elsewhere,
     so the same envelope differed by OS (QA-PORT-14, 2026-11-18). These
     modules publish such paths in their output; each one is normalized with
     the repository's convention. Comparison-only sites elsewhere (for example

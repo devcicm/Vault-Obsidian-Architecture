@@ -150,20 +150,22 @@ def _hay_historial_de_requisitos() -> bool:
         return True  # Unverifiable history: let the replay report it, never guess.
 
 
-def reconstruir_indice_requisitos() -> Dict[str, Any]:
+def reconstruir_indice_requisitos(adoptar_legado: bool = False) -> Dict[str, Any]:
     """Explicit mutation API; incomplete evidence never becomes a guessed history."""
     try:
-        return _reconstruir_indice_requisitos()
+        return _reconstruir_indice_requisitos(adoptar_legado=adoptar_legado)
     except (IndiceIlegible, OSError, ValueError, TypeError):
         return {"ok": False, "error_code": "INDEX_STALE", "history_incomplete": True,
                 "message": "Requirement projection or durable history could not be verified"}
 
 
-def _reconstruir_indice_requisitos() -> Dict[str, Any]:
+def _reconstruir_indice_requisitos(adoptar_legado: bool = False) -> Dict[str, Any]:
     """Replay the complete durable history into the existing derived index.
 
     Lock order is always projection then history; readers never hold a history
     lock while waiting for this projection. Legacy prose is not parsed as fact.
+    When `adoptar_legado=True`, unmatched on-disk requirement states receive an
+    explicit, auditable baseline adoption event without inventing past moves.
     """
     with indice_compartido(_index_file(), {"requirements": []}) as index:
         if (not isinstance(index, dict) or not isinstance(index.get("requirements"), list) or
@@ -179,14 +181,15 @@ def _reconstruir_indice_requisitos() -> Dict[str, Any]:
         legacy = [row for row in rows if row.get("action") == "transition" and
                   str(row.get("path", "")).startswith("14_Requirements/") and
                   not isinstance(row.get("requirement"), dict)]
-        if legacy:
+        if legacy and not adoptar_legado:
             return {"ok": False, "error_code": "INDEX_STALE", "history_incomplete": True,
                     "legacy_events": len(legacy),
                     "legacy_paths": sorted({str(row.get("path")) for row in legacy})[:20],
                     "message": "Legacy requirement history lacks qualified identity; restore verified history",
                     "recovery": {"action": "manual",
                                  "hint": "Review the listed change-log rows with their owner: either record "
-                                         "the qualified transition (project/REQ id) through vault_requirement_save "
+                                         "the qualified transition (project/REQ id) through vault_requirement_save, "
+                                         "run with --adopt-legacy to record an explicit baseline for disk state, "
                                          "or keep the projection and leave the rows as historical prose. "
                                          "Nothing is inferred from unqualified rows."}}
         events: Dict[str, List[Dict[str, Any]]] = {}
@@ -220,12 +223,56 @@ def _reconstruir_indice_requisitos() -> Dict[str, Any]:
             counters[project] = max(int(counters.get(project, 0)), int(req_id[4:]))
         previous_entries = {identidad_requisito(row): row for row in index.get("requirements", [])
                             if isinstance(row, dict) and identidad_requisito(row)}
+        unmatched = [
+            identity for identity, note in sorted(census["requirements"].items())
+            if not events.get(identity) or
+            events[identity][-1]["to"] != note.get("requirement_state", note.get("status"))
+        ]
+        if unmatched and not adoptar_legado:
+            return {"ok": False, "error_code": "INDEX_STALE", "history_incomplete": True,
+                    "unmatched_identities": unmatched,
+                    "message": "Requirement note state lacks matching durable history",
+                    "recovery": {"action": "manual",
+                                 "hint": "Revisa las identidades en `unmatched_identities`; si su estado en "
+                                         "disco es el vigente, ejecuta `vault_requirement_save --adopt-legacy` "
+                                         "para registrar una linea base explicita en el change-log sin inventar "
+                                         "transiciones anteriores."}}
+        adopted: List[str] = []
+        agente = firmante() if (adoptar_legado and unmatched) else ""
         rebuilt = []
         for identity, note in sorted(census["requirements"].items()):
-            history = events.get(identity, [])
-            if not history or history[-1]["to"] != note.get("requirement_state", note.get("status")):
-                return {"ok": False, "error_code": "INDEX_STALE", "history_incomplete": True,
-                        "message": "Requirement note state lacks matching durable history"}
+            history = list(events.get(identity, []))
+            estado_disco = str(note.get("requirement_state", note.get("status")) or "")
+            if not history or history[-1]["to"] != estado_disco:
+                if estado_disco not in STATUSES:
+                    return {"ok": False, "error_code": "INDEX_STALE", "history_incomplete": True,
+                            "unmatched_identities": [identity],
+                            "message": f"Requirement note '{identity}' has invalid status '{estado_disco}'"}
+                project, req_id = identity.rsplit("/", 1)
+                previo = history[-1]["to"] if history else None
+                ev_id = str(uuid.uuid5(
+                    uuid.NAMESPACE_URL,
+                    f"vault-requirement-adopt:{identity}#{len(history)}:{previo or ''}->{estado_disco}",
+                ))
+                reg = vault_change_log_add(
+                    action="transition",
+                    path=str(note.get("relPath") or ""),
+                    reason=f"{req_id}: adopcion explicita de estado en disco -> {estado_disco}",
+                    agent=agente,
+                    event_id=ev_id,
+                    requirement={"project": project, "req_id": req_id,
+                                 "from": previo, "to": estado_disco},
+                )
+                if not reg.get("ok"):
+                    return {"ok": False, "error_code": "INDEX_STALE", "history_incomplete": True,
+                            "message": f"Could not record explicit adoption for '{identity}'"}
+                ev = reg["entry"]
+                history.append({"id": ev["id"], "at": ev["timestamp"],
+                                "from": previo, "to": estado_disco,
+                                "agent": ev["agent"], "reason": ev["reason"],
+                                "adopted": True})
+                counters[project] = max(int(counters.get(project, 0)), int(req_id[4:]))
+                adopted.append(identity)
             entry = {**previous_entries.get(identity, {}), **{key: note.get(key) for key in
                      ("docId", "req_id", "project", "title", "req_type", "priority", "status", "relPath")}}
             entry.pop("pending_transition", None)
@@ -234,7 +281,10 @@ def _reconstruir_indice_requisitos() -> Dict[str, Any]:
             entry["events"] = history
             rebuilt.append(entry)
         index.update(requirements=rebuilt, counters=counters)
-    return {"ok": True, "requirements": len(rebuilt), "history_incomplete": False}
+    salida: Dict[str, Any] = {"ok": True, "requirements": len(rebuilt), "history_incomplete": False}
+    if adoptar_legado:
+        salida["adopted"] = adopted
+    return salida
 
 
 # superseded_by: vault_io.indice_compartido
@@ -705,14 +755,22 @@ Notes:
 
     parser.add_argument("--quality_in_use", help="Comma-separated ISO/IEC 25019:2023 quality-in-use characteristics")
 
+    parser.add_argument("--adopt-legacy", action="store_true", dest="adopt_legacy",
+                        help="Reconstruye el indice registrando una adopcion explicita para notas legadas sin historia")
+
     args = parser.parse_args()
 
     if args.list:
         print(json.dumps(listar_requisitos(args.project), indent=2, ensure_ascii=False))
         return 0
 
+    if args.adopt_legacy and not args.title:
+        r = reconstruir_indice_requisitos(adoptar_legado=True)
+        print(json.dumps(r, indent=2, ensure_ascii=False))
+        return 0 if r.get("ok") else 1
+
     if not (args.project and args.title and args.description and args.req_type and args.priority):
-        parser.error("--project, --title, --description, --type y --priority son obligatorios salvo con --list")
+        parser.error("--project, --title, --description, --type y --priority son obligatorios salvo con --list o --adopt-legacy")
 
     def parse_json_arg(val: Optional[str], name: str) -> Optional[Any]:
         if not val:

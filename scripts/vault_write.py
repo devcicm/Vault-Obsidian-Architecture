@@ -48,6 +48,8 @@ from vault_io import (
     is_snapshot_path,  # dueño único de qué es una instantánea (AP-57)
     NotaInmutableError,  # el veto del dueño de la escritura
     DecisionCerradaInvalidaError,  # AP-07/AP-64 en el dueño de la escritura
+    PoliticaInvalidaError,  # AP-70: política corrupta en el dueño de la escritura
+    FrontmatterIlegible,  # AP-46: frontmatter no parseable en el dueño de la escritura
     _rechazar_raiz_insegura,  # AP-36: antes del mkdir de la carpeta destino
     write_report,
     atomic_write_text,
@@ -1406,6 +1408,11 @@ def vault_write(
             # AP-07/AP-64: el criterio es del dueño de la escritura; aquí se
             # traduce con su pista (la plantilla del ADR, o quién responde).
             return emit_error("vault_write", exc.codigo, str(exc), pista=exc.pista)
+        except PoliticaInvalidaError as exc:
+            # AP-70 / AP-52: política corrupta sale como envelope del catálogo.
+            return emit_error("vault_write", exc.codigo, str(exc))
+        except FrontmatterIlegible as exc:
+            return emit_error("vault_write", "FRONTMATTER_PARSE_ERROR", str(exc))
 
         # Update search index (inside lock for consistency)
 
