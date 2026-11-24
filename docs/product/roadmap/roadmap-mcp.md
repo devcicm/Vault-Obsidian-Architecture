@@ -2,58 +2,49 @@
 
 <!-- propiedad: CARLOS IVAN CM · revisión: manual -->
 
-**Horizonte:** 6 meses (Q4 2026 — Q2 2027)
-**Versión inicial:** v1.0
+**Versión actual:** `v41.27` (misma versión que el estándar; `tools-catalog.json` derivado)
+**Política de backend (`AP-48`):** solo las 2 tools sin equivalente Python (`vault_backup_base64`, `vault_restore_base64`) son JS-native. Escalar backends paralelos en Node está prohibido por `AP-48` (`vault_mcp_catalog --check-contracts`) para evitar divergencia de contratos.
 
 ---
 
-## Problemas a resolver (P0-P2)
+## Problemas y prioridades vigentes (P0-P2)
 
-| ID | Problema | Prioridad | Hito |
-|----|---------|-----------|------|
-| P0 | `tools-catalog.json` desincronizado con Python | P0 | v1.0 |
-| P1 | JS-native tools coverage limitada (9 de 116) | P1 | v1.1 |
-| P1 | Secret scan con falsos positivos en código de ejemplo | P1 | v1.1 |
-| P2 | Multi-vault discovery sin configuración | P2 | v1.2 |
-| P2 | Resources `vault://` coverage parcial | P2 | v1.2 |
+| ID | Problema | Prioridad | Estado |
+|---|---|---|---|
+| P0 | `tools-catalog.json` desincronizado con Python | P0 | Entregado (`vault_mcp_catalog --check`) |
+| P0 | Sin coordinación de concurrencia RW en el servidor MCP | P0 | Entregado (`AsyncRWCoordinator` + `access_mode` CQRS) |
+| P1 | Latencia de arranque Python por llamada MCP | P1 | En curso (optimización de imports y proyecciones de lectura) |
+| P1 | Secret scan con falsos positivos en código de ejemplo | P1 | Abierto |
+| P2 | Multi-vault discovery y cobertura de resources `vault://` | P2 | Parcial (`VAULT_SCAN_ROOTS`, `vault://graph`, `vault://health`) |
 
 ---
 
-## Milestones
+## Hitos
 
-### v1.0 (Q4 2026)
+### Entregado (`v40.x` – `v41.27`)
 
-- [ ] `vault_mcp_catalog --sync` genera `tools-catalog.json` desde Python
-- [ ] `vault_mcp_catalog --check` falla si divergen
-- [ ] `tools/call` y `tools/list` operativos
-- [ ] 9 JS-native tools funcionando
-- [ ] Guard chain: secret scan, bracket balance, Mermaid syntax, content gate
-- [ ] `tools-catalog.json` sincronizado con Python (pre-commit hook)
+- [x] `vault_mcp_catalog --sync` genera `tools-catalog.json` desde Python
+- [x] `vault_mcp_catalog --check` y `--check-contracts` (`AP-48`) fallan si hay divergencia o backends duplicados
+- [x] `tools/call` y `tools/list` operativos (stdio + HTTP/SSE con token Bearer `SP-04`, `--host` y `--tls-cert/--tls-key`)
+- [x] Guard chain pre-escritura (secret scan, bracket balance, Mermaid syntax, content gate, tags)
+- [x] Pre-commit hook sincroniza derivados automáticamente
+- [x] Coordinador CQRS asíncrono (`AsyncRWCoordinator`: lecturas paralelas acotadas por `VAULT_MCP_MAX_READS`, escrituras por carpeta y barrera global)
 
-### v1.1 (Q1 2027)
+### Próximos hitos
 
-- [ ] +20 JS-native tools (para tools de consulta frecuentes)
+- [ ] Reducción de latencia en lecturas frecuentes (imports diferidos y proyecciones indexadas sin escaneo O(N))
 - [ ] Secret scan con allowlist configurable
-- [ ] `VAULT_SCAN_ROOTS` para multi-vault discovery
-- [ ] Resources `vault://graph` y `vault://health` completos
-- [ ] Trace log persistente en sesión
-
-### v1.2 (Q2 2027)
-
-- [ ] Resources `vault://status` y `vault://norms`
-- [ ] +50 JS-native tools (cobertura 50%+)
-- [ ] Integración con MCP HTTP mode (para Testing)
-- [ ] Tests de smoke automatizados contra server
-- [ ] MCP spec compliance verificado
+- [ ] Ampliación de resources `vault://status` y `vault://norms`
+- [ ] Evaluación de worker persistente solo-lectura (sujeto a banco de métricas y decisión de aislamiento A-06)
 
 ---
 
 ## Métricas de éxito
 
 | Métrica | Target |
-|---------|--------|
-| JS-native tools | 50+ (de 116) |
-| tools-catalog.json coverage | 100% |
-| Tiempo guard chain por operación | < 20ms |
-| Secret scan falsos positivos | < 1% |
+|---|---|
+| Cumplimiento `AP-48` (sin implementación paralela JS/Python) | 100 % (`check-contracts` en verde) |
+| Cobertura de `tools-catalog.json` | 100 % |
+| Paralelismo seguro en lecturas MCP (`VAULT_MCP_MAX_READS`) | Hasta 4 concurrentes sin deadlock ni carreras |
+| Tiempo guard chain por operación | < 20 ms |
 | Pre-commit sync check | Verde |

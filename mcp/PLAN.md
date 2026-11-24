@@ -1,6 +1,8 @@
 # Vault MCP Monolith — Plan de Implementacion
 
-> **Estado:** En construccion — Fase 1/8  
+> **Estado actual (2026-11-23):** Documento histórico (`superseded_by:` implementación vigente en `mcp/nodejs/vault-mcp-server.mjs`, v41.27). El servidor real ya entrega transporte dual `stdio` + HTTP/SSE con autenticación Bearer (`SP-04`), soporte `--host`/`--tls-cert`/`--tls-key`, catálogo derivado de Python (`tools-catalog.json`, 129 tools / 98 expuestas), solo 2 tools JS-native por norma `AP-48` y coordinador CQRS asíncrono (`AsyncRWCoordinator`). El texto original de v37.0 se conserva íntegro debajo por política de no-derogación.
+>
+> **Estado histórico original:** En construccion — Fase 1/8  
 > **Version:** v37.0 (SDD)  
 > **Fecha inicio:** 2026-07-01  
 > **Arquitecto:** CI + Kimi (deepseek-v4-pro)

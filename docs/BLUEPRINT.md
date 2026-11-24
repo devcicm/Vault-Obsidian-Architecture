@@ -129,7 +129,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-45** — Cobertura sin evidencia — la nota existe para llenar la sección | guard+audit | `framework` | `test_ap45_cobertura_sin_evidencia.py` |
 | **AP-46** — Frontmatter a mano — cada tool es su propio escritor | guard+audit | `framework` | `test_ap46_escritores_migrados.py`, `test_ap46_interpolacion_cruda.py`, `test_ap46_write_path_unico.py`, `test_norms_coherence.py`, `test_vault_sanacion.py` |
 | **AP-47** — Artefacto derivado desfasado — el índice dejó de reflejar el disco | guard+audit | `framework` | `test_ap47_indice_refleja_disco.py`, `test_audit_acciones_de_movimiento.py`, `test_delete_no_borra_derivados.py`, `test_grafo_refresco.py`, `test_sanadores_sin_lote.py` |
-| **AP-48** — Implementación paralela por camino de acceso | guard+audit | `contratos` | `test_ap48_implementacion_paralela.py`, `test_voice.py` |
+| **AP-48** — Implementación paralela por camino de acceso | guard+audit | `contratos` | `test_ap48_implementacion_paralela.py`, `test_mcp_concurrencia_cqrs.py`, `test_voice.py` |
 | **AP-49** — Vínculo resuelto en tiempo de import | guard+audit | `arquitectura` | `test_arquitectura.py`, `test_durabilidad_dominio.py` |
 | **AP-50** — Decisión duplicada sin dueño declarado | guard+audit | `arquitectura` | `test_ap57_criterios.py`, `test_norms_coherence.py` |
 | **AP-51** — La tool culpa al dato de su propio fallo | guard+audit | `blame` | `test_ap51_culpar_al_dato.py`, `test_baseline.py` |

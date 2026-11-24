@@ -577,6 +577,10 @@ function assertWithinVault(p, vaultRoot) {
   return resolved;
 }
 
+// Las siete funciones `jsNative*` siguientes (`jsNativeRead`..`jsNativeFundamentals`)
+// están `superseded_by: executePythonTool` desde AP-48 (solo se despachan las dos
+// tools puras en `JS_NATIVE_TOOLS`: `vault_backup_base64` y `vault_restore_base64`).
+// Se conservan sin despachar por política de no-derogación.
 async function jsNativeRead(args, vaultRoot) {
   let content;
   if (args.path) {
@@ -1104,6 +1108,156 @@ async function handleToolsList(params, session) {
   return { tools };
 }
 
+// ============================================================================
+// SECCIÓN 3.5: Coordinador CQRS Lectura / Escritura / Barrera Global
+// ============================================================================
+
+function maxReadsConfigurado() {
+  const crudo = parseInt(process.env.VAULT_MCP_MAX_READS || "", 10);
+  if (Number.isFinite(crudo) && crudo >= 1) return crudo;
+  return Math.max(1, Number(envDefault("VAULT_MCP_MAX_READS")) || 4);
+}
+
+/**
+ * Clasificación CQRS de una tool: `read`, `write` o `global`.
+ * Sale exclusivamente de `tools-catalog.json` (dueño único en Python, AP-05/AP-57).
+ * Ante ausencia de catálogo cae cerrado en `global` para no correr mutaciones en paralelo.
+ */
+function accessModeDe(name) {
+  if (TOOLS_SIN_CATALOGO.has(name)) return "read";
+  const tool = Object.prototype.hasOwnProperty.call(TOOLS_CATALOG, name) ? TOOLS_CATALOG[name] : null;
+  if (!tool) return "global";
+  if (tool.access_mode === "read" || tool.access_mode === "write" || tool.access_mode === "global") {
+    return tool.access_mode;
+  }
+  return tool.side_effects && tool.side_effects.length ? "write" : "read";
+}
+
+/** Clave de serialización para escrituras acotadas por carpeta (regenera `index.md`). */
+function claveRecursoEscritura(name, args) {
+  const destino = args?.folder || args?.path;
+  if (typeof destino === "string" && destino.trim()) {
+    const norm = destino.replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+    if (norm) return `folder:${norm}`;
+  }
+  return "vault:write";
+}
+
+/**
+ * Coordinador asíncrono RW con tres carriles:
+ * - `read`: en paralelo hasta `maxReads`, salvo que haya una barrera `global` activa o en cola.
+ * - `write`: exclusivo por `resourceKey` (carpeta), paralelo entre carpetas distintas.
+ * - `global`: barrera exclusiva; drena activas y retiene entrantes (sin inanición).
+ * Garantiza liberación en `finally` ante cualquier excepción o timeout.
+ */
+class AsyncRWCoordinator {
+  constructor(maxReads = 4) {
+    this.maxReads = Math.max(1, Number(maxReads) || 4);
+    this.activeReads = 0;
+    this.activeWritesByKey = new Map();
+    this.activeGlobal = false;
+    this.pendingGlobals = [];
+    this.pendingReads = [];
+    this.pendingWritesByKey = new Map();
+  }
+
+  stats() {
+    let pendingWrites = 0;
+    for (const q of this.pendingWritesByKey.values()) pendingWrites += q.length;
+    return {
+      maxReads: this.maxReads,
+      activeReads: this.activeReads,
+      activeWriteKeys: this.activeWritesByKey.size,
+      activeGlobal: this.activeGlobal,
+      pendingReads: this.pendingReads.length,
+      pendingWrites,
+      pendingGlobals: this.pendingGlobals.length,
+    };
+  }
+
+  _acquireRead() {
+    if (!this.activeGlobal && this.pendingGlobals.length === 0 && this.activeReads < this.maxReads) {
+      this.activeReads++;
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => { this.pendingReads.push(resolve); });
+  }
+
+  _acquireWrite(key) {
+    const k = key || "vault:write";
+    if (!this.activeGlobal && this.pendingGlobals.length === 0 && !this.activeWritesByKey.has(k)) {
+      this.activeWritesByKey.set(k, 1);
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      if (!this.pendingWritesByKey.has(k)) this.pendingWritesByKey.set(k, []);
+      this.pendingWritesByKey.get(k).push(resolve);
+    });
+  }
+
+  _acquireGlobal() {
+    if (!this.activeGlobal && this.activeReads === 0 && this.activeWritesByKey.size === 0) {
+      this.activeGlobal = true;
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => { this.pendingGlobals.push(resolve); });
+  }
+
+  _drain() {
+    if (this.activeGlobal) return;
+    if (this.pendingGlobals.length > 0) {
+      if (this.activeReads === 0 && this.activeWritesByKey.size === 0) {
+        this.activeGlobal = true;
+        const nextGlobal = this.pendingGlobals.shift();
+        nextGlobal();
+      }
+      return;
+    }
+    while (this.pendingReads.length > 0 && this.activeReads < this.maxReads) {
+      this.activeReads++;
+      const nextRead = this.pendingReads.shift();
+      nextRead();
+    }
+    for (const [k, queue] of [...this.pendingWritesByKey.entries()]) {
+      if (queue.length === 0) {
+        this.pendingWritesByKey.delete(k);
+        continue;
+      }
+      if (!this.activeWritesByKey.has(k)) {
+        this.activeWritesByKey.set(k, 1);
+        const nextWrite = queue.shift();
+        if (queue.length === 0) this.pendingWritesByKey.delete(k);
+        nextWrite();
+      }
+    }
+  }
+
+  async run(mode, resourceKey, fn) {
+    const k = resourceKey || "vault:write";
+    if (mode === "read") {
+      await this._acquireRead();
+      try { return await fn(); } finally {
+        this.activeReads--;
+        this._drain();
+      }
+    }
+    if (mode === "write") {
+      await this._acquireWrite(k);
+      try { return await fn(); } finally {
+        this.activeWritesByKey.delete(k);
+        this._drain();
+      }
+    }
+    await this._acquireGlobal();
+    try { return await fn(); } finally {
+      this.activeGlobal = false;
+      this._drain();
+    }
+  }
+}
+
+const rwCoordinator = new AsyncRWCoordinator(maxReadsConfigurado());
+
 async function handleToolsCall(params, session) {
   const name = params?.name;
   const args = params?.arguments || {};
@@ -1118,9 +1272,12 @@ async function handleToolsCall(params, session) {
     return formatToolError(rechazo.code, rechazo.message, name);
   }
   const schema = TOOLS_CATALOG[name]?.inputSchema;
+  const mode = accessModeDe(name);
+  const resourceKey = mode === "write" ? claveRecursoEscritura(name, args) : null;
 
-  log("info", `Executing tool: ${name}`, args);
+  log("info", `Executing tool: ${name} [${mode}]`, args);
 
+  return await rwCoordinator.run(mode, resourceKey, async () => {
   try {
     const vaultRoot = session?.vaultRoot || resolveVaultRoot(session?.sessionId);
 
@@ -1203,6 +1360,7 @@ async function handleToolsCall(params, session) {
     log("error", `Tool ${name} failed: ${e.message}`);
     return formatToolError("TOOL_EXECUTION_FAILED", e.message, name);
   }
+  });
 }
 
 // AP-40 en la dirección inversa: el servidor no acepta lo que el catálogo no
@@ -2584,7 +2742,7 @@ async function validateWithObsidian(vaultRoot) {
 }
 
 // ============================================================================
-// SECCIÓN 7: Main Entry Point
+// SECCIÓN 12: Main Entry Point
 // ============================================================================
 
 let SSE_HOST = "127.0.0.1";
@@ -2683,6 +2841,11 @@ export {
   VERSION,
   SERVER_INFO,
   CAPABILITIES,
+  loadCatalog,
+  AsyncRWCoordinator,
+  accessModeDe,
+  claveRecursoEscritura,
+  rwCoordinator,
   detectVaultRoot,
   normalizeStem,
   extractWikilinks,
