@@ -181,3 +181,57 @@ def test_onboard_v3_brownfield_deep_ast_infra_bd_qa_adrs_scripts_y_post_check(tm
         assert res["post_check"]["drift_snapshot"]["ok"] is True
     finally:
         vault_io.set_vault_root(prev)
+
+
+def test_deep_ast_no_duplica_escaneo_y_receta_usa_flag_type(tmp_path: Path, monkeypatch):
+    """Regresion del code review: --deep-ast escanea una sola vez y la receta usa --type."""
+    vault = _crear_vault_vacio(tmp_path)
+    repo = tmp_path / "repo-unico"
+    (repo / "src" / "services").mkdir(parents=True)
+    (repo / "src" / "services" / "order_service.py").write_text(
+        "class OrderService:\n    def create_order(self): return True\n", encoding="utf-8"
+    )
+    (repo / "src" / "services" / "tax_service.py").write_text(
+        "class TaxService:\n    def calculate(self): return 0\n", encoding="utf-8"
+    )
+
+    calls = {"pat": 0, "flujos": 0}
+    orig_pat = vault_onboard.patrones_diseno.detectar_patrones
+    orig_flujos = vault_onboard.features_y_flujos.detectar_features_y_flujos
+
+    def _spy_pat(*a, **kw):
+        calls["pat"] += 1
+        return orig_pat(*a, **kw)
+
+    def _spy_flujos(*a, **kw):
+        calls["flujos"] += 1
+        return orig_flujos(*a, **kw)
+
+    monkeypatch.setattr(vault_onboard.patrones_diseno, "detectar_patrones", _spy_pat)
+    monkeypatch.setattr(vault_onboard.features_y_flujos, "detectar_features_y_flujos", _spy_flujos)
+
+    prev = vault_io.get_vault_root()
+    try:
+        vault_io.set_vault_root(vault)
+        res = vault_onboard.vault_onboard(
+            project="repo-unico", path=str(repo), no_git=True, deep_ast=True,
+        )
+        assert res["ok"] is True
+        assert calls == {"pat": 1, "flujos": 1}, calls
+
+        # Sin --deep-ast, la receta de 05_Patterns debe usar --type (no --pattern_type)
+        vault2 = tmp_path / "vault2"
+        vault2.mkdir()
+        (vault2 / "00_System").mkdir()
+        vault_io.set_vault_root(vault2)
+        res2 = vault_onboard.vault_onboard(
+            project="repo-unico", path=str(repo), no_git=True, deep_ast=False,
+        )
+        assert res2["ok"] is True
+        pat_notes = [p for p in (vault2 / "05_Patterns").rglob("*.md") if p.name != "index.md"]
+        assert pat_notes
+        txt = "\n".join(p.read_text(encoding="utf-8") for p in pat_notes)
+        assert "--pattern_type" not in txt
+        assert "--type architecture" in txt
+    finally:
+        vault_io.set_vault_root(prev)

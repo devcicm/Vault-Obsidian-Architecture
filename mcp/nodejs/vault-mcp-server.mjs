@@ -1137,7 +1137,10 @@ function accessModeDe(name) {
 function claveRecursoEscritura(name, args) {
   const destino = args?.folder || args?.path;
   if (typeof destino === "string" && destino.trim()) {
-    const norm = destino.replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+    let norm = destino.replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+    if (!args?.folder && /\.md$/i.test(norm) && norm.includes("/")) {
+      norm = norm.slice(0, norm.lastIndexOf("/"));
+    }
     if (norm) return `folder:${norm}`;
   }
   return "vault:write";

@@ -2605,9 +2605,10 @@ def _onboard_05_patterns(
     dry_run: bool,
     project_path: Optional[Path] = None,
     deep_ast: bool = False,
+    precomputed: Optional[Dict[str, Any]] = None,
 ) -> List[Tuple[str, str]]:
     if deep_ast and project_path is not None:
-        det = patrones_diseno.detectar_patrones(project_path)
+        det = precomputed if precomputed is not None else patrones_diseno.detectar_patrones(project_path)
         results: List[Tuple[str, str]] = []
         for pat in det.get("patterns", [])[:12]:
             pname = pat["pattern"]
@@ -2732,7 +2733,7 @@ python scripts/vault_pattern_save.py --project {project} --name "{pname}" \\
 
 ```bash
 python scripts/vault_pattern_save.py --project {project} --name "{_slug(pname)}" \\
-  --pattern_type {pcat} --status implementado
+  --type {pcat} --status implementado
 ```
 """
             lead = (
@@ -3242,6 +3243,7 @@ def _onboard_13_flows(
     agent: str,
     dry_run: bool,
     deep_ast: bool = False,
+    precomputed: Optional[Dict[str, Any]] = None,
 ) -> List[Tuple[str, str]]:
     results = []
     workflows_dir = project_path / ".github" / "workflows"
@@ -3304,7 +3306,7 @@ python scripts/vault_flow_save.py --project {project} \\
                 emit_error("vault_onboard", "FLOW_CREATE_ERROR", str(exc))
 
     if deep_ast:
-        scan = features_y_flujos.detectar_features_y_flujos(project_path)
+        scan = precomputed if precomputed is not None else features_y_flujos.detectar_features_y_flujos(project_path)
         for flujo in scan.get("flows", [])[:8]:
             fname = flujo["name"]
             ops = flujo.get("business_operations") or ["unclassified"]
@@ -4014,6 +4016,8 @@ def vault_onboard(
         resolved_mode = mode
 
     ast_summary: Optional[Dict[str, Any]] = None
+    scan_ast: Optional[Dict[str, Any]] = None
+    pat_ast: Optional[Dict[str, Any]] = None
     if deep_ast:
         scan_ast = features_y_flujos.detectar_features_y_flujos(project_path)
         pat_ast = patrones_diseno.detectar_patrones(project_path)
@@ -4057,7 +4061,7 @@ def vault_onboard(
             _record(
                 _onboard_05_patterns(
                     project, modules, agent, dry_run,
-                    project_path=project_path, deep_ast=deep_ast,
+                    project_path=project_path, deep_ast=deep_ast, precomputed=pat_ast,
                 ),
                 "patterns",
             )
@@ -4079,7 +4083,10 @@ def vault_onboard(
             _record(_onboard_11_code(project, modules, language, agent, dry_run), "modules")
         if "13" not in skip:
             _record(
-                _onboard_13_flows(project, project_path, agent, dry_run, deep_ast=deep_ast),
+                _onboard_13_flows(
+                    project, project_path, agent, dry_run,
+                    deep_ast=deep_ast, precomputed=scan_ast,
+                ),
                 "flows",
             )
         if "14" not in skip:

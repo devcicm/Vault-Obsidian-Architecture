@@ -134,13 +134,15 @@ const readMode = mod.accessModeDe("vault_search");
 const writeMode = mod.accessModeDe("vault_write");
 const globalMode = mod.accessModeDe("vault_backup");
 const keyFolder = mod.claveRecursoEscritura("vault_write", { folder: "07_Knowledge/sub" });
+const keyNotePath = mod.claveRecursoEscritura("vault_append", { path: "07_Knowledge/sub/nota.md" });
 const keyDefault = mod.claveRecursoEscritura("vault_project", { add: "demo" });
-console.log(JSON.stringify({ readMode, writeMode, globalMode, keyFolder, keyDefault }));
+console.log(JSON.stringify({ readMode, writeMode, globalMode, keyFolder, keyNotePath, keyDefault }));
 """)
     assert r["readMode"] == "read", r
     assert r["writeMode"] == "write", r
     assert r["globalMode"] == "global", r
     assert r["keyFolder"] == "folder:07_Knowledge/sub", r
+    assert r["keyNotePath"] == "folder:07_Knowledge/sub", r
     assert r["keyDefault"] == "vault:write", r
 
 
