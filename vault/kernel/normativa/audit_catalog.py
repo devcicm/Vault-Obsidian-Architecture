@@ -27,6 +27,7 @@ estas tablas y se quedan en `vault_audit`, que es quien recorre el vault. Aquí
 solo está lo declarado.
 """
 
+import re
 from typing import Any, Dict, List, Optional
 
 # Documentación del estándar embarcada dentro de un vault. Sus wikilinks son
@@ -85,20 +86,26 @@ def manifiesto_del_estandar(raiz: "Path") -> "Optional[Path]":
     return None
 
 
+_RE_MANIFIESTO_ARCHIVADO = re.compile(
+    r"^vault-obsidian-architecture(?:\.md|\..+|-(?:v\d+(?:\.\d+)*|\d{4}-\d{2}-\d{2})(?:\.[a-z0-9_-]+)*\.md)$"
+)
+
+
 def es_documentacion_del_estandar(rel: str, contenido: Optional[str] = None) -> bool:
     """¿Esta ruta es documentación del estándar y no una nota del vault?
 
     `rel` es la ruta relativa a la raíz del vault, con `/` como separador.
 
     `contenido` es opcional y solo decide el caso aplanado. Sin él, la respuesta
-    es la conservadora —**no** excluir—: el nombre del manifiesto es largo y
-    único y se sostiene solo, pero un fichero llamado `scripts-README.md` puede
-    ser perfectamente una nota que alguien escribió, y excluirla a ciegas
-    escondería sus enlaces rotos de verdad.
+    es la conservadora —**no** excluir—: el nombre del manifiesto (o sus copias
+    archivadas con versión/fecha como `.v27.backup.md` o `-2026-08-07.md`) se
+    sostiene solo, pero una nota de proyecto del consumidor cuyo slug empiece
+    por `vault-obsidian-architecture-` (p. ej. `01_Projects/vault-obsidian-architecture-seguimiento.md`)
+    es una nota viva del vault y **sí** debe auditarse (Fase O3).
     """
     ruta = rel.replace("\\", "/").lower()
     nombre = ruta.rsplit("/", 1)[-1]
-    if nombre.startswith("vault-obsidian-architecture"):
+    if _RE_MANIFIESTO_ARCHIVADO.match(nombre):
         return True
     if any(ruta.startswith(pref) or f"/{pref}" in ruta
            for pref in ("docs/sdd/", "scripts/")):

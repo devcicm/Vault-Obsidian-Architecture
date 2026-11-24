@@ -31,8 +31,14 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
-import vault_grafo_import
 from vault.kernel import rutas
+
+try:
+    import vault_grafo_import
+    _DIR_PROGRAMA = vault_grafo_import.DIRECTORIO
+except ModuleNotFoundError:
+    # Hoja importable sin `scripts/` en sys.path (checkout o paquete instalado).
+    _DIR_PROGRAMA = Path(__file__).resolve().parents[3] / rutas.SCRIPTS
 
 # ─── La norma como paquete (deuda #10, piloto AP-65) ──────────────────────────
 #
@@ -53,7 +59,7 @@ from vault.kernel import rutas
 #: `vault_toolkit/normas` son hermanos, no el repo y sus carpetas). Quien
 #: necesita la ruta de una carpeta del repo la pide a su dueño; quien
 #: necesita la carpeta que está junto al programa, la pide al programa.
-RAIZ_NORMAS = (vault_grafo_import.DIRECTORIO.parent / "normas").resolve()
+RAIZ_NORMAS = (_DIR_PROGRAMA.parent / rutas.NORMAS).resolve()
 
 #: Códigos que el catálogo carga desde su paquete, en el orden en que los carga.
 NORMAS_EN_PAQUETE: List[str] = []

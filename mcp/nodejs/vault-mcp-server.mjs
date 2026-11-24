@@ -26,7 +26,7 @@ import { spawn, execSync } from "node:child_process";
 import { readFile, readdir, stat, writeFile, mkdir, rename, rmdir } from "node:fs/promises";
 import { existsSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
-import { resolve, basename, dirname, join, sep, isAbsolute, relative } from "node:path";
+import { resolve, basename, dirname, join, sep, delimiter, isAbsolute, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { deflateSync, inflateSync } from "node:zlib";
 import { createWriteStream, createReadStream } from "node:fs";
@@ -101,9 +101,9 @@ let VAULT_ROOT = process.env.VAULT_ROOT || envDefault("VAULT_ROOT");
 // qué es «estar dentro del repo».
 const EN_REPO_DEL_ESTANDAR = existsSync(join(REPO_ROOT, "vault-obsidian-architecture.md"));
 let VAULT_SCAN_ROOTS = process.env.VAULT_SCAN_ROOTS
-  ? process.env.VAULT_SCAN_ROOTS.split(";").map(p => resolve(p))
+  ? process.env.VAULT_SCAN_ROOTS.split(delimiter).filter(Boolean).map(p => resolve(p))
   : (EN_REPO_DEL_ESTANDAR
-      ? [join(REPO_ROOT, ".."), join(REPO_ROOT, "..", "..", "..")]
+      ? [join(REPO_ROOT, "..")]
       : []);
 let SSE_PORT = 0;
 let LOG_LEVEL = process.env.VAULT_MCP_LOG || envDefault("VAULT_MCP_LOG");
@@ -195,10 +195,15 @@ function detectVaultRoot() {
       "`vault mcp-path` imprime la configuración del cliente.",
     );
   }
-  const candidates = [
-    join(REPO_ROOT, "vault-sandbox"),
-    ...Array.from({ length: 20 }, (_, i) => join(REPO_ROOT, `..`)).map(p => resolve(p))
-  ];
+  const candidates = [join(REPO_ROOT, "vault-sandbox")];
+  let ancestor = dirname(resolve(REPO_ROOT));
+  for (let i = 0; i < 20; i++) {
+    if (!ancestor || candidates.includes(ancestor)) break;
+    candidates.push(ancestor);
+    const parent = dirname(ancestor);
+    if (parent === ancestor) break;
+    ancestor = parent;
+  }
   const MARKERS = ["00_System", "01_Projects", "99_Index", ".obsidian"];
   for (const dir of candidates) {
     try {
@@ -1178,8 +1183,21 @@ class AsyncRWCoordinator {
     };
   }
 
+  _hasPendingWrites() {
+    for (const q of this.pendingWritesByKey.values()) {
+      if (q.length > 0) return true;
+    }
+    return false;
+  }
+
   _acquireRead() {
-    if (!this.activeGlobal && this.pendingGlobals.length === 0 && this.activeReads < this.maxReads) {
+    if (
+      !this.activeGlobal
+      && this.pendingGlobals.length === 0
+      && this.activeWritesByKey.size === 0
+      && !this._hasPendingWrites()
+      && this.activeReads < this.maxReads
+    ) {
       this.activeReads++;
       return Promise.resolve();
     }
@@ -1188,7 +1206,12 @@ class AsyncRWCoordinator {
 
   _acquireWrite(key) {
     const k = key || "vault:write";
-    if (!this.activeGlobal && this.pendingGlobals.length === 0 && !this.activeWritesByKey.has(k)) {
+    if (
+      !this.activeGlobal
+      && this.pendingGlobals.length === 0
+      && this.activeReads === 0
+      && !this.activeWritesByKey.has(k)
+    ) {
       this.activeWritesByKey.set(k, 1);
       return Promise.resolve();
     }
@@ -1216,21 +1239,26 @@ class AsyncRWCoordinator {
       }
       return;
     }
-    while (this.pendingReads.length > 0 && this.activeReads < this.maxReads) {
-      this.activeReads++;
-      const nextRead = this.pendingReads.shift();
-      nextRead();
-    }
-    for (const [k, queue] of [...this.pendingWritesByKey.entries()]) {
-      if (queue.length === 0) {
-        this.pendingWritesByKey.delete(k);
-        continue;
+    if (this.activeReads === 0 && this._hasPendingWrites()) {
+      for (const [k, queue] of [...this.pendingWritesByKey.entries()]) {
+        if (queue.length === 0) {
+          this.pendingWritesByKey.delete(k);
+          continue;
+        }
+        if (!this.activeWritesByKey.has(k)) {
+          this.activeWritesByKey.set(k, 1);
+          const nextWrite = queue.shift();
+          if (queue.length === 0) this.pendingWritesByKey.delete(k);
+          nextWrite();
+        }
       }
-      if (!this.activeWritesByKey.has(k)) {
-        this.activeWritesByKey.set(k, 1);
-        const nextWrite = queue.shift();
-        if (queue.length === 0) this.pendingWritesByKey.delete(k);
-        nextWrite();
+      return;
+    }
+    if (this.activeWritesByKey.size === 0) {
+      while (this.pendingReads.length > 0 && this.activeReads < this.maxReads) {
+        this.activeReads++;
+        const nextRead = this.pendingReads.shift();
+        nextRead();
       }
     }
   }

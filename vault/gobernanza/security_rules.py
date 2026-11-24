@@ -1,6 +1,6 @@
 """Registro central de reglas de seguridad OWASP/CWE.
 
-Una sola declaración: las 45 reglas de escaneo de código viva aquí.
+Una sola declaración: las reglas de escaneo de código viven aquí (`TOTAL_REGLAS`).
 `vault_security_scan` las consume; `vault_log_error` acepta owasp_category y cwe_id
 pero no necesita el mapeo completo — lo obtiene del finding que le pasa el escáner.
 
@@ -49,7 +49,7 @@ REGLAS_POR_CATEGORIA: Dict[str, List[Dict[str, Any]]] = {
         },
         {
             "id": "S006",
-            "pattern": r"(?i)(github[_-]?token|ghp_[a-zA-Z0-9]{36})",
+            "pattern": r"(?i)(?:github[_-]?token\s*[=:]\s*[\"'][^\"']{12,}|ghp_[a-zA-Z0-9]{36}|github_pat_[a-zA-Z0-9_]{20,})",
             "severity": "critical",
             "owasp": "A02:2021",
             "cwe": "CWE-798",
@@ -86,7 +86,7 @@ REGLAS_POR_CATEGORIA: Dict[str, List[Dict[str, Any]]] = {
         },
         {
             "id": "I002",
-            "pattern": r"execute\s*\(\s*['\"].*\%s.*['\"]",
+            "pattern": r"\bexecute\s*\(\s*(?:f['\"][^'\"]*\{[^}]+\}|['\"][^'\"]*\%s[^'\"]*['\"]\s*%\s*|['\"][^'\"]*['\"]\s*\+)",
             "severity": "high",
             "owasp": "A03:2021",
             "cwe": "CWE-89",
@@ -123,7 +123,7 @@ REGLAS_POR_CATEGORIA: Dict[str, List[Dict[str, Any]]] = {
     "command_injection": [
         {
             "id": "C001",
-            "pattern": r"(exec|spawn|execSync)\s*\([^)]*\(req|process|argv|body|query|params\)",
+            "pattern": r"\b(?:exec|spawn|execSync)\s*\([^)]*\b(?:req\.|process\.argv|argv|req\.body|req\.query|req\.params)\b",
             "severity": "critical",
             "owasp": "A03:2021",
             "cwe": "CWE-78",
@@ -218,7 +218,7 @@ REGLAS_POR_CATEGORIA: Dict[str, List[Dict[str, Any]]] = {
         },
         {
             "id": "A006",
-            "pattern": r"session\.regenerate\s*\(\s*\)",
+            "pattern": r"\breq\.session\.id\s*=\s*(?:req\.|params|query|body)",
             "severity": "low",
             "owasp": "A07:2021",
             "cwe": "CWE-384",
@@ -278,7 +278,7 @@ REGLAS_POR_CATEGORIA: Dict[str, List[Dict[str, Any]]] = {
     "path_traversal": [
         {
             "id": "P001",
-            "pattern": r"readFile\s*\([^)]*\(req|process|argv|body|query|params\)",
+            "pattern": r"\breadFile(?:Sync)?\s*\([^)]*\b(?:req\.|process\.argv|argv|req\.body|req\.query|req\.params)\b",
             "severity": "high",
             "owasp": "A01:2021",
             "cwe": "CWE-22",
@@ -292,7 +292,7 @@ REGLAS_POR_CATEGORIA: Dict[str, List[Dict[str, Any]]] = {
         },
         {
             "id": "P003",
-            "pattern": r"__dirname\s*\+\s*\(req|process|argv|body|query|params\)",
+            "pattern": r"__dirname\s*\+\s*(?:req\.|process\.argv|argv|req\.body|req\.query|req\.params)\b",
             "severity": "high",
             "owasp": "A01:2021",
             "cwe": "CWE-22",
@@ -323,7 +323,7 @@ REGLAS_POR_CATEGORIA: Dict[str, List[Dict[str, Any]]] = {
     ],
     "xxe": [
         {
-            "id": "X001",
+            "id": "XXE001",
             "pattern": r"XMLParser\s*\(|xmlParser\s*\(|new\s+DOMParser\s*\(",
             "severity": "medium",
             "owasp": "A05:2021",
@@ -340,7 +340,7 @@ REGLAS_POR_CATEGORIA: Dict[str, List[Dict[str, Any]]] = {
         },
         {
             "id": "D002",
-            "pattern": r"JSON\.parse\s*\([^)]*\(req|process|argv|body\)",
+            "pattern": r"\bJSON\.parse\s*\([^)]*\b(?:req\.|process\.argv|req\.body)\b",
             "severity": "low",
             "owasp": "A08:2021",
             "cwe": "CWE-915",
@@ -356,7 +356,7 @@ REGLAS_POR_CATEGORIA: Dict[str, List[Dict[str, Any]]] = {
         },
         {
             "id": "PP002",
-            "pattern": r"merge\s*\([^)]*\(req|body|query\)",
+            "pattern": r"\bmerge\s*\([^)]*\b(?:req\.body|req\.query|req\.params)\b",
             "severity": "high",
             "owasp": "A08:2021",
             "cwe": "CWE-1321",
@@ -372,7 +372,7 @@ REGLAS_POR_CATEGORIA: Dict[str, List[Dict[str, Any]]] = {
     "redos": [
         {
             "id": "R001",
-            "pattern": r"new\s+RegExp\s*\([^)]*\(req|process|argv|body|query|params\)",
+            "pattern": r"\bnew\s+RegExp\s*\([^)]*\b(?:req\.|process\.argv|req\.body|req\.query|req\.params)\b",
             "severity": "medium",
             "owasp": "A04:2021",
             "cwe": "CWE-1333",
@@ -402,7 +402,7 @@ REGLAS_POR_CATEGORIA: Dict[str, List[Dict[str, Any]]] = {
         },
         {
             "id": "CF004",
-            "pattern": r"\.env(?!\.)",
+            "pattern": r"(?<![A-Za-z0-9_])\.env\b(?!\.example|\.sample|\.template)",
             "severity": "low",
             "owasp": "A05:2021",
             "cwe": "CWE-522",
@@ -439,7 +439,7 @@ REGLAS_POR_CATEGORIA: Dict[str, List[Dict[str, Any]]] = {
         },
         {
             "id": "DP002",
-            "pattern": r"require\s*\([^)]*\(req|process|argv|body\)",
+            "pattern": r"\brequire\s*\([^)]*\b(?:req\.|process\.argv|req\.body)\b",
             "severity": "medium",
             "owasp": "A06:2021",
             "cwe": "CWE-827",

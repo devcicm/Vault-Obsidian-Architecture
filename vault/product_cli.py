@@ -516,7 +516,10 @@ def cmd_mcp_path(args: argparse.Namespace) -> int:
         "VAULT_ROOT": str(Path(raiz).resolve()) if raiz else "<ruta absoluta del vault>",
         "VAULT_MCP_PYTHON": sys.executable,
     }
-    payload: dict[str, Any] = {"ok": True, "server": str(servidor), "python": sys.executable}
+    perfil_mcp = getattr(args, "perfil", "agente") or "agente"
+    if perfil_mcp != "completo":
+        env["VAULT_MCP_PERFIL"] = perfil_mcp
+    payload: dict[str, Any] = {"ok": True, "server": str(servidor), "python": sys.executable, "perfil": perfil_mcp}
     if args.project:
         from .kernel import proyectos as _proyectos
         slug, pedido = args.project, _PREVIO.get("project") or args.project
@@ -584,6 +587,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--project",
         type=proyecto_registrado("vault", _raiz_de_mcp_path),
         help="Ata la sesión MCP a este proyecto (slug o alias registrado)",
+    )
+    mcp_path.add_argument(
+        "--perfil",
+        choices=("agente", "completo"),
+        default="agente",
+        help="Perfil MCP emitido en env (default: agente = 15 tools / ~4.8k tokens; completo = catálogo entero)",
     )
     mcp_path.set_defaults(func=cmd_mcp_path)
     return parser

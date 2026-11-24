@@ -157,3 +157,50 @@ def test_mantenimiento_mcp_cabeceras_y_docs_alineados_con_ap48():
     assert "+50 JS-native" not in roadmap
     assert "+20 JS-native" not in roadmap
     assert "AP-48" in roadmap
+
+
+def test_lecturas_y_escrituras_no_se_solapan_en_async_rw_coordinator():
+    """Fase O2: read y write son mutuamente excluyentes en AsyncRWCoordinator."""
+    r = _node_eval("""
+const coord = new mod.AsyncRWCoordinator(4);
+const eventos = [];
+let solapado = false;
+const pWrite = coord.run("write", "folder:07_Knowledge", async () => {
+  eventos.push("w:start");
+  if (coord.stats().activeReads > 0) solapado = true;
+  await new Promise(res => setTimeout(res, 40));
+  if (coord.stats().activeReads > 0) solapado = true;
+  eventos.push("w:end");
+});
+const pRead = coord.run("read", null, async () => {
+  eventos.push("r:start");
+  if (coord.stats().activeWriteKeys > 0) solapado = true;
+  await new Promise(res => setTimeout(res, 15));
+  eventos.push("r:end");
+});
+await Promise.all([pWrite, pRead]);
+console.log(JSON.stringify({ eventos, solapado, stats: coord.stats() }));
+""")
+    assert r["solapado"] is False, r
+    assert r["eventos"].index("w:end") < r["eventos"].index("r:start"), r
+    assert r["stats"]["activeReads"] == 0 and r["stats"]["activeWriteKeys"] == 0
+
+
+def test_vault_onboard_es_global_y_mcp_path_emite_perfil_agente_por_defecto(tmp_path):
+    r = _node_eval("""
+mod.loadCatalog?.();
+console.log(JSON.stringify({ onboardMode: mod.accessModeDe("vault_onboard") }));
+""")
+    assert r["onboardMode"] == "global", r
+
+    from apoyo import correr_python
+
+    p_def = correr_python("-m", "vault", "mcp-path", timeout=30)
+    assert p_def.returncode == 0, p_def.stderr
+    d_def = json.loads(p_def.stdout)
+    assert d_def["config"]["env"].get("VAULT_MCP_PERFIL") == "agente", d_def
+
+    p_full = correr_python("-m", "vault", "mcp-path", "--perfil", "completo", timeout=30)
+    assert p_full.returncode == 0, p_full.stderr
+    d_full = json.loads(p_full.stdout)
+    assert "VAULT_MCP_PERFIL" not in d_full["config"]["env"], d_full

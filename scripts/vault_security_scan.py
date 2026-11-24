@@ -23,7 +23,7 @@ Usage:
 """
 
 import argparse
-
+import hashlib
 import json
 
 import re
@@ -301,8 +301,12 @@ def save_findings_to_vault(findings: List[Dict], project: str) -> List[str]:
     for f in findings:
         if f["severity"] in ["critical", "high"]:
             slug = slugify_strict(f["ruleId"] + "-" + f["category"])
+            # Hash corto de ubicacion para evitar que multiples hallazgos de la misma regla
+            # el mismo dia se sobrescriban silenciosamente entre si (Fase O1).
+            loc_key = f"{f.get('file', '')}:{f.get('line', 0)}:{f['ruleId']}"
+            loc_hash = hashlib.sha256(loc_key.encode("utf-8")).hexdigest()[:8]
 
-            note_path = _vulnerabilities_dir() / f"{f['ruleId']}-{slug}-{timestamp}.md"
+            note_path = _vulnerabilities_dir() / f"{f['ruleId']}-{slug}-{loc_hash}-{timestamp}.md"
 
             note_lines = [
                 Frontmatter()

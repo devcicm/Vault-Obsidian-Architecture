@@ -5514,6 +5514,7 @@ GLOBAL_SCOPE_TOOLS = frozenset({
     "vault_reindex", "vault_master_index", "vault_migrate_docs",
     "vault_migrate_rollback", "vault_standard_upgrade", "vault_init",
     "vault_merge", "vault_graph_merge", "vault_propagate", "vault_move",
+    "vault_onboard",
 })
 
 

@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Tuple
 from vault.kernel.normalizacion import es_union_ortografica
 from vault.kernel.regex import strip_code_blocks
 
-_RE_SAFETY_1 = re.compile('^(```{1,3})(.*)$')
+_RE_SAFETY_1 = re.compile(r"^(`{3,}|~{3,})(.*)$")
 
 _INJECTION_PATTERNS: List[Tuple[str, str, str]] = [
     ("POISON-01", r"(?i)\b(ignora|ignore|olvida|forget|disregard)\b[^.\n]{0,40}"
@@ -66,25 +66,48 @@ class Finding:
 
 
 def _prose_only_lines(text: str):
-    """Yield lines that are NOT inside a code fence and NOT a line comment."""
+    """Yield lines that are NOT inside a properly closed code fence and NOT a line comment.
+
+    Edge case de seguridad (Fase O3): un bloque ```` ``` ```` abierto sin cierre no
+    puede usarse para ocultar directivas `POISON-*` en el resto del documento — si
+    llega el fin de texto sin cerrar el fence, las líneas pendientes se evalúan
+    como prosa normal.
+    """
     in_fence = False
-    fence_kind = ""
+    fence_char = ""
+    fence_len = 0
+    fence_buffer: List[str] = []
     for line in text.splitlines(keepends=True):
         stripped = line.lstrip()
-        m = _RE_SAFETY_1.match(stripped)
-        if m and not in_fence:
-            in_fence = True
-            fence_kind = m.group(1)
-            continue
-        if in_fence and (stripped.startswith(fence_kind) or stripped == fence_kind):
-            in_fence = False
-            fence_kind = ""
-            continue
-        if in_fence:
-            continue
-        if stripped.startswith("#"):
-            continue
-        yield line
+        if not in_fence:
+            m = _RE_SAFETY_1.match(stripped)
+            if m:
+                in_fence = True
+                fence_char = m.group(1)[0]
+                fence_len = len(m.group(1))
+                fence_buffer = []
+                continue
+            if stripped.startswith("#"):
+                continue
+            yield line
+        else:
+            close_candidate = stripped.rstrip("\r\n ")
+            if (
+                len(close_candidate) >= fence_len
+                and set(close_candidate) == {fence_char}
+            ):
+                in_fence = False
+                fence_char = ""
+                fence_len = 0
+                fence_buffer = []
+                continue
+            fence_buffer.append(line)
+
+    # Fence sin cerrar: evaluar lo acumulado como prosa para impedir evasión
+    if in_fence and fence_buffer:
+        for buffered in fence_buffer:
+            if not buffered.lstrip().startswith("#"):
+                yield buffered
 
 
 def scan_content(text: str, field_name: str = "content") -> List[Finding]:
@@ -93,14 +116,13 @@ def scan_content(text: str, field_name: str = "content") -> List[Finding]:
     if not text:
         return findings
 
-    _FORMATO_PATTERNS = [
-        p for p in _INJECTION_PATTERNS if p[0] in ("POISON-02", "POISON-03")
-    ]
-    _NATURAL_LANGUAGE_PATTERNS = [
-        p for p in _INJECTION_PATTERNS if p[0] not in ("POISON-02", "POISON-03")
-    ]
+    # POISON-03 (etiquetas XML de sistema) aplica en todo el texto;
+    # POISON-02 (`user:`/`system:`/`assistant:`) solo aplica en prosa fuera de
+    # bloques de codigo cercados para no rechazar YAML/INI legitimos como `user: postgres` (Fase O3).
+    _RAW_PATTERNS = [p for p in _INJECTION_PATTERNS if p[0] == "POISON-03"]
+    _PROSE_PATTERNS = [p for p in _INJECTION_PATTERNS if p[0] != "POISON-03"]
 
-    for code, pattern, detail in _FORMATO_PATTERNS:
+    for code, pattern, detail in _RAW_PATTERNS:
         match = re.search(pattern, text, re.MULTILINE)
         if match:
             fragment = match.group(0).strip()[:120]
@@ -110,7 +132,7 @@ def scan_content(text: str, field_name: str = "content") -> List[Finding]:
             ))
 
     prose_text = "".join(_prose_only_lines(text))
-    for code, pattern, detail in _NATURAL_LANGUAGE_PATTERNS:
+    for code, pattern, detail in _PROSE_PATTERNS:
         match = re.search(pattern, prose_text, re.MULTILINE)
         if match:
             fragment = match.group(0).strip()[:120]

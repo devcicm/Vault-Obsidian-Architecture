@@ -431,7 +431,7 @@ _MAX_BYTES_ARCHIVO = 1_500_000
 _REGLAS_GENERICAS: Tuple[Tuple[str, re.Pattern, str, str], ...] = (
     (
         "cqrs",
-        re.compile(r"\bclass\s+(AsyncRWCoordinator|[A-Za-z0-9_]*(?:CommandHandler|QueryHandler|CommandBus|QueryBus))\b"),
+        re.compile(r"\bclass\s+([A-Za-z0-9_]*(?:CommandHandler|QueryHandler|CommandBus|QueryBus|RWCoordinator))\b"),
         "evidencia_fuerte",
         "Clase coordinadora CQRS de lectura/escritura o bus de comandos/consultas",
     ),
@@ -491,7 +491,7 @@ _REGLAS_GENERICAS: Tuple[Tuple[str, re.Pattern, str, str], ...] = (
     ),
     (
         "envelope-result-object",
-        re.compile(r"\bfunction\s+(construirError|emitError|buildEnvelope)\s*\("),
+        re.compile(r"\bfunction\s+(buildError|emitError|buildEnvelope|createResult)\s*\("),
         "evidencia_fuerte",
         "Constructor canonico de envelope estructurado de respuesta/error",
     ),
@@ -515,7 +515,7 @@ _REGLAS_GENERICAS: Tuple[Tuple[str, re.Pattern, str, str], ...] = (
     ),
     (
         "wave-resource-scheduler",
-        re.compile(r"\bclass\s+([A-Za-z0-9_]*Scheduler|AsyncRWCoordinator)\b"),
+        re.compile(r"\bclass\s+([A-Za-z0-9_]*(?:Scheduler|RWCoordinator))\b"),
         "evidencia_fuerte",
         "Planificador o coordinador concurrente por tipo de acceso",
     ),
@@ -746,21 +746,13 @@ def _detectar_python(
         nombre_var = _nombre_asignado(nodo)
         valor_var = _valor_asignado(nodo)
         if nombre_var and valor_var is not None:
-            if nombre_var in ("CONTEXTS", "BOUNDED_CONTEXTS", "PRESUPUESTO_DE_CRUCES"):
+            if nombre_var in ("CONTEXTS", "BOUNDED_CONTEXTS"):
                 agregar(
                     "bounded-contexts-ddd",
                     nodo.lineno,
                     nombre_var,
                     "evidencia_fuerte",
-                    "Registro explicito de contextos acotados o presupuesto de cruces",
-                )
-            elif nombre_var == "ACCESS_MODES" or nombre_var == "GLOBAL_SCOPE_TOOLS":
-                agregar(
-                    "cqrs",
-                    nodo.lineno,
-                    nombre_var,
-                    "evidencia_fuerte",
-                    "Contrato canonico de clasificacion lectura/escritura/global (CQRS)",
+                    "Registro explicito de contextos acotados",
                 )
             elif (
                 nombre_var.endswith(("_CATALOG", "_REGISTRY", "REGISTRIES"))
@@ -817,7 +809,7 @@ def _detectar_python(
                     "evidencia_fuerte",
                     "Tabla declarativa de despacho de comandos/rutas",
                 )
-            elif nombre_var in ("_LOCAL_LOCKS", "_INSTANCE", "_SINGLETON"):
+            elif nombre_var in ("_INSTANCE", "_SINGLETON"):
                 agregar(
                     "singleton-module-cache",
                     nodo.lineno,
@@ -836,19 +828,19 @@ def _detectar_python(
                         f"Instanciacion de lock explicito `{llamado}` para exclusion mutua",
                     )
 
-            # Puertos declarados dentro de CONTEXTS (Hexagonal)
-            if nombre_var == "CONTEXTS" and isinstance(valor_var, ast.Dict):
+            # Puertos declarados dentro de contextos (Hexagonal, criterio generico)
+            if nombre_var in ("CONTEXTS", "BOUNDED_CONTEXTS") and isinstance(valor_var, ast.Dict):
                 for val_ctx in valor_var.values:
                     if isinstance(val_ctx, ast.Dict):
                         claves = {
                             k.value for k in val_ctx.keys
                             if isinstance(k, ast.Constant) and isinstance(k.value, str)
                         }
-                        if "puertos" in claves:
+                        if "ports" in claves or "puertos" in claves:
                             agregar(
                                 "hexagonal-ports-adapters",
                                 nodo.lineno,
-                                "CONTEXTS[*]['puertos']",
+                                nombre_var,
                                 "evidencia_fuerte",
                                 "Declaracion formal de puertos entre contextos acotados",
                             )
@@ -868,7 +860,7 @@ def _detectar_python(
                     "evidencia_fuerte",
                     "Clase Repository que encapsula persistencia/rutas del dominio",
                 )
-            if cname.endswith("Adapter") or cname.startswith("Adaptador") or cname == "NormasDelCatalogo":
+            if cname.endswith("Adapter") or cname.startswith("Adaptador"):
                 agregar(
                     "adapter",
                     nodo.lineno,
@@ -876,15 +868,23 @@ def _detectar_python(
                     "evidencia_fuerte",
                     "Clase Adapter que traduce contratos entre capas",
                 )
+            retorna_self = any(
+                isinstance(sub, ast.Return)
+                and isinstance(sub.value, ast.Name)
+                and sub.value.id == "self"
+                for m in nodo.body
+                if isinstance(m, (ast.FunctionDef, ast.AsyncFunctionDef))
+                for sub in ast.walk(m)
+            )
             if cname.endswith("Builder") or (
-                cname == "Frontmatter" and {"set", "render"}.issubset(metodos)
+                retorna_self and bool(metodos.intersection({"build", "render", "to_dict"}))
             ):
                 agregar(
                     "builder",
                     nodo.lineno,
                     cname,
                     "evidencia_fuerte",
-                    "Clase Builder con construccion incremental y render/build final",
+                    "Clase Builder con construccion fluida (retorna self) y build/render final",
                 )
             if cname.endswith("Factory"):
                 agregar(
@@ -902,7 +902,7 @@ def _detectar_python(
                     "evidencia_fuerte",
                     "Clase Facade que simplifica el acceso a un subsistema",
                 )
-            if cname.endswith("Proxy") or cname == "_StablePrimitiveExport":
+            if cname.endswith("Proxy"):
                 agregar(
                     "proxy-lazy-export",
                     nodo.lineno,
@@ -926,7 +926,7 @@ def _detectar_python(
                     "evidencia_fuerte",
                     "Clase StateMachine con transiciones gobernadas",
                 )
-            if cname.endswith(("CommandHandler", "QueryHandler", "CommandBus", "QueryBus")) or cname == "AsyncRWCoordinator":
+            if cname.endswith(("CommandHandler", "QueryHandler", "CommandBus", "QueryBus", "RWCoordinator")):
                 agregar(
                     "cqrs",
                     nodo.lineno,
@@ -934,13 +934,13 @@ def _detectar_python(
                     "evidencia_fuerte",
                     "Componente explicito CQRS de comandos/consultas",
                 )
-            if cname.endswith(("Command", "Dispatcher", "Router")) or cname == "Operation":
+            if cname.endswith(("Command", "Dispatcher", "Router")):
                 agregar(
                     "command-dispatch-router",
                     nodo.lineno,
                     cname,
                     "evidencia_fuerte",
-                    "Objeto Command/Operation o enrutador de despacho",
+                    "Objeto Command o enrutador de despacho",
                 )
             if cname.endswith(("Observer", "EventBus", "Publisher")):
                 agregar(
@@ -1064,8 +1064,8 @@ def _detectar_python(
                     "evidencia_fuerte",
                     "Exportacion perezosa a nivel de modulo (PEP 562)",
                 )
-            if fname in ("construir", "create_container", "compose_app") and (
-                "adaptadores" in rel_posix or "__init__" in rel_posix or "container" in rel_posix
+            if fname in ("create_container", "compose_app", "build_container") and (
+                "__init__" in rel_posix or "container" in rel_posix or "composition" in rel_posix
             ):
                 agregar(
                     "composition-root",
@@ -1074,7 +1074,10 @@ def _detectar_python(
                     "evidencia_fuerte",
                     "Raiz de composicion que ensambla contexto y adaptadores",
                 )
-            if fname in ("proyecto_registrado", "crear_validador") or fname.endswith("_factory"):
+            if fname.endswith("_factory") or (
+                fname.startswith(("make_", "create_", "build_"))
+                and any(isinstance(sub, ast.FunctionDef) for sub in nodo.body)
+            ):
                 agregar(
                     "factory",
                     nodo.lineno,
@@ -1082,23 +1085,26 @@ def _detectar_python(
                     "evidencia_fuerte",
                     "Fabrica parametrizada que construye validadores u objetos",
                 )
-            if fname in ("emit_error", "wrap_main", "emit_fallo", "construir_error"):
+            # Envelope / Result Object generico: funcion que retorna dict estructurado con `ok` y `error_code`/`error`
+            emite_envelope = False
+            for sub in ast.walk(nodo):
+                if isinstance(sub, ast.Return) and isinstance(sub.value, ast.Dict):
+                    claves_ret = {
+                        k.value for k in sub.value.keys
+                        if isinstance(k, ast.Constant) and isinstance(k.value, str)
+                    }
+                    if "ok" in claves_ret and ("error_code" in claves_ret or "error" in claves_ret):
+                        emite_envelope = True
+                        break
+            if emite_envelope:
                 agregar(
                     "envelope-result-object",
                     nodo.lineno,
                     fname,
                     "evidencia_fuerte",
-                    "Emisor canonico de envelopes de respuesta/error",
+                    "Constructor canonico de envelope de respuesta/error estructurado",
                 )
-            if fname in ("file_lock", "indice_compartido"):
-                agregar(
-                    "reentrant-cross-process-lock",
-                    nodo.lineno,
-                    fname,
-                    "evidencia_fuerte",
-                    "Primitiva de bloqueo reentrante o entre procesos",
-                )
-            if fname in ("guardar_version_actual", "quarantine_file", "rollback_to_commit"):
+            if fname in ("create_snapshot", "quarantine_file", "rollback_to_commit", "restore_snapshot"):
                 agregar(
                     "snapshot-quarantine-rollback",
                     nodo.lineno,
@@ -1197,13 +1203,15 @@ def _detectar_python(
                     "evidencia_fuerte",
                     "Funcion de reintento con espera exponencial acotada",
                 )
-            if fname == "escrituras_en_lote":
+            if any(_es_decorador(d, "contextmanager") for d in nodo.decorator_list) and any(
+                k in fname.lower() for k in ("transaction", "batch", "unit_of_work", "uow", "lote")
+            ):
                 agregar(
                     "unit-of-work",
                     nodo.lineno,
                     fname,
                     "evidencia_fuerte",
-                    "Context manager de escrituras en lote estilo Unit of Work",
+                    "Context manager transaccional o por lote estilo Unit of Work",
                 )
             if any(
                 isinstance(sub, ast.FunctionDef)
