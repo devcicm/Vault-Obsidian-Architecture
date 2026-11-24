@@ -34,9 +34,11 @@ from vault.kernel.indices_structural import es_argumento_de_ruta
 EXTERNAS_ESPERADAS = {
     ("vault_audit", "path"),
     ("vault_code_module", "scan-path"),
+    ("vault_code_query", "scan-path"),
     ("vault_code_sync", "scan-dir"),
     ("vault_code_tag", "file"),
     ("vault_drift_detect", "path"),
+    ("vault_flow_save", "scan-path"),
     ("vault_ingest", "file"),
     ("vault_migrate_docs", "source_path"),
     ("vault_onboard", "path"),

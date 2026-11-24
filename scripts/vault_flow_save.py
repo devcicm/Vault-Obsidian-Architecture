@@ -57,6 +57,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.features_y_flujos import detectar_features_y_flujos  # noqa: E402
 from vault.kernel.contenido import nota_escalonada  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
@@ -250,6 +251,78 @@ def vault_flow_save(
     }
 
 
+def vault_flow_scan_and_save(
+    project: str,
+    scan_path: str,
+    feature: Optional[str] = None,
+    max_flows: int = 10,
+    tags: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """Escanea `scan_path` y persiste en `13_Flows/workflow/` los flujos de valor detectados."""
+    objetivo = Path(scan_path).expanduser().resolve()
+    if not objetivo.exists():
+        return emit_error("vault_flow_save", "FILE_NOT_FOUND", f"No existe la ruta a escanear: {scan_path}")
+
+    informe = detectar_features_y_flujos(objetivo, filtro_feature=feature)
+    flujos = informe["flows"][: max(1, int(max_flows))]
+    guardados: List[Dict[str, Any]] = []
+    created = 0
+    updated = 0
+
+    for flujo in flujos:
+        vs = flujo["value_stream"]
+        etapas = " -> ".join(vs.get("stages") or [])
+        decisiones = "; ".join(vs.get("decisions") or [])
+        desc = (
+            f"Flujo detectado deterministamente desde `{flujo['entry_file']}:{flujo['entry_line']}` "
+            f"(simbolo `{flujo['entry_symbol']}`, tipo `{flujo['kind']}`). "
+            f"Etapas de valor: {etapas or 'N/A'}."
+        )
+        if decisiones:
+            desc += f" Puntos de decision: {decisiones}."
+
+        res = vault_flow_save(
+            project=project,
+            name=flujo["name"],
+            flow_type="workflow",
+            description=desc,
+            mermaid=flujo["mermaid"],
+            steps=flujo["steps"],
+            actors=",".join(vs.get("actors") or []),
+            triggers=vs.get("trigger"),
+            post_conditions=vs.get("outcome"),
+            related_code=",".join(flujo.get("related_code") or []),
+            tags=list(tags or []) + ["auto-detected", flujo["kind"]],
+        )
+        if not res.get("ok"):
+            return res
+        if res.get("action") == "created":
+            created += 1
+        else:
+            updated += 1
+        guardados.append({
+            "name": flujo["name"],
+            "path": res["path"],
+            "action": res["action"],
+            "steps_count": flujo["steps_count"],
+        })
+
+    return {
+        "ok": True,
+        "mode": "scan_and_save",
+        "project": project,
+        "target": informe["target"],
+        "files_scanned": informe["files_scanned"],
+        "features_count": informe["features_count"],
+        "flows_detected": informe["flows_count"],
+        "flows_saved": len(guardados),
+        "written": len(guardados),
+        "created": created,
+        "updated": updated,
+        "saved_flows": guardados,
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Vault Flow Save Tool -- workflows, pipelines, lifecycles, dataflows",
@@ -329,18 +402,24 @@ Notas:
 
     parser.add_argument("--project", type=proyecto_registrado("vault_flow_save"), required=True, help="Project slug")
 
-    parser.add_argument("--name", required=True, help="Flow name")
+    parser.add_argument("--scan-path", dest="scan_path", help="Ruta interna o externa de codigo para detectar y guardar flujos automaticamente")
+
+    parser.add_argument("--feature", help="Filtro opcional de feature/capacidad al usar --scan-path")
+
+    parser.add_argument("--max-flows", dest="max_flows", type=int, default=10, help="Maximo de flujos a persistir con --scan-path (default: 10)")
+
+    parser.add_argument("--name", required=False, help="Flow name")
 
     parser.add_argument(
-        "--type", choices=FLOW_TYPES, required=True, dest="flow_type", help=f"Flow type: {FLOW_TYPES}"
+        "--type", choices=FLOW_TYPES, required=False, dest="flow_type", help=f"Flow type: {FLOW_TYPES}"
     )
 
     parser.add_argument(
-        "--description", required=True, help="What this flow does (1-3 lines)"
+        "--description", required=False, help="What this flow does (1-3 lines)"
     )
 
     parser.add_argument(
-        "--mermaid", required=True, help="Mermaid diagram source (without backticks)"
+        "--mermaid", required=False, help="Mermaid diagram source (without backticks)"
     )
 
     parser.add_argument(
@@ -369,6 +448,29 @@ Notas:
     parser.add_argument("--tags", nargs="*", help="Additional tags")
 
     args = parser.parse_args()
+
+    if args.scan_path:
+        result = vault_flow_scan_and_save(
+            project=args.project,
+            scan_path=args.scan_path,
+            feature=args.feature,
+            max_flows=args.max_flows,
+            tags=args.tags,
+        )
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return 0 if result["ok"] else 1
+
+    faltantes = [
+        flag for flag, val in (
+            ("--name", args.name),
+            ("--type", args.flow_type),
+            ("--description", args.description),
+            ("--mermaid", args.mermaid),
+        )
+        if not val
+    ]
+    if faltantes:
+        parser.error(f"the following arguments are required: {', '.join(faltantes)} (unless --scan-path is used)")
 
     steps = None
 

@@ -1081,7 +1081,7 @@
     },
     "vault_code_query": {
       "name": "vault_code_query",
-      "description": "Consulta información del índice de código.",
+      "description": "Consulta información del índice de código o detecta features, capacidades y flujos en un repo (solo lectura).",
       "group": "Código",
       "script": "vault_code_query.py",
       "inputSchema": {
@@ -1110,11 +1110,17 @@
           "deps": {
             "type": "boolean",
             "description": "Include dependency relations (use with --file)"
+          },
+          "scan-path": {
+            "type": "string",
+            "description": "Ruta interna o externa de código a escanear en solo lectura (features y flujos)",
+            "x-ruta": "externa"
+          },
+          "feature": {
+            "type": "string",
+            "description": "Filtro opcional de feature/capacidad al usar --scan-path"
           }
         },
-        "required": [
-          "project"
-        ],
         "additionalProperties": false
       },
       "guards": [],
@@ -2332,7 +2338,7 @@
     },
     "vault_flow_save": {
       "name": "vault_flow_save",
-      "description": "Guarda workflows, pipelines, lifecycles y dataflows con diagrama Mermaid.",
+      "description": "Guarda workflows, pipelines, lifecycles y dataflows con diagrama Mermaid, o escanea un repo con --scan-path.",
       "group": "Flujos",
       "script": "vault_flow_save.py",
       "inputSchema": {
@@ -2341,6 +2347,19 @@
           "project": {
             "type": "string",
             "description": "Proyecto"
+          },
+          "scan-path": {
+            "type": "string",
+            "description": "Ruta interna o externa de código para detectar y persistir flujos de valor",
+            "x-ruta": "externa"
+          },
+          "feature": {
+            "type": "string",
+            "description": "Filtro opcional de feature/capacidad al usar --scan-path"
+          },
+          "max-flows": {
+            "type": "integer",
+            "description": "Máximo de flujos a persistir con --scan-path (default: 10)"
           },
           "name": {
             "type": "string",
@@ -2397,11 +2416,7 @@
           }
         },
         "required": [
-          "project",
-          "name",
-          "type",
-          "description",
-          "mermaid"
+          "project"
         ],
         "additionalProperties": false
       },

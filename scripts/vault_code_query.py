@@ -56,6 +56,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
 from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
+from vault.kernel.features_y_flujos import detectar_features_y_flujos  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -475,11 +476,25 @@ def cmd_list(index: Dict[str, Any], project: str) -> Dict[str, Any]:
 
 
 
+def cmd_scan_features(scan_path: str, feature: Optional[str] = None) -> Dict[str, Any]:
+    """Escaneo en solo lectura de features, capacidades, algoritmos y flujos de valor."""
+    objetivo = Path(scan_path).expanduser().resolve()
+    if not objetivo.exists():
+        return emit_error("vault_code_query", "FILE_NOT_FOUND", f"No existe la ruta a escanear: {scan_path}")
+    informe = detectar_features_y_flujos(objetivo, filtro_feature=feature)
+    return {
+        "ok": True,
+        "mode": "scan_features",
+        "feature_filter": feature,
+        **informe,
+    }
+
+
 def main():
 
     parser = argparse.ArgumentParser(
 
-        description="Vault Code Query Tool -- recursive code index query",
+        description="Vault Code Query Tool -- recursive code index query and feature/flow scan",
 
         formatter_class=argparse.RawDescriptionHelpFormatter,
 
@@ -517,13 +532,19 @@ Ejemplos:
 
 
 
+  # Detectar features, capacidades, algoritmos y flujos de valor en un repo (solo lectura)
+
+  python vault_code_query.py --scan-path "/ruta/al/repo" --feature "login"
+
+
+
 Notas:
 
   - --file acepta ruta parcial (busca por substring en filePath)
 
   - --method y --class hacen busqueda case-insensitive en el indice
 
-  - Los datos de metodos y clases solo aparecen si el modulo fue documentado con --methods/--classes
+  - --scan-path analiza codigo interno o externo en solo lectura (CQRS)
 
   - VAULT_ROOT se detecta automaticamente desde la ubicacion del script
 
@@ -532,7 +553,7 @@ Notas:
         allow_abbrev=False,
     )
 
-    parser.add_argument("--project", type=proyecto_registrado("vault_code_query"), required=True, help="Project slug")
+    parser.add_argument("--project", type=proyecto_registrado("vault_code_query"), required=False, help="Project slug")
 
     parser.add_argument("--file", help="File path to query (partial match allowed)")
 
@@ -544,15 +565,25 @@ Notas:
 
     parser.add_argument("--deps", action="store_true", help="Include dependency relations (use with --file)")
 
+    parser.add_argument("--scan-path", dest="scan_path", help="Ruta interna o externa de codigo para detectar features y flujos (solo lectura)")
+
+    parser.add_argument("--feature", help="Filtro opcional de feature/capacidad al usar --scan-path")
+
 
 
     args = parser.parse_args()
 
+    if args.scan_path:
+        result = cmd_scan_features(args.scan_path, feature=args.feature)
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return 0 if result.get("ok") else 1
 
+    if not args.project:
+        parser.error("the following arguments are required: --project (unless --scan-path is used)")
 
     if not any([args.file, args.method, args.class_name, args.list]):
 
-        parser.error("Specify one of: --file, --method, --class, --list")
+        parser.error("Specify one of: --file, --method, --class, --list, or --scan-path")
 
 
 
