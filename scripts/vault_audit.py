@@ -2819,6 +2819,7 @@ def calcular_salud(unidades: Dict[str, int]) -> Dict[str, Any]:
         "healthIndex": indice,
         "healthProfile": perfil,
         "penalties": detalle,
+        "rawPenaltyTotal": sum(restado.values()),
         # Lo que el numero **no** dice (punto 5 de la nota
         # `ai-slop-and-evidence-quality-assessment`): el score es estructural.
         # Cuenta carpetas, enlaces y frontmatter; no mide si el contenido es
@@ -2828,6 +2829,209 @@ def calcular_salud(unidades: Dict[str, int]) -> Dict[str, Any]:
             "estructural: mide forma, enlaces y metadatos, no la verdad ni la "
             "utilidad de lo que dicen las notas. Un 100 no certifica contenido."
         ),
+    }
+
+
+#: Receta y explicacion en lenguaje llano por cada id de `PENALIZACIONES`.
+#: Garantiza que ninguna penalizacion activa quede sin explicar que falta para 100 %.
+_GUIA_PENALIZACION: Dict[str, Dict[str, str]] = {
+    "orphans": {
+        "reason": "Notas sin enlaces entrantes desde otras notas del vault",
+        "remediation": "Enlazar cada nota huerfana desde una nota relacionada o un mapa de seccion con [[nombre-de-nota]].",
+    },
+    "stale": {
+        "reason": "Notas sin actualizar por encima del umbral de vigencia",
+        "remediation": "Revisar y actualizar las notas antiguas (o marcarlas archived/deprecated si ya no estan vigentes).",
+    },
+    "stuck_patterns": {
+        "reason": "Patrones estancados en estado planificado/en_progreso sin avance",
+        "remediation": "Actualizar el estado del patron con `vault_pattern_save` (implementado/deprecado) o avanzar su implementacion.",
+    },
+    "stale_projects": {
+        "reason": "Proyectos registrados sin actividad reciente",
+        "remediation": "Actualizar el overview/estado del proyecto con `vault_project_overview` o cerrarlo en `01_Projects/`.",
+    },
+    "broken_links": {
+        "reason": "Wikilinks que apuntan a notas inexistentes (AP-14)",
+        "remediation": "Crear la nota destino con `vault_write`, corregir el destino del enlace o ejecutar `vault_graph_fix`.",
+    },
+    "ambiguous_links": {
+        "reason": "Wikilinks ambiguos que coinciden con varias notas del mismo nombre (AP-21)",
+        "remediation": "Desambiguar el enlace usando ruta relativa `[[carpeta/nota|alias]]` o renombrar las notas en colision.",
+    },
+    "canonical_shadow": {
+        "reason": "Notas con titulos o temas casi duplicados sin sucesora declarada (AP-17)",
+        "remediation": "Consolidar el par duplicado con `vault_merge` o marcar la nota reemplazada con `vault_supersede`.",
+    },
+    "cross_folder_dupes": {
+        "reason": "Contenido duplicado entre carpetas distintas (AP-18)",
+        "remediation": "Mantener una sola nota canonica (PAT-1) y reemplazar la copia por un wikilink o `vault_supersede`.",
+    },
+    "ap22": {
+        "reason": "Wikilinks vacios `[[]]` en el contenido (AP-22)",
+        "remediation": "Ejecutar `vault_fix_brackets --apply` para reparar corchetes y wikilinks vacios.",
+    },
+    "ap24": {
+        "reason": "Corchetes de wikilink desbalanceados o rotos (AP-24)",
+        "remediation": "Ejecutar `vault_fix_brackets --apply` y revisar los enlaces reportados en `issues.malformedWikilinks`.",
+    },
+    "empty_indexes": {
+        "reason": "Secciones obligatorias del vault vacias sin contenido real (AP-03)",
+        "remediation": "Poblar cada seccion vacia con su tool duena o revisar si corresponde inicializarla con `vault_init`.",
+    },
+    "mermaid_errors": {
+        "reason": "Diagramas Mermaid con errores de sintaxis (AP-25)",
+        "remediation": "Ejecutar `vault_mermaid_check --fix` y corregir los bloques reportados en `issues.mermaidErrors`.",
+    },
+    "missing_agent": {
+        "reason": "Notas sin campo `agent` en frontmatter (AP-16)",
+        "remediation": "Completar el frontmatter con `vault_frontmatter_completar` o agregar `agent:` en cada nota faltante.",
+    },
+    "missing_tags": {
+        "reason": "Notas de contenido sin etiquetas `tags` (AP-26)",
+        "remediation": "Sugerir y agregar etiquetas canonicas con `vault_tags --suggest <ruta>`.",
+    },
+    "missing_type": {
+        "reason": "Notas sin campo `type` en frontmatter (AP-27)",
+        "remediation": "Completar el campo `type` con `vault_frontmatter_completar` o `vault_frontmatter_heal`.",
+    },
+    "missing_status": {
+        "reason": "Notas sin campo `status` canonico en frontmatter (AP-29)",
+        "remediation": "Asignar un estado del vocabulario canonico (`draft`, `active`, `implemented`, etc.) con `vault_frontmatter_completar`.",
+    },
+    "missing_cia": {
+        "reason": "Notas sin clasificacion CIA (`cia_integrity`, `cia_availability`, `cia_sensitivity`) (AP-30)",
+        "remediation": "Completar los campos CIA faltantes con `vault_frontmatter_completar`.",
+    },
+    "missing_updated": {
+        "reason": "Notas sin timestamp `updatedAt` en frontmatter",
+        "remediation": "Completar `updatedAt` en formato ISO-8601 UTC con `vault_frontmatter_completar`.",
+    },
+    "missing_created": {
+        "reason": "Notas sin timestamp `createdAt` en frontmatter (AP-13)",
+        "remediation": "Completar `createdAt` en formato ISO-8601 UTC con `vault_frontmatter_completar`.",
+    },
+    "missing_id": {
+        "reason": "Notas sin identificador unico `id` requerido por el contrato (AP-12)",
+        "remediation": "Generar y guardar `id` (UUID) con `vault_frontmatter_completar`.",
+    },
+    "missing_frontmatter": {
+        "reason": "Notas sin bloque de frontmatter YAML valido (AP-28)",
+        "remediation": "Ejecutar `vault_frontmatter_heal` o `vault_norms --heal-ap46 --apply-heal` para restaurar el frontmatter.",
+    },
+    "cia_penalty": {
+        "reason": "Notas criticas desactualizadas o con propagacion de impacto pendiente",
+        "remediation": "Actualizar las notas criticas en `issues.stale` y resolver `propagationPending` con `vault_propagate`.",
+    },
+    "ap31": {
+        "reason": "Grafo con pocas relaciones semanticas tipadas (<10 % de aristas con predicado) (AP-31)",
+        "remediation": "Ejecutar `vault_graph --typed` y declarar relaciones con `vault_code_relation` o `vault_relation_add`.",
+    },
+    "ap34": {
+        "reason": "Relaciones tipadas con endpoints inexistentes o huerfanos (AP-34)",
+        "remediation": "Verificar o crear las notas faltantes referenciadas en `issues.graphKnowledge.ap34_orphanTypedRelations`.",
+    },
+    "ap35": {
+        "reason": "Grafo enriquecido ausente o desactualizado respecto a indices de relaciones (AP-35)",
+        "remediation": "Ejecutar `vault_graph --typed` para integrar relaciones semanticas y cerrar silos.",
+    },
+}
+
+
+def _construir_to_reach_100(
+    salud: Dict[str, Any],
+    muestras_por_id: Optional[Dict[str, List[str]]] = None,
+) -> Dict[str, Any]:
+    """Calcula el desglose exacto de lo que falta para llegar a 100 % de salud.
+
+    Garantiza trazabilidad 1 a 1: cada penalizacion activa en `salud['penalties']`
+    aparece en `blockers` con sus puntos exactos en `healthScore`, su ganancia
+    real en `healthIndex`, muestras afectadas y remediacion concreta.
+    """
+    muestras_por_id = muestras_por_id or {}
+    perfil = salud["healthProfile"]
+    n_familias = max(1, len(perfil))
+    score_actual = int(salud["healthScore"])
+    indice_actual = int(salud["healthIndex"])
+    raw_total = int(salud.get("rawPenaltyTotal", sum(p["penalty"] for p in salud["penalties"])))
+
+    blockers: List[Dict[str, Any]] = []
+    for p in salud["penalties"]:
+        pid = p["id"]
+        fam = p["familia"]
+        pen = int(p["penalty"])
+        info_fam = perfil[fam]
+        tope_fam = int(info_fam["cap"])
+        pen_fam_actual = int(info_fam["penalty"])
+        salud_fam_sin = (
+            100
+            if not tope_fam
+            else round(100 * (1 - max(0, pen_fam_actual - pen) / tope_fam))
+        )
+        indice_sin = round(
+            (sum(v["health"] for k, v in perfil.items() if k != fam) + salud_fam_sin)
+            / n_familias
+        )
+        ganancia_indice = max(0, indice_sin - indice_actual)
+        guia = _GUIA_PENALIZACION.get(
+            pid,
+            {
+                "reason": f"Penalizacion activa `{pid}` en familia `{fam}`",
+                "remediation": "Revisar `issues` y corregir las notas reportadas para esta metrica.",
+            },
+        )
+        blockers.append({
+            "id": pid,
+            "familia": fam,
+            "norm_code": p.get("norm_code"),
+            "count": int(p["count"]),
+            "score_points_lost": pen,
+            "cap": int(p["cap"]),
+            "saturated": pen >= int(p["cap"]),
+            "index_points_gain": ganancia_indice,
+            "reason": guia["reason"],
+            "sample_items": list(muestras_por_id.get(pid, []))[:5],
+            "remediation": guia["remediation"],
+        })
+
+    blockers.sort(
+        key=lambda b: (-b["score_points_lost"], -b["index_points_gain"], b["id"])
+    )
+
+    at_100 = score_actual >= 100 and indice_actual >= 100 and not blockers
+    faltan_score = max(0, 100 - score_actual)
+    faltan_indice = max(0, 100 - indice_actual)
+    sobre_piso = max(0, raw_total - 100)
+
+    if at_100:
+        resumen = "Salud estructural al 100/100: sin penalizaciones activas."
+    else:
+        top = ", ".join(
+            f"{b['id']} (-{b['score_points_lost']} pts, {b['count']} elem.)"
+            for b in blockers[:4]
+        )
+        extra_piso = (
+            f" Penalizacion bruta={raw_total} pts ({sobre_piso} pts por encima del piso 0)."
+            if sobre_piso > 0
+            else ""
+        )
+        resumen = (
+            f"Faltan {faltan_score} pts para healthScore=100 y {faltan_indice} pts "
+            f"para healthIndex=100 ({len(blockers)} bloqueos activos).{extra_piso} "
+            f"Principales: {top}."
+        )
+
+    return {
+        "at100": at_100,
+        "currentHealthScore": score_actual,
+        "currentHealthIndex": indice_actual,
+        "missingHealthScorePoints": faltan_score,
+        "missingHealthIndexPoints": faltan_indice,
+        "rawPenaltyTotal": raw_total,
+        "pointsAboveZeroFloor": sobre_piso,
+        "blockersCount": len(blockers),
+        "blockers": blockers,
+        "summary": resumen,
     }
 
 
@@ -3213,6 +3417,44 @@ def vault_audit(
         "healthProfile": salud["healthProfile"],
         # Qué restó cada cosa. Antes había que leerse la función para saberlo.
         "penalties": salud["penalties"],
+        # Qué falta exactamente para alcanzar 100 % en healthScore y healthIndex.
+        "toReach100": _construir_to_reach_100(
+            salud,
+            {
+                "orphans": [o.get("path", "") for o in orphans if o.get("path")],
+                "stale": [s.get("path", "") for s in stale if s.get("path")],
+                "stuck_patterns": [p.get("path", "") for p in stuck_patterns if p.get("path")],
+                "stale_projects": [p.get("path", "") for p in stale_projects if p.get("path")],
+                "broken_links": [f"{b.get('from', '')} -> [[{b.get('link', '')}]]" for b in broken_links],
+                "ambiguous_links": [f"{a.get('from', '')} -> [[{a.get('link', '')}]]" for a in ambiguous_links],
+                "canonical_shadow": [
+                    f"{c.get('noteA', c.get('path', ''))} ~ {c.get('noteB', '')}".strip(" ~")
+                    for c in canonical_shadow
+                ],
+                "cross_folder_dupes": [
+                    f"{d.get('noteA', d.get('path', ''))} ~ {d.get('noteB', '')}".strip(" ~")
+                    for d in cross_folder_dupes
+                ],
+                "ap22": [m.get("path", "") for m in malformed_wikilinks if m.get("norm_code") == "AP-22"],
+                "ap24": [m.get("path", "") for m in malformed_wikilinks if m.get("norm_code") == "AP-24"],
+                "empty_indexes": [e.get("folder", "") for e in empty_indexes if e.get("folder")],
+                "mermaid_errors": [m.get("path", "") for m in mermaid_errors if m.get("path")],
+                "missing_agent": [m.get("path", "") for m in missing_agent if m.get("path")],
+                "missing_tags": [m.get("path", "") for m in missing_tags if m.get("path")],
+                "missing_type": [m.get("path", "") for m in missing_type if m.get("path")],
+                "missing_status": [m.get("path", "") for m in missing_status if m.get("path")],
+                "missing_cia": [m.get("path", "") for m in missing_cia if m.get("path")],
+                "missing_updated": [m.get("path", "") for m in missing_updated if m.get("path")],
+                "missing_created": [m.get("path", "") for m in missing_created if m.get("path")],
+                "missing_id": [m.get("path", "") for m in missing_id if m.get("path")],
+                "missing_frontmatter": [m.get("path", "") for m in missing_frontmatter if m.get("path")],
+                "cia_penalty": [p.get("path", "") for p in propagation_pending if p.get("path")]
+                or [s.get("path", "") for s in stale if s.get("path")],
+                "ap31": [f"typedRatio={ap31_typed_ratio:.2f}"],
+                "ap34": [f"{r.get('source', 'graph')} ({r.get('count', 0)})" for r in ap34_orphan_relations],
+                "ap35": ["99_Index/graph-enriched.json"],
+            },
+        ),
         # El núcleo del vault por fan-in de enlaces (deuda #11). Informativo:
         # fuera de `healthProfile`, que itera familias con peso, y sin fila en
         # `PENALIZACIONES`. Ver `_nucleo_del_vault`.
@@ -3655,6 +3897,46 @@ def vault_audit(
     # AP-79: the notes a reader without context cannot follow, capped like
     # AP-71's; the full list is in `issues.notesWithoutLead`.
     next_actions.extend(_acciones_de_profundidad(sin_lead))
+
+    # Garantía de cierre 100 %: cualquier penalización activa que no haya
+    # generado aún una acción específica en `nextActions` (ej. missing_type,
+    # missing_status, missing_cia, missing_id, missing_created, missing_updated,
+    # missing_frontmatter, ambiguous_links, canonical_shadow, cross_folder_dupes,
+    # stale, stuck_patterns, stale_projects, cia_penalty) agrega su acción
+    # ejecutable desde `toReach100["blockers"]` para que el rating < 100 nunca
+    # quede sin explicación accionable.
+    _MAPA_CATEGORIA_ACCION = {
+        "empty_indexes": "empty_section",
+        "broken_links": "broken_link",
+        "orphans": "orphan",
+        "mermaid_errors": "mermaid_errors",
+        "missing_agent": "missing_agent",
+        "missing_tags": "missing_tags",
+        "ap35": "graph_silos",
+        "ap34": "orphan_typed_relations",
+        "ap31": "untyped_graph",
+        "ap22": "malformed_wikilink",
+        "ap24": "malformed_wikilink",
+    }
+    categorias_presentes = {a.get("category") for a in next_actions}
+    for blocker in result["toReach100"]["blockers"]:
+        cat_existente = _MAPA_CATEGORIA_ACCION.get(blocker["id"], blocker["id"])
+        if cat_existente in categorias_presentes:
+            continue
+        muestras = f" Ejemplos: {blocker['sample_items'][:3]}." if blocker["sample_items"] else ""
+        next_actions.append({
+            "priority": "high" if blocker["score_points_lost"] >= 5 else "medium",
+            "category": blocker["id"],
+            "points_to_recover": blocker["score_points_lost"],
+            "index_points_gain": blocker["index_points_gain"],
+            "description": (
+                f"{blocker['reason']} ({blocker['count']} elem., -{blocker['score_points_lost']} pts "
+                f"en healthScore, +{blocker['index_points_gain']} pts estimados en healthIndex).{muestras}"
+            ),
+            "command": blocker["remediation"],
+            "norm": blocker.get("norm_code") or "HEALTH",
+        })
+        categorias_presentes.add(blocker["id"])
 
     if next_actions:
         result["nextActions"] = next_actions
