@@ -42,6 +42,8 @@ CATALOGO_PATRONES: Tuple[Dict[str, str], ...] = (
         "id": "bounded-contexts-ddd",
         "order": "1.1",
         "name": "Bounded Contexts (DDD)",
+        "official_name": "Bounded Context (Domain-Driven Design)",
+        "reference": "Evans (DDD, 2003)",
         "category": "arquitectonicos",
         "pattern_type": "architecture",
         "summary": "Delimita contextos de dominio explicitos con lenguaje ubicuo y presupuesto de cruces.",
@@ -50,6 +52,8 @@ CATALOGO_PATRONES: Tuple[Dict[str, str], ...] = (
         "id": "hexagonal-ports-adapters",
         "order": "1.2",
         "name": "Hexagonal / Ports & Adapters",
+        "official_name": "Hexagonal Architecture (Ports and Adapters)",
+        "reference": "Cockburn (2005)",
         "category": "arquitectonicos",
         "pattern_type": "architecture",
         "summary": "Desacopla el dominio de los adaptadores externos mediante puertos explicitos.",
@@ -58,6 +62,8 @@ CATALOGO_PATRONES: Tuple[Dict[str, str], ...] = (
         "id": "cqrs",
         "order": "1.3",
         "name": "CQRS",
+        "official_name": "Command Query Responsibility Segregation (CQRS)",
+        "reference": "Young / Fowler (2011)",
         "category": "arquitectonicos",
         "pattern_type": "architecture",
         "summary": "Separa operaciones de lectura/consulta (paralelizables) de comandos de escritura (serializados por recurso).",
@@ -66,6 +72,8 @@ CATALOGO_PATRONES: Tuple[Dict[str, str], ...] = (
         "id": "append-only-event-log",
         "order": "1.4",
         "name": "Append-Only Event Log",
+        "official_name": "Append-Only Event Log",
+        "reference": "Kreps (2013) / Fowler",
         "category": "arquitectonicos",
         "pattern_type": "architecture",
         "summary": "Registra mutaciones en un log de solo anexado (p. ej. JSONL) para auditoria y reconstruccion en O(1).",
@@ -74,6 +82,8 @@ CATALOGO_PATRONES: Tuple[Dict[str, str], ...] = (
         "id": "single-source-of-truth-registry",
         "order": "1.5",
         "name": "Single Source of Truth / Registry",
+        "official_name": "Registry (Single Source of Truth)",
+        "reference": "Fowler (PoEAA, 2002)",
         "category": "arquitectonicos",
         "pattern_type": "architecture",
         "summary": "Centraliza catalogos y contratos en un registro canonico del que se derivan artefactos.",
@@ -82,15 +92,69 @@ CATALOGO_PATRONES: Tuple[Dict[str, str], ...] = (
         "id": "composition-root",
         "order": "1.6",
         "name": "Composition Root",
+        "official_name": "Composition Root",
+        "reference": "Seemann (Dependency Injection, 2011)",
         "category": "arquitectonicos",
         "pattern_type": "architecture",
         "summary": "Concentra el ensamblaje de contexto, repositorios y adaptadores en un punto unico.",
+    },
+    {
+        "id": "layered-architecture",
+        "order": "1.7",
+        "name": "Layered Architecture (N-Tier)",
+        "official_name": "Layered Architecture (N-Tier)",
+        "reference": "Richards & Ford (2020)",
+        "category": "arquitectonicos",
+        "pattern_type": "architecture",
+        "summary": "Organiza responsabilidades en capas horizontales explicitas (presentacion, aplicacion/servicios, dominio, datos).",
+    },
+    {
+        "id": "clean-architecture",
+        "order": "1.8",
+        "name": "Clean Architecture",
+        "official_name": "Clean Architecture",
+        "reference": "R. C. Martin (2017)",
+        "category": "arquitectonicos",
+        "pattern_type": "architecture",
+        "summary": "Aisla entidades y casos de uso del nucleo de negocio respecto a adaptadores de interfaz y frameworks.",
+    },
+    {
+        "id": "event-driven-architecture",
+        "order": "1.9",
+        "name": "Event-Driven Architecture (EDA)",
+        "official_name": "Event-Driven Architecture (EDA)",
+        "reference": "Richards & Ford (2020) / Hohpe & Woolf (EIP, 2003)",
+        "category": "arquitectonicos",
+        "pattern_type": "architecture",
+        "summary": "Coordina componentes desacoplados mediante produccion, enrutamiento y consumo de eventos asincronos.",
+    },
+    {
+        "id": "microkernel-plugin",
+        "order": "1.10",
+        "name": "Microkernel / Plug-in Architecture",
+        "official_name": "Microkernel Architecture (Plug-in)",
+        "reference": "Buschmann et al. (POSA, 1996) / Richards & Ford (2020)",
+        "category": "arquitectonicos",
+        "pattern_type": "architecture",
+        "summary": "Mantiene un nucleo minimo extensible mediante registro dinamico de plugins o entry points.",
+    },
+    {
+        "id": "pipe-and-filter",
+        "order": "1.11",
+        "name": "Pipe-and-Filter",
+        "official_name": "Pipes and Filters",
+        "reference": "Buschmann et al. (POSA, 1996) / Hohpe & Woolf (EIP, 2003)",
+        "category": "arquitectonicos",
+        "pattern_type": "architecture",
+        "summary": "Procesa flujos de datos a traves de etapas o filtros componibles y desacoplados.",
     },
     # 2. Creacionales
     {
         "id": "builder",
         "order": "2.1",
         "name": "Builder",
+        "official_name": "Builder",
+        "reference": "GoF (Gamma et al., 1994)",
         "category": "creacionales",
         "pattern_type": "design",
         "summary": "Construye objetos o documentos complejos paso a paso antes de renderizarlos o validarlos.",
@@ -99,6 +163,8 @@ CATALOGO_PATRONES: Tuple[Dict[str, str], ...] = (
         "id": "factory",
         "order": "2.2",
         "name": "Factory",
+        "official_name": "Factory Method / Abstract Factory",
+        "reference": "GoF (Gamma et al., 1994)",
         "category": "creacionales",
         "pattern_type": "design",
         "summary": "Encapsula la creacion parametrizada de instancias o validadores reutilizables.",
@@ -107,15 +173,29 @@ CATALOGO_PATRONES: Tuple[Dict[str, str], ...] = (
         "id": "singleton-module-cache",
         "order": "2.3",
         "name": "Singleton / Module-Scoped Cache",
+        "official_name": "Singleton",
+        "reference": "GoF (Gamma et al., 1994)",
         "category": "creacionales",
         "pattern_type": "design",
         "summary": "Mantiene una instancia o cache unica por proceso para evitar trabajo repetido.",
+    },
+    {
+        "id": "dependency-injection",
+        "order": "2.4",
+        "name": "Dependency Injection (DI)",
+        "official_name": "Dependency Injection (Inversion of Control)",
+        "reference": "Fowler (2004) / Seemann (2011)",
+        "category": "creacionales",
+        "pattern_type": "design",
+        "summary": "Inyecta colaboradores desde fuera via contenedor, anotacion o fabrica en vez de instanciarlos internamente.",
     },
     # 3. Estructurales
     {
         "id": "repository",
         "order": "3.1",
         "name": "Repository",
+        "official_name": "Repository",
+        "reference": "Fowler (PoEAA, 2002) / Evans (DDD, 2003)",
         "category": "estructurales",
         "pattern_type": "design",
         "summary": "Encapsula el acceso a persistencia, rutas o colecciones tras una frontera de dominio.",
@@ -124,6 +204,8 @@ CATALOGO_PATRONES: Tuple[Dict[str, str], ...] = (
         "id": "adapter",
         "order": "3.2",
         "name": "Adapter",
+        "official_name": "Adapter",
+        "reference": "GoF (Gamma et al., 1994)",
         "category": "estructurales",
         "pattern_type": "design",
         "summary": "Traduce la interfaz de un modulo o proveedor externo al contrato esperado por el dominio.",
@@ -132,6 +214,8 @@ CATALOGO_PATRONES: Tuple[Dict[str, str], ...] = (
         "id": "module-alias-facade",
         "order": "3.3",
         "name": "Module Alias / Facade",
+        "official_name": "Facade",
+        "reference": "GoF (Gamma et al., 1994)",
         "category": "estructurales",
         "pattern_type": "design",
         "summary": "Expone una fachada simplificada o alias de compatibilidad sobre modulos internos.",
@@ -140,15 +224,29 @@ CATALOGO_PATRONES: Tuple[Dict[str, str], ...] = (
         "id": "proxy-lazy-export",
         "order": "3.4",
         "name": "Proxy (Lazy Export)",
+        "official_name": "Proxy (Virtual / Lazy Proxy)",
+        "reference": "GoF (Gamma et al., 1994)",
         "category": "estructurales",
         "pattern_type": "design",
         "summary": "Controla o difiere el acceso y la carga de un recurso hasta su uso efectivo.",
+    },
+    {
+        "id": "decorator",
+        "order": "3.5",
+        "name": "Decorator",
+        "official_name": "Decorator",
+        "reference": "GoF (Gamma et al., 1994)",
+        "category": "estructurales",
+        "pattern_type": "design",
+        "summary": "Anade responsabilidades dinamicamente envolviendo componentes o funciones sin alterar su interfaz.",
     },
     # 4. Comportamiento
     {
         "id": "template-method",
         "order": "4.1",
         "name": "Template Method",
+        "official_name": "Template Method",
+        "reference": "GoF (Gamma et al., 1994)",
         "category": "comportamiento",
         "pattern_type": "design",
         "summary": "Define el esqueleto invariante de un flujo y delega pasos variables a subclases.",
@@ -157,6 +255,8 @@ CATALOGO_PATRONES: Tuple[Dict[str, str], ...] = (
         "id": "chain-of-responsibility",
         "order": "4.2",
         "name": "Chain of Responsibility",
+        "official_name": "Chain of Responsibility",
+        "reference": "GoF (Gamma et al., 1994)",
         "category": "comportamiento",
         "pattern_type": "design",
         "summary": "Encadena manejadores o guardas secuenciales que validan o procesan una solicitud.",
@@ -165,6 +265,8 @@ CATALOGO_PATRONES: Tuple[Dict[str, str], ...] = (
         "id": "state-machine",
         "order": "4.3",
         "name": "State Machine",
+        "official_name": "State (Finite State Machine)",
+        "reference": "GoF (Gamma et al., 1994)",
         "category": "comportamiento",
         "pattern_type": "design",
         "summary": "Gobierna transiciones explicitas entre estados validos rechazando saltos ilegales.",
@@ -173,6 +275,8 @@ CATALOGO_PATRONES: Tuple[Dict[str, str], ...] = (
         "id": "strategy",
         "order": "4.4",
         "name": "Strategy",
+        "official_name": "Strategy",
+        "reference": "GoF (Gamma et al., 1994)",
         "category": "comportamiento",
         "pattern_type": "design",
         "summary": "Permite intercambiar algoritmos o politicas en tiempo de ejecucion via tabla o protocolo.",
@@ -181,6 +285,8 @@ CATALOGO_PATRONES: Tuple[Dict[str, str], ...] = (
         "id": "command-dispatch-router",
         "order": "4.5",
         "name": "Command + Dispatch Router",
+        "official_name": "Command",
+        "reference": "GoF (Gamma et al., 1994)",
         "category": "comportamiento",
         "pattern_type": "design",
         "summary": "Encapsula invocaciones como comandos y las despacha declarativamente por ruta o accion.",
@@ -189,6 +295,8 @@ CATALOGO_PATRONES: Tuple[Dict[str, str], ...] = (
         "id": "envelope-result-object",
         "order": "4.6",
         "name": "Envelope / Result Object",
+        "official_name": "Notification / Result Object",
+        "reference": "Fowler (2014)",
         "category": "comportamiento",
         "pattern_type": "design",
         "summary": "Estandariza respuestas y errores estructurados con codigo, categoria y recuperacion.",
@@ -197,15 +305,39 @@ CATALOGO_PATRONES: Tuple[Dict[str, str], ...] = (
         "id": "observer-event-bus",
         "order": "4.7",
         "name": "Observer / Event Bus",
+        "official_name": "Observer / Publish-Subscribe Channel",
+        "reference": "GoF (Gamma et al., 1994) / Hohpe & Woolf (EIP, 2003)",
         "category": "comportamiento",
         "pattern_type": "design",
         "summary": "Notifica eventos a suscriptores desacoplados sin acoplar emisor y oyentes.",
+    },
+    {
+        "id": "specification",
+        "order": "4.8",
+        "name": "Specification",
+        "official_name": "Specification",
+        "reference": "Evans (DDD, 2003) / Fowler",
+        "category": "comportamiento",
+        "pattern_type": "design",
+        "summary": "Encapsula reglas de negocio booleanas componibles y reutilizables (`is_satisfied_by`).",
+    },
+    {
+        "id": "unit-of-work",
+        "order": "4.9",
+        "name": "Unit of Work",
+        "official_name": "Unit of Work",
+        "reference": "Fowler (PoEAA, 2002)",
+        "category": "comportamiento",
+        "pattern_type": "design",
+        "summary": "Agrupa cambios en una unidad transaccional o lote atomico con commit y rollback coordinados.",
     },
     # 5. Concurrencia y Resiliencia
     {
         "id": "atomic-write",
         "order": "5.1",
         "name": "Atomic Write",
+        "official_name": "Atomic File Replacement (Write-Temp-Rename)",
+        "reference": "POSIX / Systems Reliability",
         "category": "concurrencia_resiliencia",
         "pattern_type": "code",
         "summary": "Escribe a archivo temporal y reemplaza atomicamente para evitar lecturas parciales.",
@@ -214,6 +346,8 @@ CATALOGO_PATRONES: Tuple[Dict[str, str], ...] = (
         "id": "reentrant-cross-process-lock",
         "order": "5.2",
         "name": "Reentrant & Cross-Process Lock",
+        "official_name": "Monitor / Reentrant & Distributed Lock",
+        "reference": "Schmidt et al. (POSA2, 2000)",
         "category": "concurrencia_resiliencia",
         "pattern_type": "code",
         "summary": "Serializa secciones criticas entre hilos o procesos mediante locks explicitos.",
@@ -222,6 +356,8 @@ CATALOGO_PATRONES: Tuple[Dict[str, str], ...] = (
         "id": "process-isolation-sandbox",
         "order": "5.3",
         "name": "Process Isolation / Sandbox",
+        "official_name": "Bulkhead / Process Isolation",
+        "reference": "Nygard (Release It!, 2007)",
         "category": "concurrencia_resiliencia",
         "pattern_type": "code",
         "summary": "Aisla subprocesos (Job Object / subreaper / sesion nueva) para contener timeouts y fallos.",
@@ -230,6 +366,8 @@ CATALOGO_PATRONES: Tuple[Dict[str, str], ...] = (
         "id": "snapshot-quarantine-rollback",
         "order": "5.4",
         "name": "Snapshot, Quarantine & Rollback",
+        "official_name": "Memento / Compensating Rollback",
+        "reference": "GoF (Gamma et al., 1994) / Nygard (2007)",
         "category": "concurrencia_resiliencia",
         "pattern_type": "code",
         "summary": "Resguarda instantaneas o cuarentena antes de mutaciones destructivas para garantizar vuelta atras.",
@@ -238,9 +376,21 @@ CATALOGO_PATRONES: Tuple[Dict[str, str], ...] = (
         "id": "wave-resource-scheduler",
         "order": "5.5",
         "name": "Wave / Resource-Based Scheduler",
+        "official_name": "Scheduler / Resource-Partitioned Concurrency",
+        "reference": "Lea (Concurrent Programming) / Schmidt (POSA2)",
         "category": "concurrencia_resiliencia",
         "pattern_type": "code",
         "summary": "Planifica ejecuciones paralelas en olas o colas respetando conflictos de recursos.",
+    },
+    {
+        "id": "circuit-breaker-retry",
+        "order": "5.6",
+        "name": "Circuit Breaker & Retry with Backoff",
+        "official_name": "Circuit Breaker & Retry with Exponential Backoff",
+        "reference": "Nygard (Release It!, 2007)",
+        "category": "concurrencia_resiliencia",
+        "pattern_type": "code",
+        "summary": "Corta cascadas de fallos hacia dependencias inestables y reintenta con espera exponencial acotada.",
     },
 )
 
@@ -369,6 +519,54 @@ _REGLAS_GENERICAS: Tuple[Tuple[str, re.Pattern, str, str], ...] = (
         "evidencia_fuerte",
         "Planificador o coordinador concurrente por tipo de acceso",
     ),
+    (
+        "event-driven-architecture",
+        re.compile(r"\b(?:class|interface)\s+([A-Za-z0-9_]*(?:EventBroker|MessageBroker|EventHandler|EventConsumer))\b"),
+        "evidencia_fuerte",
+        "Componente broker/consumidor explicito de arquitectura dirigida por eventos",
+    ),
+    (
+        "microkernel-plugin",
+        re.compile(r"\b(?:class\s+([A-Za-z0-9_]*PluginRegistry)|(?:function|const)\s+(registerPlugin|loadPlugins))\b"),
+        "evidencia_fuerte",
+        "Registro o carga dinamica de plugins estilo Microkernel",
+    ),
+    (
+        "pipe-and-filter",
+        re.compile(r"\b(?:class|interface)\s+([A-Za-z0-9_]*(?:Pipe|Filter|PipelineStage))\b"),
+        "evidencia_fuerte",
+        "Etapa o filtro componible de arquitectura Pipe-and-Filter",
+    ),
+    (
+        "dependency-injection",
+        re.compile(r"\b(?:class\s+([A-Za-z0-9_]*(?:DIContainer|ServiceContainer|Injector))|@(Injectable|Inject)\b)"),
+        "evidencia_fuerte",
+        "Contenedor o decorador explicito de Dependency Injection",
+    ),
+    (
+        "decorator",
+        re.compile(r"\bclass\s+([A-Za-z0-9_]*Decorator)\b"),
+        "evidencia_fuerte",
+        "Clase Decorator que envuelve otro componente preservando su interfaz",
+    ),
+    (
+        "specification",
+        re.compile(r"\b(?:class\s+([A-Za-z0-9_]*Specification)|\b(isSatisfiedBy)\s*\()"),
+        "evidencia_fuerte",
+        "Regla de dominio componible estilo Specification",
+    ),
+    (
+        "unit-of-work",
+        re.compile(r"\b(?:class|interface)\s+([A-Za-z0-9_]*UnitOfWork)\b"),
+        "evidencia_fuerte",
+        "Coordinador transaccional Unit of Work",
+    ),
+    (
+        "circuit-breaker-retry",
+        re.compile(r"\b(?:class\s+([A-Za-z0-9_]*CircuitBreaker)|(?:function|const)\s+(retryWithBackoff|exponentialBackoff))\b"),
+        "evidencia_fuerte",
+        "Mecanismo de resiliencia Circuit Breaker o retry con backoff exponencial",
+    ),
 )
 
 _RE_SLUGS = re.compile(r"[^a-z0-9]+")
@@ -394,6 +592,8 @@ def catalogo_ordenado(categoria: Optional[str] = None) -> Dict[str, Any]:
                 "id": p["id"],
                 "order": p["order"],
                 "pattern": p["name"],
+                "official_name": p["official_name"],
+                "reference": p["reference"],
                 "category": p["category"],
                 "category_label": ETIQUETAS_CATEGORIA[p["category"]],
                 "type": p["pattern_type"],
@@ -750,6 +950,72 @@ def _detectar_python(
                     "evidencia_fuerte",
                     "Clase Observer/EventBus para notificaciones desacopladas",
                 )
+            if cname.endswith(("EventBroker", "MessageBroker", "EventHandler", "EventConsumer")):
+                agregar(
+                    "event-driven-architecture",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Componente broker/manejador explicito de Event-Driven Architecture",
+                )
+            if cname.endswith(("PluginRegistry", "PluginManager", "ExtensionRegistry")):
+                agregar(
+                    "microkernel-plugin",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Registro dinamico de plugins estilo Microkernel",
+                )
+            if cname.endswith(("Filter", "Pipe", "PipelineStage")):
+                agregar(
+                    "pipe-and-filter",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Componente etapa/filtro de arquitectura Pipe-and-Filter",
+                )
+            if cname.endswith(("DIContainer", "ServiceContainer", "Injector")):
+                agregar(
+                    "dependency-injection",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Contenedor explicito de Dependency Injection",
+                )
+            if cname.endswith("Decorator"):
+                agregar(
+                    "decorator",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Clase Decorator que envuelve otro objeto preservando interfaz",
+                )
+            if cname.endswith("Specification") or "is_satisfied_by" in metodos:
+                agregar(
+                    "specification",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Regla componible de dominio estilo Specification",
+                )
+            if cname.endswith("UnitOfWork") or (
+                {"__enter__", "__exit__", "commit", "rollback"}.issubset(metodos)
+            ):
+                agregar(
+                    "unit-of-work",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Gestor transaccional Unit of Work con commit/rollback",
+                )
+            if cname.endswith("CircuitBreaker"):
+                agregar(
+                    "circuit-breaker-retry",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Clase CircuitBreaker para resiliencia frente a fallos en cascada",
+                )
             if cname.endswith(("Scheduler",)) or cname == "Wave":
                 agregar(
                     "wave-resource-scheduler",
@@ -915,6 +1181,103 @@ def _detectar_python(
                     "evidencia_fuerte",
                     "Anexado incremental en modo append sobre log de eventos",
                 )
+            if fname in ("register_plugin", "load_plugins"):
+                agregar(
+                    "microkernel-plugin",
+                    nodo.lineno,
+                    fname,
+                    "evidencia_fuerte",
+                    "Funcion de registro/carga de plugins estilo Microkernel",
+                )
+            if fname in ("retry_with_backoff", "exponential_backoff"):
+                agregar(
+                    "circuit-breaker-retry",
+                    nodo.lineno,
+                    fname,
+                    "evidencia_fuerte",
+                    "Funcion de reintento con espera exponencial acotada",
+                )
+            if fname == "escrituras_en_lote":
+                agregar(
+                    "unit-of-work",
+                    nodo.lineno,
+                    fname,
+                    "evidencia_fuerte",
+                    "Context manager de escrituras en lote estilo Unit of Work",
+                )
+            if any(
+                isinstance(sub, ast.FunctionDef)
+                and any(
+                    isinstance(dec, ast.Call)
+                    and ((isinstance(dec.func, ast.Name) and dec.func.id == "wraps")
+                         or (isinstance(dec.func, ast.Attribute) and dec.func.attr == "wraps"))
+                    for dec in sub.decorator_list
+                )
+                for sub in nodo.body
+            ):
+                agregar(
+                    "decorator",
+                    nodo.lineno,
+                    fname,
+                    "evidencia_fuerte",
+                    "Funcion Decorator con `functools.wraps` que envuelve otra funcion",
+                )
+
+
+def _detectar_arquitectura_directorios(
+    archivos_rel: Sequence[str],
+    hallazgos: Dict[str, List[Dict[str, Any]]],
+) -> None:
+    """Detecta Layered Architecture y Clean Architecture a partir de capas explicitas."""
+    segmentos_por_archivo: Dict[str, Set[str]] = {}
+    for rel in archivos_rel:
+        partes = {p.lower() for p in Path(rel).parts[:-1]}
+        if partes:
+            segmentos_por_archivo[rel] = partes
+
+    todos = set().union(*segmentos_por_archivo.values()) if segmentos_por_archivo else set()
+    if not todos:
+        return
+
+    capas_layered = {
+        "presentation": {"controllers", "controller", "api", "routes", "presentation", "ui"},
+        "application": {"services", "service", "application"},
+        "domain": {"domain", "models", "entities"},
+        "data": {"repositories", "repository", "persistence", "data", "infrastructure", "dal"},
+    }
+    capas_encontradas = [
+        capa for capa, vocab in capas_layered.items() if todos & vocab
+    ]
+    if len(capas_encontradas) >= 3:
+        muestra = next(
+            (rel for rel, segs in sorted(segmentos_por_archivo.items())
+             if segs & capas_layered[capas_encontradas[0]]),
+            sorted(segmentos_por_archivo)[0],
+        )
+        hallazgos.setdefault("layered-architecture", []).append({
+            "file": muestra,
+            "line": 1,
+            "symbol": "+".join(capas_encontradas),
+            "confidence": "indicio_estructural",
+            "how": f"Separacion explicita en {len(capas_encontradas)} capas horizontales ({', '.join(capas_encontradas)})",
+        })
+
+    tiene_nucleo = bool(todos & {"entities", "domain"})
+    tiene_casos = bool(todos & {"use_cases", "usecases", "interactors"})
+    tiene_adaptadores = bool(todos & {"interface_adapters", "adapters", "frameworks", "frameworks_drivers", "infrastructure"})
+    if tiene_nucleo and tiene_casos and tiene_adaptadores:
+        muestra = next(
+            (rel for rel, segs in sorted(segmentos_por_archivo.items())
+             if segs & {"use_cases", "usecases", "interactors"}),
+            sorted(segmentos_por_archivo)[0],
+        )
+        hallazgos.setdefault("clean-architecture", []).append({
+            "file": muestra,
+            "line": 1,
+            "symbol": "domain+use_cases+adapters",
+            "confidence": "evidencia_fuerte",
+            "how": "Capas explicitas de Clean Architecture (entities/domain + use_cases + adapters/frameworks)",
+        })
 
 
 def _detectar_generico(
@@ -978,6 +1341,7 @@ def detectar_patrones(
 
     hallazgos: Dict[str, List[Dict[str, Any]]] = {}
     files_scanned = 0
+    archivos_vistos: List[str] = []
     skipped_files: List[Dict[str, str]] = []
 
     for archivo, rel_posix in _iterar_fuentes(ruta, incluir_tests=incluir_tests):
@@ -991,6 +1355,7 @@ def detectar_patrones(
             continue
 
         files_scanned += 1
+        archivos_vistos.append(rel_posix)
         ext = archivo.suffix.lower()
         if ext in _EXTENSIONES_PYTHON:
             try:
@@ -1001,6 +1366,8 @@ def detectar_patrones(
             _detectar_python(arbol, rel_posix, hallazgos)
         else:
             _detectar_generico(texto, rel_posix, hallazgos)
+
+    _detectar_arquitectura_directorios(archivos_vistos, hallazgos)
 
     reg_norm = {normalizar_nombre_patron(r) for r in (registrados or set())}
     cats = (categoria,) if categoria else CATEGORIAS
@@ -1039,6 +1406,8 @@ def detectar_patrones(
                 "id": meta["id"],
                 "order": meta["order"],
                 "pattern": meta["name"],
+                "official_name": meta["official_name"],
+                "reference": meta["reference"],
                 "category": meta["category"],
                 "category_label": ETIQUETAS_CATEGORIA[meta["category"]],
                 "type": meta["pattern_type"],

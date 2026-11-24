@@ -301,3 +301,99 @@ def test_vault_run_acepta_scan_path_externo_en_preflight(tmp_path):
     assert env.get("error_code") != "PREFLIGHT_REJECTED", env
     assert p.returncode == 0 and env["ok"] is True, env
     assert env["total_patterns"] >= 8
+
+
+def test_catalogo_oficial_tiene_35_patrones_con_nombre_oficial_y_referencia_estandar(tmp_path):
+    from vault.autoria.patrones_diseno import CATALOGO_PATRONES, catalogo_ordenado, detectar_patrones
+
+    assert len(CATALOGO_PATRONES) == 35
+    cat = catalogo_ordenado()
+    assert cat["total_catalog"] == 35
+    for p in cat["patterns"]:
+        assert p.get("official_name"), p
+        assert p.get("reference"), p
+
+    # Repositorio sintetico con arquitectura Clean + Layered + 8 nuevos patrones de industria
+    repo = tmp_path / "app-enterprise"
+    for carpeta in ("src/controllers", "src/services", "src/domain", "src/use_cases", "src/adapters", "src/repositories"):
+        (repo / carpeta).mkdir(parents=True)
+
+    (repo / "src" / "controllers" / "orders.py").write_text("def list_orders(): return []\n", encoding="utf-8")
+    (repo / "src" / "services" / "plugins.py").write_text(
+        textwrap.dedent(
+            """\
+            from functools import wraps
+
+            class AuthDecorator:
+                pass
+
+            def audit_decorator(fn):
+                @wraps(fn)
+                def wrapper(*a, **k):
+                    return fn(*a, **k)
+                return wrapper
+
+            class PluginRegistry:
+                pass
+
+            class OrderEventBroker:
+                pass
+
+            class ValidationFilter:
+                pass
+
+            class AppDIContainer:
+                pass
+
+            class PaymentCircuitBreaker:
+                pass
+
+            def retry_with_backoff(fn):
+                return fn()
+            """
+        ),
+        encoding="utf-8",
+    )
+    (repo / "src" / "domain" / "specs.py").write_text(
+        textwrap.dedent(
+            """\
+            class ActiveOrderSpecification:
+                def is_satisfied_by(self, order):
+                    return True
+            """
+        ),
+        encoding="utf-8",
+    )
+    (repo / "src" / "use_cases" / "uow.py").write_text(
+        textwrap.dedent(
+            """\
+            class SqlUnitOfWork:
+                def __enter__(self): return self
+                def __exit__(self, *a): pass
+                def commit(self): pass
+                def rollback(self): pass
+            """
+        ),
+        encoding="utf-8",
+    )
+    (repo / "src" / "adapters" / "http.py").write_text("class HttpAdapter:\n    pass\n", encoding="utf-8")
+    (repo / "src" / "repositories" / "orders_repo.py").write_text("class OrdersRepository:\n    pass\n", encoding="utf-8")
+
+    det = detectar_patrones(repo)
+    assert det["ok"] is True
+    ids = {p["id"] for p in det["patterns"]}
+    for esperado in (
+        "layered-architecture",
+        "clean-architecture",
+        "event-driven-architecture",
+        "microkernel-plugin",
+        "pipe-and-filter",
+        "dependency-injection",
+        "decorator",
+        "specification",
+        "unit-of-work",
+        "circuit-breaker-retry",
+    ):
+        assert esperado in ids, f"Falto detectar {esperado}: {sorted(ids)}"
+    for item in det["patterns"]:
+        assert item.get("official_name") and item.get("reference"), item
