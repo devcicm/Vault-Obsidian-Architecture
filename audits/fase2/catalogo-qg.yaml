@@ -1,8 +1,8 @@
 # Catalogo de Quality Gates — fase 2 (propuesta para dictamen QA)
 #
 # Los QG son PUERTAS DE DECISION que consumen verificaciones tecnicas ya
-# existentes (las 26 puertas, los gates de producto, el verificador AP-40, el
-# reconciliador, el verificador de saneamiento). No duplican las 26: consumen
+# existentes (las 29 puertas, los gates de producto, el verificador AP-40, el
+# reconciliador, el verificador de saneamiento). No duplican las 29: consumen
 # su resultado y anaden las condiciones de decision que faltaban.
 #
 # Estados: PASS | FAIL | BLOCKED | NOT_RUN | NOT_APPLICABLE
@@ -61,17 +61,17 @@
   purpose: "Que los controles realmente se ejecuten y detecten lo que prometen, con el estado del sandbox documentado y reproducible."
   owner: "gobernanza - vault_norms"
   acceptance_authority: "QA arquitectonico"
-  scope: [las 26 puertas, el estado de ejecucion de AP-40/AP-42/AP-43]
+  scope: [las 29 puertas, el estado de ejecucion de AP-40/AP-42/AP-43]
   checks:
-    - "python scripts/vault_gate.py --strict (las 26 puertas)"
+    - "python scripts/vault_gate.py --strict (las 29 puertas)"
     - "estado del sandbox documentado (bootstrap canonico, verificado)"
     - "el envelope de la auditoria declara el estado de ejecucion por control"
     - "TD-0003 (implementado en 51b5cd1): sin estados de ejecucion en el envelope, la puerta queda BLOCKED con CONTROL_OBLIGATORIO_NO_VERIFICADO"
     - "DEC-03 opcion C (ratificada 2026-10-28): runtime recien creado y sandbox auditados por separado con politica_certificacion_compuesta; un escape nuevo es FAIL"
   required_evidence: [salida de vault_gate, documentacion del sandbox, la seccion checks del envelope con el estado de AP-40, AP-42 y AP-43]
-  pass_criteria: ["26/26 puertas Y todos los controles obligatorios en estado ejecutado SIN degradados (completo: true)"]
+  pass_criteria: ["29/29 puertas Y todos los controles obligatorios en estado ejecutado SIN degradados (completo: true)"]
   fail_criteria: ["una puerta tecnica fallida, o un control degradado, o un control no ejecutado, o la ausencia de estados de ejecucion en el envelope (BLOCKED con CONTROL_OBLIGATORIO_NO_VERIFICADO)"]
-  nota: "26/26 puertas tecnicas aprobadas NO elimina el problema TD-0003: las puertas pueden estar verdes y el control haberse saltado. El PASS exige la evidencia del estado de ejecucion."
+  nota: "29/29 puertas tecnicas aprobadas NO elimina el problema TD-0003: las puertas pueden estar verdes y el control haberse saltado. El PASS exige la evidencia del estado de ejecucion."
   blocking_policy: "bloquea QG-07"
   timeout_policy: "1200 s"
   waiver_policy: "no permitida"

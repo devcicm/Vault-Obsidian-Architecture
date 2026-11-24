@@ -22,13 +22,13 @@
 | **Principios FAIR** | localizable, accesible, interoperable y reutilizable por diseño |
 | **V's del Big Data** | volumen, velocidad, variedad, veracidad, valor y variabilidad, cada una atada a una métrica real |
 | **Gobernanza y auditabilidad** | catálogo de normas con enforcement automático, cadena de procedencia completa y trazabilidad código↔documento |
-| **Alineación normativa** | ISO/IEC 25010, 42001, 27001, 27005, 27701, 29148, 29119-3, 20000-1, 12207 · ISO 22301, 31000, 9001, 8601 · OWASP Top 10 2021, OWASP API Security 2023 |
+| **Alineación normativa** | 31 normas ISO/IEC registradas en `vault_fundamentals_catalog` (entre ellas ISO/IEC 25000/25010/25012/25019/25023/25040/25051, 42001/42005, 27001/27005/27701, 29148, 29119-1..5, 20000-1, 12207, 15289, 15489, 23081, 23894, 33000, 42010, 90003 · ISO 22301, 31000, 9001, 8601) · OWASP Top 10 2021, OWASP API Security 2023 |
 
 Todo lo anterior está declarado, medido y forzado en **[Marco de Datos y Gobernanza](#marco-de-datos-y-gobernanza)**, con su matriz de trazabilidad concepto → métrica → tool → norma.
 
 **Qué NO es.** No es un producto ni un plugin de Obsidian — el agente no necesita Obsidian instalado. No es un sistema de gestión documental para humanos. No es un reemplazo de git, de la wiki del equipo ni de una base de datos: es la capa de memoria que un agente consulta y escribe con reglas.
 
-**Cómo se consume.** Como scripts Python invocados por el harness, o directamente vía **MCP** (`mcp/nodejs/vault-mcp-server.mjs`) para que cualquier IA compatible use las tools sin registro previo.
+**Cómo se consume.** Como paquete instalable con CLI (`pip install` → `vault init`, `vault run <tool>`, `vault doctor`), como scripts Python invocados desde un checkout, o directamente vía **MCP** (`mcp/nodejs/vault-mcp-server.mjs`) para que cualquier IA compatible use las tools sin configuración manual.
 
 **Política de no-derogación.** Este documento no se mutila: ninguna tool, norma o sección se elimina al evolucionar el estándar. Lo reemplazado se marca `superseded_by:` y conserva su contrato — ver [Política de no-derogación](#política-de-no-derogación).
 

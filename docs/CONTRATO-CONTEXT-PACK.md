@@ -39,3 +39,14 @@ La evaluación con búsqueda real comprueba recuperación, resultados vacíos,
 truncado y preferencias; no determina cuál de dos fuentes contradictorias es
 verdadera ni calibra automáticamente los pesos. La opción `--no-preferences`
 omite explícitamente las preferencias del paquete.
+
+Por defecto el paquete entrega únicamente verdad vigente: las notas históricas
+(ADR sustituidos, estados `archived`/`deprecated`/`obsolete`/`revoked`, fuentes
+archivadas y copias en cuarentena) se excluyen antes del rerank, se reportan en
+`history_excluded` (con desglose `by_reason` y punteros `superseded_by`) y sus
+señales pasan a la nota sucesora cuando existe. Pasar `--incluir-historico`
+devuelve esas notas al ranking (penalizadas). Cuando el índice de búsqueda es
+fresco y contiene los campos de proyección `aliases` y `contradicts`, el paquete
+resuelve enlaces sucesores y desacuerdos declarados (PAT-7) directamente desde
+esa proyección sin barrer todo el disco, con fallback transparente al barrido
+en índices legados.

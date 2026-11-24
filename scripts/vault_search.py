@@ -219,6 +219,12 @@ def _pide_historia(folder: Optional[str]) -> bool:
     return es_seccion_historica(carpeta) or _en_carpeta(carpeta + "/x.md", CARPETA_FUENTES)
 
 
+#: Bitacoras de sistema que generan ruido en busquedas operativas (DZ-07).
+#: Quedan fuera de resultados por defecto y se cuentan en `history_excluded`
+#: como `system_log`; vuelven con `--incluir-historico` o `--folder 00_System`.
+_BITACORAS_DE_SISTEMA = frozenset({"00_System/change-log.md"})
+
+
 class _FiltroDeHistoria:
     """Leaves history out of the matches, counting it by reason.
 
@@ -227,8 +233,9 @@ class _FiltroDeHistoria:
     row carried it is decided by reading that one matching note.
     """
 
-    def __init__(self, activo: bool) -> None:
+    def __init__(self, activo: bool, excluir_sistema: bool = False) -> None:
         self.activo = activo
+        self.excluir_sistema = excluir_sistema
         self.excluidas: Dict[str, str] = {}
         self.sin_ciclo = 0
 
@@ -247,6 +254,10 @@ class _FiltroDeHistoria:
 
     def excluye(self, nota: Dict[str, Any], filas: Dict[str, Dict[str, Any]]) -> bool:
         path = nota.get("path", "")
+        norm = path.replace("\\", "/")
+        if self.excluir_sistema and norm in _BITACORAS_DE_SISTEMA:
+            self.excluidas[path] = "system_log"
+            return True
         if not self.activo or Path(path).name.lower() == "index.md":
             return False
         motivo = self._motivo(path, filas.get(path, {"path": path}))
@@ -435,7 +446,11 @@ def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = 
 
 
     # Current truth only (producto-usable S4), before sorting and the cut at 20.
-    historia = _FiltroDeHistoria(activo=not incluir_historico and not _pide_historia(folder))
+    pide_sistema = bool(folder and any(_en_carpeta(b, folder) for b in _BITACORAS_DE_SISTEMA))
+    historia = _FiltroDeHistoria(
+        activo=not incluir_historico and not _pide_historia(folder),
+        excluir_sistema=not incluir_historico and not pide_sistema,
+    )
     scored_notes = [n for n in scored_notes if not historia.excluye(n, filas)]
     if historia.sin_ciclo:
         avisos.append(f"vigencia: {historia.sin_ciclo} coincidencia(s) del índice sin ciclo de "

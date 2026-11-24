@@ -95,10 +95,11 @@ servicio externo.
 Windows y Linux (**aún no acreditada por CI concluyente**); en macOS las tools
 fallan cerradas porque no hay contención de procesos verificada; un único
 usuario local por vault; sin sincronización ni multi-tenant. El MCP por stdio
-no abre puerto; por HTTP (`--port`) escucha solo en `127.0.0.1`, exige token
-`Authorization: Bearer` y rechaza peticiones de navegador (SP-04, ver
-`SECURITY.md`): no es autenticación de red y ponerlo detrás de un proxy sigue sin
-ser un uso soportado.
+no abre puerto; por HTTP (`--port`) escucha por defecto en `127.0.0.1` (o una
+interfaz IPv4 explícita con `--host <IP>` y opcionalmente `--tls-cert`/`--tls-key`),
+exige token `Authorization: Bearer` y rechaza peticiones de navegador (SP-04, ver
+`SECURITY.md` e `INSTALACION-LIMPIA.md`): ponerlo detrás de un proxy inverso o
+usarlo en multi-tenant sigue sin ser un uso soportado.
 
 ---
 
@@ -174,7 +175,7 @@ Reglas de la secuencia:
 | Este documento | Registro canónico que NO sustituye |
 |---|---|
 | §A–F (identidad, promesas, premisas, invariantes) | `vault-obsidian-architecture.md` (manifiesto) |
-| §E (invariantes) | `normas/` (82 paquetes con guard) y sus verificadores |
+| §E (invariantes) | `normas/` (97 paquetes con guard) y sus verificadores |
 | §F (gobierno) | `scripts/vault_gate.py` (29 puertas) y `vault_arch.py` |
 | Inventario maestro | `scripts/vault_arch.py:CONTEXTS`, `vault_mcp_catalog.TOOLS_CATALOG` |
 | Grafo de trazabilidad | `scripts/arch-baseline.json` (baseline de cruces) |
@@ -195,10 +196,10 @@ Todo lo nuevo es **aditivo**: capa de integración sobre registros vivos.
 | Correcciones dentro del alcance | ejecutor (dentro de una orden) |
 | Cambios de contrato público, excepciones de deuda, reescritura de historia | **Propietario** |
 
-**Ratificación pendiente de este documento:** el propietario debe confirmar
-(a) la frontera de producto de §A, (b) las promesas de §C y sus límites, (c) los
-invariantes de §E y (d) las premisas de §D. Hasta entonces es DRAFT y no
-obliga a ninguna puerta.
+**Ratificación:** este documento fue ratificado por el propietario el
+`2026-10-28` (`DEC-01`, `audits/architecture/DECISIONES-PROPIETARIO.md`),
+confirmando la frontera de producto (§A), las promesas y sus límites (§C),
+las premisas (§D) y los invariantes (§E).
 
 ---
 

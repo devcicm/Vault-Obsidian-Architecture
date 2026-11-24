@@ -21,14 +21,14 @@
 
 ## Milestones
 
-### v1.1 (Q4 2026)
+### v1.1 (Q4 2026 — entregado en v41.27)
 
-- [ ] `pyproject.toml [project.scripts]` declara entry point `vault`
-- [ ] `vault --version` muestra versión del toolkit
-- [ ] `vault run --help` lista todas las tools
-- [ ] `vault doctor` reporta estado del entorno (vault root, contrato, locks)
-- [ ] Pre-flight AP-36 + anti-poison funcionando
-- [ ] `vault_produccion` promesa `ergon_de_entrada` cubierta
+- [x] `pyproject.toml [project.scripts]` declara entry point `vault`
+- [x] `vault --version` muestra versión del toolkit (con arranque perezoso DZ-05)
+- [x] `vault tools list` / `vault run` descubre y ejecuta las tools instaladas
+- [x] `vault doctor` reporta estado del entorno (vault root, contrato, locks)
+- [x] Pre-flight AP-36 + anti-poison funcionando (`GobernanzaCLI`)
+- [x] `vault_produccion` promesa `ergon_de_entrada` cubierta
 
 ### v1.2 (Q1 2027)
 

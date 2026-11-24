@@ -13,28 +13,28 @@ import re
 import shutil
 import subprocess
 import sys
-from importlib import metadata
 from pathlib import Path
 from typing import Any, Sequence
 
 from .kernel.errores import construir_error
 from .kernel.version import CURRENT_VERSION
-from .kernel import proyectos as _proyectos
-from .kernel.adaptadores import NormasDelCatalogo
-from .ciclo_de_vida.producto import (
-    inicializar_runtime,
-    diagnosticar_runtime,
-    estado_runtime,
-)
-from .meta_toolkit.catalogo_producto import catalogo_producto, obtener_tool
-from .meta_toolkit.resolucion_producto import (
-    INSTALLED,
-    INVALID_INSTALLED_TARGET,
-    KNOWN_NOT_INSTALLED,
-    NOT_RUNTIME_OPERATION,
-    UNKNOWN_TOOL,
-    resolver_producto,
-)
+
+
+def __getattr__(name: str) -> Any:
+    """Exportación perezosa de dependencias de arranque costoso (DZ-05)."""
+    if name == "metadata":
+        from importlib import metadata as _metadata
+        globals()["metadata"] = _metadata
+        return _metadata
+    if name == "_PISTAS_DE_RESOLUCION":
+        pistas = _pistas_de_resolucion()
+        globals()["_PISTAS_DE_RESOLUCION"] = pistas
+        return pistas
+    if name == "resolver_producto":
+        from .meta_toolkit.resolucion_producto import resolver_producto as _resolver
+        globals()["resolver_producto"] = _resolver
+        return _resolver
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 DIST_NAME = "vault-obsidian-architecture"
@@ -75,6 +75,7 @@ def _parse_args(args: list[str]) -> dict[str, Any]:
 
 def _gobernanza() -> Any:
     """Lazy import de GobernanzaCLI para evitar circular imports."""
+    from .kernel.adaptadores import NormasDelCatalogo
     from .meta_toolkit.catalog_adapter import ToolsCatalogAdapter, NormCatalogAdapter
 
     vault_root = os.environ.get("VAULT_ROOT")
@@ -116,9 +117,10 @@ def toolkit_version() -> str:
     # Por eso la lista nunca nace vacía: si la distribución no está
     # instalada, la versión que corre —el código— es igualmente la verdad.
     versiones = [CURRENT_VERSION.lstrip("v")]
+    meta_mod = getattr(sys.modules[__name__], "metadata")
     try:
-        versiones.append(metadata.version(DIST_NAME))
-    except metadata.PackageNotFoundError:
+        versiones.append(meta_mod.version(DIST_NAME))
+    except meta_mod.PackageNotFoundError:
         pass
     return max(versiones, key=_clave_de_version)
 
@@ -139,26 +141,34 @@ def _sanitize_payload(obj: Any) -> Any:
     return obj
 
 
-#: Qué hacer con la CLI instalada según por qué no se ejecutó la tool. Sin
-#: esto salía la pista del catálogo, «Ejecutar el script con --help», que no
-#: tiene sentido sin checkout y no distinguía los casos (v40.34).
-_PISTAS_DE_RESOLUCION = {
-    UNKNOWN_TOOL: "`vault tools list` muestra las tools de esta instalación.",
-    KNOWN_NOT_INSTALLED: (
-        "La CLI no la ejecuta. Si `vault tools show <tool>` dice `via: mcp`, "
-        "está instalada y la sirve el servidor MCP (`vault mcp-path` da la "
-        "configuración del cliente); si no, esta instalación no la trae."
-    ),
-    NOT_RUNTIME_OPERATION: (
-        "Es mantenimiento del estándar, no operación sobre un vault: se ejecuta "
-        "desde un checkout del repositorio (python scripts/<tool>.py), no desde "
-        "la instalación."
-    ),
-    INVALID_INSTALLED_TARGET: (
-        "La instalación está incompleta: reinstala el paquete y comprueba con "
-        "`vault tools list`."
-    ),
-}
+def _pistas_de_resolucion() -> dict[str, str]:
+    """Qué hacer con la CLI instalada según por qué no se ejecutó la tool. Sin
+    esto salía la pista del catálogo, «Ejecutar el script con --help», que no
+    tiene sentido sin checkout y no distinguía los casos (v40.34)."""
+    from .meta_toolkit.resolucion_producto import (
+        INVALID_INSTALLED_TARGET,
+        KNOWN_NOT_INSTALLED,
+        NOT_RUNTIME_OPERATION,
+        UNKNOWN_TOOL,
+    )
+
+    return {
+        UNKNOWN_TOOL: "`vault tools list` muestra las tools de esta instalación.",
+        KNOWN_NOT_INSTALLED: (
+            "La CLI no la ejecuta. Si `vault tools show <tool>` dice `via: mcp`, "
+            "está instalada y la sirve el servidor MCP (`vault mcp-path` da la "
+            "configuración del cliente); si no, esta instalación no la trae."
+        ),
+        NOT_RUNTIME_OPERATION: (
+            "Es mantenimiento del estándar, no operación sobre un vault: se ejecuta "
+            "desde un checkout del repositorio (python scripts/<tool>.py), no desde "
+            "la instalación."
+        ),
+        INVALID_INSTALLED_TARGET: (
+            "La instalación está incompleta: reinstala el paquete y comprueba con "
+            "`vault tools list`."
+        ),
+    }
 
 
 #: Código del catálogo y pista para cada fallo de init, doctor y status. Hasta
@@ -224,8 +234,11 @@ _CICLO_DE_VIDA = {
 
 def _error(state: str, detail: str, exit_code: int,
            datos: dict[str, Any] | None = None) -> int:
-    code, pista = _CICLO_DE_VIDA.get(
-        state, ("INVALID_ACTION", _PISTAS_DE_RESOLUCION.get(state)))
+    if state in _CICLO_DE_VIDA:
+        code, pista = _CICLO_DE_VIDA[state]
+    else:
+        pistas = getattr(sys.modules[__name__], "_PISTAS_DE_RESOLUCION")
+        code, pista = ("INVALID_ACTION", pistas.get(state))
     _emit(
         construir_error(
             "vault",
@@ -246,6 +259,8 @@ _CAMPOS_DEL_DIAGNOSTICO = ("missing", "standard_version", "compatibility", "expe
 
 
 def cmd_tools_list(_: argparse.Namespace) -> int:
+    from .meta_toolkit.catalogo_producto import catalogo_producto
+
     tools = catalogo_producto()
     _emit({
         "ok": True,
@@ -262,6 +277,9 @@ def cmd_tools_list(_: argparse.Namespace) -> int:
 
 
 def cmd_tools_show(args: argparse.Namespace) -> int:
+    from .meta_toolkit.catalogo_producto import obtener_tool
+    from .meta_toolkit.resolucion_producto import UNKNOWN_TOOL
+
     tool = obtener_tool(args.tool)
     if tool is None:
         return _error(UNKNOWN_TOOL, f"tool desconocida: {args.tool}", EXIT_UNKNOWN)
@@ -300,7 +318,16 @@ def _parametros(esquema) -> list[dict[str, Any]]:
 
 
 def cmd_run(args: argparse.Namespace) -> int:
-    result = resolver_producto(args.tool)
+    from .meta_toolkit.resolucion_producto import (
+        INSTALLED,
+        INVALID_INSTALLED_TARGET,
+        KNOWN_NOT_INSTALLED,
+        NOT_RUNTIME_OPERATION,
+        UNKNOWN_TOOL,
+    )
+
+    resolver = getattr(sys.modules[__name__], "resolver_producto")
+    result = resolver(args.tool)
     if result.estado == UNKNOWN_TOOL:
         return _error(result.estado, result.detail or "tool desconocida", EXIT_UNKNOWN)
     if result.estado == KNOWN_NOT_INSTALLED:
@@ -369,7 +396,10 @@ def _poblar_con_vault_init(root: Path) -> dict[str, Any]:
     runtime: índices de sección, hub con enlaces, nota de comandos y primers.
     Su salida JSON se recoge y no se reemite: el envelope de `vault init` es uno.
     """
-    resolucion = resolver_producto("vault_init")
+    from .meta_toolkit.resolucion_producto import INSTALLED
+
+    resolver = getattr(sys.modules[__name__], "resolver_producto")
+    resolucion = resolver("vault_init")
     if resolucion.estado != INSTALLED or resolucion.module is None:
         return {"ok": False, "detail": resolucion.detail or resolucion.estado}
     env = dict(os.environ, VAULT_ROOT=str(root), VAULT_STRICT_ROOT="1")
@@ -384,16 +414,22 @@ def _poblar_con_vault_init(root: Path) -> dict[str, Any]:
 
 
 def cmd_init(args: argparse.Namespace) -> int:
+    from .ciclo_de_vida.producto import inicializar_runtime
+
     return _lifecycle_result(
         inicializar_runtime(args.runtime, bootstrap=_poblar_con_vault_init)
     )
 
 
 def cmd_doctor(args: argparse.Namespace) -> int:
+    from .ciclo_de_vida.producto import diagnosticar_runtime
+
     return _lifecycle_result(diagnosticar_runtime(args.runtime))
 
 
 def cmd_status(args: argparse.Namespace) -> int:
+    from .ciclo_de_vida.producto import estado_runtime
+
     return _lifecycle_result(estado_runtime(args.runtime))
 
 
@@ -469,6 +505,7 @@ def cmd_mcp_path(args: argparse.Namespace) -> int:
         return _error("mcp_server_missing", "el servidor MCP no está en esta instalación", 1)
     raiz = _raiz_pedida(args.root)
     if raiz:
+        from .ciclo_de_vida.producto import diagnosticar_runtime
         # A config for a vault that does not exist starts a server that serves
         # nothing; `ok: true` hid it (QA-PORT-09). Only existence is checked:
         # any folder may be a vault, not just one made by `vault init`.
@@ -481,6 +518,7 @@ def cmd_mcp_path(args: argparse.Namespace) -> int:
     }
     payload: dict[str, Any] = {"ok": True, "server": str(servidor), "python": sys.executable}
     if args.project:
+        from .kernel import proyectos as _proyectos
         slug, pedido = args.project, _PREVIO.get("project") or args.project
         env[_proyectos.ENTORNO_PROYECTO] = slug
         env[_proyectos.ENTORNO_CANDADO] = "1"
@@ -493,9 +531,25 @@ def cmd_mcp_path(args: argparse.Namespace) -> int:
     return 0
 
 
+class _VersionPerezosa(argparse.Action):
+    """Evalúa `toolkit_version()` solo cuando el usuario pide `--version` (DZ-05)."""
+
+    def __init__(self, option_strings, dest=argparse.SUPPRESS, default=argparse.SUPPRESS, help=None):
+        super().__init__(option_strings=option_strings, dest=dest, default=default, nargs=0, help=help)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        parser.exit(message=f"{toolkit_version()}\n")
+
+
+def _validar_proyecto_mcp(valor: str) -> str:
+    from .kernel import proyectos as _proyectos
+
+    return _proyectos.proyecto_registrado("vault", _raiz_de_mcp_path)(valor)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="vault", allow_abbrev=False)
-    parser.add_argument("--version", action="version", version=toolkit_version())
+    parser.add_argument("--version", action=_VersionPerezosa, help="show program's version number and exit")
     commands = parser.add_subparsers(dest="command", required=True)
 
     tools = commands.add_parser("tools", help="Descubre tools del toolkit instalado", allow_abbrev=False)
@@ -522,7 +576,7 @@ def build_parser() -> argparse.ArgumentParser:
     status.set_defaults(func=cmd_status)
     mcp_path = commands.add_parser("mcp-path", help="Ruta del servidor MCP y su configuración de cliente", allow_abbrev=False)
     mcp_path.add_argument("--root", help="Vault que servirá el MCP (por defecto, VAULT_ROOT)")
-    mcp_path.add_argument("--project", type=_proyectos.proyecto_registrado("vault", _raiz_de_mcp_path), help="Ata la sesión MCP a este proyecto (slug o alias registrado)")
+    mcp_path.add_argument("--project", type=_validar_proyecto_mcp, help="Ata la sesión MCP a este proyecto (slug o alias registrado)")
     mcp_path.set_defaults(func=cmd_mcp_path)
     return parser
 
@@ -535,12 +589,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         reconfigure = getattr(stream, "reconfigure", None)
         if callable(reconfigure):
             reconfigure(encoding="utf-8")
+    crudo = list(sys.argv[1:] if argv is None else argv)
+    if crudo == ["--version"]:
+        print(toolkit_version())
+        return 0
     previo = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     previo.add_argument("--root")
     _PREVIO["root"] = previo.parse_known_args(argv)[0].root or ""
     # El nombre crudo, sin un segundo `add_argument("--project")`: ese solo
     # existe con la fábrica (AP-63), y aquí no se resuelve nada.
-    crudo = list(sys.argv[1:] if argv is None else argv)
     for i, arg in enumerate(crudo):
         if arg == "--project" and i + 1 < len(crudo):
             _PREVIO["project"] = crudo[i + 1]

@@ -2,9 +2,9 @@
 
 <!-- propiedad: CARLOS IVAN CM · revisión: manual -->
 
-**Versión:** 1.0
-**Fecha:** 2026-09-20
-**Estado:** Draft
+**Versión:** 1.1
+**Fecha:** 2026-11-23
+**Estado:** Activo
 
 ---
 
@@ -14,8 +14,8 @@ Vault Obsidian Architecture tiene tres niveles de producto:
 
 | Nivel | Alcance | Versión independiente |
 |--------|---------|---------------------|
-| **Estándar** | Estructura, reglas, contratos, gobernanza. Manifiesto + registros canónicos. | **Sí** — `v40.x` |
-| **Toolkit** | Implementación Python/CLI/MCP/gates/migrations. Scripts + paquete `vault/`. | **Sí** — `41.x` (próxima) |
+| **Estándar** | Estructura, reglas, contratos, gobernanza. Manifiesto + registros canónicos. | **Sí** — `v41.27` (`vault_version.CURRENT_VERSION`) |
+| **Toolkit** | Implementación Python/CLI/MCP/gates/migrations. Scripts + paquete `vault/`. | **Sí** — `41.27` (wheel instalable) |
 | **Runtime** | Vault concreto de un proyecto: memoria operativa, notas, relaciones, preferencias. | No aplica |
 
 **CLI** y **MCP** son subproductos del toolkit — las dos superficies de entrada
@@ -57,7 +57,7 @@ recuperarlos después, y una persona puede revisar su contenido y procedencia.
 | **De producto** | Automatización CI/scripts robusta y predecible. |
 | **Simple** | `vault run <tool>` funciona sin pensar en paths ni Python. |
 
-**Scope IN:** `run`, `batch`, `plan`, `scan`, `doctor`, `groups`, `find`, `show`; scheduler de olas; safety anti-poison; `--verify-integrity`; timeout configurable.
+**Scope IN (CLI instalada `vault`):** `init`, `doctor`, `status`, `run`, `tools list/show`, `mcp-path`; pre-flight AP-36 y anti-poison. La CLI de checkout (`python -m cli`) añade `batch`, `plan`, `scan`, `groups`, `find`, `show`, scheduler de olas y `--verify-integrity`.
 
 **Scope OUT:** Interacción MCP; validación semántica de Mermaid/referencias; multi-vault discovery.
 
@@ -65,23 +65,23 @@ recuperarlos después, y una persona puede revisar su contenido y procedencia.
 
 | Perspectiva | Promesa |
 |-------------|---------|
-| **Técnica** | Servidor MCP monolítico, cero dependencias npm, expone 98 tools con guard chain de validación (secret scan, bracket balance, Mermaid syntax, content gate). |
-| **De producto** | Agentes LLM en tiempo real con validación semántica profunda. |
+| **Técnica** | Servidor MCP monolítico, cero dependencias npm, expone 98 tools con guard chain de validación (secret scan, bracket balance, Mermaid syntax, content gate) y coordinación asíncrona CQRS lectura/escritura (`AsyncRWCoordinator`). |
+| **De producto** | Agentes LLM en tiempo real con validación semántica profunda y concurrencia segura. |
 | **Simple** | Cualquier IA compatible usa las tools sin configuración. |
 
-**Scope IN:** `tools/call`, `tools/list`; JS-native para 2 tools; validación semántica; multi-vault discovery; resources `vault://`.
+**Scope IN:** `tools/call`, `tools/list`; JS-native para 2 tools (marcadas `superseded_by: executePythonTool` por AP-48); coordinación CQRS lectura paralela / escritura serializada por carpeta (`VAULT_MCP_MAX_READS`); validación semántica; multi-vault discovery; resources `vault://`.
 
-**Scope OUT:** Scheduling de olas; verify-integrity; batch execution.
+**Scope OUT:** Batch execution multi-comando; verify-integrity.
 
 ---
 
 ## Versionado independiente
 
 ```
-Estándar: el vigente — `vault_version.CURRENT_VERSION` (ver el manifiesto)
-Toolkit:  el publicado en la misma release (installed operations)
-CLI:       v1.0
-MCP:       v1.0
+Estándar: el vigente — `vault_version.CURRENT_VERSION` (v41.27, ver el manifiesto)
+Toolkit:  el publicado en la misma release (wheel `vault` + `vault_toolkit`)
+CLI:      instalada (`vault`) y de checkout (`python -m cli`)
+MCP:      servidor monolítico empaquetado en la misma release
 ```
 
 El toolkit y el estándar NO necesitan coincidir. Un runtime puede leer

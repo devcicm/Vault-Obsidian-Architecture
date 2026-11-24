@@ -87,19 +87,23 @@ donde importa, y prefiero decirlas aquí que dejar que las descubras tú.
   buscando `vault-*/` en el directorio actual; si la detección cae en el propio
   paquete instalado, se niegan con `VAULT_NOT_FOUND` en vez de leerlo como vault
   (posterior a 41.6, ver `docs/INSTALACION-LIMPIA.md`).
-- **El servidor MCP por HTTP (`--port`) escucha en `127.0.0.1` y exige token**
+- **El servidor MCP por HTTP (`--port`) escucha por defecto en `127.0.0.1` y exige token**
   (`Authorization: Bearer`, desde `VAULT_MCP_TOKEN` o generado e impreso por
-  stderr al arrancar). Rechaza peticiones de navegador (`Origin`) y un `Host`
-  distinto de `127.0.0.1`/`localhost`. No es autenticación de red: ponerlo detrás
-  de un proxy inverso sigue sin ser un uso soportado. Por stdio no hay puerto.
+  stderr al arrancar). Rechaza peticiones de navegador (`Origin`) y exige coincidencia
+  de `Host`. Opcionalmente acepta una interfaz IPv4 concreta con `--host <IP>` (nunca
+  comodines) y HTTPS nativo con `--tls-cert <cert.pem> --tls-key <key.pem>` (ver
+  `docs/INSTALACION-LIMPIA.md`). Sigue sin estar diseñado para exponerse detrás de un
+  proxy inverso ni en multi-tenant. Por stdio no hay puerto; internamente coordina
+  lecturas paralelas y escrituras serializadas por carpeta vía CQRS (`VAULT_MCP_MAX_READS`).
 - **Contra un vault que no sea tuyo, primero solo lectura:**
   `python scripts/vault_foreign_check.py --root <ruta>`.
 - **Cada tool corre en un proceso contenido (A-06).** Un timeout o un Ctrl-C detiene
   el árbol entero de procesos (Job object en Windows, subreaper en Linux). Cuesta
-  ~0,3 s por llamada (medido en serie: 0,48 s → 0,79 s) y, en Linux, el worker no
-  tiene terminal: lo que pida una contraseña por `/dev/tty` necesita credenciales no
-  interactivas. **En macOS las tools fallan cerrado** (`UNEXPECTED_ERROR`): no hay
-  adaptador de contención verificado.
+  ~0,3 s por llamada directa en serie (0,48 s → 0,79 s) y ~1,2 s extremo a extremo
+  vía `vault run` en Windows (cadena de procesos contenidos; `vault --version` ~0,2 s).
+  En Linux el worker no tiene terminal: lo que pida una contraseña por `/dev/tty`
+  necesita credenciales no interactivas. **En macOS las tools fallan cerrado**
+  (`UNEXPECTED_ERROR`): no hay adaptador de contención verificado.
 - **La búsqueda por defecto pondera título, tags y vista previa**; `--ranking bm25`
   puntúa la nota entera, pero en las medidas de 2026-11-16 empeoró el primer acierto,
   así que es opcional.

@@ -2,6 +2,12 @@
 
 <!-- propiedad: CARLOS IVAN CM · revisión: manual -->
 
+El README explica la instalación de un checkout para desarrollar
+(`pip install -e .`). Esta guía cubre lo que hace un tercero: **quitar** lo que
+hubiera, **instalar la wheel** y **registrar el servidor MCP** que viaja dentro
+de ella. Todo lo que aquí se afirma se ejecutó así el 2026-10-01, en Windows 10
+con Python 3.14, contra un vault creado con `vault init` dentro de una copia de
+un proyecto consumidor.
 
 ### Búsqueda de notas desde MCP
 
@@ -46,12 +52,6 @@ ese flujo para que solo el operador autorizado pueda leerlo; no lo incluyas en
 registros compartidos ni en capturas. Si sospechas exposición, detén el servidor,
 genera un token nuevo, actualiza los clientes autorizados y vuelve a iniciarlo.
 Un cambio de código no protege una instancia ya iniciada: debes reiniciarla.
-El README explica la instalación de un checkout para desarrollar
-(`pip install -e .`). Esta guía cubre lo que hace un tercero: **quitar** lo que
-hubiera, **instalar la wheel** y **registrar el servidor MCP** que viaja dentro
-de ella. Todo lo que aquí se afirma se ejecutó así el 2026-10-01, en Windows 10
-con Python 3.14, contra un vault creado con `vault init` dentro de una copia de
-un proyecto consumidor.
 
 ## 1. Encontrar y quitar instalaciones previas
 

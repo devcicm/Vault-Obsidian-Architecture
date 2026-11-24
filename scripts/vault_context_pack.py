@@ -311,6 +311,43 @@ class _FiltroDeHistoria:
         }}
 
 
+def _censo_desde_indice() -> Optional[Tuple[List[str], Dict[str, List[str]], Dict[str, Dict[str, Any]]]]:
+    """Proyeccion CQRS O(1) de aliases y PAT-7 desde `99_Index/search-index.json` (DZ-08).
+
+    Solo se acepta si el indice es legible y TODAS sus filas llevan los campos
+    de proyeccion (`aliases` y `contradicts`). Ante un indice legado o ausente
+    devuelve `None` para que `_censo()` caiga limpiamente al barrido en disco.
+    """
+    from vault.kernel.enumeracion import NOMBRES_DE_INDICE
+    from vault.kernel.normativa.desacuerdos import PREDICADO
+
+    ruta_indice = _raiz() / "99_Index" / "search-index.json"
+    try:
+        datos = json.loads(ruta_indice.read_text(encoding="utf-8"))
+    except (FileNotFoundError, OSError, json.JSONDecodeError):
+        return None
+    filas = datos.get("notes") if isinstance(datos, dict) else None
+    if not isinstance(filas, list):
+        return None
+
+    relativas: List[str] = []
+    aliases: Dict[str, List[str]] = {}
+    declarantes: Dict[str, Dict[str, Any]] = {}
+    for fila in filas:
+        if not isinstance(fila, dict) or "aliases" not in fila or PREDICADO not in fila:
+            return None
+        rel = str(fila.get("path") or "")
+        if not rel or Path(rel).name.lower() in NOMBRES_DE_INDICE:
+            continue
+        relativas.append(rel)
+        al = fila.get("aliases")
+        aliases[rel] = [a for a in al if isinstance(a, str)] if isinstance(al, list) else []
+        contra = fila.get(PREDICADO)
+        if isinstance(contra, list) and contra:
+            declarantes[rel] = {PREDICADO: contra}
+    return relativas, aliases, declarantes
+
+
 def _censo() -> Tuple[List[str], Dict[str, List[str]], Dict[str, Dict[str, Any]]]:
     """One read of the vault: every note, its `aliases:` and the PAT-7 declarers.
 
@@ -559,7 +596,9 @@ paquete de antes: compiten, penalizadas."""
     if search_index_used:
         try:
             estado_indice = index_coherence()
-            if estado_indice.get("status") == "index_stale":
+            if estado_indice.get("status") == "index_ok":
+                filtro.censo = _censo_desde_indice()
+            elif estado_indice.get("status") == "index_stale":
                 index_warning = "índice de búsqueda desactualizado: ejecuta vault_reindex"
             elif estado_indice.get("status") == "index_incomplete":
                 index_warning = "verificación del índice de búsqueda incompleta; revisa vault_reindex"

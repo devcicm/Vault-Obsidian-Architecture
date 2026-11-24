@@ -89,11 +89,12 @@ CARRILES: Dict[str, Dict[str, Any]] = {
              "argv": (rutas.cita_repo(rutas.AUDITS, "fase2/colector_qg.py"), "--sha", "<product_sha>",
                       "--ejecutar", "--recibos", "qg-recibos", "--json",
                       "qg-informe.json"),
-             # Cableado en el job `qg-receipts` de release.yml (B-04); hasta que
-             # la CI lo corra una vez, lo escrito no está verificado.
+             # Cableado en el job `qg-receipts` de release.yml (B-04) y verificado
+             # en CI el 2026-11-03 (run 41744360675, tag v41.26, recibo en
+             # audits/fase2/recibos-R27-9ac330a-ci/; vigilado por
+             # test_colector_qg_sin_puerta.py).
              "cableado": True,
-             "verificado": False,
-             "deuda": "colector_qg_sin_primera_corrida"},
+             "verificado": True},
         ],
     },
 }

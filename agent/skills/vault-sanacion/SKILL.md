@@ -56,8 +56,9 @@ back to the repo root. The envelope reports `vault_root` and
 
 
 **Where a vault lives.** The user's vaults live in a house —
-`~/.vault-master/<nombre>/` on Linux and macOS,
-`%USERPROFILE%\.vault-master\<nombre>\` on Windows — each with its own git
+`~/.vault-master/<nombre>/` on Linux,
+`%USERPROFILE%\.vault-master\<nombre>\` on Windows (macOS fails closed because
+process containment is not yet verified there) — each with its own git
 repository. `vault run vault_init --list` shows the ones that are
 there; `VAULT_MASTER` moves the house.
 

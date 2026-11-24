@@ -20,6 +20,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence
 
 from ..kernel.escritura import escribir_json_si_cambia  # noqa: E402
 from ..kernel.frontmatter_parsing import separar_frontmatter
+from ..kernel.normativa.desacuerdos import destinos_declarados
 from .bm25 import estadisticas
 from .enumeracion import es_nota_indexable, notas_en_disco
 from .repositorio import RepositorioIndices
@@ -75,6 +76,12 @@ class ServicioReindex:
         # BM25 over the whole note (`vault.indices.bm25`): the same owner
         # computes the statistics here and scores them in `vault_search`.
         terminos = estadisticas(str(titulo), separar_frontmatter(contenido)[1])
+        alias_crudo = meta.get("aliases")
+        aliases = (
+            [alias_crudo] if isinstance(alias_crudo, str)
+            else [a for a in alias_crudo if isinstance(a, str)]
+            if isinstance(alias_crudo, list) else []
+        )
         return {
             "path": self._repo.relativa(ruta),
             "title": titulo,
@@ -93,6 +100,10 @@ class ServicioReindex:
             },
             "terms": terminos["terms"],
             "length": terminos["length"],
+            # Proyeccion CQRS para `vault_context_pack` (DZ-08): evita releer
+            # y parsear YAML de cada nota en disco para `aliases:` y PAT-7.
+            "aliases": aliases,
+            "contradicts": destinos_declarados(meta),
             # What decides current truth or history (`vault.kernel.vigencia`),
             # status already normalized: the search filters history without
             # reading the note or loading the normalizer (producto-usable S4).
