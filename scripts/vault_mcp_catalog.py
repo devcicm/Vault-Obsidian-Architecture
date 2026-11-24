@@ -112,6 +112,12 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "JSON con frontmatter adicional",
                 "validators": ["valid_json"],
             },
+            "shape": {
+                "type": "string",
+                "required": False,
+                "description": "Forma documental opcional (resumen, sintesis, informe, reporte, decision, auditoria, referencia)",
+                "validators": [],
+            },
             "meta-file": {
                 "type": "string",
                 "required": False,
@@ -4313,6 +4319,24 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "type": "string",
                 "required": False,
                 "description": "Tags separados por espacio",
+                "validators": [],
+            },
+            "author": {
+                "type": "string",
+                "required": False,
+                "description": "Autor o entidad responsable de la fuente (opcional; nunca se inventa)",
+                "validators": [],
+            },
+            "published-date": {
+                "type": "string",
+                "required": False,
+                "description": "Fecha o año de publicación (ej. 2026-05-01)",
+                "validators": [],
+            },
+            "citation-style": {
+                "type": "string",
+                "required": False,
+                "description": "Estilo de cita generado (apa | none; default: apa)",
                 "validators": [],
             },
         },

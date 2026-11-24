@@ -59,6 +59,7 @@ from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 from vault.kernel.contenido import nota_escalonada  # noqa: E402
+from vault.kernel.redaccion import formatear_cita_apa  # noqa: E402
 from vault.autoria.frontmatter import firmante as _agente  # noqa: E402
 
 
@@ -84,11 +85,18 @@ def vault_bibliography_save(
     project: Optional[str] = None,
     agent: Optional[str] = None,
     tags: Optional[List[str]] = None,
+    author: Optional[str] = None,
+    published_date: Optional[str] = None,
+    citation_style: str = "apa",
 ) -> Dict[str, Any]:
     source_type = source_type.lower()
 
     if source_type not in SOURCE_TYPES:
         return emit_error("vault_bibliography_save", "INVALID_VALUE", f"source_type inválido: {source_type}. Válidos: {SOURCE_TYPES}")
+
+    citation_style = (citation_style or "apa").strip().lower()
+    if citation_style not in ("apa", "none"):
+        return emit_error("vault_bibliography_save", "INVALID_VALUE", f"citation_style inválido: {citation_style}. Válidos: ['apa', 'none']")
 
     if not url.strip():
         return emit_error("vault_bibliography_save", "MISSING_REQUIRED_ARG", "url es requerida")
@@ -152,6 +160,24 @@ def vault_bibliography_save(
 
     frontmatter_lines.set("accessed_at", now)
 
+    if author and str(author).strip():
+        frontmatter_lines.set("author", str(author).strip(), texto=True)
+
+    if published_date and str(published_date).strip():
+        frontmatter_lines.set("published_date", str(published_date).strip(), texto=True)
+
+    citation_apa = ""
+    if citation_style == "apa":
+        citation_apa = formatear_cita_apa(
+            title=title,
+            url=url,
+            author=author,
+            published_date=published_date,
+            accessed_at=now,
+            source_type=source_type,
+        )
+        frontmatter_lines.set("citation_apa", citation_apa, texto=True)
+
     frontmatter_lines.set("createdAt", now)
 
     frontmatter_lines.set("updatedAt", now)
@@ -188,19 +214,22 @@ def vault_bibliography_save(
 
     body += summary + "\n"
 
+    if citation_apa:
+        body += f"\n## Referencia APA\n\n> {citation_apa}\n"
+
     content = frontmatter_lines.render() + body
 
     # Mismo cuerpo ⇒ misma nota (v41.12): el re-guardado idéntico solo movía
-    # sellos (`accessed_at`, `**Consultado:**`) y el C3 lo daba por escritura.
+    # sellos (`accessed_at`, `**Consultado:**`, fecha de acceso en APA).
     content = conservar_nota_generada(
         note_path, content,
-        campos=("accessed_at",),
-        patrones_cuerpo=(r"^\*\*Consultado:\*\* .*$",),
+        campos=("accessed_at", "citation_apa"),
+        patrones_cuerpo=(r"^\*\*Consultado:\*\* .*$", r"^> .*Consultado el \d{4}-\d{2}-\d{2} de .*$"),
     )
 
     atomic_write_text(note_path, content)
 
-    return {
+    result_out: Dict[str, Any] = {
         "ok": True,
         **write_report(),
         "path": str(note_path.relative_to(_raiz())).replace("\\", "/"),
@@ -208,6 +237,9 @@ def vault_bibliography_save(
         "title": title,
         "agent": agent,
     }
+    if citation_apa:
+        result_out["citation_apa"] = citation_apa
+    return result_out
 
 
 def main():
@@ -263,6 +295,18 @@ Notas:
 
     parser.add_argument("--tags", nargs="*", help="Classification tags")
 
+    parser.add_argument("--author", help="Autor o entidad responsable de la fuente (opcional; no se inventa)")
+
+    parser.add_argument("--published-date", dest="published_date", help="Fecha o año de publicación (ej. 2026-05-01 o 2026)")
+
+    parser.add_argument(
+        "--citation-style",
+        dest="citation_style",
+        choices=["apa", "none"],
+        default="apa",
+        help="Formato de referencia generado (default: apa)",
+    )
+
     args = parser.parse_args()
 
     result = vault_bibliography_save(
@@ -273,6 +317,9 @@ Notas:
         args.project,
         args.agent,
         args.tags,
+        author=args.author,
+        published_date=args.published_date,
+        citation_style=args.citation_style,
     )
 
     print(json.dumps(result, indent=2, ensure_ascii=False))

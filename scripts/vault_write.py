@@ -138,6 +138,7 @@ from vault.kernel.frontmatter_escritura import (  # noqa: E402
     conservar_nota_generada,
 )
 from vault.kernel.indices_structural import describir_reserva, es_nombre_reservado  # noqa: E402
+from vault.kernel.redaccion import FORMAS_DE_DOCUMENTO, evaluar_forma  # noqa: E402
 
 _RE_VAULT_WRITE_2 = re.compile('^#\\s+(.+)$', re.MULTILINE)
 
@@ -551,7 +552,7 @@ CAMPOS_DEL_WRITE_PATH: Dict[str, str] = {
 #: Campos con significado que `--meta` sí puede fijar, y por eso los que una
 #: errata suele imitar.
 CAMPOS_DE_META = ("type", "status", "cia_integrity", "cia_availability",
-                  "cia_sensitivity", "agent")
+                  "cia_sensitivity", "agent", "document_shape")
 
 
 def problemas_de_meta(meta: Any, folder: str = "", raiz: Optional[Path] = None) -> List[str]:
@@ -592,6 +593,13 @@ def problemas_de_meta(meta: Any, folder: str = "", raiz: Optional[Path] = None) 
             problemas.append(
                 f"status {meta['status']!r} no pertenece al vocabulario canónico "
                 f"(CN-03); usa uno de {sorted(STATUS_VOCAB)}"
+            )
+
+    if "document_shape" in meta:
+        if not isinstance(meta["document_shape"], str) or meta["document_shape"].strip().lower() not in FORMAS_DE_DOCUMENTO:
+            problemas.append(
+                f"document_shape {meta['document_shape']!r} no pertenece a las formas "
+                f"documentales canónicas; usa una de {list(FORMAS_DE_DOCUMENTO)}"
             )
 
     from vault_fundamentals_catalog import cia_valores
@@ -1518,6 +1526,9 @@ def vault_write(
     if ghost_links:
         result["ghost_links"] = ghost_links
 
+    if meta.get("document_shape"):
+        result["shape_review"] = evaluar_forma(content, str(meta["document_shape"]))
+
     if tag_suggestions:
         result["tag_suggestions"] = tag_suggestions
 
@@ -1663,6 +1674,11 @@ Notas:
         "--adr", action="store_true",
         help="Escribe un ADR en 03_Decisions: siguiente adr-NNN libre, status draft, "
              "y exige Contexto/Decisión/Consecuencias (AP-07)",
+    )
+    parser.add_argument(
+        "--shape",
+        choices=list(FORMAS_DE_DOCUMENTO),
+        help="Forma documental opcional (estampa document_shape y devuelve shape_review)",
     )
 
     args = parser.parse_args()
@@ -1826,6 +1842,8 @@ Notas:
         meta = {**(meta or {}), "agent": args.agent}
     if pins:
         meta = {**(meta or {}), "version_pinned": pins}
+    if args.shape:
+        meta = {**(meta or {}), "document_shape": args.shape}
 
     # D5: los guards de contenido devuelven el envelope a mano; sale canónico.
     escritor = vault_write_adr if args.adr else vault_write

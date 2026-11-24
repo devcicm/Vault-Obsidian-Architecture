@@ -445,6 +445,22 @@
             "items": {
               "type": "string"
             }
+          },
+          "author": {
+            "type": "string",
+            "description": "Autor o entidad responsable de la fuente (opcional; nunca se inventa)"
+          },
+          "published-date": {
+            "type": "string",
+            "description": "Fecha o año de publicación (ej. 2026-05-01)"
+          },
+          "citation-style": {
+            "type": "string",
+            "description": "Estilo de cita generado (apa | none; default: apa)",
+            "enum": [
+              "apa",
+              "none"
+            ]
           }
         },
         "required": [
@@ -7967,6 +7983,19 @@
           "adr": {
             "type": "boolean",
             "description": "Escribe un ADR en 03_Decisions con el siguiente adr-NNN libre, en draft, y exige Contexto/Decisión/Consecuencias (AP-07)"
+          },
+          "shape": {
+            "type": "string",
+            "description": "Forma documental opcional (resumen, sintesis, informe, reporte, decision, auditoria, referencia)",
+            "enum": [
+              "resumen",
+              "sintesis",
+              "informe",
+              "reporte",
+              "decision",
+              "auditoria",
+              "referencia"
+            ]
           }
         },
         "required": [

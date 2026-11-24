@@ -927,6 +927,67 @@ def _detect_ingestas_sin_bitacora(barrido: Optional[List[Path]] = None) -> Dict[
             "unverifiable": sin_pasada}
 
 
+def _detect_redaccion_y_citas(barrido: Optional[List[Path]] = None) -> Dict[str, Any]:
+    """Diagnostico informativo (sin penalizacion) de formas documentales y citas APA.
+
+    Revisa:
+    - Notas que declaran `document_shape:` contra `vault.kernel.redaccion.evaluar_forma`.
+    - Notas de `12_Bibliography/` contra `auditar_cita_bibliografica` (autor, fecha, URL, APA).
+    Solo lectura y sin peso en `healthIndex` para no castigar notas legadas.
+    """
+    from vault.kernel.redaccion import (
+        FORMAS_DE_DOCUMENTO,
+        auditar_cita_bibliografica,
+        evaluar_forma,
+    )
+
+    formas_revisadas = 0
+    formas_con_brechas: List[Dict[str, Any]] = []
+    citas_revisadas = 0
+    citas_incompletas: List[Dict[str, Any]] = []
+
+    for nota in sorted(_barrido_md() if barrido is None else barrido):
+        if _is_snapshot(nota):
+            continue
+        rel = nota.relative_to(_raiz()).as_posix()
+        leida = _leer_nota_partida(nota)
+        if leida is None:
+            continue
+        fm, cuerpo = leida
+
+        forma = str(fm.get("document_shape") or "").strip().lower()
+        if forma and forma in FORMAS_DE_DOCUMENTO:
+            formas_revisadas += 1
+            ev = evaluar_forma(cuerpo, forma)
+            if ev["secciones_faltantes"] or ev["recomendaciones"]:
+                formas_con_brechas.append({
+                    "path": rel,
+                    "shape": forma,
+                    "missing_sections": ev["secciones_faltantes"],
+                    "recommendations": ev["recomendaciones"],
+                })
+
+        if rel.startswith("12_Bibliography/") and nota.name.lower() != "index.md":
+            citas_revisadas += 1
+            estado_cita = auditar_cita_bibliografica(fm)
+            if not estado_cita["complete"]:
+                citas_incompletas.append({
+                    "path": rel,
+                    "missing_fields": estado_cita["missing_fields"],
+                })
+
+    return {
+        "shapes": {
+            "checked": formas_revisadas,
+            "with_gaps": formas_con_brechas,
+        },
+        "citations": {
+            "checked": citas_revisadas,
+            "incomplete": citas_incompletas,
+        },
+    }
+
+
 def _detect_decisiones_reescritas(barrido: Optional[List[Path]] = None) -> Dict[str, Any]:
     """AP-75: closed decisions whose body changed after they were closed.
 
@@ -2945,6 +3006,7 @@ def vault_audit(
     fuentes_alteradas = _detect_fuentes_alteradas(barrido)
     ingestas_sin_bitacora = _detect_ingestas_sin_bitacora(barrido)
     decisiones_reescritas = _detect_decisiones_reescritas(barrido)
+    redaccion_y_citas = _detect_redaccion_y_citas(barrido)
     # ISO/IEC 42005 and 23894: the AI governance records with their cycle
     # unfinished. Informative work lists, without weight in the healthIndex.
     impacto_sin_evaluacion = _detect_impacto_sin_evaluacion_por_afectado(barrido)
@@ -3161,6 +3223,7 @@ def vault_audit(
         "archivedSourcesModified": fuentes_alteradas,
         "ingestsWithoutLog": ingestas_sin_bitacora,
         "closedDecisionsRewritten": decisiones_reescritas,
+        "writingAndCitations": redaccion_y_citas,
         "aiDecisionsWithoutPartyAssessment": impacto_sin_evaluacion,
         "aiRisksReviewOverdue": riesgos_ia_vencidos,
         # AP-79, informative and without weight: how far the notes go from
