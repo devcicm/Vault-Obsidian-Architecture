@@ -4053,7 +4053,7 @@ Lo ingerido entra con `status: draft` y `cia_integrity: low`, de modo que el rer
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **97 normas** del estándar (79 AP + 9 PAT + 4 SP + 5 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-79`. Fuente de verdad: `NORM_CATALOG` en `vault_norms_catalog.py` (`vault_norms.py` lo reexporta). Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **98 normas** del estándar (79 AP + 9 PAT + 4 SP + 5 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-79`. Fuente de verdad: `NORM_CATALOG` en `vault_norms_catalog.py` (`vault_norms.py` lo reexporta). Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -12596,3 +12596,17 @@ pruebas que declara el dueño y el protocolo de sesión (capa de esquema de Karp
 AGENTS.md corto de Torti Code). `vault_preferences --adapters` recorta las preferencias para
 caber en `LINEAS_MAXIMAS_ADAPTER` líneas y, si un adaptador pasaría del presupuesto aun así,
 no escribe ninguno y lo dice con `VALIDATION_FAILED`: un esquema largo se lee en diagonal.
+
+### PAT-10 - Taxonomía de operaciones de lógica de negocio y catálogo oficial de patrones
+
+**Enforcement:** `recommended` · **Audiencia:** `consumidor` · **Introducido:** v41.27 (2026-11-24)
+
+Todo análisis determinista de features, flujos y patrones sobre un repositorio (propio o de
+terceros) clasifica cada capacidad en el vocabulario cerrado de las ocho operaciones
+universales de lógica de negocio (`auth`, `rule`, `lifecycle`, `workflow`, `transform`,
+`event`, `integration`, `query` — o `unclassified` cuando no hay señal verificable, AP-45)
+sin acoplar el estándar a un dominio concreto. En paralelo, todo patrón arquitectónico, de
+diseño, concurrencia o resiliencia detectado o registrado usa el nombre oficial reconocido
+en la industria (GoF, Fowler PoEAA, Evans DDD, Hohpe EIP, Cockburn, Richards & Ford, Nygard)
+desde el catálogo canónico único (`vault/autoria/patrones_diseno.py`). `vault_code_query --scan-path`
+y `vault_pattern_list --catalog/--scan-path` publican `pattern: PAT-10` en su salida.

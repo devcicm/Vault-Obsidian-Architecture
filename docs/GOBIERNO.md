@@ -10,10 +10,10 @@ _Derivado de los registros canónicos. Se regenera con `python scripts/vault_ser
 
 ## Las cuatro familias de normas
 
-97 normas vivas, cada una un paquete en `normas/<código>/`. El catálogo derivado completo está en [docs/sdd/04-antipatterns.md](sdd/04-antipatterns.md).
+98 normas vivas, cada una un paquete en `normas/<código>/`. El catálogo derivado completo está en [docs/sdd/04-antipatterns.md](sdd/04-antipatterns.md).
 
 - **AP** · Anti-patrón — Un fallo con nombre, señal, prevención y límites. La unidad normativa principal. (79 vigentes).
-- **PAT** · Patrón — La forma recomendada de resolver algo que el estándar ya resolvió mal una vez. (9 vigentes).
+- **PAT** · Patrón — La forma recomendada de resolver algo que el estándar ya resolvió mal una vez. (10 vigentes).
 - **SP** · Protocolo de sesión — Reglas de proceso entre el agente y el vault durante una sesión. (4 vigentes).
 - **CN** · Convención — Un acuerdo de nomenclatura o forma que mantiene el vault legible y predecible. (5 vigentes).
 
@@ -22,11 +22,11 @@ _Derivado de los registros canónicos. Se regenera con `python scripts/vault_ser
 - **guard** (15 normas) — Falla en el punto de uso: la tool se niega a hacerlo mal.
 - **guard+audit** (37 normas) — Y además una puerta la mide sobre el repo entero.
 - **audit** (36 normas) — Una puerta la mide; se arregla en el siguiente ciclo.
-- **recommended** (9 normas) — Se publica, no se fuerza. La cobertura débil se declara.
+- **recommended** (10 normas) — Se publica, no se fuerza. La cobertura débil se declara.
 
 ## Qué es ley para quién
 
-- **Para quien usa el vault**: las 76 normas de consumidor, aplicadas por las tools de escritura y consulta — contrato de nota, vocabulario de estados, protocolo de borrado y buenas prácticas.
+- **Para quien usa el vault**: las 77 normas de consumidor, aplicadas por las tools de escritura y consulta — contrato de nota, vocabulario de estados, protocolo de borrado y buenas prácticas.
 - **Para quien mantiene este repositorio**: la gobernanza del meta-toolkit — las 21 normas internas del estándar (separadas por audiencia para no mezclarse con la superficie del consumidor) y el conjunto de tools cuya naturaleza es `meta_estandar` (30), que miden este repo y no el vault de nadie, por las 29 puertas de `docs/PUERTAS.md`.
 
 ## La superficie que ve el agente por MCP

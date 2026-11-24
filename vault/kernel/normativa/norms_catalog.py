@@ -319,6 +319,8 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     # ── Patrones PAT-8 y PAT-9 — capas wiki y esquema (2026-11-17) ────────────
     _desde_paquete("PAT-8"),
     _desde_paquete("PAT-9"),
+    # ── Patrón PAT-10 — 8 operaciones de lógica de negocio y patrones oficiales (2026-11-24)
+    _desde_paquete("PAT-10"),
     # ── Protocolo de sesión SP-XX ──────────────────────────────────────────────
     _desde_paquete("SP-01"),
     _desde_paquete("SP-02"),

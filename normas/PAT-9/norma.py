@@ -13,6 +13,11 @@ NORMA = {
             "lee para saber cómo se trabaja en el vault, entre ellas cuándo "
             "guardar una respuesta."
         ),
+        "PAT-10": (
+            "PAT-9 genera el esquema de operación que el agente lee en cada "
+            "sesión. PAT-10 clasifica la lógica de negocio detectada en código "
+            "en ocho operaciones universales y fija nombres oficiales de patrones."
+        ),
     },
     "name": "Esquema del agente generado",
     "type": "pattern",

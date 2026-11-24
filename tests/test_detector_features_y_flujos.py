@@ -290,3 +290,35 @@ def test_cqrs_escritura_vault_flow_save_scan_path_persiste_flujo_en_13_flows(tmp
     assert "```mermaid" in contenido
     assert "authenticate" in contenido
     assert "find_by_email" in contenido
+
+
+def test_pat10_clasifica_las_ocho_operaciones_de_logica_de_negocio_y_fallback_honesto(tmp_path):
+    from vault.grafo.features_y_flujos import (
+        OPERACIONES_LOGICA_NEGOCIO,
+        clasificar_operaciones_negocio,
+        detectar_features_y_flujos,
+    )
+
+    assert len(OPERACIONES_LOGICA_NEGOCIO) == 8
+    assert set(OPERACIONES_LOGICA_NEGOCIO) == {
+        "auth", "rule", "lifecycle", "workflow",
+        "transform", "event", "integration", "query",
+    }
+
+    assert "auth" in clasificar_operaciones_negocio("src/auth.py", "verify_token", "service_capability")
+    assert "rule" in clasificar_operaciones_negocio("src/pricing.py", "calcular_impuesto", "algorithm")
+    assert "lifecycle" in clasificar_operaciones_negocio("src/orders.py", "approve_transition", "service_capability")
+    assert "workflow" in clasificar_operaciones_negocio("src/checkout.py", "orchestrate_pipeline", "service_capability")
+    assert "transform" in clasificar_operaciones_negocio("src/etl.py", "parse_and_normalize", "algorithm")
+    assert "event" in clasificar_operaciones_negocio("src/hooks.py", "emit_webhook", "service_capability")
+    assert "integration" in clasificar_operaciones_negocio("src/http_client.py", "fetch_remote", "service_capability")
+    assert "query" in clasificar_operaciones_negocio("src/search.py", "rank_bm25", "algorithm")
+    assert clasificar_operaciones_negocio("src/misc.py", "foo_bar_baz", "service_capability") == ["unclassified"]
+
+    repo = _crear_repo_sintetico(tmp_path)
+    res = detectar_features_y_flujos(repo)
+    assert res["pattern"] == "PAT-10"
+    assert "auth" in res["summary_by_operation"]
+    assert "rule" in res["summary_by_operation"]
+    flujo_login = [fl for fl in res["flows"] if "login" in fl["name"].lower()][0]
+    assert "auth" in flujo_login["business_operations"]

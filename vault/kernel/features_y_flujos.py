@@ -83,6 +83,59 @@ _PREFIJOS_ALGORITMO: Tuple[str, ...] = (
     "format", "formatear", "build_graph", "construir_grafo",
 )
 
+#: Vocabulario cerrado de las 8 operaciones universales de lógica de negocio (PAT-10).
+#: Descarta vocabulario de un dominio particular (p. ej. ERP) y clasifica qué hace
+#: la lógica más allá del CRUD técnico. Sin señal verificable se etiqueta `unclassified` (AP-45).
+OPERACIONES_LOGICA_NEGOCIO: Tuple[str, ...] = (
+    "auth",
+    "rule",
+    "lifecycle",
+    "workflow",
+    "transform",
+    "event",
+    "integration",
+    "query",
+)
+
+_REGLAS_OPERACION_NEGOCIO: Tuple[Tuple[str, Tuple[str, ...]], ...] = (
+    ("auth", ("auth", "login", "logout", "token", "jwt", "oauth", "rbac", "perm", "session", "credential", "secret", "guard")),
+    ("rule", ("validat", "validar", "check", "assert", "policy", "politica", "invariant", "calc", "calcular", "pric", "tax", "rule", "regla", "sanitiz", "scan_content", "pre_flight", "norm")),
+    ("lifecycle", ("status", "estado", "transition", "transic", "approv", "aprob", "reject", "rechaz", "supersed", "sustitu", "archiv", "close", "cerrar", "publish", "deprecat", "cancel")),
+    ("workflow", ("workflow", "flujo", "orchestr", "orquest", "pipeline", "saga", "onboard", "migrat", "rollback", "undo", "revert", "wave", "schedul", "checkout", "order", "pedido")),
+    ("transform", ("parse", "parsear", "normaliz", "ingest", "extract", "extraer", "serializ", "render", "format", "formatear", "reindex", "slug", "transform", "convert", "import", "export", "compact")),
+    ("event", ("emit", "publish", "subscrib", "webhook", "notify", "notif", "dispatch", "event", "evento", "listener", "change_log", "bitacora", "alert", "queue", "cola", "trigger")),
+    ("integration", ("client", "adapter", "adaptador", "gateway", "subprocess", "http", "fetch", "git", "sql", rutas.MCP, "connect", "remote", "webhook", "smtp", "storage", "external")),
+    ("query", ("search", "buscar", "query", "consult", "find", "list", "rank", "bm25", "subgraph", "context_pack", "audit", "report", "metric", "dashboard", "inspect", "catalog", "detect")),
+)
+
+
+def clasificar_operaciones_negocio(
+    file_rel: str,
+    symbol: str,
+    kind: str,
+    calls: Sequence[str] = (),
+    summary: str = "",
+) -> List[str]:
+    """Clasifica una feature o flujo en `OPERACIONES_LOGICA_NEGOCIO` (PAT-10).
+
+    Devuelve únicamente operaciones respaldadas por señales en el nombre, ruta,
+    resumen o llamadas; cuando no hay evidencia suficiente devuelve `["unclassified"]`
+    para no inventar clasificación (AP-45).
+    """
+    texto = " ".join([
+        str(file_rel or ""),
+        str(symbol or ""),
+        str(kind or ""),
+        str(summary or ""),
+        " ".join(str(c) for c in (calls or ())[:12]),
+    ]).lower()
+    halladas: List[str] = []
+    for operacion, claves in _REGLAS_OPERACION_NEGOCIO:
+        if any(k in texto for k in claves):
+            halladas.append(operacion)
+    return halladas or ["unclassified"]
+
+
 #: Palabras clave de capas arquitectónicas para el flujo de valor estándar.
 _CAPAS_ARQUITECTURA: Tuple[Tuple[str, Tuple[str, ...]], ...] = (
     ("api/entrypoint", ("api", "route", "router", "endpoint", "controller", rutas.CLI, rutas.MCP, "server", "http")),
@@ -657,9 +710,24 @@ def _trazar_flujo_de_feature(
         trigger = f"Call {feat['symbol']}({', '.join(feat.get('inputs') or [])})"
 
     mermaid = _construir_mermaid_flujo(feat["name"], trigger, pasos)
+    ops_flujo: List[str] = []
+    for op in feat.get("business_operations") or clasificar_operaciones_negocio(
+        feat["file"], feat["symbol"], feat["kind"], feat.get("calls", ()), feat.get("summary", "")
+    ):
+        if op not in ops_flujo:
+            ops_flujo.append(op)
+    for paso in pasos:
+        for op in clasificar_operaciones_negocio(
+            paso["file"], paso["to_symbol"], "step", (), paso.get("action", "")
+        ):
+            if op != "unclassified" and op not in ops_flujo:
+                ops_flujo.append(op)
+    if len(ops_flujo) > 1 and "unclassified" in ops_flujo:
+        ops_flujo = [op for op in ops_flujo if op != "unclassified"]
     return {
         "name": feat["name"],
         "kind": feat["kind"],
+        "business_operations": ops_flujo,
         "entry_symbol": feat["symbol"],
         "entry_file": feat["file"],
         "entry_line": feat["line"],
@@ -772,9 +840,18 @@ def detectar_features_y_flujos(
     for feat in candidatos:
         if not _coincide_filtro(feat, filtro_feature):
             continue
+        ops = clasificar_operaciones_negocio(
+            feat["file"],
+            feat["symbol"],
+            feat["kind"],
+            feat.get("calls", ()),
+            feat.get("summary", ""),
+        )
+        feat["business_operations"] = ops
         features.append({
             "name": feat["name"],
             "kind": feat["kind"],
+            "business_operations": ops,
             "symbol": feat["symbol"],
             "file": feat["file"],
             "line": feat["line"],
@@ -797,16 +874,22 @@ def detectar_features_y_flujos(
                 callees_cubiertos.add((paso["file"], paso["to_symbol"]))
 
     resumen_tipos: Dict[str, int] = {}
+    resumen_operaciones: Dict[str, int] = {}
     for f in features:
         resumen_tipos[f["kind"]] = resumen_tipos.get(f["kind"], 0) + 1
+        for op in f.get("business_operations") or ["unclassified"]:
+            resumen_operaciones[op] = resumen_operaciones.get(op, 0) + 1
 
+    # PAT-10: toda feature/flujo reporta operaciones universales de lógica de negocio.
     return {
+        "pattern": "PAT-10",
         "target": raiz.name,
         "files_scanned": len(archivos),
         "symbols_indexed": len(todos_simbolos),
         "features_count": len(features),
         "flows_count": len(flujos),
         "summary_by_kind": resumen_tipos,
+        "summary_by_operation": resumen_operaciones,
         "features": features,
         "flows": flujos,
     }

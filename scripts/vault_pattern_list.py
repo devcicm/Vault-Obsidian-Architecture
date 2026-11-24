@@ -203,9 +203,11 @@ def _patrones_registrados() -> set:
 
 
 def vault_pattern_catalog(category: Optional[str] = None) -> Dict[str, Any]:
-    """Devuelve el catalogo canonico de patrones detectables, categorizado y ordenado."""
+    """Devuelve el catalogo canonico de patrones oficiales detectables, categorizado y ordenado (PAT-10)."""
     try:
-        return catalogo_ordenado(categoria=category)
+        res = catalogo_ordenado(categoria=category)
+        res["pattern"] = "PAT-10"
+        return res
     except ValueError as exc:
         return emit_error("vault_pattern_list", "INVALID_VALUE", str(exc))
 
@@ -214,7 +216,7 @@ def vault_pattern_detect(
     scan_path: str,
     category: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Detecta patrones de diseno y arquitectura en una ruta interna o externa (solo lectura)."""
+    """Detecta patrones oficiales de diseno y arquitectura en una ruta interna o externa (PAT-10)."""
     objetivo = Path(scan_path)
     if not objetivo.exists():
         return emit_error(
@@ -239,6 +241,7 @@ def vault_pattern_detect(
         return emit_error("vault_pattern_list", "INVALID_VALUE", str(exc))
 
     resultado["scope"] = scope
+    resultado["pattern"] = "PAT-10"
     return resultado
 
 

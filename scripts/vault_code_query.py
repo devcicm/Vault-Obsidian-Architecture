@@ -477,13 +477,14 @@ def cmd_list(index: Dict[str, Any], project: str) -> Dict[str, Any]:
 
 
 def cmd_scan_features(scan_path: str, feature: Optional[str] = None) -> Dict[str, Any]:
-    """Escaneo en solo lectura de features, capacidades, algoritmos y flujos de valor."""
+    """Escaneo en solo lectura de features, capacidades, algoritmos y flujos de valor (PAT-10)."""
     objetivo = Path(scan_path).expanduser().resolve()
     if not objetivo.exists():
         return emit_error("vault_code_query", "FILE_NOT_FOUND", f"No existe la ruta a escanear: {scan_path}")
     informe = detectar_features_y_flujos(objetivo, filtro_feature=feature)
     return {
         "ok": True,
+        "pattern": "PAT-10",
         "mode": "scan_features",
         "feature_filter": feature,
         **informe,

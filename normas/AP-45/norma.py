@@ -26,6 +26,12 @@ NORMA = {
             "evidencia debajo no salda AP-45, y la evidencia sin entrada no "
             "salda AP-79."
         ),
+        "PAT-10": (
+            "AP-45 prohíbe inventar contenido sin evidencia en cualquier nota; "
+            "PAT-10 concreta ese principio en la detección de código: clasifica "
+            "en ocho operaciones universales (o `unclassified`) y solo usa "
+            "nombres oficiales del catálogo de patrones."
+        ),
     },
     "name": "Cobertura sin evidencia — la nota existe para llenar la sección",
     "type": "antipattern",
