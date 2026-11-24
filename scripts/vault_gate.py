@@ -47,7 +47,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Sequence
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -67,10 +67,15 @@ SCRIPTS_DIR = Path(__file__).resolve().parent
 #:
 #: `nivel` dice en qué carril corre cada una (ver `NIVELES`). Es explícito en
 #: cada entrada y no un default: una puerta nueva tiene que decidir dónde va.
+#: Ejes funcionales de las puertas: permiten correr solo el eje tocado en
+#: segundos durante desarrollo sin rebajar el carril `merge`.
+EJES = ("contratos", "seguridad", "documentacion", "arquitectura", "producto")
+
 PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "framework",
         "nivel": "rapida",
+        "eje": "documentacion",
         "cmd": ["vault_norms.py", "--check-framework"],
         "mide": "El manifiesto documenta todo id del marco de datos y toda norma "
                 "catalogada tiene sección propia",
@@ -79,6 +84,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "catalogo",
         "nivel": "rapida",
+        "eje": "contratos",
         "cmd": ["vault_mcp_catalog.py", "--check"],
         "mide": "El catálogo Python y tools-catalog.json no divergen",
         "fix": "python scripts/vault_mcp_catalog.py --sync",
@@ -86,6 +92,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "contratos",
         "nivel": "rapida",
+        "eje": "contratos",
         "cmd": ["vault_mcp_catalog.py", "--check-contracts"],
         "mide": "Toda tool del catálogo tiene entrada en tool-spec.json, toda "
                 "entrada que ya no está declara su status en vez de borrarse, y "
@@ -96,6 +103,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "conteos",
         "nivel": "rapida",
+        "eje": "documentacion",
         "cmd": ["vault_doc_counts.py", "--check", "--strict"],
         # La puerta cuenta la suite con `pytest --collect-only`: su coste
         # crece con cada test que se añade. El presupuesto del runner es de
@@ -110,6 +118,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "doc_sync",
         "nivel": "rapida",
+        "eje": "documentacion",
         "cmd": ["vault_doc_sync.py", "--check", "--strict"],
         "mide": "Toda tool tiene sección en scripts/README.md y el índice una fila "
                 "por grupo",
@@ -119,6 +128,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "entorno_doc",
         "nivel": "rapida",
+        "eje": "documentacion",
         "cmd": ["vault_entorno.py", "--check-doc"],
         "mide": "El registro de variables de entorno y el documento derivado que "
                 "las publica no divergen: el registro es el dueño y el doc es "
@@ -128,6 +138,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "toolkit_audit",
         "nivel": "release",
+        "eje": "producto",
         "cmd": ["vault_toolkit_audit.py", "--check"],
         "mide": "AP-42 — el ejemplo documentado de cada tool ejercita la función "
                 "que declara: corre de verdad (con el proyecto y los ficheros que "
@@ -145,6 +156,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "noop",
         "nivel": "release",
+        "eje": "producto",
         "cmd": ["vault_noop_audit.py", "--check", "--ejecutado", "--strict"],
         "mide": "AP-37 — ninguna tool con side effects devuelve ok: true sin "
                 "indicador de trabajo, en lo declarado y en lo que el ejemplo "
@@ -154,6 +166,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "blame",
         "nivel": "rapida",
+        "eje": "seguridad",
         "cmd": ["vault_blame_audit.py", "--check", "--strict"],
         "mide": "AP-51 — ningún handler amplio devuelve un vacío indistinguible "
                 "de un resultado legítimo",
@@ -162,6 +175,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "contrato_error",
         "nivel": "rapida",
+        "eje": "seguridad",
         "cmd": ["vault_error_contract.py", "--check", "--strict"],
         "mide": "AP-52 \u2014 ningun envelope de error nuevo se emite fuera del "
                 "contrato de ERROR_CATALOG",
@@ -170,6 +184,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "campos",
         "nivel": "rapida",
+        "eje": "contratos",
         "cmd": ["vault_spec_catalog_check.py", "--check-fields", "--strict"],
         "mide": "Contrato de campos con los repos consumidores: ningún campo "
                 "estable desaparece sin quedar anotado en superseded_fields",
@@ -179,6 +194,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "changelog",
         "nivel": "rapida",
+        "eje": "documentacion",
         "cmd": ["vault_changelog_check.py", "--check", "--strict"],
         "mide": "El changelog no contradice a git: hash existente, fecha igual a "
                 "la del commit, ningún `pending` de una versión ya cerrada",
@@ -188,6 +204,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "arquitectura",
         "nivel": "rapida",
+        "eje": "arquitectura",
         "cmd": ["vault_arch.py", "--check", "--strict"],
         "mide": "Contextos acotados: fronteras, puertos, vocabularios con dueño, "
                 "entorno declarado, AP-49 en cero",
@@ -196,6 +213,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "servicio",
         "nivel": "rapida",
+        "eje": "arquitectura",
         "cmd": ["vault_servicio.py", "--check", "--strict"],
         "mide": "Trazabilidad tool → grupo → capacidad → servicio: todo grupo "
                 "pertenece a una capacidad y toda capacidad tiene tool viva",
@@ -205,6 +223,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "blueprint",
         "nivel": "rapida",
+        "eje": "arquitectura",
         "cmd": ["vault_blueprint.py", "--check", "--strict"],
         "mide": "El plano de docs/BLUEPRINT.md no diverge de los registros, y "
                 "ninguna norma estrena falta de puerta y test a la vez",
@@ -215,6 +234,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "norms_coherence",
         "nivel": "rapida",
+        "eje": "arquitectura",
         "cmd": ["vault_norms_coherence.py", "--check", "--strict"],
         "mide": "El catálogo de normas no se contradice ni con el código que "
                 "lo aplica ni con las penalizaciones que lo pesan (AP-55)",
@@ -225,6 +245,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "criterios",
         "nivel": "rapida",
+        "eje": "arquitectura",
         "cmd": ["vault_criterios.py", "--check", "--strict"],
         "mide": "Ningún módulo que clasifica notas reescribe un criterio que "
                 "ya tiene dueño canónico (AP-57)",
@@ -234,6 +255,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "fuente_unica",
         "nivel": "rapida",
+        "eje": "arquitectura",
         "cmd": ["vault_fuente_unica.py", "--check", "--strict"],
         "mide": "El mismo dato tipado no tiene valores distintos en varias "
                 "notas del mismo ámbito (AP-05)",
@@ -243,6 +265,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "ciclos",
         "nivel": "rapida",
+        "eje": "arquitectura",
         "cmd": ["vault_ciclos.py", "--check", "--strict"],
         "mide": "Ningún ciclo de importación nuevo se esquiva metiendo el "
                 "import dentro de una función (AP-58)",
@@ -253,6 +276,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "clones",
         "nivel": "rapida",
+        "eje": "arquitectura",
         "cmd": ["vault_clones.py", "--check", "--strict"],
         "mide": "Ningún cuerpo duplicado nuevo: ni sombra dentro de un módulo ni "
                 "clon entre módulos (CN-05)",
@@ -263,6 +287,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "kernel",
         "nivel": "rapida",
+        "eje": "arquitectura",
         "cmd": ["vault_kernel.py", "--check", "--strict"],
         "mide": "La lista del núcleo no contradice a la forma medida del grafo: "
                 "K1 delegada, fan-in/fan-out contra el escalón derivado y churn "
@@ -275,6 +300,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "excepcion_declarada",
         "nivel": "rapida",
+        "eje": "seguridad",
         "cmd": ["vault_excepcion_declarada.py", "--check", "--strict"],
         "mide": "Ningún handler captura la excepción que una librería declara "
                 "dejando escapar la que lanza de verdad (AP-61)",
@@ -286,6 +312,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "recursos",
         "nivel": "rapida",
+        "eje": "arquitectura",
         "cmd": ["vault_recursos.py", "--check", "--strict"],
         "mide": "Ningún consumidor cruza una frontera de contexto para leer un "
                 "recurso que no necesita el fan-out del productor (AP-62)",
@@ -297,6 +324,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "procesos_git",
         "nivel": "rapida",
+        "eje": "seguridad",
         "cmd": ["vault_procesos_git.py", "--check", "--strict"],
         "mide": "Ninguna tool ni módulo levanta git por su cuenta: el verbo lo "
                 "juzga vault.kernel.procesos_git y un mutador solo existe si "
@@ -310,6 +338,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "tests_higiene",
         "nivel": "rapida",
+        "eje": "arquitectura",
         "cmd": ["vault_tests_higiene.py", "--check", "--strict"],
         "mide": "Ningún test nuevo construye a mano lo que la suite ya resuelve "
                 "en un sitio: el path, el lanzador de una tool, el texto de una "
@@ -321,6 +350,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "produccion",
         "nivel": "rapida",
+        "eje": "documentacion",
         "cmd": ["vault_produccion.py", "--check", "--strict"],
         "mide": "Toda promesa hecha a quien instala esto —versión mínima, "
                 "dependencia, plataforma, superficie de red— tiene a alguien "
@@ -334,6 +364,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "esquemas",
         "nivel": "rapida",
+        "eje": "contratos",
         "cmd": ["vault_esquema.py", "--check", "--strict"],
         "mide": "Los JSON Schema de schemas/ son los que el contrato de nota "
                 "produce para cada versión, y ninguno se edita a mano",
@@ -343,6 +374,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "metricas",
         "nivel": "rapida",
+        "eje": "arquitectura",
         "cmd": ["vault_metricas.py", "--check", "--strict"],
         "mide": "Toda métrica de desarrollo y de producto declara qué mide, de "
                 "dónde sale y su objetivo con plazo y dueño (o por qué no lo "
@@ -354,6 +386,7 @@ PUERTAS: List[Dict[str, Any]] = [
     {
         "id": "doc_staleness",
         "nivel": "rapida",
+        "eje": "documentacion",
         "cmd": ["vault_doc_staleness.py", "--check", "--strict"],
         "mide": "Todos los artefactos derivados del vault (data-framework.json, "
                 "norm-registry.json, quality-index.json, etc.) existen y contienen JSON válido",
@@ -395,11 +428,28 @@ NIVELES = ("rapida", "release")
 SELECCIONES = NIVELES + ("todas",)
 
 
-def seleccion(nivel: str = "todas") -> List[Dict[str, Any]]:
-    """Las puertas de un nivel, en el orden del registro."""
+def seleccion(
+    nivel: str = "todas",
+    eje: Optional[str] = None,
+    gates: Optional[Sequence[str]] = None,
+) -> List[Dict[str, Any]]:
+    """Las puertas de un nivel, eje o lista puntual, en el orden del registro."""
     if nivel not in SELECCIONES:
         raise ValueError(f"nivel desconocido: {nivel!r} (válidos: {', '.join(SELECCIONES)})")
-    return [p for p in PUERTAS if nivel == "todas" or p["nivel"] == nivel]
+    if eje is not None and eje not in EJES:
+        raise ValueError(f"eje desconocido: {eje!r} (válidos: {', '.join(EJES)})")
+    elegidas = [p for p in PUERTAS if nivel == "todas" or p["nivel"] == nivel]
+    if eje is not None:
+        elegidas = [p for p in elegidas if p.get("eje") == eje]
+    if gates is not None:
+        pedidas = [g.strip() for v in gates for g in str(v).split(",") if g.strip()]
+        conocidas = {p["id"] for p in PUERTAS}
+        desconocidas = [g for g in pedidas if g not in conocidas]
+        if desconocidas:
+            raise ValueError(f"puerta desconocida: {', '.join(desconocidas)}")
+        conjunto = set(pedidas)
+        elegidas = [p for p in elegidas if p["id"] in conjunto]
+    return elegidas
 
 
 def limite_total() -> int:
@@ -524,12 +574,17 @@ def preparar_entorno() -> Dict[str, Any]:
     return resultado
 
 
-def correr_todas(strict: bool = False, nivel: str = "todas") -> Dict[str, Any]:
+def correr_todas(
+    strict: bool = False,
+    nivel: str = "todas",
+    eje: Optional[str] = None,
+    gates: Optional[Sequence[str]] = None,
+) -> Dict[str, Any]:
     preparacion = preparar_entorno()
-    elegidas = seleccion(nivel)
+    elegidas = seleccion(nivel, eje=eje, gates=gates)
     resultados = [_correr(p) for p in elegidas]
     fallidas = [r["gate"] for r in resultados if not r["ok"]]
-    return {
+    salida: Dict[str, Any] = {
         "ok": not fallidas,
         "tool": "vault_gate",
         "nivel": nivel,
@@ -547,6 +602,9 @@ def correr_todas(strict: bool = False, nivel: str = "todas") -> Dict[str, Any]:
             "siendo obligatorio antes de cerrar un cambio."
         ),
     }
+    if eje is not None:
+        salida["eje"] = eje
+    return salida
 
 
 #: Marcas del bloque derivado dentro de `AGENTS.md`. Lo de dentro lo escribe
@@ -809,21 +867,24 @@ def fix_doc() -> Dict[str, Any]:
     }
 
 
-def listar() -> Dict[str, Any]:
+def listar(eje: Optional[str] = None) -> Dict[str, Any]:
+    elegidas = seleccion(eje=eje) if eje is not None else PUERTAS
     return {
         "ok": True,
         "tool": "vault_gate",
         "action": "list",
-        "gates_total": len(PUERTAS),
+        "gates_total": len(elegidas),
+        "axes": list(EJES),
         "gates": [
             {
                 "gate": p["id"],
+                "axis": p["eje"],
                 "command": "python scripts/" + " ".join(p["cmd"]),
                 "measures": p["mide"],
                 "fix": p["fix"],
                 "level": p["nivel"],
             }
-            for p in PUERTAS
+            for p in elegidas
         ],
     }
 
@@ -838,6 +899,8 @@ Ejemplos:
   python vault_gate.py                # corre todas
   python vault_gate.py --strict       # exit 1 si alguna falla (gate de CI)
   python vault_gate.py --strict --nivel rapida   # carril dev: sin las que ejecutan el producto
+  python vault_gate.py --strict --eje contratos  # solo el eje de contratos/MCP (~8 s)
+  python vault_gate.py --strict --gate catalogo contratos  # puertas puntuales
   python vault_gate.py --list         # qué mide cada puerta y cómo se arregla
   python vault_gate.py --check-doc    # el checklist de AGENTS.md vs. el registro
 
@@ -850,6 +913,10 @@ No sustituye a la suite: `python -m pytest tests/` sigue siendo obligatorio.
     parser.add_argument("--nivel", choices=SELECCIONES, default="todas",
                         help="Qué puertas correr: rapida (carril dev), release o todas "
                              "(default, lo que exigen merge y la CI)")
+    parser.add_argument("--eje", choices=EJES, default=None,
+                        help="Corre o lista solo las puertas de un eje funcional")
+    parser.add_argument("--gate", nargs="+", dest="gates", default=None,
+                        help="Corre solo las puertas indicadas por id (separadas por espacio o coma)")
     parser.add_argument("--list", action="store_true", dest="listar",
                         help="Lista las puertas sin ejecutarlas")
     parser.add_argument("--check-doc", action="store_true", dest="check_doc",
@@ -864,7 +931,7 @@ No sustituye a la suite: `python -m pytest tests/` sigue siendo obligatorio.
         return 0 if r["ok"] else 1
 
     if args.listar:
-        print(json.dumps(listar(), ensure_ascii=False, indent=2))
+        print(json.dumps(listar(eje=args.eje), ensure_ascii=False, indent=2))
         return 0
 
     if args.check_doc:
@@ -872,7 +939,12 @@ No sustituye a la suite: `python -m pytest tests/` sigue siendo obligatorio.
         print(json.dumps(r, ensure_ascii=False))
         return 0 if r["ok"] else (1 if args.strict else 0)
 
-    r = correr_todas(args.strict, args.nivel)
+    try:
+        r = correr_todas(args.strict, args.nivel, eje=args.eje, gates=args.gates)
+    except ValueError as exc:
+        r = emit_error("vault_gate", "INVALID_VALUE", str(exc))
+        print(json.dumps(r, ensure_ascii=False, indent=2))
+        return 1
     print(json.dumps(r, ensure_ascii=False, indent=2))
     return 1 if (args.strict and not r["ok"]) else 0
 

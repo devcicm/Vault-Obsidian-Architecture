@@ -87,6 +87,17 @@ addopts = "-v --tb=short --timeout=300"
 # sustituye a ningún carril (`docs/CARRILES.md`).
 markers = [
     "slow: módulo lento según el perfil de la suite (lo marca el conftest; ver vault/meta_toolkit/estandar/perfil_suite.py)",
+    "mcp: servidor MCP monolítico, catálogo MCP, transporte stdio/HTTP/TLS y contratos",
+    "cli: CLI de producto, wheel, instalación limpia, portabilidad y release",
+    "seguridad: contención AP-36, secretos, aislamiento de procesos, errores y piso Python",
+    "escritura: write path, atomicidad, locks, políticas de mutación, historial y vcs",
+    "consulta: búsqueda, vigencia, paquete de contexto, subgrafo, tokens y preferencias",
+    "ciclo_vida: init, onboarding, sanación, drift, migraciones, skills y tutorial",
+    "grafo: grafo, índices, reindexación, wikilinks, Mermaid, tags y código",
+    "flujos: flujos y entidades de dominio (requisitos, bugs, patrones, proyectos, QA)",
+    "iso: alineación ISO, tríada CIA, FAIR, fundamentos y calidad de datos",
+    "estandar: normas del estándar, arquitectura interna, puertas, docs derivados y baselines",
+    "integracion: integración transversal, orquestadores pesados y utilidades mixtas",
 ]
 
 [tool.setuptools.exclude-package-data]

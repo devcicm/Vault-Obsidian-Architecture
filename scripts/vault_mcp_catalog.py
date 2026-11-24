@@ -2820,6 +2820,24 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Exit 1 si alguna puerta falla (gate de CI)",
                 "validators": [],
             },
+            "nivel": {
+                "type": "string",
+                "required": False,
+                "description": "Nivel de puertas a ejecutar: rapida, release o todas",
+                "validators": [],
+            },
+            "eje": {
+                "type": "string",
+                "required": False,
+                "description": "Eje funcional de puertas a ejecutar o listar (contratos, seguridad, documentacion, arquitectura, producto)",
+                "validators": [],
+            },
+            "gate": {
+                "type": "array",
+                "required": False,
+                "description": "Ids puntuales de puertas a ejecutar",
+                "validators": [],
+            },
             "list": {
                 "type": "boolean",
                 "required": False,
@@ -2830,6 +2848,12 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "type": "boolean",
                 "required": False,
                 "description": "Comprueba que el checklist de AGENTS.md cite todas las puertas",
+                "validators": [],
+            },
+            "fix-doc": {
+                "type": "boolean",
+                "required": False,
+                "description": "Regenera el checklist derivado de AGENTS.md, docs/PUERTAS.md y docs/CARRILES.md",
                 "validators": [],
             },
         },

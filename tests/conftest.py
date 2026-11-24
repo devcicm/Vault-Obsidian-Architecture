@@ -80,12 +80,14 @@ def pytest_collection_modifyitems(config, items):
     marca y reparte igual porque todo es determinista.
     """
     import reparto
-    from vault.meta_toolkit.estandar import perfil_suite
+    from vault.meta_toolkit.estandar import inventario_tests, perfil_suite
 
     lentos = perfil_suite.lentos()
     for item in items:
-        if reparto.modulo_de(item.nodeid) in lentos:
+        mod = reparto.modulo_de(item.nodeid)
+        if mod in lentos:
             item.add_marker(pytest.mark.slow)
+        item.add_marker(getattr(pytest.mark, inventario_tests.clasificar_modulo(mod)))
 
     shard = reparto.leer_shard(os.environ.get("VAULT_SHARD"))
     if shard is None:

@@ -368,3 +368,51 @@ def test_la_corrida_parcial_dice_lo_que_no_corrio(monkeypatch):
 def test_el_checklist_publica_el_nivel_de_las_que_no_son_rapidas():
     bloque = vault_gate.checklist()
     assert bloque.count("*Nivel:* release") == len(vault_gate.seleccion("release"))
+
+
+# ── Ejes y selección puntual: iterar en segundos sin rebajar `merge` ──────────
+
+
+def test_cada_puerta_declara_su_eje():
+    for p in vault_gate.PUERTAS:
+        assert p.get("eje") in vault_gate.EJES, p["id"]
+    assert set(vault_gate.EJES) == {
+        "contratos", "seguridad", "documentacion", "arquitectura", "producto"
+    }
+
+
+def test_seleccion_por_eje_y_por_gate_aisla_las_puertas():
+    contratos = vault_gate.seleccion(eje="contratos")
+    assert {p["id"] for p in contratos} == {"catalogo", "contratos", "campos", "esquemas"}
+
+    puntuales = vault_gate.seleccion(gates=["catalogo", "procesos_git"])
+    assert [p["id"] for p in puntuales] == ["catalogo", "procesos_git"]
+
+    with pytest.raises(ValueError):
+        vault_gate.seleccion(eje="inexistente")
+    with pytest.raises(ValueError):
+        vault_gate.seleccion(gates=["puerta_que_no_existe"])
+
+
+def test_correr_por_eje_reporta_lo_que_se_salto(monkeypatch):
+    monkeypatch.setattr(vault_gate, "preparar_entorno", lambda: {"necesaria": False, "ok": True})
+    monkeypatch.setattr(
+        vault_gate, "_correr",
+        lambda p: {"gate": p["id"], "ok": True, "seconds": 0.5},
+    )
+    r = vault_gate.correr_todas(eje="seguridad")
+    assert r["ok"] is True
+    assert r["eje"] == "seguridad"
+    assert r["gates_total"] == len(vault_gate.seleccion(eje="seguridad"))
+    assert len(r["skipped_gates"]) == len(vault_gate.PUERTAS) - r["gates_total"]
+
+    r2 = vault_gate.correr_todas(gates=["catalogo"])
+    assert r2["ok"] is True
+    assert r2["gates_total"] == 1
+    assert [g["gate"] for g in r2["gates"]] == ["catalogo"]
+
+
+def test_listar_publica_el_eje_de_cada_puerta():
+    listado = vault_gate.listar()
+    assert all(g.get("axis") in vault_gate.EJES for g in listado["gates"])
+
