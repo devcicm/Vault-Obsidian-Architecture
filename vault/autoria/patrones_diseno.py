@@ -18,6 +18,8 @@ import re
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
+from vault.kernel import rutas
+
 CATEGORIAS: Tuple[str, ...] = (
     "arquitectonicos",
     "creacionales",
@@ -261,8 +263,8 @@ _DIRECTORIOS_OMITIDOS: Set[str] = {
     ".history",
     ".backups",
     ".quarantine",
-    "vault-sandbox",
-    "tests",
+    rutas.SANDBOX,
+    rutas.TESTS,
     "test",
     "__tests__",
 }
@@ -942,7 +944,7 @@ def _iterar_fuentes(objetivo: Path, incluir_tests: bool = False) -> Iterable[Tup
             yield objetivo, objetivo.name
         return
 
-    omitidos = _DIRECTORIOS_OMITIDOS - ({"tests", "test", "__tests__"} if incluir_tests else set())
+    omitidos = _DIRECTORIOS_OMITIDOS - ({rutas.TESTS, "test", "__tests__"} if incluir_tests else set())
     for actual, dirs, archivos in os.walk(objetivo):
         dirs[:] = sorted(d for d in dirs if d not in omitidos and not d.startswith(".git"))
         base = Path(actual)

@@ -1,6 +1,7 @@
 {
   "envelope": {
     "agent": null,
+    "citation_apa": "Guía de diseño. (s.f.). https://example.org/guia",
     "created": 2,
     "ok": true,
     "path": "12_Bibliography/docs/guia-de-diseno.md",
@@ -13,5 +14,5 @@
     "updated": "<BEST-EFFORT>",
     "written": "<BEST-EFFORT>"
   },
-  "nota": "---\ntitle: Guía de diseño\nid: <UUID>\nurl: https://example.org/guia\nsource_type: docs\ntype: reference\nstatus: draft\nagent: system\naccessed_at: <FECHA>\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ntags: []\ncia_integrity: medium\ncia_availability: low\ncia_sensitivity: public\n---\n# Guía de diseño\n\nGuía de diseño es una fuente de tipo docs consultada en https://example.org/guia. Esta nota guarda su resumen y se generó con `vault_bibliography_save` en la bibliografía del vault.\n\n**URL:** https://example.org/guia  \n**Tipo:** docs  \n**Consultado:** <FECHA>  \n\n---\n\n## Resumen\n\nUn resumen corto.\n"
+  "nota": "---\ntitle: Guía de diseño\nid: <UUID>\nurl: https://example.org/guia\nsource_type: docs\ntype: reference\nstatus: draft\nagent: system\naccessed_at: <FECHA>\ncitation_apa: Guía de diseño. (s.f.). https://example.org/guia\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ntags: []\ncia_integrity: medium\ncia_availability: low\ncia_sensitivity: public\n---\n# Guía de diseño\n\nGuía de diseño es una fuente de tipo docs consultada en https://example.org/guia. Esta nota guarda su resumen y se generó con `vault_bibliography_save` en la bibliografía del vault.\n\n**URL:** https://example.org/guia  \n**Tipo:** docs  \n**Consultado:** <FECHA>  \n\n---\n\n## Resumen\n\nUn resumen corto.\n\n## Referencia APA\n\n> Guía de diseño. (s.f.). https://example.org/guia\n"
 }

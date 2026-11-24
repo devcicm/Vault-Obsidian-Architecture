@@ -418,7 +418,7 @@ def ficha_nueva(slug: str, titulo: str, alias: List[str], status: str, *,
             f"en estado `{status}`.")
     if alias:
         lead += " También se le nombra " + ", ".join(f"`{a}`" for a in alias) + "."
-    lead += (f" Las notas que declaran `project: {slug}` le pertenecen, y esta ficha "
+    lead += (f" Las notas cuyo campo `project` es `{slug}` le pertenecen, y esta ficha "
              "es su entrada en el registro de proyectos.")
     cabeza = nota_escalonada(
         titulo, lead,

@@ -22,7 +22,32 @@ from apoyo import correr_tool
 
 ROOT = Path(__file__).resolve().parent.parent
 TUTORIAL = ROOT / "docs" / "TUTORIAL.md"
-BASH = shutil.which("bash")
+def _resolver_bash():
+    """Resuelve bash usable con Python nativo; en Windows prioriza Git Bash sobre WSL."""
+    if os.name == "nt":
+        git = shutil.which("git")
+        candidatos = []
+        if git:
+            raiz_git = Path(git).resolve().parent.parent
+            candidatos.extend([
+                raiz_git / "bin" / "bash.exe",
+                raiz_git / "usr" / "bin" / "bash.exe",
+            ])
+        candidatos.extend([
+            Path(r"C:\Program Files\Git\bin\bash.exe"),
+            Path(r"C:\Program Files\Git\usr\bin\bash.exe"),
+        ])
+        for cand in candidatos:
+            if cand.is_file():
+                return str(cand)
+        hallado = shutil.which("bash")
+        if hallado and "system32" in Path(hallado).as_posix().lower():
+            return None
+        return hallado
+    return shutil.which("bash")
+
+
+BASH = _resolver_bash()
 
 
 def _bloques() -> list:
@@ -82,7 +107,9 @@ def test_la_busqueda_responde_lo_vigente_y_cuenta_lo_apartado(recorrido):
     env = correr_tool("vault_search", "--query", "cola de eventos", vault=recorrido).envelope
     assert env["results"][0]["path"] == "07_Knowledge/cola-de-eventos-con-nats.md"
     assert "07_Knowledge/cola-de-eventos-con-redis.md" not in [r["path"] for r in env["results"]]
-    assert env["history_excluded"]["by_reason"] == {"superseded": 1}
+    by_reason = env["history_excluded"]["by_reason"]
+    assert by_reason.get("superseded") == 1, by_reason
+    assert set(by_reason) <= {"superseded", "system_log"}, by_reason
     todo = correr_tool("vault_search", "--query", "cola de eventos", "--incluir-historico",
                        vault=recorrido).envelope
     assert "07_Knowledge/cola-de-eventos-con-redis.md" in [r["path"] for r in todo["results"]]

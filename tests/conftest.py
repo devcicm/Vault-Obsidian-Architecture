@@ -93,7 +93,8 @@ def pytest_collection_modifyitems(config, items):
     # Planificación LPT (Longest Processing Time First) cuando corre pytest-xdist:
     # despachar primero los módulos más largos elimina colas de workers ociosos
     # al cierre sin alterar el orden interno de los tests dentro de cada módulo.
-    en_paralelo = hasattr(config, "workerinput") or bool(getattr(config.option, "numprocesses", None))
+    opcion = getattr(config, "option", None)
+    en_paralelo = hasattr(config, "workerinput") or bool(getattr(opcion, "numprocesses", None))
     if en_paralelo and pesos and len(items) > 1:
         orden_primera_vez: dict[str, int] = {}
         for idx, item in enumerate(items):

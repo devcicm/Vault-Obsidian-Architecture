@@ -541,10 +541,14 @@ class _VersionPerezosa(argparse.Action):
         parser.exit(message=f"{toolkit_version()}\n")
 
 
-def _validar_proyecto_mcp(valor: str) -> str:
-    from .kernel import proyectos as _proyectos
+def proyecto_registrado(tool: str, raiz_fn):
+    """Fábrica perezosa de `proyecto_registrado` (AP-63 + arranque rápido DZ-05)."""
+    def _validar(valor: str) -> str:
+        from .kernel import proyectos as _proyectos
 
-    return _proyectos.proyecto_registrado("vault", _raiz_de_mcp_path)(valor)
+        return _proyectos.proyecto_registrado(tool, raiz_fn)(valor)
+
+    return _validar
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -576,7 +580,11 @@ def build_parser() -> argparse.ArgumentParser:
     status.set_defaults(func=cmd_status)
     mcp_path = commands.add_parser("mcp-path", help="Ruta del servidor MCP y su configuración de cliente", allow_abbrev=False)
     mcp_path.add_argument("--root", help="Vault que servirá el MCP (por defecto, VAULT_ROOT)")
-    mcp_path.add_argument("--project", type=_validar_proyecto_mcp, help="Ata la sesión MCP a este proyecto (slug o alias registrado)")
+    mcp_path.add_argument(
+        "--project",
+        type=proyecto_registrado("vault", _raiz_de_mcp_path),
+        help="Ata la sesión MCP a este proyecto (slug o alias registrado)",
+    )
     mcp_path.set_defaults(func=cmd_mcp_path)
     return parser
 

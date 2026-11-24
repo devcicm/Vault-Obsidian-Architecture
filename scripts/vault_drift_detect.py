@@ -69,7 +69,7 @@ from vault_errors import emit_error, emit_fallo, wrap_main, proyecto_registrado
 from vault_contrato_nota import es_mapa_de_versiones
 from vault_lib import parse_frontmatter, utcnow
 from vault_norms_catalog import hoy_utc, normalize_status
-from vault.kernel import procesos_git
+from vault.kernel import procesos_git, rutas
 from datetime import datetime, timezone
 
 from pathlib import Path
@@ -587,7 +587,7 @@ def _parse_iso(ts: str) -> Optional[datetime]:
 #: Path parts and name patterns of test code. A changed test does not deserve a
 #: module note of its own (brownfield BF-09: 105 test files each got a
 #: `vault_code_module` suggestion); it is grouped for the test inventory.
-_PARTES_DE_TEST = {"tests", "test", "__tests__", "spec", "specs"}
+_PARTES_DE_TEST = {rutas.TESTS, "test", "__tests__", "spec", "specs"}
 _NOMBRE_DE_TEST = re.compile(r"^(test_.+|.+_test\.[^.]+|.+\.(test|spec)\.[^.]+)$", re.IGNORECASE)
 SUGERENCIA_TESTS = ("vault_test_save: actualizar el inventario de tests del proyecto "
                     "(15_Tests) con lo que cambio, no una nota por fichero")

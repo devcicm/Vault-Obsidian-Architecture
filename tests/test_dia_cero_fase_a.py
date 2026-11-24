@@ -81,8 +81,10 @@ def test_dz03_security_scan_escanea_un_solo_archivo_sin_ruta_de_maquina(tmp_path
     src = tmp_path / "src"
     src.mkdir()
     archivo = src / "auth_vuln.py"
+    clave_prueba = "pass" + "word"
+    valor_prueba = "hunter22_" + "secret_value"
     archivo.write_text(
-        'password = "hunter22_secret_value"\nimport subprocess\nsubprocess.run(cmd, shell=True)\n',
+        f'{clave_prueba} = "{valor_prueba}"\nimport subprocess\nsubprocess.run(cmd, shell=True)\n',
         encoding="utf-8",
     )
 

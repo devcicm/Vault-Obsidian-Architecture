@@ -21,8 +21,8 @@ from vault.meta_toolkit.estandar import perfil_suite
 
 #: Bloques canónicos de la suite, ordenados por dominio de producto -> estándar.
 BLOQUES: Dict[str, str] = {
-    "mcp": "Servidor MCP monolítico, catálogo MCP, transporte stdio/HTTP/TLS y contratos",
-    "cli": "CLI de producto (`vault`), wheel, instalación limpia, portabilidad y release",
+    rutas.MCP: "Servidor MCP monolítico, catálogo MCP, transporte stdio/HTTP/TLS y contratos",
+    rutas.CLI: "CLI de producto (`vault`), wheel, instalación limpia, portabilidad y release",
     "seguridad": "Contención AP-36, secretos, aislamiento de procesos, errores y piso Python",
     "escritura": "Write path, atomicidad, locks, políticas de mutación, historial y vcs",
     "consulta": "Búsqueda, vigencia, paquete de contexto, subgrafo, tokens y preferencias",
@@ -35,8 +35,8 @@ BLOQUES: Dict[str, str] = {
 }
 
 _REGLAS_DE_CLASIFICACION: Tuple[Tuple[str, Tuple[str, ...]], ...] = (
-    ("mcp", ("mcp",)),
-    ("cli", ("cli", "product", "wheel", "portab", "instal", "clean_install", "uninstall", "sbom", "release")),
+    (rutas.MCP, (rutas.MCP,)),
+    (rutas.CLI, (rutas.CLI, "product", "wheel", "portab", "instal", "clean_install", "uninstall", "sbom", "release")),
     ("seguridad", ("security", "secret", "safety", "poison", "contain", "aislam", "timeout", "subproceso", "error", "blame", "excepcion", "piso_python", "filtro_de_expresiones")),
     ("escritura", ("write", "inmutab", "politica", "reglas", "frontmatter", "undo", "supersede", "delete", "trash", "quarantine", "backup", "restore", "lock", "atomic", "encoding", "history", "vcs", "git", "change_log", "bitacora")),
     ("consulta", ("search", "context", "query", "subgraph", "token", "bm25", "prefer", "ingest", "memoria", "recall", "banco_agente", "vigencia")),

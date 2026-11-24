@@ -23,6 +23,8 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
+from vault.kernel import rutas
+
 #: Carpetas omitidas por defecto al escanear un repositorio.
 DIRECTORIOS_IGNORADOS: frozenset[str] = frozenset({
     ".git",
@@ -46,8 +48,8 @@ DIRECTORIOS_IGNORADOS: frozenset[str] = frozenset({
     ".history",
     ".locks",
     "vault-backups",
-    "vault-sandbox",
-    "tests",
+    rutas.SANDBOX,
+    rutas.TESTS,
     "test",
     "__tests__",
 })
@@ -83,7 +85,7 @@ _PREFIJOS_ALGORITMO: Tuple[str, ...] = (
 
 #: Palabras clave de capas arquitectónicas para el flujo de valor estándar.
 _CAPAS_ARQUITECTURA: Tuple[Tuple[str, Tuple[str, ...]], ...] = (
-    ("api/entrypoint", ("api", "route", "router", "endpoint", "controller", "cli", "mcp", "server", "http")),
+    ("api/entrypoint", ("api", "route", "router", "endpoint", "controller", rutas.CLI, rutas.MCP, "server", "http")),
     ("security/auth", ("auth", "token", "jwt", "session", "oauth", "crypto", "secret", "safety", "guard", "perm")),
     ("service/domain", ("service", "usecase", "handler", "workflow", "orchestr", "manager", "engine", "core", "domain")),
     ("algorithm/computation", ("calc", "pric", "score", "rank", "detect", "parse", "validat", "algo", "metric")),
@@ -157,7 +159,7 @@ def _limpiar_etiqueta_mermaid(texto: str, max_len: int = 56) -> str:
 def _listar_archivos(raiz: Path, max_archivos: int, incluir_tests: bool) -> List[Path]:
     if raiz.is_file():
         return [raiz] if raiz.suffix.lower() in EXTENSIONES_LENGUAJE else []
-    ignorados = DIRECTORIOS_IGNORADOS - ({"tests", "test", "__tests__"} if incluir_tests else set())
+    ignorados = DIRECTORIOS_IGNORADOS - ({rutas.TESTS, "test", "__tests__"} if incluir_tests else set())
     archivos: List[Path] = []
     for ruta in sorted(raiz.rglob("*")):
         if len(archivos) >= max_archivos:
