@@ -99,7 +99,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-20** — Deceptive skeleton (empty-list) | guard | — | `test_ap20_esqueleto_de_lista.py` |
 | **AP-21** — Path-anchored wiki-links | guard+audit | — | `test_ap21_dentro_de_fence.py`, `test_ap21_ruta_necesaria.py`, `test_flujo_recuperaciones.py`, `test_normas_caras.py`, `test_normas_enlaces_sin_solape.py`, `test_vault_regex.py` |
 | **AP-22** — Wiki-link vacío — [[]] sin destino | guard+audit | — | `test_normas_caras.py`, `test_normas_enlaces_sin_solape.py`, `test_norms_coherence.py`, `test_vault_regex.py` |
-| **PAT-1** — Canonical source anchoring | recommended | — | `test_audiencia_normas_fase_m0.py`, `test_detector_features_y_flujos.py`, `test_norms_coherence.py` |
+| **PAT-1** — Canonical source anchoring | recommended | — | `test_audiencia_normas_fase_m0.py`, `test_detector_features_y_flujos.py`, `test_norms_coherence.py`, `test_onboard_v3_fase_m3.py` |
 | **PAT-2** — Stub enrichment gradient | recommended | — | `test_pat2_stub_con_plazo.py` |
 | **PAT-3** — Duplicate chain resolution | recommended | — | `test_capa4_audit_ejercitada.py` |
 | **PAT-4** — Phased audit execution | recommended | — | `test_capa4_audit_ejercitada.py` |
@@ -165,7 +165,7 @@ rojo, y una puerta en rojo se desactiva.
 | **PAT-7** — Desacuerdo legítimo declarado — contradicts entre notas | recommended | `fuente_unica` | `test_audiencia_normas_fase_m0.py`, `test_karpathy_desacuerdos.py` |
 | **PAT-8** — Respuesta compilada en el wiki | recommended | — | `test_parte_a_normas.py` |
 | **PAT-9** — Esquema del agente generado | recommended | — | `test_norms_coherence.py`, `test_parte_a_normas.py` |
-| **PAT-10** — Taxonomía de operaciones de lógica de negocio y catálogo oficial de patrones | recommended | — | `test_detector_features_y_flujos.py` |
+| **PAT-10** — Taxonomía de operaciones de lógica de negocio y catálogo oficial de patrones | recommended | — | `test_detector_features_y_flujos.py`, `test_onboard_v3_fase_m3.py` |
 | **SP-01** — Delete protocol — change_log obligatorio antes de eliminar | audit | `framework` | `test_audiencia_normas_fase_m0.py`, `test_mermaid_reglas_parsers.py`, `test_vault_norms.py` |
 | **SP-02** — Forward-link verification — buscar antes de linkar | guard | — | `test_normas_enlaces_sin_solape.py`, `test_vault_norms.py` |
 | **SP-03** — Session snapshot pattern — delta antes de operaciones masivas | audit | — | `test_vault_norms.py` |

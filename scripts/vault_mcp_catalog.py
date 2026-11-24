@@ -920,6 +920,24 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Simular sin escribir",
                 "validators": [],
             },
+            "mode": {
+                "type": "string",
+                "required": False,
+                "description": "Modo de onboarding: auto, greenfield o brownfield",
+                "validators": [],
+            },
+            "deep-ast": {
+                "type": "boolean",
+                "required": False,
+                "description": "Activar analisis AST real (PAT-10): patrones oficiales en 05_Patterns y flujos de valor en 13_Flows",
+                "validators": [],
+            },
+            "post-check": {
+                "type": "boolean",
+                "required": False,
+                "description": "Ejecutar vault_audit (con toReach100) y snapshot inicial de vault_drift_detect al cerrar",
+                "validators": [],
+            },
         },
         "guards": [
             "AP-45: no escribe una nota sin evidencia detrás; lo omitido se "

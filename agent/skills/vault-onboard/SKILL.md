@@ -2,17 +2,17 @@
 name: vault-onboard
 description: Populates a vault from a code project that has none — git archaeology, module map, retroactive ADRs, environment and infrastructure notes. Use when a project has code but no vault, when the user asks to "onboard", "bootstrap a vault", "poblar el vault" or "document this repo", or right after vault_init on an empty vault.
 allowed-tools: Bash(python *) Bash(vault *) Read Glob Grep
-argument-hint: "--project NAME --path REPO [--dry-run] [--depth N] [--max-commits N] [--skip NN ...]"
-version: "2.2"
+argument-hint: "--project NAME --path REPO [--mode auto|greenfield|brownfield] [--deep-ast] [--post-check] [--dry-run] [--depth N] [--max-commits N] [--skip NN ...]"
+version: "2.3"
 ---
 
 # vault-onboard
 
-Take a code project with no vault and populate one, respecting the norms from
-the first note.
+Take a code project (greenfield or brownfield) and populate or enrich a vault,
+respecting the norms from the first note.
 
-Version 2.2. Previous definitions remain next to this one as `SKILL-v1.0.md`,
-`SKILL-v2.0.md` and `SKILL-v2.1.md`.
+Version 2.3. Previous definitions remain next to this one as `SKILL-v1.0.md`,
+`SKILL-v2.0.md`, `SKILL-v2.1.md` and `SKILL-v2.2.md`.
 
 ## Usage
 
@@ -59,6 +59,9 @@ owns them. This table must list exactly the flags of the argparse —
 | `--skip` | Two-digit section codes to leave alone (`07`, `13`, …). Any other value is rejected with exit 2, and the tool's help lists the accepted ones |
 | `--lang` | The project's programming language. When given it replaces detection from the manifest and file extensions |
 | `--agent` | Agent name recorded in the frontmatter |
+| `--mode` | Onboarding mode: `auto` (detects greenfield vs brownfield), `greenfield` (emits layered checklist without inventing notes), or `brownfield` |
+| `--deep-ast` | Enables deterministic AST analysis (`PAT-10`) for official patterns in `05_Patterns` and value-stream flows in `13_Flows` |
+| `--post-check` | After writing (non-dry-run), runs `vault_audit` (including `toReach100`) and takes an initial `vault_drift_detect --mode snapshot` |
 
 ## Read the envelope, not just `ok`
 
@@ -72,9 +75,10 @@ report a vault richer than the one that exists:
 - **`skipped_no_evidence[]`** — notes deliberately not written because there was
   no real content behind them. A note whose body is `_Pendiente_` raises coverage
   and lowers reliability (AP-45).
-- **`sections_left_empty_by_design[]`** — `18_Bugs`, `19_Audits` and
-  `20_Quarantine` stay empty. They are event-driven; populating them at bootstrap
-  would be exactly AP-45. That is also why `--skip` does not accept them.
+- **`sections_left_empty_by_design[]`** — `00_System`, `10_Migrated`, `99_Index`,
+  `12_Bibliography`, `18_Bugs`, `19_Audits`, `20_Quarantine` and `21_QA` stay
+  outside mechanical population by design or owner tool (AP-45). That is also
+  why `--skip` does not accept them.
 
 ## Order
 

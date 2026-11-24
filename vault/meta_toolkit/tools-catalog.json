@@ -4694,6 +4694,23 @@
             "type": "boolean",
             "description": "Omitir la arqueología de historia"
           },
+          "mode": {
+            "type": "string",
+            "description": "Modo de onboarding: auto, greenfield o brownfield",
+            "enum": [
+              "auto",
+              "greenfield",
+              "brownfield"
+            ]
+          },
+          "deep-ast": {
+            "type": "boolean",
+            "description": "Activar analisis AST real (PAT-10): patrones oficiales en 05_Patterns y flujos de valor en 13_Flows"
+          },
+          "post-check": {
+            "type": "boolean",
+            "description": "Ejecutar vault_audit (con toReach100) y snapshot inicial de vault_drift_detect al cerrar"
+          },
           "heal-legacy": {
             "type": "boolean",
             "description": "Recorre el vault y cura el frontmatter legacy de cada nota (cita titles con `:`, rellena `status`/`tags`/`updatedAt` si faltan). No hace onboard; es una pasada de mantenimiento."

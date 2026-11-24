@@ -1,33 +1,37 @@
 #!/usr/bin/env python3
 """
-vault_onboard.py v2 — Onboard completo de proyecto existente al vault.
+vault_onboard.py v3 — Onboard completo de proyecto (greenfield y brownfield) al vault.
 
-Cubre las 12 secciones activas del vault y construye historial de desarrollo
-desde git log (o mtime de archivos si no hay git).
+Cubre las 15 secciones activas del vault (y declara explícitamente las 8 restantes
+de `ORDERED_SECTIONS` por diseño o herramienta dueña, cubriendo automáticamente
+todas las secciones registradas sin listas fijas) y construye historial desde
+git log (o mtime de archivos si no hay git).
 
 Estrategias de sección:
-  01_Projects   — overview con fechas git, contributors, versiones; además
-                  registra el proyecto (ficha project.md) y enlaza --path como
-                  su repositorio local, igual que vault_project --add / --link
-  02_Observability — TODO/FIXME/HACK/BUG detectados en código fuente
-  03_Decisions  — ADRs retroactivos desde commits arquitectónicos
-  04_Sessions   — una nota por fase temporal del proyecto (antes/después)
-  05_Patterns   — patrones inferidos por naming de archivos
-  06_Diagrams   — arquitectura Mermaid desde estructura src/
-  07_Knowledge  — conceptos desde README headers + dependencias clave
-  08_Runbooks   — scripts npm/Makefile/CI → runbooks
-  09_Infrastructure — Docker, env vars, BD schemas
-  11_Code       — stubs por módulo detectado (priorizado por tipo)
-  13_Flows      — GitHub Actions / CI workflows → flujos
-  14_Requirements — README features/stories → reqs
-  15_Tests      — inventario de test files por tipo
+  01_Projects       — overview con fechas git, contributors, versiones, licencia,
+                      gestor de paquetes y enlace local (vault_project --add/--link)
+  02_Observability  — TODO/FIXME/HACK/BUG detectados en código fuente
+  03_Decisions      — ADRs retroactivos desde commits, docs/adr/* y CHANGELOG/ARCHITECTURE
+  04_Sessions       — una nota por fase temporal del proyecto (antes/después)
+  05_Patterns       — patrones oficiales del catálogo (AST real con --deep-ast o heurística)
+  06_Diagrams       — arquitectura Mermaid desde estructura src/ (validada AP-25)
+  07_Knowledge      — conceptos desde README headers + dependencias clave
+  08_Runbooks       — scripts package.json / pyproject.toml / Makefile → runbooks
+  09_Infrastructure — Docker/Compose (raíz y monorepo), .env, CI, Terraform/K8s/Ansible y esquemas BD
+  11_Code           — stubs por módulo detectado (priorizado por tipo, sin excluir scripts/)
+  13_Flows          — CI workflows + flujos de valor AST y operaciones PAT-10 con --deep-ast
+  14_Requirements   — README features/stories → reqs (siempre naciendo stub)
+  15_Tests          — inventario de test files + quality gates / configuración QA detectada
+  16_AI_Governance  — baseline verificable ISO/IEC 42001 (licencia, infra, dependencias)
+  17_Preferences    — contexto estable deducido (lenguaje, runtime, lockfile, convenciones)
 
-Idempotencia: si el archivo ya existe en vault → merge (añade secciones faltantes).
+Idempotencia: si el archivo ya existe en vault → merge aditivo bajo lock (sin tocar inmutables).
 Historia: git disponible → git log + tags; sin git → mtime/ctime de archivos.
 
 Usage:
     python vault_onboard.py --project my-api --path ../my-api
-    python vault_onboard.py --project my-api --path . --lang typescript --dry-run
+    python vault_onboard.py --project my-api --path . --mode greenfield --lang python
+    python vault_onboard.py --project my-api --path . --mode brownfield --deep-ast --post-check
     python vault_onboard.py --project my-api --path . --skip 02 05 --no-git
 """
 
@@ -63,7 +67,7 @@ from vault_io import (
 from vault_norms_catalog import compute_norm_refs
 from vault_fundamentals_catalog import cia_por_defecto
 from vault_raiz import leer_puntero
-from vault.kernel import procesos_git, proyectos
+from vault.kernel import features_y_flujos, patrones_diseno, procesos_git, proyectos, rutas
 from vault.kernel.fallos import FalloDeDominio
 from vault_registry import ORDERED_SECTIONS, es_artefacto_derivado
 from vault_write import tipo_por_carpeta
@@ -130,7 +134,6 @@ SKIP_DIRS = {
     "coverage",
     ".nyc_output",
     "vault-backups",
-    "scripts",
 }
 
 SKIP_DIRS_TEST = {"test", "tests", "spec", "specs", "__tests__", "e2e", "fixtures"}
@@ -240,6 +243,7 @@ _RE_VAULT_ONBOARD_11 = re.compile('^## (.+)')
 _RE_VAULT_ONBOARD_12 = re.compile('^\\s{2}([\\w-]+):\\s*$', re.MULTILINE)
 _RE_VAULT_ONBOARD_13 = re.compile(r"^\s+(push|pull_request|workflow_dispatch|schedule|release):", re.MULTILINE)
 _RE_VAULT_ONBOARD_14 = re.compile(r"^[-*]\s+(.+)$", re.MULTILINE)
+_RE_DEP_SEP = re.compile(r"[<>=!~;\[\s]")
 
 
 def _raiz() -> Path:
@@ -822,10 +826,14 @@ def _read_package_json(project_path: Path) -> Dict[str, Any]:
             elif d in ("express", "fastify", "koa"):
                 framework = framework or d.capitalize()
         node_ver = data.get("engines", {}).get("node", "")
+        lic = data.get("license", "")
+        if isinstance(lic, dict):
+            lic = lic.get("type", "")
         return {
             "name": data.get("name", ""),
             "description": data.get("description", ""),
             "version": data.get("version", ""),
+            "license": str(lic or "").strip(),
             "runtime": f"Node.js {node_ver}".strip(),
             "framework": framework,
             "scripts": data.get("scripts", {}),
@@ -844,7 +852,42 @@ def _read_pyproject(project_path: Path) -> Dict[str, Any]:
         if not fp.exists():
             continue
         try:
-            text = fp.read_text(encoding="utf-8")
+            text = fp.read_text(encoding="utf-8", errors="replace")
+            if fname == "pyproject.toml":
+                try:
+                    import tomllib  # Python >= 3.11
+
+                    data = tomllib.loads(text)
+                    proj = data.get("project") or {}
+                    lic_raw = proj.get("license", "")
+                    lic = lic_raw.get("text", "") if isinstance(lic_raw, dict) else str(lic_raw or "")
+                    deps_raw = list(proj.get("dependencies") or [])
+                    deps = [
+                        _RE_DEP_SEP.split(str(d), maxsplit=1)[0].strip()
+                        for d in deps_raw
+                        if str(d).strip()
+                    ]
+                    scripts = dict(proj.get("scripts") or {})
+                    framework = ""
+                    for d in deps:
+                        dl = d.lower()
+                        if dl in ("django", "fastapi", "flask", "starlette", "tornado"):
+                            framework = dl.capitalize() if dl != "fastapi" else "FastAPI"
+                            break
+                    return {
+                        "name": str(proj.get("name") or ""),
+                        "description": str(proj.get("description") or ""),
+                        "version": str(proj.get("version") or ""),
+                        "license": lic.strip(),
+                        "runtime": f"Python {proj.get('requires-python', '')}".strip(),
+                        "framework": framework,
+                        "source": fname,
+                        "scripts": scripts,
+                        "key_deps": deps[:15],
+                        "all_deps": deps,
+                    }
+                except ImportError:
+                    pass
             name = _RE_VAULT_ONBOARD_1.search(text)
             desc = _RE_VAULT_ONBOARD_2.search(text)
             ver = _RE_VAULT_ONBOARD_3.search(text)
@@ -852,6 +895,7 @@ def _read_pyproject(project_path: Path) -> Dict[str, Any]:
                 "name": name.group(1) if name else "",
                 "description": desc.group(1) if desc else "",
                 "version": ver.group(1) if ver else "",
+                "license": "",
                 "runtime": "Python",
                 "framework": "",
                 "source": fname,
@@ -863,6 +907,111 @@ def _read_pyproject(project_path: Path) -> Dict[str, Any]:
             _registrar_degradacion("leer_manifiesto_python", exc)
             continue
     return {}
+
+
+def _read_cargo_toml(project_path: Path) -> Dict[str, Any]:
+    fp = project_path / "Cargo.toml"
+    if not fp.exists():
+        return {}
+    try:
+        text = fp.read_text(encoding="utf-8", errors="replace")
+        name = _RE_VAULT_ONBOARD_1.search(text)
+        ver = _RE_VAULT_ONBOARD_3.search(text)
+        desc = _RE_VAULT_ONBOARD_2.search(text)
+        lic = re.search(r'license\s*=\s*["\']([^"\']+)', text)
+        return {
+            "name": name.group(1) if name else "",
+            "description": desc.group(1) if desc else "",
+            "version": ver.group(1) if ver else "",
+            "license": lic.group(1) if lic else "",
+            "runtime": "Rust",
+            "framework": "",
+            "source": "Cargo.toml",
+            "scripts": {},
+            "key_deps": [],
+            "all_deps": [],
+        }
+    except Exception as exc:
+        _registrar_degradacion("leer_cargo_toml", exc)
+        return {}
+
+
+def _read_go_mod(project_path: Path) -> Dict[str, Any]:
+    fp = project_path / "go.mod"
+    if not fp.exists():
+        return {}
+    try:
+        text = fp.read_text(encoding="utf-8", errors="replace")
+        mod = re.search(r"^module\s+(\S+)", text, re.MULTILINE)
+        gover = re.search(r"^go\s+(\S+)", text, re.MULTILINE)
+        return {
+            "name": mod.group(1).rsplit("/", 1)[-1] if mod else "",
+            "description": "",
+            "version": "",
+            "license": "",
+            "runtime": f"Go {gover.group(1)}".strip() if gover else "Go",
+            "framework": "",
+            "source": "go.mod",
+            "scripts": {},
+            "key_deps": [],
+            "all_deps": [],
+        }
+    except Exception as exc:
+        _registrar_degradacion("leer_go_mod", exc)
+        return {}
+
+
+def _read_pom_xml(project_path: Path) -> Dict[str, Any]:
+    fp = project_path / "pom.xml"
+    if not fp.exists():
+        return {}
+    try:
+        text = fp.read_text(encoding="utf-8", errors="replace")
+        art = re.search(r"<artifactId>([^<]+)</artifactId>", text)
+        ver = re.search(r"<version>([^<]+)</version>", text)
+        return {
+            "name": art.group(1).strip() if art else "",
+            "description": "",
+            "version": ver.group(1).strip() if ver else "",
+            "license": "",
+            "runtime": "JVM / Maven",
+            "framework": "Spring" if "spring-boot" in text.lower() else "",
+            "source": "pom.xml",
+            "scripts": {},
+            "key_deps": [],
+            "all_deps": [],
+        }
+    except Exception as exc:
+        _registrar_degradacion("leer_pom_xml", exc)
+        return {}
+
+
+_LOCKFILES_GESTOR: Tuple[Tuple[str, str], ...] = (
+    ("pnpm-lock.yaml", "pnpm"),
+    ("yarn.lock", "yarn"),
+    ("bun.lockb", "bun"),
+    ("bun.lock", "bun"),
+    ("package-lock.json", "npm"),
+    ("uv.lock", "uv"),
+    ("poetry.lock", "poetry"),
+    ("Pipfile.lock", "pipenv"),
+    ("Cargo.lock", "cargo"),
+    ("go.sum", "go"),
+)
+
+_FICHEROS_CONVENCIONES: Tuple[str, ...] = (
+    "AGENTS.md",
+    "CLAUDE.md",
+    "CONTRIBUTING.md",
+    ".editorconfig",
+    "ruff.toml",
+    ".eslintrc.json",
+    ".eslintrc.js",
+    "eslint.config.js",
+    ".prettierrc",
+    ".prettierrc.json",
+    "tsconfig.json",
+)
 
 
 def _read_csproj(project_path: Path) -> Dict[str, Any]:
@@ -936,11 +1085,45 @@ def _detect_project_meta(
     project_path: Path, lang_hint: Optional[str]
 ) -> Dict[str, Any]:
     meta: Dict[str, Any] = {}
-    for reader in (_read_package_json, _read_pyproject, _read_csproj):
+    for reader in (
+        _read_package_json,
+        _read_pyproject,
+        _read_csproj,
+        _read_cargo_toml,
+        _read_go_mod,
+        _read_pom_xml,
+    ):
         result = reader(project_path)
         if result:
             meta.update(result)
             break
+
+    for lockfile, gestor in _LOCKFILES_GESTOR:
+        if (project_path / lockfile).is_file():
+            meta["package_manager"] = gestor
+            break
+
+    meta["conventions"] = [
+        f for f in _FICHEROS_CONVENCIONES if (project_path / f).is_file()
+    ]
+    if not meta.get("license"):
+        for lic_file in ("LICENSE", "LICENSE.md", "LICENSE.txt"):
+            lp = project_path / lic_file
+            if lp.is_file():
+                try:
+                    primera = lp.read_text(encoding="utf-8", errors="replace").splitlines()[:3]
+                    encabezado = " ".join(x.strip() for x in primera if x.strip())
+                    if "MIT" in encabezado:
+                        meta["license"] = "MIT"
+                    elif "Apache" in encabezado:
+                        meta["license"] = "Apache-2.0"
+                    elif "GPL" in encabezado:
+                        meta["license"] = "GPL"
+                    elif encabezado:
+                        meta["license"] = lic_file
+                except OSError:
+                    pass
+                break
 
     meta["readme_excerpt"], meta["readme_headers"] = _read_readme(project_path)
 
@@ -1037,6 +1220,9 @@ def _detect_infra(project_path: Path) -> Dict[str, Any]:
         "ports": [],
         "files": [],
         "base_image": "",
+        "iac": [],
+        "databases": [],
+        "qa_tools": [],
     }
     for fname in ("docker-compose.yml", "docker-compose.yaml", "compose.yml"):
         fp = project_path / fname
@@ -1082,9 +1268,66 @@ def _detect_infra(project_path: Path) -> Dict[str, Any]:
             except Exception as exc:
                 _registrar_degradacion("leer_env_example", exc)
                 pass
-    for ci_dir in (".github/workflows", ".circleci", "Jenkinsfile", ".gitlab-ci.yml"):
+    for ci_dir in (
+        ".github/workflows",
+        ".circleci",
+        "Jenkinsfile",
+        ".gitlab-ci.yml",
+        "azure-pipelines.yml",
+        "bitbucket-pipelines.yml",
+    ):
         if (project_path / ci_dir).exists():
             infra["files"].append(str(ci_dir))
+
+    # Escaneo acotado (profundidad <= 3) de IaC, esquemas BD, monorepo Docker y QA
+    _QA_INDICADORES = {
+        "pytest.ini",
+        "vitest.config.ts",
+        "vitest.config.js",
+        "jest.config.js",
+        "jest.config.ts",
+        "playwright.config.ts",
+        "playwright.config.js",
+        "cypress.config.ts",
+        "sonar-project.properties",
+        "codecov.yml",
+        ".pre-commit-config.yaml",
+    }
+    for actual, dirs, archivos in os.walk(project_path):
+        rel_dir = Path(actual).relative_to(project_path)
+        prof = 0 if str(rel_dir) == "." else len(rel_dir.parts)
+        if prof >= 3:
+            dirs[:] = []
+        else:
+            dirs[:] = sorted(
+                d for d in dirs if d.lower() not in SKIP_DIRS and not d.startswith(".git")
+            )
+        partes_lower = {p.lower() for p in rel_dir.parts}
+        for nombre in sorted(archivos):
+            rel_posix = (rel_dir / nombre).as_posix() if prof > 0 else nombre
+            nl = nombre.lower()
+            if nl.endswith(".tf") or nl in ("chart.yaml", "kustomization.yaml", "ansible.cfg") or (
+                nl.startswith("playbook") and nl.endswith((".yml", ".yaml"))
+            ) or ("k8s" in partes_lower and nl.endswith((".yml", ".yaml"))):
+                if len(infra["iac"]) < 20:
+                    infra["iac"].append(rel_posix)
+                if rel_posix not in infra["files"] and len(infra["files"]) < 30:
+                    infra["files"].append(rel_posix)
+            elif nl in ("schema.prisma", "alembic.ini", "schema.sql") or nl.startswith("drizzle.config") or (
+                nl.endswith(".sql") and ("migrations" in partes_lower or "db" in partes_lower or "sql" in partes_lower)
+            ):
+                if len(infra["databases"]) < 20:
+                    infra["databases"].append(rel_posix)
+                if rel_posix not in infra["files"] and len(infra["files"]) < 30:
+                    infra["files"].append(rel_posix)
+            elif prof > 0 and nl.startswith("dockerfile") and rel_posix not in infra["files"]:
+                if len(infra["files"]) < 30:
+                    infra["files"].append(rel_posix)
+            elif nl in _QA_INDICADORES and rel_posix not in infra["qa_tools"]:
+                infra["qa_tools"].append(rel_posix)
+
+    if (project_path / ".githooks").is_dir():
+        infra["qa_tools"].append(".githooks")
     return infra
 
 
@@ -2197,7 +2440,7 @@ python scripts/vault_write.py --folder 03_Decisions --title "{title}"
             body = f"""# {title}
 
 **Fuente:** `{fname}` encontrado en el proyecto
-**Status:** implemented
+**Status:** stub
 
 ## Contenido detectado
 
@@ -2234,6 +2477,44 @@ Revisar el archivo y extraer ADRs individuales con vault_write.
             raise
         except Exception as exc:
             emit_error("vault_onboard", "DECISION_CREATE_ERROR", str(exc))
+
+    # Inventario de ADRs preexistentes en docs/adr/ o adr/ (sin inventar decisiones)
+    adrs_repo: List[str] = []
+    for adr_dir in (project_path / rutas.DOCS / "adr", project_path / "adr"):
+        if adr_dir.is_dir():
+            for fp in sorted(adr_dir.glob("*.md"))[:20]:
+                adrs_repo.append(fp.relative_to(project_path).as_posix())
+    if adrs_repo:
+        lista_md = "\n".join(f"- `{p}`" for p in adrs_repo)
+        body = f"""# {project} — Inventario de ADRs existentes en el repositorio
+
+> Detectados por vault_onboard en el repositorio fuente. Nace `stub` para revisar o migrar con `vault_migrate_docs`.
+
+## ADRs encontrados ({len(adrs_repo)})
+
+{lista_md}
+
+## Para enriquecer
+
+Revisar cada ADR y decidir si migrarlo a `03_Decisions/` con `vault_migrate_docs` o enlazarlo desde el proyecto.
+"""
+        lead = (
+            f"Inventario de {len(adrs_repo)} decisiones de arquitectura (ADR) ya presentes en el "
+            f"repositorio del proyecto {project}. Evita reconstruir desde commits decisiones que el "
+            "equipo ya dejó documentadas. Nace como esbozo en el onboarding."
+        )
+        results.append(
+            _write(
+                "03_Decisions",
+                f"{_slug(project)}-adrs-existentes.md",
+                f"{project} — Inventario de ADRs existentes en el repositorio",
+                ["adr", "inventory", project],
+                {"agent": agent, "project": project},
+                body,
+                dry_run,
+                lead=lead,
+            )
+        )
 
     return results
 
@@ -2318,8 +2599,78 @@ python scripts/vault_write.py --folder 04_Sessions --title "{month} sesion de tr
 
 
 def _onboard_05_patterns(
-    project: str, modules: List[Dict], agent: str, dry_run: bool
+    project: str,
+    modules: List[Dict],
+    agent: str,
+    dry_run: bool,
+    project_path: Optional[Path] = None,
+    deep_ast: bool = False,
 ) -> List[Tuple[str, str]]:
+    if deep_ast and project_path is not None:
+        det = patrones_diseno.detectar_patrones(project_path)
+        results: List[Tuple[str, str]] = []
+        for pat in det.get("patterns", [])[:12]:
+            pname = pat["pattern"]
+            official = pat.get("official_name") or pname
+            ref = pat.get("reference") or "Catalogo canonico VOA"
+            pcat = pat.get("type") or "design"
+            evidencias = pat.get("evidence") or []
+            ev_md = "\n".join(
+                f"- `{ev['file']}:{ev['line']}` (`{ev['symbol']}`) — {ev['how']}"
+                for ev in evidencias[:8]
+            ) or "— Sin evidencias detalladas"
+            body = f"""# {pname}
+
+> Patrón oficial detectado por análisis AST (`vault_onboard --deep-ast`, PAT-10). Verificar alcance real.
+
+**Nombre oficial:** {official}
+**Referencia estándar:** {ref}
+**Categoría:** {pcat} ({pat.get("category_label", pat.get("category", ""))})
+**Confianza:** {pat.get("confidence", "indicio_estructural")} ({pat.get("evidence_total", len(evidencias))} evidencias)
+
+## Descripción
+
+{pat.get("summary", "")}
+
+## Evidencia verificada en código
+
+{ev_md}
+
+## Para enriquecer
+
+```bash
+python scripts/vault_pattern_save.py --project {project} --name "{pname}" \\
+  --type {pcat} --status implementado
+```
+"""
+            lead = (
+                f"Patrón {official} ({ref}) detectado en el proyecto {project} por análisis "
+                f"determinista AST con {pat.get('evidence_total', len(evidencias))} evidencias "
+                f"en {len(pat.get('files', []))} ficheros. "
+                f"{pat.get('summary', '')} Se registró en el onboarding con el nombre oficial del catálogo."
+            )
+            results.append(
+                _write(
+                    f"05_Patterns/{pcat}",
+                    f"{_slug(project)}-{_slug(pname)}.md",
+                    pname,
+                    ["pattern", pcat, project, "pat-10"],
+                    {
+                        "agent": agent,
+                        "project": project,
+                        "pattern_type": pcat,
+                        "official_name": official,
+                        "pattern_reference": ref,
+                    },
+                    body,
+                    dry_run,
+                    lead=lead,
+                    falta="confirmar con el equipo el estado real y excepciones del patrón",
+                )
+            )
+        if results:
+            return results
+
     pattern_counts: Dict[str, int] = defaultdict(int)
     for mod in modules:
         pattern_counts[mod["type"]] += 1
@@ -2330,30 +2681,30 @@ def _onboard_05_patterns(
             2,
             "Service Layer",
             "architecture",
-            "Separación de lógica de negocio en servicios",
+            "Separación de lógica de negocio en servicios (Fowler PoEAA)",
         ),
         (
             "controller",
             1,
-            "MVC / Layered",
+            "Layered Architecture (N-Tier)",
             "architecture",
-            "Separación de responsabilidades en capas",
+            "Separación de responsabilidades en capas horizontales (Richards & Ford)",
         ),
-        ("repository", 1, "Repository", "design", "Abstracción del acceso a datos"),
-        ("factory", 1, "Factory", "design", "Creación de objetos encapsulada"),
+        ("repository", 1, "Repository", "design", "Abstracción del acceso a datos (Fowler PoEAA / Evans DDD)"),
+        ("factory", 1, "Factory", "design", "Creación de objetos encapsulada (GoF)"),
         (
             "middleware",
             1,
-            "Middleware Chain",
-            "architecture",
-            "Procesamiento encadenado de requests",
+            "Chain of Responsibility",
+            "design",
+            "Procesamiento encadenado de solicitudes mediante middleware/guardas (GoF)",
         ),
         (
             "manager",
             1,
-            "Manager / Coordinator",
+            "Facade",
             "design",
-            "Coordinación de múltiples servicios",
+            "Coordinación simplificada de múltiples servicios tras una fachada (GoF)",
         ),
     ]
 
@@ -2763,6 +3114,8 @@ def _onboard_09_infrastructure(
     )
     envs_md = "\n".join(f"- `{e}`" for e in infra.get("envs", [])) or "— No detectadas"
     files_md = "\n".join(f"- `{f}`" for f in infra.get("files", []))
+    iac_md = "\n".join(f"- `{f}`" for f in infra.get("iac", [])) or "— No detectados"
+    db_md = "\n".join(f"- `{f}`" for f in infra.get("databases", [])) or "— No detectados"
     body = f"""# {project} — Infraestructura
 
 > Stub generado por vault_onboard desde archivos de configuración.
@@ -2786,6 +3139,14 @@ def _onboard_09_infrastructure(
 ## Imagen base Docker
 
 {infra.get("base_image") or "— No detectada"}
+
+## Infraestructura como código (IaC / Orquestación)
+
+{iac_md}
+
+## Esquemas y migraciones de base de datos
+
+{db_md}
 
 ## Para enriquecer
 
@@ -2876,21 +3237,24 @@ python scripts/vault_code_module.py \\
 
 
 def _onboard_13_flows(
-    project: str, project_path: Path, agent: str, dry_run: bool
+    project: str,
+    project_path: Path,
+    agent: str,
+    dry_run: bool,
+    deep_ast: bool = False,
 ) -> List[Tuple[str, str]]:
     results = []
     workflows_dir = project_path / ".github" / "workflows"
-    if not workflows_dir.exists():
-        return []
-    for wf_file in sorted(workflows_dir.glob("*.yml"))[:5]:
-        try:
-            text = wf_file.read_text(encoding="utf-8", errors="replace")
-            triggers = _RE_VAULT_ONBOARD_13.findall(text)
-            jobs = _RE_VAULT_ONBOARD_12.findall(text)
-            jobs_md = "\n".join(f"- `{j}`" for j in jobs[:8]) or "— No detectados"
-            triggers_md = ", ".join(set(triggers)) or "— No detectados"
-            wf_name = wf_file.stem
-            body = f"""# CI: {wf_name}
+    if workflows_dir.exists():
+        for wf_file in sorted(workflows_dir.glob("*.yml"))[:5]:
+            try:
+                text = wf_file.read_text(encoding="utf-8", errors="replace")
+                triggers = _RE_VAULT_ONBOARD_13.findall(text)
+                jobs = _RE_VAULT_ONBOARD_12.findall(text)
+                jobs_md = "\n".join(f"- `{j}`" for j in jobs[:8]) or "— No detectados"
+                triggers_md = ", ".join(set(triggers)) or "— No detectados"
+                wf_name = wf_file.stem
+                body = f"""# CI: {wf_name}
 
 > Flujo detectado desde `.github/workflows/{wf_file.name}`.
 
@@ -2905,39 +3269,97 @@ def _onboard_13_flows(
 
 ```bash
 python scripts/vault_flow_save.py --project {project} \\
-  --name "{wf_name}" --flow_type pipeline --description "..."
+  --name "{wf_name}" --type pipeline --description "..."
 ```
 """
-            detectado = []
-            if triggers:
-                detectado.append(f"se dispara con {', '.join(sorted(set(triggers)))}")
-            if jobs:
-                detectado.append(f"ejecuta {len(jobs)} jobs ({', '.join(jobs[:4])})")
+                detectado = []
+                if triggers:
+                    detectado.append(f"se dispara con {', '.join(sorted(set(triggers)))}")
+                if jobs:
+                    detectado.append(f"ejecuta {len(jobs)} jobs ({', '.join(jobs[:4])})")
+                lead = (
+                    f"Flujo de integración continua {wf_name} del proyecto {project}, definido "
+                    f"en `.github/workflows/{wf_file.name}`. "
+                    + (f"Según el workflow, {' y '.join(detectado)}. " if detectado else "")
+                    + "Se detectó en el onboarding leyendo el workflow y no describe qué valida "
+                    "cada paso."
+                )
+                results.append(
+                    _write(
+                        "13_Flows/pipeline",
+                        f"{_slug(project)}-{_slug(wf_name)}.md",
+                        f"CI: {wf_name}",
+                        ["flow", "pipeline", "ci", project],
+                        {"agent": agent, "project": project, "flow_type": "pipeline"},
+                        body,
+                        dry_run,
+                        lead=lead,
+                        falta="" if (triggers and jobs) else (
+                            "qué lo dispara y qué jobs ejecuta: el onboarding no los detectó en el workflow"),
+                    )
+                )
+            except _OnboardNotaBloqueada:
+                raise
+            except Exception as exc:
+                emit_error("vault_onboard", "FLOW_CREATE_ERROR", str(exc))
+
+    if deep_ast:
+        scan = features_y_flujos.detectar_features_y_flujos(project_path)
+        for flujo in scan.get("flows", [])[:8]:
+            fname = flujo["name"]
+            ops = flujo.get("business_operations") or ["unclassified"]
+            vs = flujo.get("value_stream") or {}
+            pasos_md = "\n".join(
+                f"{p['step']}. `{p['actor']}.{p['to_symbol']}` (`{p['file']}:{p['line']}`) — {p['action']}"
+                for p in (flujo.get("steps") or [])[:12]
+            ) or "— Flujo directo sin subllamadas locales."
+            mermaid = flujo.get("mermaid") or ""
+            bloque_mermaid = ""
+            if mermaid and not _errores_mermaid(mermaid):
+                bloque_mermaid = f"\n## Diagrama de flujo\n\n```mermaid\n{mermaid}\n```\n"
+            body = f"""# {fname}
+
+> Flujo de valor detectado por análisis AST (`vault_onboard --deep-ast`, PAT-10).
+
+**Entrada:** `{flujo['entry_file']}:{flujo['entry_line']}` (`{flujo['entry_symbol']}`)
+**Disparador:** {vs.get('trigger', fname)}
+**Operaciones de negocio (PAT-10):** {', '.join(ops)}
+**Capas atravesadas:** {', '.join(vs.get('stages') or ['service/domain'])}
+
+## Pasos trazados
+
+{pasos_md}
+{bloque_mermaid}
+## Para enriquecer
+
+```bash
+python scripts/vault_flow_save.py --project {project} \\
+  --name "{fname}" --type workflow --description "..."
+```
+"""
             lead = (
-                f"Flujo de integración continua {wf_name} del proyecto {project}, definido "
-                f"en `.github/workflows/{wf_file.name}`. "
-                + (f"Según el workflow, {' y '.join(detectado)}. " if detectado else "")
-                + "Se detectó en el onboarding leyendo el workflow y no describe qué valida "
-                "cada paso."
+                f"Flujo de valor {fname} del proyecto {project} (operaciones PAT-10: {', '.join(ops)}), "
+                f"con entrada en `{flujo['entry_file']}:{flujo['entry_line']}` y "
+                f"{flujo.get('steps_count', 0)} pasos trazados por análisis AST. "
+                "Nace como esbozo para contrastar con las reglas de negocio reales."
             )
             results.append(
                 _write(
-                    "13_Flows/pipeline",
-                    f"{_slug(project)}-{_slug(wf_name)}.md",
-                    f"CI: {wf_name}",
-                    ["flow", "pipeline", "ci", project],
-                    {"agent": agent, "project": project, "flow_type": "pipeline"},
+                    "13_Flows/workflow",
+                    f"{_slug(project)}-{_slug(fname)[:64]}.md",
+                    fname,
+                    ["flow", "workflow", "pat-10", project],
+                    {
+                        "agent": agent,
+                        "project": project,
+                        "flow_type": "workflow",
+                        "business_operations": ops,
+                    },
                     body,
                     dry_run,
                     lead=lead,
-                    falta="" if (triggers and jobs) else (
-                        "qué lo dispara y qué jobs ejecuta: el onboarding no los detectó en el workflow"),
                 )
             )
-        except _OnboardNotaBloqueada:
-            raise
-        except Exception as exc:
-            emit_error("vault_onboard", "FLOW_CREATE_ERROR", str(exc))
     return results
 
 
@@ -2977,7 +3399,7 @@ def _onboard_14_requirements(
 **ID:** {req_id}
 **Tipo:** functional
 **Prioridad:** must-have
-**Status:** implemented
+**Status:** stub
 **Fuente:** README.md — sección `## {fh}`
 
 ## Descripción
@@ -3029,7 +3451,12 @@ python scripts/vault_requirement_save.py --project {project} \\
 
 
 def _onboard_15_tests(
-    project: str, project_path: Path, meta: Dict, agent: str, dry_run: bool
+    project: str,
+    project_path: Path,
+    meta: Dict,
+    agent: str,
+    dry_run: bool,
+    infra: Optional[Dict[str, Any]] = None,
 ) -> List[Tuple[str, str]]:
     relevant_exts = {
         ext for ext, lang in LANG_BY_EXT.items() if lang == meta.get("language", "")
@@ -3046,7 +3473,8 @@ def _onboard_15_tests(
         if ttype is not None:
             by_type[ttype].append(rel)
 
-    if not by_type:
+    qa_tools = list((infra or {}).get("qa_tools") or [])
+    if not by_type and not qa_tools:
         return []
 
     results = []
@@ -3088,6 +3516,40 @@ python scripts/vault_test_save.py --project {project} \\
                 f"{project} — Tests {ttype}",
                 ["test", ttype, project],
                 {"agent": agent, "project": project, "test_type": ttype},
+                body,
+                dry_run,
+                lead=lead,
+            )
+        )
+
+    if qa_tools:
+        qa_md = "\n".join(f"- `{t}`" for t in sorted(qa_tools))
+        body = f"""# {project} — Configuración QA y Quality Gates
+
+> Configuración de pruebas, linters y hooks detectada en el repositorio por vault_onboard.
+
+## Artefactos QA detectados ({len(qa_tools)})
+
+{qa_md}
+
+## Para registrar planes y reportes en 21_QA
+
+```bash
+python scripts/vault_qa_save.py --project {project} --type test-plan --title "Plan QA {project}" --description "..."
+```
+"""
+        lead = (
+            f"Configuración QA y controles de calidad del proyecto {project}: {len(qa_tools)} "
+            f"ficheros de pruebas, cobertura o hooks detectados ({', '.join(sorted(qa_tools)[:4])}). "
+            "Sirve de puente hacia el registro de eventos QA en `21_QA/` sin inventar resultados."
+        )
+        results.append(
+            _write(
+                "15_Tests/qa",
+                f"{_slug(project)}-quality-gates.md",
+                f"{project} — Configuración QA y Quality Gates",
+                ["test", "qa", "quality-gates", project],
+                {"agent": agent, "project": project, "test_type": "qa"},
                 body,
                 dry_run,
                 lead=lead,
@@ -3197,6 +3659,9 @@ def _onboard_17_preferences(
         )
     if meta.get("runtime"):
         lineas.append(f"- El runtime declarado es **{meta['runtime']}**.")
+    if meta.get("conventions"):
+        convs = ", ".join(f"`{c}`" for c in meta["conventions"][:8])
+        lineas.append(f"- El repositorio declara archivos de convención/reglas: {convs}.")
     if not lineas:
         return []
 
@@ -3316,6 +3781,112 @@ def _registrar_y_enlazar(project: str, project_path: Path, dry_run: bool, agent:
             "ficha": alta["ficha"], "linked": True, "file": enlace["file"]}
 
 
+_MODOS_ONBOARDING = ("auto", "greenfield", "brownfield")
+
+
+def _checklist_greenfield(project: str, language: str = "") -> List[Dict[str, str]]:
+    """Guía ordenada por capas para arrancar un proyecto Greenfield sin inventar notas (AP-45)."""
+    slug = _slug(project)
+    return [
+        {
+            "layer": "0. Gobierno y preferencias",
+            "sections": "00_System, 01_Projects, 16_AI_Governance, 17_Preferences",
+            "action": f"Definir stack/reglas `must` y `should` con `vault_preferences --set` y alcance en `01_Projects/{slug}/overview.md`.",
+        },
+        {
+            "layer": "1. Requisitos y lógica de negocio (PAT-10)",
+            "sections": "14_Requirements, 07_Knowledge, 13_Flows, 05_Patterns",
+            "action": (
+                f"Registrar requisitos semilla (`vault_requirement_save --project {slug}`) y revisar "
+                "qué operaciones universales aplican: auth, rule, lifecycle, workflow, transform, event, integration, query."
+            ),
+        },
+        {
+            "layer": "2. Decisiones, arquitectura e infraestructura",
+            "sections": "03_Decisions, 06_Diagrams, 09_Infrastructure, 08_Runbooks",
+            "action": (
+                f"Documentar ADR-001 de stack (`vault_write --folder 03_Decisions`), "
+                f"diagrama inicial (`vault_diagram_save --project {slug}`) e infraestructura objetivo (`vault_infra_save`)."
+            ),
+        },
+        {
+            "layer": "3. Calidad, QA y cierre",
+            "sections": "15_Tests, 21_QA, 99_Index",
+            "action": (
+                f"Registrar plan QA inicial (`vault_qa_save --project {slug}`), "
+                f"tomar snapshot base (`vault_drift_detect --project {slug} --mode snapshot`) y correr `vault_audit`."
+            ),
+        },
+    ]
+
+
+def _ejecutar_post_check(project: str, linked: bool) -> Dict[str, Any]:
+    """Ejecuta audit + snapshot de drift en subproceso aislado (0 cruces nuevos)."""
+    env = {**os.environ, "VAULT_ROOT": str(_raiz())}
+    salida: Dict[str, Any] = {}
+    scripts_dir = Path(__file__).resolve().parent
+
+    try:
+        p_audit = subprocess.run(
+            [sys.executable, str(scripts_dir / "vault_audit.py")],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            env=env,
+            timeout=120,
+        )
+        if p_audit.returncode == 0 and "{" in p_audit.stdout:
+            data = json.loads(p_audit.stdout[p_audit.stdout.index("{"):])
+            salida["audit"] = {
+                "ok": bool(data.get("ok")),
+                "healthScore": data.get("healthScore"),
+                "healthIndex": data.get("healthIndex"),
+                "toReach100": (data.get("toReach100") or {}).get("summary"),
+            }
+        else:
+            salida["audit"] = {"ok": False, "exit_code": p_audit.returncode}
+    except Exception as exc:
+        salida["audit"] = emit_error(
+            "vault_onboard", "UNEXPECTED_ERROR", f"post_check audit: {type(exc).__name__}: {exc}", exception=exc
+        )
+
+    if linked:
+        try:
+            p_drift = subprocess.run(
+                [
+                    sys.executable,
+                    str(scripts_dir / "vault_drift_detect.py"),
+                    "--project",
+                    _slug(project),
+                    "--mode",
+                    "snapshot",
+                ],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                env=env,
+                timeout=60,
+            )
+            if p_drift.returncode == 0 and "{" in p_drift.stdout:
+                d_data = json.loads(p_drift.stdout[p_drift.stdout.index("{"):])
+                salida["drift_snapshot"] = {
+                    "ok": bool(d_data.get("ok")),
+                    "mode": "snapshot",
+                }
+            else:
+                salida["drift_snapshot"] = {"ok": False, "exit_code": p_drift.returncode}
+        except Exception as exc:
+            salida["drift_snapshot"] = emit_error(
+                "vault_onboard", "UNEXPECTED_ERROR", f"post_check drift: {type(exc).__name__}: {exc}", exception=exc
+            )
+    else:
+        salida["drift_snapshot"] = {"ok": False, "skipped": "proyecto no enlazado"}
+
+    return salida
+
+
 @_aislar_contexto
 def vault_onboard(
     project: str,
@@ -3329,7 +3900,16 @@ def vault_onboard(
     git_phases: int = 8,
     max_commits: int = 500,
     no_git: bool = False,
+    mode: str = "auto",
+    deep_ast: bool = False,
+    post_check: bool = False,
 ) -> Dict[str, Any]:
+    if mode not in _MODOS_ONBOARDING:
+        return emit_error(
+            "vault_onboard",
+            "INVALID_INPUT",
+            f"Modo de onboarding invalido: {mode!r}. Validos: {list(_MODOS_ONBOARDING)}",
+        )
     project_path = Path(path).resolve()
     if not project_path.exists():
         return {
@@ -3422,6 +4002,29 @@ def vault_onboard(
     modules = _scan_modules(project_path, depth, language, max_modules)
     infra = _detect_infra(project_path)
 
+    # Resolver modo real (greenfield vs brownfield)
+    if mode == "auto":
+        tiene_notas_previas = (_raiz() / "01_Projects" / _slug(project) / "overview.md").is_file()
+        resolved_mode = (
+            "greenfield"
+            if (not tiene_notas_previas and len(modules) == 0 and int(history.get("total_commits", 0)) <= 2)
+            else "brownfield"
+        )
+    else:
+        resolved_mode = mode
+
+    ast_summary: Optional[Dict[str, Any]] = None
+    if deep_ast:
+        scan_ast = features_y_flujos.detectar_features_y_flujos(project_path)
+        pat_ast = patrones_diseno.detectar_patrones(project_path)
+        ast_summary = {
+            "pattern": "PAT-10",
+            "patterns_detected": pat_ast.get("total_patterns", 0),
+            "features_detected": scan_ast.get("features_count", 0),
+            "flows_detected": scan_ast.get("flows_count", 0),
+            "summary_by_operation": scan_ast.get("summary_by_operation", {}),
+        }
+
     # 4. Apply section strategies
     # AP-47: el onboard es el escritor masivo por antonomasia — cada sección
     # que pobla dispara varias notas, y sin lote cada una regenera índice de
@@ -3451,7 +4054,13 @@ def vault_onboard(
                 "observability",
             )
         if "05" not in skip:
-            _record(_onboard_05_patterns(project, modules, agent, dry_run), "patterns")
+            _record(
+                _onboard_05_patterns(
+                    project, modules, agent, dry_run,
+                    project_path=project_path, deep_ast=deep_ast,
+                ),
+                "patterns",
+            )
         if "06" not in skip:
             _record(
                 _onboard_06_diagrams(project, project_path, meta, modules, agent, dry_run),
@@ -3469,11 +4078,14 @@ def vault_onboard(
         if "11" not in skip:
             _record(_onboard_11_code(project, modules, language, agent, dry_run), "modules")
         if "13" not in skip:
-            _record(_onboard_13_flows(project, project_path, agent, dry_run), "flows")
+            _record(
+                _onboard_13_flows(project, project_path, agent, dry_run, deep_ast=deep_ast),
+                "flows",
+            )
         if "14" not in skip:
             _record(_onboard_14_requirements(project, project_path, meta, agent, dry_run), "requirements")
         if "15" not in skip:
-            _record(_onboard_15_tests(project, project_path, meta, agent, dry_run), "tests")
+            _record(_onboard_15_tests(project, project_path, meta, agent, dry_run, infra=infra), "tests")
         if "16" not in skip:
             _record(
                 _onboard_16_governance(project, meta, infra, agent, dry_run), "governance"
@@ -3606,11 +4218,21 @@ def vault_onboard(
         informe_secciones[seccion] = {"status": estado, "reason": motivo,
                                       "policy_omissions": omisiones_politica}
 
+    post_check_report: Optional[Dict[str, Any]] = None
+    if post_check and not dry_run:
+        post_check_report = _ejecutar_post_check(project, bool(project_link.get("linked")))
+
     return {
         "ok": True,
         "project": project,
+        "onboarding_mode": resolved_mode,
+        "onboarding_mode_requested": mode,
+        "deep_ast": deep_ast,
         "path_scanned": str(project_path),
         "dry_run": dry_run,
+        "ast_summary": ast_summary,
+        "greenfield_checklist": _checklist_greenfield(project, language) if resolved_mode == "greenfield" else [],
+        "post_check": post_check_report,
         "git_history": {
             "is_git": history.get("is_git", False),
             "current_branch": history.get("current_branch", ""),
@@ -3722,6 +4344,24 @@ Con --dry-run no se registra ni enlaza nada; con --skip 01, tampoco.
     parser.add_argument("--max-commits", dest="max_commits", type=int, default=500)
     parser.add_argument("--no-git", action="store_true")
     parser.add_argument(
+        "--mode",
+        choices=list(_MODOS_ONBOARDING),
+        default="auto",
+        help="Modo de onboarding: auto (detecta greenfield/brownfield), greenfield o brownfield",
+    )
+    parser.add_argument(
+        "--deep-ast",
+        dest="deep_ast",
+        action="store_true",
+        help="Activa análisis AST real (PAT-10): patrones oficiales en 05_Patterns y flujos de valor en 13_Flows",
+    )
+    parser.add_argument(
+        "--post-check",
+        dest="post_check",
+        action="store_true",
+        help="Al cerrar (sin --dry-run) ejecuta vault_audit y snapshot inicial de vault_drift_detect",
+    )
+    parser.add_argument(
         "--heal-legacy", action="store_true",
         help="Recorre el vault y cura el frontmatter legacy de cada nota "
              "(cita titles con `:`, rellena `status`/`tags`/`updatedAt` si "
@@ -3750,6 +4390,9 @@ Con --dry-run no se registra ni enlaza nada; con --skip 01, tampoco.
         git_phases=args.git_phases,
         max_commits=args.max_commits,
         no_git=args.no_git,
+        mode=args.mode,
+        deep_ast=args.deep_ast,
+        post_check=args.post_check,
     )
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0 if result.get("ok") else 1

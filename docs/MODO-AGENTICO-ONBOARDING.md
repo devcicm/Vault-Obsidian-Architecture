@@ -78,10 +78,10 @@ que sí se revisó.
 |---|---|---|---|
 | 0 | Confirmar que el proyecto **no** tiene vault | — | si lo que hay es un vault viejo, esto no aplica: es sanación |
 | 1 | Copiar / apuntar al proyecto en solo lectura | — | dónde vive el vault destino (fuera de git si el proyecto es ajeno) |
-| 2 | Crear el vault vacío | `vault_init` | la versión objetivo del estándar |
+| 2 | Crear el vault vacío y registrar el proyecto | `vault_init` + `vault_project --add` | la versión objetivo del estándar y el slug del proyecto (requisito previo para que la fase 3 no falle por AP-63) |
 | 3 | **Documentación suelta preexistente** | `vault_migrate_docs` | qué `.md` del repo es documentación y cuál es andamiaje |
-| 4 | Poblar desde el código y la historia | `vault_onboard` | el alcance: `--skip`, `--max-commits`, `--max-modules` |
-| 5 | Verificar con el criterio del consumidor | `vault_audit`, `vault_norms --audit`, `vault_mermaid_check` | qué hallazgo es deuda real y cuál es artefacto de la medida |
+| 4 | Poblar desde el código y la historia (Greenfield o Brownfield) | `vault_onboard --mode auto\|greenfield\|brownfield [--deep-ast] [--post-check]` | el modo, el alcance (`--skip`, `--max-commits`, `--max-modules`) y si activar análisis AST profundo (`PAT-10`) |
+| 5 | Verificar con el criterio del consumidor | `vault_audit` (revisando `toReach100`), `vault_norms --audit`, `vault_mermaid_check` | qué hallazgo es deuda real y cuál es artefacto de la medida |
 | 6 | Escribir a mano lo que se declaró omitido | `vault_write` y las `*_save` | todo: esta fase es la que no se automatiza |
 | 7 | Índices, grafo y vocabulario | `vault_reindex`, `vault_graph`, `vault_tags` | el vocabulario propio del dominio |
 
