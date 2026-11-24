@@ -81,7 +81,12 @@ def entorno(vault: Optional[Path] = None, quitar: tuple = (), **extra: Any) -> D
     `quitar` retira variables heredadas que cambiarían la resolución de la raíz
     (p. ej. `VAULT_PERMISSIVE_ROOT`); `extra` añade o sustituye.
     """
-    env = dict(os.environ, PYTHONIOENCODING="utf-8", VAULT_AGENT="pytest")
+    env = dict(
+        os.environ,
+        PYTHONIOENCODING="utf-8",
+        PYTHONDONTWRITEBYTECODE="1",
+        VAULT_AGENT="pytest",
+    )
     if vault is not None:
         env.update(VAULT_ROOT=str(vault), VAULT_STRICT_ROOT="1")
     for nombre in quitar:

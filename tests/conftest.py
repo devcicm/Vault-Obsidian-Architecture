@@ -83,11 +83,29 @@ def pytest_collection_modifyitems(config, items):
     from vault.meta_toolkit.estandar import inventario_tests, perfil_suite
 
     lentos = perfil_suite.lentos()
+    pesos = perfil_suite.pesos()
     for item in items:
         mod = reparto.modulo_de(item.nodeid)
         if mod in lentos:
             item.add_marker(pytest.mark.slow)
         item.add_marker(getattr(pytest.mark, inventario_tests.clasificar_modulo(mod)))
+
+    # Planificación LPT (Longest Processing Time First) cuando corre pytest-xdist:
+    # despachar primero los módulos más largos elimina colas de workers ociosos
+    # al cierre sin alterar el orden interno de los tests dentro de cada módulo.
+    en_paralelo = hasattr(config, "workerinput") or bool(getattr(config.option, "numprocesses", None))
+    if en_paralelo and pesos and len(items) > 1:
+        orden_primera_vez: dict[str, int] = {}
+        for idx, item in enumerate(items):
+            mod = reparto.modulo_de(item.nodeid)
+            if mod not in orden_primera_vez:
+                orden_primera_vez[mod] = idx
+        items.sort(
+            key=lambda it: (
+                -pesos.get(reparto.modulo_de(it.nodeid), 0.5),
+                orden_primera_vez[reparto.modulo_de(it.nodeid)],
+            )
+        )
 
     shard = reparto.leer_shard(os.environ.get("VAULT_SHARD"))
     if shard is None:

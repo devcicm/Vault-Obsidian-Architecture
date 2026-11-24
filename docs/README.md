@@ -42,6 +42,7 @@ cada cambio.
 | [Puertas de cierre](PUERTAS.md) | Qué mide cada puerta, cómo se arregla y por qué existe — derivado de `vault_gate.PUERTAS` y de los docstrings: se regenera con `vault_gate --fix-doc` |
 | [Carriles de verificación](CARRILES.md) | Qué exige cada carril (`dev`, `merge`, `release`) y qué bloquea — derivado de `carriles.py` con `vault_gate --fix-doc` |
 | [Plano de construcción](BLUEPRINT.md) | Derivado de los registros: se regenera con `vault_blueprint --blueprint`, no se edita |
+| [Mapa de conteos y registros](MAPA-CONTEOS-Y-REGISTROS.md) | Inventario vivo de archivos que fijan cifras, registros, baselines, aserciones y sus regeneradores |
 | [Seis capas conceptuales](architecture/layers.md) | Piezas y responsabilidades |
 | [ADR](adr/) | Decisiones de arquitectura registradas |
 | [Normas](sdd/04-antipatterns.md) | Catálogo AP/PAT/SP/CN derivado de `vault_norms_catalog`; cada norma es un paquete en [`normas/`](../normas/) con su `porque.md` |

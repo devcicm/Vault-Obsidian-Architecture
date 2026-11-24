@@ -262,6 +262,7 @@ _¿Qué cambio sistémico previene esta categoría de no conformidad en el futur
     atomic_write_text(path, conservar_nota_generada(path, sanitize_content(full, dry_run=False)[0],
                                          campos=("ncr_id",),
                                          patrones_cuerpo=(
+                                             r"^No conformidad NCR-\d{4}-\d+ .*$",
                                              r"^> \*\*NCR-.*$",
                                              r"^\| \*\*ID\*\* \| .*$",)))
     # El indice de seccion lo dispara el write path del kernel

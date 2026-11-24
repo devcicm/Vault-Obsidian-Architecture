@@ -71,7 +71,9 @@ def test_hay_puertos_en_los_contextos_que_publican_api():
     # +1 on 2026-11-17 (QA-FL-06, approved by the owner with the autoria <->
     # durabilidad budget): `reubicar_indices`, in Autoria. Quarantine add and
     # restore re-point the indexes through the owner of moving.
-    assert len(PUERTOS) == 69
+    # +2 on 2026-11-23 (Fase B CQRS, commit 7e0642de): `modo_acceso_tool` y
+    # `herramientas_alcance_global` en `meta_toolkit` (contrato CQRS oficial).
+    assert len(PUERTOS) == 71
     # `cli` queda fuera a propósito: es un adaptador de transporte y **nadie
     # importa de `cli/`**, así que no publica API. Exigirle un puerto obligaría
     # a inventar uno, que es justo lo contrario de lo que mide este fichero.

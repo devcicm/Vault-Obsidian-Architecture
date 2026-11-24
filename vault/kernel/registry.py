@@ -416,6 +416,7 @@ DOCS_DEL_REPO: Dict[str, tuple] = {
     "GUIA-DE-PRODUCCION.md": ("referencia", "promesas a quien instala y quién las ejerce, derivado"),
     "INSIGHTS.md": ("guia", "cómo inventariar y comparar vaults con vault_insights"),
     "INSTALACION-LIMPIA.md": ("guia", "quitar lo previo, instalar la wheel y registrar el MCP"),
+    "MAPA-CONTEOS-Y-REGISTROS.md": ("referencia", "mapa único de dónde se declara cada conteo, registro, baseline y assertion fijada"),
     "MAPA-MANIFIESTO.md": ("referencia", "cada titular del manifiesto clasificado"),
     "METRICAS.md": ("referencia", "métricas de desarrollo y producto, derivado"),
     "MODO-AGENTICO-ONBOARDING.md": ("guia", "poblar un vault desde un proyecto que no tenía"),
