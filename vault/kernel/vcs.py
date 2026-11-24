@@ -427,9 +427,111 @@ def ficheros_del_repo(raiz: Path) -> Dict[str, List[str]]:
     return ficheros_del_repo_con_estado(raiz)[0]
 
 
+def versiones_de_nota(raiz: Path, rel: str, limite: int = 100) -> List[Dict[str, Any]]:
+    """Historial git de una nota concreta, de la más reciente a la más antigua.
+
+    Solo lectura (`git log`, en `VERBOS_LECTURA` de AP-68). Devuelve lista vacía
+    si el vault no tiene repo git o la nota no tiene commits aún.
+    """
+    from datetime import datetime, timezone
+
+    raiz = Path(raiz)
+    if not hay_repo(raiz):
+        return []
+    rel_posix = str(rel).replace("\\", "/").lstrip("./")
+    r = _git(
+        raiz,
+        "log",
+        f"-{max(1, int(limite))}",
+        "--format=%H%x1f%aI%x1f%s",
+        "--",
+        rel_posix,
+    )
+    if r.returncode != 0:
+        return []
+    salida: List[Dict[str, Any]] = []
+    for linea in (r.stdout or "").splitlines():
+        if not linea.strip():
+            continue
+        partes = linea.split("\x1f")
+        if len(partes) < 3 or not es_hash(partes[0]):
+            continue
+        sha, fecha_iso, mensaje = partes[0], partes[1], partes[2]
+        try:
+            ts = datetime.fromisoformat(fecha_iso).astimezone(timezone.utc)
+        except ValueError:
+            ts = None
+        salida.append({
+            "sha": sha,
+            "timestamp": ts,
+            "timestamp_str": fecha_iso,
+            "mensaje": mensaje,
+            "origen": "git",
+        })
+    return salida
+
+
+def contenido_en_commit(raiz: Path, sha: str, rel: str) -> Optional[str]:
+    """Lee el contenido exacto de `rel` en el commit `sha` (`git show`, lectura AP-68)."""
+    raiz = Path(raiz)
+    if not hay_repo(raiz) or not es_hash(sha):
+        return None
+    rel_posix = str(rel).replace("\\", "/").lstrip("./")
+    r = _git(raiz, "show", f"{sha}:{rel_posix}")
+    if r.returncode != 0:
+        return None
+    return r.stdout
+
+
+def asegurar_version_en_git(raiz: Path, rel: str, mensaje: Optional[str] = None) -> Dict[str, Any]:
+    """Garantiza que el contenido actual en disco de `rel` existe en un commit git.
+
+    Si `rel` no tiene cambios sin commitear respecto a `HEAD`, no crea un commit
+    redundante y devuelve el `sha` del último commit de esa nota. Si `rel` está
+    sin rastrear o modificado en el árbol de trabajo (p. ej. al cambiar desde
+    `snapshots`/`diff` a `git`, o en llamadas en proceso sin `wrap_main`), hace
+    staging solo de `rel` y commitea antes de que la nueva escritura lo tape.
+    """
+    raiz = Path(raiz)
+    if not hay_repo(raiz):
+        return {"stored": False, "motivo": "el vault no tiene repositorio git"}
+    rel_posix = str(rel).replace("\\", "/").lstrip("./")
+    asegurar_ignorados(raiz)
+
+    # Comprobar si `rel` tiene cambios pendientes o no está rastreada.
+    st = _git(raiz, "status", "--porcelain", "--", rel_posix)
+    if st.returncode != 0:
+        return {"stored": False, "motivo": (st.stderr or "").strip()[:300] or "git status fallo"}
+
+    sucia = bool((st.stdout or "").strip())
+    if not sucia:
+        previas = versiones_de_nota(raiz, rel_posix, limite=1)
+        if previas:
+            return {"stored": True, "committed": False, "sha": previas[0]["sha"]}
+        # Puede estar ignorada por .gitignore (no-.md o carpeta ignorada).
+        return {"stored": False, "motivo": "la ruta esta ignorada o sin historial en git"}
+
+    entorno = identidad_de_commit(raiz)
+    add = _git(raiz, "add", "--", rel_posix, env=entorno)
+    if add.returncode != 0:
+        return {"stored": False, "motivo": (add.stderr or "").strip()[:300] or "git add fallo"}
+    msg = mensaje or f"vault(pre-edit): {rel_posix}"
+    commit = _git(raiz, "commit", "-m", msg, "--", rel_posix, env=entorno)
+    salida = (commit.stdout or "") + (commit.stderr or "")
+    if commit.returncode != 0:
+        if "nothing to commit" in salida or "no changes added" in salida:
+            previas = versiones_de_nota(raiz, rel_posix, limite=1)
+            if previas:
+                return {"stored": True, "committed": False, "sha": previas[0]["sha"]}
+        return {"stored": False, "motivo": salida.strip()[:300] or "git commit fallo"}
+    sha_r = _git(raiz, "rev-parse", "HEAD")
+    return {"stored": True, "committed": True, "sha": (sha_r.stdout or "").strip()}
+
+
 __all__ = ["IGNORADOS", "IGNORADOS_EN_GIT", "IGNORADOS_POR_RIESGO",
            "IDENTIDAD_LOCAL", "asegurar_ignorados", "hay_repo", "es_hash",
            "commit_de_operacion", "commits", "commits_con_estado",
            "contenido_del_commit", "ficheros_del_repo",
            "ficheros_del_repo_con_estado", "identidad_de_commit",
-           "reparar_indice"]
+           "reparar_indice", "versiones_de_nota", "contenido_en_commit",
+           "asegurar_version_en_git"]

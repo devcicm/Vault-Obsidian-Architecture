@@ -106,10 +106,12 @@ def test_un_fichero_de_politica_ilegible_falla_cerrado(vault):
     (vault / "00_System" / "inmutable.json").write_text("{esto no es json", encoding="utf-8")
     with pytest.raises(vault_io.PoliticaInvalidaError):
         vault_io.inmutables_declaradas(vault)
-    with pytest.raises(vault_io.PoliticaInvalidaError):
-        vault_write.vault_write(
-            folder="19_Audits", title="nota", tags=["prueba"], meta={"agent": "opencode"},
-            content=f"{LARGO}\nNo se debe escribir.\n")
+    res = vault_write.vault_write(
+        folder="19_Audits", title="nota", tags=["prueba"], meta={"agent": "opencode"},
+        content=f"{LARGO}\nNo se debe escribir.\n")
+    assert res.get("ok") is False, res
+    assert res.get("error_code") == vault_io.PoliticaInvalidaError.codigo, res
+    assert not (vault / "19_Audits" / "nota.md").exists()
 
 
 

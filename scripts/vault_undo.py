@@ -62,25 +62,40 @@ def _ruta_fuera_del_vault(path: str) -> Optional[Dict[str, Any]]:
 def get_history_versions(note_path: str) -> List[Dict[str, Any]]:
     """Return sorted list of version metadata for a note (newest first).
 
-    Delega en `vault.kernel.historia` (v41.3): el prefijo `carpeta__stem-` que
-    filtraba aquí también casaba con las versiones de `stem-otra.md`, y el orden
-    por mtime lo deshace cualquier copia del vault.
+    Delega en `vault.kernel.historia.linea_temporal`: une snapshots, deltas
+    `.patches.jsonl` y commits git sin mezclar notas ni depender de mtime.
     """
     # Sin exigir que la nota exista: la versión de una nota borrada es justo la
     # que más falta hace encontrar (CIA-A, 2026-10-10).
-    rel = (_raiz() / note_path).relative_to(_raiz()).as_posix()
+    raiz = _raiz()
+    rel = (raiz / note_path).relative_to(raiz).as_posix()
     versions: List[Dict[str, Any]] = []
-    for v in historia.versiones(_history_dir(), rel):
-        try:
-            st = v["path"].stat()
-        except OSError:
-            continue
-        versions.append({
-            "filename": v["filename"],
-            "size_bytes": st.st_size,
-            "modified": datetime.fromtimestamp(st.st_mtime, tz=timezone.utc).isoformat(),
-            "timestamp": v["timestamp"].isoformat(),
-        })
+    for v in historia.linea_temporal(raiz, rel, dir_historial=_history_dir()):
+        origen = v.get("origen", "snapshots")
+        ts = v.get("timestamp")
+        ts_iso = ts.isoformat() if ts is not None else str(v.get("timestamp_str") or "")
+        if origen == "snapshots":
+            try:
+                st = v["path"].stat()
+            except OSError:
+                continue
+            versions.append({
+                "filename": v["filename"],
+                "origen": origen,
+                "size_bytes": st.st_size,
+                "modified": datetime.fromtimestamp(st.st_mtime, tz=timezone.utc).isoformat(),
+                "timestamp": ts_iso,
+                "_entry": v,
+            })
+        else:
+            versions.append({
+                "filename": v["filename"],
+                "origen": origen,
+                "size_bytes": int(v.get("size_bytes") or 0),
+                "modified": ts_iso,
+                "timestamp": ts_iso,
+                "_entry": v,
+            })
     return versions
 
 
@@ -158,8 +173,18 @@ def vault_undo(
             f"No se encontraron versiones en .history/ para: {path}",
         )
 
+    rel_posix = note_path.relative_to(vault_root).as_posix()
     if version is None:
         target = versions[0]
+        if note_path.exists() and len(versions) > 1 and target.get("origen") == "git":
+            actual_txt = note_path.read_text(encoding="utf-8", errors="replace")
+            for cand in versions:
+                txt = historia.contenido_de_version(
+                    vault_root, rel_posix, cand.get("_entry") or cand, dir_historial=_history_dir()
+                )
+                if txt is not None and txt != actual_txt:
+                    target = cand
+                    break
     else:
         target = next((v for v in versions if v["filename"] == version), None)
         if target is None:
@@ -169,8 +194,14 @@ def vault_undo(
                 f"Version '{version}' no encontrada. Disponibles: {available}",
             )
 
-    history_file = _history_dir() / target["filename"]
-    restored_content = history_file.read_text(encoding="utf-8", errors="replace")
+    restored_content = historia.contenido_de_version(
+        vault_root, rel_posix, target.get("_entry") or target, dir_historial=_history_dir()
+    )
+    if restored_content is None:
+        return emit_error(
+            "vault_undo", "FILE_READ_ERROR",
+            f"No se pudo reconstruir el contenido de la version '{target['filename']}'",
+        )
 
     if not note_path.exists():
         # CIA-A: la nota se borró (`vault_delete` guardó su versión). Vuelve a
@@ -251,11 +282,15 @@ def vault_undo_list(path: str) -> Dict[str, Any]:
             "vault_undo", "HISTORY_NOT_FOUND",
             f"No se encontraron versiones en .history/ para: {path}",
         )
+    public_versions = [
+        {k: val for k, val in v.items() if k != "_entry"}
+        for v in versions
+    ]
     return {
         "ok": True,
         "note": path,
-        "versions": versions,
-        "total": len(versions),
+        "versions": public_versions,
+        "total": len(public_versions),
     }
 
 

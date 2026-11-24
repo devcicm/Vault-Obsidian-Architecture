@@ -54,6 +54,8 @@ from vault_entorno import leer as _env
 # siguen funcionando sin tocarse. No-derogación: la puerta de entrada histórica
 # no se retira porque haya aparecido otra mejor.
 import vault_raiz as _raiz
+from vault.kernel import historia as _historia
+from vault.kernel import vcs as _vcs
 from vault.kernel.errors_trace import trazas_en_lote
 from vault.kernel.fallos import FalloDeDominio
 from vault.kernel.indices_structural import DISPOSITIVOS_WINDOWS, es_dispositivo_windows
@@ -663,6 +665,33 @@ def _exigir_decision_cerrada_valida(path: Path, text: Optional[str]) -> None:
             "su porqué (no el agente que la redactó); si aún se discute, dejarla en draft.")
 
 
+def _nota_base_inmutable_protegida(path: Path, relativa: str, seccion: str) -> Optional[str]:
+    """Por qué reescribir `path` viola `base_inmutable`, o None si es sucesora evolutiva.
+
+    En las secciones declaradas bajo `base_inmutable` en `00_System/reglas.json`,
+    la nota original sellada no se muta nunca. Una nota sucesora que declare
+    `evolves_from:` en su frontmatter actual sí puede evolucionar (bajo el modo
+    de historial vigente) mientras la base original permanece intacta byte a byte.
+    """
+    from vault.kernel.frontmatter_parsing import FrontmatterParseError, parse_frontmatter_with_body
+
+    try:
+        fm, _ = parse_frontmatter_with_body(path.read_text(encoding="utf-8", errors="replace"))
+    except (OSError, FrontmatterParseError):
+        fm = {}
+    evolves = (fm or {}).get("evolves_from")
+    if isinstance(evolves, str) and evolves.strip():
+        return None
+    if isinstance(evolves, list) and any(isinstance(x, str) and x.strip() for x in evolves):
+        return None
+    return (
+        f"la nota base '{relativa}' vive en la seccion '{seccion}', declarada en "
+        f"`base_inmutable` dentro de {FICHERO_REGLAS}: no se reescribe. "
+        f"Crea una nota sucesora que declare `evolves_from: \"[[{path.stem}]]\"` "
+        f"para evolucionarla sin alterar la base."
+    )
+
+
 def _exigir_politica_de_inmutabilidad(path: Path, text: Optional[str] = None) -> None:
     """La política de inmutabilidad, en el punto donde se muta.
 
@@ -690,6 +719,10 @@ def _exigir_politica_de_inmutabilidad(path: Path, text: Optional[str] = None) ->
     seccion = seccion_de(relativa)
     if seccion and seccion in reglas["inmutable"]:
         raise NotaInmutableError(seccion, relativa)
+    if seccion and seccion in base_inmutable_declarada(Path(raiz)):
+        motivo_base = _nota_base_inmutable_protegida(path, relativa, seccion)
+        if motivo_base:
+            raise NotaInmutableError(seccion, relativa, motivo=motivo_base)
     motivo = _fuente_archivada_reescrita(path, relativa, text)
     if motivo:
         raise NotaInmutableError(seccion, relativa, motivo=motivo)
@@ -899,6 +932,10 @@ def _cargar_politica(fichero: Path) -> Optional[dict]:
     return datos
 
 
+#: Claves escalares (no lista) válidas en `00_System/reglas.json` y sus valores permitidos.
+CLAVES_ESCALARES_REGLAS = {"historial": _historia.MODOS_DE_HISTORIAL}
+
+
 def _leer_politica(fichero: Path, claves: tuple, requeridas: tuple = ()) -> dict:
     """Una politica existente invalida detiene la operacion."""
     # AP-70: claves faltantes, o desconocidas en una politica obligatoria, bloquean.
@@ -912,8 +949,18 @@ def _leer_politica(fichero: Path, claves: tuple, requeridas: tuple = ()) -> dict
             f"Claves de politica invalidas en {fichero}: desconocidas={sorted(desconocidas)}, faltantes={sorted(faltantes)}")
     datos = {clave: valor for clave, valor in datos.items() if clave in claves}
     for clave in claves:
-        if clave in datos and (not isinstance(datos[clave], list) or
-                               any(not isinstance(x, str) or not x.strip() for x in datos[clave])):
+        if clave not in datos:
+            continue
+        if clave in CLAVES_ESCALARES_REGLAS:
+            permitidos = CLAVES_ESCALARES_REGLAS[clave]
+            val = datos[clave]
+            if not isinstance(val, str) or val.strip() not in permitidos:
+                raise PoliticaInvalidaError(
+                    f"La politica {fichero} requiere en `{clave}` uno de {list(permitidos)}, recibido: {val!r}"
+                )
+            datos[clave] = val.strip()
+        elif (not isinstance(datos[clave], list) or
+              any(not isinstance(x, str) or not x.strip() for x in datos[clave])):
             raise PoliticaInvalidaError(f"La politica {fichero} requiere una lista de secciones en {clave}")
     return datos
 
@@ -956,10 +1003,51 @@ FICHERO_REGLAS = "00_System/reglas.json"
 
 #: Las claves de `reglas.json` que alguien lee. `sustitucion` lista las
 #: secciones donde una nota cerrada se sustituye en vez de reescribirse
-#: (`vault_registry.MODOS_DE_VERSION`, opt-in); `comandos_de_prueba`, los
-#: comandos con que el dueño dice que se prueba su proyecto, para que el
+#: (`vault_registry.MODOS_DE_VERSION`, opt-in); `base_inmutable` protege la nota
+#: base sellada y permite evolucionar sucesoras con `evolves_from:`; `historial`
+#: elige el backend (`snapshots` | `git` | `diff` | `auto`); `comandos_de_prueba`,
+#: los comandos con que el dueño dice que se prueba su proyecto, para que el
 #: adaptador de cliente los publique sin inventarlos.
-CLAVES_DE_REGLAS = ("inmutable", "secciones", "no_borrar", "sustitucion", "comandos_de_prueba")
+CLAVES_DE_REGLAS = (
+    "inmutable",
+    "secciones",
+    "no_borrar",
+    "sustitucion",
+    "base_inmutable",
+    "historial",
+    "comandos_de_prueba",
+)
+
+
+def _validar_conflictos_de_reglas(base: Path, datos: dict, inmutables_totales: List[str]) -> None:
+    """AP-70: impide combinaciones contradictorias de inmutabilidad o historial."""
+    set_inm = set(inmutables_totales)
+    set_sus = {s.strip() for s in (datos.get("sustitucion") or []) if isinstance(s, str) and s.strip()}
+    set_base = {s.strip() for s in (datos.get("base_inmutable") or []) if isinstance(s, str) and s.strip()}
+    pares = (
+        ("inmutable", set_inm, "sustitucion", set_sus),
+        ("inmutable", set_inm, "base_inmutable", set_base),
+        ("sustitucion", set_sus, "base_inmutable", set_base),
+    )
+    for nombre_a, conj_a, nombre_b, conj_b in pares:
+        choque = sorted(conj_a & conj_b)
+        if choque:
+            raise PoliticaInvalidaError(
+                f"Conflicto de modos en {FICHERO_REGLAS}: las secciones {choque} "
+                f"no pueden estar a la vez en `{nombre_a}` y `{nombre_b}`."
+            )
+
+
+def _cargar_reglas_validadas(raiz: Optional[Path] = None) -> tuple:
+    base = Path(raiz) if raiz is not None else _raiz.get_vault_root()
+    inmutables = list(inmutables_declaradas(base))
+    datos = _leer_politica(base / FICHERO_REGLAS, CLAVES_DE_REGLAS)
+    for clave in ("inmutable", "secciones"):
+        for s in (datos.get(clave) or []) if isinstance(datos.get(clave), list) else []:
+            if str(s).strip() and str(s).strip() not in inmutables:
+                inmutables.append(str(s).strip())
+    _validar_conflictos_de_reglas(base, datos, inmutables)
+    return base, datos, inmutables
 
 
 def reglas_declaradas(raiz: Optional[Path] = None) -> Dict[str, List[str]]:
@@ -968,16 +1056,10 @@ def reglas_declaradas(raiz: Optional[Path] = None) -> Dict[str, List[str]]:
     Devuelve `{"inmutable": [...], "no_borrar": [...]}`. `inmutable` es la
     union de `inmutable.json` (lo que ya estaba publicado) y de `reglas.json`;
     `no_borrar` solo puede venir de `reglas.json`. Un fichero ausente no
-    impone reglas; uno ilegible o invalido detiene la operacion.
+    impone reglas; uno ilegible, invalido o contradictorio detiene la operacion.
     """
-    base = Path(raiz) if raiz is not None else _raiz.get_vault_root()
-    inmutables = list(inmutables_declaradas(base))
+    _base, datos, inmutables = _cargar_reglas_validadas(raiz)
     no_borrar: List[str] = []
-    datos = _leer_politica(base / FICHERO_REGLAS, CLAVES_DE_REGLAS)
-    for clave in ("inmutable", "secciones"):
-        for s in (datos.get(clave) or []) if isinstance(datos.get(clave), list) else []:
-            if str(s).strip() and str(s).strip() not in inmutables:
-                inmutables.append(str(s).strip())
     for s in (datos.get("no_borrar") or []) if isinstance(datos.get("no_borrar"), list) else []:
         if str(s).strip():
             no_borrar.append(str(s).strip())
@@ -985,14 +1067,38 @@ def reglas_declaradas(raiz: Optional[Path] = None) -> Dict[str, List[str]]:
 
 
 def _lista_de_reglas(clave: str, raiz: Optional[Path] = None) -> List[str]:
-    base = Path(raiz) if raiz is not None else _raiz.get_vault_root()
-    datos = _leer_politica(base / FICHERO_REGLAS, CLAVES_DE_REGLAS)
+    _base, datos, _inmutables = _cargar_reglas_validadas(raiz)
     return [s.strip() for s in datos.get(clave) or [] if s.strip()]
 
 
 def sustitucion_declarada(raiz: Optional[Path] = None) -> List[str]:
     """Las secciones donde este vault declara que lo cerrado se sustituye."""
     return _lista_de_reglas("sustitucion", raiz)
+
+
+def base_inmutable_declarada(raiz: Optional[Path] = None) -> List[str]:
+    """Las secciones donde la nota base es inmutable y las sucesoras con `evolves_from` evolucionan."""
+    return _lista_de_reglas("base_inmutable", raiz)
+
+
+def modo_historial_declarado(raiz: Optional[Path] = None) -> str:
+    """El modo de historial declarado en `00_System/reglas.json` (`snapshots` por defecto)."""
+    _base, datos, _inmutables = _cargar_reglas_validadas(raiz)
+    return str(datos.get("historial") or "snapshots")
+
+
+def modo_historial_efectivo(raiz: Optional[Path] = None) -> str:
+    """Resuelve `auto` a `git` (si hay repo) o `diff`; falla cerrado si `git` no tiene repo."""
+    base = Path(raiz) if raiz is not None else _raiz.get_vault_root()
+    modo = modo_historial_declarado(base)
+    if modo == "auto":
+        return "git" if _vcs.hay_repo(base) else "diff"
+    if modo == "git" and not _vcs.hay_repo(base):
+        raise PoliticaInvalidaError(
+            f"La politica {FICHERO_REGLAS} declara `historial: \"git\"` pero el vault "
+            f"no tiene repositorio git inicializado. Usa `auto` o `diff`, o inicializa git."
+        )
+    return modo
 
 
 def comandos_de_prueba_declarados(raiz: Optional[Path] = None) -> List[str]:
@@ -1032,32 +1138,41 @@ def nota_es_inmutable(nota: Path, raiz: Optional[Path] = None) -> Optional[str]:
 
 
 def guardar_version_actual(nota: Path) -> str:
-    """Copia la versión actual de una nota a `.history/` antes de taparla.
+    """Versiona la nota actual antes de taparla según el modo de historial del vault.
 
     **El dueño único de "versionar antes de sobrescribir"**: lo usan
-    `vault_write` (que la crea), `vault_undo` (que la restaura) y
-    `vault_merge` (que la fusiona). Estaba en tres sitios con tres cuerpos
-    (CN-05), y el cuarto —la migración— lo importaba desde otro contexto con
-    un símbolo privado, que es justo lo que la puerta de puertos veta
-    (AP-58).
+    `vault_write`, `vault_undo` y `vault_merge`.
 
-    Vive aquí porque es lo que sabe escribir sin romper: `atomic_write_text`
-    (la escritura atómica) y `vault.kernel.historia` (el nombre de la
-    versión). El nombre sale del FICHERO, no del título (CN-01): una nota
-    heredada (`_nota_heredada`) tiene otro stem, y su versión quedaba donde
-    ni `vault_undo` ni `vault_diff` la buscan.
+    Modos soportados (`00_System/reglas.json`, clave `historial`):
+    - `snapshots` (default): copia completa en `.history/<clave>-<ts>.md`.
+    - `diff`: delta incremental en `.history/<clave>.patches.jsonl` (`O(delta)`).
+    - `git`: garantiza commit git del estado previo sin duplicar `.history/*.md`
+      (con fallback a `diff` si la ruta está ignorada por `.gitignore`).
+    - `auto`: `git` si el vault tiene `.git`, de lo contrario `diff`.
 
-    Devuelve el nombre del fichero guardado.
+    Devuelve el identificador de versión guardado.
     """
-    from vault.kernel import historia
-
     nota = Path(nota)
     raiz = _raiz.get_vault_root()
     try:
         relativo = nota.relative_to(raiz).as_posix()
     except ValueError:
         relativo = nota.name
-    destino = historia.nombre_libre(raiz / ".history", relativo)
+
+    modo = modo_historial_efectivo(raiz)
+    if modo == "diff":
+        texto = nota.read_text(encoding="utf-8", errors="replace")
+        return _historia.anexar_patch(raiz / ".history", relativo, texto)
+    if modo == "git":
+        res = _vcs.asegurar_version_en_git(raiz, relativo)
+        if res.get("stored") and res.get("sha"):
+            return f"git:{res['sha'][:12]}"
+        # Si la ruta no es versionable en git (p. ej. ignorada por .gitignore),
+        # no se pierde el historial: cae a delta incremental en `.history/`.
+        texto = nota.read_text(encoding="utf-8", errors="replace")
+        return _historia.anexar_patch(raiz / ".history", relativo, texto)
+
+    destino = _historia.nombre_libre(raiz / ".history", relativo)
     destino.parent.mkdir(parents=True, exist_ok=True)
     atomic_write_text(destino, nota.read_text(encoding="utf-8", errors="replace"))
     return destino.name

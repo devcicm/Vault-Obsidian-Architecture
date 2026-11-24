@@ -1388,16 +1388,16 @@ def vault_write(
     # onboarding, que escribe por el dueno (medido el 2026-11-09).
 
     with file_lock(vault_path, timeout=10.0):
-        if vault_path.exists():
-            # El nombre sale del fichero, no de `slugify(title)`: una nota
-            # heredada (`_nota_heredada`) tiene otro stem, y su versión quedaba
-            # donde ni `vault_undo` ni `vault_diff` la buscan. Y dos escrituras
-            # en el mismo segundo ya no se pisan (v41.3, `vault.kernel.historia`).
-            # El dueño de "versionar antes de sobrescribir" es `vault_io`
-            # (v41.26): lo usan también `vault_undo` y `vault_merge`.
-            guardar_version_actual(vault_path)
-
         try:
+            if vault_path.exists():
+                # El nombre sale del fichero, no de `slugify(title)`: una nota
+                # heredada (`_nota_heredada`) tiene otro stem, y su versión quedaba
+                # donde ni `vault_undo` ni `vault_diff` la buscan. Y dos escrituras
+                # en el mismo segundo ya no se pisan (v41.3, `vault.kernel.historia`).
+                # El dueño de "versionar antes de sobrescribir" es `vault_io`
+                # (v41.26): lo usan también `vault_undo` y `vault_merge`.
+                guardar_version_actual(vault_path)
+
             # AP-70: la escritura común rechaza una política existente inválida.
             atomic_write_text(vault_path, final_content)
         except NotaInmutableError as exc:

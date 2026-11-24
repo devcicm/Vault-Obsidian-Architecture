@@ -45,14 +45,19 @@ def _history_dir() -> Path:
     return _repo().dir_historial
 
 
-def get_history(note_path: Path) -> List[str]:
-    """Get all historical versions sorted newest first.
-
-    Delega en `vault.kernel.historia` (v41.3): el prefijo casaba también con
-    las versiones de `stem-otra.md`.
-    """
+def _history_entries(note_path: Path) -> List[Dict[str, Any]]:
+    """Entradas completas de la línea temporal unificada (snapshots + diff + git)."""
     rel = note_path.resolve().relative_to(_raiz().resolve()).as_posix()
-    return [v["filename"] for v in historia.versiones(_history_dir(), rel)]
+    return historia.linea_temporal(_raiz(), rel, dir_historial=_history_dir())
+
+
+def get_history(note_path: Path) -> List[str]:
+    """Get all historical versions sorted newest first across all backends.
+
+    Delega en `vault.kernel.historia.linea_temporal`: une snapshots, `.patches.jsonl`
+    y commits git sin mezclar notas ni ordenar por mtime.
+    """
+    return [v["filename"] for v in _history_entries(note_path)]
 
 
 def _compute_hash(path: Path) -> Dict[str, Any]:
@@ -161,13 +166,15 @@ def vault_diff(
     stat_only: bool = False,
     hash_only: bool = False,
     context: int = 3,
+    timeline: bool = False,
 ) -> Dict[str, Any]:
     """
     Compare note versions or two arbitrary paths.
 
     Modes:
-      --path                       current vs most recent .history/
-      --path + --version           current vs specific .history/ version
+      --path                       current vs most recent historical version (snapshots/diff/git)
+      --path + --version           current vs specific version ID
+      --path + --timeline          full start-to-current evolution across all backends
       --compare A --with B         two explicit paths (absolute or vault-relative)
       --hash PATH                  hash only, no diff
       Any mode + --stat            stats only, no hunk content
@@ -200,7 +207,7 @@ def vault_diff(
         lines_b = path_b.read_text(encoding="utf-8", errors="replace").splitlines()
         return _run_diff(lines_a, lines_b, _relativa(path_a), _relativa(path_b), context, stat_only)
 
-    # ── Mode: note vs .history/ ───────────────────────────────────────────────
+    # ── Mode: note vs unified history (snapshots / diff / git) ───────────────
     if path is None:
         return emit_error("vault_diff", "MISSING_REQUIRED_ARG", f"Indica --path, o bien --compare y --with")
 
@@ -214,11 +221,14 @@ def vault_diff(
     if hash_only:
         return _compute_hash(note_path)
 
-    current_lines = note_path.read_text(encoding="utf-8", errors="replace").splitlines()
-    history = get_history(note_path)
+    rel = _relativa(note_path)
+    current_text = note_path.read_text(encoding="utf-8", errors="replace")
+    current_lines = current_text.splitlines()
+    entries = _history_entries(note_path)
+    history = [e["filename"] for e in entries]
 
-    if not history:
-        return {
+    if not entries:
+        out: Dict[str, Any] = {
             "ok": True,
             "path": path,
             "changed": False,
@@ -226,17 +236,52 @@ def vault_diff(
             "history": [],
             "message": "No historical versions found",
         }
+        if timeline:
+            out.update({"timeline": [], "total_versions": 0, "backends_used": []})
+        return out
+
+    if timeline:
+        # Más antigua primero para narrar inicio → estado actual.
+        cronologicas = list(reversed(entries))
+        primera = cronologicas[0]
+        old_text = historia.contenido_de_version(_raiz(), rel, primera, dir_historial=_history_dir())
+        old_lines = (old_text or "").splitlines()
+        result = _run_diff(old_lines, current_lines, primera["filename"], path, context, stat_only)
+        result["history"] = history
+        result["total_versions"] = len(cronologicas)
+        result["first_version"] = primera["filename"]
+        result["backends_used"] = list(dict.fromkeys(e["origen"] for e in cronologicas))
+        result["timeline"] = [
+            {
+                "id": e["filename"],
+                "origen": e["origen"],
+                "timestamp": e["timestamp"].isoformat() if e.get("timestamp") else e.get("timestamp_str", ""),
+            }
+            for e in cronologicas
+        ]
+        return result
 
     if version is None:
-        target_name = history[0]
-    elif version in history:
-        target_name = version
+        # En modo git, el commit HEAD puede coincidir byte a byte con el archivo actual:
+        # saltar ese reflejo de HEAD si existe una versión previa distinta.
+        target_entry = entries[0]
+        for candidato in entries:
+            texto_cand = historia.contenido_de_version(_raiz(), rel, candidato, dir_historial=_history_dir())
+            if texto_cand is not None and texto_cand != current_text:
+                target_entry = candidato
+                break
     else:
-        return emit_error("vault_diff", "VERSION_NOT_FOUND", f"Versión '{version}' inexistente. Disponibles: {history}")
+        target_entry = next((e for e in entries if e["filename"] == version), None)
+        if target_entry is None:
+            return emit_error("vault_diff", "VERSION_NOT_FOUND", f"Versión '{version}' inexistente. Disponibles: {history}")
 
-    old_lines = (_history_dir() / target_name).read_text(encoding="utf-8", errors="replace").splitlines()
-    result = _run_diff(old_lines, current_lines, target_name, path, context, stat_only)
+    old_text = historia.contenido_de_version(_raiz(), rel, target_entry, dir_historial=_history_dir())
+    if old_text is None:
+        return emit_error("vault_diff", "FILE_READ_ERROR", f"No se pudo recuperar el contenido de '{target_entry['filename']}'")
+    old_lines = old_text.splitlines()
+    result = _run_diff(old_lines, current_lines, target_entry["filename"], path, context, stat_only)
     result["history"] = history
+    result["backend"] = target_entry["origen"]
     return result
 
 
@@ -279,6 +324,8 @@ Ejemplos:
                         help="Archivo B para comparacion directa (requiere --compare)")
     parser.add_argument("--stat",     action="store_true",
                         help="Solo estadisticas (sin hunks) -- ideal para LLM")
+    parser.add_argument("--timeline", action="store_true",
+                        help="Evolucion completa inicio->actual uniendo snapshots, diff y git")
     parser.add_argument("--context",  type=int, default=3,
                         help="Lineas de contexto alrededor de cada cambio (default: 3)")
 
@@ -303,6 +350,7 @@ Ejemplos:
             version=args.version,
             stat_only=args.stat,
             context=args.context,
+            timeline=args.timeline,
         )
     else:
         parser.error("Provide --path, --hash, or --compare/--with")

@@ -1747,6 +1747,10 @@
             "type": "boolean",
             "description": "Solo estadisticas (sin hunks) -- ideal para LLM"
           },
+          "timeline": {
+            "type": "boolean",
+            "description": "Evolución completa inicio→actual uniendo snapshots, diff y git"
+          },
           "context": {
             "type": "integer",
             "description": "Lineas de contexto alrededor de cada cambio (default: 3)"

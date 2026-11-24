@@ -278,6 +278,12 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Número de versión a comparar (default: última)",
                 "validators": [],
             },
+            "timeline": {
+                "type": "boolean",
+                "required": False,
+                "description": "Evolución completa inicio→actual uniendo snapshots, diff y git",
+                "validators": [],
+            },
         },
         "guards": [],
         "side_effects": [],

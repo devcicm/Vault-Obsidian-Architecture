@@ -961,19 +961,36 @@ def _detect_decisiones_reescritas(barrido: Optional[List[Path]] = None) -> Dict[
         if not _cerrada(leida[0]):
             continue
         medidas += 1
-        versiones = list(reversed(historia.versiones(_raiz() / ".history", rel)))
+        versiones = list(reversed(historia.linea_temporal(_raiz(), rel)))
         if not versiones:
             sin_historia.append({"path": rel, "norm": "AP-75",
-                                 "detail": "sin versiones en .history/: no se sabe si el cuerpo "
-                                           "cambió después de cerrarse"})
+                                 "detail": "sin versiones en el historial (.history/ ni git): "
+                                           "no se sabe si el cuerpo cambió después de cerrarse"})
             continue
-        cierre = next((v for v in versiones
-                       if (p := _leer_nota_partida(v["path"])) and _cerrada(p[0])), None)
+
+        def _partir_version(entrada: Dict[str, Any]) -> Optional[Tuple[Dict[str, Any], str]]:
+            texto_v = historia.contenido_de_version(_raiz(), rel, entrada)
+            if texto_v is None:
+                return None
+            try:
+                fm_v, cuerpo_v = parse_frontmatter_with_body(texto_v)
+            except FrontmatterParseError:
+                return None
+            return fm_v or {}, cuerpo_v
+
+        cierre = None
+        cuerpo_al_cerrar = ""
+        for v in versiones:
+            partida = _partir_version(v)
+            if partida and _cerrada(partida[0]):
+                cierre = v
+                cuerpo_al_cerrar = partida[1]
+                break
         if cierre is None:
             continue  # closed in its last write: nothing was rewritten after it
-        cuerpo_al_cerrar = _leer_nota_partida(cierre["path"])[1]
         if huella_de_cuerpo(cuerpo_al_cerrar) != huella_de_cuerpo(leida[1]):
             reescritas.append({"path": rel, "norm": "AP-75", "closed_in": cierre["filename"],
+                               "backend": cierre.get("origen", "snapshots"),
                                "detail": "el cuerpo cambió después de cerrarse; una decisión "
                                          "cerrada se sustituye (vault_supersede), no se reescribe"})
     return {"norm": "AP-75", "checked": medidas, "rewritten": reescritas,
