@@ -654,6 +654,19 @@ def _escribir_adapter(ruta, texto: str, force: bool) -> bool:
             os.link(temporal, ruta)
         except FileExistsError:
             return False
+        except OSError:
+            # Sistemas de ficheros sin hard links (FAT32, exFAT, algunos mounts):
+            # creación exclusiva atómica sin sobrescribir ficheros existentes.
+            try:
+                fd = os.open(str(ruta), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o666)
+            except FileExistsError:
+                return False
+            try:
+                datos = temporal.read_bytes()
+                os.write(fd, datos)
+                os.fsync(fd)
+            finally:
+                os.close(fd)
     finally:
         with contextlib.suppress(OSError):
             os.unlink(temporal)

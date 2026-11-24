@@ -89,14 +89,21 @@ PRIMER_VALIDADOR = "v25"
 
 _ISO = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}")
 
+def _estados_de_tool(registro: Tuple[Dict[str, Any], ...], tool_name: str) -> Tuple[str, ...]:
+    """Extrae la tupla de estados de `tool_name` en `LIFECYCLE_REGISTRY` o falla con `ValueError`."""
+    for row in registro:
+        if row.get("tool") == tool_name:
+            return tuple(row["states"])
+    raise ValueError(f"LIFECYCLE_REGISTRY no declara estados para la tool {tool_name!r}")
+
+
 #: El contrato vigente, campo a campo. El orden es el de `faltantes`.
 #: `clases`: a qué clase de nota se le exige. `requerido_desde`: versión en que
 #: `vault_validate` empezó a reprobar su ausencia (None si no la reprueba).
 CAMPOS: Dict[str, Dict[str, Any]] = {
     "requirement_state": {"tipo": "string", "nivel": "opcional", "clases": ("contenido",),
                           "requerido_desde": None, "valores_desde": "v42",
-                          "valores": tuple(next(row["states"] for row in LIFECYCLE_REGISTRY
-                                                if row["tool"] == "vault_requirement_save"))},
+                          "valores": _estados_de_tool(LIFECYCLE_REGISTRY, "vault_requirement_save")},
     "solution_ref": {"tipo": "string", "nivel": "opcional", "clases": ("contenido",),
                      "requerido_desde": None},
     "solved_by": {"tipo": "string", "nivel": "opcional", "clases": ("contenido",),

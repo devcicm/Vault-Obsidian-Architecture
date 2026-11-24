@@ -34,6 +34,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.kernel import rutas
 from vault.kernel.rutas import cita_repo
 from vault_errors import wrap_main
+import vault_fundamentals_catalog
+import vault_gate
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -228,6 +230,16 @@ def count_tools_read() -> int:
 
 def count_scripts() -> int:
     return len(list((REPO_ROOT / "scripts").glob("*.py")))
+
+
+def count_iso_coverage() -> int:
+    """Estándares ISO cubiertos según `FRAMEWORK_REGISTRIES['iso_coverage']`."""
+    return len(vault_fundamentals_catalog.FRAMEWORK_REGISTRIES.get("iso_coverage", ()))
+
+
+def count_gates_total() -> int:
+    """Puertas registradas en `vault_gate.PUERTAS`."""
+    return len(vault_gate.PUERTAS)
 
 
 #: A-03 del estudio vault-dev-codex: el conteo de la suite es un
@@ -478,6 +490,23 @@ COUNTED_FACTS: List[Dict] = [
         "description": "Tools del catalogo con mode=read",
         "value": count_tools_read,
         "patterns": [r'"total": \d+, "read": (\d+), "write"'],
+    },
+    {
+        "id": "iso_coverage",
+        "description": "Estándares ISO en FRAMEWORK_REGISTRIES['iso_coverage']",
+        "value": count_iso_coverage,
+        "patterns": [
+            r"(\d+)\s+normas ISO",
+            r"(\d+)\s+estándares ISO",
+        ],
+    },
+    {
+        "id": "gates_total",
+        "description": "Puertas registradas en vault_gate.PUERTAS",
+        "value": count_gates_total,
+        "patterns": [
+            r"(\d+)\s+puertas de calidad",
+        ],
     },
     {
         "id": "tests",

@@ -20,7 +20,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Tuple
+from typing import Any, Callable, Optional, Tuple
 
 from ..kernel.contexto import VaultContext
 
@@ -201,31 +201,24 @@ class RepositorioGobernanza:
         self._ctx.escritor.escribir(self.bitacora_cambios_lineas, "")
         return True
 
-    def leer_movimientos(self, congelada: Path) -> list:
-        """Every recorded move, oldest first: the frozen `move-log.json`, then the log.
+    def leer_movimientos_con_estado(self, congelada: Path) -> "LecturaMovimientos":
+        """Every recorded move plus any corruption on the frozen legacy `move-log.json`.
 
-        bigo-inmutabilidad, S8 (b): the change log is the single record of a
-        move. `vault_move` no longer writes `move-log.json` (its owner, Grafo,
-        declares the path the caller passes as `congelada`); a vault from before
-        keeps it, frozen, and it is read first and as it always was — its read
-        errors propagate as `json.loads(read_text())` raised them, so its
-        readers keep their handling. A value that is not a list is a
-        `TypeError`.
-
-        Then the moves the log holds: the `moved` rows that carry `moved_at`,
-        the instant of the move that only `vault_move` records, in the record
-        shape of the frozen file (`from`, `to`, `timestamp`). Older `moved`
-        rows, written next to a `move-log.json` record, carry no `moved_at`:
-        that record already holds them, and counting them again would show one
-        move twice. A log that cannot be read adds no moves; the log's own
-        readers (`vault_change_log --query`) report it.
+        Isolates a corrupted frozen `move-log.json` into `legado_roto` (AP-51:
+        visible, never silent) while still reading all valid `moved_at` rows
+        from `.change-log.jsonl` so new moves are never blinded by legacy file
+        corruption.
         """
         movimientos: list = []
+        legado_roto: Optional[str] = None
         if congelada.exists():
-            datos = json.loads(congelada.read_text(encoding="utf-8"))
-            if not isinstance(datos, list):
-                raise TypeError(f"se esperaba una lista, hay {type(datos).__name__}")
-            movimientos.extend(datos)
+            try:
+                datos = json.loads(congelada.read_text(encoding="utf-8"))
+                if not isinstance(datos, list):
+                    raise TypeError(f"se esperaba una lista, hay {type(datos).__name__}")
+                movimientos.extend(datos)
+            except (OSError, ValueError, TypeError) as exc:
+                legado_roto = f"{type(exc).__name__}: {exc}"
         try:
             entradas = self.leer_bitacora_cambios().entradas
         except (OSError, ValueError, TypeError):
@@ -236,7 +229,16 @@ class RepositorioGobernanza:
                 movimientos.append({"from": entrada.get("path"),
                                     "to": entrada.get("new_path"),
                                     "timestamp": entrada["moved_at"]})
-        return movimientos
+        return LecturaMovimientos(movimientos=movimientos, legado_roto=legado_roto)
+
+    def leer_movimientos(self, congelada: Path) -> list:
+        """Every recorded move, oldest first: the frozen `move-log.json`, then the log.
+
+        Delegates to `leer_movimientos_con_estado` so a corrupted frozen
+        `move-log.json` no longer blinds the live `.change-log.jsonl` moves.
+        Callers that need to surface legacy corruption read `leer_movimientos_con_estado`.
+        """
+        return self.leer_movimientos_con_estado(congelada).movimientos
 
     @property
     def fundamentos_json(self) -> Path:
@@ -273,6 +275,14 @@ class LecturaBitacora:
 
     entradas: list
     lineas_rotas: Tuple[int, ...] = ()
+
+
+@dataclass(frozen=True)
+class LecturaMovimientos:
+    """One read of recorded moves plus any corruption on the frozen `move-log.json`."""
+
+    movimientos: list
+    legado_roto: Optional[str] = None
 
 
 def _sanear_valores(valor: Any, sanear: Callable[[str], str]) -> Any:

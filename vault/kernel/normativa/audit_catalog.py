@@ -110,8 +110,10 @@ def es_documentacion_del_estandar(rel: str, contenido: Optional[str] = None) -> 
 
 #: Las familias de salud, con dueño y en un solo sitio.
 #:
-#: `healthScore` parte de 100 y resta 22 penalizaciones independientes cuyos
-#: topes suman 285. Eso significa que **satura**: basta con estar mal en dos o
+#: `healthScore` parte de 100 y resta las penalizaciones independientes de
+#: `PENALIZACIONES` (históricamente 22 cuyos topes sumaban 285; el número vivo
+#: y la suma de topes salen siempre del registro `PENALIZACIONES`, no de esta
+#: prosa, AP-47). Eso significa que **satura**: basta con estar mal en dos o
 #: tres familias distintas para llegar a 0, y a partir de ahí un vault regular y
 #: uno catastrófico puntúan igual. No es una hipótesis — `vault-sandbox/`, el
 #: vault de referencia de este repo y recién reconstruido, puntúa 0.
