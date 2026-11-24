@@ -163,6 +163,13 @@
       "purpose": "Nivel de log del servidor MCP (`info` por defecto). Solo la lee el `.mjs`."
     },
     {
+      "name": "VAULT_MCP_MAX_READS",
+      "type": "entero",
+      "default": 4,
+      "context": "meta_toolkit",
+      "purpose": "Máximo de llamadas MCP de solo lectura (`access_mode: read`) ejecutadas en paralelo por el coordinador CQRS del servidor MCP. Solo la lee el `.mjs`."
+    },
+    {
       "name": "VAULT_MCP_TOKEN",
       "type": "texto",
       "default": "",

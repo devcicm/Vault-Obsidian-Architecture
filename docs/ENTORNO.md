@@ -6,7 +6,7 @@
 > una en tu shell lo da `python scripts/vault_entorno.py --filtro <nombre>`:
 > se resuelve al llamarse, no al documentarse (AP-49).
 
-Variables: 33.
+Variables: 34.
 
 | Variable | Tipo | Default | Quién la lee | Qué gobierna |
 |---|---|---|---|---|
@@ -24,6 +24,7 @@ Variables: 33.
 | `VAULT_MASTER` | ruta | — | kernel | La casa de los vaults: donde se crean por defecto (vault_init --name) y donde se listan (vault_init --list). Por defecto ~/.vault-master (Windows: %USERPROFILE%\.vault-master). Cambiarla mueve la casa entera; el valor de la variable no se escribe a mano en la documentacion, se lee de aqui. |
 | `VAULT_MCP_LIVE_SEARCH` | bandera | `False` | consulta | Busqueda de `vault_search` sobre el markdown visible en cada consulta, no sobre el indice del servidor MCP (que se carga al arrancar y no se recarga al escribir). La fija el `.mjs` al invocar la tool; la CLI no la usa. |
 | `VAULT_MCP_LOG` | texto | `'info'` | meta_toolkit | Nivel de log del servidor MCP (`info` por defecto). Solo la lee el `.mjs`. |
+| `VAULT_MCP_MAX_READS` | entero | `4` | meta_toolkit | Máximo de llamadas MCP de solo lectura (`access_mode: read`) ejecutadas en paralelo por el coordinador CQRS del servidor MCP. Solo la lee el `.mjs`. |
 | `VAULT_MCP_PERFIL` | texto | `''` | meta_toolkit | Perfil de tools que el servidor MCP expone y acepta (`agente`: las del protocolo de sesión, de `tools-catalog.json` → `perfiles`). Vacía, todas las expuestas por MCP. Solo la lee el `.mjs`. |
 | `VAULT_MCP_PYTHON` | ruta | — | meta_toolkit | Intérprete con el que el servidor MCP lanza las tools. Vacía, sondea `python3`, `python` y `py` (en ese orden; `py` al final porque en Windows del runner resuelve el Python registrado en la máquina, no el del toolkit) y exige a cada candidato que pueda `import yaml` (la dependencia declarada). Instalado en un venv, solo el de ese venv ve el toolkit, y `vault mcp-path` la fija a él: esa elección explícita no se segunda adivina. Solo la lee el `.mjs`. |
 | `VAULT_MCP_TOKEN` | texto | `''` | meta_toolkit | Token que exige el transporte HTTP/SSE del servidor MCP (`Authorization: Bearer`). Si falta, se genera uno por arranque. Solo la lee el `.mjs`; stdio no la usa. |

@@ -5330,6 +5330,27 @@ def _convert_to_json_schema(py_tool: Dict[str, Any]) -> Dict[str, Any]:
 #: `VAULT_MCP_TOKEN` de siempre es `operador`, para no romper a quien ya lo usa.
 PERFILES_DE_TOKEN = ("lector", "operador")
 
+#: Modos de concurrencia CQRS (lectura/escritura/barrera global).
+#: Dueño único compartido por Python (`cli/scheduler.py`) y Node (`tools-catalog.json`):
+#: - `read`: sin `side_effects`; ejecutable en paralelo acotado por `VAULT_MCP_MAX_READS`.
+#: - `write`: mutación acotada a carpeta/recurso; serializada por carpeta en el coordinador RW.
+#: - `global`: toca el vault completo; barrera exclusiva que drena operaciones activas.
+ACCESS_MODES = ("read", "write", "global")
+
+GLOBAL_SCOPE_TOOLS = frozenset({
+    "vault_backup", "vault_restore", "vault_backup_base64", "vault_restore_base64",
+    "vault_reindex", "vault_master_index", "vault_migrate_docs",
+    "vault_migrate_rollback", "vault_standard_upgrade", "vault_init",
+    "vault_merge", "vault_graph_merge", "vault_propagate", "vault_move",
+})
+
+
+def access_mode(name: str, py_tool: Dict[str, Any]) -> str:
+    """Clasificación CQRS canónica de una tool: `global`, `write` o `read`."""
+    if name in GLOBAL_SCOPE_TOOLS:
+        return "global"
+    return "write" if py_tool.get("side_effects") else "read"
+
 
 def perfil_minimo(py_tool: Dict[str, Any]) -> str:
     """El perfil de token más bajo que puede llamar a la tool.
@@ -5432,6 +5453,7 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
             "guards": tool.get("guards", []),
             "side_effects": tool.get("side_effects", []),
             "perfil_minimo": perfil_minimo(tool),
+            "access_mode": access_mode(name, tool),
             "status": status,
             "exposed_via_mcp": exposed,
             # A2: se deriva inline (misma lógica que clasificar_tools, sin ciclo).
@@ -5482,6 +5504,8 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
         # A-13 — los perfiles de token, de menor a mayor. El `.mjs` no arranca
         # con un `VAULT_MCP_TOKENS` que nombre otro.
         "perfiles_de_token": list(PERFILES_DE_TOKEN),
+        # CQRS — conjunto canónico de tools con alcance global de vault.
+        "global_scope_tools": sorted(GLOBAL_SCOPE_TOOLS),
     }
 
     with open(output_path, "w", encoding="utf-8", newline="\n") as f:
@@ -5614,6 +5638,9 @@ def check_sync(json_path: Optional[str] = None) -> Dict[str, Any]:
     if existing.get("perfiles_de_token") != list(PERFILES_DE_TOKEN):
         result["ok"] = False
         result["diffs"].append("perfiles_de_token divergen (regenerar con --sync)")
+    if existing.get("global_scope_tools") != sorted(GLOBAL_SCOPE_TOOLS):
+        result["ok"] = False
+        result["diffs"].append("global_scope_tools divergen (regenerar con --sync)")
 
     existing_groups = set(existing.get("groups", {}).keys())
     py_groups = set(GROUPS.keys())
@@ -5656,6 +5683,10 @@ def check_sync(json_path: Optional[str] = None) -> Dict[str, Any]:
         if existing["tools"][name].get("perfil_minimo") != perfil_minimo(TOOLS_CATALOG[name]):
             result["ok"] = False
             result["diffs"].append(f"{name}: perfil_minimo differs (regenerar con --sync)")
+        # CQRS — lo que decide el carril de concurrencia (`read`/`write`/`global`).
+        if existing["tools"][name].get("access_mode") != access_mode(name, TOOLS_CATALOG[name]):
+            result["ok"] = False
+            result["diffs"].append(f"{name}: access_mode differs (regenerar con --sync)")
 
         py_guard_count = len(TOOLS_CATALOG[name].get("guards", []))
         js_guard_count = len(existing["tools"][name].get("guards", []))

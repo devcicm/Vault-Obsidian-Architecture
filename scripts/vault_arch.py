@@ -580,6 +580,11 @@ CONTEXTS: dict[str, dict] = {
             # faltaba era decirlo aquí, y mientras `cli/` no tuvo contexto no
             # había dónde notarlo.
             "NATIVE_JS_TOOLS": "vault_mcp_catalog:NATIVE_JS_TOOLS",
+            # CQRS (lectura/escritura/global): fuente única de las tools de
+            # alcance global que `cli/scheduler.py` y el servidor MCP consumen
+            # sin mantener copias paralelas (AP-05/AP-57).
+            "GLOBAL_SCOPE_TOOLS": "vault_mcp_catalog:GLOBAL_SCOPE_TOOLS",
+            "access_mode": "vault_mcp_catalog:access_mode",
             # La CLI consume esta proyección derivada para saber si una tool
             # tiene operación instalada real; no puede inferirlo del script.
             "distribution_metadata": "vault_mcp_catalog:distribution_metadata",

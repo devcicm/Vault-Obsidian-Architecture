@@ -67,9 +67,15 @@ GUARDED_ARTIFACTS = frozenset({
 # solo se usa si este repo no está importable desde el consumidor, y
 # `vault_mcp_catalog --check` falla si alguna de las tres copias diverge.
 try:  # pragma: no cover - depende de dónde se instale la CLI
-    from vault_mcp_catalog import NATIVE_JS_TOOLS  # type: ignore
+    from vault_mcp_catalog import GLOBAL_SCOPE_TOOLS, NATIVE_JS_TOOLS  # type: ignore
 except ImportError:  # respaldo verificado por el guard, no una segunda verdad
     NATIVE_JS_TOOLS = frozenset({"vault_backup_base64", "vault_restore_base64"})
+    GLOBAL_SCOPE_TOOLS = frozenset({
+        "vault_backup", "vault_restore", "vault_backup_base64", "vault_restore_base64",
+        "vault_reindex", "vault_master_index", "vault_migrate_docs",
+        "vault_migrate_rollback", "vault_standard_upgrade", "vault_init",
+        "vault_merge", "vault_graph_merge", "vault_propagate", "vault_move",
+    })
 
 _ARTIFACT_HINTS = {
     "graph-enriched": "99_Index/graph-enriched.json",

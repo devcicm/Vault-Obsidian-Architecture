@@ -270,6 +270,13 @@ VARIABLES: Dict[str, Variable] = {
             "Nivel de log del servidor MCP (`info` por defecto). Solo la lee "
             "el `.mjs`.",
         ),
+        Variable(
+            "VAULT_MCP_MAX_READS", "entero", 4, "meta_toolkit",
+            "Máximo de llamadas MCP de solo lectura (`access_mode: read`) "
+            "ejecutadas en paralelo por el coordinador CQRS del servidor MCP. "
+            "Solo la lee el `.mjs`.",
+            _entero,
+        ),
         # SP-04. Vacía no significa «sin autenticación»: el `.mjs` genera un
         # token al arrancar y lo imprime por stderr. El default es cerrado.
         Variable(

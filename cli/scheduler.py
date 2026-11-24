@@ -34,17 +34,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
-from .registry import GUARDED_ARTIFACTS, Fragment, resolve
-
-# Tools cuyo alcance es el vault completo: no admiten nada en paralelo.
-# Un backup concurrente con una escritura produce un snapshot inconsistente;
-# un restore concurrente con cualquier cosa es corrupción directa.
-GLOBAL_SCOPE_TOOLS = frozenset({
-    "vault_backup", "vault_restore", "vault_backup_base64", "vault_restore_base64",
-    "vault_reindex", "vault_master_index", "vault_migrate_docs",
-    "vault_migrate_rollback", "vault_standard_upgrade", "vault_init",
-    "vault_merge", "vault_graph_merge", "vault_propagate", "vault_move",
-})
+from .registry import GLOBAL_SCOPE_TOOLS, GUARDED_ARTIFACTS, Fragment, resolve
 
 _SLUG_STRIP = re.compile(r"[^\w\s-]", re.UNICODE)
 _SLUG_SPACE = re.compile(r"[-\s]+")

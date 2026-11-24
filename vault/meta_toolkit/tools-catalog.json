@@ -97,6 +97,7 @@
         "Crea nota en 16_AI_Governance/decisions/"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_ai_decision",
@@ -142,6 +143,7 @@
         "Anota el cambio en el change-log (F8, no repudio)"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_append",
@@ -203,6 +205,7 @@
         "Con --blueprint reescribe docs/ARQUITECTURA.md"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -254,6 +257,7 @@
       ],
       "side_effects": [],
       "perfil_minimo": "lector",
+      "access_mode": "read",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_arquitectura_en",
@@ -297,6 +301,7 @@
         "Solo con --refresh-dq: refresca 00_System/quality-index.json si caducó y anota una fila `linted` en 00_System/change-log (indicador `change_log`)"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_audit",
@@ -330,6 +335,7 @@
         "Crea carpeta en vault-backups/"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "global",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_backup",
@@ -358,6 +364,7 @@
         "Genera archivo .b64zip.json en vault-backups/"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "global",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": null,
@@ -384,6 +391,7 @@
       "guards": [],
       "side_effects": [],
       "perfil_minimo": "lector",
+      "access_mode": "read",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_backup_list",
@@ -452,6 +460,7 @@
         "Crea nota en 12_Bibliography/{project}-{slug}.md"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_bibliography_save",
@@ -500,6 +509,7 @@
         "Con --freeze reescribe scripts/blame-baseline.json"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -554,6 +564,7 @@
         "scripts/blueprint-baseline.json"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -679,6 +690,7 @@
         "Actualiza 18_Bugs/.bugs-index.json"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_bug_save",
@@ -762,6 +774,7 @@
         "Registra el cambio en el changelog del vault (con --propagate encola la propagación)"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_change_log",
@@ -820,6 +833,7 @@
         "Con --freeze escribe scripts/changelog-baseline.json"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -865,6 +879,7 @@
         "scripts/ciclos-baseline.json"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -911,6 +926,7 @@
         "scripts\\clones-baseline.json"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -945,6 +961,7 @@
         "Genera 11_Code/{project}/map.md con diagrama"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_code_map",
@@ -1052,6 +1069,7 @@
         "Crea nota en 11_Code/{project}/"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_code_module",
@@ -1102,6 +1120,7 @@
       "guards": [],
       "side_effects": [],
       "perfil_minimo": "lector",
+      "access_mode": "read",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_code_query",
@@ -1171,6 +1190,7 @@
         "Actualiza índice de relaciones en 11_Code/"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_code_relation",
@@ -1217,6 +1237,7 @@
         "Con --fix: inyecta @vault: en los ficheros fuente del proyecto, FUERA del vault (AP-36: el side effect se declara para poder revisarlo)"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_code_sync",
@@ -1305,6 +1326,7 @@
         "Actualiza frontmatter del módulo"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -1381,6 +1403,7 @@
       ],
       "side_effects": [],
       "perfil_minimo": "lector",
+      "access_mode": "read",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_context_pack",
@@ -1427,6 +1450,7 @@
         "scripts/criterios-baseline.json"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -1486,6 +1510,7 @@
         "Guarda la versión borrada en .history/ (la restaura vault_undo --restore)"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_delete",
@@ -1532,6 +1557,7 @@
         "Crea 00_System/delta-snapshot.json"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_delta",
@@ -1609,6 +1635,7 @@
         "Genera archivos exportados"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_diagram_export",
@@ -1679,6 +1706,7 @@
         "Crea nota en 06_Diagrams/{category}/"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_diagram_save",
@@ -1729,6 +1757,7 @@
       "guards": [],
       "side_effects": [],
       "perfil_minimo": "lector",
+      "access_mode": "read",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_diff",
@@ -1776,6 +1805,7 @@
         "Con --fix reescribe cifras en los documentos vigilados"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -1814,6 +1844,7 @@
       ],
       "side_effects": [],
       "perfil_minimo": "lector",
+      "access_mode": "read",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -1855,6 +1886,7 @@
         "Con --fix reescribe la tabla de índice de scripts/README.md"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -1915,6 +1947,7 @@
         "--mode snapshot escribe el snapshot de sesión en 00_System/ y, sobre git, repo.synced_commit en la ficha del proyecto"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_drift_detect",
@@ -1994,6 +2027,7 @@
         "Genera 09_Infrastructure/{project}/matrix.md"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_env_matrix",
@@ -2046,6 +2080,7 @@
         "Crea nota en 09_Infrastructure/{project}/"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_env_save",
@@ -2094,6 +2129,7 @@
         "scripts/error-contract-baseline.json (solo con --freeze)"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -2140,6 +2176,7 @@
         "schemas/"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -2185,6 +2222,7 @@
         "scripts/excepcion-declarada-baseline.json"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -2228,6 +2266,7 @@
         "Regenera tools-catalog.json, env-table.json, field-compat-baseline.json, docs/ARQUITECTURA.md, docs/BLUEPRINT.md y las cifras del README"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -2278,6 +2317,7 @@
         "Backups en vault-backups/.vault-fix-backup-YYYYMMDD-HHMMSS/"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_fix_brackets",
@@ -2366,6 +2406,7 @@
         "Crea nota en 13_Flows/{type}/"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_flow_save",
@@ -2414,6 +2455,7 @@
         "Crea/actualiza 00_System/custom-folders.json"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_folder_registry",
@@ -2455,6 +2497,7 @@
       ],
       "side_effects": [],
       "perfil_minimo": "lector",
+      "access_mode": "read",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -2503,6 +2546,7 @@
         "Reescribe el frontmatter de la nota por atomic_write_text"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_frontmatter_completar",
@@ -2540,6 +2584,7 @@
         "Reescribe la nota reparada por atomic_write_text"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_frontmatter_heal",
@@ -2590,6 +2635,7 @@
         "scripts/fuente-unica-baseline.json"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_fuente_unica",
@@ -2640,6 +2686,7 @@
         "Con --framework/--doc escribe el marco de datos y la documentación derivada (en el checkout del estándar)"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_fundamentals",
@@ -2709,6 +2756,7 @@
       ],
       "side_effects": [],
       "perfil_minimo": "lector",
+      "access_mode": "read",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -2752,6 +2800,7 @@
       "guards": [],
       "side_effects": [],
       "perfil_minimo": "lector",
+      "access_mode": "read",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault.gobernanza.tool"
@@ -2776,6 +2825,7 @@
         "Crea 99_Index/graph.json"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_graph",
@@ -2848,6 +2898,7 @@
         "Crea stubs si es necesario"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_graph_fix",
@@ -2892,6 +2943,7 @@
       "guards": [],
       "side_effects": [],
       "perfil_minimo": "lector",
+      "access_mode": "read",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_graph_inspect",
@@ -2927,6 +2979,7 @@
         "Detecta AP-31 (untyped graph), AP-34 (orphan typed relations), AP-35 (relationship silos)"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "global",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_graph_merge",
@@ -2964,6 +3017,7 @@
         "Borra archivos de .history/"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_history_compact",
@@ -3015,6 +3069,7 @@
       "guards": [],
       "side_effects": [],
       "perfil_minimo": "lector",
+      "access_mode": "read",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_impact",
@@ -3114,6 +3169,7 @@
         "Crea nota en 02_Observability/incidents/"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_incident_save",
@@ -3157,6 +3213,7 @@
         "Genera diagrama en 09_Infrastructure/{project}/"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_infra_map",
@@ -3253,6 +3310,7 @@
         "Crea nota en 09_Infrastructure/{project}/"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_infra_save",
@@ -3352,6 +3410,7 @@
         "Con --commit --archivar-fuente: crea la fuente literal en 10_Migrated/fuentes/ (nunca la sobrescribe)"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_ingest",
@@ -3430,6 +3489,7 @@
         "Con --name: crea el vault en la casa y le hace su repositorio git"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "global",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_init",
@@ -3485,6 +3545,7 @@
         "scripts/kernel-baseline.json"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -3528,6 +3589,7 @@
       "guards": [],
       "side_effects": [],
       "perfil_minimo": "lector",
+      "access_mode": "read",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_knowledge_get",
@@ -3598,6 +3660,7 @@
         "Crea nota en 07_Knowledge/{topic}/"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_knowledge_save",
@@ -3643,6 +3706,7 @@
       "guards": [],
       "side_effects": [],
       "perfil_minimo": "lector",
+      "access_mode": "read",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_list",
@@ -3728,6 +3792,7 @@
         "Crea/actualiza nota en 02_Observability/"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_log_error",
@@ -3752,6 +3817,7 @@
         "Genera 99_Index/index.md"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "global",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_master_index",
@@ -3798,6 +3864,7 @@
         "Crea backups antes de modificar"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "global",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_merge",
@@ -3842,6 +3909,7 @@
         "Con --fix (sin --dry-run): reescribe los .md cuyo bloque el compilador señala, SOLO si una propuesta es aprobada por el compilador; escritura por el patrón canónico (file_lock + record_raw_write + escritura_atomica + refrescar_grafo)"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_mermaid_check",
@@ -3925,6 +3993,7 @@
         "docs/METRICAS.md"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -3991,6 +4060,7 @@
         "Copia/move archivos"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "global",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_migrate_docs",
@@ -4028,6 +4098,7 @@
         "Revierte archivos migrados"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "global",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_migrate_rollback",
@@ -4076,6 +4147,7 @@
         "Actualiza 17_Preferences/model_profile.active"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_model_profile",
@@ -4156,6 +4228,7 @@
         "Actualiza wiki-links, search-index, graph.json y la fila moved del change-log (move-log.json queda congelado)"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "global",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_move",
@@ -4270,6 +4343,7 @@
         "Crea nota en 02_Observability/ncr/"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_ncr_save",
@@ -4317,6 +4391,7 @@
         "Con --freeze reescribe scripts/noop-baseline.json"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -4434,6 +4509,7 @@
         "Con --rebuild/--audit escribe el registro de normas y sus artefactos derivados"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -4490,6 +4566,7 @@
         "scripts/norms-coherence-baseline.json"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -4591,6 +4668,7 @@
         "No modifica el proyecto de origen: solo lo lee"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_onboard",
@@ -4627,6 +4705,7 @@
       "guards": [],
       "side_effects": [],
       "perfil_minimo": "lector",
+      "access_mode": "read",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_pattern_list",
@@ -4707,6 +4786,7 @@
         "Reescribe 05_Patterns/index.json desde las notas (--rebuild-index)"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_pattern_save",
@@ -4812,6 +4892,7 @@
         "Actualiza índice de 17_Preferences"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_preferences",
@@ -4931,6 +5012,7 @@
         "Crea nota en 02_Observability/privacy/"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_privacy_save",
@@ -4969,6 +5051,7 @@
       ],
       "side_effects": [],
       "perfil_minimo": "lector",
+      "access_mode": "read",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -5016,6 +5099,7 @@
         "docs/GUIA-DE-PRODUCCION.md"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -5129,6 +5213,7 @@
         "Borra 01_Projects/<slug>/ (solo index.md derivados) y rehace project-registry.json (remove)"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_project",
@@ -5206,6 +5291,7 @@
         "Crea/actualiza 01_Projects/{slug}/overview.md"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_project_overview",
@@ -5262,6 +5348,7 @@
         "Con --status/--summary escribe el status del proyecto y anota la entrada en su changelog"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_project_status",
@@ -5332,6 +5419,7 @@
         "Actualiza notas relacionadas"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "global",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_propagate",
@@ -5426,6 +5514,7 @@
         "Crea 21_QA/.qa-index.json si no existe"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_qa_save",
@@ -5476,6 +5565,7 @@
         "Genera reporte en 00_System/"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_quality_check",
@@ -5504,6 +5594,7 @@
         "Genera 02_Observability/qa/quality-dashboard.md"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_quality_dashboard",
@@ -5564,6 +5655,7 @@
         "Actualiza 20_Quarantine/.quarantine-ledger.json (append-only)"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_quarantine",
@@ -5612,6 +5704,7 @@
       "guards": [],
       "side_effects": [],
       "perfil_minimo": "lector",
+      "access_mode": "read",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_query_parse",
@@ -5642,6 +5735,7 @@
       "guards": [],
       "side_effects": [],
       "perfil_minimo": "lector",
+      "access_mode": "read",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_read",
@@ -5691,6 +5785,7 @@
         "scripts/recursos-baseline.json"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -5734,6 +5829,7 @@
         "Opcional: 99_Index/graph.json, hash-index.json"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "global",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_reindex",
@@ -5809,6 +5905,7 @@
         "Actualiza relaciones en 07_Knowledge/"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_relation_add",
@@ -5912,6 +6009,7 @@
         "Crea nota en 01_Projects/{project}/releases/"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_release_save",
@@ -6019,6 +6117,7 @@
         "Crea nota en 01_Projects/{project}/requirements/"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_requirement_save",
@@ -6056,6 +6155,7 @@
         "Sobreescribe archivos del vault"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "global",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_restore",
@@ -6093,6 +6193,7 @@
         "Restaura vault a nuevo directorio"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "global",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": null,
@@ -6212,6 +6313,7 @@
         "Crea nota en 01_Projects/{project}/risks/"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_risk_save",
@@ -6265,6 +6367,7 @@
         "Al cerrar, escribe la nota de sesion en 04_Sessions/ por vault_write"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_ronda",
@@ -6314,6 +6417,7 @@
         "Actualiza log del runbook"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_runbook_log",
@@ -6394,6 +6498,7 @@
         "Crea nota en 08_Runbooks/{project}/"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_runbook_save",
@@ -6427,6 +6532,7 @@
       ],
       "side_effects": [],
       "perfil_minimo": "lector",
+      "access_mode": "read",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_sanacion",
@@ -6476,6 +6582,7 @@
         "Escribe docs/sdd/gaps.md solo si no existe o no tiene contenido manual"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_sdd_init",
@@ -6526,6 +6633,7 @@
       "guards": [],
       "side_effects": [],
       "perfil_minimo": "lector",
+      "access_mode": "read",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_search",
@@ -6586,6 +6694,7 @@
         "Crea la carpeta de la sección si no existe"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_section",
@@ -6624,6 +6733,7 @@
         "Genera {section}/index.md"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_section_index",
@@ -6675,6 +6785,7 @@
         "Genera reporte en 02_Observability/vulnerabilities/"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_security_scan",
@@ -6729,6 +6840,7 @@
       ],
       "side_effects": [],
       "perfil_minimo": "lector",
+      "access_mode": "read",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -6825,6 +6937,7 @@
         "Crea nota en 02_Observability/slos/"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_slo_save",
@@ -6871,6 +6984,7 @@
         "scripts/smoke-baseline.json"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -6941,6 +7055,7 @@
         "Ejecuta fixes automáticos"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "global",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_standard_upgrade",
@@ -7026,6 +7141,7 @@
       ],
       "side_effects": [],
       "perfil_minimo": "lector",
+      "access_mode": "read",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_subgraph",
@@ -7075,6 +7191,7 @@
         "Reescribe el frontmatter de la nota por atomic_write_text; el cuerpo no cambia"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_supersede",
@@ -7130,6 +7247,7 @@
         "Anota términos nuevos en 19_Audits/vocabulary/tag-ledger.json (append-only)"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_tags",
@@ -7242,6 +7360,7 @@
         "Crea nota en 15_Tests/{test_type}/{project}-{slug}.md"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_test_save",
@@ -7286,6 +7405,7 @@
         "scripts/tests-higiene-baseline.json"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -7334,6 +7454,7 @@
       "guards": [],
       "side_effects": [],
       "perfil_minimo": "lector",
+      "access_mode": "read",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_timeline",
@@ -7416,6 +7537,7 @@
         "Escribe los flujos de tokens y los ficheros de estado del servicio en 00_System/token-usage/ (self-test, start-service, begin, event, end)"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_token_counter",
@@ -7448,6 +7570,7 @@
         "Sirve la API HTTP local y escribe los flujos de tokens y los ficheros de estado del servicio"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": "vault_toolkit.operations.vault_token_service",
@@ -7492,6 +7615,7 @@
       ],
       "side_effects": [],
       "perfil_minimo": "lector",
+      "access_mode": "read",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_tokens",
@@ -7561,6 +7685,7 @@
         "scripts/toolkit-audit-last-parcial.json"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -7628,6 +7753,7 @@
         "Crea nota restaurada o sobreescribe la actual"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_undo",
@@ -7693,6 +7819,7 @@
       "guards": [],
       "side_effects": [],
       "perfil_minimo": "lector",
+      "access_mode": "read",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_validate",
@@ -7725,6 +7852,7 @@
       ],
       "side_effects": [],
       "perfil_minimo": "lector",
+      "access_mode": "read",
       "status": "active",
       "exposed_via_mcp": false,
       "execution_module": null,
@@ -7801,6 +7929,7 @@
         "Regenera section index"
       ],
       "perfil_minimo": "operador",
+      "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
       "execution_module": "vault_toolkit.operations.vault_write",
@@ -10008,5 +10137,21 @@
   "perfiles_de_token": [
     "lector",
     "operador"
+  ],
+  "global_scope_tools": [
+    "vault_backup",
+    "vault_backup_base64",
+    "vault_graph_merge",
+    "vault_init",
+    "vault_master_index",
+    "vault_merge",
+    "vault_migrate_docs",
+    "vault_migrate_rollback",
+    "vault_move",
+    "vault_propagate",
+    "vault_reindex",
+    "vault_restore",
+    "vault_restore_base64",
+    "vault_standard_upgrade"
   ]
 }
