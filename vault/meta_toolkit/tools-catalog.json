@@ -1221,6 +1221,99 @@
         "vault_code_module"
       ]
     },
+    "vault_code_review": {
+      "name": "vault_code_review",
+      "description": "Revisión determinista de PR, diff o archivos fuente guiada por el vault: resuelve etiquetas @vault: por archivo y símbolo (incluidos IDs cortos como REQ-042), trae reglas vivas de negocio, cruza PAT-10 y matriz RDD, audita seguridad e higiene en líneas añadidas, calcula impacto documental y genera visor web HTML clicable opcional.",
+      "group": "Código",
+      "script": "vault_code_review.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Ruta al repositorio o carpeta de código fuente",
+            "x-ruta": "externa"
+          },
+          "project": {
+            "type": "string",
+            "description": "Slug del proyecto para resolver repo enlazado y desambiguar IDs cortos"
+          },
+          "base": {
+            "type": "string",
+            "description": "Referencia git base del diff (ej: main)"
+          },
+          "head": {
+            "type": "string",
+            "description": "Referencia git destino del diff (default: HEAD)"
+          },
+          "staged": {
+            "type": "boolean",
+            "description": "Revisar solo cambios en staging"
+          },
+          "files": {
+            "type": "array",
+            "description": "Lista explícita de archivos fuente a revisar",
+            "items": {
+              "type": "string"
+            },
+            "x-ruta": "externa"
+          },
+          "run-linters": {
+            "type": "boolean",
+            "description": "Ejecutar linters instalados sobre archivos tocados"
+          },
+          "no-rdd": {
+            "type": "boolean",
+            "description": "Omitir matriz de trazabilidad RDD"
+          },
+          "html-preview": {
+            "type": "boolean",
+            "description": "Generar visor web HTML autocontenido con @vault: clicables en 19_Audits/previews/"
+          },
+          "save": {
+            "type": "boolean",
+            "description": "Guardar acta de revisión en 19_Audits/code-review/"
+          },
+          "report": {
+            "type": "boolean",
+            "description": "Emitir salida legible en Markdown"
+          },
+          "strict": {
+            "type": "boolean",
+            "description": "Fallar con exit 1 si el veredicto es REQUEST_CHANGES"
+          },
+          "agent": {
+            "type": "string",
+            "description": "Agente que firma el acta cuando se usa --save"
+          }
+        },
+        "additionalProperties": false
+      },
+      "guards": [
+        "AP-36",
+        "AP-44",
+        "AP-46",
+        "AP-51",
+        "AP-60",
+        "AP-72",
+        "PAT-10"
+      ],
+      "side_effects": [
+        "Con --save: guarda acta de revisión en 19_Audits/code-review/",
+        "Con --html-preview: genera visor web HTML clicable en 19_Audits/previews/"
+      ],
+      "perfil_minimo": "operador",
+      "access_mode": "write",
+      "status": "active",
+      "exposed_via_mcp": true,
+      "execution_module": "vault_toolkit.operations.vault_code_review",
+      "related": [
+        "vault_code_sync",
+        "vault_code_tag",
+        "vault_drift_detect",
+        "vault_security_scan"
+      ]
+    },
     "vault_code_sync": {
       "name": "vault_code_sync",
       "description": "Sincroniza estado del código con el vault.",
@@ -1246,6 +1339,10 @@
             "type": "boolean",
             "description": "Mostrar qué se haría sin modificar archivos"
           },
+          "rdd": {
+            "type": "boolean",
+            "description": "Incluye matriz de trazabilidad RDD (14_Requirements REQ-NNN <-> métodos @vault: <-> 15_Tests)"
+          },
           "report": {
             "type": "boolean",
             "description": "Salida human-readable en lugar de JSON"
@@ -1265,6 +1362,7 @@
       "execution_module": "vault_toolkit.operations.vault_code_sync",
       "related": [
         "vault_code_map",
+        "vault_code_review",
         "vault_reindex"
       ]
     },
@@ -1290,7 +1388,7 @@
           },
           "link-vault": {
             "type": "string",
-            "description": "Embeber @vault: en archivo fuente (ruta nota sin .md)"
+            "description": "Embeber @vault: en cabecera o encima de --symbol (ruta o ID corto como REQ-042)"
           },
           "unlink-vault": {
             "type": "boolean",
@@ -1298,7 +1396,11 @@
           },
           "scan": {
             "type": "boolean",
-            "description": "Listar @vault: y @norm en un archivo"
+            "description": "Listar @vault: (archivo y símbolos) y @norm en un archivo"
+          },
+          "resolve": {
+            "type": "boolean",
+            "description": "Resolver @vault: contra el vault y devolver las reglas vivas de cada nota"
           },
           "list": {
             "type": "boolean",
@@ -1312,6 +1414,18 @@
             "type": "string",
             "description": "Ruta al archivo de código (absoluta o relativa al CWD)",
             "x-ruta": "externa"
+          },
+          "symbol": {
+            "type": "string",
+            "description": "Método, función o clase objetivo para --link-vault o --resolve (ej: calcular_iva)"
+          },
+          "project": {
+            "type": "string",
+            "description": "Proyecto para desambiguar IDs cortos (ej: REQ-042)"
+          },
+          "html-preview": {
+            "type": "boolean",
+            "description": "Con --resolve: genera visor web HTML autocontenido con @vault: clicables dentro de 19_Audits/previews/"
           },
           "title": {
             "type": "string",
@@ -8126,7 +8240,8 @@
       "vault_code_relation",
       "vault_code_map",
       "vault_code_query",
-      "vault_code_sync"
+      "vault_code_sync",
+      "vault_code_review"
     ],
     "Backups": [
       "vault_backup",

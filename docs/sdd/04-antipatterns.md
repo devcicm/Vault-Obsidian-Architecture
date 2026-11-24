@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
 > Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-79 más
-> las familias PAT, SP y CN. Por familia: AP 79, CN 5, PAT 9, SP 4.
+> las familias PAT, SP y CN. Por familia: AP 79, CN 5, PAT 10, SP 4.
 > Bilingual document. Full norm catalog: antipatterns AP-01..AP-79 plus the PAT,
-> SP and CN families. By family: AP 79, CN 5, PAT 9, SP 4.
+> SP and CN families. By family: AP 79, CN 5, PAT 10, SP 4.
 
 ---
 
 ## ES
 
-Total de normas registradas: 97 (AP 79, CN 5, PAT 9, SP 4)
+Total de normas registradas: 98 (AP 79, CN 5, PAT 10, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -993,6 +993,16 @@ Un dominio = una nota canónica rica. Todas las referencias desde otros contexto
 
 **Prevención:** N/A -- es el patrón correcto. Aplicar siempre al crear documentación.
 
+### PAT-10: Taxonomía de operaciones de lógica de negocio y catálogo oficial de patrones
+
+- **Severidad:** N/A
+- **Enforcement:** recommended
+- **Detectado por:** vault_code_query, vault_pattern_list
+
+Todo escaneo de capacidades, flujos y patrones sobre un repositorio (propio o de terceros) clasifica cada capacidad en las ocho operaciones universales de lógica de negocio (`auth`, `rule`, `lifecycle`, `workflow`, `transform`, `event`, `integration`, `query` -- o `unclassified` si falta evidencia verificable, AP-45), sin acoplar el estándar a un dominio concreto como ERP. Al mismo tiempo, cualquier patrón de diseño, arquitectura, concurrencia o resiliencia detectado o registrado debe usar su nombre oficial reconocido en la industria (GoF, Fowler PoEAA, Evans DDD, Hohpe EIP, Cockburn, Richards & Ford, Nygard) desde el catálogo canónico único (`patrones_diseno.CATALOGO_PATRONES`).
+
+**Prevención:** N/A -- es el patrón correcto. Un tercero o agente comprende la lógica de negocio de un proyecto por operaciones universales y nombres de patrón estándar sin ruido de normas internas del mantenedor ni nombres inventados.
+
 ### PAT-2: Stub enrichment gradient
 
 - **Severidad:** N/A
@@ -1117,7 +1127,7 @@ El transporte HTTP/SSE del servidor MCP acepta sesiones sin token, responde con 
 
 ## EN
 
-Total registered norms: 97 (AP 79, CN 5, PAT 9, SP 4)
+Total registered norms: 98 (AP 79, CN 5, PAT 10, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -2100,6 +2110,16 @@ Un cuerpo de código tiene un dueño, y ese dueño es el único sitio donde se e
 Un dominio = una nota canónica rica. Todas las referencias desde otros contextos son [[wiki-links]] a esa nota canónica, nunca copias del contenido.
 
 **Prevention:** N/A -- es el patrón correcto. Aplicar siempre al crear documentación.
+
+### PAT-10: Taxonomía de operaciones de lógica de negocio y catálogo oficial de patrones
+
+- **Severity:** N/A
+- **Enforcement:** recommended
+- **Detected by:** vault_code_query, vault_pattern_list
+
+Todo escaneo de capacidades, flujos y patrones sobre un repositorio (propio o de terceros) clasifica cada capacidad en las ocho operaciones universales de lógica de negocio (`auth`, `rule`, `lifecycle`, `workflow`, `transform`, `event`, `integration`, `query` -- o `unclassified` si falta evidencia verificable, AP-45), sin acoplar el estándar a un dominio concreto como ERP. Al mismo tiempo, cualquier patrón de diseño, arquitectura, concurrencia o resiliencia detectado o registrado debe usar su nombre oficial reconocido en la industria (GoF, Fowler PoEAA, Evans DDD, Hohpe EIP, Cockburn, Richards & Ford, Nygard) desde el catálogo canónico único (`patrones_diseno.CATALOGO_PATRONES`).
+
+**Prevention:** N/A -- es el patrón correcto. Un tercero o agente comprende la lógica de negocio de un proyecto por operaciones universales y nombres de patrón estándar sin ruido de normas internas del mantenedor ni nombres inventados.
 
 ### PAT-2: Stub enrichment gradient
 

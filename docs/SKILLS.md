@@ -35,6 +35,7 @@ LLM) puede invocar. Cada skill tiene:
 | `vault-decision` | v1.0 | `agent/skills/vault-decision/SKILL.md` | — | `scripts/vault_supersede.py` | Cambia una decisión sin borrar la anterior: escribe la nueva, la sustituye y muestra cómo deshacer |
 | `vault-mcp-diagnose` | v1.0 | `agent/skills/vault-mcp-diagnose/SKILL.md` | — | — (orquesta diagnóstico MCP en solo lectura) | Diagnostica catálogo MCP, contratos AP-48, concurrencia CQRS (`VAULT_MCP_MAX_READS`) y resolución de raíz |
 | `vault-ingest` | v1.0 | `agent/skills/vault-ingest/SKILL.md` | — | `scripts/vault_ingest.py` | Ingiere fuentes externas con preflight anti-poison no desactivable, archivo inmutable (AP-73) y trazabilidad (AP-74) |
+| `vault-code-review` | v1.0 | `agent/skills/vault-code-review/SKILL.md` | — | `scripts/vault_code_review.py` | Revisa PRs, diffs o archivos resolviendo `@vault:` por símbolo/ID corto, `PAT-10`, RDD, seguridad acotada al diff y visor HTML clicable |
 
 Lo que la wheel lleva son los **puntos de entrada** de las skills cuyo entry point es un script del catálogo
 (`vault_sanacion`, `vault_onboard`, `vault_sdd_init`): instalado el paquete se

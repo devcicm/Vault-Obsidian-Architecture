@@ -8,13 +8,13 @@ Responde tres preguntas sobre cada tool: **dónde se puede usar**, **si hay evid
 
 | Categoría | Cuántas | Dónde corre | Quién la usa |
 |---|---|---|---|
-| Operaciones del vault por CLI | 97 | `vault run <tool>` desde la wheel instalada; por MCP las que estén expuestas | agentes y personas con un vault |
+| Operaciones del vault por CLI | 98 | `vault run <tool>` desde la wheel instalada; por MCP las que estén expuestas | agentes y personas con un vault |
 | Operaciones del vault solo por MCP | 2 | servidor MCP (JavaScript nativo); `vault run` no las ejecuta | agentes por MCP |
 | Mantenimiento del estándar | 30 | solo en un checkout de este repo (`python scripts/<tool>.py`); la wheel no las instala | quien mantiene el estándar |
 | Internas | 20 | no son tools de un vault: librerías, registros o CLIs de diagnóstico del toolkit | nadie desde fuera |
 | Archivadas | 5 | no se ejecutan; cada una nombra su reemplazo | nadie |
 
-Las 129 activas son 97 + 2 + 30. Expuestas por el servidor MCP: **98**; las otras 31 se ejecutan por CLI o en el checkout.
+Las 130 activas son 98 + 2 + 30. Expuestas por el servidor MCP: **99**; las otras 31 se ejecutan por CLI o en el checkout.
 
 `vault tools list` dice lo mismo desde la wheel: `class: runtime` con `installed: true` es lo que corre; `class: maintenance` con `installed: false` es del checkout, y `vault run` la rechaza con `not_runtime_operation`.
 
@@ -39,6 +39,7 @@ Las 129 activas son 97 + 2 + 30. Expuestas por el servidor MCP: **98**; las otra
 | `vault_code_module` | Código | sí | sí | OK |
 | `vault_code_query` | Código | sí | no | OK |
 | `vault_code_relation` | Código | sí | sí | OK |
+| `vault_code_review` | Código | sí | sí | sin dato |
 | `vault_code_sync` | Código | sí | sí | OK |
 | `vault_context_pack` | Memoria de Contexto | sí | no | OK |
 | `vault_delete` | Change Log | sí | sí | OK |

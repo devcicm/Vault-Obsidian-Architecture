@@ -33,7 +33,7 @@ Restricciones que son decisión de producto, no limitación pendiente:
 
 | Capacidad | Resultado | Grupos | Tools |
 |---|---|---|---|
-| **Escritura → gobernanza** (`escritura_a_gobernanza`) | Lo que el agente captura queda escrito una sola vez, normalizado contra las normas, versionado y auditable después. | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 36, 37 | 89 |
+| **Escritura → gobernanza** (`escritura_a_gobernanza`) | Lo que el agente captura queda escrito una sola vez, normalizado contra las normas, versionado y auditable después. | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 36, 37 | 90 |
 | **Consulta → contexto** (`consulta_a_contexto`) | Una pregunta del agente se convierte en un paquete de contexto acotado y presupuestado, recorriendo el grafo del vault sin índice externo. | 26, 34 | 10 |
 | **Gobernanza del estándar** (`gobernanza_del_estandar`) | El estándar cumple lo que publica: registro canónico primero, doc derivada, guard que falla si divergen. Ninguna de estas tools toca las notas de un usuario. | 35 | 30 |
 
@@ -54,7 +54,7 @@ regenera.*
 |---|---|---|---|
 | **Kernel** (`kernel`) | 4 | 24 | 1 | depender de cualquier contexto de dominio |
 | **Autoría** (`autoria`) | 8 | 47 | 0 | — |
-| **Grafo** (`grafo`) | 4 | 15 | 0 | — |
+| **Grafo** (`grafo`) | 4 | 16 | 0 | — |
 | **Gobernanza** (`gobernanza`) | 21 | 14 | 0 | — |
 | **Índices** (`indices`) | 12 | 7 | 0 | — |
 | **Consulta** (`consulta`) | 7 | 11 | 0 | base de datos; embeddings; servicio externo |
@@ -132,7 +132,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-48** — Implementación paralela por camino de acceso | guard+audit | `contratos` | `test_ap48_implementacion_paralela.py`, `test_audiencia_normas_fase_m0.py`, `test_mcp_concurrencia_cqrs.py`, `test_voice.py` |
 | **AP-49** — Vínculo resuelto en tiempo de import | guard+audit | `arquitectura` | `test_arquitectura.py`, `test_audiencia_normas_fase_m0.py`, `test_durabilidad_dominio.py` |
 | **AP-50** — Decisión duplicada sin dueño declarado | guard+audit | `arquitectura` | `test_ap57_criterios.py`, `test_norms_coherence.py` |
-| **AP-51** — La tool culpa al dato de su propio fallo | guard+audit | `blame` | `test_ap51_culpar_al_dato.py`, `test_baseline.py` |
+| **AP-51** — La tool culpa al dato de su propio fallo | guard+audit | `blame` | `test_ap51_culpar_al_dato.py`, `test_baseline.py`, `test_code_review_fase_n.py` |
 | **AP-52** — El error se emite fuera del contrato del catalogo | guard+audit | `contrato_error` | `test_ap52_contrato_de_error.py`, `test_audiencia_normas_fase_m0.py`, `test_regla7_contraste_ajeno.py` |
 | **AP-53** — El historial se afirma a mano y nadie lo contrasta con git | guard | `changelog` | `test_changelog_check.py` |
 | **AP-54** — El lock falla y se escribe igual | guard | `arquitectura` | `test_lock_reentrante.py` |
@@ -153,7 +153,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-69** — El test que construye a mano lo que ya tiene apoyo | guard | `tests_higiene` | `test_ap69_sin_version_publicada.py`, `test_audiencia_normas_fase_m0.py` |
 | **AP-70** — Politica de mutacion ilegible o invalida | guard+audit | `framework` | `test_inmutabilidad_todos_los_escritores.py`, `test_reglas_y_adaptadores.py` |
 | **AP-71** — Concepto importante sin página propia | audit | — | `test_karpathy_conceptos.py` |
-| **AP-72** — Comentario que cita una decisión que no existe | guard | `doc_sync` | `test_torti_documentacion.py` |
+| **AP-72** — Comentario que cita una decisión que no existe | guard | `doc_sync` | `test_code_review_fase_n.py`, `test_torti_documentacion.py` |
 | **AP-73** — Fuente archivada modificada | guard+audit | — | `test_parte_a_normas.py` |
 | **AP-74** — Operación sin fila en la bitácora | audit | — | `test_parte_a_normas.py` |
 | **AP-75** — Decisión cerrada reescrita | guard+audit | — | `test_audiencia_normas_fase_m0.py`, `test_parte_a_normas.py` |
@@ -180,7 +180,7 @@ rojo, y una puerta en rojo se desactiva.
 
 *Registros: `vault_mcp_catalog.TOOLS_CATALOG` + `<vault>/00_System/tool-spec.json`*
 
-129 tools activas en 37 grupos. Toda tool
+130 tools activas en 37 grupos. Toda tool
 del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 `status: archived | internal | orphan` — no se borra, se anota
 (`vault_mcp_catalog.py --check-contracts`).
@@ -194,7 +194,7 @@ del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 | Conocimiento | 2 |
 | Core | 8 |
 | Corrección Automática | 5 |
-| Código | 5 |
+| Código | 6 |
 | Data Quality | 2 |
 | Defectos y Cuarentena | 2 |
 | Diagramas | 4 |
@@ -255,6 +255,7 @@ falla — no se rellena con el valor más cercano.
 | `vault_code_module` | 12 — Código | escritura_a_gobernanza |
 | `vault_code_query` | 12 — Código | escritura_a_gobernanza |
 | `vault_code_relation` | 12 — Código | escritura_a_gobernanza |
+| `vault_code_review` | 12 — Código | escritura_a_gobernanza |
 | `vault_code_sync` | 12 — Código | escritura_a_gobernanza |
 | `vault_code_tag` | 35 — Normas | gobernanza_del_estandar |
 | `vault_context_pack` | 34 — Memoria de Contexto | consulta_a_contexto |
@@ -454,7 +455,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 4 | ≤ 2 para 2027-03-31 · cada 90 d · meta_toolkit — vault_kernel → **en_plazo** | 5 → 6 → 6 → 5 → 4 → 4 (encoge, Δ-1) |
 | `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_norms_distincion → **cumple** | 57 → 0 → 0 → 0 (encoge, Δ-57) |
 | `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_norms_coherence → **cumple** | 47 → 0 → 0 → 0 (encoge, Δ-47) |
-| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1508 | — *no aplica*: No es deuda: es el contrato de campos estables con los repos consumidores y crece por diseño cada vez que una tool publica un campo nuevo (1334 → 1410 entre 2026-08-30 y 2026-10-08). Lo que la puerta vigila es que ningún campo desaparezca sin `superseded_fields`, no su tamaño. Declarado el 2026-10-09 con la deuda #8. | 1448 → 1471 → 1489 → 1505 → 1506 → 1508 (crece, Δ+151) |
+| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1527 | — *no aplica*: No es deuda: es el contrato de campos estables con los repos consumidores y crece por diseño cada vez que una tool publica un campo nuevo (1334 → 1410 entre 2026-08-30 y 2026-10-08). Lo que la puerta vigila es que ningún campo desaparezca sin `superseded_fields`, no su tamaño. Declarado el 2026-10-09 con la deuda #8. | 1471 → 1489 → 1505 → 1506 → 1508 → 1527 (crece, Δ+159) |
 | `scripts/excepcion-declarada-baseline.json` | AP-61 — la excepción declarada no es la que escapa | 0 | ≤ 0 para 2027-06-30 · cada 180 d · gobernanza → **cumple** | 0 → 0 (plana, Δ+0) |
 | `scripts/recursos-baseline.json` | AP-62 — el consumidor cruza para leer un recurso y paga el fan-out | 2 | ≤ 0 para 2027-03-31 · cada 90 d · meta_toolkit — vault_recursos → **en_plazo** | 2 → 2 (plana, Δ+0) |
 | `scripts/rutas-baseline.json` | v41.21 — el layout del repo escrito como literal fuera de su dueño vault/kernel/rutas.py; solo encoge | 19 | ≤ 20 para 2027-06-30 · cada 90 d · meta_toolkit — vault.kernel.rutas → **cumple** | 175 → 16 → 15 → 15 → 20 → 19 (encoge, Δ-158) |

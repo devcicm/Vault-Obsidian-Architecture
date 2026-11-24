@@ -1582,7 +1582,92 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "side_effects": ["Actualiza 11_Code/{project}/index.json",
         "Con --fix: inyecta @vault: en los ficheros fuente del proyecto, FUERA del vault (AP-36: el side effect se declara para poder revisarlo)"],
         "example": 'python vault_code_sync.py --project "mi-api"\npython vault_code_sync.py --project "mi-api" --dry-run',
-        "related": ["vault_code_map", "vault_reindex"],
+        "related": ["vault_code_map", "vault_code_review", "vault_reindex"],
+    },
+    "vault_code_review": {
+        "name": "vault_code_review",
+        "script": "vault_code_review.py",
+        "group": "Código",
+        "purpose": (
+            "Revisión determinista de PR, diff o archivos fuente guiada por el vault: "
+            "resuelve etiquetas @vault: por archivo y símbolo (incluidos IDs cortos como "
+            "REQ-042), trae reglas vivas de negocio, cruza PAT-10 y matriz RDD, audita "
+            "seguridad e higiene en líneas añadidas, calcula impacto documental y genera "
+            "visor web HTML clicable opcional."
+        ),
+        "params": {
+            "path": {
+                "type": "string",
+                "required": False,
+                "ruta": "externa",
+                "description": "Ruta al repositorio o carpeta de código fuente",
+            },
+            "project": {
+                "type": "string",
+                "required": False,
+                "description": "Slug del proyecto para resolver repo enlazado y desambiguar IDs cortos",
+                "validators": [],
+            },
+            "base": {
+                "type": "string",
+                "required": False,
+                "description": "Referencia git base del diff (ej: main)",
+            },
+            "head": {
+                "type": "string",
+                "required": False,
+                "description": "Referencia git destino del diff (default: HEAD)",
+            },
+            "staged": {
+                "type": "boolean",
+                "required": False,
+                "description": "Revisar solo cambios en staging",
+            },
+            "files": {
+                "type": "array",
+                "items": {"type": "string"},
+                "required": False,
+                "ruta": "externa",
+                "description": "Lista explícita de archivos fuente a revisar",
+            },
+            "run_linters": {
+                "type": "boolean",
+                "required": False,
+                "description": "Ejecutar linters instalados sobre archivos tocados",
+            },
+            "no_rdd": {
+                "type": "boolean",
+                "required": False,
+                "description": "Omitir matriz de trazabilidad RDD",
+            },
+            "html_preview": {
+                "type": "boolean",
+                "required": False,
+                "description": "Generar visor web HTML autocontenido con @vault: clicables en 19_Audits/previews/",
+            },
+            "save": {
+                "type": "boolean",
+                "required": False,
+                "description": "Guardar acta de revisión en 19_Audits/code-review/",
+            },
+            "report": {
+                "type": "boolean",
+                "required": False,
+                "description": "Emitir salida legible en Markdown",
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Fallar con exit 1 si el veredicto es REQUEST_CHANGES",
+            },
+        },
+        "guards": ["AP-36", "AP-44", "AP-46", "AP-51", "AP-60", "AP-72", "PAT-10"],
+        "side_effects": [
+            "Con --save: guarda acta de revisión en 19_Audits/code-review/",
+            "Con --html-preview: genera visor web HTML clicable en 19_Audits/previews/",
+        ],
+        "example": 'python vault_code_review.py --project "mi-api"',
+        "related": ["vault_code_sync", "vault_code_tag", "vault_drift_detect", "vault_security_scan"],
     },
     "vault_code_tag": {
         "name": "vault_code_tag",
@@ -4858,6 +4943,7 @@ GROUPS: Dict[str, List[str]] = {
         "vault_code_map",
         "vault_code_query",
         "vault_code_sync",
+        "vault_code_review",
         # vault_code_tag NO se lista aquí: su `group` en TOOLS_CATALOG es
         # "Normas y Etiquetas" y ya está en el grupo "Normas". Estaba en ambos,
         # y una tool en dos grupos se cuenta dos veces en cualquier recorrido.

@@ -48,7 +48,7 @@ python -m cli groups --pretty
 ```jsonc
 {
   "ok": true, "tool": "cli.groups",
-  "total": 129, "read": 13, "write": 116, "groups": 37,
+  "total": 130, "read": 13, "write": 117, "groups": 37,
   "missing_scripts": [],
   "catalog": { "Backups": [ {"name": "vault_backup", "mode": "write", "purpose": "..."} ] }
 }
@@ -77,7 +77,7 @@ python -m cli find <query> [--mode read|write] [--group <texto>] [--full]
 
 ```bash
 python -m cli find "backup grafo"
-python -m cli find "" --mode write          # las 116 tools que escriben
+python -m cli find "" --mode write          # las 117 tools que escriben
 python -m cli find "indice" --group Index --full --pretty
 ```
 

@@ -366,7 +366,7 @@ CONTEXTS: dict[str, dict] = {
             "vault_graph_merge", "vault_relation_add", "vault_link_safety",
             "vault_impact", "vault_code_map", "vault_code_module",
             "vault_code_query", "vault_code_relation", "vault_code_sync",
-            "vault_code_tag", "vault_infra_map", "vault_env_matrix",
+            "vault_code_review", "vault_code_tag", "vault_infra_map", "vault_env_matrix",
         ],
     },
     "gobernanza": {

@@ -42,9 +42,16 @@ import json
 import re
 import sys
 import threading
-from vault_errors import emit_error, mensaje_de, wrap_main
+from vault_errors import emit_error, mensaje_de, wrap_main, proyecto_registrado
 from vault_entorno import agente_por_defecto
-from vault_io import atomic_write_json, write_report, resolve_input_path, file_lock
+from vault_io import (
+    assert_within_vault,
+    atomic_write_json,
+    atomic_write_text,
+    write_report,
+    resolve_input_path,
+    file_lock,
+)
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -57,9 +64,14 @@ from vault.grafo.enlace_codigo import (  # noqa: E402
     VAULT_TAG_PATTERN as _stable_vault_tag_pattern,
     VAULT_TAG_TEMPLATES as _stable_vault_tag_templates,
     comment_style as _stable_comment_style,
+    construir_indice_notas_vault as _construir_indice_notas,
+    extract_all_vault_refs as _stable_extract_all_vault_refs,
     extract_vault_ref as _stable_extract_vault_ref,
     line_offset as _stable_line_offset,
+    link_symbol_vault as _stable_link_symbol_vault,
     link_vault as _stable_link_vault,
+    renderizar_visor_html as _stable_renderizar_visor_html,
+    resolver_referencia_vault as _stable_resolver_referencia_vault,
     unlink_vault as _stable_unlink_vault,
 )
 from vault.kernel import construir  # noqa: E402
@@ -94,6 +106,7 @@ _NORM_TAG_PATTERN = re.compile(
     r"^(?://|#|<!--|/\*|--)\s*@norm\s+(\S+)\s*[—\-]+\s*(.*?)(?:\s*(?:-->|\*/))?\s*$",
     re.MULTILINE,
 )
+_RE_SAFE_STEM = re.compile(r"[^a-zA-Z0-9_-]+")
 
 # Los nombres privados históricos siguen siendo importables, pero Grafo es
 # el dueño canónico de la semántica @vault.
@@ -398,8 +411,8 @@ def vault_code_tag_remove(code: str, file_path_str: str) -> Dict[str, Any]:
     return {"ok": True, "action": "removed", "file": str(file_path), "code": code_lower, "lines_removed": count}
 
 
-def vault_code_tag_scan(file_path_str: str) -> Dict[str, Any]:
-    """List all @vault: and @norm tags present in a code file."""
+def vault_code_tag_scan(file_path_str: str, project: Optional[str] = None) -> Dict[str, Any]:
+    """List all @vault: (file header and symbol-level) and @norm tags in a code file."""
     file_path = Path(file_path_str)
     file_path = resolve_input_path(file_path)
 
@@ -411,14 +424,50 @@ def vault_code_tag_scan(file_path_str: str) -> Dict[str, Any]:
     except Exception as e:
         return emit_error("vault_code_tag", "FILE_READ_ERROR", f"No se pudo leer {file_path}: {e}", exception=e)
 
-    # Extract @vault: reference (at most one per file)
+    # Extract @vault: reference (cabecera retrocompatible) y todas las referencias (incl. simbolos)
     vault_ref = _extract_vault_ref_from_content(content)
+    all_refs = _stable_extract_all_vault_refs(content, file_path=file_path)
+    indice = _construir_indice_notas(_raiz())
 
-    # Verify vault note exists if referenced
     vault_note_exists = False
     if vault_ref:
-        note_path = _raiz() / (vault_ref["note_path"] + ".md")
-        vault_note_exists = note_path.exists()
+        res_hdr = _stable_resolver_referencia_vault(
+            _raiz(), vault_ref["note_path"], project=project, indice=indice, incluir_contenido=False
+        )
+        vault_note_exists = bool(res_hdr["resolved"])
+
+    symbol_refs: List[Dict[str, Any]] = []
+    broken_refs: List[Dict[str, Any]] = []
+    stale_refs: List[Dict[str, Any]] = []
+    for ref in all_refs:
+        res = _stable_resolver_referencia_vault(
+            _raiz(),
+            ref["ref_target"],
+            anchor=ref["anchor"],
+            project=project,
+            indice=indice,
+            incluir_contenido=False,
+        )
+        enriquecido = {
+            "line": ref["line"],
+            "scope": ref["scope"],
+            "symbol": ref["symbol"],
+            "raw_ref": ref["raw_ref"],
+            "ref_target": ref["ref_target"],
+            "anchor": ref["anchor"],
+            "title": ref["title"],
+            "resolved": res["resolved"],
+            "status": res["status"],
+            "resolved_path": res["path"],
+            "note_status": res.get("note_status"),
+            "superseded_by": res.get("superseded_by"),
+        }
+        if ref["scope"] == "symbol" or ref["symbol"]:
+            symbol_refs.append(enriquecido)
+        if not res["resolved"]:
+            broken_refs.append(enriquecido)
+        elif res.get("stale"):
+            stale_refs.append(enriquecido)
 
     # Extract @norm tags
     norm_tags = _extract_tags_from_content(content)
@@ -435,9 +484,137 @@ def vault_code_tag_scan(file_path_str: str) -> Dict[str, Any]:
         "file": str(file_path),
         "vault_ref": vault_ref,
         "vault_note_exists": vault_note_exists,
+        "all_vault_refs_total": len(all_refs),
+        "symbol_refs_total": len(symbol_refs),
+        "symbol_refs": symbol_refs,
+        "broken_refs": broken_refs,
+        "stale_refs": stale_refs,
         "norm_tags_total": len(norm_tags),
         "norm_tags": norm_tags,
-        "linked": vault_ref is not None,
+        "linked": vault_ref is not None or len(all_refs) > 0,
+    }
+
+
+def vault_code_tag_resolve(
+    file_path_str: str,
+    symbol: Optional[str] = None,
+    project: Optional[str] = None,
+    html_preview: bool = False,
+) -> Dict[str, Any]:
+    """Resuelve las etiquetas @vault: de un archivo o simbolo y devuelve las reglas vivas del vault."""
+    file_path = resolve_input_path(Path(file_path_str))
+    if not file_path.exists():
+        return emit_error("vault_code_tag", "FILE_NOT_FOUND", f"No existe: {file_path}")
+
+    try:
+        content = file_path.read_text(encoding="utf-8", errors="ignore")
+    except Exception as e:
+        return emit_error("vault_code_tag", "FILE_READ_ERROR", f"No se pudo leer {file_path}: {e}", exception=e)
+
+    refs = _stable_extract_all_vault_refs(content, file_path=file_path)
+    if symbol:
+        sym_l = symbol.strip().lower()
+        refs = [
+            r for r in refs
+            if (r.get("symbol") or "").lower() == sym_l
+            or (r.get("symbol_short") or "").lower() == sym_l
+            or (r.get("symbol") or "").lower().endswith(f".{sym_l}")
+        ]
+
+    indice = _construir_indice_notas(_raiz())
+    resolved_items: List[Dict[str, Any]] = []
+    warnings: List[Dict[str, Any]] = []
+    for ref in refs:
+        res = _stable_resolver_referencia_vault(
+            _raiz(),
+            ref["ref_target"],
+            anchor=ref["anchor"],
+            project=project,
+            indice=indice,
+            incluir_contenido=True,
+        )
+        item = {
+            "line": ref["line"],
+            "scope": ref["scope"],
+            "symbol": ref["symbol"],
+            "raw_ref": ref["raw_ref"],
+            "span": ref.get("span"),
+            "title_in_code": ref["title"],
+            **res,
+        }
+        resolved_items.append(item)
+        if not res["resolved"]:
+            warnings.append(
+                {
+                    "code": "AP-72",
+                    "severity": "blocker",
+                    "line": ref["line"],
+                    "symbol": ref["symbol"],
+                    "raw_ref": ref["raw_ref"],
+                    "reason": res["status"],
+                    "candidates": res.get("candidates", []),
+                }
+            )
+        elif res.get("stale"):
+            warnings.append(
+                {
+                    "code": "STALE_VAULT_REF",
+                    "severity": "warning",
+                    "line": ref["line"],
+                    "symbol": ref["symbol"],
+                    "raw_ref": ref["raw_ref"],
+                    "reason": res["status"],
+                    "superseded_by": res.get("superseded_by"),
+                }
+            )
+        elif ref["anchor"] and res.get("anchor_found") is False:
+            warnings.append(
+                {
+                    "code": "ANCHOR_NOT_FOUND",
+                    "severity": "warning",
+                    "line": ref["line"],
+                    "symbol": ref["symbol"],
+                    "raw_ref": ref["raw_ref"],
+                    "reason": f"Ancla #{ref['anchor']} no encontrada en {res['path']}",
+                }
+            )
+
+    html_path_rel: Optional[str] = None
+    if html_preview:
+        html_doc = _stable_renderizar_visor_html(
+            titulo=f"Visor @vault — {file_path.name}",
+            archivos=[
+                {
+                    "path": str(file_path),
+                    "content": content,
+                    "references": resolved_items,
+                }
+            ],
+            resumen={
+                "archivo": file_path.name,
+                "refs_totales": len(resolved_items),
+                "resueltas": sum(1 for i in resolved_items if i["resolved"]),
+                "alertas": len(warnings),
+            },
+        )
+        safe_stem = _RE_SAFE_STEM.sub("-", file_path.stem).strip("-") or "codigo"
+        out_path = _raiz() / "19_Audits" / "previews" / f"{safe_stem}-vault-preview.html"
+        assert_within_vault(out_path, _raiz())
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        atomic_write_text(out_path, html_doc)
+        html_path_rel = str(out_path.relative_to(_raiz())).replace("\\", "/")
+
+    return {
+        "ok": True,
+        **(write_report() if html_preview else {}),
+        "file": str(file_path),
+        "symbol_filter": symbol,
+        "total_refs": len(resolved_items),
+        "resolved_count": sum(1 for i in resolved_items if i["resolved"]),
+        "warnings_count": len(warnings),
+        "html_preview_path": html_path_rel,
+        "references": resolved_items,
+        "warnings": warnings,
     }
 
 
@@ -541,11 +718,28 @@ def vault_code_tag_link_vault(
     note_path_rel: str,
     file_path_str: str,
     title: str = "",
+    symbol: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Compatibilidad pública del enlace @vault de la CLI histórica."""
+    """Compatibilidad pública del enlace @vault en cabecera o sobre un símbolo concreto."""
+    resolved_path = str(resolve_input_path(Path(file_path_str)))
+    if symbol:
+        res = _stable_link_symbol_vault(
+            note_path_rel,
+            resolved_path,
+            symbol,
+            title,
+            report=write_report,
+        )
+        if not res.get("ok"):
+            return emit_error(
+                "vault_code_tag",
+                str(res.get("error_code") or "INVALID_ACTION"),
+                str(res.get("detail") or "No se pudo enlazar el símbolo"),
+            )
+        return res
     return _stable_link_vault(
         note_path_rel,
-        str(resolve_input_path(Path(file_path_str))),
+        resolved_path,
         title,
         report=write_report,
     )
@@ -625,14 +819,18 @@ Formatos de comentario por extensión:
     parser.add_argument("--define",       metavar="CODE",       help="Definir/actualizar una etiqueta @norm personalizada")
     parser.add_argument("--apply",        metavar="CODE",       help="Aplicar @norm a un archivo de código")
     parser.add_argument("--remove",       metavar="CODE",       help="Eliminar @norm de un archivo")
-    parser.add_argument("--link-vault",   metavar="NOTE_PATH",  help="Embeber @vault: en archivo fuente (ruta nota sin .md)")
+    parser.add_argument("--link-vault",   metavar="NOTE_PATH",  help="Embeber @vault: en cabecera o encima de --symbol (ruta o ID corto como REQ-042)")
     parser.add_argument("--unlink-vault", action="store_true",  help="Eliminar @vault: de un archivo fuente")
-    parser.add_argument("--scan",         action="store_true",  help="Listar @vault: y @norm en un archivo")
+    parser.add_argument("--scan",         action="store_true",  help="Listar @vault: (archivo y símbolos) y @norm en un archivo")
+    parser.add_argument("--resolve",      action="store_true",  help="Resolver @vault: contra el vault y devolver las reglas vivas de cada nota")
     parser.add_argument("--list",         action="store_true",  help="Listar todos los tags registrados")
     parser.add_argument("--tag-note",     metavar="CODE",       help="Crear nota en vault para este tag")
 
     # Parameters
     parser.add_argument("--file",        help="Ruta al archivo de código (absoluta o relativa al CWD)")
+    parser.add_argument("--symbol",      help="Método, función o clase objetivo para --link-vault o --resolve (ej: calcular_iva)")
+    parser.add_argument("--project",     type=proyecto_registrado("vault_code_tag"), help="Proyecto para desambiguar IDs cortos (ej: REQ-042)")
+    parser.add_argument("--html-preview", action="store_true", help="Con --resolve: genera visor web HTML autocontenido con @vault: clicables dentro de 19_Audits/previews/")
     parser.add_argument("--title",       help="Título para --link-vault (se muestra tras — en el tag)")
     parser.add_argument("--name",        help="Nombre descriptivo del tag (para --define o --apply)")
     parser.add_argument("--description", default="", help="Descripción detallada del tag")
@@ -667,6 +865,7 @@ Formatos de comentario por extensión:
             note_path_rel=args.link_vault,
             file_path_str=args.file,
             title=args.title or "",
+            symbol=args.symbol,
         )
     elif args.unlink_vault:
         if not args.file:
@@ -676,10 +875,19 @@ Formatos de comentario por extensión:
         if not args.file:
             parser.error("--remove requiere --file")
         result = vault_code_tag_remove(args.remove, args.file)
+    elif args.resolve:
+        if not args.file:
+            parser.error("--resolve requiere --file")
+        result = vault_code_tag_resolve(
+            file_path_str=args.file,
+            symbol=args.symbol,
+            project=args.project,
+            html_preview=args.html_preview,
+        )
     elif args.scan:
         if not args.file:
             parser.error("--scan requiere --file")
-        result = vault_code_tag_scan(args.file)
+        result = vault_code_tag_scan(args.file, project=args.project)
     elif args.list:
         result = vault_code_tag_list(
             file_filter=args.file,

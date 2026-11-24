@@ -35,6 +35,8 @@ EXTERNAS_ESPERADAS = {
     ("vault_audit", "path"),
     ("vault_code_module", "scan-path"),
     ("vault_code_query", "scan-path"),
+    ("vault_code_review", "files"),
+    ("vault_code_review", "path"),
     ("vault_code_sync", "scan-dir"),
     ("vault_code_tag", "file"),
     ("vault_drift_detect", "path"),

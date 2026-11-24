@@ -98,15 +98,25 @@ OPERACIONES_LOGICA_NEGOCIO: Tuple[str, ...] = (
 )
 
 _REGLAS_OPERACION_NEGOCIO: Tuple[Tuple[str, Tuple[str, ...]], ...] = (
-    ("auth", ("auth", "login", "logout", "token", "jwt", "oauth", "rbac", "perm", "session", "credential", "secret", "guard")),
-    ("rule", ("validat", "validar", "check", "assert", "policy", "politica", "invariant", "calc", "calcular", "pric", "tax", "rule", "regla", "sanitiz", "scan_content", "pre_flight", "norm")),
-    ("lifecycle", ("status", "estado", "transition", "transic", "approv", "aprob", "reject", "rechaz", "supersed", "sustitu", "archiv", "close", "cerrar", "publish", "deprecat", "cancel")),
+    ("auth", ("auth", "login", "logout", "token", "jwt", "oauth", "rbac", "permission", "permiso", "session", "credential", "secret", "guard")),
+    ("rule", ("validat", "validar", "check", "assert", "policy", "politica", "invariant", "calc", "calcular", "pric", "tax", "iva", "rule", "regla", "sanitiz", "scan_content", "pre_flight", "norma", "norms")),
+    ("lifecycle", ("status", "estado", "transition", "transic", "approv", "aprob", "reject", "rechaz", "supersed", "sustitu", "archiv", "cerrar", "publish", "deprecat", "cancel")),
     ("workflow", ("workflow", "flujo", "orchestr", "orquest", "pipeline", "saga", "onboard", "migrat", "rollback", "undo", "revert", "wave", "schedul", "checkout", "order", "pedido")),
     ("transform", ("parse", "parsear", "normaliz", "ingest", "extract", "extraer", "serializ", "render", "format", "formatear", "reindex", "slug", "transform", "convert", "import", "export", "compact")),
     ("event", ("emit", "publish", "subscrib", "webhook", "notify", "notif", "dispatch", "event", "evento", "listener", "change_log", "bitacora", "alert", "queue", "cola", "trigger")),
-    ("integration", ("client", "adapter", "adaptador", "gateway", "subprocess", "http", "fetch", "git", "sql", rutas.MCP, "connect", "remote", "webhook", "smtp", "storage", "external")),
+    ("integration", ("client", "adapter", "adaptador", "gateway", "subprocess", "http", "fetch", "git", "github", "sql", rutas.MCP, "connect", "remote", "webhook", "smtp", "storage", "external")),
     ("query", ("search", "buscar", "query", "consult", "find", "list", "rank", "bm25", "subgraph", "context_pack", "audit", "report", "metric", "dashboard", "inspect", "catalog", "detect")),
 )
+
+_RE_CAMEL_SEP = re.compile(r"([a-z0-9])([A-Z])")
+_RE_TOKEN_SPLIT = re.compile(r"[^a-z0-9]+")
+_EXACT_ONLY_TOKENS = frozenset({"order", "git", "tax", "iva", "rule", "norm", "norms", "norma", "normas", "list", "find", "sql", "http", "smtp", "jwt", "rbac", "saga", "wave", "cola", "slug"})
+
+
+def _tokenizar_para_pat10(texto: str) -> List[str]:
+    """Separa camelCase, snake_case y rutas en tokens en minusculas para evitar falsos positivos por substring."""
+    con_sep = _RE_CAMEL_SEP.sub(r"\1_\2", texto)
+    return [t for t in _RE_TOKEN_SPLIT.split(con_sep.lower()) if t]
 
 
 def clasificar_operaciones_negocio(
@@ -118,20 +128,39 @@ def clasificar_operaciones_negocio(
 ) -> List[str]:
     """Clasifica una feature o flujo en `OPERACIONES_LOGICA_NEGOCIO` (PAT-10).
 
-    Devuelve únicamente operaciones respaldadas por señales en el nombre, ruta,
-    resumen o llamadas; cuando no hay evidencia suficiente devuelve `["unclassified"]`
-    para no inventar clasificación (AP-45).
+    Empareja por fronteras de token (snake_case / camelCase / rutas) para evitar
+    falsos positivos por substrings internos (p. ej. `order` en `border`, `git`
+    en `digital`, `norm` en `normal`). Sin evidencia verificable devuelve
+    `["unclassified"]` (AP-45).
     """
-    texto = " ".join([
+    crudo = " ".join([
         str(file_rel or ""),
         str(symbol or ""),
         str(kind or ""),
         str(summary or ""),
         " ".join(str(c) for c in (calls or ())[:12]),
-    ]).lower()
+    ])
+    tokens = _tokenizar_para_pat10(crudo)
+    tokens_set = set(tokens)
+    crudo_lower = crudo.lower()
+
     halladas: List[str] = []
     for operacion, claves in _REGLAS_OPERACION_NEGOCIO:
-        if any(k in texto for k in claves):
+        coincide = False
+        for k in claves:
+            if "_" in k:
+                if k in crudo_lower:
+                    coincide = True
+                    break
+            elif k in _EXACT_ONLY_TOKENS:
+                if k in tokens_set or f"{k}s" in tokens_set:
+                    coincide = True
+                    break
+            else:
+                if any(t == k or t.startswith(k) for t in tokens):
+                    coincide = True
+                    break
+        if coincide:
             halladas.append(operacion)
     return halladas or ["unclassified"]
 

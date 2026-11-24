@@ -42,7 +42,15 @@ import vault_subproceso
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
-from vault.grafo.enlace_codigo import link_vault  # noqa: E402
+from vault.grafo.enlace_codigo import (  # noqa: E402
+    CODE_EXTS as _CODE_EXTS,
+    VAULT_TAG_PATTERN as _VAULT_TAG_PATTERN,
+    construir_indice_notas_vault,
+    construir_matriz_rdd,
+    extract_all_vault_refs,
+    link_vault,
+    resolver_referencia_vault,
+)
 from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 from vault.kernel import procesos_git  # noqa: E402
 
@@ -65,38 +73,8 @@ def _code_index() -> Path:
     return _repo().indice_codigo
 
 
-# Extensions considered source code (auditable for @vault: tags)
-_CODE_EXTS = frozenset(
-    {
-        ".ts",
-        ".tsx",
-        ".js",
-        ".jsx",
-        ".mjs",
-        ".py",
-        ".cs",
-        ".java",
-        ".go",
-        ".rs",
-        ".cpp",
-        ".c",
-        ".h",
-        ".kt",
-        ".swift",
-        ".rb",
-        ".php",
-        ".dart",
-        ".scala",
-        ".sh",
-        ".bash",
-        ".r",
-    }
-)
-
-_VAULT_TAG_PATTERN = re.compile(
-    r"^(?://|#|<!--|/\*|--)\s*@vault:\s*(\S+)\s*[—\-]+",
-    re.MULTILINE,
-)
+# _CODE_EXTS y _VAULT_TAG_PATTERN provienen de su dueno canonico (AP-57):
+# vault.grafo.enlace_codigo -> vault.kernel.trazabilidad_codigo.
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -176,21 +154,27 @@ def vault_code_sync(
     scan_dir: Optional[str] = None,
     fix: bool = False,
     dry_run: bool = False,
+    include_rdd: bool = False,
 ) -> Dict[str, Any]:
     """
-    Audit bidirectional traceability between vault notes and source files.
+    Audit bidirectional traceability between vault notes and source files
+    (both file headers and symbol-level @vault: refs, including short IDs like REQ-042).
 
     Returns:
       {
         "ok": true,
-        "summary": { complete, missing_tag, missing_file, no_source_ref, orphan_vault_refs },
-        "complete":       [ {note, source_file} ],
-        "missing_tag":    [ {note, source_file, fix_applied} ],
-        "missing_file":   [ {note, source_file_declared} ],
-        "no_source_ref":  [ {note} ],
-        "orphan_vault_refs": [ {source_file, vault_ref_declared} ],
-        "fixed":          int,
-        "dry_run":        bool,
+        "summary": { complete, missing_tag, missing_file, no_source_ref,
+                     orphan_vault_refs, stale_vault_refs, symbol_refs_checked },
+        "complete":          [ {note, source_file} ],
+        "missing_tag":       [ {note, source_file, fix_applied} ],
+        "missing_file":      [ {note, source_file_declared} ],
+        "no_source_ref":     [ {note} ],
+        "orphan_vault_refs": [ {source_file, vault_ref_declared, line?, symbol?} ],
+        "stale_vault_refs":  [ {source_file, vault_ref_declared, resolved_path, status, line, symbol} ],
+        "symbol_refs":       [ ... ],
+        "rdd_traceability":  { ... } (when include_rdd=True),
+        "fixed":             int,
+        "dry_run":           bool,
       }
     """
     es_del = _proyectos.pertenencia_en(_raiz(), project)
@@ -202,6 +186,8 @@ def vault_code_sync(
     missing_file: List[Dict] = []
     no_source_ref: List[Dict] = []
     orphan_vault_refs: List[Dict] = []
+    stale_vault_refs: List[Dict] = []
+    symbol_refs_found: List[Dict] = []
     # AP-67: el material que el agente opera tiene que estar en la memoria.
     # `proyecto_sin_conocimiento` es decidible (un proyecto enlazado sin una
     # sola nota de su codigo); `fuente_sin_nota` es el recuento de lo que hay
@@ -321,20 +307,67 @@ def vault_code_sync(
             except OSError:
                 continue
 
+    indice_notas = construir_indice_notas_vault(_raiz())
+
     for scan_root in scan_roots:
         for src_file in scan_root.rglob("*"):
-            if src_file.suffix.lower() not in _CODE_EXTS:
+            if not src_file.is_file() or src_file.suffix.lower() not in _CODE_EXTS:
                 continue
-            ref = _vault_ref_in_file(src_file)
-            if ref and ref not in all_note_refs and not _decision_existente(ref):
-                orphan_vault_refs.append(
-                    {
-                        "source_file": str(src_file),
-                        "vault_ref_declared": ref,
-                        "note": f"Vault note {ref}.md not found in {_code_dir().name}/",
-                    }
-                )
-            elif not ref:
+            try:
+                src_text = src_file.read_text(encoding="utf-8", errors="ignore")
+            except (OSError, UnicodeDecodeError, PermissionError) as exc:
+                emit_error("vault_code_sync", "FILE_READ_ERROR", str(exc))
+                continue
+
+            all_refs = extract_all_vault_refs(src_text, file_path=src_file)
+            if all_refs:
+                for ref_item in all_refs:
+                    ref_target = ref_item["ref_target"]
+                    res = resolver_referencia_vault(
+                        _raiz(),
+                        ref_target,
+                        anchor=ref_item["anchor"],
+                        project=project,
+                        indice=indice_notas,
+                        incluir_contenido=False,
+                    )
+                    if ref_item["scope"] == "symbol" or ref_item["symbol"]:
+                        symbol_refs_found.append(
+                            {
+                                "source_file": str(src_file),
+                                "line": ref_item["line"],
+                                "symbol": ref_item["symbol"],
+                                "vault_ref_declared": ref_item["raw_ref"],
+                                "resolved": res["resolved"],
+                                "resolved_path": res["path"],
+                                "status": res["status"],
+                            }
+                        )
+                    if not res["resolved"] and ref_target not in all_note_refs and not _decision_existente(ref_target):
+                        orphan_vault_refs.append(
+                            {
+                                "source_file": str(src_file),
+                                "line": ref_item["line"],
+                                "symbol": ref_item["symbol"],
+                                "vault_ref_declared": ref_target,
+                                "reason": res["status"],
+                                "candidates": res.get("candidates", []),
+                                "note": f"Vault note {ref_target}.md not found in vault",
+                            }
+                        )
+                    elif res.get("stale"):
+                        stale_vault_refs.append(
+                            {
+                                "source_file": str(src_file),
+                                "line": ref_item["line"],
+                                "symbol": ref_item["symbol"],
+                                "vault_ref_declared": ref_item["raw_ref"],
+                                "resolved_path": res["path"],
+                                "status": res["status"],
+                                "superseded_by": res.get("superseded_by"),
+                            }
+                        )
+            else:
                 # AP-67: este fichero no lo apunta ninguna nota. No es un
                 # error: es conocimiento que el vault no tiene. Se cuenta
                 # entero y se muestran unos pocos, porque el numero es el
@@ -348,6 +381,12 @@ def vault_code_sync(
                     if len(fuente_sin_nota) < 25:
                         fuente_sin_nota.append(
                             {"source_file": str(src_file), "norm": "AP-67"})
+
+    rdd_matrix = (
+        construir_matriz_rdd(_raiz(), scan_roots, project=project, indice=indice_notas)
+        if include_rdd
+        else None
+    )
 
     # AP-67: un proyecto enlazado al vault y sin una sola nota de su codigo
     # es un proyecto que el vault declara conocer y no conoce. Es decidible:
@@ -375,6 +414,8 @@ def vault_code_sync(
         "missing_file": len(missing_file),
         "no_source_ref": len(no_source_ref),
         "orphan_vault_refs": len(orphan_vault_refs),
+        "stale_vault_refs": len(stale_vault_refs),
+        "symbol_refs_checked": len(symbol_refs_found),
         "fix_applied": fixed,
         "proyecto_sin_conocimiento": len(proyecto_sin_conocimiento),
         "fuente_sin_nota": fuente_sin_nota_total,
@@ -395,7 +436,7 @@ def vault_code_sync(
                                            synced_at=utcnow()[:10])
             synced = {"commit": head, "ficha": ficha} if ficha else None
 
-    return {
+    salida_sync: Dict[str, Any] = {
         "ok": True,
         **write_report(),
         "status": status,
@@ -409,10 +450,15 @@ def vault_code_sync(
         "missing_file": missing_file,
         "no_source_ref": no_source_ref,
         "orphan_vault_refs": orphan_vault_refs,
+        "stale_vault_refs": stale_vault_refs,
+        "symbol_refs": symbol_refs_found,
         "proyecto_sin_conocimiento": proyecto_sin_conocimiento,
         "fuente_sin_nota": fuente_sin_nota,
         "fuente_sin_nota_total": fuente_sin_nota_total,
     }
+    if rdd_matrix is not None:
+        salida_sync["rdd_traceability"] = rdd_matrix
+    return salida_sync
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -500,6 +546,11 @@ Ejemplos:
         help="Mostrar qué se haría sin modificar archivos",
     )
     parser.add_argument(
+        "--rdd",
+        action="store_true",
+        help="Incluye matriz de trazabilidad RDD (14_Requirements REQ-NNN <-> métodos @vault: <-> 15_Tests)",
+    )
+    parser.add_argument(
         "--report", action="store_true", help="Salida human-readable en lugar de JSON"
     )
 
@@ -510,6 +561,7 @@ Ejemplos:
         scan_dir=args.scan_dir,
         fix=args.fix,
         dry_run=args.dry_run,
+        include_rdd=args.rdd,
     )
 
     if args.report:

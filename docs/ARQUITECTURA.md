@@ -2,7 +2,7 @@
 
 > Documento derivado. Se genera con `python scripts/vault_arch.py --blueprint`; la fuente es `CONTEXTS` en `scripts/vault_arch.py`. No se edita a mano.
 
-**10 contextos**, **180 módulos** clasificados, **34 fronteras cruzadas** pendientes de publicar puerto.
+**10 contextos**, **181 módulos** clasificados, **34 fronteras cruzadas** pendientes de publicar puerto.
 
 ## Los límites
 
@@ -87,7 +87,7 @@ Fronteras que hoy cruza (6), deuda declarada:
 
 - **Lenguaje ubicuo:** nodo, arista, wikilink, huérfano, componente
 - **Puertos publicados:** `construir_grafo` → `vault_graph:vault_graph`, `impacto` → `vault_impact:vault_impact`, `refresco_de_grafo` → `vault_graph:refrescar_nota_en_grafo`, `resolver_wikilink` → `vault_link_safety:validate_wikilinks`
-- **Módulos (15):** `vault_code_map`, `vault_code_module`, `vault_code_query`, `vault_code_relation`, `vault_code_sync`, `vault_code_tag`, `vault_env_matrix`, `vault_graph`, `vault_graph_fix`, `vault_graph_inspect`, `vault_graph_merge`, `vault_impact`, `vault_infra_map`, `vault_link_safety`, `vault_relation_add`
+- **Módulos (16):** `vault_code_map`, `vault_code_module`, `vault_code_query`, `vault_code_relation`, `vault_code_review`, `vault_code_sync`, `vault_code_tag`, `vault_env_matrix`, `vault_graph`, `vault_graph_fix`, `vault_graph_inspect`, `vault_graph_merge`, `vault_impact`, `vault_infra_map`, `vault_link_safety`, `vault_relation_add`
 
 Fronteras que hoy cruza (2), deuda declarada:
 
@@ -224,6 +224,7 @@ Quién escribe qué. Derivado del catálogo (`side_effects`): es el inventario q
 - `vault_code_map` (Código): Genera 11_Code/{project}/map.md con diagrama
 - `vault_code_module` (Código): Crea nota en 11_Code/{project}/
 - `vault_code_relation` (Código): Actualiza índice de relaciones en 11_Code/
+- `vault_code_review` (Código): Con --save: guarda acta de revisión en 19_Audits/code-review/; Con --html-preview: genera visor web HTML clicable en 19_Audits/previews/
 - `vault_code_sync` (Código): Actualiza 11_Code/{project}/index.json; Con --fix: inyecta @vault: en los ficheros fuente del proyecto, FUERA del vault (AP-36: el side effect se declara para poder revisarlo)
 - `vault_code_tag` (Normas): Actualiza frontmatter del módulo
 - `vault_criterios` (Normas): scripts/criterios-baseline.json

@@ -2605,6 +2605,28 @@ un automático. Lo que sí es automático es la otra mitad del enlace:
 - CI gate: `python scripts/vault_code_sync.py --project {slug}` — retorna exit 0 si `status: clean`
 - Saber cuánto del proyecto está en la memoria: `fuente_sin_nota` en el `summary`
 - Antes de sincronizar al equipo: confirmar trazabilidad completa con `--report`
+- Trazabilidad RDD (`--rdd`): cruza `14_Requirements/` (`REQ-NNN`) ↔ métodos anotados con `@vault:` (incluso indentados dentro de clases) ↔ pruebas en `15_Tests/`, y reporta referencias a notas obsoletas (`stale_vault_refs`).
+
+---
+
+#### `vault_code_review(path?, project?, base?, head?, staged?, files?, run_linters?, no_rdd?, html_preview?, save?, report?, strict?)`
+
+Revisión determinista de código / PR guiada por las notas vivas del vault. Integra ambos sentidos de sincronización: cuando un humano o una IA lee el código fuente con etiquetas `@vault:` (en cabecera o encima de un método concreto como `calcular_iva`, usando rutas o códigos cortos como `REQ-042#redondeo`), resuelve las reglas de negocio vigentes desde el vault sin saturar el código; y desde el vault, valida la matriz RDD (`REQ ↔ método ↔ test`) e impacto documental.
+
+**Ejes de revisión:**
+1. **Trazabilidad `@vault:` por archivo y símbolo** — resuelve rutas e IDs cortos (`REQ-NNN`, `QA-NNN`, `FLOW-NNN`, `ADR-NNNN`, `proyecto/REQ-NNN` y `#anclas`), entrega las reglas vivas con enlaces `obsidian://` y `file://`, bloquea referencias rotas (`AP-72`) y alerta sobre notas `superseded`/`deprecated`/`obsolete`.
+2. **Cobertura RDD y operaciones de negocio (`PAT-10`)** — identifica símbolos tocados en el diff, los clasifica en las 8 operaciones universales (`auth`, `rule`, `lifecycle`, `workflow`, `transform`, `event`, `integration`, `query`) y alerta cuando un método crítico carece de etiqueta `@vault:`.
+3. **Seguridad y secretos acotados al diff** — escanea únicamente líneas `+` de código real (omitiendo comentarios y docstrings).
+4. **Higiene estática (`AP-51`)** — detecta `except:` desnudos, `except Exception: pass/continue`, funciones tocadas >120 líneas y cambios de código fuente sin pruebas.
+5. **Impacto en el vault** — calcula notas afectadas directamente (`11_Code/`, `14_Requirements/`, `@vault:`) y backlinks en `99_Index/graph.json`.
+6. **Linters opcionales (`--run-linters`)** — ejecuta linters instalados (`ruff`/`eslint`) sobre los archivos tocados sin inventar resultados si no existen.
+7. **Visor web HTML clicable (`--html-preview`) y acta (`--save`)** — genera dentro del vault (`19_Audits/previews/`, `AP-36`) un visor HTML5 autocontenido donde cada `@vault:` del código/diff es clicable y despliega las reglas de la nota en un panel lateral.
+
+```bash
+python scripts/vault_code_review.py --path . --project mi-api --base main --head HEAD --report
+python scripts/vault_code_review.py --path . --project mi-api --files src/fiscal.py --html-preview
+python scripts/vault_code_review.py --path . --project mi-api --staged --run-linters --strict
+```
 
 ---
 
@@ -4298,7 +4320,7 @@ El vault en `{data-dir}/vault/` puede abrirse **directamente** en Obsidian deskt
 
 ## MCP Server Monolith — Servicio Directo para IAs (v37)
 
-El vault ahora expone sus 129 herramientas como un **servidor MCP monolítico** que las IAs pueden consumir directamente sin registro en harness. El archivo `mcp/nodejs/vault-mcp-server.mjs` implementa:
+El vault ahora expone sus 130 herramientas como un **servidor MCP monolítico** que las IAs pueden consumir directamente sin registro en harness. El archivo `mcp/nodejs/vault-mcp-server.mjs` implementa:
 
 ### Transporte dual
 - **Modo stdio:** el cliente MCP lanza `node mcp/nodejs/vault-mcp-server.mjs` como proceso hijo
@@ -4309,9 +4331,9 @@ El vault ahora expone sus 129 herramientas como un **servidor MCP monolítico** 
 | Capa | Función | Estrategias reutilizadas |
 |------|---------|--------------------------|
 | **MCP Protocol** | JSON-RPC 2.0 nativo (initialize, tools/list, tools/call, resources) | Cero dependencias npm |
-| **Tool Registry** | 129 herramientas con inputSchema completo | `vault_mcp_catalog.py` TOOLS_CATALOG |
+| **Tool Registry** | 130 herramientas con inputSchema completo | `vault_mcp_catalog.py` TOOLS_CATALOG |
 | **JS-native backend** | 2 tools rápidas en JavaScript puro | `vault_graph_inspect`, `vault_graph`, `vault_read`, backup/restore *(superseded_by: AP-48 — una tool no tiene a la vez backend en Node y script Python; la lista viva es `vault_mcp_catalog.NATIVE_JS_TOOLS`)* |
-| **Python backend** | 127 tools via subprocess a `scripts/*.py` | Todas las tools existentes |
+| **Python backend** | 128 tools via subprocess a `scripts/*.py` | Todas las tools existentes |
 | **Guard Chain** | 9 validadores pre-escritura en secuencia | `vault_write`, `vault_regex`, `vault_secret_scan` |
 | **File Watcher** | Detección de cambios en vault via `fs.watch` + SHA-256 | `vault_delta`, `vault_drift_detect` |
 | **Traceability** | Log inmutable de mutaciones (JSON + MD) | `vault_change_log`, `vault_mcp_context` |

@@ -3,8 +3,8 @@
 Vault Obsidian Architecture es un estándar abierto con un toolkit para dar a agentes LLM memoria documental persistente, auditable y gobernada sobre Markdown plano.
 
 [![Version](https://img.shields.io/badge/version-v41.27-blue)](./vault-obsidian-architecture.md)
-[![Tools](https://img.shields.io/badge/tools-129_active-green)](./scripts/)
-[![Scripts](https://img.shields.io/badge/scripts-172_total-lightblue)](./scripts/)
+[![Tools](https://img.shields.io/badge/tools-130_active-green)](./scripts/)
+[![Scripts](https://img.shields.io/badge/scripts-173_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
 
@@ -564,7 +564,7 @@ python scripts/vault_norms.py --check-framework    # guard anti-drift registro �
 
 ---
 
-## Las 129 tools activas — 37 grupos
+## Las 130 tools activas — 37 grupos
 
 | Grupo | Tools |
 |---|---|
@@ -579,7 +579,7 @@ python scripts/vault_norms.py --check-framework    # guard anti-drift registro �
 | 9 — Migración | `vault_migrate_docs`, `vault_migrate_rollback` |
 | 10 — Línea de Tiempo | `vault_timeline` |
 | 11 — Vista del Proyecto | `vault_project_status`, `vault_project_overview`, `vault_project` |
-| 12 — Código | `vault_code_module`, `vault_code_relation`, `vault_code_map`, `vault_code_query`, `vault_code_sync` |
+| 12 — Código | `vault_code_module`, `vault_code_relation`, `vault_code_map`, `vault_code_query`, `vault_code_sync`, `vault_code_review` |
 | 13 — Backups | `vault_backup`, `vault_backup_list`, `vault_restore`, `vault_backup_base64`, `vault_restore_base64` |
 | 14 — Seguridad | `vault_security_scan` |
 | 15 — Índices | `vault_section_index`, `vault_master_index`, `vault_reindex` |
@@ -698,7 +698,7 @@ Sistema de control de asistencia con autenticación biométrica.
 
 Contiene:
 - 8 principios de diseño
-- 129 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
+- 130 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
 - 98 normas: 79 antipatrones (AP-01–AP-79), 10 patrones (PAT-1–PAT-10), 4 SP, 5 CN
 - norm_refs auto-embebido en frontmatter + vault_code_tag para etiquetas en código fuente
 - 8 Fundamentos de Datos (F1–F8) con trazabilidad a tools
@@ -727,7 +727,7 @@ Contiene:
 ## Scripts — estructura del repositorio
 
 ```
-scripts/                    ← 172 archivos Python (129 tools activas + internas y de apoyo); las archivadas viven aparte en scripts/_archived/
+scripts/                    ← 173 archivos Python (130 tools activas + internas y de apoyo); las archivadas viven aparte en scripts/_archived/
 ├── vault_io.py             — I/O base: _detect_vault_root, assert_within_vault, atomic_write_text/json, file_lock
 ├── vault_errors.py         — wrap_main (timeout 60s), emit_ok, trace log
 ├── vault_write.py          — tool principal de escritura (guards AP-20, AP-21, norm_refs auto-embed)

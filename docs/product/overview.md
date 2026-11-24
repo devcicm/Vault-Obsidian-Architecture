@@ -65,7 +65,7 @@ recuperarlos después, y una persona puede revisar su contenido y procedencia.
 
 | Perspectiva | Promesa |
 |-------------|---------|
-| **Técnica** | Servidor MCP monolítico, cero dependencias npm, expone 98 tools con guard chain de validación (secret scan, bracket balance, Mermaid syntax, content gate) y coordinación asíncrona CQRS lectura/escritura (`AsyncRWCoordinator`). |
+| **Técnica** | Servidor MCP monolítico, cero dependencias npm, expone 99 tools con guard chain de validación (secret scan, bracket balance, Mermaid syntax, content gate) y coordinación asíncrona CQRS lectura/escritura (`AsyncRWCoordinator`). |
 | **De producto** | Agentes LLM en tiempo real con validación semántica profunda y concurrencia segura. |
 | **Simple** | Cualquier IA compatible usa las tools sin configuración. |
 

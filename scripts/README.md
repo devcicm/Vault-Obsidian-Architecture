@@ -1,13 +1,13 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture** (versión vigente: `vault_version.CURRENT_VERSION`). Implementan las 129 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture** (versión vigente: `vault_version.CURRENT_VERSION`). Implementan las 130 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **172 archivos Python** — 129 tools activas (125 con script + 2 JS-native backup/restore base64) + tools internas + meta/spec + bibliotecas; las 8 archivadas viven aparte en `_archived/`. Cuáles están disponibles, cuáles tienen ejemplo verificado y cuáles no deben usarse: [`../docs/DISPONIBILIDAD-DE-TOOLS.md`](../docs/DISPONIBILIDAD-DE-TOOLS.md)
+- **173 archivos Python** — 130 tools activas (125 con script + 2 JS-native backup/restore base64) + tools internas + meta/spec + bibliotecas; las 8 archivadas viven aparte en `_archived/`. Cuáles están disponibles, cuáles tienen ejemplo verificado y cuáles no deben usarse: [`../docs/DISPONIBILIDAD-DE-TOOLS.md`](../docs/DISPONIBILIDAD-DE-TOOLS.md)
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
 - **Saneamiento de índices (v38.1)** — `vault_section_index.py --heal [--root]` regenera índices con formato legacy `[[stem|alias]]` o ausentes; el auto-index post-write se auto-cura si un agente escribe `index.md` a mano
-- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone 98 de las 129 tools activas via MCP Protocol (las otras 31 se ejecutan por CLI o en el checkout) (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
+- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone 99 de las 130 tools activas via MCP Protocol (las otras 31 se ejecutan por CLI o en el checkout) (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — una dependencia obligatoria, PyYAML (declarada en `pyproject.toml`)
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault; requiere marcador de CONTENIDO (01_Projects/02_Observability/03_Decisions/.obsidian), no solo 00_System/99_Index (evita el ciclo auto-reforzado de detección); override runtime con `set_vault_root()`/env `VAULT_ROOT`
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -36,7 +36,7 @@ Scripts Python del estándar **Vault Obsidian Architecture** (versión vigente: 
 | [Grupo 9 — Migración](#grupo-9--migración) | vault_migrate_docs, vault_migrate_rollback |
 | [Grupo 10 — Línea de Tiempo](#grupo-10--línea-de-tiempo) | vault_timeline |
 | [Grupo 11 — Vista del Proyecto](#grupo-11--vista-del-proyecto) | vault_project_status, vault_project_overview, vault_project |
-| [Grupo 12 — Código](#grupo-12--código) | vault_code_module, vault_code_relation, vault_code_map, vault_code_query, vault_code_sync |
+| [Grupo 12 — Código](#grupo-12--código) | vault_code_module, vault_code_relation, vault_code_map, vault_code_query, vault_code_sync, vault_code_review |
 | [Grupo 13 — Backups](#grupo-13--backups) | vault_backup, vault_backup_list, vault_restore, vault_backup_base64, vault_restore_base64 |
 | [Grupo 14 — Seguridad](#grupo-14--seguridad) | vault_security_scan |
 | [Grupo 15 — Índices](#grupo-15--índices) | vault_section_index, vault_master_index, vault_reindex |
@@ -1103,6 +1103,21 @@ python vault_code_sync.py --project my-api --report      # salida legible
 python vault_code_sync.py --scan-dir src/                # refs huérfanas en el código
 python vault_code_sync.py --project my-api --fix --dry-run
 python vault_code_sync.py --project my-api --fix         # inyecta @vault: donde falta
+python vault_code_sync.py --project my-api --rdd         # incluye matriz RDD (REQ <-> métodos <-> tests)
+```
+
+---
+
+### `vault_code_review.py`
+Revisión determinista de PR, diff git o archivos fuente guiada por las notas vivas del vault.
+
+Resuelve etiquetas `@vault:` a nivel de archivo y de símbolo/método (incluidos códigos cortos como `REQ-042`, `QA-003`, `FLOW-007` y anclas `#sección`), trae al revisor humano o IA las reglas de negocio vigentes sin saturar el código, cruza símbolos tocados contra `PAT-10` y la matriz RDD (`14_Requirements/` ↔ métodos ↔ `15_Tests/`), audita seguridad e higiene (`AP-51`) acotadas a líneas reales del diff, calcula impacto en el vault y genera opcionalmente un visor web HTML autocontenido con etiquetas `@vault:` clicables (`19_Audits/previews/`) o acta en `19_Audits/code-review/`.
+
+```bash
+python vault_code_review.py --project my-api
+python vault_code_review.py --path . --base main --head HEAD --report
+python vault_code_review.py --path . --staged --run-linters --strict
+python vault_code_review.py --path . --files src/fiscal.py --html-preview
 ```
 
 ---
@@ -2603,7 +2618,7 @@ El vault expone sus herramientas como un **servidor MCP** que las IAs consumen d
 
 **Archivo:** `../mcp/nodejs/vault-mcp-server.mjs` (~1650 líneas, cero dependencias npm)  
 **Plan:** `../mcp/PLAN.md` — documento de evidencia con 8 fases de implementación
-**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (129 tools)
+**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (130 tools)
 
 Los parámetros que el catálogo publica **se derivan del `argparse` de cada script**,
 no se escriben a mano: el servidor compone `--<param>` literal, así que un param

@@ -1,60 +1,59 @@
-"""Enlace persistente entre un archivo de código y su nota del vault.
+"""Enlace persistente entre un archivo de código (o símbolo) y su nota del vault.
 
 Este servicio pertenece a Grafo: @vault es una arista desde el archivo fuente
-hacia la nota que lo documenta y code-tag-registry.json es su proyección
-persistida. No conoce el parser ni la CLI histórica vault_code_tag; esos
-adaptadores delegan aquí.
+(o desde un método/clase concreto) hacia la nota que lo documenta y
+code-tag-registry.json es su proyección persistida. La semántica pura de
+extracción, resolución por ID corto y matriz RDD vive en el núcleo
+(`vault.kernel.trazabilidad_codigo`); este módulo gestiona el registro
+persistido bajo lock.
 """
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, Optional
 
 from ..kernel import construir
+from ..kernel.trazabilidad_codigo import (
+    CODE_EXTS,
+    COMMENT_STYLES,
+    VAULT_REF_ANY_PATTERN,
+    VAULT_TAG_PATTERN,
+    VAULT_TAG_TEMPLATES,
+    comment_style,
+    construir_indice_notas_vault,
+    construir_matriz_rdd,
+    extract_all_vault_refs,
+    insertar_vault_en_simbolo,
+    line_offset,
+    renderizar_visor_html,
+    resolver_referencia_vault,
+)
 from .repositorio import RepositorioGrafo
 
-
-# El estilo de comentario es una propiedad del enlace código↔nota, no de la
-# herramienta legacy que lo expone. La fachada conserva los nombres privados
-# históricos como aliases para sus operaciones @norm.
-COMMENT_STYLES: Dict[str, str] = {
-    ".cs": "line", ".ts": "line", ".tsx": "line", ".js": "line",
-    ".jsx": "line", ".java": "line", ".cpp": "line", ".c": "line",
-    ".h": "line", ".go": "line", ".swift": "line", ".kt": "line",
-    ".rs": "line", ".dart": "line", ".py": "hash", ".rb": "hash",
-    ".sh": "hash", ".bash": "hash", ".zsh": "hash", ".yml": "hash",
-    ".yaml": "hash", ".r": "hash", ".html": "open_close",
-    ".xml": "open_close", ".svg": "open_close", ".css": "block",
-    ".scss": "block", ".sass": "block", ".less": "block", ".sql": "dash",
-    ".md": "none",
-}
-
-VAULT_TAG_TEMPLATES = {
-    "line": "// @vault: {note_path}  — {title}",
-    "hash": "# @vault: {note_path}  — {title}",
-    "open_close": "<!-- @vault: {note_path}  — {title} -->",
-    "block": "/* @vault: {note_path}  — {title} */",
-    "dash": "-- @vault: {note_path}  — {title}",
-}
-
-VAULT_TAG_PATTERN = re.compile(
-    r"^(?://|#|<!--|/\*|--)\s*@vault:\s*(\S+)\s*[—\-]+\s*(.*?)(?:\s*(?:-->|\*/))?\s*$",
-    re.MULTILINE,
-)
-
-
-def comment_style(file_path: Path) -> str:
-    return COMMENT_STYLES.get(file_path.suffix.lower(), "line")
-
-
-def line_offset(lines: List[str], line_index: int) -> int:
-    return sum(len(line) for line in lines[:line_index])
+__all__ = [
+    "CODE_EXTS",
+    "COMMENT_STYLES",
+    "VAULT_REF_ANY_PATTERN",
+    "VAULT_TAG_PATTERN",
+    "VAULT_TAG_TEMPLATES",
+    "comment_style",
+    "construir_indice_notas_vault",
+    "construir_matriz_rdd",
+    "extract_all_vault_refs",
+    "extract_vault_ref",
+    "insertar_vault_en_simbolo",
+    "line_offset",
+    "link_symbol_vault",
+    "link_vault",
+    "renderizar_visor_html",
+    "resolver_referencia_vault",
+    "unlink_vault",
+]
 
 
 def extract_vault_ref(content: str) -> Optional[Dict[str, str]]:
-    """Extrae la arista @vault embebida, si existe."""
+    """Extrae la arista @vault embebida en cabecera, si existe."""
     match = VAULT_TAG_PATTERN.search(content)
     if not match:
         return None
@@ -77,6 +76,37 @@ def _save_registry(repo: RepositorioGrafo, registry: Dict[str, Any]) -> None:
     repo.ctx.escritor.escribir_json(repo.registro_etiquetas_codigo, registry)
 
 
+def _registrar_en_proyeccion(
+    repo: RepositorioGrafo,
+    note_ref: str,
+    tag_title: str,
+    file_path: Path,
+    symbol: Optional[str] = None,
+) -> None:
+    registry = _read_registry(repo)
+    vault_key = f"vault:{note_ref.replace('/', ':')}"
+    tags = registry.setdefault("tags", {})
+    if vault_key not in tags:
+        tags[vault_key] = {
+            "name": tag_title,
+            "description": f"Vault note: {note_ref}",
+            "files": [],
+            "symbols": [],
+            "vault_note": note_ref + ".md" if "/" in note_ref else note_ref,
+            "created_at": repo.ctx.reloj.marca(),
+            "created_by": "vault_code_tag",
+            "tag_type": "vault_ref",
+        }
+    file_string = str(file_path)
+    if file_string not in tags[vault_key].get("files", []):
+        tags[vault_key].setdefault("files", []).append(file_string)
+    if symbol:
+        sym_entry = f"{file_string}::{symbol}"
+        if sym_entry not in tags[vault_key].get("symbols", []):
+            tags[vault_key].setdefault("symbols", []).append(sym_entry)
+    _save_registry(repo, registry)
+
+
 def link_vault(
     note_path_rel: str,
     file_path_str: str,
@@ -85,7 +115,7 @@ def link_vault(
     root: str | Path | None = None,
     report: Callable[[], Dict[str, int]] | None = None,
 ) -> Dict[str, Any]:
-    """Inserta o reemplaza el enlace @vault de un archivo fuente."""
+    """Inserta o reemplaza el enlace @vault de cabecera en un archivo fuente."""
     repo = _repo(root)
     file_path = Path(file_path_str)
 
@@ -111,7 +141,7 @@ def link_vault(
 
     try:
         original = file_path.read_text(encoding="utf-8", errors="ignore")
-    except Exception as exc:
+    except OSError as exc:
         return {"ok": False, "error_code": "READ_ERROR", "detail": str(exc)}
 
     existing = VAULT_TAG_PATTERN.search(original)
@@ -137,24 +167,8 @@ def link_vault(
     try:
         with repo.ctx.escritor.bloquear(repo.registro_etiquetas_codigo, timeout=30.0):
             repo.ctx.escritor.escribir(file_path, new_content)
-            registry = _read_registry(repo)
-            vault_key = f"vault:{note_ref.replace('/', ':')}"
-            tags = registry.setdefault("tags", {})
-            if vault_key not in tags:
-                tags[vault_key] = {
-                    "name": tag_title,
-                    "description": f"Vault note: {note_ref}",
-                    "files": [],
-                    "vault_note": note_ref + ".md",
-                    "created_at": repo.ctx.reloj.marca(),
-                    "created_by": "vault_code_tag",
-                    "tag_type": "vault_ref",
-                }
-            file_string = str(file_path)
-            if file_string not in tags[vault_key].get("files", []):
-                tags[vault_key].setdefault("files", []).append(file_string)
-            _save_registry(repo, registry)
-    except Exception as exc:
+            _registrar_en_proyeccion(repo, note_ref, tag_title, file_path)
+    except OSError as exc:
         return {"ok": False, "error_code": "WRITE_ERROR", "detail": str(exc)}
 
     return {
@@ -164,6 +178,86 @@ def link_vault(
         "file": str(file_path),
         "note": note_ref,
         "comment": vault_comment,
+    }
+
+
+def link_symbol_vault(
+    note_path_rel: str,
+    file_path_str: str,
+    symbol: str,
+    title: str = "",
+    *,
+    root: str | Path | None = None,
+    report: Callable[[], Dict[str, int]] | None = None,
+) -> Dict[str, Any]:
+    """Inserta un enlace @vault encima de un método, función o clase respetando indentación."""
+    repo = _repo(root)
+    file_path = Path(file_path_str)
+
+    if not file_path.exists():
+        return {
+            "ok": False,
+            "error_code": "FILE_NOT_FOUND",
+            "detail": f"Source file not found: {file_path}",
+        }
+
+    style = comment_style(file_path)
+    if style == "none":
+        return {
+            "ok": False,
+            "error_code": "UNSUPPORTED_FORMAT",
+            "detail": "Use frontmatter norm_refs for .md files.",
+        }
+
+    try:
+        original = file_path.read_text(encoding="utf-8", errors="ignore")
+    except OSError as exc:
+        return {"ok": False, "error_code": "READ_ERROR", "detail": str(exc)}
+
+    note_ref = note_path_rel.replace("\\", "/").removesuffix(".md").strip()
+    tag_title = (title or note_ref.split("/")[-1])[:60]
+
+    new_content, action, line_no, comment_line = insertar_vault_en_simbolo(
+        original,
+        note_ref=note_ref,
+        symbol=symbol,
+        style=style,
+        title=tag_title,
+        file_path=file_path,
+    )
+    if action == "symbol_not_found":
+        return {
+            "ok": False,
+            "error_code": "NOT_FOUND",
+            "detail": f"Symbol '{symbol}' not found in {file_path}",
+        }
+    if action == "already_present":
+        return {
+            "ok": True,
+            "action": "already_present",
+            "file": str(file_path),
+            "symbol": symbol,
+            "line": line_no,
+            "note": note_ref,
+            "comment": comment_line,
+        }
+
+    try:
+        with repo.ctx.escritor.bloquear(repo.registro_etiquetas_codigo, timeout=30.0):
+            repo.ctx.escritor.escribir(file_path, new_content)
+            _registrar_en_proyeccion(repo, note_ref, tag_title, file_path, symbol=symbol)
+    except OSError as exc:
+        return {"ok": False, "error_code": "WRITE_ERROR", "detail": str(exc)}
+
+    return {
+        "ok": True,
+        **(report() if report else {}),
+        "action": action,
+        "file": str(file_path),
+        "symbol": symbol,
+        "line": line_no,
+        "note": note_ref,
+        "comment": comment_line,
     }
 
 
@@ -183,7 +277,7 @@ def unlink_vault(
         }
     try:
         content = file_path.read_text(encoding="utf-8", errors="ignore")
-    except Exception as exc:
+    except OSError as exc:
         return {"ok": False, "error_code": "READ_ERROR", "detail": str(exc)}
 
     new_content, count = VAULT_TAG_PATTERN.subn("", content)
@@ -192,6 +286,6 @@ def unlink_vault(
     try:
         with repo.ctx.escritor.bloquear(repo.registro_etiquetas_codigo, timeout=30.0):
             repo.ctx.escritor.escribir(file_path, new_content)
-    except Exception as exc:
+    except OSError as exc:
         return {"ok": False, "error_code": "WRITE_ERROR", "detail": str(exc)}
     return {"ok": True, "action": "unlinked", "file": str(file_path), "lines_removed": count}
