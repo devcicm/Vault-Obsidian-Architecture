@@ -10,6 +10,7 @@ de derivarlo; se regenera con `vault_norms_engine.escribir_caras_derivadas`.
 GUARD = [
     'scripts/vault_io.py::_cargar_politica',
     'scripts/vault_io.py::_leer_politica',
+    'scripts/vault_io.py::motivo_proteccion_nota',
     'scripts/vault_write.py::vault_write',
     'scripts/vault_delete.py::vault_delete',
     'scripts/vault_move.py::move_note',

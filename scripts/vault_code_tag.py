@@ -341,7 +341,7 @@ def vault_code_tag_apply(
 
     try:
         from vault_io import atomic_write_text
-        atomic_write_text(file_path, new_content)
+        atomic_write_text(file_path, new_content, sanitize=False)
     except Exception as e:
         return emit_error("vault_code_tag", "FILE_WRITE_ERROR", f"No se pudo escribir {file_path}: {e}", exception=e)
 
@@ -399,7 +399,7 @@ def vault_code_tag_remove(code: str, file_path_str: str) -> Dict[str, Any]:
         return {"ok": True, "action": "not_found", "file": str(file_path), "code": code_lower}
 
     from vault_io import atomic_write_text
-    atomic_write_text(file_path, new_content)
+    atomic_write_text(file_path, new_content, sanitize=False)
 
     # Update registry
     reg = _read_registry()

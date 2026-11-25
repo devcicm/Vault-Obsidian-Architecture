@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 from . import features_y_flujos, procesos_git, rutas
+from .contenido import es_adr, falta_de_responsable
 from .errores import construir_error
 from .trazabilidad_codigo import (
     CODE_EXTS,
@@ -160,10 +161,63 @@ def _simbolos_con_rangos(content: str, file_path: Path) -> List[Dict[str, Any]]:
 
     # Deteccion lineal O(n) para lenguajes C-like / JS / TS / Go / Rust (AP-57: reusa kernel)
     lines = content.splitlines()
+
+    def _fin_bloque_clike(start_idx: int) -> int:
+        """Balancea `{ ... }` en O(n) ignorando strings y comentarios `//` (Fase H, C10)."""
+        depth = 0
+        opened = False
+        in_block_comment = False
+        for cur in range(start_idx - 1, len(lines)):
+            ln_txt = lines[cur]
+            i = 0
+            n = len(ln_txt)
+            in_str: Optional[str] = None
+            while i < n:
+                ch = ln_txt[i]
+                nxt = ln_txt[i + 1] if i + 1 < n else ""
+                if in_block_comment:
+                    if ch == "*" and nxt == "/":
+                        in_block_comment = False
+                        i += 2
+                        continue
+                    i += 1
+                    continue
+                if in_str:
+                    if ch == "\\":
+                        i += 2
+                        continue
+                    if ch == in_str:
+                        in_str = None
+                    i += 1
+                    continue
+                if ch == "/" and nxt == "/":
+                    break
+                if ch == "/" and nxt == "*":
+                    in_block_comment = True
+                    i += 2
+                    continue
+                if ch in ('"', "'", "`"):
+                    in_str = ch
+                    i += 1
+                    continue
+                if ch == "{":
+                    depth += 1
+                    opened = True
+                elif ch == "}" and opened:
+                    depth -= 1
+                    if depth == 0:
+                        return cur + 1
+                i += 1
+            # Expresión de una sola línea sin `{` (p. ej. C# `=> ...;` o firma abstracta)
+            if not opened and (";" in ln_txt or cur >= start_idx + 2):
+                return cur + 1
+        return len(lines)
+
     out_gen: List[Dict[str, Any]] = []
     for idx, ln in enumerate(lines, 1):
         sym = extraer_nombre_declaracion_linea(ln)
         if sym:
+            end_ln = _fin_bloque_clike(idx)
             out_gen.append(
                 {
                     "name": sym,
@@ -171,8 +225,8 @@ def _simbolos_con_rangos(content: str, file_path: Path) -> List[Dict[str, Any]]:
                     "kind": "function",
                     "start_line": idx,
                     "def_line": idx,
-                    "end_line": min(len(lines), idx + 40),
-                    "length": 1,
+                    "end_line": end_ln,
+                    "length": max(1, end_ln - idx + 1),
                     "calls": [],
                 }
             )
@@ -695,6 +749,9 @@ def ejecutar_code_review(
     run_linters: bool = False,
     include_rdd: bool = True,
     generar_html: bool = False,
+    xp_level: Optional[int] = None,
+    reviewer: Optional[str] = None,
+    agent: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Ejecuta el pipeline completo de 7 ejes de Code Review / PR Review."""
     repo = repo_root.resolve()
@@ -708,12 +765,17 @@ def ejecutar_code_review(
         for f_str in files:
             p = Path(f_str)
             abs_p = p.resolve() if p.is_absolute() else (repo / p).resolve()
-            if not abs_p.is_file():
-                continue
+            # Fase H (C7): contención estricta de `--files` dentro de `repo_root`.
             try:
                 rel = str(abs_p.relative_to(repo)).replace("\\", "/")
             except ValueError:
-                rel = str(abs_p).replace("\\", "/")
+                return construir_error(
+                    "vault_code_review",
+                    "INVALID_PATH",
+                    f"El archivo '{f_str}' resuelve fuera del repositorio '{repo}'.",
+                )
+            if not abs_p.is_file():
+                continue
             txt = abs_p.read_text(encoding="utf-8", errors="ignore")
             added = {i: ln for i, ln in enumerate(txt.splitlines(), 1)}
             diff_por_archivo[rel] = {
@@ -776,9 +838,10 @@ def ejecutar_code_review(
 
         # Eje 1: Extraccion y resolucion de todas las etiquetas @vault: (cabecera + simbolos)
         refs = extract_all_vault_refs(content, file_path=abs_p) if is_code else []
-        file_has_header_vault = any(r["scope"] == "file" for r in refs)
         symbol_refs_map: Dict[str, List[Dict[str, Any]]] = {}
         file_resolved_refs: List[Dict[str, Any]] = []
+        file_header_resolved_refs: List[Dict[str, Any]] = []
+        file_header_adr_refs: List[Dict[str, Any]] = []
 
         for ref in refs:
             res = resolver_referencia_vault(
@@ -817,6 +880,10 @@ def ejecutar_code_review(
                     }
                 )
             else:
+                if ref["scope"] == "file":
+                    file_header_resolved_refs.append(item)
+                    if res.get("path") and es_adr(res["path"], res.get("type", "")):
+                        file_header_adr_refs.append(item)
                 if res["path"]:
                     resolved_note_paths.add(res["path"])
                 applicable_rules.append(
@@ -861,9 +928,10 @@ def ejecutar_code_review(
                         }
                     )
 
-        # Eje 2: Simbolos tocados + PAT-10 + cobertura RDD
+        # Eje 2: Simbolos tocados + PAT-10 + ADR_INVARIANT_TOUCHED (SPEC-01) + cobertura RDD
         simbolos = _simbolos_con_rangos(content, abs_p) if is_code else []
         file_touched_syms: List[str] = []
+        adr_alerts_emitted: Set[Tuple[str, str]] = set()
         for sym in simbolos:
             lineas_sym_tocadas = sorted(ln for ln in added_set if sym["start_line"] <= ln <= sym["end_line"])
             if not lineas_sym_tocadas:
@@ -872,7 +940,12 @@ def ejecutar_code_review(
                 rel, sym["qualified_name"], sym["kind"], calls=sym.get("calls", ())
             )
             refs_del_sym = symbol_refs_map.get(sym["qualified_name"]) or symbol_refs_map.get(sym["name"]) or []
-            has_doc = bool(refs_del_sym) or file_has_header_vault
+            # Fase H (C10): solo referencias RESUELTAS cuentan como documentacion, y en
+            # operaciones criticas PAT-10 se exige granularidad por simbolo (una cabecera
+            # generica `@vault:` no silencia metodos criticos sin trazabilidad propia).
+            refs_resueltas_sym = [r for r in refs_del_sym if r.get("resolved")]
+            has_symbol_doc = bool(refs_resueltas_sym)
+            has_doc = has_symbol_doc or bool(file_header_resolved_refs)
             sym_entry = {
                 "file": rel,
                 "symbol": sym["qualified_name"],
@@ -886,7 +959,39 @@ def ejecutar_code_review(
             touched_symbols.append(sym_entry)
             file_touched_syms.append(sym["qualified_name"])
 
-            if not is_test and sym["kind"] != "class" and not has_doc:
+            # SPEC-01 (C10): alerta dedicada al modificar codigo vinculado a un ADR
+            # en `03_Decisions/` (tanto por simbolo como por cabecera del archivo).
+            if not is_test:
+                adr_refs_sym = [
+                    r for r in refs_resueltas_sym
+                    if r.get("path") and es_adr(r["path"], r.get("type", ""))
+                ]
+                for adr_ref in adr_refs_sym + file_header_adr_refs:
+                    adr_path = adr_ref["path"]
+                    clave = (sym["qualified_name"], adr_path)
+                    if clave in adr_alerts_emitted:
+                        continue
+                    adr_alerts_emitted.add(clave)
+                    findings.append(
+                        {
+                            "code": "ADR_INVARIANT_TOUCHED",
+                            "norm": "AP-72",
+                            "severity": "warning",
+                            "file": rel,
+                            "line": sym["def_line"],
+                            "symbol": sym["qualified_name"],
+                            "adr_path": adr_path,
+                            "adr_title": adr_ref.get("title") or Path(adr_path).stem,
+                            "adr_status": adr_ref.get("note_status") or adr_ref.get("status"),
+                            "message": (
+                                f"El cambio modifica `{sym['qualified_name']}`, protegido por la "
+                                f"decisión histórica `{adr_path}` (`{adr_ref.get('title') or Path(adr_path).stem}`). "
+                                "Verifica la invariante del ADR y acompaña con test de regresión o confirmación humana."
+                            ),
+                        }
+                    )
+
+            if not is_test and sym["kind"] != "class" and not has_symbol_doc:
                 ops_criticas = [op for op in ops if op in _CRITICAL_PAT10_OPS]
                 if ops_criticas:
                     findings.append(
@@ -900,7 +1005,7 @@ def ejecutar_code_review(
                             "business_operations": ops_criticas,
                             "message": (
                                 f"Metodo de negocio `{sym['qualified_name']}` ({', '.join(ops_criticas)}) "
-                                "no tiene etiqueta `@vault:` vinculada a su requisito o ADR."
+                                "no tiene etiqueta `@vault:` resuelta vinculada a su requisito o ADR."
                             ),
                             "suggested_command": (
                                 f"python {rutas.SCRIPTS}/vault_code_tag.py --link-vault REQ-001 "
@@ -939,17 +1044,73 @@ def ejecutar_code_review(
                 }
             )
 
-    # Alerta de deuda de tests cuando se modifica codigo de produccion sin tocar pruebas
-    if prod_code_changed > 0 and test_files_changed == 0 and not files:
+    # Alerta de deuda de tests cuando se modifica codigo de produccion sin tocar pruebas.
+    # SP-06 (XP Nivel >= 2): escala a blocker y aplica tambien con --files.
+    exigir_tdd = xp_level is not None and xp_level >= 2
+    if prod_code_changed > 0 and test_files_changed == 0 and (exigir_tdd or not files):
         findings.append(
             {
                 "code": "NO_TESTS_TOUCHED",
-                "severity": "warning",
+                "norm": "SP-06" if exigir_tdd else None,
+                "severity": "blocker" if exigir_tdd else "warning",
                 "file": "",
                 "line": 0,
                 "message": (
                     f"El cambio modifica {prod_code_changed} archivo(s) de codigo fuente "
-                    "sin anadir ni actualizar ningun archivo de pruebas."
+                    "sin anadir ni actualizar ningun archivo de pruebas"
+                    + (f" (bloqueante en XP Nivel {xp_level}, SP-06)." if exigir_tdd else ".")
+                ),
+            }
+        )
+
+    # SP-06 (XP Nivel >= 3): deteccion de iteracion monolitica + validacion de revisor humano.
+    if xp_level is not None and xp_level >= 3:
+        lineas_prod_anadidas = sum(
+            int(f.get("added", 0)) for f in files_summary
+            if f.get("is_code") and not _RE_TEST_FILE.search(str(f.get("file", "")))
+        )
+        if prod_code_changed > 12 or lineas_prod_anadidas > 400:
+            findings.append(
+                {
+                    "code": "XP_MONOLITHIC_DIFF",
+                    "norm": "SP-06",
+                    "severity": "warning",
+                    "file": "",
+                    "line": 0,
+                    "message": (
+                        f"SP-06 (XP Nivel {xp_level}): iteración monolítica "
+                        f"({prod_code_changed} archivos, {lineas_prod_anadidas} líneas de producción). "
+                        "Divide el cambio en incrementos pequeños revisables en pareja."
+                    ),
+                }
+            )
+    if reviewer is not None:
+        motivo_rev = falta_de_responsable(
+            {"status": "approved", "agent": agent or "", "responsable": reviewer},
+            "cerrado",
+        )
+        if motivo_rev:
+            findings.append(
+                {
+                    "code": "XP_REVIEWER_INVALID",
+                    "norm": "SP-06",
+                    "severity": "blocker",
+                    "file": "",
+                    "line": 0,
+                    "message": f"SP-06: revisor de pareja inválido ({motivo_rev}).",
+                }
+            )
+    elif xp_level is not None and xp_level >= 3:
+        findings.append(
+            {
+                "code": "XP_REVIEWER_MISSING",
+                "norm": "SP-06",
+                "severity": "warning",
+                "file": "",
+                "line": 0,
+                "message": (
+                    f"SP-06 (XP Nivel {xp_level}): no se indicó `--reviewer` humano "
+                    "para la revisión en pareja."
                 ),
             }
         )
@@ -1018,7 +1179,7 @@ def ejecutar_code_review(
         else None
     )
 
-    return {
+    salida = {
         "ok": True,
         "verdict": verdict,
         "review_scope": review_scope,
@@ -1034,3 +1195,6 @@ def ejecutar_code_review(
         "linters": linters_report,
         "html_content": html_content,
     }
+    if xp_level is not None:
+        salida["xp_level"] = xp_level
+    return salida

@@ -101,6 +101,7 @@ def conservar_nota_de_error(ruta: Path, texto_nuevo: str) -> str:
 # `vault_vocabulario.py` para el registro y su contexto dueño.
 from vault_vocabulario import opciones as _opciones
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
+from vault.kernel.safety import scan_poison  # noqa: E402
 
 #: `info` no es una gravedad: es lo que se registra sin que sea un
 #: problema. Por eso es una ampliación declarada y no otra escala.
@@ -321,6 +322,20 @@ def vault_log_error(
 
     if severity not in SEVERITIES:
         return emit_error("vault_log_error", "INVALID_VALUE", f"Severity inválida: {severity}. Válidos: {SEVERITIES}")
+
+    # Fase H (C5): pre-vuelo anti-poison no desactivable en señales de observabilidad.
+    hallazgos_poison = (
+        scan_poison(title or "", "log_error:title")
+        + scan_poison(description or "", "log_error:description")
+        + scan_poison(context or "", "log_error:context")
+        + scan_poison(mitigation or "", "log_error:mitigation")
+    )
+    bloqueantes_poison = [f for f in hallazgos_poison if f.severity in ("critical", "high")]
+    if bloqueantes_poison:
+        return {
+            **emit_error("vault_log_error", "POISON_DETECTED", bloqueantes_poison[0].detail),
+            "findings": [f.to_dict() for f in bloqueantes_poison],
+        }
 
     folder = TYPE_FOLDERS[error_type]
 

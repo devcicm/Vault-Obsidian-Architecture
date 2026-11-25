@@ -6,7 +6,7 @@
 > una en tu shell lo da `python scripts/vault_entorno.py --filtro <nombre>`:
 > se resuelve al llamarse, no al documentarse (AP-49).
 
-Variables: 34.
+Variables: 35.
 
 | Variable | Tipo | Default | Quién la lee | Qué gobierna |
 |---|---|---|---|---|
@@ -27,6 +27,7 @@ Variables: 34.
 | `VAULT_MCP_MAX_READS` | entero | `4` | meta_toolkit | Máximo de llamadas MCP de solo lectura (`access_mode: read`) ejecutadas en paralelo por el coordinador CQRS del servidor MCP. Solo la lee el `.mjs`. |
 | `VAULT_MCP_PERFIL` | texto | `''` | meta_toolkit | Perfil de tools que el servidor MCP expone y acepta (`agente`: las del protocolo de sesión, de `tools-catalog.json` → `perfiles`). Vacía, todas las expuestas por MCP. Solo la lee el `.mjs`. |
 | `VAULT_MCP_PYTHON` | ruta | — | meta_toolkit | Intérprete con el que el servidor MCP lanza las tools. Vacía, sondea `python3`, `python` y `py` (en ese orden; `py` al final porque en Windows del runner resuelve el Python registrado en la máquina, no el del toolkit) y exige a cada candidato que pueda `import yaml` (la dependencia declarada). Instalado en un venv, solo el de ese venv ve el toolkit, y `vault mcp-path` la fija a él: esa elección explícita no se segunda adivina. Solo la lee el `.mjs`. |
+| `VAULT_MCP_ROL` | texto | `''` | meta_toolkit | Rol de privilegios para clientes MCP locales sobre transporte `stdio` (`lector`, `ejecutor` u `operador`, validado fail-closed contra `tools-catalog.json` → `perfiles_de_token`). Vacía conserva la compatibilidad sin recorte en `stdio`. Solo la lee el `.mjs`. |
 | `VAULT_MCP_TOKEN` | texto | `''` | meta_toolkit | Token que exige el transporte HTTP/SSE del servidor MCP (`Authorization: Bearer`). Si falta, se genera uno por arranque. Solo la lee el `.mjs`; stdio no la usa. |
 | `VAULT_MCP_TOKENS` | texto | `''` | meta_toolkit | Tokens del transporte HTTP/SSE con su perfil, `lector:<t>,operador:<t>` (perfiles de `tools-catalog.json` → `perfiles_de_token`). `lector` solo ve y llama a las tools sin side effects. Se suma a `VAULT_MCP_TOKEN`, que es `operador`. Solo la lee el `.mjs`. |
 | `VAULT_MODEL_PROFILE` | texto | `''` | consulta | Perfil de modelo LLM activo. Lo propaga el servidor MCP al detectar el cliente (clientInfo.name). Lo lee vault_model_profile y vault_context_pack para adaptar el budget al modelo. |

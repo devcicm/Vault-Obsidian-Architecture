@@ -69,7 +69,7 @@ regenera.*
 
 *Registros: `vault_norms.NORM_CATALOG` + `vault_gate.PUERTAS` + `tests/`*
 
-98 de 98 normas tienen puerta o test que las nombre.
+100 de 100 normas tienen puerta o test que las nombre.
 **Es la única capa con baseline**, y por un motivo concreto: las demás se midieron
 en cero el día que se declararon porque sus datos ya existían y solo faltaba
 atarlos. Ésta no. Exigir cero aquí el primer día habría hecho nacer la puerta en
@@ -87,7 +87,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-08** — Documentación anclada a versiones obsoletas | audit | — | `test_ap08_version_pinned.py`, `test_ap08_vigencia.py`, `test_parte_a_normas.py` |
 | **AP-09** — Runbooks fuera de estructura | audit | `framework` | `test_vault_norms_audit.py` |
 | **AP-10** — Migración sin plan de rollback | audit | `framework` | `test_norms_coherence.py` |
-| **AP-11** — Skeleton files — frontmatter válido, contenido vacío | guard | `framework` | `test_envelope_forma.py`, `test_voice.py`, `test_voz_solo_normas_relevantes.py` |
+| **AP-11** — Skeleton files — frontmatter válido, contenido vacío | guard | `framework` | `test_envelope_forma.py`, `test_hardening_fase_h.py`, `test_voice.py`, `test_voz_solo_normas_relevantes.py` |
 | **AP-12** — Frontmatter inconsistente entre notas del mismo tipo | audit | — | `test_capa4_audit_ejercitada.py` |
 | **AP-13** — Timestamps inválidos o incompletos en frontmatter | audit | `framework` | `test_audit_missing_created.py`, `test_meta_contrato.py` |
 | **AP-14** — Wiki-links rotos o vacíos | guard+audit | — | `test_audit_acciones_de_movimiento.py`, `test_normas_caras.py`, `test_normas_enlaces_sin_solape.py`, `test_norms_coherence.py` |
@@ -97,7 +97,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-18** — Cross-folder content duplication | audit | — | `test_capa4_audit_ejercitada.py` |
 | **AP-19** — Shadow indexing | audit | `framework` | `test_errores_docs_resuelven.py` |
 | **AP-20** — Deceptive skeleton (empty-list) | guard | — | `test_ap20_esqueleto_de_lista.py` |
-| **AP-21** — Path-anchored wiki-links | guard+audit | — | `test_ap21_dentro_de_fence.py`, `test_ap21_ruta_necesaria.py`, `test_flujo_recuperaciones.py`, `test_normas_caras.py`, `test_normas_enlaces_sin_solape.py`, `test_vault_regex.py` |
+| **AP-21** — Path-anchored wiki-links | guard+audit | — | `test_ap21_dentro_de_fence.py`, `test_ap21_ruta_necesaria.py`, `test_flujo_recuperaciones.py`, `test_hardening_fase_h.py`, `test_normas_caras.py`, `test_normas_enlaces_sin_solape.py`, `test_vault_regex.py` |
 | **AP-22** — Wiki-link vacío — [[]] sin destino | guard+audit | — | `test_normas_caras.py`, `test_normas_enlaces_sin_solape.py`, `test_norms_coherence.py`, `test_vault_regex.py` |
 | **PAT-1** — Canonical source anchoring | recommended | — | `test_audiencia_normas_fase_m0.py`, `test_detector_features_y_flujos.py`, `test_norms_coherence.py`, `test_onboard_v3_fase_m3.py` |
 | **PAT-2** — Stub enrichment gradient | recommended | — | `test_pat2_stub_con_plazo.py` |
@@ -162,7 +162,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-78** — Decisión de IA de impacto alto sin evaluación por afectado | audit | — | `test_iso_42005_impacto_ia.py` |
 | **AP-79** — Nota sin entrada autosuficiente | audit | — | `test_ap79_profundidad_audit.py` |
 | **PAT-6** — Semantic graph enrichment — enriquecimiento periodico del grafo | recommended | — | `test_capa4_audit_ejercitada.py` |
-| **PAT-7** — Desacuerdo legítimo declarado — contradicts entre notas | recommended | `fuente_unica` | `test_audiencia_normas_fase_m0.py`, `test_karpathy_desacuerdos.py` |
+| **PAT-7** — Desacuerdo legítimo declarado — contradicts entre notas | recommended | `fuente_unica` | `test_audiencia_normas_fase_m0.py`, `test_fabrica_conocimiento_fase_q.py`, `test_karpathy_desacuerdos.py` |
 | **PAT-8** — Respuesta compilada en el wiki | recommended | — | `test_parte_a_normas.py` |
 | **PAT-9** — Esquema del agente generado | recommended | — | `test_norms_coherence.py`, `test_parte_a_normas.py` |
 | **PAT-10** — Taxonomía de operaciones de lógica de negocio y catálogo oficial de patrones | recommended | — | `test_detector_features_y_flujos.py`, `test_onboard_v3_fase_m3.py` |
@@ -170,6 +170,8 @@ rojo, y una puerta en rojo se desactiva.
 | **SP-02** — Forward-link verification — buscar antes de linkar | guard | — | `test_normas_enlaces_sin_solape.py`, `test_vault_norms.py` |
 | **SP-03** — Session snapshot pattern — delta antes de operaciones masivas | audit | — | `test_vault_norms.py` |
 | **SP-04** — Sesión MCP por HTTP sin credencial — cualquier proceso local la abre | guard | `produccion` | `test_mcp_http_seguridad.py`, `test_token_service_seguridad.py` |
+| **SP-05** — Separación Ejecutor-Curador y trazabilidad de banderas en la Fábrica de Conocimiento | guard | — | `test_fabrica_conocimiento_fase_q.py` |
+| **SP-06** — Madurez progresiva XP y disciplina Augmented Coding (opt-in) | guard | — | `test_xp_augmented_coding_fase_r.py` |
 | **CN-01** — Kebab-case filenames — nombres de archivo en minúsculas con guiones | guard | — | `test_ap46_escritores_migrados.py`, `test_audiencia_normas_fase_m0.py`, `test_cn01_cn04_audit_informativo.py`, `test_cn04_escritores_con_titulo.py`, `test_karpathy_adaptador.py`, `test_meta_contrato.py`, `test_vault_norms.py` |
 | **CN-02** — Numbered folder structure — secciones numeradas como únicos destinos | guard+audit | `framework` | `test_blueprint.py`, `test_fix_brackets_ruta.py`, `test_raiz_no_seccion.py`, `test_vault_norms.py`, `test_vault_norms_audit.py` |
 | **CN-03** — Standard status vocabulary — vocabulario canónico de meta.status | audit | `framework` | `test_calidad_no_castiga_el_vocabulario_canonico.py`, `test_norms_coherence.py`, `test_vault_norms.py`, `test_vault_norms_audit.py`, `test_vault_sanacion.py` |

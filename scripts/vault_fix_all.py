@@ -156,6 +156,16 @@ PASOS: List[Dict[str, Any]] = [
         "por_que": "regenera docs/ARQUITECTURA.md desde CONTEXTS",
     },
     {
+        "nombre": "servicio",
+        "insumos": (_carpeta(rutas.SCRIPTS), _carpeta(rutas.VAULT),
+                    _carpeta(rutas.NORMAS),
+                    rutas.cita_repo(rutas.DOCS, "GOBIERNO.md")),
+        "salidas": (rutas.cita_repo(rutas.DOCS, "GOBIERNO.md"),),
+        "script": "vault_servicio.py",
+        "args": ["--doc"],
+        "por_que": "regenera docs/GOBIERNO.md desde los registros de capacidades, naturalezas y normas",
+    },
+    {
         "nombre": "blueprint",
         "insumos": None,
         "salidas": (rutas.cita_repo(rutas.DOCS, "BLUEPRINT.md"),),

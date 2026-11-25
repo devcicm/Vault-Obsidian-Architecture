@@ -9,6 +9,7 @@ de derivarlo; se regenera con `vault_norms_engine.escribir_caras_derivadas`.
 
 GUARD = [
     'scripts/vault_io.py::_fuente_archivada_reescrita',
+    'scripts/vault_io.py::motivo_proteccion_nota',
     'scripts/vault_audit.py::_detect_fuentes_alteradas',
     'scripts/vault_audit.py::vault_audit',
 ]

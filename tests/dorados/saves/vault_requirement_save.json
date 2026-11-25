@@ -11,6 +11,15 @@
     "transition_logged": true,
     "unchanged": "<BEST-EFFORT>",
     "updated": "<BEST-EFFORT>",
+    "vault_says": {
+      "focus": "SP-06",
+      "message": "Acabas de cambiar lo que soy. 10 notas en disco, y eso queda en mi historial. Recuerda SP-06 — Madurez progresiva XP y disciplina Augmented Coding (opt-in): Declarar `xp_level` (1..4) en `00_System/reglas.json` solo cuando el proyecto adopta progresivamente XP; clasificar historias con `vault_requirement_save --buffer critical|optional`; registrar evidencia de tests en `15_Tests/` antes de cerrar requisitos; revisar diffs incrementales con `vault_code_review --reviewer <persona>` y emitir cláusula compacta en adaptadores con `vault_preferences --adapters`.",
+      "moment": "wrote",
+      "next": "python scripts/vault_norms.py --audit",
+      "norms": [
+        "SP-06 — Madurez progresiva XP y disciplina Augmented Coding (opt-in)"
+      ]
+    },
     "written": "<BEST-EFFORT>"
   },
   "nota": "---\nid: <UUID>\nreq_id: REQ-001\ntitle: Búsqueda por categoría\nproject: demo\nreq_type: functional\npriority: must-have\nstatus: draft\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ntags: [\"demo\", \"requirement\", \"functional\", \"must-have\"]\ncia_integrity: high\ncia_availability: medium\ncia_sensitivity: internal\nagent: system\n---\n\n# Búsqueda por categoría\n\nBúsqueda por categoría es un requisito de tipo functional y prioridad must-have del proyecto demo, en estado draft. Esta nota se generó con `vault_requirement_save` y vive en la sección de requisitos del vault.\n\n> _Pendiente: faltan sus criterios de aceptación (`--acceptance_criteria`)._\n\n## Descripcion\n\nEl usuario busca por categoría.\n\n## Estado\n\n**Estado:** **draft** | reviewed | approved | implemented | verified | obsolete"

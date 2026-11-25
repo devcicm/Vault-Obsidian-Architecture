@@ -67,7 +67,7 @@ from typing import Any, Dict, List, Optional
 #: "LLM Wiki" log that are not a single note's lifecycle: an ingest pass that
 #: produced notes from one source, and a lint pass over the whole vault. They
 #: are appended, never inserted, so the stable order of the older five holds.
-VALID_ACTIONS = ["created", "updated", "deleted", "moved", "transition", "ingested", "linted"]
+VALID_ACTIONS = ["created", "updated", "deleted", "moved", "transition", "ingested", "linted", "curated"]
 
 VALID_PROPAGATE_STRATEGIES = ["conservative", "transitive", "critical-path"]
 

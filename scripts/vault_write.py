@@ -99,7 +99,7 @@ from vault_norms_catalog import (
     STATUS_VOCAB,
     STATUS_TRANSITIONS,
 )
-from vault_registry import motivo_de_destino_invalido
+from vault_registry import motivo_de_destino_invalido, regimen_de_estado
 from datetime import datetime, timezone
 
 import uuid
@@ -110,6 +110,8 @@ from typing import Any, Dict, List, Optional
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.kernel.safety import scan_poison  # noqa: E402
 
 # La configuración se lee del registro único, no con un default por punto
 # de uso. Ver `vault_entorno.py`.
@@ -976,6 +978,23 @@ def vault_write(
             raise
         return emit_fallo("vault_write", exc)
 
+    # Fase H (C5): pre-vuelo anti-poison antes que forma (como guarda_secretos),
+    # no desactivable en notas de contenido (00_System/ exento).
+    if not folder.startswith("00_System"):
+        hallazgos_poison = (
+            scan_poison(title or "", "write:title")
+            + scan_poison(content or "", "write:content")
+        )
+        bloqueantes_poison = [f for f in hallazgos_poison if f.severity in ("critical", "high")]
+        if bloqueantes_poison:
+            return {
+                **emit_error(
+                    "vault_write", "POISON_DETECTED",
+                    f"Contenido bloqueado por pre-vuelo anti-poison: {bloqueantes_poison[0].detail}",
+                ),
+                "findings": [f.to_dict() for f in bloqueantes_poison],
+            }
+
     # Content gate: new notes must pass strict content quality gate (00_System exempt)
 
     if not _check_content_gate(content, folder):
@@ -1308,6 +1327,32 @@ def vault_write(
                         "to_status": destino,
                         "allowed": sorted(permitidos),
                     }
+    else:
+        # Fase H (C8): una nota nueva de requerimiento (14_Requirements) o ADR
+        # (03_Decisions) no puede nacer directamente en estado `verified` sin
+        # recorrer la máquina de estados (AP-41), ni evadir `es_adr()` en
+        # `03_Decisions/` declarando un `type` ajeno (CN-02).
+        carpeta_norm = folder.replace("\\", "/").strip("/")
+        tipo_decl = str(meta.get("type") or "").strip().lower()
+        if carpeta_norm.startswith("03_Decisions") and not is_index and tipo_decl:
+            if tipo_decl not in ("adr", "decision", "primer", "index"):
+                return emit_error(
+                    "vault_write", "INVALID_VALUE",
+                    f"CN-02: `03_Decisions/` solo admite type 'adr' o 'decision' (recibido: {tipo_decl!r}).",
+                )
+        es_req_o_adr = (
+            carpeta_norm.startswith("14_Requirements")
+            or carpeta_norm.startswith("03_Decisions")
+            or tipo_decl in ("requirement", "adr", "decision")
+        )
+        if es_req_o_adr and not is_index and meta.get("status"):
+            destino_alta, _, _ = normalize_status(str(meta["status"]))
+            if destino_alta == "verified":
+                return emit_error(
+                    "vault_write", "INVALID_STATUS",
+                    f"AP-41: una nota nueva en '{carpeta_norm}' no puede nacer directamente como 'verified'; "
+                    "créala en estado abierto ('draft' o 'planned') y transiciona con evidencia.",
+                )
 
     # Create folder if not exists. AP-36: la raíz se comprueba ANTES del `mkdir`;
     # la escritura atómica rechazaba la nota pero la carpeta ya quedaba creada

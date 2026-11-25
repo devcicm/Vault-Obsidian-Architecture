@@ -9,4 +9,5 @@ de derivarlo; se regenera con `vault_norms_engine.escribir_caras_derivadas`.
 
 GUARD = [
     'vault/gobernanza/fuente_unica.py::check',
+    'scripts/vault_context_pack.py::vault_context_pack',
 ]

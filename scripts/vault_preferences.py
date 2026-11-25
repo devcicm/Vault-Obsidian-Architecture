@@ -53,6 +53,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 # La configuración se lee del registro único, no con un default por punto
 # de uso. Ver `vault_entorno.py`.
 from vault_entorno import leer as _env
+from vault.kernel.safety import scan_poison  # noqa: E402
 
 #: Lo que espera una escritura a que otra suelte la nota (igual que vault_write).
 _LOCK_TIMEOUT = 10.0
@@ -202,6 +203,23 @@ def vault_preferences_set(
             "ok": False,
             "error_code": "EMPTY_STATEMENT",
             "error": "El enunciado de la preferencia no puede estar vacío",
+        }
+
+    # Fase H (C5): las preferencias `must` entran primero al paquete de contexto,
+    # por lo que el pre-vuelo anti-poison aquí es obligatorio y no desactivable.
+    hallazgos_poison = (
+        scan_poison(title or "", "preferences:title")
+        + scan_poison(statement, "preferences:statement")
+        + scan_poison(rationale or "", "preferences:rationale")
+    )
+    bloqueantes_poison = [f for f in hallazgos_poison if f.severity in ("critical", "high")]
+    if bloqueantes_poison:
+        return {
+            **emit_error(
+                "vault_preferences", "POISON_DETECTED",
+                f"Contenido bloqueado por pre-vuelo anti-poison: {bloqueantes_poison[0].detail}",
+            ),
+            "findings": [f.to_dict() for f in bloqueantes_poison],
         }
 
     # AP-16: atribución obligatoria. La preferencia dirige el comportamiento
@@ -604,6 +622,13 @@ def _cuerpo_adapter(cliente: str, contexto: dict, reglas: dict) -> str:
         lineas.append("")
     lineas += _mapa_de_carpetas() + _regla_de_nombres() + _decisiones()
     lineas += _comandos_de_prueba(reglas.get("comandos_de_prueba") or [])
+    nivel_xp = reglas.get("xp_level")
+    if nivel_xp:
+        lineas += [
+            "## Augmented Coding (SP-06)",
+            f"- Nivel XP activo: `{nivel_xp}` (`00_System/reglas.json`): TDD Rojo->Verde->Refactor, iteraciones pequeñas y revisión humana.",
+            "",
+        ]
     lineas += _protocolo_de_sesion()
     cola = [
         "",
@@ -683,16 +708,41 @@ def vault_preferences_adapters(destino: str, force: bool = False) -> dict:
     """
     from pathlib import Path as _Path
 
-    base = _Path(destino)
+    raw_dest = str(destino or "").strip()
+    if not raw_dest or ".." in _Path(raw_dest).parts:
+        return emit_error(
+            "vault_preferences", "INVALID_PATH",
+            f"Destino de adaptadores inválido o con traversal '..': {destino!r}",
+        )
+    base = _Path(raw_dest).resolve()
+    if base.exists() and not base.is_dir():
+        return emit_error(
+            "vault_preferences", "INVALID_PATH",
+            f"El destino de adaptadores no es un directorio: {base}",
+        )
+    # Fase H (C7): bloquear escritura de adaptadores sobre raíces críticas del SO.
+    partes_lower = tuple(p.lower() for p in base.parts)
+    if (
+        len(base.parts) <= 1
+        or (len(partes_lower) >= 2 and partes_lower[1] in ("windows", "system32", "etc", "usr", "bin", "sbin", "boot"))
+    ):
+        return emit_error(
+            "vault_preferences", "INVALID_PATH",
+            f"Destino de adaptadores rechazado por seguridad (ruta de sistema): {base}",
+        )
     try:
         contexto = vault_preferences_context(max_items=40)
     except Exception as exc:  # AP-51: se dice por qué, no se devuelve vacío
         return emit_error("vault_preferences", "PREFERENCES_UNREADABLE",
                           f"no se pudo leer el contexto: {exc}")
     try:
-        from vault_io import comandos_de_prueba_declarados, reglas_declaradas
+        from vault_io import comandos_de_prueba_declarados, reglas_declaradas, xp_level_declarado
 
-        reglas = {**reglas_declaradas(), "comandos_de_prueba": comandos_de_prueba_declarados()}
+        reglas = {
+            **reglas_declaradas(),
+            "comandos_de_prueba": comandos_de_prueba_declarados(),
+            "xp_level": xp_level_declarado(),
+        }
     except Exception:
         return emit_error("vault_preferences", "INVALID_INPUT",
                           "No se pudieron verificar las reglas del vault; no se generaron adaptadores.")

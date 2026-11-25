@@ -133,6 +133,7 @@ def test_los_pasos_en_el_orden_canonico():
         "esquemas",
         "metricas",
         "arquitectura",
+        "servicio",
         "blueprint",
         "doc_counts",
         "doc_sync",

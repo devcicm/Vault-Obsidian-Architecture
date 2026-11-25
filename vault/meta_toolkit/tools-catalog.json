@@ -726,7 +726,7 @@
         "properties": {
           "action": {
             "type": "string",
-            "description": "Action to record: ['created', 'updated', 'deleted', 'moved', 'transition', 'ingested', 'linted']",
+            "description": "Action to record: ['created', 'updated', 'deleted', 'moved', 'transition', 'ingested', 'linted', 'curated']",
             "enum": [
               "created",
               "updated",
@@ -734,7 +734,8 @@
               "moved",
               "transition",
               "ingested",
-              "linted"
+              "linted",
+              "curated"
             ]
           },
           "path": {
@@ -1285,6 +1286,10 @@
           "agent": {
             "type": "string",
             "description": "Agente que firma el acta cuando se usa --save"
+          },
+          "reviewer": {
+            "type": "string",
+            "description": "Revisor humano de pareja (XP Nivel 3, SP-06)"
           }
         },
         "additionalProperties": false
@@ -1531,6 +1536,15 @@
           "incluir-historico": {
             "type": "boolean",
             "description": "Devuelve las notas históricas (superseded_by, archived, deprecated, obsolete, revoked, fuentes archivadas, cuarentena) al ranking, penalizadas. Por defecto solo verdad vigente."
+          },
+          "max-sensitivity": {
+            "type": "string",
+            "description": "Tope máximo de cia_sensitivity permitido en el paquete (public, internal, restricted)",
+            "enum": [
+              "public",
+              "internal",
+              "restricted"
+            ]
           }
         },
         "additionalProperties": false
@@ -3387,7 +3401,7 @@
           },
           "type": {
             "type": "string",
-            "description": "Component type: ['server', 'vm', 'container', 'service', 'database', 'queue', 'storage', 'proxy', 'loadbalancer', 'network', 'firewall', 'cdn', 'pipeline', 'secret']",
+            "description": "Component type: ['server', 'vm', 'container', 'service', 'database', 'queue', 'storage', 'proxy', 'loadbalancer', 'network', 'firewall', 'cdn', 'pipeline', 'secret', 'data_source']",
             "enum": [
               "server",
               "vm",
@@ -3402,7 +3416,8 @@
               "firewall",
               "cdn",
               "pipeline",
-              "secret"
+              "secret",
+              "data_source"
             ]
           },
           "description": {
@@ -3541,6 +3556,10 @@
           "desde-pack": {
             "type": "string",
             "description": "Envelope JSON de vault_context_pack: el texto es la respuesta y se guarda como un borrador que cita sus notas"
+          },
+          "no-aplicar-paginas": {
+            "type": "boolean",
+            "description": "No anexar automáticamente a páginas afectadas en --commit; delegar al curador SP-05"
           }
         },
         "required": [
@@ -3942,7 +3961,7 @@
       "side_effects": [
         "Crea/actualiza nota en 02_Observability/"
       ],
-      "perfil_minimo": "operador",
+      "perfil_minimo": "ejecutor",
       "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
@@ -5624,6 +5643,55 @@
           "clear": {
             "type": "string",
             "description": "Mark a note as reviewed (remove propagation_pending)"
+          },
+          "curate-plan": {
+            "type": "boolean",
+            "description": "SP-05 dry-run: cruza banderas (.flags.jsonl), cola de propagación y /raw recientes"
+          },
+          "curate-apply": {
+            "type": "boolean",
+            "description": "SP-05 curación batch: aplica banderas aprobadas por write path gobernado y emite reporte"
+          },
+          "flag-ids": {
+            "type": "array",
+            "description": "Subconjunto de FLAG-NNN a aplicar con --curate-apply",
+            "items": {
+              "type": "string"
+            }
+          },
+          "resolve-flag": {
+            "type": "string",
+            "description": "SP-05: transicionar estado de una bandera (triaged|applied|dismissed)"
+          },
+          "flag-status": {
+            "type": "string",
+            "description": "Nuevo estado de la bandera con --resolve-flag",
+            "enum": [
+              "open",
+              "triaged",
+              "applied",
+              "dismissed"
+            ]
+          },
+          "resolution-note": {
+            "type": "string",
+            "description": "Motivo de resolución o descarte con --resolve-flag"
+          },
+          "mark-contradicts": {
+            "type": "string",
+            "description": "PAT-7: declara desacuerdo bilateral `contradicts:` entre PATH_A y --other-note"
+          },
+          "other-note": {
+            "type": "string",
+            "description": "Segunda nota del desacuerdo bilateral con --mark-contradicts"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Motivo del desacuerdo declarado con --mark-contradicts"
+          },
+          "agent": {
+            "type": "string",
+            "description": "Agente curador que firma la operación SP-05/PAT-7"
           }
         },
         "additionalProperties": false
@@ -5939,6 +6007,15 @@
           "path": {
             "type": "string",
             "description": "Ruta relativa al vault (ej: 01_Projects/mi-api/overview.md)"
+          },
+          "max-sensitivity": {
+            "type": "string",
+            "description": "Tope máximo de cia_sensitivity permitido al leer (public, internal, restricted)",
+            "enum": [
+              "public",
+              "internal",
+              "restricted"
+            ]
           }
         },
         "required": [
@@ -6319,6 +6396,14 @@
             "type": "string",
             "description": "Comma-separated ISO/IEC 25019:2023 quality-in-use characteristics"
           },
+          "buffer": {
+            "type": "string",
+            "description": "Holgura XP opcional (SPEC-03/SP-06): critical | optional",
+            "enum": [
+              "critical",
+              "optional"
+            ]
+          },
           "adopt-legacy": {
             "type": "boolean",
             "description": "Reconstruye el indice registrando una adopcion explicita para notas legadas sin historia"
@@ -6556,6 +6641,14 @@
             "type": "boolean",
             "description": "Consultar la ronda abierta (por defecto)"
           },
+          "flag": {
+            "type": "boolean",
+            "description": "Levantar una bandera no bloqueante FLAG-NNN (SP-05)"
+          },
+          "flags": {
+            "type": "boolean",
+            "description": "Listar banderas registradas en 00_System/.flags.jsonl"
+          },
           "agente": {
             "type": "string",
             "description": "Quien abre la ronda"
@@ -6567,6 +6660,36 @@
           "resumen": {
             "type": "string",
             "description": "Que se hizo en la ronda (va a la nota de sesion)"
+          },
+          "kind": {
+            "type": "string",
+            "description": "Tipo de bandera (con --flag / --flags)",
+            "enum": [
+              ""
+            ]
+          },
+          "observed": {
+            "type": "string",
+            "description": "Evidencia observada (con --flag)"
+          },
+          "proposed-fix": {
+            "type": "string",
+            "description": "Ajuste propuesto para el curador (con --flag)"
+          },
+          "target-note": {
+            "type": "string",
+            "description": "Nota objetivo sugerida relativa al vault (con --flag)"
+          },
+          "trace-ref": {
+            "type": "string",
+            "description": "Referencia de traza o ejecución (con --flag)"
+          },
+          "status": {
+            "type": "string",
+            "description": "Filtrar banderas por estado (con --flags)",
+            "enum": [
+              ""
+            ]
           }
         },
         "additionalProperties": false
@@ -6580,7 +6703,7 @@
         "Escribe y borra 00_System/ronda-activa.json",
         "Al cerrar, escribe la nota de sesion en 04_Sessions/ por vault_write"
       ],
-      "perfil_minimo": "operador",
+      "perfil_minimo": "ejecutor",
       "access_mode": "write",
       "status": "active",
       "exposed_via_mcp": true,
@@ -10364,6 +10487,7 @@
   },
   "perfiles_de_token": [
     "lector",
+    "ejecutor",
     "operador"
   ],
   "global_scope_tools": [

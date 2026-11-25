@@ -40,6 +40,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
+from vault_entorno import leer as _env
 from vault_errors import emit_error, wrap_main
 from vault_io import atomic_write_json, get_vault_root, is_snapshot_path, write_report
 from vault_lib import destino_mas_corto, indice_de_nombres, inventario_de_nombres
@@ -48,9 +49,18 @@ from vault_write import vault_write
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from vault.autoria.banderas import (  # noqa: E402
+    ESTADOS_BANDERA,
+    TIPOS_BANDERA,
+    levantar_bandera,
+    listar_banderas,
+)
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.autoria.ronda import leer_activa, nuevo_round_id, ruta_activa  # noqa: E402
+from vault.kernel import construir  # noqa: E402
 from vault.kernel.enumeracion import notas_en_disco  # noqa: E402
 from vault.kernel.frontmatter_parsing import FrontmatterParseError, parse_frontmatter  # noqa: E402
+from vault.kernel.safety import scan_poison  # noqa: E402
 
 TOOL = "vault_ronda"
 SECCION_SESIONES = "04_Sessions"
@@ -78,11 +88,36 @@ def activa() -> Dict[str, Any]:
             "round": ronda, **write_report()}
 
 
+def _rechazo_si_ejecutor(accion: str):
+    """SP-05: el perfil `ejecutor` solo consulta y levanta banderas (`--flag`/`--flags`)."""
+    rol = str(_env("VAULT_MCP_ROL") or "").strip().lower()
+    if rol == "ejecutor":
+        return emit_error(
+            TOOL,
+            "PERMISSION_DENIED",
+            f"SP-05: el perfil `ejecutor` no puede ejecutar `--{accion}` en `vault_ronda`; "
+            "solo puede consultar (`--activa`, `--flags`) y levantar señales (`--flag`).",
+        )
+    return None
+
+
 def abrir(agente: str, objetivo: str) -> Dict[str, Any]:
+    denegado = _rechazo_si_ejecutor("abrir")
+    if denegado:
+        return denegado
     agente, objetivo = (agente or "").strip(), (objetivo or "").strip()
     if not agente or not objetivo:
         return emit_error(TOOL, "MISSING_REQUIRED_ARG",
                           "--abrir necesita --agente y --objetivo no vacíos")
+    bloqueantes_poison = [
+        f for f in scan_poison(objetivo, "ronda:objetivo")
+        if f.severity in ("critical", "high")
+    ]
+    if bloqueantes_poison:
+        return {
+            **emit_error(TOOL, "POISON_DETECTED", bloqueantes_poison[0].detail),
+            "findings": [f.to_dict() for f in bloqueantes_poison],
+        }
     ronda, error = _activa_o_error()
     if error:
         return error
@@ -145,9 +180,21 @@ def _cuerpo(ronda: Dict[str, Any], resumen: str, notas: List[str], cerrada: str)
 
 
 def cerrar(resumen: str) -> Dict[str, Any]:
+    denegado = _rechazo_si_ejecutor("cerrar")
+    if denegado:
+        return denegado
     resumen = (resumen or "").strip()
     if not resumen:
         return emit_error(TOOL, "MISSING_REQUIRED_ARG", "--cerrar necesita un --resumen no vacío")
+    bloqueantes_poison = [
+        f for f in scan_poison(resumen, "ronda:resumen")
+        if f.severity in ("critical", "high")
+    ]
+    if bloqueantes_poison:
+        return {
+            **emit_error(TOOL, "POISON_DETECTED", bloqueantes_poison[0].detail),
+            "findings": [f.to_dict() for f in bloqueantes_poison],
+        }
     ronda, error = _activa_o_error()
     if error:
         return error
@@ -170,15 +217,56 @@ def cerrar(resumen: str) -> Dict[str, Any]:
             **write_report()}
 
 
+def levantar_senal(
+    kind: str,
+    observed: str,
+    proposed_fix: str = "",
+    target_note: str = "",
+    trace_ref: str = "",
+    agent: str = "",
+) -> Dict[str, Any]:
+    """Levanta una bandera no bloqueante FLAG-NNN en 00_System/.flags.jsonl (SPEC-04, SP-05).
+
+    Operación segura para el perfil `ejecutor`: nunca modifica notas canónicas.
+    """
+    repo = RepositorioAutoria(construir(get_vault_root()))
+    res = levantar_bandera(
+        repo,
+        kind=kind,
+        observed=observed,
+        proposed_fix=proposed_fix,
+        target_note=target_note,
+        trace_ref=trace_ref,
+        agent=agent,
+    )
+    if not res.get("ok"):
+        return {
+            **emit_error(TOOL, str(res.get("error_code") or "INVALID_INPUT"), str(res.get("message") or "")),
+            **({"findings": res["findings"]} if res.get("findings") else {}),
+        }
+    return {"ok": True, "tool": TOOL, "action": "flag", **res, **write_report()}
+
+
+def listar_senales(status: str = "", kind: str = "") -> Dict[str, Any]:
+    """Lista las banderas registradas en 00_System/.flags.jsonl (SP-05)."""
+    repo = RepositorioAutoria(construir(get_vault_root()))
+    res = listar_banderas(repo, status=status or None, kind=kind or None)
+    if not res.get("ok"):
+        return emit_error(TOOL, str(res.get("error_code") or "INVALID_INPUT"), str(res.get("message") or ""))
+    return {"ok": True, "tool": TOOL, "action": "flags", **res, **write_report()}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Abre, consulta y cierra la ronda de trabajo de un agente",
+        description="Abre, consulta y cierra la ronda de trabajo de un agente; gestiona banderas SP-05",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Ejemplos:
   python vault_ronda.py --activa
   python vault_ronda.py --abrir --agente claude --objetivo "sanar 10_Migrated"
   python vault_ronda.py --cerrar --resumen "tres notas canónicas y dos supersedidas"
+  python vault_ronda.py --flag --kind schema_drift --observed "Columna renamed" --target-note "08_Runbooks/etl.md"
+  python vault_ronda.py --flags --status open
 """,
         allow_abbrev=False,
     )
@@ -186,15 +274,34 @@ Ejemplos:
     accion.add_argument("--abrir", action="store_true", help="Abrir una ronda nueva")
     accion.add_argument("--cerrar", action="store_true", help="Cerrar la ronda abierta")
     accion.add_argument("--activa", action="store_true", help="Consultar la ronda abierta (por defecto)")
-    parser.add_argument("--agente", default="", help="Quién abre la ronda (con --abrir)")
+    accion.add_argument("--flag", action="store_true", help="Levantar una bandera no bloqueante FLAG-NNN (SP-05)")
+    accion.add_argument("--flags", action="store_true", help="Listar banderas registradas en 00_System/.flags.jsonl")
+    parser.add_argument("--agente", default="", help="Quién abre la ronda o levanta la bandera")
     parser.add_argument("--objetivo", default="", help="Para qué se abre (con --abrir)")
     parser.add_argument("--resumen", default="", help="Qué se hizo (con --cerrar)")
+    parser.add_argument("--kind", default="", choices=["", *TIPOS_BANDERA], help="Tipo de bandera (con --flag / --flags)")
+    parser.add_argument("--observed", default="", help="Evidencia observada (con --flag)")
+    parser.add_argument("--proposed-fix", default="", help="Ajuste propuesto para el curador (con --flag)")
+    parser.add_argument("--target-note", default="", help="Nota objetivo sugerida relativa al vault (con --flag)")
+    parser.add_argument("--trace-ref", default="", help="Referencia de traza o ejecución (con --flag)")
+    parser.add_argument("--status", default="", choices=["", *ESTADOS_BANDERA], help="Filtrar banderas por estado (con --flags)")
     args = parser.parse_args()
 
     if args.abrir:
         result = abrir(args.agente, args.objetivo)
     elif args.cerrar:
         result = cerrar(args.resumen)
+    elif args.flag:
+        result = levantar_senal(
+            kind=args.kind,
+            observed=args.observed,
+            proposed_fix=args.proposed_fix,
+            target_note=args.target_note,
+            trace_ref=args.trace_ref,
+            agent=args.agente,
+        )
+    elif args.flags:
+        result = listar_senales(status=args.status, kind=args.kind)
     else:
         result = activa()
     print(json.dumps(result, indent=2, ensure_ascii=False))

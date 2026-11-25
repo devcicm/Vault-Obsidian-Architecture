@@ -7,6 +7,7 @@
 > - Las decisiones viven en `docs/adr/`; el porqué de cada norma, en `normas/<código>/porque.md`.
 > - Todo lo que se ejecuta va contra `vault-sandbox/`, nunca contra la raíz del repo ni un vault real.
 > - Lo derivado no se edita a mano: se regenera con su dueño (abajo, «Cuatro cosas…»).
+> - **Mapa por capas y referencia cruzada para agentes:** [CLAUDE.md](CLAUDE.md) (índice compacto de contexto y skills) · [docs/architecture/MAPA-CAPAS.md](docs/architecture/MAPA-CAPAS.md) (Capas 1–6 y control de flujo) · [.archify/mapa-capas.html](.archify/mapa-capas.html) · [docs/BLUEPRINT.md](docs/BLUEPRINT.md) · [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) · [docs/GOBIERNO.md](docs/GOBIERNO.md) · [agent/skills/](agent/skills/).
 
 Este repositorio **no es un vault**: es el **estándar** que define cómo se construyen los
 vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se puede cometer aquí.
@@ -20,7 +21,7 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~13.000 líneas). Fuente normativa. |
 | `scripts/*.py` | ~173 scripts, 130 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (8038 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (8076 tests). Toda norma con guard debe tener test. |
 | `normas/` | Normas como paquete (`normas/<código>/`: `norma.py`, `porque.md`, `guard.py`, `heal.py`, `test_*.py`). Las carga `vault_norms_catalog` en su sitio del catálogo; la forma la vigila `--check-framework`. Desde m186 toda norma vive aquí (cuántas, `NORMAS_EN_PAQUETE`). `guard.py`/`heal.py` son derivados —apuntan a la función dueña; los sanadores salen de `vault_norms_catalog.SANADORES`— y se regeneran con `vault_norms_engine.escribir_caras_derivadas`, no a mano. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |

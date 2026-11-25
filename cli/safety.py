@@ -56,7 +56,7 @@ class Verdict:
 
 # ── 1. Contención de rutas ───────────────────────────────────────────────────
 
-from vault.consulta.safety import (
+from vault.kernel.safety import (
     Finding, _INJECTION_PATTERNS, _INVISIBLE, _TAG_BLOCK,
     _prose_only_lines, scan_content,
 )  # noqa: E402,F401

@@ -15,9 +15,10 @@ Encadena tools existentes, no las reimplementa:
 
 Dos decisiones que explican el resto:
 
-  - **El presupuesto se respeta recortando notas enteras, no partiéndolas.**
-    Media nota en el contexto es peor que ninguna: el agente la cita como si
-    estuviera completa. Lo que no cabe se reporta en `excluded` con su motivo.
+  - **El presupuesto se respeta recortando notas enteras del paquete, y cada nota
+    incluida se acota a `--excerpt-tokens` (default 350 tokens).** Si una nota no
+    cabe en el presupuesto restante se reporta en `excluded` con su motivo, y si
+    su extracto fue acortado se declara `truncated: true`.
   - **Las preferencias `must` entran siempre**, antes que cualquier resultado.
     Si el presupuesto obliga a elegir entre saber más del tema y saber qué le
     prohibió el usuario al agente, gana lo segundo. Si no caben íntegras con
@@ -90,6 +91,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.consulta.repositorio import RepositorioConsulta  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.safety import SENSITIVITY_ORDER, excede_sensibilidad, scan_poison  # noqa: E402
 # The rule and its weights have one owner, shared with `vault_search`
 # (producto-usable S4): re-exported so `vault_context_pack.penalizacion` and
 # friends keep working for their callers.
@@ -509,6 +511,7 @@ def vault_context_pack(
     now: Optional[datetime] = None,
     intento: Optional[str] = None,
     incluir_historico: bool = False,
+    max_sensitivity: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
 Recupera, rerankea y empaqueta el contexto para responder `query`.
@@ -522,6 +525,11 @@ paquete de antes: compiten, penalizadas."""
         return emit_error(
             "vault_context_pack", "INVALID_INPUT",
             f"--intento {intento!r} no es uno de {', '.join(INTENTOS)}",
+        )
+    if max_sensitivity is not None and str(max_sensitivity).strip().lower() not in SENSITIVITY_ORDER:
+        return emit_error(
+            "vault_context_pack", "INVALID_INPUT",
+            f"--max-sensitivity {max_sensitivity!r} no es uno de {', '.join(SENSITIVITY_ORDER)}",
         )
     if budget_tokens <= 0:
         return {"ok": False, "error_code": "INVALID_BUDGET",
@@ -700,6 +708,7 @@ paquete de antes: compiten, penalizadas."""
                         "recency": round(recency, 4), "cia": cia,
                         "status_penalty": penalty},
             "status": status,
+            "cia_sensitivity": str(frontmatter.get("cia_sensitivity") or "internal").strip().lower(),
             "updatedAt": updated,
             "via": graph_via.get(path),
             "readable": note.get("ok", False),
@@ -741,15 +750,49 @@ paquete de antes: compiten, penalizadas."""
 
     seleccion = _con_los_dos_lados(candidates[:top_k], now, filtro.censo)
     traidas = {c["path"] for c in seleccion}
+    poison_warnings: List[str] = []
     for candidate in seleccion:
         if not candidate["readable"]:
             excluded.append({"path": candidate["path"], "reason": "no legible"})
             continue
+        # Fase H (C5): filtro de sensibilidad CIA opcional (`--max-sensitivity`).
+        if max_sensitivity and excede_sensibilidad(candidate.get("cia_sensitivity"), max_sensitivity):
+            excluded.append({
+                "path": candidate["path"],
+                "reason": "sensibilidad excedida",
+                "cia_sensitivity": candidate.get("cia_sensitivity"),
+            })
+            continue
+        # Fase H (C5): defensa en profundidad anti-poison en lectura de contexto.
+        poison_criticos = [
+            f for f in scan_poison(candidate["body"], f"context:{candidate['path']}")
+            if f.severity == "critical"
+        ]
+        if poison_criticos:
+            excluded.append({
+                "path": candidate["path"],
+                "reason": "contenido sospechoso (poison)",
+                "poison_codes": [f.code for f in poison_criticos],
+            })
+            poison_warnings.append(
+                f"nota excluida por contenido sospechoso ({poison_criticos[0].code}): {candidate['path']}"
+            )
+            continue
         excerpt, truncated = _truncate_to_tokens(candidate["body"], excerpt_tokens)
+        # Fase H (C9): renderizar desacuerdos declarados (PAT-7) en el texto Markdown.
+        aviso_desacuerdo = ""
+        if candidate.get("disagrees_with"):
+            contrapartes = ", ".join(f"`{p}`" for p in candidate["disagrees_with"])
+            aviso_desacuerdo = (
+                f"\n> **Contradicción declarada (PAT-7):** esta nota discrepa con {contrapartes}. "
+                "Contrasta ambas posturas antes de decidir.\n"
+            )
         block = (f"### {candidate['title']}\n"
                  f"`{candidate['path']}`"
                  + (f" · status: {candidate['status']}" if candidate["status"] else "")
-                 + f" · score {candidate['score']}\n\n{excerpt}")
+                 + f" · score {candidate['score']}\n"
+                 + aviso_desacuerdo
+                 + f"\n{excerpt}")
         cost = estimate_tokens(block) + SEPARATOR_TOKENS
         if used + cost > budget_tokens:
             excluded.append({"path": candidate["path"], "reason": "sin presupuesto",
@@ -768,7 +811,7 @@ paquete de antes: compiten, penalizadas."""
 
     context = header + "\n\n" + "\n\n---\n\n".join(blocks) if blocks else ""
 
-    warnings: List[str] = list(avisos_de_preferencias)
+    warnings: List[str] = list(avisos_de_preferencias) + poison_warnings
     if search_error:
         warnings.append(f"búsqueda léxica: {search_error}")
     if search_incomplete:
@@ -888,6 +931,9 @@ Notas:
         help="Devuelve las notas históricas (superseded_by, archived, deprecated, "
              "obsolete, revoked, fuentes archivadas, cuarentena) al ranking, "
              "penalizadas como antes. Por defecto el paquete es solo verdad vigente.")
+    parser.add_argument(
+        "--max-sensitivity", choices=list(SENSITIVITY_ORDER), default=None,
+        help="Tope máximo de cia_sensitivity permitido en el paquete (public, internal, restricted)")
 
     args = parser.parse_args()
     pregunta = args.query_flag or args.query
@@ -902,6 +948,7 @@ Notas:
         excerpt_tokens=args.excerpt_tokens, min_score=args.min_score,
         include_preferences=not args.no_preferences,
         intento=args.intento, incluir_historico=args.incluir_historico,
+        max_sensitivity=args.max_sensitivity,
     )
 
     if args.format == "markdown" and result.get("ok"):

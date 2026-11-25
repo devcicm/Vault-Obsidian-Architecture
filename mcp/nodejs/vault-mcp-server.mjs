@@ -113,6 +113,10 @@ let LOG_LEVEL = process.env.VAULT_MCP_LOG || envDefault("VAULT_MCP_LOG");
 const PERFIL = process.env.VAULT_MCP_PERFIL || envDefault("VAULT_MCP_PERFIL");
 let PERFILES = {};
 let TOOLS_DEL_PERFIL = null;
+// Fase H (C6): rol de privilegios para transporte local `stdio`, validado
+// fail-closed contra `PERFILES_DE_TOKEN` al arrancar. Vacío mantiene
+// compatibilidad previa sin recorte.
+const ROL_STDIO = (process.env.VAULT_MCP_ROL || envDefault("VAULT_MCP_ROL") || "").trim();
 // A-13 — los perfiles de token, de menor a mayor, de la pasarela. El de cada
 // tool es su `perfil_minimo`, derivado de `side_effects` en Python; aquí no se
 // nombra ninguno: el mayor es el último, y es el del `VAULT_MCP_TOKEN` de siempre.
@@ -164,6 +168,16 @@ function loadCatalog() {
 
 // Un perfil desconocido no degrada al catálogo entero: lanza, y `main()` sale.
 function aplicarPerfil() {
+  if (ROL_STDIO) {
+    if (!PERFILES_DE_TOKEN.includes(ROL_STDIO)) {
+      const conocidos = PERFILES_DE_TOKEN.join(", ") || "ninguno";
+      throw new Error(
+        `VAULT_MCP_ROL=${ROL_STDIO} no es un perfil de token de tools-catalog.json ` +
+        `(perfiles_de_token: ${conocidos}).`,
+      );
+    }
+    log("info", `Rol stdio activo (VAULT_MCP_ROL): ${ROL_STDIO}`);
+  }
   if (!PERFIL) return;
   if (!Object.prototype.hasOwnProperty.call(PERFILES, PERFIL)) {
     const conocidos = Object.keys(PERFILES).join(", ") || "ninguno";
@@ -1349,7 +1363,7 @@ async function handleToolsCall(params, session) {
       result = await executePythonTool("__module__:vault.gobernanza.tool", args, vaultRoot, session, schema);
     } else if (JS_NATIVE_TOOLS.has(name)) {
       result = await dispatchJsNative(name, args, vaultRoot);
-    } else if (name === "vault_graph_fix" || name === "vault_graph_inspect" || name === "vault_gobernanza") {
+    } else if (name === "vault_graph_fix" || name === "vault_graph_inspect") {
       const scriptName = name + ".py";
       const scriptPath = join(SCRIPTS_DIR, scriptName);
       // El tercer argumento existía y no lo pasaba nadie: `env.VAULT_ROOT =
@@ -1411,6 +1425,24 @@ function comprobarLlamada(name, args, session) {
     return { code: "INVALID_ARGS", message: "`arguments` tiene que ser un objeto" };
   }
   if (TOOLS_SIN_CATALOGO.has(name)) {
+    const perfilActivo = session?.perfilToken || ROL_STDIO;
+    // Auditoría de capas/Archify (SP-04/SP-05): `vault_registry` expone rutas
+    // absolutas de vaults en disco; sesiones acotadas por perfil o rol restringido
+    // no pueden saltarse el control de acceso por estar fuera del catálogo.
+    if (name === "vault_registry") {
+      if (TOOLS_DEL_PERFIL && !TOOLS_DEL_PERFIL.has(name)) {
+        return {
+          code: "tool_not_found",
+          message: `Tool '${name}' no está en el perfil '${PERFIL}' (VAULT_MCP_PERFIL).`,
+        };
+      }
+      if (perfilActivo && perfilActivo !== perfilMayor()) {
+        return {
+          code: "tool_not_found",
+          message: `Tool '${name}' requiere el perfil de token '${perfilMayor()}' (VAULT_MCP_TOKENS / VAULT_MCP_ROL).`,
+        };
+      }
+    }
     const sobran = Object.keys(args);
     return sobran.length
       ? { code: "INVALID_ARGS", message: `${name} no acepta parámetros: ${sobran.join(", ")}` }
@@ -1432,6 +1464,15 @@ function comprobarLlamada(name, args, session) {
     return {
       code: "tool_not_found",
       message: `Tool '${name}' requiere el perfil de token '${tool.perfil_minimo || perfilMayor()}' (VAULT_MCP_TOKENS).`,
+    };
+  }
+  // SP-05: bajo perfil `ejecutor`, `vault_ronda` solo puede leer (`activa`/`flags`)
+  // o levantar banderas (`flag`), nunca abrir/cerrar rondas ni escribir en 04_Sessions/.
+  const perfilActivo = session?.perfilToken || ROL_STDIO;
+  if (perfilActivo === "ejecutor" && name === "vault_ronda" && (args.abrir || args.cerrar)) {
+    return {
+      code: "PERMISSION_DENIED",
+      message: "SP-05: el perfil `ejecutor` no puede abrir ni cerrar rondas en `vault_ronda`; usa `flag`, `flags` o `activa`.",
     };
   }
   const error = validarArgumentos(tool.inputSchema || { properties: {} }, args)
@@ -2056,11 +2097,11 @@ function perfilDeToken(cabecera, permisosPorToken) {
   return c ? c.perfil : null;
 }
 
-// Lo que el token de la sesión deja ver y ejecutar. Sin perfil de token
-// (stdio) no hay recorte: el proceso lo lanzó el propio cliente. Una tool sin
-// `perfil_minimo` conocido exige el mayor.
+// Lo que el token de la sesión (HTTP/SSE) o `VAULT_MCP_ROL` (stdio) deja ver y
+// ejecutar. Sin ambos no hay recorte en stdio: el proceso lo lanzó el cliente.
+// Una tool sin `perfil_minimo` conocido exige el mayor.
 function permitidaPorToken(tool, session) {
-  const perfil = session?.perfilToken;
+  const perfil = session?.perfilToken || ROL_STDIO;
   if (!perfil) return true;
   const necesario = PERFILES_DE_TOKEN.indexOf(tool.perfil_minimo);
   return necesario !== -1 && necesario <= PERFILES_DE_TOKEN.indexOf(perfil);
@@ -2278,14 +2319,17 @@ function startSSE(port, bindHost, tlsOptions = null) {
 // ============================================================================
 
 const SECRET_PATTERNS = [
-  { id: "aws_access_key", pattern: /AKIA[0-9A-Z]{16}/, severity: "critical", desc: "AWS Access Key" },
-  { id: "aws_secret_key", pattern: /[A-Za-z0-9\/+]{40}/, severity: "critical", desc: "AWS Secret Key (base64 40+ chars)" },
+  { id: "aws_access_key", pattern: /\bAKIA[0-9A-Z]{16}\b/, severity: "critical", desc: "AWS Access Key" },
+  // Fase H (C6): paridad exacta con `vault/gobernanza/secret_scan.py` (AP-48):
+  // exige clases mezcladas en exactamente 40 chars base64 y excluye SHA-1/SHA-256 hex y rayas `====`.
+  { id: "aws_secret_key", pattern: /(?<![A-Za-z0-9/+=])(?![0-9a-f]{40})(?![0-9A-F]{40})(?=[A-Za-z0-9/+=]{40})(?=[A-Za-z0-9/+=]{0,39}[A-Z])(?=[A-Za-z0-9/+=]{0,39}[0-9])[A-Za-z0-9/+=]{40}(?![A-Za-z0-9/+=])/, severity: "high", desc: "AWS Secret Key (40 chars base64 mixed classes)" },
   { id: "github_token", pattern: /gh[pousr]_[A-Za-z0-9_]{36}/, severity: "critical", desc: "GitHub Token" },
   { id: "bearer_token", pattern: /bearer\s+[A-Za-z0-9\-._~+\/]{20,}={0,2}/i, severity: "critical", desc: "Bearer Token" },
   { id: "private_key", pattern: /-----BEGIN\s+(RSA|EC|DSA|OPENSSH)\s+PRIVATE\s+KEY-----/, severity: "critical", desc: "Private Key" },
   { id: "password_assign", pattern: /password\s*[:=]\s*["'][^"']{3,}["']/i, severity: "high", desc: "Password Assignment" },
-  { id: "api_key_assign", pattern: /api[_-]?key\s*[:=]\s*["'][^"']{5,}["']/i, severity: "high", desc: "API Key Assignment" },
-  { id: "jwt_token", pattern: /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/, severity: "warning", desc: "JWT Token" },
+  // Paridad exacta con `vault/gobernanza/secret_scan.py` (AP-48): 20+ chars con mayúscula y dígito.
+  { id: "api_key_assign", pattern: /(api[_-]?key|apikey|secret|token)\s*[:=]\s*['"]?(?=[A-Za-z0-9_\-]{20,})(?=[A-Za-z0-9_\-]{0,19}[A-Z])(?=[A-Za-z0-9_\-]{0,19}[0-9])[A-Za-z0-9_\-]{20,}/i, severity: "high", desc: "API Key/Secret/Token Assignment (long, mixed classes)" },
+  { id: "jwt_token", pattern: /\beyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/, severity: "high", desc: "JWT Token" },
 ];
 
 function guardSecretScan(text) {
@@ -2434,6 +2478,34 @@ function buildStemPathMap(vaultRoot) {
     const nameOnly = normalizeStem(relPath.split("/").pop().replace(/\.md$/, ""));
     if (stem) map.set(stem, relPath);
     if (nameOnly && nameOnly !== stem) map.set(nameOnly, relPath);
+    // Fase H (C6, AP-44): indexar también `aliases:` del frontmatter como hace Obsidian y Python.
+    try {
+      const raw = readFileSync(join(vaultRoot, relPath), "utf-8");
+      if (raw.startsWith("---")) {
+        const end = raw.indexOf("\n---", 3);
+        if (end !== -1) {
+          const fmBlock = raw.slice(3, end);
+          const inlineMatch = /^aliases\s*:\s*\[([^\]]*)\]/m.exec(fmBlock);
+          if (inlineMatch) {
+            for (const part of inlineMatch[1].split(",")) {
+              const alias = normalizeStem(part.trim().replace(/^["']|["']$/g, ""));
+              if (alias && !map.has(alias)) map.set(alias, relPath);
+            }
+          } else {
+            const blockMatch = /^aliases\s*:\s*\n((?:[ \t]+-[ \t]+.+\n?)+)/m.exec(fmBlock);
+            if (blockMatch) {
+              for (const line of blockMatch[1].split("\n")) {
+                const item = line.replace(/^[ \t]+-[ \t]+/, "").trim().replace(/^["']|["']$/g, "");
+                const alias = normalizeStem(item);
+                if (alias && !map.has(alias)) map.set(alias, relPath);
+              }
+            }
+          }
+        }
+      }
+    } catch (err) {
+      process.stderr.write(`[vault-mcp] alias-scan omitido (${relPath}): ${err?.message || err}\n`);
+    }
   }
   _stemPathCache = map;
   _stemPathCacheRoot = vaultRoot;
@@ -2559,32 +2631,36 @@ class TraceLog {
   }
 
   static _sessionId = `session-${Date.now()}`;
+  static _queues = new Map();
 
-  static async _appendJson(entry, path) {
-    try {
-      let entries = [];
-      // AP-51: «no hay traza» y «no se pudo leer» no son lo mismo. Con
-      // `catch (_) {}` una traza corrupta se tomaba por vacía y la escritura
-      // de abajo la sobrescribía con una sola entrada: el historial de
-      // mutaciones se perdía sin aviso. Ausente es legítimo; ilegible se
-      // aparta con otro nombre —nada se borra— y se empieza una nueva. Si ni
-      // apartarla se puede, el `catch` de fuera avisa y no se escribe nada.
+  static _appendJson(entry, path) {
+    // Fase H (C6): serializar read-modify-write por ruta + escritura atómica
+    // para evitar carreras bajo AsyncRWCoordinator.
+    const prev = TraceLog._queues.get(path) || Promise.resolve();
+    const next = prev.then(async () => {
       try {
-        entries = JSON.parse(await readFile(path, "utf-8"));
-        if (!Array.isArray(entries)) throw new Error("la traza no es una lista");
-      } catch (e) {
-        if (e && e.code !== "ENOENT") {
-          const aparte = `${path}.corrupt-${Date.now()}`;
-          await rename(path, aparte);
-          log("warn", "Trace JSON log ilegible: se conserva aparte y se empieza otra",
-              { aparte: basename(aparte), error: String(e && e.message || e) });
+        let entries = [];
+        try {
+          entries = JSON.parse(await readFile(path, "utf-8"));
+          if (!Array.isArray(entries)) throw new Error("la traza no es una lista");
+        } catch (e) {
+          if (e && e.code !== "ENOENT") {
+            const aparte = `${path}.corrupt-${Date.now()}`;
+            await rename(path, aparte);
+            log("warn", "Trace JSON log ilegible: se conserva aparte y se empieza otra",
+                { aparte: basename(aparte), error: String(e && e.message || e) });
+          }
+          entries = [];
         }
-        entries = [];
-      }
-      entries.push(entry);
-      if (entries.length > 1000) entries = entries.slice(-500);
-      await writeFile(path, JSON.stringify(entries, null, 2));
-    } catch (e) { log("warn", "Failed to write trace JSON log", e.message); }
+        entries.push(entry);
+        if (entries.length > 1000) entries = entries.slice(-500);
+        const tmp = `${path}.tmp-${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+        await writeFile(tmp, JSON.stringify(entries, null, 2));
+        await rename(tmp, path);
+      } catch (e) { log("warn", "Failed to write trace JSON log", e.message); }
+    });
+    TraceLog._queues.set(path, next.catch(() => {}));
+    return next;
   }
 
   // superseded_by: `.mcp-trace-log.json` + `vault://traceability/mutations`
@@ -2649,20 +2725,15 @@ async function handleResourcesList() {
 
 async function handleResourcesRead(params, session) {
   const uri = params?.uri || "";
+  const sessionVaultRoot = session?.vaultRoot || resolveVaultRoot(session?.sessionId);
   try {
     switch (uri) {
       case "vault://graph": {
-        // La raíz es un ARGUMENTO de `jsNativeGraph` (no la busca): sin ella,
-        // `join(undefined, f)` revienta dentro de `readFile` y el error
-        // acababa dentro del texto del recurso, con apariencia de contenido
-        // válido. Medido el 2026-10-26 con una sesión JSON-RPC real:
-        // `resources/read vault://graph` devolvía
-        // «Error reading resource vault://graph: The "path" argument must be…».
-        const data = await jsNativeGraph({}, detectVaultRoot());
+        const data = await jsNativeGraph({}, sessionVaultRoot);
         return { contents: [{ uri, mimeType: "application/json", text: JSON.stringify(data, null, 2) }] };
       }
       case "vault://graph/enriched": {
-        const vaultRoot = detectVaultRoot();
+        const vaultRoot = sessionVaultRoot;
         const enrichedPath = join(vaultRoot, "99_Index", "graph-enriched.json");
         let data;
         try {
@@ -2678,7 +2749,7 @@ async function handleResourcesRead(params, session) {
         return { contents: [{ uri, mimeType: "application/json", text: JSON.stringify(data, null, 2) }] };
       }
       case "vault://health": {
-        const data = await runHealthCheck(detectVaultRoot());
+        const data = await runHealthCheck(sessionVaultRoot);
         return { contents: [{ uri, mimeType: "application/json", text: JSON.stringify(data, null, 2) }] };
       }
       case "vault://registry": {
@@ -2718,7 +2789,7 @@ async function handleResourcesRead(params, session) {
       }
       case "vault://state": {
         return { contents: [{ uri, mimeType: "application/json", text: JSON.stringify({
-          version: VERSION, vault_root: detectVaultRoot(), tools_loaded: Object.keys(TOOLS_CATALOG).length,
+          version: VERSION, vault_root: sessionVaultRoot, tools_loaded: Object.keys(TOOLS_CATALOG).length,
           uptime: process.uptime(), server_info: SERVER_INFO,
         }, null, 2) }] };
       }

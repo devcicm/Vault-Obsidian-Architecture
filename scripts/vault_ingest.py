@@ -176,16 +176,60 @@ def _read_source(args: argparse.Namespace) -> Dict[str, Any]:
                 "error": "Descargar una URL requiere --allow-network explícito",
                 "hint": "Descarga el contenido y usa --file, o pasa --allow-network",
             }
+        import ipaddress
+        import socket
+        import urllib.parse
         import urllib.request
 
-        if not args.url.lower().startswith(("http://", "https://")):
-            return {"ok": False, "error_code": "INVALID_URL",
-                    "error": "Solo se admiten URLs http(s)"}
+        def _validar_url_segura(raw_url: str) -> Optional[str]:
+            parsed = urllib.parse.urlparse(raw_url)
+            if parsed.scheme.lower() not in ("http", "https"):
+                return "Solo se admiten URLs http(s)"
+            host = (parsed.hostname or "").strip().lower()
+            if not host:
+                return "La URL no declara un host válido"
+            if host in ("localhost", "localhost.localdomain") or host.endswith(".local") or host.endswith(".internal"):
+                return f"SSRF bloqueado: host local o interno no permitido ({host})"
+            try:
+                infos = socket.getaddrinfo(host, parsed.port or (443 if parsed.scheme.lower() == "https" else 80))
+            except OSError as exc:
+                return f"No se pudo resolver el host {host!r}: {exc}"
+            for info in infos:
+                ip_str = info[4][0]
+                try:
+                    ip = ipaddress.ip_address(ip_str)
+                except ValueError:
+                    return f"Dirección IP inválida resuelta para {host!r}: {ip_str}"
+                if (
+                    ip.is_private
+                    or ip.is_loopback
+                    or ip.is_link_local
+                    or ip.is_multicast
+                    or ip.is_reserved
+                    or ip.is_unspecified
+                ):
+                    return f"SSRF bloqueado: '{host}' resuelve a dirección no pública ({ip})"
+            return None
+
+        motivo_ssrf = _validar_url_segura(args.url)
+        if motivo_ssrf:
+            return {"ok": False, "error_code": "INVALID_URL", "error": motivo_ssrf}
+
+        class _SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self, req, fp, code, msg, headers, newurl):
+                err = _validar_url_segura(newurl)
+                if err:
+                    raise ValueError(err)
+                return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+        opener = urllib.request.build_opener(_SafeRedirectHandler())
         try:
-            with urllib.request.urlopen(args.url, timeout=20) as response:
+            with opener.open(args.url, timeout=20) as response:
                 # El mismo tope que las otras tres puertas. Estaba escrito aquí
                 # a mano como 5_000_000 y era el único que existía.
                 raw = response.read(tope + 1)
+        except ValueError as exc:
+            return {"ok": False, "error_code": "INVALID_URL", "error": str(exc)}
         except Exception as exc:
             return {"ok": False, "error_code": "FETCH_FAILED", "error": str(exc)}
         return {"ok": True, "text": raw.decode("utf-8", errors="replace"),
@@ -279,8 +323,14 @@ _extract_entities = extraer_entidades
 
 
 def _wikilink_de(ruta: str) -> str:
-    """`07_Knowledge/a.md` -> `[[07_Knowledge/a]]`: the path form a wikilink takes."""
+    """`07_Knowledge/a.md` -> `[[07_Knowledge/a]]`: cita inequívoca de fuente/pack."""
     return f"[[{ruta[:-3] if ruta.endswith('.md') else ruta}]]"
+
+
+def _wikilink_corto(ruta: str) -> str:
+    """`07_Knowledge/a.md` -> `[[a]]`: forma canónica sin carpeta (AP-21) para menciones."""
+    stem = Path(ruta).stem if ruta.endswith(".md") else Path(ruta).name
+    return f"[[{stem}]]"
 
 
 def _ruta_de_fuente_archivada(text: str, source: str, origin: str) -> str:
@@ -394,7 +444,7 @@ def _paginas_afectadas(
         menciones = [n["path"] for n in proposals if entidad in n["content"]] or \
             [n["path"] for n in proposals]
         texto = (f"- Ingesta {fecha} desde `{source}`: menciona **{entidad}** en "
-                 + ", ".join(_wikilink_de(p) for p in menciones))
+                 + ", ".join(_wikilink_corto(p) for p in menciones))
         vistas.add(rutas[0])
         filas.append({
             "path": rutas[0],
@@ -595,6 +645,7 @@ def vault_ingest(
     agent: Optional[str] = None,
     archivar_fuente: bool = False,
     pack: Optional[Dict[str, Any]] = None,
+    aplicar_paginas: bool = True,
 ) -> Dict[str, Any]:
     """Ingiere un texto y propone (o escribe) las notas derivadas.
 
@@ -776,12 +827,38 @@ def vault_ingest(
         if written:
             update_section_index(section)
 
+    # SPEC-02 / SPEC-04 (C15): plan de fan-out estructurado para curación y
+    # candidatos a conflicto cuando ya existe una nota con el mismo destino (sin last-write-wins).
+    fanout_plan: List[Dict[str, Any]] = [
+        {
+            "target_note": p["path"],
+            "entity": p.get("entity"),
+            "recommended_action": "append_mention" if aplicar_paginas else "queue_for_curation",
+            "curate_command": "vault_propagate --curate-plan",
+        }
+        for p in paginas
+    ]
+    conflict_candidates: List[Dict[str, Any]] = []
+    for note in proposals:
+        dest = _raiz() / note["path"]
+        if dest.is_file():
+            try:
+                prev_txt = dest.read_text(encoding="utf-8", errors="replace").strip()
+            except OSError:
+                prev_txt = ""
+            if prev_txt and prev_txt != note["content"].strip():
+                conflict_candidates.append({
+                    "existing_path": note["path"],
+                    "incoming_title": note["title"],
+                    "reason": "La ruta propuesta ya existe con contenido distinto; evitar last-write-wins y contrastar vía PAT-7 (`vault_propagate --mark-contradicts`).",
+                })
+
     aplicadas = False
     registro: Dict[str, Any] = {}
     if commit:
         # Karpathy's ingest touches the pages it affects: applied only with
-        # --commit, through the port (owner `vault_append`, never overwrites).
-        aplicadas = _aplicar_paginas(paginas)
+        # --commit (salvo --no-aplicar-paginas en modo curado SP-05).
+        aplicadas = _aplicar_paginas(paginas) if aplicar_paginas else False
         # One `ingested` row per pass that wrote something. A pass that only
         # skipped existing notes changed nothing, and logs nothing.
         if written or (archivo or {}).get("written"):
@@ -813,6 +890,8 @@ def vault_ingest(
         # overwrite; an ambiguous name proposes nothing.
         "affected_pages": paginas,
         "affected_pages_applied": aplicadas,
+        "fanout_plan": fanout_plan,
+        "conflict_candidates": conflict_candidates,
         **({"affected_pages_skipped": paginas_omitidas} if paginas_omitidas else {}),
         # The pass id the notes and the log row share (AP-74), and the pattern
         # a saved answer follows (PAT-8).
@@ -913,6 +992,8 @@ Notas:
     parser.add_argument("--desde-pack", metavar="PACK_JSON",
                         help=("Envelope de vault_context_pack: el texto es la respuesta "
                               "a su consulta y se guarda como UN borrador que cita sus notas"))
+    parser.add_argument("--no-aplicar-paginas", action="store_true",
+                        help="No anexar automáticamente a páginas afectadas en --commit; delegar al curador SP-05")
 
     args = parser.parse_args()
 
@@ -937,6 +1018,7 @@ Notas:
         commit=args.commit and not args.dry_run, max_notes=args.max_notes,
         tags=args.tags, agent=args.agent,
         archivar_fuente=args.archivar_fuente, pack=pack,
+        aplicar_paginas=not args.no_aplicar_paginas,
     )
     # D5: un solo sitio lleva los envelopes a mano a la forma canónica.
     result = completar_envelope("vault_ingest", result)

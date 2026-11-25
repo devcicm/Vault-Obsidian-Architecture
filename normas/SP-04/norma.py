@@ -16,6 +16,12 @@ NORMA = {
             "del navegador puede invocarla; y una sesión autenticada no vuelve "
             "legítima una ruta `../`. Hacen falta las dos."
         ),
+        "SP-05": (
+            "SP-04 protege la apertura y autenticación de la sesión MCP; SP-05 "
+            "separa los privilegios dentro de la sesión entre agente ejecutor "
+            "(`ejecutor`, señales en `vault_ronda --flag`) y curador (`operador`, "
+            "curación batch en `vault_propagate --curate-apply`)."
+        ),
     },
     "name": "Sesión MCP por HTTP sin credencial — cualquier proceso local la abre",
     "type": "antipattern",

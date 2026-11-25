@@ -36,6 +36,7 @@ from vault_lib import separar_frontmatter, utcnow
 from vault_registry import es_artefacto_derivado
 from vault.kernel.entorno import agente_por_defecto
 from vault.kernel.frontmatter_escritura import Frontmatter
+from vault.kernel.safety import scan_poison
 from datetime import datetime, timezone
 
 from pathlib import Path
@@ -78,6 +79,21 @@ def vault_append(
     if not (content or "").strip():
         return {**emit_error("vault_append", "INVALID_INPUT",
                              "--content vacío: no hay nada que añadir."), "path": path}
+
+    # Fase H (C5): pre-vuelo anti-poison no desactivable en vault_append.
+    bloqueantes_poison = [
+        f for f in scan_poison(content, "append:content")
+        if f.severity in ("critical", "high")
+    ]
+    if bloqueantes_poison:
+        return {
+            **emit_error(
+                "vault_append", "POISON_DETECTED",
+                f"Contenido bloqueado por pre-vuelo anti-poison: {bloqueantes_poison[0].detail}",
+            ),
+            "path": path,
+            "findings": [f.to_dict() for f in bloqueantes_poison],
+        }
 
     note_path = get_vault_root() / path
 

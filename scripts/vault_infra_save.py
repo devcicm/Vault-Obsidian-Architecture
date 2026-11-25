@@ -89,7 +89,15 @@ COMPONENT_TYPES = {
     "cdn": "network",
     "pipeline": "pipelines",
     "secret": "secrets",
+    "data_source": "data-sources",
 }
+
+#: Límite duro (16 KB) y claves prohibidas para `data_source` (SPEC-04): el vault
+#: guarda únicamente el mapa operativo de acceso a datos, nunca volcados tabulares.
+MAX_DATA_SOURCE_CONFIG_BYTES = 16_384
+CLAVES_PROHIBIDAS_DATA_SOURCE = frozenset({
+    "rows", "records", "dump", "raw_data", "table_dump", "csv_data",
+})
 
 
 LOCATIONS = [
@@ -286,6 +294,23 @@ def vault_infra_save(
 
     if component_type not in COMPONENT_TYPES:
         return emit_error("vault_infra_save", "INVALID_VALUE", f"Tipo inválido: {type}. Válidos: {list(COMPONENT_TYPES.keys())}")
+
+    if component_type == "data_source":
+        cfg_dict = config if isinstance(config, dict) else {}
+        claves_dump = sorted(k for k in cfg_dict if str(k).strip().lower() in CLAVES_PROHIBIDAS_DATA_SOURCE)
+        if claves_dump:
+            return emit_error(
+                "vault_infra_save", "VALIDATION_FAILED",
+                f"SPEC-04: `data_source` no permite volcado de datos en bruto (claves prohibidas: {claves_dump}). "
+                "Guarda solo el mapa operativo (source_system, entities, canonical_fields, query_guide, freshness_sla).",
+            )
+        tamano_cfg = len(json.dumps(cfg_dict, ensure_ascii=False).encode("utf-8"))
+        if tamano_cfg > MAX_DATA_SOURCE_CONFIG_BYTES:
+            return emit_error(
+                "vault_infra_save", "VALIDATION_FAILED",
+                f"SPEC-04: `data_source` excede el tope de {MAX_DATA_SOURCE_CONFIG_BYTES} bytes ({tamano_cfg} bytes); "
+                "el vault almacena el mapa de acceso, no dumps de datos.",
+            )
 
     if location not in LOCATIONS:
         return emit_error("vault_infra_save", "INVALID_VALUE", f"Ubicación inválida: {location}. Válidas: {LOCATIONS}")

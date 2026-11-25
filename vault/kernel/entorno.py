@@ -333,6 +333,13 @@ VARIABLES: Dict[str, Variable] = {
             "Vacía, todas las expuestas por MCP. Solo la lee el `.mjs`.",
         ),
         Variable(
+            "VAULT_MCP_ROL", "texto", "", "meta_toolkit",
+            "Rol de privilegios para clientes MCP locales sobre transporte `stdio` "
+            "(`lector`, `ejecutor` u `operador`, validado fail-closed contra "
+            "`tools-catalog.json` → `perfiles_de_token`). Vacía conserva la "
+            "compatibilidad sin recorte en `stdio`. Solo la lee el `.mjs`.",
+        ),
+        Variable(
             "VAULT_MCP_PYTHON", "ruta", None, "meta_toolkit",
             "Intérprete con el que el servidor MCP lanza las tools. Vacía, "
             "sondea `python3`, `python` y `py` (en ese orden; `py` al final "

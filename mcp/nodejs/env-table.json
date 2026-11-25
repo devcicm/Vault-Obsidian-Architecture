@@ -205,6 +205,13 @@
       "purpose": "Perfil de tools que el servidor MCP expone y acepta (`agente`: las del protocolo de sesión, de `tools-catalog.json` → `perfiles`). Vacía, todas las expuestas por MCP. Solo la lee el `.mjs`."
     },
     {
+      "name": "VAULT_MCP_ROL",
+      "type": "texto",
+      "default": "",
+      "context": "meta_toolkit",
+      "purpose": "Rol de privilegios para clientes MCP locales sobre transporte `stdio` (`lector`, `ejecutor` u `operador`, validado fail-closed contra `tools-catalog.json` → `perfiles_de_token`). Vacía conserva la compatibilidad sin recorte en `stdio`. Solo la lee el `.mjs`."
+    },
+    {
       "name": "VAULT_MCP_PYTHON",
       "type": "ruta",
       "default": null,

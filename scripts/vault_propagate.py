@@ -48,9 +48,15 @@ VALID_ACTIONS = ("notify", "queue", "reindex")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from vault.ciclo_de_vida.curacion import (  # noqa: E402
+    aplicar_curacion,
+    marcar_contradiccion,
+    planificar_curacion,
+)
 from vault.ciclo_de_vida.repositorio import RepositorioCicloDeVida  # noqa: E402
 from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.banderas import ESTADOS_BANDERA, actualizar_estado_bandera  # noqa: E402
 from vault.kernel.bloqueo import LockPerdido  # noqa: E402
 from vault.kernel.escritura import apartar_ilegible  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
@@ -476,17 +482,88 @@ Ejemplos:
         metavar="PATH",
         help="Mark a note as reviewed (remove propagation_pending)",
     )
+    parser.add_argument(
+        "--curate-plan", action="store_true",
+        help="SP-05 dry-run: cruza banderas (.flags.jsonl), cola de propagación y /raw recientes",
+    )
+    parser.add_argument(
+        "--curate-apply", action="store_true",
+        help="SP-05 curación batch: aplica banderas aprobadas por write path gobernado y emite reporte",
+    )
+    parser.add_argument(
+        "--flag-ids", nargs="+", metavar="FLAG_ID", default=[],
+        help="Subconjunto de FLAG-NNN a aplicar con --curate-apply",
+    )
+    parser.add_argument(
+        "--resolve-flag", metavar="FLAG_ID",
+        help="SP-05: transicionar estado de una bandera (triaged|applied|dismissed)",
+    )
+    parser.add_argument(
+        "--flag-status", choices=list(ESTADOS_BANDERA),
+        help="Nuevo estado de la bandera con --resolve-flag",
+    )
+    parser.add_argument(
+        "--resolution-note", default="",
+        help="Motivo de resolución o descarte con --resolve-flag",
+    )
+    parser.add_argument(
+        "--mark-contradicts", metavar="PATH_A",
+        help="PAT-7: declara desacuerdo bilateral `contradicts:` entre PATH_A y --other-note",
+    )
+    parser.add_argument(
+        "--other-note", metavar="PATH_B",
+        help="Segunda nota del desacuerdo bilateral con --mark-contradicts",
+    )
+    parser.add_argument(
+        "--reason", default="",
+        help="Motivo del desacuerdo declarado con --mark-contradicts",
+    )
+    parser.add_argument(
+        "--agent", default="curator",
+        help="Agente curador que firma la operación SP-05/PAT-7",
+    )
 
     args = parser.parse_args()
 
-    if args.queue_report:
+    if args.curate_plan:
+        res = planificar_curacion(_raiz(), cola_propagacion=_propagation_queue())
+        result = (
+            {**res, **write_report()} if res.get("ok")
+            else emit_error("vault_propagate", str(res.get("error_code") or "INVALID_INPUT"), str(res.get("message") or ""))
+        )
+    elif args.curate_apply:
+        res = aplicar_curacion(_raiz(), flag_ids=args.flag_ids or None, agent=args.agent)
+        result = (
+            {**res, **write_report()} if res.get("ok")
+            else emit_error("vault_propagate", str(res.get("error_code") or "INVALID_INPUT"), str(res.get("message") or ""))
+        )
+    elif args.resolve_flag:
+        if not args.flag_status:
+            parser.error("--resolve-flag requiere --flag-status (triaged|applied|dismissed)")
+        res = actualizar_estado_bandera(
+            _raiz(), args.resolve_flag, args.flag_status,
+            resolution_note=args.resolution_note, agent=args.agent,
+        )
+        result = (
+            {**res, **write_report()} if res.get("ok")
+            else emit_error("vault_propagate", str(res.get("error_code") or "INVALID_INPUT"), str(res.get("message") or ""))
+        )
+    elif args.mark_contradicts:
+        if not args.other_note:
+            parser.error("--mark-contradicts requiere --other-note PATH_B")
+        res = marcar_contradiccion(_raiz(), args.mark_contradicts, args.other_note, reason=args.reason, agent=args.agent)
+        result = (
+            {**res, **write_report()} if res.get("ok")
+            else emit_error("vault_propagate", str(res.get("error_code") or "INVALID_INPUT"), str(res.get("message") or ""))
+        )
+    elif args.queue_report:
         result = vault_propagate_queue_report(min_priority=args.min_priority)
     elif args.clear:
         result = vault_propagate_clear(args.clear)
     else:
         if not args.changed and not args.since:
             parser.error(
-                "Provide --changed PATH [PATH ...] or --since DATE (or use --queue-report / --clear)"
+                "Provide --changed PATH [PATH ...] or --since DATE (or use --queue-report / --clear / --curate-plan / --curate-apply / --resolve-flag / --mark-contradicts)"
             )
 
         actions = [a.strip() for a in args.action.split(",") if a.strip()]

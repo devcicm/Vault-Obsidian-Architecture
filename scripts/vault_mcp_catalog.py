@@ -5506,13 +5506,16 @@ def _convert_to_json_schema(py_tool: Dict[str, Any]) -> Dict[str, Any]:
     return schema
 
 
-#: Lo que puede hacer quien presenta un token del transporte HTTP (A-13).
-#: Hasta v41.25 había un único Bearer y quien lo tenía llamaba a toda tool,
-#: `vault_delete` y `vault_standard_upgrade` incluidas. `lector` solo ve y
-#: ejecuta las tools sin side effects declarados; `operador`, todas. Los
-#: tokens los declara `VAULT_MCP_TOKENS` (`lector:<t>,operador:<t>`); el
-#: `VAULT_MCP_TOKEN` de siempre es `operador`, para no romper a quien ya lo usa.
-PERFILES_DE_TOKEN = ("lector", "operador")
+#: Lo que puede hacer quien presenta un token del transporte HTTP (A-13) o
+#: un rol local `VAULT_MCP_ROL` en `stdio` (Fase H/Q, SP-05):
+#: - `lector`: solo ve y ejecuta tools sin `side_effects`.
+#: - `ejecutor`: `lector` + señales no bloqueantes (`vault_ronda`, `vault_log_error`)
+#:   sin permiso de escritura sobre conocimiento canónico (SPEC-04, SP-05).
+#: - `operador`: todas las tools (incluidos curación batch y write path canónico).
+PERFILES_DE_TOKEN = ("lector", "ejecutor", "operador")
+
+#: Tools de señal permitidas al perfil intermedio `ejecutor` (nunca mutan notas canónicas).
+TOOLS_SENAL_EJECUTOR = frozenset({"vault_ronda", "vault_log_error"})
 
 #: Modos de concurrencia CQRS (lectura/escritura/barrera global).
 #: Dueño único compartido por Python (`cli/scheduler.py`) y Node (`tools-catalog.json`):
@@ -5540,11 +5543,15 @@ def access_mode(name: str, py_tool: Dict[str, Any]) -> str:
 def perfil_minimo(py_tool: Dict[str, Any]) -> str:
     """El perfil de token más bajo que puede llamar a la tool.
 
-    Se deriva de `side_effects` y no se declara a mano: una tool que escribe y
-    se olvida de decirlo ya es deuda de AP-37, y una lista de lectoras escrita
-    aparte envejecería sin que nada la comparase (AP-05).
+    Se deriva de `side_effects` y de `TOOLS_SENAL_EJECUTOR` (SP-05): las tools
+    sin side effects son `lector`; las señales acotadas (`vault_ronda`,
+    `vault_log_error`) son `ejecutor`; el resto de escritores exige `operador`.
     """
-    return "operador" if py_tool.get("side_effects") else "lector"
+    if not py_tool.get("side_effects"):
+        return "lector"
+    if py_tool.get("name") in TOOLS_SENAL_EJECUTOR:
+        return "ejecutor"
+    return "operador"
 
 
 def errores_para_transporte() -> Dict[str, Any]:

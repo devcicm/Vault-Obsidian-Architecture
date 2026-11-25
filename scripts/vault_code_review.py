@@ -30,11 +30,13 @@ from typing import Any, Dict, List, Optional, Sequence
 from vault_entorno import agente_por_defecto
 from vault_errors import emit_error, proyecto_registrado, wrap_main
 from vault_io import (
+    PoliticaInvalidaError,
     assert_within_vault,
     atomic_write_text,
     client_cwd,
     resolve_input_path,
     write_report,
+    xp_level_declarado,
 )
 from vault_lib import slugify_strict, utcnow
 
@@ -192,6 +194,7 @@ def vault_code_review(
     html_preview: bool = False,
     save: bool = False,
     agent: Optional[str] = None,
+    reviewer: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Orquesta el Code Review / PR Review con trazabilidad `@vault:` y matriz RDD."""
     raiz = _raiz()
@@ -243,6 +246,11 @@ def vault_code_review(
                 "note": "No hay repositorio enlazado para el proyecto ni se paso --path/--files.",
             }
 
+    try:
+        nivel_xp = xp_level_declarado(raiz)
+    except PoliticaInvalidaError as exc:
+        return emit_error("vault_code_review", "INVALID_INPUT", str(exc))
+
     res = _cr.ejecutar_code_review(
         raiz,
         repo_path,
@@ -254,6 +262,9 @@ def vault_code_review(
         run_linters=run_linters,
         include_rdd=include_rdd,
         generar_html=html_preview,
+        xp_level=nivel_xp,
+        reviewer=reviewer,
+        agent=agent or agente_por_defecto(),
     )
     if not res.get("ok"):
         return emit_error(
@@ -300,6 +311,7 @@ def main() -> int:
     parser.add_argument("--report", action="store_true", help="Emitir informe legible en Markdown en lugar de JSON")
     parser.add_argument("--strict", action="store_true", help="Retornar codigo de salida 1 si el veredicto es REQUEST_CHANGES")
     parser.add_argument("--agent", default=agente_por_defecto(), help="Agente que firma el acta cuando se usa --save")
+    parser.add_argument("--reviewer", default=None, help="Revisor humano de pareja (XP Nivel 3, SP-06)")
 
     args = parser.parse_args()
     result = vault_code_review(
@@ -314,6 +326,7 @@ def main() -> int:
         html_preview=args.html_preview,
         save=args.save,
         agent=args.agent,
+        reviewer=args.reviewer,
     )
 
     if args.report and result.get("ok"):

@@ -49,6 +49,8 @@ from vault_io import (
     assert_within_vault,
     identidad_requisito,
     leer_requisitos_de_dominio,
+    xp_level_declarado,
+    PoliticaInvalidaError,
     IndiceIlegible,
 )
 import uuid
@@ -69,7 +71,10 @@ from vault.autoria.frontmatter import Frontmatter, firmante  # noqa: E402
 
 
 from vault_encoding import sanitize_content  # noqa: E402
+from vault.kernel.enumeracion import notas_en_disco  # noqa: E402
+from vault.kernel.frontmatter_parsing import parse_frontmatter_with_body  # noqa: E402
 from vault.kernel.normativa import calidad_iso  # noqa: E402
+from vault.kernel.normativa.xp import XP_BUFFERS  # noqa: E402
 
 def _raiz() -> Path:
     """La raiz del vault, resuelta al usarse."""
@@ -316,6 +321,25 @@ def save_index(data: Dict[str, Any]) -> None:
     atomic_write_json(_index_file(), data)
 
 
+def _hay_evidencia_tdd_en_verde(raiz: Path, req_id: str, title_slug: str) -> bool:
+    """Comprueba en `15_Tests/` evidencia de al menos un test con `test_result: pass` (SP-06)."""
+    objetivos = {req_id.strip().lower(), title_slug.strip().lower()}
+    objetivos.discard("")
+    for nota in notas_en_disco(raiz, ("15_Tests",), incluir_indices=False):
+        try:
+            fm, cuerpo = parse_frontmatter_with_body(nota.read_text(encoding="utf-8", errors="replace"))
+        except (OSError, UnicodeError, ValueError):
+            continue
+        fm = fm or {}
+        if str(fm.get("test_result") or "").strip().lower() != "pass":
+            continue
+        rel_req = str(fm.get("related_requirement") or "").strip().lower()
+        cuerpo_low = (cuerpo or "").lower()
+        if any(obj and (obj in rel_req or obj in cuerpo_low) for obj in objetivos):
+            return True
+    return False
+
+
 def vault_requirement_save(
     project: str,
     title: str,
@@ -330,6 +354,7 @@ def vault_requirement_save(
     req_id: Optional[str] = None,
     quality_characteristics: Optional[List[str]] = None,
     quality_in_use: Optional[List[str]] = None,
+    buffer: Optional[str] = None,
 ) -> Dict[str, Any]:
     es_del = _proyectos.pertenencia_en(_raiz(), project)
     if req_type not in REQ_TYPES:
@@ -340,6 +365,15 @@ def vault_requirement_save(
 
     if status not in STATUSES:
         return emit_error("vault_requirement_save", "INVALID_VALUE", f"status '{status}' not valid. Use: {STATUSES}")
+
+    buffer_val: Optional[str] = None
+    if buffer is not None:
+        buffer_val = str(buffer).strip().lower()
+        if buffer_val not in XP_BUFFERS:
+            return emit_error(
+                "vault_requirement_save", "INVALID_VALUE",
+                f"buffer '{buffer}' not valid. Use: {list(XP_BUFFERS)}",
+            )
 
     # ISO/IEC 25010:2023 / 25019:2023 (optional): validated before anything
     # is reserved or written; written only when given.
@@ -425,6 +459,21 @@ def vault_requirement_save(
         if rechazo is not None:
             return rechazo
 
+        # SP-06 (XP Nivel >= 2): transición a `implemented`/`verified` exige
+        # evidencia de al menos un test en verde en `15_Tests/` (`test_result: pass`).
+        try:
+            nivel_xp = xp_level_declarado(_raiz())
+        except PoliticaInvalidaError as exc:
+            return emit_error("vault_requirement_save", "INVALID_INPUT", str(exc))
+        if nivel_xp is not None and nivel_xp >= 2 and status in ("implemented", "verified"):
+            req_id_eval = str((existente or {}).get("req_id") or req_id or "")
+            if not _hay_evidencia_tdd_en_verde(_raiz(), req_id_eval, title_slug):
+                return emit_error(
+                    "vault_requirement_save", "VALIDATION_FAILED",
+                    f"SP-06 (XP Nivel {nivel_xp}): no se puede pasar '{req_id_eval or title}' a "
+                    f"'{status}' sin evidencia TDD en verde en 15_Tests/ (`test_result: pass`).",
+                )
+
         if existente is not None:
             req_id = str(existente.get("req_id") or "")
             note_id = str(existente.get("docId") or "") or str(uuid.uuid4())
@@ -480,6 +529,9 @@ def vault_requirement_save(
         frontmatter.set("req_type", req_type)
 
         frontmatter.set("priority", priority)
+
+        if buffer_val is not None:
+            frontmatter.set("buffer", buffer_val)
 
         frontmatter.lineas(status_frontmatter_lines("vault_requirement_save", status))
 
@@ -610,6 +662,8 @@ def vault_requirement_save(
                 "updatedAt": existente.get("updatedAt", now) if sin_cambio and existente else now,
                 "events": eventos,
             }
+            if buffer_val is not None:
+                entry["buffer"] = buffer_val
             if pending_transition is not None:
                 entry["pending_transition"] = pending_transition
             if existente is not None:
@@ -632,7 +686,7 @@ def vault_requirement_save(
                 "transition_logged": False, "req_id": req_id,
                 "path": str(note_path.relative_to(_raiz())).replace("\\", "/"), **write_report()}
 
-    return {
+    salida = {
         "ok": True,
         **write_report(),
         "path": str(note_path.relative_to(_raiz())).replace("\\", "/"),
@@ -640,6 +694,9 @@ def vault_requirement_save(
         "action": accion,
         "transition_logged": transicion_registrada,
     }
+    if buffer_val is not None:
+        salida["buffer"] = buffer_val
+    return salida
 
 
 def listar_requisitos(project: Optional[str] = None) -> Dict[str, Any]:
@@ -754,6 +811,8 @@ Notes:
     parser.add_argument("--quality_characteristics", help="Comma-separated ISO/IEC 25010:2023 characteristics or characteristic.subcharacteristic")
 
     parser.add_argument("--quality_in_use", help="Comma-separated ISO/IEC 25019:2023 quality-in-use characteristics")
+    parser.add_argument("--buffer", choices=list(XP_BUFFERS), default=None,
+                        help="Holgura XP opcional (SPEC-03/SP-06): critical | optional")
 
     parser.add_argument("--adopt-legacy", action="store_true", dest="adopt_legacy",
                         help="Reconstruye el indice registrando una adopcion explicita para notas legadas sin historia")
@@ -809,6 +868,7 @@ Notes:
         req_id=args.req_id,
         quality_characteristics=args.quality_characteristics,
         quality_in_use=args.quality_in_use,
+        buffer=args.buffer,
     )
 
     print(json.dumps(result, indent=2, ensure_ascii=False))

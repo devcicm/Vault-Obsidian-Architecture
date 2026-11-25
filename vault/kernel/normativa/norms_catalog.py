@@ -332,6 +332,8 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     _desde_paquete("SP-02"),
     _desde_paquete("SP-03"),
     _desde_paquete("SP-04"),
+    _desde_paquete("SP-05"),
+    _desde_paquete("SP-06"),
     # ── Convenciones de nomenclatura CN-XX ────────────────────────────────────
     _desde_paquete("CN-01"),
     _desde_paquete("CN-02"),

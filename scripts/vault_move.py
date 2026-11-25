@@ -30,6 +30,7 @@ from vault_io import (
     assert_within_vault, atomic_write_text, file_lock, is_snapshot_path,
     actualizar_indices_de_dominio, refrescar_grafo, refrescar_indice_de_seccion,
     tomar_lock, write_report, PoliticaInvalidaError, nota_es_inmutable,
+    motivo_proteccion_nota,  # guard único AP-73/AP-75/no_borrar/inmutable
     NotaInmutableError,  # el veto del dueño de la escritura
 )
 from vault_lib import indice_de_nombres, resolver_wikilink, utcnow
@@ -590,13 +591,15 @@ def move_note(
     source = _raiz() / from_path
     destination = _raiz() / to_path
 
-    # AP-70: validar la política antes de mover la nota.
+    # AP-70 + Fase H (C8): validar política (inmutable, no_borrar, AP-73, AP-75,
+    # base_inmutable) antes de mover la nota para impedir evadir guards moviéndola.
     try:
-        seccion = nota_es_inmutable(source, _raiz())
+        proteccion = motivo_proteccion_nota(source, _raiz(), accion="move")
     except PoliticaInvalidaError as exc:
         return emit_error("vault_move", "INVALID_INPUT", str(exc))
-    if seccion:
-        return emit_error("vault_move", "IMMUTABLE_NOTE", f"La seccion '{seccion}' es inmutable: no se mueve {from_path}.")
+    if proteccion:
+        codigo_prot, mensaje_prot = proteccion
+        return emit_error("vault_move", codigo_prot, mensaje_prot)
 
     if not source.exists():
         return emit_error("vault_move", "FILE_NOT_FOUND", f"Archivo no encontrado: {from_path}")

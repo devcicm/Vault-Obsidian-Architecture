@@ -29,6 +29,10 @@ FICHERO_NOTAS_PALABRAS = "notes-keywords.json"
 #: La ronda de trabajo abierta (D-07). Lo escribe `vault_ronda` y lo lee
 #: `vault_write` para estampar su `round_id`.
 FICHERO_RONDA_ACTIVA = "ronda-activa.json"
+#: Cola append-only de banderas del agente ejecutor (SPEC-04, SP-05).
+#: La escribe `vault_ronda --flag` (perfil `ejecutor`) y la consume
+#: `vault_propagate --curate-plan/--curate-apply` (perfil `operador`).
+FICHERO_FLAGS = ".flags.jsonl"
 
 
 class RepositorioAutoria:
@@ -78,6 +82,10 @@ class RepositorioAutoria:
     @property
     def ronda_activa(self) -> Path:
         return self._ctx.ruta(CARPETA_SISTEMA, FICHERO_RONDA_ACTIVA)
+
+    @property
+    def cola_banderas(self) -> Path:
+        return self._ctx.ruta(CARPETA_SISTEMA, FICHERO_FLAGS)
 
     # ── Ficheros ─────────────────────────────────────────────────────────────
 

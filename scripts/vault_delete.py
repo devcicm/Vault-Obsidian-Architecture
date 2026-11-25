@@ -23,6 +23,7 @@ from vault_entorno import agente_por_defecto
 from vault_io import (
     actualizar_indices_de_dominio, assert_within_vault, atomic_write_json, atomic_write_text,
     refrescar_grafo,
+    motivo_proteccion_nota,  # guard único AP-73/AP-75/no_borrar/inmutable
     nota_no_se_borra,  # politica de no-borrado del vault
     nota_es_inmutable, PoliticaInvalidaError,  # politica de inmutabilidad del vault
 )
@@ -177,27 +178,20 @@ def vault_delete(
     if bloqueo:
         return bloqueo
 
-    # La politica del vault (propuesta `persistent-custom-rules-and-agent-
-    # integration`): una seccion declarada en `no_borrar` no se borra por
-    # ninguna via. Persistir la regla no basta —un prompt no es una frontera
-    # de permisos—, asi que la valla vive aqui, en la mutacion.
+    # La politica del vault + AP-73 (/raw inmutable) + AP-75 (sustitucion) +
+    # base_inmutable, unificados en el dueño de escritura (`vault_io.motivo_proteccion_nota`).
     # AP-70: una política ilegible impide decidir si el borrado está permitido.
     try:
-        seccion_prohibida = nota_no_se_borra(note_path, vault_root)
-        if not seccion_prohibida:
-            seccion_prohibida = nota_es_inmutable(note_path, vault_root)
+        proteccion = motivo_proteccion_nota(note_path, vault_root, accion="delete")
     except PoliticaInvalidaError as exc:
         return emit_error("vault_delete", "INVALID_INPUT", str(exc))
-    if seccion_prohibida:
+    if proteccion:
+        codigo_prot, mensaje_prot = proteccion
         return emit_error(
-            "vault_delete", "DELETE_FORBIDDEN",
-            f"La seccion '{seccion_prohibida}' esta protegida por la politica "
-            f"del vault (no_borrar o inmutable): '{path}' no se borra ni se "
-            f"mueve de sitio.",
-            args={"seccion": seccion_prohibida, "path": path},
-            pista="La politica vive en 00_System/reglas.json (no_borrar) y "
-                  "00_System/inmutable.json (secciones). Mover la nota es "
-                  "tambien retirarla del historico.",
+            "vault_delete", codigo_prot, mensaje_prot,
+            args={"path": path},
+            pista="La politica vive en 00_System/reglas.json y 00_System/inmutable.json; "
+                  "las fuentes archivadas (AP-73) y decisiones cerradas (AP-75) nunca se borran.",
         )
 
     # SP-01 es el protocolo de borrado de notas: los indices, el change-log y

@@ -51,6 +51,7 @@ from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 from vault.kernel import historia  # noqa: E402
 from vault.kernel.frontmatter_parsing import parse_frontmatter_robust  # noqa: E402
+from vault.kernel.safety import SENSITIVITY_ORDER, excede_sensibilidad, scan_poison  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -127,7 +128,7 @@ def _resolver_por_nombre(nombre: str):
     return (_raiz() / ruta if ruta else None), candidatos
 
 
-def vault_read(path: str) -> Dict[str, Any]:
+def vault_read(path: str, max_sensitivity: Optional[str] = None) -> Dict[str, Any]:
     """
 
     Read a note from the vault.
@@ -197,6 +198,29 @@ def vault_read(path: str) -> Dict[str, Any]:
     meta, body, legible, causa = parse_frontmatter_robust(content)
     body = body.strip()
 
+    # Fase H (C5): filtro opcional por cia_sensitivity y aviso anti-poison en lectura.
+    if max_sensitivity is not None:
+        if str(max_sensitivity).strip().lower() not in SENSITIVITY_ORDER:
+            return emit_error(
+                "vault_read", "INVALID_INPUT",
+                f"--max-sensitivity {max_sensitivity!r} no es uno de {', '.join(SENSITIVITY_ORDER)}",
+            )
+        nivel_nota = (meta or {}).get("cia_sensitivity")
+        if excede_sensibilidad(nivel_nota, max_sensitivity):
+            return {
+                **emit_error(
+                    "vault_read", "PERMISSION_DENIED",
+                    f"La nota '{canonica}' tiene cia_sensitivity={nivel_nota or 'internal'!r}, "
+                    f"que excede el límite --max-sensitivity={max_sensitivity!r}.",
+                ),
+                "path": canonica,
+            }
+
+    poison_hits = [
+        f.to_dict() for f in scan_poison(body, f"read:{canonica}")
+        if f.severity in ("critical", "high")
+    ]
+
     # Extract wiki-links
 
     wiki_links = extract_wiki_links(content)
@@ -225,6 +249,8 @@ def vault_read(path: str) -> Dict[str, Any]:
         result["resolved_from"] = resuelta_desde
     if not legible:
         result["frontmatter_error"] = causa
+    if poison_hits:
+        result["poison_warning"] = poison_hits
     return result
 
 
@@ -257,10 +283,14 @@ Notas:
     )
 
     parser.add_argument("--path", required=True, help="Relative path to note")
+    parser.add_argument(
+        "--max-sensitivity", choices=list(SENSITIVITY_ORDER), default=None,
+        help="Tope máximo de cia_sensitivity permitido al leer (public, internal, restricted)",
+    )
 
     args = parser.parse_args()
 
-    result = vault_read(args.path)
+    result = vault_read(args.path, max_sensitivity=args.max_sensitivity)
 
     print(json.dumps(result, indent=2, ensure_ascii=False))
 

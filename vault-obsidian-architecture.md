@@ -4090,7 +4090,7 @@ Lo ingerido entra con `status: draft` y `cia_integrity: low`, de modo que el rer
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **98 normas** del estándar (79 AP + 10 PAT + 4 SP + 5 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-79`. Fuente de verdad: `NORM_CATALOG` en `vault_norms_catalog.py` (`vault_norms.py` lo reexporta). Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **100 normas** del estándar (79 AP + 10 PAT + 6 SP + 5 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-79`. Fuente de verdad: `NORM_CATALOG` en `vault_norms_catalog.py` (`vault_norms.py` lo reexporta). Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -7603,6 +7603,29 @@ HTTP, `tests/test_token_service_seguridad.py` contra el servicio de tokens real,
 `Access-Control-Allow-Origin`.
 
 **Distinta de AP-36:** AP-36 mira *adónde* escribe una tool; SP-04 mira *quién* puede pedírselo.
+
+---
+
+### SP-05 — Separación Ejecutor-Curador y trazabilidad de banderas en la Fábrica de Conocimiento
+
+**Regla:** los agentes ejecutores operan con el perfil intermedio `ejecutor` (`VAULT_MCP_ROL=ejecutor` en `stdio` o `VAULT_MCP_TOKENS=ejecutor:<t>` en HTTP/SSE): pueden leer el vault y levantar señales no bloqueantes (`FLAG-NNN`) mediante `vault_ronda --flag` sobre la cola append-only `00_System/.flags.jsonl` (con pre-vuelo `scan_poison` obligatorio), sin permiso de edición directa sobre el conocimiento canónico.
+
+La consolidación ocurre en lote bajo el perfil `operador` mediante `vault_propagate --curate-plan` (`dry-run`), `vault_propagate --curate-apply` (anexa vía write path gobernado, estampa `source_flags`/`trace_ref`, transiciona cada bandera a `applied`, anota acción `curated` en `00_System/.change-log.jsonl` y emite acta en `19_Audits/curation/`) y `vault_propagate --mark-contradicts` (`PAT-7`, sin *last-write-wins*).
+
+**Distinta de SP-04:** SP-04 autentica la sesión MCP; SP-05 separa privilegios ejecutor↔curador y garantiza trazabilidad cerrada bandera→nota dentro de esa sesión.
+
+---
+
+### SP-06 — Madurez progresiva XP y disciplina Augmented Coding (opt-in)
+
+**Regla:** un proyecto que declara `xp_level` (`1..4`) en `00_System/reglas.json` (validación O(1) fail-closed en `vault/kernel/normativa/xp.py`) activa la escalera progresiva de prácticas XP sin romper vaults existentes (opt-in):
+
+- **Nivel 1 (Visibilidad):** clasificación explícita de holgura en requisitos (`vault_requirement_save --buffer critical|optional`) y cláusula compacta `## Augmented Coding (SP-06)` emitida por `vault_preferences --adapters` (respetando el techo `PAT-9` de 120 líneas).
+- **Nivel 2 (Contratos TDD):** `vault_requirement_save` bloquea pasar requisitos a `implemented`/`verified` sin evidencia `test_result: pass` en `15_Tests/`, y `vault_code_review` escala `NO_TESTS_TOUCHED` a severidad `blocker`.
+- **Nivel 3 (Supervisión):** `vault_code_review` avisa ante iteraciones monolíticas (`XP_MONOLITHIC_DIFF`) y exige un revisor humano válido (`--reviewer`, reutilizando `AP-64` / `falta_de_responsable`).
+- **Nivel 4 (Flujo continuo / Trunk-Based):** prohibido saltar niveles 1–3; `00_System/reglas.json` exige `xp_prerequisites: {"tdd_pass": true, "human_pair_review": true}`.
+
+**Distinta de SP-05:** SP-05 separa privilegios ejecutor↔curador sobre el conocimiento del vault; SP-06 gobierna la disciplina de ingeniería y verificación TDD/revisión de código del proyecto bajo adopción opt-in.
 
 ---
 

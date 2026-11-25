@@ -320,6 +320,15 @@ def pista_de_intereses() -> str:
 #: El único valor estándar de `agent` (AP-16) que es una persona.
 AGENTE_HUMANO = "human"
 
+#: Nombres de agentes de IA y marcadores de relleno que no son una persona (Fase H, AP-64).
+_RESPONSABLES_NO_HUMANOS = frozenset({
+    "n/a", "na", "none", "null", "tbd", "todo", "pending", "unknown",
+    "bot", "ai", "ia", "llm", "agent", "agente", "assistant", "asistente",
+    "auto", "system", "claude", "codex", "gpt", "gpt-4", "gpt-4o",
+    "chatgpt", "gemini", "copilot", "cursor", "opencode", "deepseek",
+    "anthropic", "openai", "windsurf", "antigravity",
+})
+
 
 def falta_de_responsable(fm, regimen: str) -> str:
     """AP-64: por qué esta decisión cerrada no tiene quien responda de ella.
@@ -327,8 +336,8 @@ def falta_de_responsable(fm, regimen: str) -> str:
     Devuelve el motivo, o `""` si no hay falta. Solo se exige a una decisión
     en régimen `cerrado` que no sea plantilla: una abierta aún se discute y una
     terminal ya no se consulta como vigente. Es falta no declarar
-    `responsable`, y también declarar como responsable al mismo agente no
-    humano que la escribió: eso es firmarse el propio porqué.
+    `responsable`, declarar un marcador de relleno o un agente de IA, o
+    declarar como responsable al mismo agente no humano que la escribió.
     """
     fm = fm or {}
     if regimen != "cerrado" or str(fm.get("status") or "").strip().lower() == "template":
@@ -336,6 +345,9 @@ def falta_de_responsable(fm, regimen: str) -> str:
     responsable = " ".join(str(fm.get("responsable") or "").split()).lower()
     if not responsable:
         return "decisión cerrada sin `responsable`: nadie responde de su porqué"
+    if responsable in _RESPONSABLES_NO_HUMANOS:
+        return (f"el responsable '{responsable}' no es una persona: "
+                "una decisión cerrada la responde una persona")
     agente = str(fm.get("agent") or "").strip().lower()
     if agente and agente != AGENTE_HUMANO and responsable == agente:
         return (f"el responsable es el mismo agente que la escribió ({agente}): "

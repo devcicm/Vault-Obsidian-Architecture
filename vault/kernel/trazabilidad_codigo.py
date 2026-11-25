@@ -67,7 +67,7 @@ VAULT_TAG_PATTERN = re.compile(
 # Patron extendido: acepta cualquier sangria, titulo opcional y anclas `#seccion`.
 # Sin cuantificadores anidados para cumplir el filtro anti-ReDoS.
 VAULT_REF_ANY_PATTERN = re.compile(
-    r"^([ \t]*)(?://|#|<!--|/\*|--)[ \t]*@vault:[ \t]*([^\s—–]+)"
+    r"^([ \t]*)(?:///|//|#|<!--|/\*\*?|(?:\*(?![/]))|--)[ \t]*@vault:[ \t]*([^\s—–]+)"
     r"(?:[ \t]+(?:[—–]|-{1,2})[ \t]*(.*?))?(?:[ \t]*(?:-->|\*/))?[ \t]*$",
     re.MULTILINE,
 )

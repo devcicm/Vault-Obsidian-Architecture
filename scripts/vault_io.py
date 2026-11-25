@@ -59,6 +59,7 @@ from vault.kernel import vcs as _vcs
 from vault.kernel.errors_trace import trazas_en_lote
 from vault.kernel.fallos import FalloDeDominio
 from vault.kernel.indices_structural import DISPOSITIVOS_WINDOWS, es_dispositivo_windows
+from vault.kernel.normativa.xp import validar_politica_xp as _validar_politica_xp
 from vault_raiz import (  # noqa: F401  (reexport deliberado)
     LOW_CONFIDENCE_ORIGINS,
     RaizNoIdentificada,
@@ -935,6 +936,9 @@ def _cargar_politica(fichero: Path) -> Optional[dict]:
 #: Claves escalares (no lista) válidas en `00_System/reglas.json` y sus valores permitidos.
 CLAVES_ESCALARES_REGLAS = {"historial": _historia.MODOS_DE_HISTORIAL}
 
+#: Claves opt-in de madurez XP (`SPEC-03` / `SP-06`), validadas O(1) fail-closed.
+CLAVES_XP_REGLAS = ("xp_level", "xp_prerequisites")
+
 
 def _leer_politica(fichero: Path, claves: tuple, requeridas: tuple = ()) -> dict:
     """Una politica existente invalida detiene la operacion."""
@@ -951,6 +955,8 @@ def _leer_politica(fichero: Path, claves: tuple, requeridas: tuple = ()) -> dict
     for clave in claves:
         if clave not in datos:
             continue
+        if clave in CLAVES_XP_REGLAS:
+            continue
         if clave in CLAVES_ESCALARES_REGLAS:
             permitidos = CLAVES_ESCALARES_REGLAS[clave]
             val = datos[clave]
@@ -962,6 +968,10 @@ def _leer_politica(fichero: Path, claves: tuple, requeridas: tuple = ()) -> dict
         elif (not isinstance(datos[clave], list) or
               any(not isinstance(x, str) or not x.strip() for x in datos[clave])):
             raise PoliticaInvalidaError(f"La politica {fichero} requiere una lista de secciones en {clave}")
+    if any(k in datos for k in CLAVES_XP_REGLAS):
+        err_xp = _validar_politica_xp(datos)
+        if err_xp:
+            raise PoliticaInvalidaError(f"La politica {fichero} es invalida: {err_xp}")
     return datos
 
 
@@ -1016,6 +1026,8 @@ CLAVES_DE_REGLAS = (
     "base_inmutable",
     "historial",
     "comandos_de_prueba",
+    "xp_level",
+    "xp_prerequisites",
 )
 
 
@@ -1106,6 +1118,13 @@ def comandos_de_prueba_declarados(raiz: Optional[Path] = None) -> List[str]:
     return _lista_de_reglas("comandos_de_prueba", raiz)
 
 
+def xp_level_declarado(raiz: Optional[Path] = None) -> Optional[int]:
+    """El nivel XP (`1..4`) declarado en `00_System/reglas.json`, o None si opt-in inactivo (SP-06)."""
+    _base, datos, _inmutables = _cargar_reglas_validadas(raiz)
+    nivel = datos.get("xp_level")
+    return int(nivel) if isinstance(nivel, int) and not isinstance(nivel, bool) else None
+
+
 def nota_no_se_borra(nota: Path, raiz: Optional[Path] = None) -> Optional[str]:
     """La seccion que prohibe borrar esta nota, o None."""
     base = Path(raiz) if raiz is not None else _raiz.get_vault_root()
@@ -1116,6 +1135,65 @@ def nota_no_se_borra(nota: Path, raiz: Optional[Path] = None) -> Optional[str]:
     seccion = seccion_de(relativa)
     if seccion and seccion in reglas_declaradas(base)["no_borrar"]:
         return seccion
+    return None
+
+
+def motivo_proteccion_nota(
+    nota: Path,
+    raiz: Optional[Path] = None,
+    accion: str = "delete",
+) -> Optional[Tuple[str, str]]:
+    """Guard único de protección para `delete` y `move` (Fase H, C8).
+
+    Devuelve `(error_code, mensaje)` si la nota no puede borrarse ni moverse,
+    o `None` si la operación está permitida. Unifica:
+    - `no_borrar` e `inmutable` (política en `reglas.json`/`inmutable.json`),
+    - `AP-73` (`es_fuente_archivada`, siempre activa sin opt-in),
+    - `base_inmutable` (nota base sellada),
+    - `AP-75` (`sustitucion`: nota cerrada no se borra ni se saca de su sección).
+    """
+    base = Path(raiz) if raiz is not None else _raiz.get_vault_root()
+    # Primero validar la política (AP-70): una política corrupta siempre falla cerrado.
+    reglas = reglas_declaradas(base)
+    try:
+        relativa = Path(nota).resolve().relative_to(base.resolve()).as_posix()
+    except (ValueError, OSError):
+        try:
+            relativa = Path(nota).relative_to(base).as_posix()
+        except ValueError:
+            return None
+    seccion = seccion_de(relativa)
+    verbo = "borra" if accion == "delete" else "mueve"
+
+    if seccion and seccion in reglas["no_borrar"]:
+        codigo = "DELETE_FORBIDDEN" if accion == "delete" else "IMMUTABLE_NOTE"
+        return (
+            codigo,
+            f"La seccion '{seccion}' esta protegida por `no_borrar` en {FICHERO_REGLAS}: "
+            f"'{relativa}' no se {verbo} ni se retira del historico.",
+        )
+    if seccion and seccion in reglas["inmutable"]:
+        codigo = "DELETE_FORBIDDEN" if accion == "delete" else "IMMUTABLE_NOTE"
+        return (
+            codigo,
+            f"La seccion '{seccion}' es inmutable: '{relativa}' no se {verbo}.",
+        )
+    if Path(nota).exists() and Path(nota).is_file():
+        # AP-73: fuentes archivadas (/raw) nunca se borran ni mueven (siempre activa).
+        motivo_fuente = _fuente_archivada_reescrita(Path(nota), relativa, None)
+        if motivo_fuente:
+            return ("IMMUTABLE_NOTE", motivo_fuente)
+        if seccion and seccion in base_inmutable_declarada(base):
+            motivo_base = _nota_base_inmutable_protegida(Path(nota), relativa, seccion)
+            if motivo_base:
+                return ("IMMUTABLE_NOTE", motivo_base)
+        if seccion and seccion in sustitucion_declarada(base):
+            # Pasar un cuerpo vacío distinto para detectar si la nota está cerrada (AP-75).
+            motivo_sus = _decision_cerrada_reescrita(
+                Path(nota), relativa, seccion, "---\n---\n__movida_o_borrada__\n"
+            )
+            if motivo_sus:
+                return ("IMMUTABLE_NOTE", motivo_sus)
     return None
 
 
