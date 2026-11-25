@@ -27,15 +27,15 @@ _Derivado de los registros canónicos. Se regenera con `python scripts/vault_ser
 ## Qué es ley para quién
 
 - **Para quien usa el vault**: las 77 normas de consumidor, aplicadas por las tools de escritura y consulta — contrato de nota, vocabulario de estados, protocolo de borrado y buenas prácticas.
-- **Para quien mantiene este repositorio**: la gobernanza del meta-toolkit — las 21 normas internas del estándar (separadas por audiencia para no mezclarse con la superficie del consumidor) y el conjunto de tools cuya naturaleza es `meta_estandar` (30), que miden este repo y no el vault de nadie, por las 29 puertas de `docs/PUERTAS.md`.
+- **Para quien mantiene este repositorio**: la gobernanza del meta-toolkit — las 21 normas internas del estándar (separadas por audiencia para no mezclarse con la superficie del consumidor) y el conjunto de tools cuya naturaleza es `meta_estandar` (29), que miden este repo y no el vault de nadie, por las 29 puertas de `docs/PUERTAS.md`.
 
 ## La superficie que ve el agente por MCP
 
-El catálogo marca `exposed_via_mcp` y el servidor MCP lo respeta: las 30 tools de gobernanza **no** llegan al cliente (el recorte lo deriva de la capacidad `gobernanza_del_estandar`, no de una lista escrita a mano). `VAULT_MCP_PERFIL=agente` reduce el menú a las 15 del protocolo de sesión, y el servidor poda además en runtime las tools cuyo script no existe.
+El catálogo marca `exposed_via_mcp` y el servidor MCP lo respeta: las 29 tools de gobernanza **no** llegan al cliente (el recorte lo deriva de la capacidad `gobernanza_del_estandar`, no de una lista escrita a mano). `VAULT_MCP_PERFIL=agente` reduce el menú a las 15 del protocolo de sesión, y el servidor poda además en runtime las tools cuyo script no existe.
 
 ## El mapa: capacidad → grupo → tool
 
-### Escritura → gobernanza — 90 tools (`escritura_a_gobernanza`)
+### Escritura → gobernanza — 91 tools (`escritura_a_gobernanza`)
 
 - **Backups (13)** — vault_backup, vault_backup_base64, vault_backup_list, vault_restore, vault_restore_base64
 - **Bibliografía (16)** — vault_bibliography_save
@@ -44,7 +44,7 @@ El catálogo marca `exposed_via_mcp` y el servidor MCP lo respeta: las 30 tools 
 - **Conocimiento (5)** — vault_knowledge_get, vault_knowledge_save
 - **Core (1)** — vault_append, vault_diff, vault_list, vault_merge, vault_move, vault_read, vault_search, vault_write
 - **Corrección Automática (33)** — vault_fix_brackets, vault_frontmatter_completar, vault_frontmatter_heal, vault_graph_fix, vault_supersede
-- **Código (12)** — vault_code_map, vault_code_module, vault_code_query, vault_code_relation, vault_code_review, vault_code_sync
+- **Código (12)** — vault_code_map, vault_code_module, vault_code_query, vault_code_relation, vault_code_review, vault_code_sync, vault_code_tag
 - **Data Quality (24)** — vault_fundamentals, vault_quality_check
 - **Defectos y Cuarentena (36)** — vault_bug_save, vault_quarantine
 - **Diagramas (4)** — vault_diagram_export, vault_diagram_save, vault_mermaid_check, vault_relation_add
@@ -77,9 +77,9 @@ El catálogo marca `exposed_via_mcp` y el servidor MCP lo respeta: las 30 tools 
 - **Memoria de Contexto (34)** — vault_arquitectura_en, vault_context_pack, vault_ingest, vault_model_profile, vault_preferences, vault_query_parse, vault_subgraph
 - **Tokens (26)** — vault_token_counter, vault_token_service, vault_tokens
 
-### Gobernanza del estándar — 30 tools (`gobernanza_del_estandar`)
+### Gobernanza del estándar — 29 tools (`gobernanza_del_estandar`)
 
-- **Normas (35)** — vault_arch, vault_blame_audit, vault_blueprint, vault_changelog_check, vault_ciclos, vault_clones, vault_code_tag, vault_criterios, vault_doc_counts, vault_doc_staleness, vault_doc_sync, vault_error_contract, vault_esquema, vault_excepcion_declarada, vault_fix_all, vault_foreign_check, vault_gate, vault_kernel, vault_metricas, vault_noop_audit, vault_norms, vault_norms_coherence, vault_procesos_git, vault_produccion, vault_recursos, vault_servicio, vault_smoke, vault_tests_higiene, vault_toolkit_audit, vault_voice
+- **Normas (35)** — vault_arch, vault_blame_audit, vault_blueprint, vault_changelog_check, vault_ciclos, vault_clones, vault_criterios, vault_doc_counts, vault_doc_staleness, vault_doc_sync, vault_error_contract, vault_esquema, vault_excepcion_declarada, vault_fix_all, vault_foreign_check, vault_gate, vault_kernel, vault_metricas, vault_noop_audit, vault_norms, vault_norms_coherence, vault_procesos_git, vault_produccion, vault_recursos, vault_servicio, vault_smoke, vault_tests_higiene, vault_toolkit_audit, vault_voice
 
 ## El vocabulario y su dueño
 

@@ -35,7 +35,7 @@ import sys
 # de uso. Ver `vault_entorno.py`.
 from vault_entorno import leer as _env
 
-from vault_registry import SECTIONS as _REGISTRO_DE_SECCIONES, es_andamio
+from vault_registry import SECTIONS as _REGISTRO_DE_SECCIONES, comando_de_tool, es_andamio
 from vault_errors import presupuesto_de_vault, emit_error, wrap_main, proyecto_registrado
 
 from collections import defaultdict
@@ -1414,6 +1414,22 @@ _MARCADORES_DE_CONVENCION: List[Tuple[str, str]] = [
 #: ningún par sería silenciar la norma, no afinarla.
 
 
+def _separar_sufijo_seccion(titulo: str) -> Optional[Tuple[str, str]]:
+    """Extrae `(prefijo, seccion_nn)` en O(n) si el título termina en `<sep> NN_nombre`."""
+    t = titulo.strip().lower()
+    i = len(t)
+    while i > 0 and (t[i - 1].isalnum() or t[i - 1] == "_"):
+        i -= 1
+    cola = t[i:]
+    if not (len(cola) >= 4 and cola[0:2].isdigit() and cola[2] == "_" and cola[3].isalpha()):
+        return None
+    antes = t[:i].rstrip(" \t")
+    prefijo = antes.rstrip("—–-:")
+    if not prefijo or prefijo == antes:
+        return None
+    return prefijo.rstrip(" \t"), cola
+
+
 def _distintos_por_convencion(titulo_a: str, titulo_b: str) -> Optional[str]:
     """¿Los dos títulos son artefactos distintos por convención de nombres?
 
@@ -1427,7 +1443,17 @@ def _distintos_por_convencion(titulo_a: str, titulo_b: str) -> Optional[str]:
     criterio: se estaba midiendo con la normalización propia en vez de con la
     del dominio (AP-44). Cualquier proyecto .NET, Java o TypeScript dispara esto
     en proporción a su número de servicios.
+
+    También cubre series particionadas por sección numerada del estándar
+    (`Agent Vault Inventory — 01_Projects` vs `Agent Vault Inventory — 11_Code`):
+    comparten el mismo prefijo y difieren solo en la sección `NN_Nombre` a la
+    que pertenecen, no son copias entre sí.
     """
+    pa = _separar_sufijo_seccion(titulo_a)
+    pb = _separar_sufijo_seccion(titulo_b)
+    if pa and pb and pa[0] == pb[0] and pa[1] != pb[1]:
+        return f"seccion:{pa[1]}/{pb[1]}"
+
     a = re.sub(r"[^a-z0-9]", "", titulo_a.lower())
     b = re.sub(r"[^a-z0-9]", "", titulo_b.lower())
     if a == b:
@@ -2472,7 +2498,7 @@ def _get_roadmap_for_populated_vault(content_notes: List[Path]) -> List[Dict[str
                 "priority": "high",
                 "category": "guidance",
                 "description": "Documenta cada proyecto activo con `vault_project_overview` (mínimo 3 proyectos para cobertura significativa).",
-                "command": "python scripts/vault_project_overview.py --project <slug> --description '...' --runtime '...'",
+                "command": comando_de_tool("vault_project_overview --project <slug> --description '...' --runtime '...'"),
             }
         )
     if by_folder.get("03_Decisions", 0) < 2:
@@ -2492,8 +2518,10 @@ def _get_roadmap_for_populated_vault(content_notes: List[Path]) -> List[Dict[str
                 # vacías. La plantilla va como guía: pasarla vacía como
                 # contenido la rechaza el gate de contenido (AP-11).
                 "template": plantilla_adr(),
-                "command": "python scripts/vault_write.py --adr --folder 03_Decisions "
-                           "--title '<decisión>' --content @file:adr.md",
+                "command": comando_de_tool(
+                    "vault_write --adr --folder 03_Decisions "
+                    "--title '<decisión>' --content @file:adr.md"
+                ),
             }
         )
     if by_folder.get("08_Runbooks", 0) < 1:
@@ -2502,7 +2530,7 @@ def _get_roadmap_for_populated_vault(content_notes: List[Path]) -> List[Dict[str
                 "priority": "medium",
                 "category": "guidance",
                 "description": "Crea al menos un runbook para el procedimiento más crítico (deploy, rollback, incident response).",
-                "command": "python scripts/vault_runbook_save.py --project <slug> --title 'Deploy' --steps '...'",
+                "command": comando_de_tool("vault_runbook_save --project <slug> --title 'Deploy' --steps '...'"),
             }
         )
     if by_folder.get("02_Observability", 0) < 1:
@@ -2511,7 +2539,7 @@ def _get_roadmap_for_populated_vault(content_notes: List[Path]) -> List[Dict[str
                 "priority": "medium",
                 "category": "guidance",
                 "description": "Registra SLOs y métricas operacionales con `vault_slo_save` y `vault_log_error`.",
-                "command": "python scripts/vault_slo_save.py --project <slug> --service api --slo_type availability --target 99.9",
+                "command": comando_de_tool("vault_slo_save --project <slug> --service api --slo_type availability --target 99.9"),
             }
         )
     if by_folder.get("14_Requirements", 0) < 1:
@@ -2520,7 +2548,7 @@ def _get_roadmap_for_populated_vault(content_notes: List[Path]) -> List[Dict[str
                 "priority": "medium",
                 "category": "guidance",
                 "description": "Documenta los requerimientos formales (ISO 29148) con trazabilidad a tests y código.",
-                "command": "python scripts/vault_requirement_save.py --project <slug> --title 'REQ-001 ...'",
+                "command": comando_de_tool("vault_requirement_save --project <slug> --title 'REQ-001 ...'"),
             }
         )
     if by_folder.get("15_Tests", 0) < 1:
@@ -2529,7 +2557,7 @@ def _get_roadmap_for_populated_vault(content_notes: List[Path]) -> List[Dict[str
                 "priority": "medium",
                 "category": "guidance",
                 "description": "Registra los casos de test formales (ISO 29119) con trazabilidad a requirements.",
-                "command": "python scripts/vault_test_save.py --project <slug> --title 'Test: ...' --test_type unit --description '...'",
+                "command": comando_de_tool("vault_test_save --project <slug> --title 'Test: ...' --test_type unit --description '...'"),
             }
         )
     if by_folder.get("11_Code", 0) < 1:
@@ -2538,7 +2566,7 @@ def _get_roadmap_for_populated_vault(content_notes: List[Path]) -> List[Dict[str
                 "priority": "medium",
                 "category": "guidance",
                 "description": "Documenta tus módulos de código siguiendo IEEE 1016 con `vault_code_module --tag-source` para inyectar trazabilidad bidireccional.",
-                "command": "python scripts/vault_code_module.py --project <slug> --file_path <path> --description '...' --tag-source",
+                "command": comando_de_tool("vault_code_module --project <slug> --file_path <path> --description '...' --tag-source"),
             }
         )
     if by_folder.get("16_AI_Governance", 0) < 1 and len(content_notes) > 20:
@@ -2547,7 +2575,7 @@ def _get_roadmap_for_populated_vault(content_notes: List[Path]) -> List[Dict[str
                 "priority": "low",
                 "category": "guidance",
                 "description": "Una vez que el vault tenga >20 notas, registra decisiones de agentes IA (ISO 42001) en `16_AI_Governance/`.",
-                "command": "python scripts/vault_ai_decision.py --project <slug> --title '<decision>' --decision_type architecture",
+                "command": comando_de_tool("vault_ai_decision --project <slug> --title '<decision>' --decision_type architecture"),
             }
         )
     if not actions:
@@ -2555,7 +2583,11 @@ def _get_roadmap_for_populated_vault(content_notes: List[Path]) -> List[Dict[str
             {
                 "priority": "low",
                 "category": "guidance",
-                "description": "Vault maduro. Siguiente: ejecuta `python scripts/vault_backup.py` para crear un snapshot con Merkle tree, y `python scripts/vault_drift_detect.py --path . --project <slug> --mode report` para detectar drift desde el último backup.",
+                "description": (
+                    f"Vault maduro. Siguiente: ejecuta `{comando_de_tool('vault_backup')}` para crear un snapshot "
+                    f"con Merkle tree, y `{comando_de_tool('vault_drift_detect --path . --project <slug> --mode report')}` "
+                    "para detectar drift desde el último backup."
+                ),
             }
         )
     return actions
@@ -2897,7 +2929,7 @@ _GUIA_PENALIZACION: Dict[str, Dict[str, str]] = {
     },
     "missing_status": {
         "reason": "Notas sin campo `status` canonico en frontmatter (AP-29)",
-        "remediation": "Asignar un estado del vocabulario canonico (`draft`, `active`, `implemented`, etc.) con `vault_frontmatter_completar`.",
+        "remediation": "Asignar un estado del vocabulario canonico (`draft`, `verified`, `implemented`, etc.) con `vault_frontmatter_completar`.",
     },
     "missing_cia": {
         "reason": "Notas sin clasificacion CIA (`cia_integrity`, `cia_availability`, `cia_sensitivity`) (AP-30)",
@@ -3596,9 +3628,10 @@ def vault_audit(
                 f"({carpeta['files']} ficheros). Su contenido no se "
                 f"audita como notas del vault."),
             "remediation_options": [
-                f"Declararla como seccion propia: python scripts/vault_section.py "
-                f"--add {carpeta['folder']} <documentacion>",
-                f"Sacarla del vault: muevela fuera de la raiz del vault",
+                "Declararla como seccion propia: " + comando_de_tool(
+                    f"vault_section --add {carpeta['folder']} <documentacion>"
+                ),
+                "Sacarla del vault: muevela fuera de la raiz del vault",
             ],
             "norm": "CN-02",
         })
@@ -3634,7 +3667,9 @@ def vault_audit(
                 "link": target,
                 "description": f"Wiki-link [[{target}]] en `{src}` no resuelve a ninguna nota del vault.",
                 "remediation_options": [
-                    f'Crear la nota destino: `python scripts/vault_write.py --folder "<carpeta>" --title "{target}" --content "..."`',
+                    "Crear la nota destino: `"
+                    + comando_de_tool(f'vault_write --folder "<carpeta>" --title "{target}" --content "..."')
+                    + "`",
                     f"Editar `{src}` y corregir el link a una nota que sí exista.",
                     f"Eliminar el link de `{src}` si ya no aplica.",
                 ],
@@ -3651,7 +3686,7 @@ def vault_audit(
         if auto_fixable:
             # `--path` y comillas: la ruta como posicional no existe y argparse
             # rechazaba la receta entera (AP-44: medido ejecutándola).
-            cmd = f'python scripts/vault_fix_brackets.py --apply --path "{path}"'
+            cmd = comando_de_tool(f'vault_fix_brackets --apply --path "{path}"')
             desc_kind = ", ".join(kinds)
             next_actions.append(
                 {
@@ -3720,9 +3755,9 @@ def vault_audit(
                             "path": original_path,
                             "description": f"Nodo `{original_path}` fue eliminado pero tenía inbound links — hay enlaces huérfanos.",
                             "remediation_options": [
-                                f"Restaurar la nota desde backup.",
-                                f"Crear una nota vacía con el mismo nombre.",
-                                f"Ejecutar `python scripts/vault_graph.py` para limpiar el grafo.",
+                                "Restaurar la nota desde backup.",
+                                "Crear una nota vacía con el mismo nombre.",
+                                f"Ejecutar `{comando_de_tool('vault_graph')}` para limpiar el grafo.",
                             ],
                             # Los entrantes que quedan no resuelven: AP-14. Hasta
                             # v41.2 citaba AP-15, que es material ajeno en la raíz.
@@ -3751,7 +3786,7 @@ def vault_audit(
                     "from": move.get("from", ""),
                     "to": move.get("to", ""),
                     "description": f"Nota movida de `{move.get('from', '')}` a `{move.get('to', '')}`.",
-                    "command": f"Ejecutar `python scripts/vault_graph.py` para actualizar el grafo.",
+                    "command": f"Ejecutar `{comando_de_tool('vault_graph')}` para actualizar el grafo.",
                     # El grafo es un artefacto derivado que puede haber quedado
                     # atrás: AP-47. Hasta v41.2 citaba AP-16 (campo `agent`).
                     "norm": "AP-47",
@@ -3767,7 +3802,7 @@ def vault_audit(
                 "priority": "high",
                 "category": "mermaid_errors",
                 "description": f"{len(mermaid_errors)} errores de sintaxis en diagramas Mermaid",
-                "command": "python scripts/vault_mermaid_check.py --fix",
+                "command": comando_de_tool("vault_mermaid_check --fix"),
                 "norm": "AP-25",
             }
         )
@@ -3803,7 +3838,7 @@ def vault_audit(
                     f"`{ruta}` es una nota de contenido sin tags "
                     f"({len(missing_tags)} en total). Añadir en su frontmatter los "
                     "tags que propone el comando; no se crea otra nota."),
-                "command": f'python scripts/vault_tags.py --suggest "{ruta}"',
+                "command": comando_de_tool(f'vault_tags --suggest "{ruta}"'),
                 "norm": "AP-26",
             }
         )
@@ -3818,7 +3853,7 @@ def vault_audit(
                     f"El grafo enriquecido esta ausente o desactualizado ({ap35_silo_flags.get('graph_enriched_hours_old', '?')}h). "
                     "Las relaciones semanticas de entity y code no estan integradas en el grafo de conocimiento (AP-35)."
                 ),
-                "command": "python scripts/vault_graph.py --typed",
+                "command": comando_de_tool("vault_graph --typed"),
                 "norm": "AP-35",
             }
         )
@@ -3844,17 +3879,21 @@ def vault_audit(
         if not ap31_typed_pass_current:
             paso = ("Ejecutar vault_graph --typed para enriquecer el grafo con "
                     "relaciones semanticas (AP-31).")
-            comando = "python scripts/vault_graph.py --typed"
+            comando = comando_de_tool("vault_graph --typed")
         elif (ap35_silo_flags or {}).get("code_index_exists"):
             paso = ("El grafo tipado ya incluye todas las relaciones declaradas: "
                     "declarar relaciones entre ficheros de codigo y regenerarlo (AP-31).")
-            comando = ("python scripts/vault_code_relation.py --project <project> "
-                       "--from_file <path> --to_file <path> --relation_type <type>")
+            comando = comando_de_tool(
+                "vault_code_relation --project <project> "
+                "--from_file <path> --to_file <path> --relation_type <type>"
+            )
         else:
             paso = ("El grafo tipado ya incluye todas las relaciones declaradas: "
                     "declarar relaciones entre entidades y regenerarlo (AP-31).")
-            comando = ("python scripts/vault_relation_add.py --project <project> "
-                       "--from <entity> --to <entity> --relation_type <type>")
+            comando = comando_de_tool(
+                "vault_relation_add --project <project> "
+                "--from <entity> --to <entity> --relation_type <type>"
+            )
         next_actions.append(
             {
                 "priority": "medium",

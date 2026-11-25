@@ -110,7 +110,7 @@ _REGLAS_OPERACION_NEGOCIO: Tuple[Tuple[str, Tuple[str, ...]], ...] = (
 
 _RE_CAMEL_SEP = re.compile(r"([a-z0-9])([A-Z])")
 _RE_TOKEN_SPLIT = re.compile(r"[^a-z0-9]+")
-_EXACT_ONLY_TOKENS = frozenset({"order", "git", "tax", "iva", "rule", "norm", "norms", "norma", "normas", "list", "find", "sql", "http", "smtp", "jwt", "rbac", "saga", "wave", "cola", "slug"})
+_EXACT_ONLY_TOKENS = frozenset({"order", "git", "tax", "iva", "rule", "norm", "norms", "norma", rutas.NORMAS, "list", "find", "sql", "http", "smtp", "jwt", "rbac", "saga", "wave", "cola", "slug"})
 
 
 def _tokenizar_para_pat10(texto: str) -> List[str]:

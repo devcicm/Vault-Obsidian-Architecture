@@ -226,7 +226,7 @@ Quién escribe qué. Derivado del catálogo (`side_effects`): es el inventario q
 - `vault_code_relation` (Código): Actualiza índice de relaciones en 11_Code/
 - `vault_code_review` (Código): Con --save: guarda acta de revisión en 19_Audits/code-review/; Con --html-preview: genera visor web HTML clicable en 19_Audits/previews/
 - `vault_code_sync` (Código): Actualiza 11_Code/{project}/index.json; Con --fix: inyecta @vault: en los ficheros fuente del proyecto, FUERA del vault (AP-36: el side effect se declara para poder revisarlo)
-- `vault_code_tag` (Normas): Actualiza frontmatter del módulo
+- `vault_code_tag` (Código): Inserta/actualiza @vault: o @norm en el archivo fuente y 00_System/code-tag-registry.json
 - `vault_criterios` (Normas): scripts/criterios-baseline.json
 - `vault_delete` (Change Log): Escribe entrada en 00_System/.change-log.jsonl (append-only; lee también el .change-log.json congelado); Escribe entrada en 00_System/change-log.md; Elimina o mueve a 20_Quarantine/; Guarda la versión borrada en .history/ (la restaura vault_undo --restore)
 - `vault_delta` (Session Delta y Tags): Crea 00_System/delta-snapshot.json

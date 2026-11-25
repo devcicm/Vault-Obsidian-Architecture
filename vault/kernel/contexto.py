@@ -72,8 +72,14 @@ class VaultContext:
         escribía fuera de la raíz: no por descuido, sino porque nada en la forma
         del código obligaba a pasar por aquí.
         """
-        destino = (self.raiz.joinpath(*partes)).resolve()
-        raiz = self.raiz.resolve()
+        def _sin_prefijo_win(p: Path) -> Path:
+            s = str(p)
+            if s.startswith("\\\\?\\") and not s.startswith("\\\\?\\UNC\\"):
+                return Path(s[4:])
+            return p
+
+        destino = _sin_prefijo_win((self.raiz.joinpath(*partes)).resolve())
+        raiz = _sin_prefijo_win(self.raiz.resolve())
         if destino != raiz and raiz not in destino.parents:
             raise ValueError(
                 f"AP-36: {destino} cae fuera del vault {raiz}. Todo side effect "

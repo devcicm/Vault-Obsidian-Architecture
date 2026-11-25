@@ -8,13 +8,13 @@ Responde tres preguntas sobre cada tool: **dónde se puede usar**, **si hay evid
 
 | Categoría | Cuántas | Dónde corre | Quién la usa |
 |---|---|---|---|
-| Operaciones del vault por CLI | 98 | `vault run <tool>` desde la wheel instalada; por MCP las que estén expuestas | agentes y personas con un vault |
+| Operaciones del vault por CLI | 99 | `vault run <tool>` desde la wheel instalada; por MCP las que estén expuestas | agentes y personas con un vault |
 | Operaciones del vault solo por MCP | 2 | servidor MCP (JavaScript nativo); `vault run` no las ejecuta | agentes por MCP |
-| Mantenimiento del estándar | 30 | solo en un checkout de este repo (`python scripts/<tool>.py`); la wheel no las instala | quien mantiene el estándar |
+| Mantenimiento del estándar | 29 | solo en un checkout de este repo (`python scripts/<tool>.py`); la wheel no las instala | quien mantiene el estándar |
 | Internas | 20 | no son tools de un vault: librerías, registros o CLIs de diagnóstico del toolkit | nadie desde fuera |
 | Archivadas | 5 | no se ejecutan; cada una nombra su reemplazo | nadie |
 
-Las 130 activas son 98 + 2 + 30. Expuestas por el servidor MCP: **99**; las otras 31 se ejecutan por CLI o en el checkout.
+Las 130 activas son 99 + 2 + 29. Expuestas por el servidor MCP: **100**; las otras 30 se ejecutan por CLI o en el checkout.
 
 `vault tools list` dice lo mismo desde la wheel: `class: runtime` con `installed: true` es lo que corre; `class: maintenance` con `installed: false` es del checkout, y `vault run` la rechaza con `not_runtime_operation`.
 
@@ -39,8 +39,9 @@ Las 130 activas son 98 + 2 + 30. Expuestas por el servidor MCP: **99**; las otra
 | `vault_code_module` | Código | sí | sí | OK |
 | `vault_code_query` | Código | sí | no | OK |
 | `vault_code_relation` | Código | sí | sí | OK |
-| `vault_code_review` | Código | sí | sí | sin dato |
+| `vault_code_review` | Código | sí | sí | OK |
 | `vault_code_sync` | Código | sí | sí | OK |
+| `vault_code_tag` | Código | sí | sí | OK |
 | `vault_context_pack` | Memoria de Contexto | sí | no | OK |
 | `vault_delete` | Change Log | sí | sí | OK |
 | `vault_delta` | Session Delta y Tags | sí | sí | OK |
@@ -146,7 +147,6 @@ Comprueban o regeneran este repositorio. **No** operan el vault de nadie y no es
 | `vault_changelog_check` | Normas | no | sí | OK |
 | `vault_ciclos` | Normas | no | sí | OK |
 | `vault_clones` | Normas | no | sí | OK |
-| `vault_code_tag` | Normas | no | sí | OK |
 | `vault_criterios` | Normas | no | sí | OK |
 | `vault_doc_counts` | Normas | no | sí | OK |
 | `vault_doc_staleness` | Normas | no | no | OK |

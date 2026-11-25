@@ -828,7 +828,7 @@ Formatos de comentario por extensión:
 
     # Parameters
     parser.add_argument("--file",        help="Ruta al archivo de código (absoluta o relativa al CWD)")
-    parser.add_argument("--symbol",      help="Método, función o clase objetivo para --link-vault o --resolve (ej: calcular_iva)")
+    parser.add_argument("--symbol",      help="Método, función, clase o namespace objetivo para --link-vault o --resolve (ej: calcular_iva, FacturaService, Facturacion.Impuestos)")
     parser.add_argument("--project",     type=proyecto_registrado("vault_code_tag"), help="Proyecto para desambiguar IDs cortos (ej: REQ-042)")
     parser.add_argument("--html-preview", action="store_true", help="Con --resolve: genera visor web HTML autocontenido con @vault: clicables dentro de 19_Audits/previews/")
     parser.add_argument("--title",       help="Título para --link-vault (se muestra tras — en el tag)")

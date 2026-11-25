@@ -7,7 +7,7 @@ Scripts Python del estándar **Vault Obsidian Architecture** (versión vigente: 
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
 - **Saneamiento de índices (v38.1)** — `vault_section_index.py --heal [--root]` regenera índices con formato legacy `[[stem|alias]]` o ausentes; el auto-index post-write se auto-cura si un agente escribe `index.md` a mano
-- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone 99 de las 130 tools activas via MCP Protocol (las otras 31 se ejecutan por CLI o en el checkout) (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
+- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone 100 de las 130 tools activas via MCP Protocol (las otras 30 se ejecutan por CLI o en el checkout) (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — una dependencia obligatoria, PyYAML (declarada en `pyproject.toml`)
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault; requiere marcador de CONTENIDO (01_Projects/02_Observability/03_Decisions/.obsidian), no solo 00_System/99_Index (evita el ciclo auto-reforzado de detección); override runtime con `set_vault_root()`/env `VAULT_ROOT`
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -36,7 +36,7 @@ Scripts Python del estándar **Vault Obsidian Architecture** (versión vigente: 
 | [Grupo 9 — Migración](#grupo-9--migración) | vault_migrate_docs, vault_migrate_rollback |
 | [Grupo 10 — Línea de Tiempo](#grupo-10--línea-de-tiempo) | vault_timeline |
 | [Grupo 11 — Vista del Proyecto](#grupo-11--vista-del-proyecto) | vault_project_status, vault_project_overview, vault_project |
-| [Grupo 12 — Código](#grupo-12--código) | vault_code_module, vault_code_relation, vault_code_map, vault_code_query, vault_code_sync, vault_code_review |
+| [Grupo 12 — Código](#grupo-12--código) | vault_code_module, vault_code_relation, vault_code_map, vault_code_query, vault_code_sync, vault_code_review, vault_code_tag |
 | [Grupo 13 — Backups](#grupo-13--backups) | vault_backup, vault_backup_list, vault_restore, vault_backup_base64, vault_restore_base64 |
 | [Grupo 14 — Seguridad](#grupo-14--seguridad) | vault_security_scan |
 | [Grupo 15 — Índices](#grupo-15--índices) | vault_section_index, vault_master_index, vault_reindex |
@@ -59,7 +59,7 @@ Scripts Python del estándar **Vault Obsidian Architecture** (versión vigente: 
 | [Grupo 32 — Gestión de Carpetas](#grupo-32--gestión-de-carpetas) | vault_folder_registry, vault_section |
 | [Grupo 33 — Corrección Automática](#grupo-33--corrección-automática) | vault_fix_brackets, vault_graph_fix, vault_frontmatter_heal, vault_frontmatter_completar, vault_supersede |
 | [Grupo 34 — Memoria de Contexto](#grupo-34--memoria-de-contexto) | vault_preferences, vault_model_profile, vault_query_parse, vault_subgraph, vault_context_pack, vault_ingest, vault_arquitectura_en |
-| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_changelog_check, vault_error_contract, vault_foreign_check, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_doc_staleness, vault_noop_audit, vault_smoke, vault_toolkit_audit, vault_voice, vault_servicio, vault_blueprint, vault_norms_coherence, vault_criterios, vault_ciclos, vault_clones, vault_kernel, vault_excepcion_declarada, vault_recursos, vault_procesos_git, vault_tests_higiene, vault_produccion, vault_esquema, vault_metricas, vault_fix_all |
+| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_changelog_check, vault_error_contract, vault_foreign_check, vault_gate, vault_doc_counts, vault_doc_sync, vault_doc_staleness, vault_noop_audit, vault_smoke, vault_toolkit_audit, vault_voice, vault_servicio, vault_blueprint, vault_norms_coherence, vault_criterios, vault_ciclos, vault_clones, vault_kernel, vault_excepcion_declarada, vault_recursos, vault_procesos_git, vault_tests_higiene, vault_produccion, vault_esquema, vault_metricas, vault_fix_all |
 | [Grupo 36 — Defectos y Cuarentena](#grupo-36--defectos-y-cuarentena) | vault_bug_save, vault_quarantine |
 | [Grupo 37 — Skills](#grupo-37--skills) | vault_sdd_init, vault_sanacion |
 | [Observabilidad de Tools](#observabilidad-de-tools) | vault_errors |
@@ -1118,6 +1118,23 @@ python vault_code_review.py --project my-api
 python vault_code_review.py --path . --base main --head HEAD --report
 python vault_code_review.py --path . --staged --run-linters --strict
 python vault_code_review.py --path . --files src/fiscal.py --html-preview
+```
+
+---
+
+### `vault_code_tag.py`
+Aplica etiquetas al **código fuente**, no a las notas: `@vault:` para apuntar desde un archivo, **namespace**, **clase** o **método** (`--symbol`) a la nota o ID corto que lo documenta (`REQ-042#redondeo`), y `@norm` para vincular con una norma del estándar o etiqueta propia. Es el extremo del lado del código de la trazabilidad que `vault_code_sync` y `vault_code_review` auditan; con `--resolve` y `--html-preview` devuelve las reglas vivas del vault y un visor web HTML clicable offline.
+
+```bash
+python vault_code_tag.py --define cr-0989 --name "Cola de prioridad" --description "FIFO con pesos"
+python vault_code_tag.py --apply cr-0989 --file "src/services/colas.cs"
+python vault_code_tag.py --apply AP-22 --file "scripts/vault_write.py"
+python vault_code_tag.py --link-vault "11_Code/my-api/colas" --file "src/services/colas.cs"
+python vault_code_tag.py --link-vault "REQ-042#redondeo" --file "src/Facturacion.cs" --symbol "Facturacion.Impuestos"
+python vault_code_tag.py --link-vault "REQ-042#redondeo" --file "src/Facturacion.cs" --symbol "CalcularIva"
+python vault_code_tag.py --resolve --file "src/Facturacion.cs" --html-preview
+python vault_code_tag.py --scan --file "src/services/colas.cs"
+python vault_code_tag.py --list --prefix cr
 ```
 
 ---
@@ -2761,20 +2778,6 @@ Desde v40.0 el contexto **Gobernanza** —`vault_norms`, `vault_audit`, `vault_f
 Siete vínculos los contaba el guard de AP-49; **ocho más no**, porque derivaban de los primeros sin nombrar `VAULT_ROOT` —`QUALITY_INDEX = SYSTEM_DIR / "quality-index.json"`— y se evaluaban en el mismo import, igual de inertes. Dos de esas ubicaciones se calculaban por duplicado: `quality-index.json` en `vault_audit` y en `vault_quality_check`, `.change-log.json` en `vault_fundamentals` y en `vault_quality_check`. Eso es AP-05 escondido dentro de AP-49, y ahora hay un test que lo fija.
 
 La sustitución tuvo que hacerse **por AST y no por texto**: `vault_norms` cita `VAULT_ROOT` dentro de la descripción de AP-36 y de AP-49, y un reemplazo ciego habría reescrito el enunciado de las normas dejándolas ininteligibles sin que ningún guard se enterara. `test_gobernanza_dominio.py` comprueba que el texto del catálogo sigue nombrando `VAULT_ROOT` y no `_raiz()`.
-
-### `vault_code_tag.py`
-Aplica etiquetas al **código fuente**, no a las notas: `@norm` para vincular un archivo con una norma del estándar (o con una etiqueta propia), y `@vault:` para apuntar desde el código a la nota que lo documenta. Es el extremo del lado del código de la trazabilidad que `vault_code_sync` audita.
-
-```bash
-python vault_code_tag.py --define cr-0989 --name "Cola de prioridad" --description "FIFO con pesos"
-python vault_code_tag.py --apply cr-0989 --file "src/services/colas.cs"
-python vault_code_tag.py --apply AP-22 --file "scripts/vault_write.py"
-python vault_code_tag.py --link-vault "11_Code/my-api/colas" --file "src/services/colas.cs"
-python vault_code_tag.py --scan --file "src/services/colas.cs"
-python vault_code_tag.py --list --prefix cr
-```
-
----
 
 ### `vault_changelog_check.py`
 El changelog del manifiesto, contrastado contra git. Cada entrada publica el commit

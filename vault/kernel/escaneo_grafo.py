@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from vault_lib import indice_de_nombres, parse_frontmatter, resolver_wikilink
-from vault_regex import RE_WIKILINK  # dueño único del patrón (AP-50)
+from vault_regex import RE_WIKILINK, sin_bloques_cercados, strip_code_blocks  # dueños únicos (AP-50, AP-57)
 
 
 def _lista_de_cadenas(valor: Any) -> List[str]:
@@ -63,11 +63,14 @@ def leer_notas_de_grafo(notas: Dict[str, str]) -> Dict[str, Dict[str, Any]]:
     for rel, contenido in notas.items():
         fm = parse_frontmatter(contenido)
         titulo = fm.get("title")
+        # AP-44 / AP-57: excluir bloques cercados y código inline (`[[nota]]`)
+        # con los mismos dueños que vault_audit para no inventar enlaces rotos.
+        prosa = strip_code_blocks(sin_bloques_cercados(contenido))
         meta[rel] = {
             "title": str(titulo).strip() if titulo not in (None, "") else Path(rel).stem,
             "tags": _lista_de_cadenas(fm.get("tags")),
             "aliases": _lista_de_cadenas(fm.get("aliases")),
-            "links": RE_WIKILINK.findall(contenido),
+            "links": RE_WIKILINK.findall(prosa),
         }
     return meta
 

@@ -38,7 +38,7 @@ try:
     _DIR_PROGRAMA = vault_grafo_import.DIRECTORIO
 except ModuleNotFoundError:
     # Hoja importable sin `scripts/` en sys.path (checkout o paquete instalado).
-    _DIR_PROGRAMA = Path(__file__).resolve().parents[3] / rutas.SCRIPTS
+    _DIR_PROGRAMA = rutas.ruta_repo(rutas.SCRIPTS)
 
 # ─── La norma como paquete (deuda #10, piloto AP-65) ──────────────────────────
 #

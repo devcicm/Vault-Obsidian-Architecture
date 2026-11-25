@@ -54,7 +54,7 @@ NATURALEZAS: Dict[str, Dict[str, Any]] = {
         ),
         "tools": [
             "vault_audit", "vault_backup", "vault_backup_base64",
-            "vault_backup_list", "vault_code_review", "vault_code_sync", "vault_delta",
+            "vault_backup_list", "vault_code_review", "vault_code_sync", "vault_code_tag", "vault_delta",
             "vault_delete", "vault_drift_detect", "vault_fix_brackets",
             "vault_frontmatter_heal", "vault_frontmatter_completar", "vault_fuente_unica",
             "vault_supersede",
@@ -94,7 +94,7 @@ NATURALEZAS: Dict[str, Dict[str, Any]] = {
         ),
         "tools": [
             "vault_arch", "vault_blame_audit", "vault_blueprint",
-            "vault_changelog_check", "vault_code_tag", "vault_doc_counts",
+            "vault_changelog_check", "vault_doc_counts",
             "vault_doc_staleness", "vault_doc_sync", "vault_error_contract",
             "vault_foreign_check", "vault_gate", "vault_noop_audit",
             "vault_norms", "vault_norms_coherence", "vault_criterios",

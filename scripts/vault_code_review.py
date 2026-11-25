@@ -32,6 +32,7 @@ from vault_errors import emit_error, proyecto_registrado, wrap_main
 from vault_io import (
     assert_within_vault,
     atomic_write_text,
+    client_cwd,
     resolve_input_path,
     write_report,
 )
@@ -209,7 +210,7 @@ def vault_code_review(
     if repo_path is None:
         if files:
             primero = resolve_input_path(Path(files[0]))
-            repo_path = primero.parent if primero.exists() else Path.cwd()
+            repo_path = primero.parent if primero.exists() else client_cwd()
         else:
             # Sin --path ni repo enlazado: honestidad AP-45/AP-60 (NO_DATA, nunca APPROVE)
             return {

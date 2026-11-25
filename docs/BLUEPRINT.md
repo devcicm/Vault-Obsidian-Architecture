@@ -33,9 +33,9 @@ Restricciones que son decisión de producto, no limitación pendiente:
 
 | Capacidad | Resultado | Grupos | Tools |
 |---|---|---|---|
-| **Escritura → gobernanza** (`escritura_a_gobernanza`) | Lo que el agente captura queda escrito una sola vez, normalizado contra las normas, versionado y auditable después. | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 36, 37 | 90 |
+| **Escritura → gobernanza** (`escritura_a_gobernanza`) | Lo que el agente captura queda escrito una sola vez, normalizado contra las normas, versionado y auditable después. | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 36, 37 | 91 |
 | **Consulta → contexto** (`consulta_a_contexto`) | Una pregunta del agente se convierte en un paquete de contexto acotado y presupuestado, recorriendo el grafo del vault sin índice externo. | 26, 34 | 10 |
-| **Gobernanza del estándar** (`gobernanza_del_estandar`) | El estándar cumple lo que publica: registro canónico primero, doc derivada, guard que falla si divergen. Ninguna de estas tools toca las notas de un usuario. | 35 | 30 |
+| **Gobernanza del estándar** (`gobernanza_del_estandar`) | El estándar cumple lo que publica: registro canónico primero, doc derivada, guard que falla si divergen. Ninguna de estas tools toca las notas de un usuario. | 35 | 29 |
 
 - **`consulta_a_contexto`** — El grupo 26 (Tokens) cae en el rango 1–33 que `AGENTS.md` atribuye al primer eje, pero sus tres tools viven en el contexto `consulta` y existen para que el paquete quepa en la ventana. El rango es cronológico, no clasificatorio.
 - **`gobernanza_del_estandar`** — Tercera capacidad que `AGENTS.md` no nombraba. Existía desde que se escribió la primera puerta; declararla es lo que impide que sus tools se cuenten como si sirvieran a la memoria del agente.
@@ -194,7 +194,7 @@ del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 | Conocimiento | 2 |
 | Core | 8 |
 | Corrección Automática | 5 |
-| Código | 6 |
+| Código | 7 |
 | Data Quality | 2 |
 | Defectos y Cuarentena | 2 |
 | Diagramas | 4 |
@@ -206,7 +206,7 @@ del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 | Línea de Tiempo | 1 |
 | Memoria de Contexto | 7 |
 | Migración | 2 |
-| Normas | 30 |
+| Normas | 29 |
 | Observabilidad | 1 |
 | Patrones | 2 |
 | Producción/SRE | 2 |
@@ -257,7 +257,7 @@ falla — no se rellena con el valor más cercano.
 | `vault_code_relation` | 12 — Código | escritura_a_gobernanza |
 | `vault_code_review` | 12 — Código | escritura_a_gobernanza |
 | `vault_code_sync` | 12 — Código | escritura_a_gobernanza |
-| `vault_code_tag` | 35 — Normas | gobernanza_del_estandar |
+| `vault_code_tag` | 12 — Código | escritura_a_gobernanza |
 | `vault_context_pack` | 34 — Memoria de Contexto | consulta_a_contexto |
 | `vault_criterios` | 35 — Normas | gobernanza_del_estandar |
 | `vault_delete` | 23 — Change Log | escritura_a_gobernanza |

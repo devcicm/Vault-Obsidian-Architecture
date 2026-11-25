@@ -317,6 +317,11 @@ def _no_op_declarado(tool: str, respuestas: List[Dict[str, Any]]) -> tuple[bool,
 
 
 SIN_ESCRITURA_DECLARADA: Dict[str, str] = {
+    "vault_code_review": (
+        "el ejemplo revisa un proyecto sin repo enlazado y sin --save/--html-preview: "
+        "devuelve NO_DATA sin escribir; las escrituras de --save y --html-preview las ejercita "
+        "tests/test_vault_code_review_fase_n.py"
+    ),
     "vault_code_sync": "el ejemplo sincroniza un repo que el proyecto del banco no tiene enlazado; sin repo no hay nada que copiar",
     "vault_diagram_export": "mi-api no tiene diagramas propios y la línea con --path solo devuelve la configuración de exportación",
     "vault_fuente_unica": "solo lectura por diseño (regla 7): mide divergencias de AP-05 y no escribe",

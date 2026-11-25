@@ -24,6 +24,8 @@ from urllib.parse import quote
 
 import yaml
 
+from .enumeracion import notas_en_disco
+
 # Extensiones de codigo fuente reconocidas para escaneo y etiquetado.
 CODE_EXTS = frozenset(
     {
@@ -79,10 +81,13 @@ _MODIFICADORES_DECLARACION = frozenset(
         "inline", "extern", "unsafe", "readonly", "sealed", "partial",
     }
 )
+_PALABRAS_NAMESPACE = frozenset({"namespace", "package", "module"})
+_PALABRAS_CLASE = frozenset({"class", "interface", "struct", "enum", "trait", "record", "type"})
 _PALABRAS_DECLARACION = frozenset(
     {
         "function", "def", "fn", "func", "class", "interface", "struct",
-        "enum", "trait", "record", "type", "module", "procedure", "view", "trigger",
+        "enum", "trait", "record", "type", "module", "namespace", "package",
+        "procedure", "view", "trigger",
     }
 )
 _RE_IDENT = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)")
@@ -107,7 +112,12 @@ _FRONTMATTER_ID_KEYS = (
     "req_id", "qa_id", "bug_id", "ncr_id", "flow_id", "adr_id", "doc_id", "id",
 )
 _STALE_NOTE_STATUSES = frozenset({"superseded", "deprecated", "obsolete", "archived"})
-_KEYWORDS_NO_SYMBOL = frozenset({"if", "for", "while", "switch", "catch", "return", "else", "elif"})
+_KEYWORDS_NO_SYMBOL = frozenset(
+    {
+        "if", "for", "foreach", "while", "switch", "catch", "return", "else",
+        "elif", "using", "lock", "checked", "unchecked", "fixed", "synchronized",
+    }
+)
 _PRIORITY_SECTIONS = (
     "reglas", "rules", "criterios de aceptacion", "acceptance criteria",
     "decision", "invariantes", "descripcion", "description", "especificacion",
@@ -206,8 +216,35 @@ def _simbolos_python(content: str) -> List[Dict[str, Any]]:
     return simbolos
 
 
-def extraer_nombre_declaracion_linea(linea: str) -> Optional[str]:
-    """Extrae el nombre de funcion/metodo/clase en una linea en tiempo O(n) sin backtracking."""
+def _extraer_identificador_calificado(texto: str) -> Optional[str]:
+    """Extrae un identificador simple o calificado (`Foo.Bar`, `Foo::Bar`, `Foo\\Bar`) en O(n)."""
+    s = texto.lstrip()
+    if not s:
+        return None
+    i = 0
+    n = len(s)
+    while i < n:
+        ch = s[i]
+        if ch.isalnum() or ch in ("_", ".", "\\"):
+            i += 1
+        elif ch == ":" and i + 1 < n and s[i + 1] == ":":
+            i += 2
+        else:
+            break
+    cand = s[:i].rstrip(".\\:")
+    if not cand or not (cand[0].isalpha() or cand[0] == "_"):
+        return None
+    segs = cand.replace("::", ".").replace("\\", ".").split(".")
+    if all(seg and (seg[0].isalpha() or seg[0] == "_") for seg in segs):
+        return cand
+    return None
+
+
+def extraer_declaracion_linea(
+    linea: str,
+    siguiente_linea: Optional[str] = None,
+) -> Optional[Tuple[str, str]]:
+    """Extrae `(nombre, kind)` de namespace/clase/funcion/metodo en O(n) sin backtracking."""
     s = linea.strip()
     if not s or _RE_DECORATOR_OR_COMMENT.match(s):
         return None
@@ -219,35 +256,73 @@ def extraer_nombre_declaracion_linea(linea: str) -> Optional[str]:
         return None
     kw = tokens[idx].lower()
 
-    # 1. `function foo`, `class Bar`, `func (r *Srv) Baz`, `def calc`
+    # 1. `namespace Foo.Bar`, `package com.acme`, `class Bar`, `function foo`, `func (r *Srv) Baz`, `def calc`
     if kw in _PALABRAS_DECLARACION:
         resto = " ".join(tokens[idx + 1 :]).lstrip()
+        if kw in _PALABRAS_NAMESPACE:
+            nombre_ns = _extraer_identificador_calificado(resto)
+            if nombre_ns and nombre_ns not in _KEYWORDS_NO_SYMBOL:
+                return nombre_ns, "namespace"
+            return None
         if resto.startswith("(") and ")" in resto:
             resto = resto.split(")", 1)[1].lstrip()
         m = _RE_IDENT.match(resto)
         if m and m.group(1) not in _KEYWORDS_NO_SYMBOL:
-            return m.group(1)
+            kind = "class" if kw in _PALABRAS_CLASE else "function"
+            return m.group(1), kind
         return None
 
     # 2. `const foo = (...) =>` / `let foo = async (...) =>`
     if kw in ("const", "let", "var") and idx + 1 < len(tokens) and "=>" in s:
         m = _RE_IDENT.match(tokens[idx + 1])
         if m and m.group(1) not in _KEYWORDS_NO_SYMBOL:
-            return m.group(1)
+            return m.group(1), "function"
         return None
 
-    # 3. Metodo C#/Java/TS/Go con firma `... nombre(...) {`
-    if "(" in s and s.endswith("{") and ";" not in s.split("(", 1)[0]:
+    # 3. Metodo C#/Java/TS/Go/C++ con firma:
+    #    - K&R: `public decimal CalcularIva(decimal monto) {`
+    #    - Allman (llave en linea siguiente): `public decimal CalcularIva(decimal monto)` + `{`
+    #    - Expression-bodied (C#): `public decimal CalcularIva(decimal m) => ...;`
+    if "(" in s and ";" not in s.split("(", 1)[0]:
         antes_paren = s.split("(", 1)[0].rstrip()
-        if antes_paren:
+        despues_paren = s.split("(", 1)[1]
+        es_kr = s.endswith("{")
+        es_allman = (
+            ")" in despues_paren
+            and "=" not in antes_paren
+            and not s.endswith(";")
+            and siguiente_linea is not None
+            and siguiente_linea.lstrip().startswith("{")
+        )
+        es_expr_body = (
+            ")" in despues_paren
+            and "=>" in despues_paren.split(")", 1)[1]
+            and len(antes_paren.split()) >= 2
+            and "=" not in antes_paren
+        )
+        if (es_kr or es_allman or es_expr_body) and antes_paren:
             ultimo = antes_paren.split()[-1]
+            # Limpiar genericos simples como `Calcular<T>`
+            if "<" in ultimo:
+                ultimo = ultimo.split("<", 1)[0]
             m = _RE_IDENT.match(ultimo)
             if m and m.group(1) not in _KEYWORDS_NO_SYMBOL:
-                return m.group(1)
+                return m.group(1), "method"
     return None
 
 
-def _simbolo_siguiente_generico(lines: List[str], after_line_1based: int) -> Optional[Tuple[str, int]]:
+def extraer_nombre_declaracion_linea(
+    linea: str,
+    siguiente_linea: Optional[str] = None,
+) -> Optional[str]:
+    """Extrae el nombre de namespace/clase/funcion/metodo en una linea en tiempo O(n)."""
+    decl = extraer_declaracion_linea(linea, siguiente_linea=siguiente_linea)
+    return decl[0] if decl else None
+
+
+def _simbolo_siguiente_generico(
+    lines: List[str], after_line_1based: int
+) -> Optional[Tuple[str, str, int]]:
     """Busca la declaracion inmediata tras un comentario @vault: (una linea en blanco corta el enlace)."""
     n = len(lines)
     for idx in range(after_line_1based, min(n, after_line_1based + 12)):
@@ -257,9 +332,10 @@ def _simbolo_siguiente_generico(lines: List[str], after_line_1based: int) -> Opt
             return None
         if _RE_DECORATOR_OR_COMMENT.match(linea):
             continue
-        sym = extraer_nombre_declaracion_linea(linea)
-        if sym:
-            return sym, idx + 1
+        sig = lines[idx + 1] if idx + 1 < n else None
+        decl = extraer_declaracion_linea(linea, siguiente_linea=sig)
+        if decl:
+            return decl[0], decl[1], idx + 1
         # Si encontramos otra sentencia real que no es declaracion, no adivinar (AP-45).
         return None
     return None
@@ -291,7 +367,14 @@ def _simbolo_para_linea(
     hit = _simbolo_siguiente_generico(lines, line_1based)
     if hit is None:
         return None
-    return {"name": hit[0], "qualified_name": hit[0], "kind": "symbol", "def_line": hit[1], "start_line": hit[1]}
+    nombre, kind, def_line = hit
+    return {
+        "name": nombre,
+        "qualified_name": nombre,
+        "kind": kind,
+        "def_line": def_line,
+        "start_line": def_line,
+    }
 
 
 def extract_all_vault_refs(
@@ -352,6 +435,7 @@ def extract_all_vault_refs(
                 "scope": scope,
                 "symbol": sym_info["qualified_name"] if sym_info else None,
                 "symbol_short": sym_info["name"] if sym_info else None,
+                "symbol_kind": sym_info["kind"] if sym_info else None,
                 "symbol_line": sym_info["def_line"] if sym_info else None,
                 "span": {
                     "line": line_no,
@@ -374,14 +458,17 @@ def construir_indice_notas_vault(vault_root: Path) -> Dict[str, Any]:
     if not raiz.is_dir():
         return {"root": raiz, "by_rel": by_rel, "by_code": by_code}
 
-    for md in raiz.rglob("*.md"):
+    secciones = [
+        d.name
+        for d in raiz.iterdir()
+        if d.is_dir() and d.name not in _IGNORED_VAULT_DIRS and not d.name.startswith(".")
+    ]
+    for md in notas_en_disco(raiz, secciones, incluir_indices=False):
         try:
             rel_parts = md.relative_to(raiz).parts
         except ValueError:
             continue
         if not rel_parts or any(p in _IGNORED_VAULT_DIRS for p in rel_parts):
-            continue
-        if md.name.lower() == "index.md":
             continue
 
         rel_str = "/".join(rel_parts)
@@ -676,21 +763,41 @@ def localizar_linea_simbolo(
             indent = linea_txt[: len(linea_txt) - len(linea_txt.lstrip(" \t"))]
             return linea_1b, indent
 
-    # Fallback multilenguaje O(n) (TS/JS/C#/Java/Go/Rust/PHP/Ruby/SQL)
-    objetivo_simple = objetivo.rsplit(".", 1)[-1]
+    # Fallback multilenguaje O(n) (TS/JS/C#/Java/Go/Rust/PHP/C++/Ruby/SQL):
+    # Soporta namespaces (`Facturacion.Impuestos`, `App::Billing`, `App\Billing`),
+    # clases (`FacturaService`), calificados (`FacturaService.CalcularIva`) y metodos.
+    def _linea_con_atributos(linea_1b: int) -> Tuple[int, str]:
+        ins = linea_1b
+        while ins > 1:
+            prev = lines[ins - 2].strip()
+            if prev.startswith("@") or (prev.startswith("[") and prev.endswith("]")):
+                ins -= 1
+            else:
+                break
+        base_ln = lines[ins - 1]
+        indent = base_ln[: len(base_ln) - len(base_ln.lstrip(" \t"))]
+        return ins, indent
+
+    objetivo_simple = objetivo.rsplit(".", 1)[-1].rsplit("::", 1)[-1].rsplit("\\", 1)[-1]
+    fallback_line: Optional[int] = None
+    clase_actual: Optional[str] = None
+    n_lines = len(lines)
     for i, ln in enumerate(lines, 1):
-        sym = extraer_nombre_declaracion_linea(ln)
-        if sym == objetivo_simple:
-            ins = i
-            while ins > 1:
-                prev = lines[ins - 2].strip()
-                if prev.startswith("@") or (prev.startswith("[") and prev.endswith("]")):
-                    ins -= 1
-                else:
-                    break
-            base_ln = lines[ins - 1]
-            indent = base_ln[: len(base_ln) - len(base_ln.lstrip(" \t"))]
-            return ins, indent
+        sig = lines[i] if i < n_lines else None
+        decl = extraer_declaracion_linea(ln, siguiente_linea=sig)
+        if not decl:
+            continue
+        sym, kind = decl
+        if kind == "class":
+            clase_actual = sym
+        if sym == objetivo:
+            return _linea_con_atributos(i)
+        if clase_actual and kind in ("method", "function") and f"{clase_actual}.{sym}" == objetivo:
+            return _linea_con_atributos(i)
+        if fallback_line is None and sym == objetivo_simple:
+            fallback_line = i
+    if fallback_line is not None:
+        return _linea_con_atributos(fallback_line)
     return None
 
 

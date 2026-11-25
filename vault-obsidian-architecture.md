@@ -2630,6 +2630,21 @@ python scripts/vault_code_review.py --path . --project mi-api --staged --run-lin
 
 ---
 
+#### `vault_code_tag(define?, apply?, remove?, link_vault?, file?, symbol?, scan?, list?, tag_note?, sync_vault?, dry_run?)`
+
+Etiquetado bidireccional en comentarios de código fuente (`@norm` y `@vault:`) promovido al Grupo 12 (`Código`, expuesto en MCP y en la wheel del consumidor) para enlazar archivos, namespaces, clases y métodos con sus notas de documentación, requisitos o ADRs sin saturar el código fuente.
+
+- **Trazabilidad `@vault:` multilenguaje (`--link-vault`):** inserta enlaces `@vault:` en cabecera de archivo o sobre una declaración específica (`--symbol` con nombres simples o calificados para `namespace`/`package`/`module`, `class`/`interface`/`struct`/`enum`/`trait`/`record`/`type`, `method`/`function`, incluidos estilos C# Allman y expression-bodied `=>`).
+- **Etiquetas `@norm` (`--define`, `--apply`, `--remove`, `--scan`, `--list`, `--tag-note`):** gestiona códigos normativos o de negocio en `00_System/code-tag-registry.json`.
+
+```bash
+python scripts/vault_code_tag.py --link-vault REQ-042 --file src/fiscal.py --symbol calcular_iva
+python scripts/vault_code_tag.py --scan --path src/
+python scripts/vault_code_tag.py --apply AP-22 --file src/parser.py
+```
+
+---
+
 ### Grupo 13 — Backups: vault, base de datos y archivos
 
 > **Capas de protección:**
@@ -4075,7 +4090,7 @@ Lo ingerido entra con `status: draft` y `cia_integrity: low`, de modo que el rer
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **98 normas** del estándar (79 AP + 9 PAT + 4 SP + 5 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-79`. Fuente de verdad: `NORM_CATALOG` en `vault_norms_catalog.py` (`vault_norms.py` lo reexporta). Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **98 normas** del estándar (79 AP + 10 PAT + 4 SP + 5 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-79`. Fuente de verdad: `NORM_CATALOG` en `vault_norms_catalog.py` (`vault_norms.py` lo reexporta). Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 

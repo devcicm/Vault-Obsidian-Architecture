@@ -99,9 +99,11 @@ def es_documentacion_del_estandar(rel: str, contenido: Optional[str] = None) -> 
     `contenido` es opcional y solo decide el caso aplanado. Sin él, la respuesta
     es la conservadora —**no** excluir—: el nombre del manifiesto (o sus copias
     archivadas con versión/fecha como `.v27.backup.md` o `-2026-08-07.md`) se
-    sostiene solo, pero una nota de proyecto del consumidor cuyo slug empiece
-    por `vault-obsidian-architecture-` (p. ej. `01_Projects/vault-obsidian-architecture-seguimiento.md`)
-    es una nota viva del vault y **sí** debe auditarse (Fase O3).
+    sostiene solo, un fichero llamado `scripts-README.md` requiere la marca del
+    estándar para no esconder enlaces rotos de verdad, y una nota de proyecto
+    del consumidor cuyo slug empiece por `vault-obsidian-architecture-` (p. ej.
+    `01_Projects/vault-obsidian-architecture-seguimiento.md`) es una nota viva
+    del vault y **sí** debe auditarse (Fase O3).
     """
     ruta = rel.replace("\\", "/").lower()
     nombre = ruta.rsplit("/", 1)[-1]

@@ -1672,17 +1672,33 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_code_tag": {
         "name": "vault_code_tag",
         "script": "vault_code_tag.py",
-        "group": "Normas",
-        "purpose": "Etiqueta módulos de código por funcionalidad.",
+        "group": "Código",
+        "purpose": "Etiqueta archivos, namespaces, clases o métodos con @vault: (ruta o ID corto como REQ-042) y @norm, y resuelve las reglas vivas del vault.",
         "params": {
-            "file": {"ruta": "externa"},
+            "link-vault": {"type": "string", "required": False, "description": "Nota o ID corto (@vault:) a enlazar (ej: REQ-042#redondeo)"},
+            "unlink-vault": {"type": "boolean", "required": False, "description": "Elimina el enlace @vault: de cabecera"},
+            "symbol": {"type": "string", "required": False, "description": "Método, función, clase o namespace objetivo (ej: calcular_iva, FacturaService, Facturacion.Impuestos)"},
+            "file": {"type": "string", "required": False, "description": "Ruta del archivo fuente a etiquetar, escanear o resolver", "ruta": "externa"},
+            "resolve": {"type": "boolean", "required": False, "description": "Resuelve todos los @vault: del archivo y devuelve las reglas vivas del vault"},
+            "html-preview": {"type": "boolean", "required": False, "description": "Con --resolve, genera visor web HTML autocontenido con enlaces @vault: clicables"},
+            "scan": {"type": "boolean", "required": False, "description": "Escanea @vault: (archivo y símbolos) y @norm en un archivo"},
+            "project": {"type": "string", "required": False, "description": "Proyecto para desambiguar IDs cortos"},
+            "title": {"type": "string", "required": False, "description": "Título descriptivo para --link-vault"},
+            "list": {"type": "boolean", "required": False, "description": "Lista etiquetas registradas"},
+            "define": {"type": "string", "required": False, "description": "Define una etiqueta @norm personalizada"},
+            "apply": {"type": "string", "required": False, "description": "Aplica una etiqueta @norm al archivo"},
+            "remove": {"type": "string", "required": False, "description": "Elimina una etiqueta @norm del archivo"},
+            "name": {"type": "string", "required": False, "description": "Nombre de la etiqueta @norm"},
+            "description": {"type": "string", "required": False, "description": "Descripción de la etiqueta @norm"},
+            "prefix": {"type": "string", "required": False, "description": "Filtra --list por prefijo"},
+            "tag-note": {"type": "string", "required": False, "description": "Crea nota en el vault documentando la etiqueta"},
         },
         "guards": [],
-        "side_effects": ["Actualiza frontmatter del módulo"],
+        "side_effects": ["Inserta/actualiza @vault: o @norm en el archivo fuente y 00_System/code-tag-registry.json"],
         "example": ('python vault_code_tag.py --list\n'
                     'python vault_code_tag.py --define cr-ejemplo --name '
                     '"Ejemplo" --description "Etiqueta de prueba"'),
-        "related": ["vault_tags", "vault_code_module"],
+        "related": ["vault_code_review", "vault_code_sync", "vault_code_module", "vault_tags"],
     },
     "vault_flow_save": {
         "name": "vault_flow_save",
@@ -4944,10 +4960,7 @@ GROUPS: Dict[str, List[str]] = {
         "vault_code_query",
         "vault_code_sync",
         "vault_code_review",
-        # vault_code_tag NO se lista aquí: su `group` en TOOLS_CATALOG es
-        # "Normas y Etiquetas" y ya está en el grupo "Normas". Estaba en ambos,
-        # y una tool en dos grupos se cuenta dos veces en cualquier recorrido.
-        # La tool no se retira de nada — solo deja de estar duplicada en el índice.
+        "vault_code_tag",
     ],
     # vault_backup_base64 / vault_restore_base64 son JS-native (script: ""), y por
     # eso quedaron fuera de esta lista durante varias versiones: declaraban
@@ -4982,7 +4995,6 @@ GROUPS: Dict[str, List[str]] = {
         "vault_error_contract",
         "vault_foreign_check",
         "vault_gate",
-        "vault_code_tag",
         "vault_doc_counts",
         "vault_doc_sync",
         "vault_doc_staleness",

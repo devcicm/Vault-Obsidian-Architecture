@@ -1368,76 +1368,76 @@
     },
     "vault_code_tag": {
       "name": "vault_code_tag",
-      "description": "Etiqueta módulos de código por funcionalidad.",
-      "group": "Normas",
+      "description": "Etiqueta archivos, namespaces, clases o métodos con @vault: (ruta o ID corto como REQ-042) y @norm, y resuelve las reglas vivas del vault.",
+      "group": "Código",
       "script": "vault_code_tag.py",
       "inputSchema": {
         "type": "object",
         "properties": {
           "define": {
             "type": "string",
-            "description": "Definir/actualizar una etiqueta @norm personalizada"
+            "description": "Define una etiqueta @norm personalizada"
           },
           "apply": {
             "type": "string",
-            "description": "Aplicar @norm a un archivo de código"
+            "description": "Aplica una etiqueta @norm al archivo"
           },
           "remove": {
             "type": "string",
-            "description": "Eliminar @norm de un archivo"
+            "description": "Elimina una etiqueta @norm del archivo"
           },
           "link-vault": {
             "type": "string",
-            "description": "Embeber @vault: en cabecera o encima de --symbol (ruta o ID corto como REQ-042)"
+            "description": "Nota o ID corto (@vault:) a enlazar (ej: REQ-042#redondeo)"
           },
           "unlink-vault": {
             "type": "boolean",
-            "description": "Eliminar @vault: de un archivo fuente"
+            "description": "Elimina el enlace @vault: de cabecera"
           },
           "scan": {
             "type": "boolean",
-            "description": "Listar @vault: (archivo y símbolos) y @norm en un archivo"
+            "description": "Escanea @vault: (archivo y símbolos) y @norm en un archivo"
           },
           "resolve": {
             "type": "boolean",
-            "description": "Resolver @vault: contra el vault y devolver las reglas vivas de cada nota"
+            "description": "Resuelve todos los @vault: del archivo y devuelve las reglas vivas del vault"
           },
           "list": {
             "type": "boolean",
-            "description": "Listar todos los tags registrados"
+            "description": "Lista etiquetas registradas"
           },
           "tag-note": {
             "type": "string",
-            "description": "Crear nota en vault para este tag"
+            "description": "Crea nota en el vault documentando la etiqueta"
           },
           "file": {
             "type": "string",
-            "description": "Ruta al archivo de código (absoluta o relativa al CWD)",
+            "description": "Ruta del archivo fuente a etiquetar, escanear o resolver",
             "x-ruta": "externa"
           },
           "symbol": {
             "type": "string",
-            "description": "Método, función o clase objetivo para --link-vault o --resolve (ej: calcular_iva)"
+            "description": "Método, función, clase o namespace objetivo (ej: calcular_iva, FacturaService, Facturacion.Impuestos)"
           },
           "project": {
             "type": "string",
-            "description": "Proyecto para desambiguar IDs cortos (ej: REQ-042)"
+            "description": "Proyecto para desambiguar IDs cortos"
           },
           "html-preview": {
             "type": "boolean",
-            "description": "Con --resolve: genera visor web HTML autocontenido con @vault: clicables dentro de 19_Audits/previews/"
+            "description": "Con --resolve, genera visor web HTML autocontenido con enlaces @vault: clicables"
           },
           "title": {
             "type": "string",
-            "description": "Título para --link-vault (se muestra tras — en el tag)"
+            "description": "Título descriptivo para --link-vault"
           },
           "name": {
             "type": "string",
-            "description": "Nombre descriptivo del tag (para --define o --apply)"
+            "description": "Nombre de la etiqueta @norm"
           },
           "description": {
             "type": "string",
-            "description": "Descripción detallada del tag"
+            "description": "Descripción de la etiqueta @norm"
           },
           "files": {
             "type": "array",
@@ -1448,7 +1448,7 @@
           },
           "prefix": {
             "type": "string",
-            "description": "Filtrar --list por prefijo (ej: cr, impl, bus)"
+            "description": "Filtra --list por prefijo"
           },
           "agent": {
             "type": "string",
@@ -1459,16 +1459,18 @@
       },
       "guards": [],
       "side_effects": [
-        "Actualiza frontmatter del módulo"
+        "Inserta/actualiza @vault: o @norm en el archivo fuente y 00_System/code-tag-registry.json"
       ],
       "perfil_minimo": "operador",
       "access_mode": "write",
       "status": "active",
-      "exposed_via_mcp": false,
-      "execution_module": null,
+      "exposed_via_mcp": true,
+      "execution_module": "vault_toolkit.operations.vault_code_tag",
       "related": [
-        "vault_tags",
-        "vault_code_module"
+        "vault_code_review",
+        "vault_code_sync",
+        "vault_code_module",
+        "vault_tags"
       ]
     },
     "vault_context_pack": {
@@ -8241,7 +8243,8 @@
       "vault_code_map",
       "vault_code_query",
       "vault_code_sync",
-      "vault_code_review"
+      "vault_code_review",
+      "vault_code_tag"
     ],
     "Backups": [
       "vault_backup",
@@ -8308,7 +8311,6 @@
       "vault_error_contract",
       "vault_foreign_check",
       "vault_gate",
-      "vault_code_tag",
       "vault_doc_counts",
       "vault_doc_sync",
       "vault_doc_staleness",
