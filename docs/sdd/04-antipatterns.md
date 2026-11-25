@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
 > Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-79 más
-> las familias PAT, SP y CN. Por familia: AP 79, CN 5, PAT 10, SP 4.
+> las familias PAT, SP y CN. Por familia: AP 79, CN 5, PAT 10, SP 6.
 > Bilingual document. Full norm catalog: antipatterns AP-01..AP-79 plus the PAT,
-> SP and CN families. By family: AP 79, CN 5, PAT 10, SP 4.
+> SP and CN families. By family: AP 79, CN 5, PAT 10, SP 6.
 
 ---
 
 ## ES
 
-Total de normas registradas: 98 (AP 79, CN 5, PAT 10, SP 4)
+Total de normas registradas: 100 (AP 79, CN 5, PAT 10, SP 6)
 
 ### AP-01: Documentación alucinada
 
@@ -1123,11 +1123,31 @@ El transporte HTTP/SSE del servidor MCP acepta sesiones sin token, responde con 
 
 **Prevención:** Token por `VAULT_MCP_TOKEN` o generado al arrancar (default cerrado), comparado en tiempo constante; `Origin` presente → 403; `Host` distinto de 127.0.0.1/localhost → 403 (DNS rebinding); sin CORS; cada respuesta solo a su sesión. stdio no abre puerto y no cambia. Lo ejerce `tests/test_mcp_http_seguridad.py` contra el servidor real, y `vault_produccion` (puerta 21) falla si la promesa `superficie_expuesta` se queda sin ese ejecutor. El servicio de tokens aplica las mismas tres comprobaciones con `VAULT_TOKEN_SERVICE_TOKEN` o un token generado que deja en el vault, junto al fichero de puerto, para su cliente; lo ejerce `tests/test_token_service_seguridad.py`.
 
+### SP-05: Separación Ejecutor-Curador y trazabilidad de banderas en la Fábrica de Conocimiento
+
+- **Severidad:** high
+- **Enforcement:** guard
+- **Detectado por:** sin detector declarado
+
+Un agente ejecutor que edita directamente el conocimiento canónico (`03_Decisions/`, `07_Knowledge/`, `08_Runbooks/`, `17_Preferences/`) durante una tarea en caliente introduce deriva, contradicciones silenciosas y vector de envenenamiento. SP-05 formaliza el circuito cerrado Ejecutor → Bandera (`00_System/.flags.jsonl`, `FLAG-NNN` con `scan_poison`) → Curador batch (`vault_propagate --curate-plan/--curate-apply`, estampado de `source_flags`/`trace_ref`, `PAT-7` para desacuerdos y reporte en `19_Audits/curation/`).
+
+**Prevención:** Asignar `VAULT_MCP_ROL=ejecutor` (stdio) o `VAULT_MCP_TOKENS=ejecutor:<t>` (HTTP/SSE) a agentes ejecutores: solo acceden a herramientas `lector` y señales acotadas (`vault_ronda`, `vault_log_error`). Levantar señales con `vault_ronda --flag` (pre-vuelo `scan_poison` obligatorio) y curar en lote bajo perfil `operador` con `vault_propagate --curate-plan` / `--curate-apply` / `--mark-contradicts`.
+
+### SP-06: Madurez progresiva XP y disciplina Augmented Coding (opt-in)
+
+- **Severidad:** high
+- **Enforcement:** guard
+- **Detectado por:** sin detector declarado
+
+Adoptar velocidad de generación asistida por LLM sin progresión de prácticas XP (holgura explícita, TDD rojo-verde-refactor, iteraciones pequeñas con revisión humana) convierte la IA en un multiplicador de deuda técnica y regresiones. SP-06 activa de forma opt-in `xp_level: 1..4` en `00_System/reglas.json` (validación O(1) fail-closed): Nivel 1 habilita clasificación `buffer: critical|optional` en requisitos; Nivel 2 bloquea pasar requisitos a `implemented`/`verified` sin evidencia `test_result: pass` en `15_Tests/` y escala `NO_TESTS_TOUCHED` a `blocker` en `vault_code_review`; Nivel 3 avisa ante diffs monolíticos y exige revisor humano válido (`AP-64`); Nivel 4 exige `xp_prerequisites` verificados (`tdd_pass: true`, `human_pair_review: true`).
+
+**Prevención:** Declarar `xp_level` (1..4) en `00_System/reglas.json` solo cuando el proyecto adopta progresivamente XP; clasificar historias con `vault_requirement_save --buffer critical|optional`; registrar evidencia de tests en `15_Tests/` antes de cerrar requisitos; revisar diffs incrementales con `vault_code_review --reviewer <persona>` y emitir cláusula compacta en adaptadores con `vault_preferences --adapters`.
+
 ---
 
 ## EN
 
-Total registered norms: 98 (AP 79, CN 5, PAT 10, SP 4)
+Total registered norms: 100 (AP 79, CN 5, PAT 10, SP 6)
 
 ### AP-01: Documentación alucinada
 
@@ -2240,3 +2260,23 @@ Antes de cualquier operación masiva (migración, rename en lote, vault_tags --r
 El transporte HTTP/SSE del servidor MCP acepta sesiones sin token, responde con CORS abierto o atiende un `Host` que no es el suyo. Escuchar en 127.0.0.1 no lo impide: el navegador del usuario también vive ahí, y una página cualquiera podía abrir `/sse`, leer el `sessionId` e invocar `vault_delete` por `/message`. Desde v41.3 alcanza a todo servicio HTTP local del toolkit: `vault_token_service` tampoco pedía credencial, y un formulario de cualquier página podía hacerle `POST /stop` o leer un flujo con el texto del prompt guardado.
 
 **Prevention:** Token por `VAULT_MCP_TOKEN` o generado al arrancar (default cerrado), comparado en tiempo constante; `Origin` presente → 403; `Host` distinto de 127.0.0.1/localhost → 403 (DNS rebinding); sin CORS; cada respuesta solo a su sesión. stdio no abre puerto y no cambia. Lo ejerce `tests/test_mcp_http_seguridad.py` contra el servidor real, y `vault_produccion` (puerta 21) falla si la promesa `superficie_expuesta` se queda sin ese ejecutor. El servicio de tokens aplica las mismas tres comprobaciones con `VAULT_TOKEN_SERVICE_TOKEN` o un token generado que deja en el vault, junto al fichero de puerto, para su cliente; lo ejerce `tests/test_token_service_seguridad.py`.
+
+### SP-05: Separación Ejecutor-Curador y trazabilidad de banderas en la Fábrica de Conocimiento
+
+- **Severity:** high
+- **Enforcement:** guard
+- **Detected by:** sin detector declarado
+
+Un agente ejecutor que edita directamente el conocimiento canónico (`03_Decisions/`, `07_Knowledge/`, `08_Runbooks/`, `17_Preferences/`) durante una tarea en caliente introduce deriva, contradicciones silenciosas y vector de envenenamiento. SP-05 formaliza el circuito cerrado Ejecutor → Bandera (`00_System/.flags.jsonl`, `FLAG-NNN` con `scan_poison`) → Curador batch (`vault_propagate --curate-plan/--curate-apply`, estampado de `source_flags`/`trace_ref`, `PAT-7` para desacuerdos y reporte en `19_Audits/curation/`).
+
+**Prevention:** Asignar `VAULT_MCP_ROL=ejecutor` (stdio) o `VAULT_MCP_TOKENS=ejecutor:<t>` (HTTP/SSE) a agentes ejecutores: solo acceden a herramientas `lector` y señales acotadas (`vault_ronda`, `vault_log_error`). Levantar señales con `vault_ronda --flag` (pre-vuelo `scan_poison` obligatorio) y curar en lote bajo perfil `operador` con `vault_propagate --curate-plan` / `--curate-apply` / `--mark-contradicts`.
+
+### SP-06: Madurez progresiva XP y disciplina Augmented Coding (opt-in)
+
+- **Severity:** high
+- **Enforcement:** guard
+- **Detected by:** sin detector declarado
+
+Adoptar velocidad de generación asistida por LLM sin progresión de prácticas XP (holgura explícita, TDD rojo-verde-refactor, iteraciones pequeñas con revisión humana) convierte la IA en un multiplicador de deuda técnica y regresiones. SP-06 activa de forma opt-in `xp_level: 1..4` en `00_System/reglas.json` (validación O(1) fail-closed): Nivel 1 habilita clasificación `buffer: critical|optional` en requisitos; Nivel 2 bloquea pasar requisitos a `implemented`/`verified` sin evidencia `test_result: pass` en `15_Tests/` y escala `NO_TESTS_TOUCHED` a `blocker` en `vault_code_review`; Nivel 3 avisa ante diffs monolíticos y exige revisor humano válido (`AP-64`); Nivel 4 exige `xp_prerequisites` verificados (`tdd_pass: true`, `human_pair_review: true`).
+
+**Prevention:** Declarar `xp_level` (1..4) en `00_System/reglas.json` solo cuando el proyecto adopta progresivamente XP; clasificar historias con `vault_requirement_save --buffer critical|optional`; registrar evidencia de tests en `15_Tests/` antes de cerrar requisitos; revisar diffs incrementales con `vault_code_review --reviewer <persona>` y emitir cláusula compacta en adaptadores con `vault_preferences --adapters`.

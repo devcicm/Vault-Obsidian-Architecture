@@ -64,6 +64,7 @@ vault run vault_audit
 | `--file` | Path to a local file (internal or external, AP-36) to ingest |
 | `--max-chars` | Maximum character budget processed from the input source |
 | `--max-notes` | Maximum number of governed notes generated in one pass |
+| `--no-aplicar-paginas` | Keep proposed cross-note mention appends as plan only during `--commit` |
 | `--section` | Target vault section for the generated notes (e.g. `07_Knowledge`) |
 | `--stdin` | Read raw source content from standard input |
 | `--subfolder` | Optional subfolder inside `--section` |

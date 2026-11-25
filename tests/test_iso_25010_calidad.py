@@ -42,9 +42,9 @@ def _prueba(raiz: Path, titulo: str, *extra: str):
 
 
 def _ficheros(raiz: Path) -> dict:
-    """Every file of the vault except the tool trace, which each run appends to."""
+    """Every file of the vault except runtime telemetry (.tool-trace.json, .voice-counter)."""
     return {p.relative_to(raiz).as_posix(): p.read_bytes() for p in raiz.rglob("*")
-            if p.is_file() and p.name != ".tool-trace.json"}
+            if p.is_file() and p.name not in (".tool-trace.json", ".voice-counter")}
 
 
 # ── The registry ─────────────────────────────────────────────────────────────

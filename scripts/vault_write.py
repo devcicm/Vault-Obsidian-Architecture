@@ -1330,16 +1330,10 @@ def vault_write(
     else:
         # Fase H (C8): una nota nueva de requerimiento (14_Requirements) o ADR
         # (03_Decisions) no puede nacer directamente en estado `verified` sin
-        # recorrer la máquina de estados (AP-41), ni evadir `es_adr()` en
-        # `03_Decisions/` declarando un `type` ajeno (CN-02).
+        # recorrer la máquina de estados (AP-41). Los tipos de otra sección ya
+        # fueron bloqueados arriba por `problemas_de_meta` (CN-02).
         carpeta_norm = folder.replace("\\", "/").strip("/")
         tipo_decl = str(meta.get("type") or "").strip().lower()
-        if carpeta_norm.startswith("03_Decisions") and not is_index and tipo_decl:
-            if tipo_decl not in ("adr", "decision", "primer", "index"):
-                return emit_error(
-                    "vault_write", "INVALID_VALUE",
-                    f"CN-02: `03_Decisions/` solo admite type 'adr' o 'decision' (recibido: {tipo_decl!r}).",
-                )
         es_req_o_adr = (
             carpeta_norm.startswith("14_Requirements")
             or carpeta_norm.startswith("03_Decisions")

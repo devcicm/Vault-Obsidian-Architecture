@@ -75,6 +75,7 @@ vault run vault_code_review --path . --project mi-api --base main --head HEAD --
 | `--path` | Ruta al repositorio o carpeta de código fuente a revisar |
 | `--project` | Slug del proyecto (resuelve repo enlazado y desambigua IDs cortos como `REQ-042`) |
 | `--report` | Emite informe legible en Markdown en lugar de JSON |
+| `--reviewer` | Revisor humano de pareja en XP Nivel 3+ (`SP-06`, validado contra `AP-64`) |
 | `--run-linters` | Ejecuta linters instalados (`ruff`/`eslint`) sobre archivos tocados |
 | `--save` | Guarda el acta de revisión en `19_Audits/code-review/` |
 | `--staged` | Revisa únicamente los cambios en staging (`git diff --cached`) |

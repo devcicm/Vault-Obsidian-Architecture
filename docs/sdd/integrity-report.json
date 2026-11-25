@@ -3,7 +3,7 @@
   "tool": "vault_sdd_init",
   "skill_version": "1.0",
   "vault_version": "v41.27",
-  "generated_at": "2026-11-24T20:00:04.000Z",
+  "generated_at": "2026-11-25T13:57:57.000Z",
   "generated_files": [
     "README.md",
     "00-principles.md",

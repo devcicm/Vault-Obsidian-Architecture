@@ -1,5 +1,7 @@
 # Mapa de Arquitectura por Capas, Inventario y Control de Flujo
 
+<!-- propiedad: CARLOS IVAN CM · revisión: manual -->
+
 > **Propósito:** mapa operativo y de control de flujo para humanos y agentes externos. Permite entender en menos de 2 minutos la esencia de **Vault-Obsidian-Architecture**, qué pertenece a cada capa (Capas 1–6), cómo fluyen los datos y la seguridad, y exactamente dónde tocar (y qué no tocar) ante cualquier cambio.
 >
 > **Fuentes canónicas vivas (en caso de discrepancia, mandan los registros):** [docs/BLUEPRINT.md](../BLUEPRINT.md) · [docs/ARQUITECTURA.md](../ARQUITECTURA.md) · [docs/GOBIERNO.md](../GOBIERNO.md) · [docs/CARRILES.md](../CARRILES.md) · [docs/ENTORNO.md](../ENTORNO.md)

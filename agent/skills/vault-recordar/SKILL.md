@@ -60,6 +60,7 @@ vault run vault_context_pack --query "event queue decisions" --incluir-historico
 | `--format` | `json` or `markdown` |
 | `--explain` | Include the rerank signals per note |
 | `--incluir-historico` | Also return history, penalized, instead of current truth only |
+| `--max-sensitivity` | Exclude notes whose `cia_sensitivity` exceeds `public`, `internal`, or `restricted` |
 
 ## Output contract
 

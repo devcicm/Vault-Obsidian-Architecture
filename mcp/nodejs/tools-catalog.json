@@ -5691,7 +5691,7 @@
           },
           "agent": {
             "type": "string",
-            "description": "Agente curador que firma la operación SP-05/PAT-7"
+            "description": "Agente curador que firma la operación SP-05/PAT-7 (por defecto VAULT_AGENT)"
           }
         },
         "additionalProperties": false

@@ -519,11 +519,13 @@ Ejemplos:
         help="Motivo del desacuerdo declarado con --mark-contradicts",
     )
     parser.add_argument(
-        "--agent", default="curator",
-        help="Agente curador que firma la operación SP-05/PAT-7",
+        "--agent", default=None,
+        help="Agente curador que firma la operación SP-05/PAT-7 (por defecto VAULT_AGENT)",
     )
 
     args = parser.parse_args()
+    from vault_entorno import agente_por_defecto
+    agente_curador = args.agent or agente_por_defecto()
 
     if args.curate_plan:
         res = planificar_curacion(_raiz(), cola_propagacion=_propagation_queue())
@@ -532,7 +534,7 @@ Ejemplos:
             else emit_error("vault_propagate", str(res.get("error_code") or "INVALID_INPUT"), str(res.get("message") or ""))
         )
     elif args.curate_apply:
-        res = aplicar_curacion(_raiz(), flag_ids=args.flag_ids or None, agent=args.agent)
+        res = aplicar_curacion(_raiz(), flag_ids=args.flag_ids or None, agent=agente_curador)
         result = (
             {**res, **write_report()} if res.get("ok")
             else emit_error("vault_propagate", str(res.get("error_code") or "INVALID_INPUT"), str(res.get("message") or ""))
@@ -542,7 +544,7 @@ Ejemplos:
             parser.error("--resolve-flag requiere --flag-status (triaged|applied|dismissed)")
         res = actualizar_estado_bandera(
             _raiz(), args.resolve_flag, args.flag_status,
-            resolution_note=args.resolution_note, agent=args.agent,
+            resolution_note=args.resolution_note, agent=agente_curador,
         )
         result = (
             {**res, **write_report()} if res.get("ok")
@@ -551,7 +553,7 @@ Ejemplos:
     elif args.mark_contradicts:
         if not args.other_note:
             parser.error("--mark-contradicts requiere --other-note PATH_B")
-        res = marcar_contradiccion(_raiz(), args.mark_contradicts, args.other_note, reason=args.reason, agent=args.agent)
+        res = marcar_contradiccion(_raiz(), args.mark_contradicts, args.other_note, reason=args.reason, agent=agente_curador)
         result = (
             {**res, **write_report()} if res.get("ok")
             else emit_error("vault_propagate", str(res.get("error_code") or "INVALID_INPUT"), str(res.get("message") or ""))
