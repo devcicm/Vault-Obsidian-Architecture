@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "ec11b954-435a-4cf2-b151-9de5ff9ad359",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "B:\\Vault-Obsidian-Architecture\\.archify\\candidata-capas.json",
+  "output": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-capas.html",
+  "specification": {
+    "sha256": "49bc5e1b477811f36dd1806e3685fd7615de5f97ac8e1bd9b76db17ef6545491",
+    "bytes": 7119
+  },
+  "artifact": {
+    "sha256": "27df252ba5c2dc0b5d318ea2f13e08eeca5ed502b75fed68a0520351887a82e6",
+    "bytes": 834975
+  }
+}

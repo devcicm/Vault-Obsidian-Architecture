@@ -1,0 +1,183 @@
+{
+ "schema_version": 1,
+ "diagram_type": "architecture",
+ "meta": {
+  "title": "Mapa por Capas (Capas 1–6) e Inventario de Control de Flujo — VOA v41.27",
+  "subtitle": "1 servicio · 3 capacidades · 6 capas técnicas · 10 contextos · 130 tools (100 MCP) · 100 normas · 0 BD · 0 embeddings",
+  "locale": "es",
+  "output": ".archify/mapa-capas.html",
+  "quality_profile": "showcase",
+  "repository": {
+   "url": "https://github.com/devcicm/Vault-Obsidian-Architecture",
+   "provider": "github",
+   "revision": "dde2af4d78290a4db8122bd5de0d9fbf785178c1"
+  },
+  "legend": {
+   "mode": "all",
+   "entries": {
+    "external": { "label": "Consumidor externo (Agente LLM · Humano)" },
+    "messagebus": { "label": "Capa 5 · Transporte MCP/CLI y RBAC (SP-04/05)" },
+    "frontend": { "label": "Capa 4 · Ciclo de Vida y Curación SP-05" },
+    "backend": { "label": "Capas 2 y 3 · Dominio, Gobernanza y Consulta" },
+    "security": { "label": "Capa 1 · Núcleo confinante (0 deps de dominio)" },
+    "database": { "label": "Vault en disco: Markdown + JSONL + Git" },
+    "cloud": { "label": "Capa 6 · Meta-gobernanza (29 puertas)" }
+   }
+  }
+ },
+ "layout": {
+  "mode": "grid",
+  "cols": 4
+ },
+ "components": [
+  {
+   "id": "ext",
+   "type": "external",
+   "label": "Agente / Humano",
+   "sublabel": "lector · ejecutor · operador",
+   "pos": [30, 40],
+   "size": [170, 56],
+   "sources": [
+    { "path": "CLAUDE.md", "line": 1, "end_line": 40, "label": "Índice de contexto y skills" },
+    { "path": "AGENTS.md", "line": 1, "end_line": 50, "label": "Instrucciones del estándar" }
+   ]
+  },
+  {
+   "id": "c5",
+   "type": "messagebus",
+   "label": "Capa 5 · Transporte",
+   "sublabel": "100 MCP · CLI · VAULT_MCP_ROL",
+   "pos": [280, 40],
+   "size": [250, 62],
+   "sources": [
+    { "path": "mcp/nodejs/vault-mcp-server.mjs", "line": 1417, "end_line": 1480, "label": "Guard de llamadas y RBAC" },
+    { "path": "cli/safety.py", "line": 55, "end_line": 90, "label": "Seguridad CLI -> kernel" }
+   ]
+  },
+  {
+   "id": "c6",
+   "type": "cloud",
+   "label": "Capa 6 · Meta-Estándar",
+   "sublabel": "29 puertas · 12 pasos fix_all",
+   "pos": [620, 40],
+   "size": [240, 62],
+   "sources": [
+    { "path": "scripts/vault_gate.py", "line": 1, "end_line": 60, "label": "Registro de 29 puertas" },
+    { "path": "scripts/vault_fix_all.py", "line": 140, "end_line": 205, "label": "Cierre de drift derivado" }
+   ]
+  },
+  {
+   "id": "c4",
+   "type": "frontend",
+   "label": "Capa 4 · Ciclo y Curación",
+   "sublabel": "10 mód · curacion SP-05/PAT-7",
+   "pos": [280, 180],
+   "size": [250, 62],
+   "sources": [
+    { "path": "vault/ciclo_de_vida/curacion.py", "line": 1, "end_line": 70, "label": "Orquestador batch SP-05" },
+    { "path": "vault/runtime.py", "line": 190, "end_line": 225, "label": "Puertos runtime" }
+   ]
+  },
+  {
+   "id": "c3",
+   "type": "backend",
+   "label": "Capa 3 · Gobernanza y Consulta",
+   "sublabel": "100 normas · context_pack · ingest",
+   "pos": [280, 320],
+   "size": [250, 64],
+   "sources": [
+    { "path": "scripts/vault_context_pack.py", "line": 1, "end_line": 50, "label": "Paquete de contexto sin BD" },
+    { "path": "scripts/vault_preferences.py", "line": 620, "end_line": 655, "label": "Adaptadores PAT-9 + SP-06" }
+   ]
+  },
+  {
+   "id": "c2",
+   "type": "backend",
+   "label": "Capa 2 · Dominio Base",
+   "sublabel": "71 tools · write · ronda · code_review",
+   "pos": [280, 460],
+   "size": [250, 64],
+   "sources": [
+    { "path": "scripts/vault_write.py", "line": 1, "end_line": 50, "label": "Write path único (AP-46)" },
+    { "path": "scripts/vault_ronda.py", "line": 90, "end_line": 120, "label": "Señales ejecutor SP-05" },
+    { "path": "scripts/vault_requirement_save.py", "line": 324, "end_line": 360, "label": "Holgura y gate TDD SP-06" }
+   ]
+  },
+  {
+   "id": "c1",
+   "type": "security",
+   "label": "Capa 1 · Núcleo (Kernel)",
+   "sublabel": "24 mód · safety · banderas · xp",
+   "pos": [280, 600],
+   "size": [250, 64],
+   "sources": [
+    { "path": "vault/kernel/safety.py", "line": 1, "end_line": 45, "label": "Anti-poison + CIA" },
+    { "path": "vault/kernel/banderas.py", "line": 1, "end_line": 45, "label": "Cola .flags.jsonl SP-05" },
+    { "path": "vault/kernel/normativa/xp.py", "line": 1, "end_line": 57, "label": "Política XP O(1) SP-06" }
+   ]
+  },
+  {
+   "id": "fs",
+   "type": "database",
+   "label": "Vault (Markdown + Git)",
+   "sublabel": "00..21 · reglas · .flags · .change-log",
+   "pos": [620, 600],
+   "size": [240, 64],
+   "sources": [
+    { "path": "vault/kernel/registry.py", "line": 1, "end_line": 60, "label": "Secciones canónicas CN-02" }
+   ]
+  }
+ ],
+ "boundaries": [
+  { "kind": "region", "label": "Runtime distribuible (Capas 1–5)", "wraps": ["c5", "c4", "c3", "c2", "c1"] },
+  { "kind": "region", "label": "Control del Estándar (fuera de wheel)", "wraps": ["c6"] }
+ ],
+ "connections": [
+  { "id": "f1", "from": "ext", "to": "c5", "label": "MCP / CLI", "variant": "emphasis" },
+  { "id": "f2", "from": "c5", "to": "c4", "label": "curación SP-05" },
+  { "id": "f3", "from": "c4", "to": "c3", "label": "normas y contexto" },
+  { "id": "f4", "from": "c3", "to": "c2", "label": "BM25, grafo y notas" },
+  { "id": "f5", "from": "c2", "to": "c1", "label": "poison + locks + xp", "variant": "security" },
+  { "id": "f6", "from": "c1", "to": "fs", "label": "AP-36 + Git", "variant": "emphasis" },
+  { "id": "f7", "from": "c6", "to": "c5", "label": "sync catálogo/env", "variant": "dashed" },
+  { "id": "f8", "from": "c6", "to": "c1", "label": "29 puertas estrictas", "variant": "dashed" }
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "Esencia del repositorio",
+   "items": [
+    "Este repo es el ESTÁNDAR (spec + toolkit), no un vault de notas",
+    "Promesa: Markdown plano + JSON/JSONL + Git · 0 BD · 0 embeddings · 0 terceros",
+    "Regla 1: todo runtime corre en vault-sandbox/, jamás en la raíz del repo"
+   ]
+  },
+  {
+   "dot": "emerald",
+   "title": "Flujo cerrado de la Fábrica (SP-05)",
+   "items": [
+    "Ejecutor (Capa 5 → Capa 2): lee y levanta FLAG-NNN vía `vault_ronda --flag` (bloqueado en abrir/cerrar/write)",
+    "Cola (Capa 1): `00_System/.flags.jsonl` con `scan_poison` no desactivable",
+    "Operador (Capa 4 → Capa 2): `vault_propagate --curate-apply` vía puerto `BitacoraCambios` + acta en `19_Audits/curation/`"
+   ]
+  },
+  {
+   "dot": "violet",
+   "title": "Control de flujo de cambios",
+   "items": [
+    "Regla pura / catálogo / seguridad base → Capa 1 (`vault/kernel/`)",
+    "Nota, grafo, índice o backup → Capa 2 · Auditoría o consulta → Capa 3",
+    "Orquestador → Capa 4 · Transporte → Capa 5 · Puerta del repo → Capa 6"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "Carriles y referencias cruzadas",
+   "items": [
+    "dev: `vault_test_scope --changed --correr` + `vault_gate --strict --nivel rapida`",
+    "merge: `vault_fix_all` (12 pasos) + `vault_gate --strict` (29/29) + `pytest tests/ -n 4` en serie",
+    "Red de contexto: `AGENTS.md` ↔ `CLAUDE.md` ↔ `docs/architecture/MAPA-CAPAS.md` ↔ `docs/BLUEPRINT.md`"
+   ]
+  }
+ ]
+}

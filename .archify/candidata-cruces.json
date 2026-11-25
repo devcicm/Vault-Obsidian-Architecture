@@ -2,37 +2,25 @@
  "schema_version": 1,
  "diagram_type": "architecture",
  "meta": {
-  "title": "Cruces medidos entre contextos: frontera cruzada, fuera de puerto y anclas",
-  "subtitle": "32 cruces de `scripts/arch-baseline.json` · 0 fuera de puerto (AP-49) · 2 anclas del puente (ADR-0002)",
+  "title": "Cruces medidos entre contextos: 34 claves, 52 sitios y 0 fuera de puerto (v41.27)",
+  "subtitle": "34 cruces de `scripts/arch-baseline.json` · 22 pares · 0 fuera de puerto (AP-49) · 2 anclas (ADR-0002)",
   "locale": "es",
   "output": ".archify/mapa-cruces.html",
   "quality_profile": "showcase",
   "repository": {
    "url": "https://github.com/devcicm/Vault-Obsidian-Architecture",
    "provider": "github",
-   "revision": "e749720ad9957dc5553340c61fb907e9c3a40a03"
+   "revision": "dde2af4d78290a4db8122bd5de0d9fbf785178c1"
   },
   "legend": {
    "mode": "all",
    "entries": {
-    "security": {
-     "label": "Kernel: mecanismo confinante"
-    },
-    "frontend": {
-     "label": "Superficie de escritura del vault (Autoría)"
-    },
-    "backend": {
-     "label": "Dominio del vault (nota · grafo · norma · índice)"
-    },
-    "database": {
-     "label": "Retención y restauración (Durabilidad)"
-    },
-    "cloud": {
-     "label": "Meta-toolkit: gobernanza del estándar"
-    },
-    "messagebus": {
-     "label": "Mediador llamada ↔ tool (CLI)"
-    }
+    "security": { "label": "Kernel: 0 cruces salientes hacia dominio" },
+    "frontend": { "label": "Autoría (47 mód · 8 puertos)" },
+    "backend": { "label": "Dominio (Grafo · Gobernanza · Índices · Consulta · Ciclo)" },
+    "database": { "label": "Durabilidad (4 mód · 4 puertos · ↔ Autoría)" },
+    "cloud": { "label": "Meta-toolkit (40 mód · 8 puertos)" },
+    "messagebus": { "label": "CLI (8 mód · 0 puertos)" }
    }
   }
  },
@@ -41,428 +29,79 @@
   "cols": 6
  },
  "components": [
-  {
-   "id": "k",
-   "type": "security",
-   "label": "I · Kernel",
-   "sublabel": "23 módulos · 4 puertos",
-   "pos": [
-    40,
-    230
-   ],
-   "size": [
-    190,
-    62
-   ],
-   "sources": [
-    {
-     "path": "scripts/vault_arch.py",
-     "line": 156,
-     "end_line": 246,
-     "label": "CONTEXTS[Kernel]"
-    }
-   ]
-  },
-  {
-   "id": "a",
-   "type": "frontend",
-   "label": "II · Autoría",
-   "sublabel": "46 módulos · 7 puertos",
-   "pos": [
-    360,
-    230
-   ],
-   "size": [
-    200,
-    70
-   ],
-   "sources": [
-    {
-     "path": "scripts/vault_arch.py",
-     "line": 247,
-     "end_line": 283,
-     "label": "CONTEXTS[Autoría]"
-    }
-   ]
-  },
-  {
-   "id": "g",
-   "type": "backend",
-   "label": "III · Grafo",
-   "sublabel": "15 módulos · 4 puertos",
-   "pos": [
-    660,
-    230
-   ],
-   "size": [
-    150,
-    58
-   ],
-   "sources": [
-    {
-     "path": "scripts/vault_arch.py",
-     "line": 284,
-     "end_line": 303,
-     "label": "CONTEXTS[Grafo]"
-    }
-   ]
-  },
-  {
-   "id": "gov",
-   "type": "backend",
-   "label": "IV · Gobernanza",
-   "sublabel": "13 módulos · 21 puertos",
-   "pos": [
-    960,
-    230
-   ],
-   "size": [
-    150,
-    72
-   ],
-   "sources": [
-    {
-     "path": "scripts/vault_arch.py",
-     "line": 304,
-     "end_line": 399,
-     "label": "CONTEXTS[Gobernanza]"
-    }
-   ]
-  },
-  {
-   "id": "idx",
-   "type": "backend",
-   "label": "V · Índices",
-   "sublabel": "7 módulos · 12 puertos",
-   "pos": [
-    660,
-    480
-   ],
-   "size": [
-    160,
-    58
-   ],
-   "sources": [
-    {
-     "path": "scripts/vault_arch.py",
-     "line": 400,
-     "end_line": 427,
-     "label": "CONTEXTS[Índices]"
-    }
-   ]
-  },
-  {
-   "id": "q",
-   "type": "backend",
-   "label": "VI · Consulta",
-   "sublabel": "11 módulos · 7 puertos",
-   "pos": [
-    40,
-    480
-   ],
-   "size": [
-    170,
-    66
-   ],
-   "sources": [
-    {
-     "path": "scripts/vault_arch.py",
-     "line": 428,
-     "end_line": 450,
-     "label": "CONTEXTS[Consulta]"
-    }
-   ]
-  },
-  {
-   "id": "cv",
-   "type": "backend",
-   "label": "VII · Ciclo de vida",
-   "sublabel": "10 módulos · 3 puertos",
-   "pos": [
-    400,
-    480
-   ],
-   "size": [
-    180,
-    62
-   ],
-   "sources": [
-    {
-     "path": "scripts/vault_arch.py",
-     "line": 451,
-     "end_line": 470,
-     "label": "CONTEXTS[Ciclo de vida]"
-    }
-   ]
-  },
-  {
-   "id": "dur",
-   "type": "database",
-   "label": "VIII · Durabilidad",
-   "sublabel": "4 módulos · sin cruces medidos",
-   "pos": [
-    40,
-    660
-   ],
-   "size": [
-    190,
-    58
-   ],
-   "sources": [
-    {
-     "path": "scripts/vault_arch.py",
-     "line": 471,
-     "end_line": 485,
-     "label": "CONTEXTS[Durabilidad]"
-    }
-   ]
-  },
-  {
-   "id": "mt",
-   "type": "cloud",
-   "label": "IX · Meta-toolkit",
-   "sublabel": "39 mód · 6 puertos",
-   "pos": [
-    1150,
-    400
-   ],
-   "size": [
-    124,
-    62
-   ],
-   "sources": [
-    {
-     "path": "scripts/vault_arch.py",
-     "line": 486,
-     "end_line": 619,
-     "label": "CONTEXTS[Meta-toolkit]"
-    }
-   ]
-  },
-  {
-   "id": "cli",
-   "type": "messagebus",
-   "label": "X · CLI",
-   "sublabel": "0 puertos",
-   "pos": [
-    1150,
-    560
-   ],
-   "size": [
-    118,
-    56
-   ],
-   "sources": [
-    {
-     "path": "scripts/vault_arch.py",
-     "line": 620,
-     "end_line": 660,
-     "label": "CONTEXTS[CLI]"
-    }
-   ]
-  }
+  { "id": "k", "type": "security", "label": "I · Kernel", "sublabel": "24 mód · 0 salientes", "pos": [40, 230], "size": [190, 62], "sources": [{ "path": "scripts/vault_arch.py", "line": 211, "end_line": 300, "label": "CONTEXTS[Kernel]" }] },
+  { "id": "a", "type": "frontend", "label": "II · Autoría", "sublabel": "47 mód · 8 puertos", "pos": [360, 230], "size": [200, 70], "sources": [{ "path": "scripts/vault_arch.py", "line": 301, "end_line": 337, "label": "CONTEXTS[Autoría]" }] },
+  { "id": "g", "type": "backend", "label": "III · Grafo", "sublabel": "16 mód · 4 puertos", "pos": [680, 230], "size": [150, 58], "sources": [{ "path": "scripts/vault_arch.py", "line": 338, "end_line": 357, "label": "CONTEXTS[Grafo]" }] },
+  { "id": "gov", "type": "backend", "label": "IV · Gobernanza", "sublabel": "14 mód · 21 puertos", "pos": [960, 230], "size": [155, 72], "sources": [{ "path": "scripts/vault_arch.py", "line": 358, "end_line": 453, "label": "CONTEXTS[Gobernanza]" }] },
+  { "id": "idx", "type": "backend", "label": "V · Índices", "sublabel": "7 mód · 12 puertos", "pos": [680, 480], "size": [155, 58], "sources": [{ "path": "scripts/vault_arch.py", "line": 454, "end_line": 495, "label": "CONTEXTS[Índices]" }] },
+  { "id": "q", "type": "backend", "label": "VI · Consulta", "sublabel": "11 mód · 7 puertos", "pos": [40, 480], "size": [170, 66], "sources": [{ "path": "scripts/vault_arch.py", "line": 496, "end_line": 518, "label": "CONTEXTS[Consulta]" }] },
+  { "id": "cv", "type": "backend", "label": "VII · Ciclo de vida", "sublabel": "10 mód · 3 puertos", "pos": [390, 480], "size": [185, 62], "sources": [{ "path": "scripts/vault_arch.py", "line": 519, "end_line": 538, "label": "CONTEXTS[Ciclo de vida]" }] },
+  { "id": "dur", "type": "database", "label": "VIII · Durabilidad", "sublabel": "4 mód · ↔ Autoría", "pos": [40, 660], "size": [190, 58], "sources": [{ "path": "scripts/vault_arch.py", "line": 539, "end_line": 553, "label": "CONTEXTS[Durabilidad]" }] },
+  { "id": "mt", "type": "cloud", "label": "IX · Meta-toolkit", "sublabel": "40 mód · 8 puertos", "pos": [1170, 400], "size": [132, 62], "sources": [{ "path": "scripts/vault_arch.py", "line": 554, "end_line": 681, "label": "CONTEXTS[Meta-toolkit]" }] },
+  { "id": "cli", "type": "messagebus", "label": "X · CLI", "sublabel": "8 mód · 0 puertos", "pos": [1170, 560], "size": [132, 56], "sources": [{ "path": "scripts/vault_arch.py", "line": 700, "end_line": 710, "label": "CONTEXTS[CLI]" }] }
  ],
  "boundaries": [
-  {
-   "kind": "region",
-   "label": "vault/ — los cruces partieron o llegan aquí",
-   "wraps": [
-    "k",
-    "a",
-    "g",
-    "gov",
-    "idx",
-    "q",
-    "cv",
-    "dur"
-   ]
-  },
-  {
-   "kind": "region",
-   "label": "mide el repo, no escribe en él",
-   "wraps": [
-    "mt",
-    "cli"
-   ]
-  }
+  { "kind": "region", "label": "vault/ — contextos de dominio y núcleo", "wraps": ["k", "a", "g", "gov", "idx", "q", "cv", "dur"] },
+  { "kind": "region", "label": "mide el repo, no escribe en él", "wraps": ["mt", "cli"] }
  ],
  "connections": [
-  {
-   "id": "x-k-a",
-   "from": "k",
-   "to": "a",
-   "label": "1 cruce (vault_errors → autoria)"
-  },
-  {
-   "id": "x-g-a",
-   "from": "g",
-   "to": "a",
-   "label": "1 cruce · code_tag"
-  },
-  {
-   "id": "x-a-g",
-   "from": "a",
-   "to": "g",
-   "label": "4 cruces (repos)"
-  },
-  {
-   "id": "x-a-idx",
-   "from": "a",
-   "to": "idx",
-   "label": "5 cruces (tags)",
-   "variant": "security"
-  },
-  {
-   "id": "x-cv-idx",
-   "from": "cv",
-   "to": "idx",
-   "label": "7 cruces",
-   "variant": "security"
-  },
-  {
-   "id": "x-q-cv",
-   "from": "q",
-   "to": "cv",
-   "label": "1 cruce (repos consulta)"
-  },
-  {
-   "id": "x-gov-idx",
-   "from": "gov",
-   "to": "idx",
-   "label": "5 cruces (runtime + repos)"
-  },
-  {
-   "id": "x-gov-mt",
-   "from": "gov",
-   "to": "mt",
-   "label": "1 cruce",
-   "variant": "security"
-  },
-  {
-   "id": "x-g-gov",
-   "from": "g",
-   "to": "gov",
-   "label": "1 cruce (repos grafo)"
-  },
-  {
-   "id": "x-idx-g",
-   "from": "idx",
-   "to": "g",
-   "label": "1 cruce (repos indices)"
-  },
-  {
-   "id": "x-mt-gov",
-   "from": "mt",
-   "to": "gov",
-   "label": "4 cruces (audita lo publicado)"
-  },
-  {
-   "id": "x-a-gov",
-   "from": "a",
-   "to": "gov",
-   "label": "1 cruce (change_log)"
-  },
-  {
-   "id": "x-mt-cv",
-   "from": "mt",
-   "to": "cv",
-   "label": "1 cruce (spec_memory)"
-  },
-  {
-   "id": "x-mt-q",
-   "from": "mt",
-   "to": "q",
-   "label": "1 cruce (vault_mcp)"
-  },
-  {
-   "id": "x-cv-a",
-   "from": "cv",
-   "to": "a",
-   "label": "1 cruce (onboard → write)",
-   "labelAt": [
-    341,
-    370
-   ]
-  },
-  {
-   "id": "x-cv-gov",
-   "from": "cv",
-   "to": "gov",
-   "label": "3 cruces (sanar + propagar)"
-  },
-  {
-   "id": "x-cv-g",
-   "from": "cv",
-   "to": "g",
-   "label": "1 cruce · propagate→impact"
-  },
-  {
-   "id": "x-cv-mt",
-   "from": "cv",
-   "to": "mt",
-   "label": "1 cruce (standard_upgrade)"
-  },
-  {
-   "id": "x-q-a",
-   "from": "q",
-   "to": "a",
-   "label": "1 cruce (context_pack)"
-  },
-  {
-   "id": "x-q-g",
-   "from": "q",
-   "to": "g",
-   "label": "3 cruces (subgrafo)"
-  },
-  {
-   "id": "x-a-mt",
-   "from": "a",
-   "to": "mt",
-   "label": "1 cruce (vault_voice)"
-  },
-  {
-   "id": "x-cli-mt",
-   "from": "cli",
-   "to": "mt",
-   "label": "1 cruce (registry)"
-  }
+  { "id": "x-a-dur", "from": "a", "to": "dur", "label": "1/1 (delete)" },
+  { "id": "x-dur-a", "from": "dur", "to": "a", "label": "1/1 (move)" },
+  { "id": "x-g-a", "from": "g", "to": "a", "label": "1/1" },
+  { "id": "x-a-g", "from": "a", "to": "g", "label": "1/4" },
+  { "id": "x-a-idx", "from": "a", "to": "idx", "label": "2/8", "variant": "security" },
+  { "id": "x-cv-idx", "from": "cv", "to": "idx", "label": "6/7", "variant": "security" },
+  { "id": "x-q-cv", "from": "q", "to": "cv", "label": "1/1" },
+  { "id": "x-gov-idx", "from": "gov", "to": "idx", "label": "2/5", "variant": "security" },
+  { "id": "x-g-gov", "from": "g", "to": "gov", "label": "1/4" },
+  { "id": "x-idx-g", "from": "idx", "to": "g", "label": "1/1" },
+  { "id": "x-mt-gov", "from": "mt", "to": "gov", "label": "4/4" },
+  { "id": "x-a-gov", "from": "a", "to": "gov", "label": "1/1" },
+  { "id": "x-mt-cv", "from": "mt", "to": "cv", "label": "1/1" },
+  { "id": "x-mt-q", "from": "mt", "to": "q", "label": "1/1" },
+  { "id": "x-cv-a", "from": "cv", "to": "a", "label": "1/1", "labelAt": [352, 370] },
+  { "id": "x-cv-gov", "from": "cv", "to": "gov", "label": "3/3" },
+  { "id": "x-cv-g", "from": "cv", "to": "g", "label": "1/1" },
+  { "id": "x-cv-mt", "from": "cv", "to": "mt", "label": "1/1" },
+  { "id": "x-q-a", "from": "q", "to": "a", "label": "1/1" },
+  { "id": "x-q-g", "from": "q", "to": "g", "label": "1/3" },
+  { "id": "x-a-mt", "from": "a", "to": "mt", "label": "1/1" },
+  { "id": "x-cli-mt", "from": "cli", "to": "mt", "label": "1/1" }
  ],
  "cards": [
   {
    "dot": "violet",
-   "title": "Anclas del puente (ADR-0002, 2026-10-16)",
+   "title": "Anclas del puente (ADR-0002)",
    "items": [
-    "en la wheel, todo módulo de scripts/ es alias de su dueño en vault/<contexto>/ → vault_toolkit/_impl/",
-    "vault_grafo_import: dice dónde está scripts/ con su __file__; lo fijan los dueños mudados al kernel",
-    "vault_release: fábrica de release; no viaja en la wheel y no tiene dueño en vault/ (ancla v41.17)",
-    "bridge_modules solo puede encoger: lo que tiene hogar sale del registro, no congelado"
+    "vault_grafo_import: ubica scripts/ en checkout y wheel",
+    "vault_release: fábrica de release fuera de la wheel",
+    "bridge_modules_total = 2 (monotónico: solo puede encoger)"
    ]
   },
   {
    "dot": "rose",
    "title": "Fuera de puerto: 0 sitios (AP-49 saldado)",
    "items": [
-    "los 8 sitios que había (vault_norms_engine, vault_sanacion, vault_write) ya llegan a símbolos declarados en el puerto del destino",
-    "baseline off_port_crossings: lista vacía — el fichero queda en pie, la deuda saldada no se borra",
-    "un sitio nuevo fuera de puerto vuelve a bloquear la puerta vault_arch"
+    "off_port_total = 0 · broken_ports = 0 · undeclared_kernel_deps = 0",
+    "Eliminados: kernel→autoria, gobernanza→meta_toolkit, gobernanza→autoria",
+    "Fases H/Q/R cerradas con 0 cruces nuevos (kernel/banderas + BitacoraCambios)"
    ]
   },
   {
    "dot": "cyan",
-   "title": "Objetivos de la cota (solo puede encoger)",
+   "title": "Presupuesto vivo (22 pares · 34 claves · 52 sitios)",
    "items": [
-    "cruces: 32 medidos → objetivo 30 antes del 2027-03-31 (cadencia 90 días)",
-    "fuera de puerto: 0 medidos → objetivo 4 cumplido; el objetivo solo puede encoger",
-    "dueño: meta_toolkit — vault_arch; cifras derivadas del grafo de módulos, nunca a mano"
+    "17 pares permanentes · 5 pares en_estudio · 0 pares a_eliminar",
+    "Notación en aristas: «claves/sitios» medidos por vault_arch.cruces()",
+    "autoria ↔ durabilidad (delete↔quarantine↔move) ahora visibles en el mapa"
    ]
   },
   {
    "dot": "amber",
-   "title": "Cómo leer las cifras",
+   "title": "Control de arquitectura",
    "items": [
-    "«N cruces» = sitios de import medidos por vault_arch entre contextos",
-    "«fuera de puerto» = el mismo cruce llegando a un símbolo que el destino no declara en su puerto",
-    "durabilidad no figura: ningún cruce medido la toca — si aparece, es un cruce nuevo y la puerta lo frena"
+    "Cualquier par nuevo o cruce sin puerto bloquea `vault_arch --check --strict`",
+    "Vista por capas y control de flujo en `.archify/mapa-capas.html` y `docs/architecture/MAPA-CAPAS.md`"
    ]
   }
  ]

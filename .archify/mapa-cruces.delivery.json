@@ -1,17 +1,17 @@
 {
   "schemaVersion": 1,
-  "receiptId": "13856164-2a79-45f4-ab8d-a43b8f2c99f2",
+  "receiptId": "28fc0870-adf4-4e14-a570-2a7eedf93d7f",
   "status": "current",
   "command": "deliver",
   "type": "architecture",
   "input": "B:\\Vault-Obsidian-Architecture\\.archify\\candidata-cruces.json",
   "output": "B:\\Vault-Obsidian-Architecture\\.archify\\mapa-cruces.html",
   "specification": {
-    "sha256": "8d5a8168ebe677da1608704d90651202ca913020a99e54e8fc9b18b4c2b88535",
-    "bytes": 9286
+    "sha256": "9236ef8b9060289ade00b145bdc43c021d3fee2e315d3cfe27debbb12a1fb571",
+    "bytes": 6687
   },
   "artifact": {
-    "sha256": "1b8d49a294be090e0efd3b7ff94623a0d2f035507828034065d2fd5080606e86",
-    "bytes": 853870
+    "sha256": "d019128fa5d13405b912bcad0961bff3e0284052a04673e3d1e5325c65f17616",
+    "bytes": 852112
   }
 }
