@@ -10,6 +10,7 @@ de derivarlo; se regenera con `vault_norms_engine.escribir_caras_derivadas`.
 GUARD = [
     'scripts/vault_voice.py::speak',
     'scripts/vault_voice.py::coverage',
+    'vault/autoria/voz.py::speak',
     'scripts/vault_errors.py::_inject_voice',
     'vault/gobernanza/auditoria_runtime.py::auditar_runtime',
 ]

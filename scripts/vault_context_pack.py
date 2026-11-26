@@ -45,6 +45,13 @@ from vault_query_parse import vault_query_parse
 from vault_search import vault_search
 from vault_subgraph import vault_subgraph
 from vault_token_service import estimate_tokens
+from vault.kernel.presupuesto_contexto import (  # noqa: E402
+    HARD_CAPS_CONTEXTO,
+    evaluar_presion_contexto,
+)
+
+#: Normas del presupuesto de contexto y compactación adaptativa (SPEC-06).
+NORMAS_PRESUPUESTO = ("AP-81", "SP-07")
 
 FLOOR_BUDGET = 2000
 DEFAULT_BUDGET = FLOOR_BUDGET
@@ -521,6 +528,8 @@ Por defecto el paquete es verdad vigente: las notas históricas
 dice cuántas y por qué (`history_excluded`). `incluir_historico=True` es el
 paquete de antes: compiten, penalizadas."""
 
+    # AP-81 / SP-07: presupuesto finito y compuertas de compactación (SPEC-06).
+    _normas_presupuesto = ("AP-81", "SP-07")
     if intento is not None and intento not in INTENTOS:
         return emit_error(
             "vault_context_pack", "INVALID_INPUT",

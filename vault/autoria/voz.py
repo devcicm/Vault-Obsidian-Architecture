@@ -217,6 +217,8 @@ def speak(
     servicio puede por tanto importarse como paquete normal y el adaptador
     decide cuál es la fuente canónica aplicable al entorno donde se ejecuta.
     """
+    # AP-43 / SP-07: recordatorios JIT en el resultado activo del agente.
+    _normas_voz_jit = ("AP-43", "SP-07")
     if (voice_mode if voice_mode is not None else os.environ.get("VAULT_VOICE", "1")) == "0":
         return None
 

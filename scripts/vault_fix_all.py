@@ -61,6 +61,7 @@ fallaron para que se vean todos de una vez.
 from __future__ import annotations
 
 import argparse
+from graphlib import CycleError, TopologicalSorter
 import json
 import subprocess
 import sys
@@ -72,6 +73,7 @@ from vault_errors import emit_error
 from vault_subproceso import ejecutar
 
 from vault.kernel import procesos_git, rutas
+from vault.kernel.ciclo_ejecucion import GestorDispose  # AP-82 / AP-83
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -208,6 +210,46 @@ PASOS: List[Dict[str, Any]] = [
 ]
 
 
+#: Grafo acíclico dirigido (DAG, SPEC-05 Etapa 2 P3) de dependencias entre pasos
+#: de `PASOS`. Validado con `graphlib.TopologicalSorter` (stdlib) para detectar
+#: ciclos y garantizar que todo paso corre después de los artefactos que consume.
+DEPENDENCIAS_PASOS: Dict[str, Tuple[str, ...]] = {
+    "tools_catalog": (),
+    "operations": ("tools_catalog",),
+    "env_table": (),
+    "field_compat": ("tools_catalog",),
+    "esquemas": (),
+    "metricas": (),
+    "arquitectura": ("tools_catalog", "env_table"),
+    "servicio": ("tools_catalog",),
+    "blueprint": ("tools_catalog", "field_compat", "arquitectura", "servicio"),
+    "doc_counts": ("tools_catalog", "operations", "arquitectura", "servicio", "blueprint"),
+    "doc_sync": ("tools_catalog",),
+    "caras_de_norma": ("tools_catalog", "blueprint", "doc_counts", "doc_sync"),
+}
+
+
+def orden_topologico_pasos() -> List[Dict[str, Any]]:
+    """Valida el DAG `DEPENDENCIAS_PASOS` y devuelve `PASOS` en orden topológico determinista."""
+    por_nombre = {p["nombre"]: p for p in PASOS}
+    ts: TopologicalSorter[str] = TopologicalSorter()
+    for p in PASOS:
+        nombre = p["nombre"]
+        deps = DEPENDENCIAS_PASOS.get(nombre, ())
+        ts.add(nombre, *deps)
+    # Comprueba aciclicidad real; respeta el orden canónico de PASOS cuando
+    # varios nodos quedan listos simultáneamente (determinismo total).
+    ts.prepare()
+    orden_canonico = {p["nombre"]: idx for idx, p in enumerate(PASOS)}
+    resueltos: List[Dict[str, Any]] = []
+    while ts.is_active():
+        listos = sorted(ts.get_ready(), key=lambda n: orden_canonico.get(n, 999))
+        for nombre in listos:
+            resueltos.append(por_nombre[nombre])
+            ts.done(nombre)
+    return resueltos
+
+
 def _ejecutar_paso(paso: Dict[str, Any], paso_n: int) -> Dict[str, Any]:
     if paso.get("modulo"):
         # Un paso sin CLI: el dueño del artefacto expone una función, no un
@@ -315,7 +357,8 @@ def fix_all(dry_run: bool = False, solo_paso: int | None = None,
     Con `cambiados` (rutas relativas al repo, con `/`) se omite cada paso
     cuyos insumos no aparecen ahí; sin él, corren todos.
     """
-    pasos_a_correr = list(enumerate(PASOS, start=1))
+    pasos_ordenados = orden_topologico_pasos()
+    pasos_a_correr = list(enumerate(pasos_ordenados, start=1))
     if solo_paso is not None:
         pasos_a_correr = [(n, p) for n, p in pasos_a_correr if n == solo_paso]
     pasos_a_correr, omitidos = _seleccionar(pasos_a_correr, cambiados)
@@ -339,7 +382,9 @@ def fix_all(dry_run: bool = False, solo_paso: int | None = None,
             "omitted": omitidos,
         }
 
-    resultados = [_ejecutar_paso(p, n) for n, p in pasos_a_correr]
+    # AP-82 / AP-83: ejecución bajo ámbito Dispose/RAII y orden DAG validado.
+    with GestorDispose():
+        resultados = [_ejecutar_paso(p, n) for n, p in pasos_a_correr]
     fallidos = [r for r in resultados if not r["ok"]]
     return {
         "ok": not fallidos,

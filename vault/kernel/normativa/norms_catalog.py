@@ -90,6 +90,7 @@ NORMAS_INTERNAS_ESTANDAR = frozenset({
     "AP-40", "AP-42", "AP-43", "AP-46", "AP-48", "AP-49", "AP-50",
     "AP-51", "AP-52", "AP-53", "AP-54", "AP-55", "AP-57", "AP-58",
     "AP-59", "AP-60", "AP-61", "AP-62", "AP-66", "AP-68", "AP-69",
+    "AP-82", "AP-83",
 })
 
 
@@ -318,6 +319,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     _desde_paquete("AP-78"),
     # ── Anti-patrón AP-79 — nota sin entrada autosuficiente (nota escalonada, 2026-11-19)
     _desde_paquete("AP-79"),
+    # ── Anti-patrón AP-80 — arista de grafo sin sello epistémico (2026-11-26)
+    _desde_paquete("AP-80"),
+    # ── Anti-patrón AP-81 — saturación de contexto sin presupuesto ni offloading (SPEC-06, 2026-11-26)
+    _desde_paquete("AP-81"),
+    # ── Anti-patrón AP-82 — recurso sin Dispose/RAII, lease ni cierre ordenado (privada, SPEC-05, 2026-11-26)
+    _desde_paquete("AP-82"),
+    # ── Anti-patrón AP-83 — orquestación/lote sin DAG, Saga pre-SHA ni checkpoint (privada, SPEC-05, 2026-11-26)
+    _desde_paquete("AP-83"),
     # ── Patrón PAT-6 ───────────────────────────────────────────────────────────
     _desde_paquete("PAT-6"),
     # ── Patrón PAT-7 — desacuerdo declarado (LLM Wiki, 2026-11-16) ─────────────
@@ -327,6 +336,8 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     _desde_paquete("PAT-9"),
     # ── Patrón PAT-10 — 8 operaciones de lógica de negocio y patrones oficiales (2026-11-24)
     _desde_paquete("PAT-10"),
+    # ── Patrón PAT-11 — navegación Grafo primero y análisis estructural compacto (2026-11-26)
+    _desde_paquete("PAT-11"),
     # ── Protocolo de sesión SP-XX ──────────────────────────────────────────────
     _desde_paquete("SP-01"),
     _desde_paquete("SP-02"),
@@ -334,6 +345,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     _desde_paquete("SP-04"),
     _desde_paquete("SP-05"),
     _desde_paquete("SP-06"),
+    _desde_paquete("SP-07"),
     # ── Convenciones de nomenclatura CN-XX ────────────────────────────────────
     _desde_paquete("CN-01"),
     _desde_paquete("CN-02"),

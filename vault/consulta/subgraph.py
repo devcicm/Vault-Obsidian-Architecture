@@ -495,7 +495,7 @@ def vault_subgraph_explain(node: str, max_neighbors: int = 15) -> Dict[str, Any]
 
 
 def vault_subgraph_report(top: int = 10) -> Dict[str, Any]:
-    """Reporte estructural compacto del grafo (god nodes, comunidades, puentes y epistémica)."""
+    """Reporte estructural compacto del grafo (PAT-11, AP-80: god nodes, comunidades, puentes y epistémica)."""
     graph, err = _cargar_grafo_o_error()
     if err is not None:
         return err
@@ -509,6 +509,7 @@ def vault_subgraph_report(top: int = 10) -> Dict[str, Any]:
     )
     res["graph_source"] = _fichero_de_grafo().name
     res["overlay"] = graph.get("overlay", {"applied": False})
+    res["norm_refs"] = ["AP-80", "PAT-11"]
     res.update(desfase)
     return res
 

@@ -630,8 +630,9 @@ def _cuerpo_adapter(cliente: str, contexto: dict, reglas: dict) -> str:
             "",
         ]
     lineas += _protocolo_de_sesion()
+    # PAT-11: navegar primero por el grafo estructurado antes de búsquedas ciegas.
     lineas += [
-        "## Grafo primero (ahorro de contexto)",
+        "## Grafo primero (ahorro de contexto, PAT-11)",
         "- Antes de lanzar búsquedas amplias (`grep`/`Glob`), consulta `vault_subgraph --report`, `--explain <nota>`, `--path <A> <B>` o `vault_context_pack`.",
         "",
     ]

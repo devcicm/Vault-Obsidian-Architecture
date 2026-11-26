@@ -282,6 +282,7 @@ def vault_graph() -> Dict[str, Any]:
     except (json.JSONDecodeError, PermissionError, TypeError):
         pass
 
+    # AP-80 / PAT-11: cada arista consolidada lleva sello epistémico y reporte opcional.
     graph_data = ensamblar_grafo(
         nodes, escaneo, extras, colisiones_de_nombre(relativas)
     )

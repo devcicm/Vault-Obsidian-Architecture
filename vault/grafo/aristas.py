@@ -68,11 +68,11 @@ _CONFIANZA_INFERRED: Dict[str, float] = {
 
 
 def clasificar_arista_epistemica(arista: Dict[str, Any]) -> Tuple[str, float]:
-    """Devuelve `(etiqueta, confianza)` en `CONFIANZA_EPISTEMICA` para una arista.
+    """Devuelve `(etiqueta, confianza)` en `CONFIANZA_EPISTEMICA` para una arista (AP-80).
 
     Si la arista ya trae un sello epistémico válido y confianza numérica en
     `[0.0, 1.0]`, se preserva. En caso contrario se deriva de forma determinista
-    desde el predicado canónico sin inventar evidencia (AP-45).
+    desde el predicado canónico sin inventar evidencia (AP-45, AP-80).
     """
     existente = arista.get("epistemic")
     conf_raw = arista.get("confidence")

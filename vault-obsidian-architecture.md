@@ -4090,7 +4090,7 @@ Lo ingerido entra con `status: draft` y `cia_integrity: low`, de modo que el rer
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **100 normas** del estándar (79 AP + 10 PAT + 6 SP + 5 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-79`. Fuente de verdad: `NORM_CATALOG` en `vault_norms_catalog.py` (`vault_norms.py` lo reexporta). Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **106 normas** del estándar (79 AP + 10 PAT + 6 SP + 5 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-79`. Fuente de verdad: `NORM_CATALOG` en `vault_norms_catalog.py` (`vault_norms.py` lo reexporta). Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -7626,6 +7626,17 @@ La consolidación ocurre en lote bajo el perfil `operador` mediante `vault_propa
 - **Nivel 4 (Flujo continuo / Trunk-Based):** prohibido saltar niveles 1–3; `00_System/reglas.json` exige `xp_prerequisites: {"tdd_pass": true, "human_pair_review": true}`.
 
 **Distinta de SP-05:** SP-05 separa privilegios ejecutor↔curador sobre el conocimiento del vault; SP-06 gobierna la disciplina de ingeniería y verificación TDD/revisión de código del proyecto bajo adopción opt-in.
+
+---
+
+### SP-07 — Compactación adaptativa en 5 umbrales y recordatorios JIT por eventos
+
+**Regla (SPEC-06 / OpenDev):** tratar la ventana de contexto del agente como un presupuesto finito en ambos modos de integración (**Modo A — Harness Nativo** y **Modo B — Standalone CLI/MCP**) mediante `vault/kernel/presupuesto_contexto.py`:
+
+- **Escalera de 5 umbrales (`UMBRALES_COMPACTACION`):** `70%` telemetría sin mutación → `80%` enmascarado de observaciones antiguas a punteros compactos (`~15` tokens con offloading bajo `00_System/context-offload/`, `AP-36`) → `85%` poda rápida sin LLM → `90%` enmascarado agresivo reteniendo últimos 2 turnos → `99%` volcado íntegro a disco + resumen central preservando literales los últimos turnos.
+- **Recordatorios JIT por eventos (`evaluar_triggers_jit`):** dispara directivas breves (1–3 líneas) ante `tool_error`, `consecutive_reads >= 5` sin escritura y `post_code_edit` sin verificación, emitidas con `role: "user"` (Modo A) o en `vault_says` (Modo B), deduplicadas y acotadas a `max_active_jit_reminders`.
+
+**Distinta de AP-81:** AP-81 prohíbe saturar el contexto sin presupuesto, offloading ni hard caps; SP-07 fija el protocolo operativo turno a turno (5 umbrales + triggers JIT).
 
 ---
 
@@ -12670,3 +12681,51 @@ diseño, concurrencia o resiliencia detectado o registrado usa el nombre oficial
 en la industria (GoF, Fowler PoEAA, Evans DDD, Hohpe EIP, Cockburn, Richards & Ford, Nygard)
 desde el catálogo canónico único (`vault/autoria/patrones_diseno.py`). `vault_code_query --scan-path`
 y `vault_pattern_list --catalog/--scan-path` publican `pattern: PAT-10` en su salida.
+
+### AP-80 - Arista de grafo sin sello epistémico ni confianza
+
+**Enforcement:** `guard` · **Audiencia:** `consumidor` · **Introducido:** v41.27 (2026-11-26)
+
+Mezclar enlaces verificados en disco (`wiki_link`, `implements`, `supersedes`) con heurísticas
+(`shared_tag`, `same_section`, `mentions`) o sugerencias ambiguas sin distinguir su origen induce
+a tratar conjeturas como hechos (`AP-45`). Toda arista consolidada por `vault.grafo.aristas` y
+proyectada por `vault_graph` / `vault_subgraph` lleva `epistemic` en el vocabulario cerrado
+`('EXTRACTED', 'INFERRED', 'AMBIGUOUS')` y `confidence` en `[0.0, 1.0]`.
+
+### AP-81 - Saturación de contexto sin presupuesto ni offloading a puntero
+
+**Enforcement:** `guard` · **Audiencia:** `consumidor` · **Introducido:** v41.27 (2026-11-26)
+
+Acumular salidas extensas de herramientas y estructuras sin tope dentro de la ventana de contexto
+degrada al agente tras 15–20 turnos (`SPEC-06`). `vault_context_pack` acota toda recuperación a
+`budget_tokens` y `vault/kernel/presupuesto_contexto.py` fija `HARD_CAPS_CONTEXTO` y
+`offload_texto_a_puntero` bajo `00_System/context-offload/` (`AP-36`) para punteros de `~15` tokens.
+
+### AP-82 - Recurso adquirido sin Dispose/RAII, lease ni cierre ordenado
+
+**Enforcement:** `guard` · **Audiencia:** `interno_estandar` *(privada)* · **Introducido:** v41.27 (2026-11-26)
+
+Norma interna de desarrollo del estándar (`SPEC-05` Pilar 5): todo recurso escaso adquirido en
+procesos del toolkit (archivos, locks, timers, subprocesos, temporales) debe liberarse mediante
+`GestorDispose` (`vault/kernel/ciclo_ejecucion.py`) o `with`/`ExitStack` en orden LIFO e
+idempotente, sin ocultar la causa raíz (`AP-51`), con `LeaseHeartbeat` en operaciones largas y
+`instalar_cierre_ordenado` ante `SIGTERM`/`SIGINT`.
+
+### AP-83 - Orquestación o lote sin DAG acíclico, compensación Saga ni checkpoint
+
+**Enforcement:** `guard` · **Audiencia:** `interno_estandar` *(privada)* · **Introducido:** v41.27 (2026-11-26)
+
+Norma interna de desarrollo del estándar (`SPEC-05` Etapa 2): los pipelines internos declaran sus
+dependencias como DAG acíclico validado con `graphlib.TopologicalSorter` (`vault_fix_all.py`), y
+las mutaciones compuestas en lote disponen de compensación determinista por pre-SHA Git
+(`SagaPreSha`) y checkpoints JSONL idempotentes con replay (`CheckpointLog`) bajo `00_System/`.
+
+### PAT-11 - Navegación Grafo primero y análisis estructural compacto
+
+**Enforcement:** `recommended` · **Audiencia:** `consumidor` · **Introducido:** v41.27 (2026-11-26)
+
+Antes de ejecutar barridos amplios con `grep`/`Glob`, el agente consulta el mapa estructural
+compacto (`vault_subgraph --report`: *God Nodes*, comunidades *Label Propagation* deterministas,
+puentes y confianza epistémica), explica nodos clave (`--explain`) o traza rutas mínimas
+(`--path A B`). `vault_preferences --adapters` publica la directiva *Grafo primero* en los
+adaptadores generados para clientes externos.

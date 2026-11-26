@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-79 más
-> las familias PAT, SP y CN. Por familia: AP 79, CN 5, PAT 10, SP 6.
-> Bilingual document. Full norm catalog: antipatterns AP-01..AP-79 plus the PAT,
-> SP and CN families. By family: AP 79, CN 5, PAT 10, SP 6.
+> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-83 más
+> las familias PAT, SP y CN. Por familia: AP 83, CN 5, PAT 11, SP 7.
+> Bilingual document. Full norm catalog: antipatterns AP-01..AP-83 plus the PAT,
+> SP and CN families. By family: AP 83, CN 5, PAT 11, SP 7.
 
 ---
 
 ## ES
 
-Total de normas registradas: 100 (AP 79, CN 5, PAT 10, SP 6)
+Total de normas registradas: 106 (AP 83, CN 5, PAT 11, SP 7)
 
 ### AP-01: Documentación alucinada
 
@@ -933,6 +933,46 @@ Una nota que abre con una o tres líneas cortas obliga a quien no estuvo en la c
 
 Límites declarados: la norma sabe que la entrada existe y tiene cuerpo, no que sea cierta ni que resuma bien la nota; las notas que ya existían se informan para subirlas, nunca se rechazan, y `vault_write` no gana ninguna puerta nueva.
 
+### AP-80: Arista de grafo sin sello epistémico ni confianza
+
+- **Severidad:** medium
+- **Enforcement:** guard
+- **Detectado por:** sin detector declarado
+
+Mezclar enlaces verificados en disco (`wiki_link`, `implements`, `supersedes`) con relaciones inferidas por heurística (`shared_tag`, `same_section`, `mentions`) o sugerencias ambiguas sin distinguir su origen lleva al agente a tratar conjeturas como hechos (AP-45). Cada arista consolidada en `99_Index/graph.json`, `graph-enriched.json` y `vault_subgraph` debe declarar `epistemic` en el vocabulario cerrado `('EXTRACTED', 'INFERRED', 'AMBIGUOUS')` y `confidence` en `[0.0, 1.0]`.
+
+**Prevención:** Consolidar toda arista a través del dueño único `vault.grafo.aristas.consolidar_aristas` / `clasificar_arista_epistemica` y proyectar `stats.epistemic` desde `vault.grafo.refresco.ensamblar_grafo`.
+
+### AP-81: Saturación de contexto sin presupuesto ni offloading a puntero
+
+- **Severidad:** high
+- **Enforcement:** guard
+- **Detectado por:** sin detector declarado
+
+Tratar la ventana de contexto de un agente LLM como un registro ilimitado en lugar de un presupuesto finito provoca que salidas masivas de terminal, lecturas completas y estructuras sin tope entierren las reglas críticas y colapsen la sesión tras 15-20 turnos. Toda consulta empaquetada respeta `budget_tokens` (`vault_context_pack`) y toda observación pesada se externaliza bajo `00_System/context-offload/` a un puntero compacto (~15 tokens) respetando `HARD_CAPS_CONTEXTO` (Modo A Harness Nativo y Modo B Standalone CLI/MCP).
+
+**Prevención:** Usar `vault_context_pack --budget` y las primitivas `vault.kernel.presupuesto_contexto.evaluar_presion_contexto` / `offload_texto_a_puntero` respetando `HARD_CAPS_CONTEXTO` y contención AP-36.
+
+### AP-82: Recurso adquirido sin Dispose/RAII, lease ni cierre ordenado
+
+- **Severidad:** high
+- **Enforcement:** guard
+- **Detectado por:** sin detector declarado
+
+Adquirir recursos escasos (archivos, locks, timers, subprocesos o temporales) sin un dueño de liberación determinista en orden LIFO e idempotente produce fugas de handles, bloqueos huérfanos y cierres sucios ante excepciones o señales `SIGTERM`/`SIGINT`. En los procesos internos del toolkit, toda composición de recursos usa `GestorDispose` (o `with`/`ExitStack`), leases renovables (`LeaseHeartbeat`) y `instalar_cierre_ordenado` sin ocultar la excepción original (AP-51).
+
+**Prevención:** Envolver recursos en `vault.kernel.ciclo_ejecucion.GestorDispose`, renovar concesiones con `LeaseHeartbeat` y registrar cierre ordenado con `instalar_cierre_ordenado`.
+
+### AP-83: Orquestación o lote sin DAG acíclico, compensación Saga ni checkpoint
+
+- **Severidad:** high
+- **Enforcement:** guard
+- **Detectado por:** sin detector declarado
+
+Ejecutar pipelines de múltiples pasos con un orden lineal implícito o aplicar lotes destructivos sin punto de compensación ni checkpoints deja el repositorio o el vault en estados intermedios inconsistentes tras un fallo parcial. Los pipelines internos del estándar declaran su DAG explícito validado con `graphlib.TopologicalSorter` (`vault_fix_all.DEPENDENCIAS_PASOS`) y las primitivas de lote usan `SagaPreSha` y `CheckpointLog` en `00_System/` (AP-36).
+
+**Prevención:** Validar el orden de pasos mediante `vault_fix_all.orden_topologico_pasos` (`TopologicalSorter`) y respaldar lotes críticos con `vault.kernel.ciclo_ejecucion.SagaPreSha` y `CheckpointLog`.
+
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
 - **Severidad:** high
@@ -1002,6 +1042,16 @@ Un dominio = una nota canónica rica. Todas las referencias desde otros contexto
 Todo escaneo de capacidades, flujos y patrones sobre un repositorio (propio o de terceros) clasifica cada capacidad en las ocho operaciones universales de lógica de negocio (`auth`, `rule`, `lifecycle`, `workflow`, `transform`, `event`, `integration`, `query` -- o `unclassified` si falta evidencia verificable, AP-45), sin acoplar el estándar a un dominio concreto como ERP. Al mismo tiempo, cualquier patrón de diseño, arquitectura, concurrencia o resiliencia detectado o registrado debe usar su nombre oficial reconocido en la industria (GoF, Fowler PoEAA, Evans DDD, Hohpe EIP, Cockburn, Richards & Ford, Nygard) desde el catálogo canónico único (`patrones_diseno.CATALOGO_PATRONES`).
 
 **Prevención:** N/A -- es el patrón correcto. Un tercero o agente comprende la lógica de negocio de un proyecto por operaciones universales y nombres de patrón estándar sin ruido de normas internas del mantenedor ni nombres inventados.
+
+### PAT-11: Navegación Grafo primero y análisis estructural compacto
+
+- **Severidad:** N/A
+- **Enforcement:** recommended
+- **Detectado por:** vault_subgraph, vault_graph, vault_preferences
+
+Antes de lanzar búsquedas amplias sobre decenas de archivos crudos quemando ventana de contexto, el agente consulta el reporte estructural compacto (`vault_subgraph --report`: God Nodes, comunidades y puentes), explica nodos clave (`--explain`) o traza rutas mínimas (`--path A B`). `vault_preferences --adapters` publica la directiva 'Grafo primero' en los adaptadores generados para clientes externos.
+
+**Prevención:** N/A -- es el patrón correcto. Reduce el consumo de tokens de exploración manteniendo 100 % ejecución local en Python stdlib sin BD ni embeddings.
 
 ### PAT-2: Stub enrichment gradient
 
@@ -1143,11 +1193,21 @@ Adoptar velocidad de generación asistida por LLM sin progresión de prácticas 
 
 **Prevención:** Declarar `xp_level` (1..4) en `00_System/reglas.json` solo cuando el proyecto adopta progresivamente XP; clasificar historias con `vault_requirement_save --buffer critical|optional`; registrar evidencia de tests en `15_Tests/` antes de cerrar requisitos; revisar diffs incrementales con `vault_code_review --reviewer <persona>` y emitir cláusula compacta en adaptadores con `vault_preferences --adapters`.
 
+### SP-07: Compactación adaptativa en 5 umbrales y recordatorios JIT por eventos
+
+- **Severidad:** medium
+- **Enforcement:** guard
+- **Detectado por:** sin detector declarado
+
+Esperar a que la ventana se llene al 100% para resumir 'todo o nada' y confiar únicamente en el system prompt inicial tras 15-20 llamadas degrada al agente en sesiones largas. SP-07 aplica una escalera progresiva en 5 umbrales (`70%` telemetría, `80%` enmascarado a punteros ~15 tokens, `85%` poda rápida sin LLM, `90%` enmascarado agresivo, `99%` volcado íntegro + compactación preservando turnos recientes) e inyecta recordatorios breves disparados por eventos (`tool_error`, `consecutive_reads >= 5`, `post_code_edit`) con `role='user'` en Harness Nativo y en `vault_says` en Standalone.
+
+**Prevención:** Invocar `vault.kernel.presupuesto_contexto.compactar_observaciones` y `evaluar_triggers_jit` en cada turno del harness o vía `vault_context_pack` y `vault_voice`.
+
 ---
 
 ## EN
 
-Total registered norms: 100 (AP 79, CN 5, PAT 10, SP 6)
+Total registered norms: 106 (AP 83, CN 5, PAT 11, SP 7)
 
 ### AP-01: Documentación alucinada
 
@@ -2071,6 +2131,46 @@ Una nota que abre con una o tres líneas cortas obliga a quien no estuvo en la c
 
 Límites declarados: la norma sabe que la entrada existe y tiene cuerpo, no que sea cierta ni que resuma bien la nota; las notas que ya existían se informan para subirlas, nunca se rechazan, y `vault_write` no gana ninguna puerta nueva.
 
+### AP-80: Arista de grafo sin sello epistémico ni confianza
+
+- **Severity:** medium
+- **Enforcement:** guard
+- **Detected by:** sin detector declarado
+
+Mezclar enlaces verificados en disco (`wiki_link`, `implements`, `supersedes`) con relaciones inferidas por heurística (`shared_tag`, `same_section`, `mentions`) o sugerencias ambiguas sin distinguir su origen lleva al agente a tratar conjeturas como hechos (AP-45). Cada arista consolidada en `99_Index/graph.json`, `graph-enriched.json` y `vault_subgraph` debe declarar `epistemic` en el vocabulario cerrado `('EXTRACTED', 'INFERRED', 'AMBIGUOUS')` y `confidence` en `[0.0, 1.0]`.
+
+**Prevention:** Consolidar toda arista a través del dueño único `vault.grafo.aristas.consolidar_aristas` / `clasificar_arista_epistemica` y proyectar `stats.epistemic` desde `vault.grafo.refresco.ensamblar_grafo`.
+
+### AP-81: Saturación de contexto sin presupuesto ni offloading a puntero
+
+- **Severity:** high
+- **Enforcement:** guard
+- **Detected by:** sin detector declarado
+
+Tratar la ventana de contexto de un agente LLM como un registro ilimitado en lugar de un presupuesto finito provoca que salidas masivas de terminal, lecturas completas y estructuras sin tope entierren las reglas críticas y colapsen la sesión tras 15-20 turnos. Toda consulta empaquetada respeta `budget_tokens` (`vault_context_pack`) y toda observación pesada se externaliza bajo `00_System/context-offload/` a un puntero compacto (~15 tokens) respetando `HARD_CAPS_CONTEXTO` (Modo A Harness Nativo y Modo B Standalone CLI/MCP).
+
+**Prevention:** Usar `vault_context_pack --budget` y las primitivas `vault.kernel.presupuesto_contexto.evaluar_presion_contexto` / `offload_texto_a_puntero` respetando `HARD_CAPS_CONTEXTO` y contención AP-36.
+
+### AP-82: Recurso adquirido sin Dispose/RAII, lease ni cierre ordenado
+
+- **Severity:** high
+- **Enforcement:** guard
+- **Detected by:** sin detector declarado
+
+Adquirir recursos escasos (archivos, locks, timers, subprocesos o temporales) sin un dueño de liberación determinista en orden LIFO e idempotente produce fugas de handles, bloqueos huérfanos y cierres sucios ante excepciones o señales `SIGTERM`/`SIGINT`. En los procesos internos del toolkit, toda composición de recursos usa `GestorDispose` (o `with`/`ExitStack`), leases renovables (`LeaseHeartbeat`) y `instalar_cierre_ordenado` sin ocultar la excepción original (AP-51).
+
+**Prevention:** Envolver recursos en `vault.kernel.ciclo_ejecucion.GestorDispose`, renovar concesiones con `LeaseHeartbeat` y registrar cierre ordenado con `instalar_cierre_ordenado`.
+
+### AP-83: Orquestación o lote sin DAG acíclico, compensación Saga ni checkpoint
+
+- **Severity:** high
+- **Enforcement:** guard
+- **Detected by:** sin detector declarado
+
+Ejecutar pipelines de múltiples pasos con un orden lineal implícito o aplicar lotes destructivos sin punto de compensación ni checkpoints deja el repositorio o el vault en estados intermedios inconsistentes tras un fallo parcial. Los pipelines internos del estándar declaran su DAG explícito validado con `graphlib.TopologicalSorter` (`vault_fix_all.DEPENDENCIAS_PASOS`) y las primitivas de lote usan `SagaPreSha` y `CheckpointLog` en `00_System/` (AP-36).
+
+**Prevention:** Validar el orden de pasos mediante `vault_fix_all.orden_topologico_pasos` (`TopologicalSorter`) y respaldar lotes críticos con `vault.kernel.ciclo_ejecucion.SagaPreSha` y `CheckpointLog`.
+
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
 - **Severity:** high
@@ -2140,6 +2240,16 @@ Un dominio = una nota canónica rica. Todas las referencias desde otros contexto
 Todo escaneo de capacidades, flujos y patrones sobre un repositorio (propio o de terceros) clasifica cada capacidad en las ocho operaciones universales de lógica de negocio (`auth`, `rule`, `lifecycle`, `workflow`, `transform`, `event`, `integration`, `query` -- o `unclassified` si falta evidencia verificable, AP-45), sin acoplar el estándar a un dominio concreto como ERP. Al mismo tiempo, cualquier patrón de diseño, arquitectura, concurrencia o resiliencia detectado o registrado debe usar su nombre oficial reconocido en la industria (GoF, Fowler PoEAA, Evans DDD, Hohpe EIP, Cockburn, Richards & Ford, Nygard) desde el catálogo canónico único (`patrones_diseno.CATALOGO_PATRONES`).
 
 **Prevention:** N/A -- es el patrón correcto. Un tercero o agente comprende la lógica de negocio de un proyecto por operaciones universales y nombres de patrón estándar sin ruido de normas internas del mantenedor ni nombres inventados.
+
+### PAT-11: Navegación Grafo primero y análisis estructural compacto
+
+- **Severity:** N/A
+- **Enforcement:** recommended
+- **Detected by:** vault_subgraph, vault_graph, vault_preferences
+
+Antes de lanzar búsquedas amplias sobre decenas de archivos crudos quemando ventana de contexto, el agente consulta el reporte estructural compacto (`vault_subgraph --report`: God Nodes, comunidades y puentes), explica nodos clave (`--explain`) o traza rutas mínimas (`--path A B`). `vault_preferences --adapters` publica la directiva 'Grafo primero' en los adaptadores generados para clientes externos.
+
+**Prevention:** N/A -- es el patrón correcto. Reduce el consumo de tokens de exploración manteniendo 100 % ejecución local en Python stdlib sin BD ni embeddings.
 
 ### PAT-2: Stub enrichment gradient
 
@@ -2280,3 +2390,13 @@ Un agente ejecutor que edita directamente el conocimiento canónico (`03_Decisio
 Adoptar velocidad de generación asistida por LLM sin progresión de prácticas XP (holgura explícita, TDD rojo-verde-refactor, iteraciones pequeñas con revisión humana) convierte la IA en un multiplicador de deuda técnica y regresiones. SP-06 activa de forma opt-in `xp_level: 1..4` en `00_System/reglas.json` (validación O(1) fail-closed): Nivel 1 habilita clasificación `buffer: critical|optional` en requisitos; Nivel 2 bloquea pasar requisitos a `implemented`/`verified` sin evidencia `test_result: pass` en `15_Tests/` y escala `NO_TESTS_TOUCHED` a `blocker` en `vault_code_review`; Nivel 3 avisa ante diffs monolíticos y exige revisor humano válido (`AP-64`); Nivel 4 exige `xp_prerequisites` verificados (`tdd_pass: true`, `human_pair_review: true`).
 
 **Prevention:** Declarar `xp_level` (1..4) en `00_System/reglas.json` solo cuando el proyecto adopta progresivamente XP; clasificar historias con `vault_requirement_save --buffer critical|optional`; registrar evidencia de tests en `15_Tests/` antes de cerrar requisitos; revisar diffs incrementales con `vault_code_review --reviewer <persona>` y emitir cláusula compacta en adaptadores con `vault_preferences --adapters`.
+
+### SP-07: Compactación adaptativa en 5 umbrales y recordatorios JIT por eventos
+
+- **Severity:** medium
+- **Enforcement:** guard
+- **Detected by:** sin detector declarado
+
+Esperar a que la ventana se llene al 100% para resumir 'todo o nada' y confiar únicamente en el system prompt inicial tras 15-20 llamadas degrada al agente en sesiones largas. SP-07 aplica una escalera progresiva en 5 umbrales (`70%` telemetría, `80%` enmascarado a punteros ~15 tokens, `85%` poda rápida sin LLM, `90%` enmascarado agresivo, `99%` volcado íntegro + compactación preservando turnos recientes) e inyecta recordatorios breves disparados por eventos (`tool_error`, `consecutive_reads >= 5`, `post_code_edit`) con `role='user'` en Harness Nativo y en `vault_says` en Standalone.
+
+**Prevention:** Invocar `vault.kernel.presupuesto_contexto.compactar_observaciones` y `evaluar_triggers_jit` en cada turno del harness o vía `vault_context_pack` y `vault_voice`.

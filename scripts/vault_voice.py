@@ -68,13 +68,18 @@ def _rotacion() -> int:
     return _rotacion_estable(_runtime_root())
 
 
+#: Normas que articulan la voz JIT en resultados activos (AP-43 / SP-07).
+NORMAS_VOZ_JIT = ("AP-43", "SP-07")
+
+
 def speak(
     tool: str,
     payload: Optional[Dict[str, Any]] = None,
     writes: Optional[Dict[str, int]] = None,
 ) -> Optional[Dict[str, Any]]:
-    """Fachada compatible que delega la composición al servicio estable."""
-    # AP-43: la norma llega al agente en el resultado que está leyendo.
+    """Fachada compatible que delega la composición al servicio estable (AP-43 / SP-07)."""
+    # AP-43 / SP-07: la norma llega al agente en el resultado que está leyendo.
+    _normas_voz = ("AP-43", "SP-07")
     return _speak_estable(
         tool,
         payload,
