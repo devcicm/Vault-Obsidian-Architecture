@@ -1,7 +1,7 @@
 ---
 name: vault-mcp-diagnose
 description: "Trigger: MCP server failed, tools not showing in client, concurrency timeout, handshake error, diagnose MCP. Verifies MCP catalog sync, contracts, concurrency config, vault root resolution, and server startup health."
-allowed-tools: Bash(vault *) Bash(node *) Read Glob Grep
+allowed-tools: Bash(vault *) Bash(python *) Bash(node *) Read Glob Grep
 argument-hint: "[--root PATH]"
 entry-point: none
 version: "1.0"
@@ -23,6 +23,7 @@ root resolution (`VAULT_ROOT`), and environment variable hygiene.
 
 - Python >= 3.9 and Node.js >= 18 available on `PATH`.
 - `VAULT_ROOT` set to the target vault (or `--root` passed to `vault mcp-path`).
+- Steps 1–3 (`vault_entorno.py` and `vault_mcp_catalog.py`) are standard-repo maintenance checks and require a checkout of `Vault-Obsidian-Architecture`; steps 4–5 run in any installed environment.
 
 ## When not to use it
 
@@ -32,16 +33,16 @@ root resolution (`VAULT_ROOT`), and environment variable hygiene.
 ## Steps
 
 ```bash
-# 1. Inspect the active environment and MCP limits (including VAULT_MCP_MAX_READS)
-vault run vault_entorno --limites
+# 1. Inspect the active environment and MCP limits (spec repo checkout)
+python scripts/vault_entorno.py --limites
 
-# 2. Verify catalog parity (Python TOOLS_CATALOG vs mcp/nodejs/tools-catalog.json)
-vault run vault_mcp_catalog --check
+# 2. Verify catalog parity: Python TOOLS_CATALOG vs mcp/nodejs/tools-catalog.json (spec repo checkout)
+python scripts/vault_mcp_catalog.py --check
 
-# 3. Verify tool contracts (tool-spec.json coverage and AP-48 single backend)
-vault run vault_mcp_catalog --check-contracts
+# 3. Verify tool contracts: tool-spec.json coverage and AP-48 single backend (spec repo checkout)
+python scripts/vault_mcp_catalog.py --check-contracts
 
-# 4. Verify vault health and root resolution
+# 4. Verify vault health and root resolution (installed CLI)
 vault run vault_validate --check structure
 
 # 5. Print the exact server path and client config snippet for the target vault

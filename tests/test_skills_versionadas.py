@@ -77,6 +77,16 @@ def test_la_skill_declara_su_version_y_la_doc_la_publica(skill):
     fila = next((l for l in DOC.splitlines() if l.startswith(f"| `{skill.parent.name}`")), None)
     assert fila is not None, skill.parent.name
     assert f"| v{version} |" in fila, fila
+    cabeceras = re.findall(
+        rf"^### `{re.escape(skill.parent.name)}` v(\d+\.\d+)\s*$",
+        DOC,
+        re.MULTILINE,
+    )
+    for ver_cabecera in cabeceras:
+        assert ver_cabecera == version, (
+            f"docs/SKILLS.md tiene cabecera `### `{skill.parent.name}` v{ver_cabecera}` "
+            f"desfasada respecto a SKILL.md v{version}"
+        )
 
 
 @pytest.mark.parametrize("skill", SKILLS, ids=IDS)

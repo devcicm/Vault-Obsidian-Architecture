@@ -376,7 +376,7 @@ def comandos_vault_run(texto: str) -> list:
 
     comandos = []
     for bloque in re.findall(r"```bash\n(.*?)```", texto, re.DOTALL):
-        logico = re.sub(r"\\n\s*", " ", bloque)
+        logico = re.sub(r"\\\n\s*", " ", bloque)
         logico = re.sub(r"\$\((?:[^()]|\([^()]*\))*\)", "SUSTITUCION", logico)
         for linea in logico.splitlines():
             if "vault run " not in linea:

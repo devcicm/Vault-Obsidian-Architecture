@@ -303,12 +303,38 @@ def test_vault_run_acepta_scan_path_externo_en_preflight(tmp_path):
     assert env["total_patterns"] >= 8
 
 
-def test_catalogo_oficial_tiene_35_patrones_con_nombre_oficial_y_referencia_estandar(tmp_path):
+def test_catalogo_oficial_tiene_70_patrones_con_nombre_oficial_y_referencia_estandar(tmp_path):
     from vault.autoria.patrones_diseno import CATALOGO_PATRONES, catalogo_ordenado, detectar_patrones
 
-    assert len(CATALOGO_PATRONES) == 35
+    assert len(CATALOGO_PATRONES) == 70
     cat = catalogo_ordenado()
-    assert cat["total_catalog"] == 35
+    assert cat["total_catalog"] == 70
+    por_cat = {g["category"]: g["count"] for g in cat["categories"]}
+    assert por_cat == {
+        "arquitectonicos": 20,
+        "creacionales": 8,
+        "estructurales": 10,
+        "comportamiento": 16,
+        "concurrencia_resiliencia": 16,
+    }
+    ids_cat = {p["id"] for p in cat["patterns"]}
+    assert len(ids_cat) == 70, "IDs duplicados en CATALOGO_PATRONES"
+    for requerido in (
+        "dispose-raii",
+        "acid-transactions",
+        "saga-compensation",
+        "durable-execution-checkpoint-replay",
+        "dag-workflow-orchestration",
+        "heartbeat-lease",
+        "graceful-shutdown",
+        "transactional-outbox",
+        "event-sourcing",
+        "anti-corruption-layer",
+        "idempotent-consumer",
+        "rate-limiter-throttling",
+        "backpressure",
+    ):
+        assert requerido in ids_cat, f"Falta patron critico en catalogo: {requerido}"
     for p in cat["patterns"]:
         assert p.get("official_name"), p
         assert p.get("reference"), p
@@ -397,3 +423,124 @@ def test_catalogo_oficial_tiene_35_patrones_con_nombre_oficial_y_referencia_esta
         assert esperado in ids, f"Falto detectar {esperado}: {sorted(ids)}"
     for item in det["patterns"]:
         assert item.get("official_name") and item.get("reference"), item
+
+
+def test_detector_detecta_ciclo_de_vida_acid_dispose_saga_checkpoint_dag_y_heartbeat(tmp_path):
+    from vault.autoria.patrones_diseno import detectar_patrones
+
+    repo = tmp_path / "durable-engine"
+    (repo / "py").mkdir(parents=True)
+    (repo / "ts").mkdir(parents=True)
+
+    (repo / "py" / "lifecycle.py").write_text(
+        textwrap.dedent(
+            """\
+            from contextlib import ExitStack
+            from graphlib import TopologicalSorter
+
+            class LockResourceGuard:
+                def __enter__(self): return self
+                def __exit__(self, *a): self.dispose()
+                def dispose(self): pass
+
+            def run_scoped():
+                with ExitStack() as stack:
+                    return stack
+
+            class SqlTransactionManager:
+                def begin(self): pass
+                def commit(self): pass
+                def rollback(self): pass
+
+            class OrderSagaOrchestrator:
+                def execute(self): pass
+                def compensate(self): pass
+
+            class JsonlCheckpointStore:
+                def save_checkpoint(self, state): pass
+                def load_checkpoint(self, run_id): return None
+
+            class PipelineWorkflowDAG:
+                def plan(self):
+                    return TopologicalSorter({})
+
+            class WorkerLeaseManager:
+                def acquire_lease(self, key): return True
+                def renew_lease(self, key): return True
+
+            class ServiceGracefulShutdown:
+                def drain(self): pass
+
+            class OrderOutboxRelay:
+                pass
+
+            class OrderEventStore:
+                pass
+
+            class WebhookIdempotentConsumer:
+                pass
+
+            class ApiRateLimiter:
+                pass
+
+            class TaskBoundedQueue:
+                pass
+
+            class DbConnectionPool:
+                pass
+
+            class InvoiceDTO:
+                pass
+
+            class ChatMediator:
+                pass
+
+            class AstRuleVisitor:
+                pass
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    (repo / "ts" / "worker.ts").write_text(
+        textwrap.dedent(
+            """\
+            export class Handle implements IDisposable {
+              dispose(): void {}
+            }
+            export class BillingTransactionManager {
+              beginTransaction() {}
+            }
+            process.on('SIGTERM', () => {});
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    det = detectar_patrones(repo)
+    assert det["ok"] is True
+    ids = {p["id"] for p in det["patterns"]}
+    esperados = {
+        "dispose-raii",
+        "acid-transactions",
+        "saga-compensation",
+        "durable-execution-checkpoint-replay",
+        "dag-workflow-orchestration",
+        "heartbeat-lease",
+        "graceful-shutdown",
+        "transactional-outbox",
+        "event-sourcing",
+        "idempotent-consumer",
+        "rate-limiter-throttling",
+        "backpressure",
+        "object-pool",
+        "data-transfer-object",
+        "mediator",
+        "visitor",
+    }
+    assert esperados.issubset(ids), f"Faltaron: {sorted(esperados - ids)}"
+    # Verificar evidencia multi-lenguaje en Dispose y ACID
+    por_id = {p["id"]: p for p in det["patterns"]}
+    assert any(f.endswith("worker.ts") for f in por_id["dispose-raii"]["files"])
+    assert any(f.endswith("worker.ts") for f in por_id["acid-transactions"]["files"])
+    assert any(f.endswith("worker.ts") for f in por_id["graceful-shutdown"]["files"])

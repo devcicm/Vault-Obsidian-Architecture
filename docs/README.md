@@ -30,6 +30,7 @@ cada cambio.
 | Documento | Para qué |
 |---|---|
 | [Onboarding](MODO-AGENTICO-ONBOARDING.md) | Poblar un vault desde un proyecto que no tenía |
+| [Orquestación y ciclo de vida](MODO-AGENTICO-ORQUESTACION.md) | Marco transversal de ejecución durable, DAG, ACID, resiliencia y patrón `Dispose`/RAII |
 | [Sanación](MODO-AGENTICO-SANACION.md) | Adaptar un vault preexistente sin borrar nada |
 
 ## Arquitectura

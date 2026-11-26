@@ -37,27 +37,25 @@ LLM) puede invocar. Cada skill tiene:
 | `vault-ingest` | v1.0 | `agent/skills/vault-ingest/SKILL.md` | — | `scripts/vault_ingest.py` | Ingiere fuentes externas con preflight anti-poison no desactivable, archivo inmutable (AP-73) y trazabilidad (AP-74) |
 | `vault-code-review` | v1.0 | `agent/skills/vault-code-review/SKILL.md` | — | `scripts/vault_code_review.py` | Revisa PRs, diffs o archivos resolviendo `@vault:` por símbolo/ID corto, `PAT-10`, RDD, seguridad acotada al diff y visor HTML clicable |
 | `vault-curate` | v1.0 | `agent/skills/vault-curate/SKILL.md` | — | — (orquesta curación batch `SP-05` vía `vault_ronda` y `vault_propagate`) | Consolida banderas `FLAG-NNN` en lote (`--curate-plan`/`--curate-apply`), estampa `source_flags` y marca desacuerdos bilaterales `PAT-7` sin sobrescribir |
+| `vault-orquestacion` | v1.0 | `agent/skills/vault-orquestacion/SKILL.md` | — | — (orquesta el marco de 5 pilares `MODO-AGENTICO-ORQUESTACION.md`) | Guía el diagnóstico, diseño, implementación y registro del ciclo de vida moderno de ejecución durable, DAG, ACID, Saga y patrón `Dispose`/RAII |
 
-Lo que la wheel lleva son los **puntos de entrada** de las skills cuyo entry point es un script del catálogo
-(`vault_sanacion`, `vault_onboard`, `vault_sdd_init`): instalado el paquete se
-invocan como `vault run vault_<nombre> …` con los mismos argumentos que el
+Lo que la wheel lleva son los **puntos de entrada** de las skills cuyo entry point es una tool operativa del catálogo
+(por ejemplo `vault_sanacion`, `vault_onboard`, `vault_sdd_init`, `vault_move`, `vault_backup`, `vault_context_pack`, `vault_supersede`, `vault_ingest`, `vault_code_review`): instalado el paquete se
+invocan como `vault run <tool> …` con los mismos argumentos que el
 script. **No lleva las definiciones `SKILL.md`**: un agente las encuentra por la
 ruta `agent/skills/` del repositorio, o copiando esa carpeta junto al agente.
+Las skills orquestadoras (`entry-point: none`) combinan tools existentes del catálogo sin añadir tools nuevas;
 `vault-toolkit-audit` es mantenimiento del estándar y no está en la wheel: solo
 corre desde un checkout (`python scripts/vault_toolkit_audit.py …`).
 
-Las tres primeras cubren los tres recorridos que el estándar reconoce —poblar
-un vault, sanar uno que ya existe, documentar el estándar sobre el que se
-apoyan—, y ese es el criterio para que exista una skill y no solo una tool:
+El criterio para que exista una skill y no solo una tool es siempre el mismo:
 **hay skill donde hay un procedimiento que un agente tiene que decidir**, no
-donde hay un comando que ejecutar.
-
-La cuarta (`vault-toolkit-audit`) es un recorrido de otro tipo: el que decide
-**si el toolkit hace lo que declara**. Sin ella, medir el catálogo era una
-actividad de una persona —leer el informe, decidir qué congelar, cuándo
-recongelar— que cada vez se hacía de otra manera; con ella, el procedimiento
-—barrido completo, veredicto por tool, baseline que solo encoge, informe
-derivado— queda escrito y es el mismo para quien lo ejecute.
+donde hay un comando aislado que ejecutar. Por eso coexisten skills de recorrido
+sobre un vault (poblar, sanar, orquestar ciclo de vida, curar, recordar, decidir,
+revisar código, ingestar, respaldar, mover), skills de diagnóstico MCP y una
+skill de auditoría del propio estándar (`vault-toolkit-audit`), donde el
+procedimiento —barrido completo, veredicto por tool, baseline que solo encoge,
+informe derivado— queda escrito y es el mismo para quien lo ejecute.
 
 Desde v2.1, `vault-onboard` y `vault-sanacion` piden que el resultado al usuario
 identifique la versión de la definición, el destino y la evidencia disponible.
@@ -78,7 +76,7 @@ Una skill vive en **dos piezas** y ambas tienen que estar presentes:
 | Pieza | Ruta | Para qué |
 |---|---|---|
 | **Definición** | `agent/skills/<nombre>/SKILL.md` | Lo que el agente descubre e invoca (`/<nombre>`). Frontmatter con `name`, `description`, `allowed-tools`, `argument-hint`. |
-| **Entry point** | `scripts/vault_<nombre>.py` | El código real. La definición sin script es una tool alucinada (AP-01/AP-04). |
+| **Entry point** | `scripts/<entry_point>.py` o `entry-point: none` (orquestadora) | El código real o las tools del catálogo que orquesta. Una definición sin script ni comandos `vault run` válidos es una tool alucinada (AP-01/AP-04). |
 
 **No hay paso de instalación.** El descubrimiento es por convención de ruta:
 un agente que abre este repo encuentra `agent/skills/` automáticamente. No se
@@ -134,7 +132,7 @@ en este repo resuelve a `vault-sandbox/`.
 
 > Las **tool skills** son capacidades invocables como comandos de shell. Cada una
 > tiene un propósito, una interfaz de argumentos y un contrato de salida.
-> A diferencia de las procedure skills (sdd-init, sanacion, onboard), una tool skill
+> A diferencia de las procedure skills (`agent/skills/*/SKILL.md`), una tool skill
 > es un comando que se ejecuta directamente.
 
 ### Cómo invocar una tool
@@ -266,7 +264,7 @@ en el `.mcp.json` del proyecto consumidor es todo el registro.
 
 ---
 
-### `vault-sdd-init` v2.0
+### `vault-sdd-init` v2.1
 
 ```
 +---------------------------------------------+
@@ -290,11 +288,14 @@ python scripts/vault_sdd_init.py --bilingual
 # Dry-run: muestra plan sin escribir
 python scripts/vault_sdd_init.py --bilingual --dry-run
 
+# Verificar drift sin escribir
+python scripts/vault_sdd_init.py --check
+
 # Especificar vault root alternativo
 python scripts/vault_sdd_init.py --vault-root /path/to/vault --bilingual
 
-# Forzar re-generación
-python scripts/vault_sdd_init.py --bilingual --force
+# Forzar re-generación (y regenerar gaps si se solicita explícitamente)
+python scripts/vault_sdd_init.py --bilingual --force --regenerate-gaps
 ```
 
 #### Comportamiento
@@ -393,7 +394,7 @@ LLM) can invoke. Each skill has:
 
 (See table above in ES section.)
 
-### `vault-sdd-init` v2.0
+### `vault-sdd-init` v2.1
 
 #### Purpose
 

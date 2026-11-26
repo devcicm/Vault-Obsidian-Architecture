@@ -1,7 +1,7 @@
 """Contrato de las skills: definición ↔ entry point ↔ documentación.
 
-Una skill vive en dos piezas (`.claude/skills/<x>/SKILL.md` y el script que
-ejecuta). Si divergen, el agente invoca argumentos que no existen — que es
+Una skill vive en dos piezas (`agent/skills/<x>/SKILL.md` y el script que
+ejecuta, o las tools `vault run` que orquesta si declara `entry-point: none`). Si divergen, el agente invoca argumentos que no existen — que es
 exactamente AP-01/AP-04 (tool alucinada) por la puerta de atrás.
 
 Ancla además el rango de antipatrones: se escribía con `len(aps)` (el conteo)
@@ -94,10 +94,16 @@ def test_cada_comando_vault_run_es_valido_para_su_tool(skill_path):
     that requires a value gets one. The old vault-backup taught
     `vault run vault_backup --verify` with no value, and the tests passed."""
     from apoyo import comandos_vault_run, flags_de_argparse
+    from vault.meta_toolkit.resolucion_producto import resolver_producto
 
     for tool, tokens in comandos_vault_run(skill_path.read_text(encoding="utf-8")):
         script = REPO_ROOT / "scripts" / f"{tool}.py"
         assert script.exists(), f"{skill_path.parent.name}: vault run {tool} no existe"
+        resolucion = resolver_producto(tool)
+        assert resolucion.estado == "installed", (
+            f"{skill_path.parent.name}: `vault run {tool}` no es una tool instalada "
+            f"(estado={resolucion.estado!r}); usa `python scripts/{tool}.py` si es de checkout"
+        )
         flags = flags_de_argparse(script)
         for i, token in enumerate(tokens):
             if not token.startswith("--"):

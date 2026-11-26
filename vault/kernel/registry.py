@@ -420,6 +420,7 @@ DOCS_DEL_REPO: Dict[str, tuple] = {
     "MAPA-MANIFIESTO.md": ("referencia", "cada titular del manifiesto clasificado"),
     "METRICAS.md": ("referencia", "métricas de desarrollo y producto, derivado"),
     "MODO-AGENTICO-ONBOARDING.md": ("guia", "poblar un vault desde un proyecto que no tenía"),
+    "MODO-AGENTICO-ORQUESTACION.md": ("guia", "marco transversal de ciclo de vida de ejecución durable, ACID, orquestación y patrón Dispose/RAII"),
     "MODO-AGENTICO-SANACION.md": ("guia", "adaptar un vault preexistente sin borrar nada"),
     "PUERTAS.md": ("referencia", "qué mide cada puerta y cómo se arregla, derivado"),
     "README.md": ("indice", "índice de docs/, escrito a mano"),

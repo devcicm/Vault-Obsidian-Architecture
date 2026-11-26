@@ -21,12 +21,12 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~13.000 líneas). Fuente normativa. |
 | `scripts/*.py` | ~173 scripts, 130 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (8076 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (8086 tests). Toda norma con guard debe tener test. |
 | `normas/` | Normas como paquete (`normas/<código>/`: `norma.py`, `porque.md`, `guard.py`, `heal.py`, `test_*.py`). Las carga `vault_norms_catalog` en su sitio del catálogo; la forma la vigila `--check-framework`. Desde m186 toda norma vive aquí (cuántas, `NORMAS_EN_PAQUETE`). `guard.py`/`heal.py` son derivados —apuntan a la función dueña; los sanadores salen de `vault_norms_catalog.SANADORES`— y se regeneran con `vault_norms_engine.escribir_caras_derivadas`, no a mano. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
 | `vault-sandbox/` | **Único** vault de pruebas del repo. Todo runtime va aquí. |
-| `docs/` | SDD, skills, `MODO-AGENTICO-SANACION.md` (12 fases para sanar un vault preexistente) y `MODO-AGENTICO-ONBOARDING.md` (7 fases para poblar uno desde un proyecto sin vault). Allí la regla es *nada se borra*; aquí, **nada se inventa**. |
+| `docs/` | SDD, skills, `MODO-AGENTICO-SANACION.md` (12 fases para sanar un vault preexistente), `MODO-AGENTICO-ONBOARDING.md` (7 fases para poblar uno desde un proyecto sin vault) y `MODO-AGENTICO-ORQUESTACION.md` (5 pilares de ciclo de vida de ejecución durable, ACID y `Dispose`/RAII). Allí la regla es *nada se borra*; aquí, **nada se inventa**. |
 
 ---
 

@@ -1,8 +1,8 @@
 ---
 name: vault-toolkit-audit
 description: Audits every tool of the toolkit against its declared function — it runs each tool's documented example for real, checks its envelope against the contract, and measures whether a second run rewrites the vault. Use when auditing the toolkit, when a tool's behaviour has to be measured instead of declared, or before declaring a change closed.
-allowed-tools: Bash(python *) Bash(vault *) Read Glob Grep
-argument-hint: "[--todo] [--grupo N] [--tools a,b] [--check] [--freeze] [--doc]"
+allowed-tools: Bash(python *) Read Glob Grep
+argument-hint: "[--todo] [--grupo N] [--tools a,b] [--check] [--strict] [--freeze] [--admitir-nuevos] [--doc] [--parcial]"
 version: "1.0"
 ---
 
@@ -48,8 +48,10 @@ this tool with `INVALID_ACTION` and the reason *"mantenimiento del estándar,
 no operación sobre un vault"*: it audits the standard itself (the catalog and
 the contracts in this repository), so it belongs to a checkout, not to a vault
 consumer. `vault run` dispatches the operations on a vault; this one operates
-on the repo. The other three skills (`vault-sdd-init`, `vault-sanacion`,
-`vault-onboard`) do run through `vault run`, because they act on a vault.
+on the repo. The vault-facing operational skills (such as `vault-sdd-init`,
+`vault-sanacion`, `vault-onboard`, `vault-move`, `vault-backup`, `vault-ingest`,
+`vault-code-review`, and the orchestration skills) run through `vault run`
+because they act on a vault.
 
 ## Arguments
 

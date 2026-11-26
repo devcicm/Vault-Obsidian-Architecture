@@ -40,6 +40,7 @@
 | **Code Review** | Revisar diff contra reglas del vault, ADRs y `SP-06` | [agent/skills/vault-code-review/SKILL.md](agent/skills/vault-code-review/SKILL.md) |
 | **Sanación de vault ajeno** | Sanar un vault preexistente sin borrar nada (12 fases) | [agent/skills/vault-sanacion/SKILL.md](agent/skills/vault-sanacion/SKILL.md) · [docs/MODO-AGENTICO-SANACION.md](docs/MODO-AGENTICO-SANACION.md) |
 | **Onboarding desde cero** | Poblar un vault desde un proyecto sin vault (7 fases) | [agent/skills/vault-onboard/SKILL.md](agent/skills/vault-onboard/SKILL.md) · [docs/MODO-AGENTICO-ONBOARDING.md](docs/MODO-AGENTICO-ONBOARDING.md) |
+| **Orquestación y ciclo de vida** | Ejecución durable, DAG, ACID, Saga y patrón `Dispose`/RAII (5 pilares) | [agent/skills/vault-orquestacion/SKILL.md](agent/skills/vault-orquestacion/SKILL.md) · [docs/MODO-AGENTICO-ORQUESTACION.md](docs/MODO-AGENTICO-ORQUESTACION.md) |
 | **Operación y custodia** | Backup, mover notas, SDD, diagnóstico MCP y auditoría | [vault-backup](agent/skills/vault-backup/SKILL.md) · [vault-move](agent/skills/vault-move/SKILL.md) · [vault-sdd-init](agent/skills/vault-sdd-init/SKILL.md) · [vault-mcp-diagnose](agent/skills/vault-mcp-diagnose/SKILL.md) · [vault-toolkit-audit](agent/skills/vault-toolkit-audit/SKILL.md) |
 
 ## 4. Invariantes rápidos antes de entregar cualquier cambio

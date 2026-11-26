@@ -148,6 +148,96 @@ CATALOGO_PATRONES: Tuple[Dict[str, str], ...] = (
         "pattern_type": "architecture",
         "summary": "Procesa flujos de datos a traves de etapas o filtros componibles y desacoplados.",
     },
+    {
+        "id": "event-sourcing",
+        "order": "1.12",
+        "name": "Event Sourcing",
+        "official_name": "Event Sourcing",
+        "reference": "Fowler (2005) / Kleppmann (DDIA, 2017)",
+        "category": "arquitectonicos",
+        "pattern_type": "architecture",
+        "summary": "Persiste el estado de dominio como secuencia inmutable de eventos en vez de sobrescribir solo el estado actual.",
+    },
+    {
+        "id": "transactional-outbox",
+        "order": "1.13",
+        "name": "Transactional Outbox",
+        "official_name": "Transactional Outbox",
+        "reference": "Richardson (Microservices Patterns, 2018) / Hohpe & Woolf (EIP)",
+        "category": "arquitectonicos",
+        "pattern_type": "architecture",
+        "summary": "Registra estado y evento saliente en la misma transaccion atomica antes de publicarlo a un broker externo.",
+    },
+    {
+        "id": "dag-workflow-orchestration",
+        "order": "1.14",
+        "name": "Workflow / DAG Orchestration",
+        "official_name": "Directed Acyclic Graph (DAG) Workflow Orchestration",
+        "reference": "Hohpe & Woolf (EIP, 2003) / Modern Workflow Engines",
+        "category": "arquitectonicos",
+        "pattern_type": "architecture",
+        "summary": "Modela flujos de trabajo como grafo aciclico dirigido de tareas con dependencias explicitas y ejecucion paralelizable.",
+    },
+    {
+        "id": "modular-monolith",
+        "order": "1.15",
+        "name": "Modular Monolith",
+        "official_name": "Modular Monolith",
+        "reference": "Richards & Ford (2020) / Newman (2021)",
+        "category": "arquitectonicos",
+        "pattern_type": "architecture",
+        "summary": "Despliega una unidad unica particionada en modulos fuertemente encapsulados con contratos publicos explicitos.",
+    },
+    {
+        "id": "microservices-architecture",
+        "order": "1.16",
+        "name": "Microservices Architecture",
+        "official_name": "Microservices Architecture",
+        "reference": "Newman (2015) / Richardson (2018)",
+        "category": "arquitectonicos",
+        "pattern_type": "architecture",
+        "summary": "Descompone el sistema en servicios autonomos desplegables de forma independiente con propiedad aislada de datos.",
+    },
+    {
+        "id": "strangler-fig",
+        "order": "1.17",
+        "name": "Strangler Fig",
+        "official_name": "Strangler Fig Application",
+        "reference": "Fowler (2004) / Newman (2019)",
+        "category": "arquitectonicos",
+        "pattern_type": "architecture",
+        "summary": "Sustituye gradualmente un sistema heredado interceptando rutas hacia componentes nuevos sin reescritura total.",
+    },
+    {
+        "id": "backend-for-frontend",
+        "order": "1.18",
+        "name": "Backend for Frontend (BFF)",
+        "official_name": "Backends for Frontends (BFF)",
+        "reference": "Newman (2015)",
+        "category": "arquitectonicos",
+        "pattern_type": "architecture",
+        "summary": "Expone una fachada backend dedicada por tipo de cliente que agrega llamadas y adapta contratos.",
+    },
+    {
+        "id": "sidecar-ambassador",
+        "order": "1.19",
+        "name": "Sidecar / Ambassador",
+        "official_name": "Sidecar / Ambassador Pattern",
+        "reference": "Burns (Designing Distributed Systems, 2018)",
+        "category": "arquitectonicos",
+        "pattern_type": "architecture",
+        "summary": "Adjunta un proceso o contenedor auxiliar para red, seguridad u observabilidad sin contaminar la logica principal.",
+    },
+    {
+        "id": "anti-corruption-layer",
+        "order": "1.20",
+        "name": "Anti-Corruption Layer (ACL)",
+        "official_name": "Anti-Corruption Layer (DDD)",
+        "reference": "Evans (DDD, 2003)",
+        "category": "arquitectonicos",
+        "pattern_type": "architecture",
+        "summary": "Aisla el modelo del dominio frente a contratos o semanticas heredadas de sistemas externos mediante una capa traductora.",
+    },
     # 2. Creacionales
     {
         "id": "builder",
@@ -188,6 +278,46 @@ CATALOGO_PATRONES: Tuple[Dict[str, str], ...] = (
         "category": "creacionales",
         "pattern_type": "design",
         "summary": "Inyecta colaboradores desde fuera via contenedor, anotacion o fabrica en vez de instanciarlos internamente.",
+    },
+    {
+        "id": "prototype",
+        "order": "2.5",
+        "name": "Prototype",
+        "official_name": "Prototype",
+        "reference": "GoF (Gamma et al., 1994)",
+        "category": "creacionales",
+        "pattern_type": "design",
+        "summary": "Crea nuevas instancias clonando un objeto prototipo existente en lugar de reconstruirlo desde cero.",
+    },
+    {
+        "id": "object-pool",
+        "order": "2.6",
+        "name": "Object Pool",
+        "official_name": "Object Pool / Pooling",
+        "reference": "Kircher & Jain (POSA3, 2004)",
+        "category": "creacionales",
+        "pattern_type": "design",
+        "summary": "Reutiliza un conjunto acotado de recursos costosos (conexiones, workers, buffers) evitando crear y destruir en cada uso.",
+    },
+    {
+        "id": "abstract-factory",
+        "order": "2.7",
+        "name": "Abstract Factory",
+        "official_name": "Abstract Factory",
+        "reference": "GoF (Gamma et al., 1994)",
+        "category": "creacionales",
+        "pattern_type": "design",
+        "summary": "Expone una interfaz para crear familias completas de objetos relacionados sin acoplar a clases concretas.",
+    },
+    {
+        "id": "lazy-initialization",
+        "order": "2.8",
+        "name": "Lazy Initialization",
+        "official_name": "Lazy Initialization",
+        "reference": "Fowler (PoEAA, 2002) / POSA3",
+        "category": "creacionales",
+        "pattern_type": "design",
+        "summary": "Difiere la creacion o calculo de un objeto costoso hasta el momento en que realmente se solicita.",
     },
     # 3. Estructurales
     {
@@ -239,6 +369,56 @@ CATALOGO_PATRONES: Tuple[Dict[str, str], ...] = (
         "category": "estructurales",
         "pattern_type": "design",
         "summary": "Anade responsabilidades dinamicamente envolviendo componentes o funciones sin alterar su interfaz.",
+    },
+    {
+        "id": "bridge",
+        "order": "3.6",
+        "name": "Bridge",
+        "official_name": "Bridge",
+        "reference": "GoF (Gamma et al., 1994)",
+        "category": "estructurales",
+        "pattern_type": "design",
+        "summary": "Desacopla una abstraccion de su implementacion para que ambas evolucionen de forma independiente.",
+    },
+    {
+        "id": "composite",
+        "order": "3.7",
+        "name": "Composite",
+        "official_name": "Composite",
+        "reference": "GoF (Gamma et al., 1994)",
+        "category": "estructurales",
+        "pattern_type": "design",
+        "summary": "Compone objetos en arboles jerarquicos permitiendo tratar elementos individuales y compuestos de manera uniforme.",
+    },
+    {
+        "id": "flyweight",
+        "order": "3.8",
+        "name": "Flyweight",
+        "official_name": "Flyweight",
+        "reference": "GoF (Gamma et al., 1994)",
+        "category": "estructurales",
+        "pattern_type": "design",
+        "summary": "Comparte estado intrinseco inmutable entre multiples instancias ligeras para minimizar uso de memoria.",
+    },
+    {
+        "id": "data-transfer-object",
+        "order": "3.9",
+        "name": "Data Transfer Object (DTO)",
+        "official_name": "Data Transfer Object (DTO)",
+        "reference": "Fowler (PoEAA, 2002)",
+        "category": "estructurales",
+        "pattern_type": "design",
+        "summary": "Transporta datos serializables entre fronteras de capa o proceso sin exponer entidades ni logica interna.",
+    },
+    {
+        "id": "gateway-data-mapper",
+        "order": "3.10",
+        "name": "Gateway / Data Mapper",
+        "official_name": "Gateway / Data Mapper",
+        "reference": "Fowler (PoEAA, 2002)",
+        "category": "estructurales",
+        "pattern_type": "design",
+        "summary": "Encapsula llamadas a recursos externos o traduce bidireccionalmente entre objetos de dominio y persistencia.",
     },
     # 4. Comportamiento
     {
@@ -331,6 +511,76 @@ CATALOGO_PATRONES: Tuple[Dict[str, str], ...] = (
         "pattern_type": "design",
         "summary": "Agrupa cambios en una unidad transaccional o lote atomico con commit y rollback coordinados.",
     },
+    {
+        "id": "iterator",
+        "order": "4.10",
+        "name": "Iterator",
+        "official_name": "Iterator",
+        "reference": "GoF (Gamma et al., 1994)",
+        "category": "comportamiento",
+        "pattern_type": "design",
+        "summary": "Recorre secuencialmente elementos de una coleccion o stream sin exponer su representacion interna.",
+    },
+    {
+        "id": "mediator",
+        "order": "4.11",
+        "name": "Mediator",
+        "official_name": "Mediator",
+        "reference": "GoF (Gamma et al., 1994)",
+        "category": "comportamiento",
+        "pattern_type": "design",
+        "summary": "Centraliza interacciones complejas entre multiples componentes reduciendo acoplamiento muchos-a-muchos.",
+    },
+    {
+        "id": "visitor",
+        "order": "4.12",
+        "name": "Visitor",
+        "official_name": "Visitor",
+        "reference": "GoF (Gamma et al., 1994)",
+        "category": "comportamiento",
+        "pattern_type": "design",
+        "summary": "Separa operaciones nuevas sobre estructuras de nodos (p. ej. AST o grafos) sin alterar las clases visitadas.",
+    },
+    {
+        "id": "interpreter",
+        "order": "4.13",
+        "name": "Interpreter",
+        "official_name": "Interpreter",
+        "reference": "GoF (Gamma et al., 1994)",
+        "category": "comportamiento",
+        "pattern_type": "design",
+        "summary": "Define una gramatica o DSL y evalua expresiones mediante nodos ejecutables componibles.",
+    },
+    {
+        "id": "memento",
+        "order": "4.14",
+        "name": "Memento",
+        "official_name": "Memento",
+        "reference": "GoF (Gamma et al., 1994)",
+        "category": "comportamiento",
+        "pattern_type": "design",
+        "summary": "Captura y restaura el estado interno de un objeto sin romper su encapsulamiento.",
+    },
+    {
+        "id": "null-object",
+        "order": "4.15",
+        "name": "Null Object",
+        "official_name": "Null Object",
+        "reference": "Woolf (PLoPD3, 1997) / Fowler (Refactoring)",
+        "category": "comportamiento",
+        "pattern_type": "design",
+        "summary": "Sustituye referencias nulas por una implementacion inofensiva que evita condicionales repetitivos.",
+    },
+    {
+        "id": "policy-rule-engine",
+        "order": "4.16",
+        "name": "Policy / Rule Engine",
+        "official_name": "Policy / Rules Engine Pattern",
+        "reference": "Evans (DDD, 2003) / Fowler",
+        "category": "comportamiento",
+        "pattern_type": "design",
+        "summary": "Evalua politicas y reglas de decision declarativas separadas del flujo de control principal.",
+    },
     # 5. Concurrencia y Resiliencia
     {
         "id": "atomic-write",
@@ -391,6 +641,106 @@ CATALOGO_PATRONES: Tuple[Dict[str, str], ...] = (
         "category": "concurrencia_resiliencia",
         "pattern_type": "code",
         "summary": "Corta cascadas de fallos hacia dependencias inestables y reintenta con espera exponencial acotada.",
+    },
+    {
+        "id": "dispose-raii",
+        "order": "5.7",
+        "name": "Dispose / RAII",
+        "official_name": "Dispose Pattern / Resource Acquisition Is Initialization (RAII)",
+        "reference": "Stroustrup (RAII) / .NET IDisposable / Python PEP 343",
+        "category": "concurrencia_resiliencia",
+        "pattern_type": "code",
+        "summary": "Garantiza liberacion determinista e idempotente de recursos (locks, sockets, archivos, timers, subprocesos) al salir del ambito o ante fallo.",
+    },
+    {
+        "id": "acid-transactions",
+        "order": "5.8",
+        "name": "ACID Transactions",
+        "official_name": "ACID Transaction (Atomicity, Consistency, Isolation, Durability)",
+        "reference": "Haerder & Reuter (1983) / Gray & Reuter (1993) / Kleppmann (DDIA, 2017)",
+        "category": "concurrencia_resiliencia",
+        "pattern_type": "code",
+        "summary": "Garantiza atomicidad, consistencia, aislamiento y durabilidad en mutaciones compuestas evitando estados parciales corruptos.",
+    },
+    {
+        "id": "saga-compensation",
+        "order": "5.9",
+        "name": "Saga / Compensating Transaction",
+        "official_name": "Saga Pattern (Compensating Transactions)",
+        "reference": "Garcia-Molina & Salem (1987) / Richardson (2018)",
+        "category": "concurrencia_resiliencia",
+        "pattern_type": "code",
+        "summary": "Coordina operaciones largas o distribuidas como secuencia de pasos locales con compensacion explicita ante fallo.",
+    },
+    {
+        "id": "durable-execution-checkpoint-replay",
+        "order": "5.10",
+        "name": "Durable Execution / Checkpoint & Replay",
+        "official_name": "Durable Execution (Checkpoint & Deterministic Replay)",
+        "reference": "Kleppmann (DDIA, 2017) / Temporal Durable Execution",
+        "category": "concurrencia_resiliencia",
+        "pattern_type": "code",
+        "summary": "Persiste checkpoints deterministas del progreso para reanudar o reproducir flujos interrumpidos sin repetir efectos secundarios.",
+    },
+    {
+        "id": "idempotent-consumer",
+        "order": "5.11",
+        "name": "Idempotent Receiver / Consumer",
+        "official_name": "Idempotent Receiver / Consumer",
+        "reference": "Hohpe & Woolf (EIP, 2003) / Richardson (2018)",
+        "category": "concurrencia_resiliencia",
+        "pattern_type": "code",
+        "summary": "Deduplica comandos o eventos repetidos mediante clave de idempotencia para tolerar reintentos seguros.",
+    },
+    {
+        "id": "heartbeat-lease",
+        "order": "5.12",
+        "name": "Heartbeat & Lease",
+        "official_name": "Heartbeat & Time-Bounded Lease",
+        "reference": "Gray & Cheriton (1989) / Kleppmann (DDIA, 2017)",
+        "category": "concurrencia_resiliencia",
+        "pattern_type": "code",
+        "summary": "Mantiene concesiones temporales renovadas por latidos periodicos para detectar caidas y liberar bloqueos huerfanos.",
+    },
+    {
+        "id": "timeout-deadline-propagation",
+        "order": "5.13",
+        "name": "Timeout & Deadline Propagation",
+        "official_name": "Timeout & Deadline Propagation",
+        "reference": "Nygard (Release It!, 2007) / Beyer et al. (Google SRE, 2016)",
+        "category": "concurrencia_resiliencia",
+        "pattern_type": "code",
+        "summary": "Impone limites explicitos de espera y propaga el presupuesto de tiempo restante a cada llamada descendente.",
+    },
+    {
+        "id": "rate-limiter-throttling",
+        "order": "5.14",
+        "name": "Rate Limiter / Throttling",
+        "official_name": "Rate Limiting / Throttling (Token Bucket / Sliding Window)",
+        "reference": "Nygard (Release It!, 2007) / Microsoft Cloud Design Patterns",
+        "category": "concurrencia_resiliencia",
+        "pattern_type": "code",
+        "summary": "Limita la tasa de solicitudes para proteger servicios, cuotas y recursos compartidos frente a picos de trafico.",
+    },
+    {
+        "id": "backpressure",
+        "order": "5.15",
+        "name": "Backpressure / Bounded Queue",
+        "official_name": "Backpressure / Bounded Queue",
+        "reference": "Nygard (Release It!, 2007) / Reactive Systems",
+        "category": "concurrencia_resiliencia",
+        "pattern_type": "code",
+        "summary": "Acota colas intermedias y frena productores cuando los consumidores se saturan para evitar agotamiento de memoria.",
+    },
+    {
+        "id": "graceful-shutdown",
+        "order": "5.16",
+        "name": "Graceful Shutdown & Draining",
+        "official_name": "Graceful Shutdown (Signal Handling & Draining)",
+        "reference": "Nygard (Release It!, 2007) / POSIX Signal Handling",
+        "category": "concurrencia_resiliencia",
+        "pattern_type": "code",
+        "summary": "Intercepta SIGTERM/SIGINT, deja de aceptar trabajo nuevo, drena operaciones en curso y ejecuta dispose ordenado antes de salir.",
     },
 )
 
@@ -566,6 +916,114 @@ _REGLAS_GENERICAS: Tuple[Tuple[str, re.Pattern, str, str], ...] = (
         re.compile(r"\b(?:class\s+([A-Za-z0-9_]*CircuitBreaker)|(?:function|const)\s+(retryWithBackoff|exponentialBackoff))\b"),
         "evidencia_fuerte",
         "Mecanismo de resiliencia Circuit Breaker o retry con backoff exponencial",
+    ),
+    (
+        "dispose-raii",
+        re.compile(r"\b(?:implements\s+(?:IDisposable|IAsyncDisposable|Disposable)|Symbol\.(?:dispose|asyncDispose)|\busing\s+(?:const|var)\s+([A-Za-z0-9_]+)|(?:async\s+)?(dispose|asyncDispose)\s*\(\s*\))"),
+        "evidencia_fuerte",
+        "Patron Dispose / RAII para liberacion determinista de recursos",
+    ),
+    (
+        "acid-transactions",
+        re.compile(r"\b(?:class|interface)\s+([A-Za-z0-9_]*(?:TransactionManager|AcidTransaction))|\b(beginTransaction|IsolationLevel)\b"),
+        "evidencia_fuerte",
+        "Gestor o contrato explicito de transacciones ACID",
+    ),
+    (
+        "saga-compensation",
+        re.compile(r"\b(?:class|interface)\s+([A-Za-z0-9_]*(?:SagaOrchestrator|SagaCoordinator|CompensatingAction|SagaStep))\b"),
+        "evidencia_fuerte",
+        "Orquestador o paso compensatorio del patron Saga",
+    ),
+    (
+        "durable-execution-checkpoint-replay",
+        re.compile(r"\b(?:class|interface)\s+([A-Za-z0-9_]*(?:CheckpointStore|WorkflowCheckpoint|ReplayEngine|DurableExecutor))|\b(saveCheckpoint|replayEvents)\s*\("),
+        "evidencia_fuerte",
+        "Persistencia de checkpoints y replay determinista (Durable Execution)",
+    ),
+    (
+        "dag-workflow-orchestration",
+        re.compile(r"\b(?:class|interface)\s+([A-Za-z0-9_]*(?:WorkflowDAG|TaskGraph|DagExecutor|WorkflowEngine|WorkflowOrchestrator))\b"),
+        "evidencia_fuerte",
+        "Motor u orquestador de flujo de trabajo modelado como DAG",
+    ),
+    (
+        "heartbeat-lease",
+        re.compile(r"\b(?:class|interface)\s+([A-Za-z0-9_]*(?:LeaseManager|HeartbeatMonitor))|\b(renewLease|sendHeartbeat)\s*\("),
+        "evidencia_fuerte",
+        "Gestion de concesiones temporales (Lease) renovadas por Heartbeat",
+    ),
+    (
+        "graceful-shutdown",
+        re.compile(r"\b(?:class\s+([A-Za-z0-9_]*(?:GracefulShutdown|ShutdownCoordinator))|process\.on\(\s*['\"](SIGTERM|SIGINT)['\"])"),
+        "evidencia_fuerte",
+        "Manejo de senales SIGTERM/SIGINT y drenaje ordenado (Graceful Shutdown)",
+    ),
+    (
+        "transactional-outbox",
+        re.compile(r"\b(?:class|interface)\s+([A-Za-z0-9_]*(?:OutboxRepository|OutboxRelay|OutboxPublisher|TransactionalOutbox))\b"),
+        "evidencia_fuerte",
+        "Implementacion explicita del patron Transactional Outbox",
+    ),
+    (
+        "event-sourcing",
+        re.compile(r"\b(?:class|interface)\s+([A-Za-z0-9_]*(?:EventStore|EventSourcedAggregate|AggregateRoot))\b"),
+        "evidencia_fuerte",
+        "Almacen o agregado reconstruido mediante Event Sourcing",
+    ),
+    (
+        "anti-corruption-layer",
+        re.compile(r"\b(?:class|interface)\s+([A-Za-z0-9_]*(?:AntiCorruptionLayer|ACLTranslator))\b"),
+        "evidencia_fuerte",
+        "Capa traductora Anti-Corruption Layer (DDD)",
+    ),
+    (
+        "idempotent-consumer",
+        re.compile(r"\b(?:class|interface)\s+([A-Za-z0-9_]*(?:IdempotentConsumer|IdempotencyStore|IdempotencyGuard))\b"),
+        "evidencia_fuerte",
+        "Deduplicacion de comandos o eventos mediante Idempotent Consumer",
+    ),
+    (
+        "rate-limiter-throttling",
+        re.compile(r"\b(?:class|interface)\s+([A-Za-z0-9_]*(?:RateLimiter|TokenBucket|LeakyBucket|SlidingWindowLimiter))\b"),
+        "evidencia_fuerte",
+        "Limitador de tasa (Rate Limiter / Throttling)",
+    ),
+    (
+        "backpressure",
+        re.compile(r"\b(?:class|interface)\s+([A-Za-z0-9_]*(?:BoundedQueue|BackpressureController))\b"),
+        "evidencia_fuerte",
+        "Cola acotada o control explicito de Backpressure",
+    ),
+    (
+        "timeout-deadline-propagation",
+        re.compile(r"\b(?:class\s+([A-Za-z0-9_]*DeadlineContext)|context\.(WithDeadline|WithTimeout)\s*\()"),
+        "evidencia_fuerte",
+        "Propagacion explicita de timeout o deadline entre llamadas",
+    ),
+    (
+        "object-pool",
+        re.compile(r"\b(?:class|struct)\s+([A-Za-z0-9_]*(?:ObjectPool|ConnectionPool|WorkerPool))\b"),
+        "evidencia_fuerte",
+        "Pool acotado de recursos reutilizables (Object Pool)",
+    ),
+    (
+        "data-transfer-object",
+        re.compile(r"\b(?:class|interface|type|record)\s+([A-Za-z0-9_]+DTO)\b"),
+        "evidencia_fuerte",
+        "Objeto de transferencia serializable (DTO)",
+    ),
+    (
+        "mediator",
+        re.compile(r"\b(?:class|interface)\s+([A-Za-z0-9_]*Mediator)\b"),
+        "evidencia_fuerte",
+        "Componente centralizador de comunicaciones estilo Mediator",
+    ),
+    (
+        "visitor",
+        re.compile(r"\b(?:class|interface)\s+([A-Za-z0-9_]*Visitor)\b"),
+        "evidencia_fuerte",
+        "Clase Visitor para recorrer y operar sobre estructuras de nodos",
     ),
 )
 
@@ -1016,6 +1474,258 @@ def _detectar_python(
                     "evidencia_fuerte",
                     "Clase CircuitBreaker para resiliencia frente a fallos en cascada",
                 )
+            if (
+                cname.endswith(("Disposable", "ResourceGuard", "ScopeGuard"))
+                or "dispose" in metodos
+                or "aclose" in metodos
+                or (
+                    {"__enter__", "__exit__"}.issubset(metodos)
+                    and bool(metodos.intersection({"close", "dispose", "release", "cleanup", "shutdown"}))
+                )
+                or {"__aenter__", "__aexit__"}.issubset(metodos)
+            ):
+                agregar(
+                    "dispose-raii",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Liberacion determinista de recursos mediante protocolo Dispose / Context Manager (RAII)",
+                )
+            if cname.endswith(("TransactionManager", "AcidTransaction")) or (
+                {"begin", "commit", "rollback"}.issubset(metodos)
+            ):
+                agregar(
+                    "acid-transactions",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Gestor transaccional explicito con begin/commit/rollback (ACID)",
+                )
+            if cname.endswith(("SagaOrchestrator", "SagaCoordinator", "CompensatingAction", "SagaStep")) or (
+                "compensate" in metodos and bool(metodos.intersection({"execute", "run", "apply"}))
+            ):
+                agregar(
+                    "saga-compensation",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Orquestador o paso compensatorio del patron Saga",
+                )
+            if cname.endswith(("CheckpointStore", "WorkflowCheckpoint", "ReplayEngine", "DurableExecutor")) or (
+                {"save_checkpoint", "load_checkpoint"}.issubset(metodos)
+            ):
+                agregar(
+                    "durable-execution-checkpoint-replay",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Motor o almacen de checkpoints y replay determinista (Durable Execution)",
+                )
+            if cname.endswith(("WorkflowDAG", "TaskGraph", "DagExecutor", "WorkflowEngine", "WorkflowOrchestrator")):
+                agregar(
+                    "dag-workflow-orchestration",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Orquestador de flujo de trabajo modelado como grafo aciclico dirigido (DAG)",
+                )
+            if cname.endswith(("LeaseManager", "HeartbeatMonitor")) or (
+                {"acquire_lease", "renew_lease"}.issubset(metodos)
+            ):
+                agregar(
+                    "heartbeat-lease",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Control de concesiones temporales renovadas por Heartbeat & Lease",
+                )
+            if cname.endswith(("GracefulShutdown", "ShutdownCoordinator")):
+                agregar(
+                    "graceful-shutdown",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Coordinador de drenaje y cierre ordenado (Graceful Shutdown)",
+                )
+            if cname.endswith(("OutboxRepository", "OutboxRelay", "OutboxPublisher", "TransactionalOutbox")):
+                agregar(
+                    "transactional-outbox",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Componente explicito del patron Transactional Outbox",
+                )
+            if cname.endswith(("EventStore", "EventSourcedAggregate")) or (
+                cname.endswith("AggregateRoot") and bool(metodos.intersection({"apply_event", "replay"}))
+            ):
+                agregar(
+                    "event-sourcing",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Almacen o agregado reconstruido a partir de eventos (Event Sourcing)",
+                )
+            if cname.endswith(("AntiCorruptionLayer", "ACLTranslator")):
+                agregar(
+                    "anti-corruption-layer",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Capa traductora Anti-Corruption Layer frente a contratos externos",
+                )
+            if cname.endswith(("IdempotentConsumer", "IdempotencyStore", "IdempotencyGuard")):
+                agregar(
+                    "idempotent-consumer",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Guardia o almacen de deduplicacion estilo Idempotent Consumer",
+                )
+            if cname.endswith(("RateLimiter", "TokenBucket", "LeakyBucket", "SlidingWindowLimiter")):
+                agregar(
+                    "rate-limiter-throttling",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Limitador de tasa (Rate Limiter / Throttling)",
+                )
+            if cname.endswith(("BoundedQueue", "BackpressureController")):
+                agregar(
+                    "backpressure",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Cola acotada o regulador explicito de Backpressure",
+                )
+            if cname.endswith(("DeadlineContext", "TimeoutBudget")):
+                agregar(
+                    "timeout-deadline-propagation",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Propagacion explicita de presupuesto de tiempo (Timeout & Deadline)",
+                )
+            if cname.endswith(("ObjectPool", "ConnectionPool", "WorkerPool")):
+                agregar(
+                    "object-pool",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Pool de recursos reutilizables (Object Pool)",
+                )
+            if cname.endswith("AbstractFactory"):
+                agregar(
+                    "abstract-factory",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Fabrica abstracta para familias de objetos relacionados",
+                )
+            if cname.endswith("Prototype") or ("clone" in metodos and "Prototype" in cname):
+                agregar(
+                    "prototype",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Clase Prototype con clonacion de instancias",
+                )
+            if cname.endswith("Bridge"):
+                agregar(
+                    "bridge",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Separacion abstraccion/implementacion estilo Bridge",
+                )
+            if cname.endswith("Composite"):
+                agregar(
+                    "composite",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Estructura jerarquica uniforme estilo Composite",
+                )
+            if cname.endswith(("Flyweight", "FlyweightFactory")):
+                agregar(
+                    "flyweight",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Comparticion de estado intrinseco estilo Flyweight",
+                )
+            if cname.endswith("DTO") and len(cname) > 3:
+                agregar(
+                    "data-transfer-object",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Objeto de transferencia serializable entre fronteras (DTO)",
+                )
+            if cname.endswith(("DataMapper", "Gateway")):
+                agregar(
+                    "gateway-data-mapper",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Traductor Data Mapper o pasarela Gateway",
+                )
+            if cname.endswith("Mediator"):
+                agregar(
+                    "mediator",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Mediador centralizado de comunicaciones entre componentes",
+                )
+            if cname.endswith("Visitor") or any(_nombre_base(b) == "NodeVisitor" for b in nodo.bases):
+                agregar(
+                    "visitor",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Clase Visitor sobre estructura de nodos o AST",
+                )
+            if cname.endswith("Interpreter"):
+                agregar(
+                    "interpreter",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Evaluador de gramatica o DSL estilo Interpreter",
+                )
+            if cname.endswith("Memento"):
+                agregar(
+                    "memento",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Instantanea encapsulada de estado estilo Memento",
+                )
+            if cname.endswith("NullObject") or cname.startswith("Null") and len(cname) > 4 and metodos:
+                if cname.endswith("NullObject"):
+                    agregar(
+                        "null-object",
+                        nodo.lineno,
+                        cname,
+                        "evidencia_fuerte",
+                        "Implementacion inofensiva estilo Null Object",
+                    )
+            if cname.endswith(("PolicyEngine", "RuleEngine", "RulesEngine")):
+                agregar(
+                    "policy-rule-engine",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Motor declarativo de politicas o reglas de negocio",
+                )
+            if {"__iter__", "__next__"}.issubset(metodos):
+                agregar(
+                    "iterator",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Protocolo explicito Iterator (`__iter__` + `__next__`)",
+                )
             if cname.endswith(("Scheduler",)) or cname == "Wave":
                 agregar(
                     "wave-resource-scheduler",
@@ -1203,6 +1913,38 @@ def _detectar_python(
                     "evidencia_fuerte",
                     "Funcion de reintento con espera exponencial acotada",
                 )
+            if fname in ("save_checkpoint", "load_checkpoint", "replay_events", "replay_workflow"):
+                agregar(
+                    "durable-execution-checkpoint-replay",
+                    nodo.lineno,
+                    fname,
+                    "evidencia_fuerte",
+                    "Funcion de checkpoint o replay determinista (Durable Execution)",
+                )
+            if fname in ("topological_sort", "execute_dag", "run_workflow_dag"):
+                agregar(
+                    "dag-workflow-orchestration",
+                    nodo.lineno,
+                    fname,
+                    "evidencia_fuerte",
+                    "Ordenamiento topologico o ejecucion de grafo aciclico dirigido (DAG)",
+                )
+            if fname in ("renew_lease", "send_heartbeat", "acquire_lease"):
+                agregar(
+                    "heartbeat-lease",
+                    nodo.lineno,
+                    fname,
+                    "evidencia_fuerte",
+                    "Renovacion de lease o latido periodico (Heartbeat & Lease)",
+                )
+            if fname in ("graceful_shutdown", "drain_and_shutdown", "install_signal_handlers"):
+                agregar(
+                    "graceful-shutdown",
+                    nodo.lineno,
+                    fname,
+                    "evidencia_fuerte",
+                    "Manejador de cierre ordenado y drenaje de recursos (Graceful Shutdown)",
+                )
             if any(_es_decorador(d, "contextmanager") for d in nodo.decorator_list) and any(
                 k in fname.lower() for k in ("transaction", "batch", "unit_of_work", "uow", "lote")
             ):
@@ -1213,6 +1955,37 @@ def _detectar_python(
                     "evidencia_fuerte",
                     "Context manager transaccional o por lote estilo Unit of Work",
                 )
+            if any(_es_decorador(d, "contextmanager") for d in nodo.decorator_list) and any(
+                k in fname.lower() for k in ("dispose", "resource", "managed_", "scoped_", "closing")
+            ):
+                agregar(
+                    "dispose-raii",
+                    nodo.lineno,
+                    fname,
+                    "evidencia_fuerte",
+                    "Context manager RAII/Dispose para adquisicion y liberacion garantizada de recursos",
+                )
+            for sub in ast.walk(nodo):
+                if isinstance(sub, ast.Call):
+                    cn_ext = _es_call_nombre(sub, {"ExitStack", "AsyncExitStack", "TopologicalSorter"})
+                    if cn_ext in ("ExitStack", "AsyncExitStack"):
+                        agregar(
+                            "dispose-raii",
+                            sub.lineno,
+                            f"{fname} ({cn_ext})",
+                            "evidencia_fuerte",
+                            f"Composicion determinista de liberacion de recursos via `{cn_ext}` (RAII/Dispose)",
+                        )
+                        break
+                    if cn_ext == "TopologicalSorter":
+                        agregar(
+                            "dag-workflow-orchestration",
+                            sub.lineno,
+                            f"{fname} (TopologicalSorter)",
+                            "evidencia_fuerte",
+                            "Planificacion determinista de dependencias DAG via `graphlib.TopologicalSorter`",
+                        )
+                        break
             if any(
                 isinstance(sub, ast.FunctionDef)
                 and any(
