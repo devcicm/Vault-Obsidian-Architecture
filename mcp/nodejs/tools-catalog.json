@@ -7014,7 +7014,15 @@
           },
           "tipos": {
             "type": "string",
-            "description": "Tipos de nota de la sección, separados por comas; el primero es el que vault_write escribe si la nota no trae type"
+            "description": "Tipos de nota de la sección separados por comas"
+          },
+          "subfolders": {
+            "type": "string",
+            "description": "Subcarpetas relativas separadas por comas a crear y registrar bajo la sección"
+          },
+          "sync": {
+            "type": "boolean",
+            "description": "Sincroniza folder-registry, index.md, índice maestro, search-index y graph.json"
           },
           "superseded-by": {
             "type": "string",

@@ -1271,6 +1271,24 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Qué contiene la sección",
                 "validators": [],
             },
+            "tipos": {
+                "type": "string",
+                "required": False,
+                "description": "Tipos de nota de la sección separados por comas",
+                "validators": [],
+            },
+            "subfolders": {
+                "type": "string",
+                "required": False,
+                "description": "Subcarpetas relativas separadas por comas a crear y registrar bajo la sección",
+                "validators": [],
+            },
+            "sync": {
+                "type": "boolean",
+                "required": False,
+                "description": "Sincroniza folder-registry, index.md, índice maestro, search-index y graph.json",
+                "validators": [],
+            },
             "superseded-by": {
                 "type": "string",
                 "required": False,

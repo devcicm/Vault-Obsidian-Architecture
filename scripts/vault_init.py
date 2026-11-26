@@ -1126,13 +1126,35 @@ def _inicializar_git(destino: Path) -> Dict[str, Any]:
 
 
 def _listar_vaults_de_la_casa() -> Dict[str, Any]:
-    """Los vaults de la casa, con lo que se sabe de cada uno sin abrirlo."""
+    """Los vaults de la casa y los externos declarados en el registro maestro."""
+    from vault.kernel.acceso_baules import listar_ecosistema_baules
     from vault.kernel.vault_home import listar_vaults_de_la_casa, master_home
 
     casa = master_home()
-    vaults = listar_vaults_de_la_casa()
-    return {"ok": True, "tool": "vault_init", "action": "list", "casa": str(casa),
-            "total": len(vaults), "vaults": vaults}
+    vaults = listar_vaults_de_la_casa(casa)
+    externos: List[Dict[str, Any]] = []
+    registry_path = str(casa / "registry.json")
+    registry_error = None
+    try:
+        ecosistema = listar_ecosistema_baules(casa)
+        registry_path = ecosistema.get("registry_path", registry_path)
+        externos = [v for v in ecosistema.get("vaults", []) if v.get("origin") != "master"]
+    except ValueError as exc:
+        registry_error = str(exc)
+    salida: Dict[str, Any] = {
+        "ok": True,
+        "tool": "vault_init",
+        "action": "list",
+        "casa": str(casa),
+        "total": len(vaults),
+        "vaults": vaults,
+        "external_total": len(externos),
+        "external_vaults": externos,
+        "registry_path": registry_path,
+    }
+    if registry_error:
+        salida["registry_warning"] = registry_error
+    return salida
 
 
 if __name__ == "__main__":

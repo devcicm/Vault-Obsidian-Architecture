@@ -306,19 +306,19 @@ def test_vault_run_acepta_scan_path_externo_en_preflight(tmp_path):
 def test_catalogo_oficial_tiene_70_patrones_con_nombre_oficial_y_referencia_estandar(tmp_path):
     from vault.autoria.patrones_diseno import CATALOGO_PATRONES, catalogo_ordenado, detectar_patrones
 
-    assert len(CATALOGO_PATRONES) == 70
+    assert len(CATALOGO_PATRONES) == 72
     cat = catalogo_ordenado()
-    assert cat["total_catalog"] == 70
+    assert cat["total_catalog"] == 72
     por_cat = {g["category"]: g["count"] for g in cat["categories"]}
     assert por_cat == {
-        "arquitectonicos": 20,
+        "arquitectonicos": 22,
         "creacionales": 8,
         "estructurales": 10,
         "comportamiento": 16,
         "concurrencia_resiliencia": 16,
     }
     ids_cat = {p["id"] for p in cat["patterns"]}
-    assert len(ids_cat) == 70, "IDs duplicados en CATALOGO_PATRONES"
+    assert len(ids_cat) == 72, "IDs duplicados en CATALOGO_PATRONES"
     for requerido in (
         "dispose-raii",
         "acid-transactions",
@@ -330,6 +330,8 @@ def test_catalogo_oficial_tiene_70_patrones_con_nombre_oficial_y_referencia_esta
         "transactional-outbox",
         "event-sourcing",
         "anti-corruption-layer",
+        "identity-access-management",
+        "multi-tenancy-isolation",
         "idempotent-consumer",
         "rate-limiter-throttling",
         "backpressure",

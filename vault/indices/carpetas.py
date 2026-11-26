@@ -68,40 +68,41 @@ class ServicioCarpetas:
     # ── Detección ────────────────────────────────────────────────────────────
 
     def detectar(self) -> List[Dict[str, Any]]:
+        """Detecta recursivamente subcarpetas personalizadas bajo toda sección del vault.
+
+        Aplica `PREFIJOS_IGNORADOS` (`.` y `_`) y omite symlinks en **todos** los
+        niveles de profundidad — antes solo bajaba 2 niveles y no filtraba en el
+        segundo, dejando ocultas subcarpetas de nivel 3+ y colando `_attachments`.
+        """
         raiz = self._repo.raiz
         ahora = self._ahora()
         encontradas: List[Dict[str, Any]] = []
 
-        for seccion in self._repo.ctx.secciones.ordenadas():
-            dir_seccion = raiz / seccion
-            if not dir_seccion.exists():
-                continue
-
-            for item in sorted(dir_seccion.iterdir()):
-                if not item.is_dir() or item.name.startswith(PREFIJOS_IGNORADOS):
+        def _recorrer(directorio: Path, seccion: str, parent_rel: str | None) -> None:
+            for item in sorted(directorio.iterdir()):
+                if not item.is_dir() or item.is_symlink():
                     continue
-
+                if item.name.startswith(PREFIJOS_IGNORADOS):
+                    continue
                 rel = _rel(raiz, item)
-                encontradas.append({
+                entrada: Dict[str, Any] = {
                     "path": rel,
                     "name": item.name,
                     "section": seccion,
                     "detected_at": ahora,
                     "type": "subfolder",
                     "created_by": "unknown",
-                })
+                }
+                if parent_rel is not None:
+                    entrada["parent"] = parent_rel
+                encontradas.append(entrada)
+                _recorrer(item, seccion, rel)
 
-                for sub in sorted(item.iterdir()):
-                    if sub.is_dir():
-                        encontradas.append({
-                            "path": _rel(raiz, sub),
-                            "name": sub.name,
-                            "section": seccion,
-                            "parent": rel,
-                            "detected_at": ahora,
-                            "type": "subfolder",
-                            "created_by": "unknown",
-                        })
+        for seccion in self._repo.ctx.secciones.ordenadas():
+            dir_seccion = raiz / seccion
+            if not dir_seccion.exists() or dir_seccion.is_symlink():
+                continue
+            _recorrer(dir_seccion, seccion, None)
 
         return encontradas
 

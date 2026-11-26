@@ -27,6 +27,7 @@ import { readFile, readdir, stat, writeFile, mkdir, rename, rmdir } from "node:f
 import { existsSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { resolve, basename, dirname, join, sep, delimiter, isAbsolute, relative } from "node:path";
+import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { deflateSync, inflateSync } from "node:zlib";
 import { createWriteStream, createReadStream } from "node:fs";
@@ -190,24 +191,71 @@ function aplicarPerfil() {
   log("info", `Perfil ${PERFIL}: ${TOOLS_DEL_PERFIL.size} tools`);
 }
 
+function resolveMasterHome() {
+  const envVal = (process.env.VAULT_MASTER || envDefault("VAULT_MASTER") || "").trim();
+  if (envVal) {
+    return envVal.startsWith("~") ? resolve(join(homedir(), envVal.slice(1))) : resolve(envVal);
+  }
+  return join(homedir(), ".vault-master");
+}
+
+function readVaultPointer(startDir) {
+  const MARCAS = ["00_System", "01_Projects", "99_Index", ".obsidian"];
+  let actual = resolve(startDir);
+  for (let i = 0; i < 20; i++) {
+    const puntero = join(actual, ".vault-path");
+    if (existsSync(puntero)) {
+      try {
+        const crudo = readFileSync(puntero, "utf-8").split(/\r?\n/)[0].trim();
+        if (crudo) {
+          const destino = crudo.startsWith("~")
+            ? resolve(join(homedir(), crudo.slice(1)))
+            : (isAbsolute(crudo) ? resolve(crudo) : resolve(actual, crudo));
+          if (existsSync(destino) && readdirSync(destino).filter(e => MARCAS.includes(e)).length >= 2) {
+            return destino;
+          }
+        }
+      } catch (_) { /* AP-51: puntero ilegible se ignora y cae al siguiente candidato */ }
+    }
+    const padre = dirname(actual);
+    if (padre === actual) break;
+    actual = padre;
+  }
+  return null;
+}
+
 function detectVaultRoot() {
   if (VAULT_ROOT) return VAULT_ROOT;
   const MARCAS = ["00_System", "01_Projects", "99_Index", ".obsidian"];
+  const clienteCwd = (process.env.VAULT_CLIENT_CWD || envDefault("VAULT_CLIENT_CWD") || "").trim();
+  const baseCwd = clienteCwd || process.cwd();
   if (INSTALADO) {
+    // Paridad con Python (`vault/kernel/raiz.py:leer_puntero`): `.vault-path` en
+    // el directorio del cliente o un ancestro apunta al vault del proyecto.
+    const porPuntero = readVaultPointer(baseCwd);
+    if (porPuntero) {
+      VAULT_ROOT = porPuntero;
+      return VAULT_ROOT;
+    }
     // Instalado, los candidatos del checkout son `site-packages` y su padre:
     // el fallback `vault-sandbox` caería dentro de la instalación (AP-36). Se
     // acepta el directorio desde el que el cliente lanza el servidor si es un
     // vault, y si no se falla con la costura declarada en vez de inventar uno.
     try {
-      if (readdirSync(process.cwd()).filter(e => MARCAS.includes(e)).length >= 2) {
-        VAULT_ROOT = process.cwd();
+      if (readdirSync(baseCwd).filter(e => MARCAS.includes(e)).length >= 2) {
+        VAULT_ROOT = baseCwd;
         return VAULT_ROOT;
       }
     } catch (_) { /* AP-51: cae al error declarado de abajo */ }
     throw new Error(
-      "No hay vault: define VAULT_ROOT (o lanza el servidor desde la carpeta del vault). " +
+      "No hay vault: define VAULT_ROOT (o lanza el servidor desde la carpeta del vault o con .vault-path). " +
       "`vault mcp-path` imprime la configuración del cliente.",
     );
+  }
+  const porPunteroDev = readVaultPointer(baseCwd);
+  if (porPunteroDev) {
+    VAULT_ROOT = porPunteroDev;
+    return VAULT_ROOT;
   }
   const candidates = [join(REPO_ROOT, "vault-sandbox")];
   let ancestor = dirname(resolve(REPO_ROOT));
@@ -299,9 +347,80 @@ function discoverVaults(searchRoots) {
     }
   }
 
+  function registrarCandidato(full, name, origin) {
+    const resolvedFull = resolve(full);
+    if ([...found.values()].some(v => resolve(v.path) === resolvedFull)) return;
+    const subEntries = readdirSync(resolvedFull);
+    const markers = subEntries.filter(s => MARKERS.includes(s));
+    if (markers.length < 2) return;
+    if (found.has(name)) return;
+    const version = readStandardVersion(resolvedFull);
+    const ilegibles = [];
+    const notes = countMdFiles(resolvedFull, ilegibles);
+    const info = {
+      name,
+      path: resolvedFull,
+      version,
+      notes,
+      markers,
+      origin,
+      has_access_policy: existsSync(join(resolvedFull, "00_System", "access-policy.json")),
+      notes_scope: ALCANCE_DEL_RECuento,
+      lastSeen: new Date().toISOString(),
+    };
+    if (ilegibles.length) {
+      info.notes_incomplete = ilegibles.length;
+      log("warn", "recuento de notas parcial", { vault: name, unreadable_dirs: ilegibles.length });
+    }
+    found.set(name, info);
+  }
+
   for (const root of searchRoots) {
     try { scan(resolve(root), 0, true); } catch (_) {
       recordFailure("traversal_failures");
+    }
+  }
+
+  // Paridad con `vault/kernel/vault_home.py` + `vault/kernel/acceso_baules.py`:
+  // En `VAULT_MASTER` (`~/.vault-master/`) los baúles viven por nombre propio
+  // (`agente`, `gestion`, `infraestructura-redes`) sin exigir prefijo `vault-`,
+  // y `registry.json` declara baúles externos en rutas personalizadas.
+  // Se activa cuando `VAULT_MASTER` está definido o cuando no se acotó un
+  // `VAULT_SCAN_ROOTS` explícito (p. ej. pruebas aisladas).
+  const explorarMaster = Boolean(process.env.VAULT_MASTER) || !process.env.VAULT_SCAN_ROOTS;
+  if (explorarMaster) {
+    const masterDir = resolveMasterHome();
+    if (existsSync(masterDir)) {
+      try {
+        for (const e of readdirSync(masterDir, { withFileTypes: true })) {
+          if (!e.isDirectory() || e.name.startsWith(".") || EXCLUDE.has(e.name)) continue;
+          try {
+            registrarCandidato(join(masterDir, e.name), e.name, "master");
+          } catch (_) {
+            recordFailure("candidate_failures");
+          }
+        }
+      } catch (_) {
+        recordFailure("traversal_failures");
+      }
+      const masterRegPath = join(masterDir, "registry.json");
+      if (existsSync(masterRegPath)) {
+        try {
+          const parsed = JSON.parse(readFileSync(masterRegPath, "utf-8"));
+          const lista = Array.isArray(parsed?.vaults) ? parsed.vaults : [];
+          for (const item of lista) {
+            if (!item || typeof item.path !== "string" || !item.path.trim()) continue;
+            if (!existsSync(item.path)) continue;
+            try {
+              registrarCandidato(item.path, item.name || basename(item.path), item.origin || "external");
+            } catch (_) {
+              recordFailure("candidate_failures");
+            }
+          }
+        } catch (err) {
+          log("warn", "registry.json de VAULT_MASTER ilegible", { error: String(err?.message || err) });
+        }
+      }
     }
   }
 
@@ -1354,7 +1473,17 @@ async function handleToolsCall(params, session) {
       return { content: [{ type: "text", text: JSON.stringify({
         ok: true,
         ...(VAULT_DISCOVERY_INCOMPLETE ? { discovery_incomplete: { ...VAULT_DISCOVERY_INCOMPLETE } } : {}),
-        vaults: [...VAULT_REGISTRY.values()].map(v => ({ name: v.name, version: v.version, notes: v.notes, notes_scope: v.notes_scope || ALCANCE_DEL_RECuento, ...(v.notes_incomplete ? { notes_incomplete: v.notes_incomplete } : {}), path: v.path, lastSeen: v.lastSeen }))
+        vaults: [...VAULT_REGISTRY.values()].map(v => ({
+          name: v.name,
+          version: v.version,
+          notes: v.notes,
+          notes_scope: v.notes_scope || ALCANCE_DEL_RECuento,
+          ...(v.origin ? { origin: v.origin } : {}),
+          ...(typeof v.has_access_policy === "boolean" ? { has_access_policy: v.has_access_policy } : {}),
+          ...(v.notes_incomplete ? { notes_incomplete: v.notes_incomplete } : {}),
+          path: v.path,
+          lastSeen: v.lastSeen,
+        })),
       }, null, 2) }] };
     }
 

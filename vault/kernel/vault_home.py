@@ -65,7 +65,7 @@ def es_ruta_de_master(ruta: "str | Path") -> bool:
         return False
 
 
-def listar_vaults_de_la_casa() -> list:
+def listar_vaults_de_la_casa(casa: Optional[Path] = None) -> list:
     """Los vaults de la casa, con lo que se sabe de cada uno sin abrirlo.
 
     El nombre, la ruta, la versión declarada en su `00_System/` y si tiene
@@ -74,7 +74,7 @@ def listar_vaults_de_la_casa() -> list:
     """
     import json
 
-    casa = master_home()
+    casa = Path(casa) if casa is not None else master_home()
     vaults = []
     if not casa.is_dir():
         return vaults
@@ -97,5 +97,6 @@ def listar_vaults_de_la_casa() -> list:
             "ruta": str(hijo),
             "version": version,
             "git": (hijo / ".git").is_dir(),
+            "access_policy": (hijo / "00_System" / "access-policy.json").is_file(),
         })
     return vaults

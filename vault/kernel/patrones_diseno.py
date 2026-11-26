@@ -238,6 +238,26 @@ CATALOGO_PATRONES: Tuple[Dict[str, str], ...] = (
         "pattern_type": "architecture",
         "summary": "Aisla el modelo del dominio frente a contratos o semanticas heredadas de sistemas externos mediante una capa traductora.",
     },
+    {
+        "id": "identity-access-management",
+        "order": "1.21",
+        "name": "Identity & Access Management (IAM / RBAC / ABAC)",
+        "official_name": "Identity & Access Management (Federated Identity / RBAC / ABAC)",
+        "reference": "NIST SP 800-63 / Sandhu (RBAC, 1996) / OAuth 2.0 & OIDC (RFC 6749)",
+        "category": "arquitectonicos",
+        "pattern_type": "architecture",
+        "summary": "Establece identidad verificable (Principal/Claims) y autorizacion fail-closed por roles o atributos entre fronteras de confianza.",
+    },
+    {
+        "id": "multi-tenancy-isolation",
+        "order": "1.22",
+        "name": "Multi-Tenancy & Tenant Isolation",
+        "official_name": "Multi-Tenancy Architecture (Silo / Bridge / Pool Isolation)",
+        "reference": "Chong & Carraro (Microsoft, 2006) / AWS SaaS Lens",
+        "category": "arquitectonicos",
+        "pattern_type": "architecture",
+        "summary": "Aisla datos, identidad y politicas por tenant mediante silo fisico, esquema dedicado o pool con filtro obligatorio de tenant_id/RLS.",
+    },
     # 2. Creacionales
     {
         "id": "builder",
@@ -1025,6 +1045,18 @@ _REGLAS_GENERICAS: Tuple[Tuple[str, re.Pattern, str, str], ...] = (
         "evidencia_fuerte",
         "Clase Visitor para recorrer y operar sobre estructuras de nodos",
     ),
+    (
+        "identity-access-management",
+        re.compile(r"\b(?:class|interface)\s+([A-Za-z0-9_]*(?:IdentityProvider|AccessPolicyEngine|RbacGuard|AbacPolicy|AuthPrincipal|TokenVerifier))|\b(authorizePrincipal|verifyJwtToken|evaluateAccessPolicy)\s*\("),
+        "evidencia_fuerte",
+        "Identidad verificable y autorizacion IAM/RBAC/ABAC explicita",
+    ),
+    (
+        "multi-tenancy-isolation",
+        re.compile(r"\b(?:class|interface)\s+([A-Za-z0-9_]*(?:TenantContext|TenantResolver|TenantIsolationMiddleware|TenantIsolationGuard|MultiTenantStore))|\b(resolveTenant|withTenantScope|assertTenantIsolation)\s*\("),
+        "evidencia_fuerte",
+        "Aislamiento explicito por tenant (Multi-Tenancy & Tenant Isolation)",
+    ),
 )
 
 _RE_SLUGS = re.compile(r"[^a-z0-9]+")
@@ -1718,6 +1750,36 @@ def _detectar_python(
                     "evidencia_fuerte",
                     "Motor declarativo de politicas o reglas de negocio",
                 )
+            if cname.endswith((
+                "IdentityProvider",
+                "AccessPolicy",
+                "AccessPolicyEngine",
+                "AuthProvider",
+                "TokenVerifier",
+                "RbacEnforcer",
+                "AbacEnforcer",
+            )) or (cname == "Principal") or ({"authenticate", "authorize"}.issubset(metodos)):
+                agregar(
+                    "identity-access-management",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Identidad (Principal/IAM) o control de acceso RBAC/ABAC explicito",
+                )
+            if cname.endswith((
+                "TenantContext",
+                "TenantResolver",
+                "TenantIsolationGuard",
+                "TenantStore",
+                "MultiTenantRouter",
+            )):
+                agregar(
+                    "multi-tenancy-isolation",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Resolucion o aislamiento explicito por tenant (Multi-Tenancy)",
+                )
             if {"__iter__", "__next__"}.issubset(metodos):
                 agregar(
                     "iterator",
@@ -1944,6 +2006,22 @@ def _detectar_python(
                     fname,
                     "evidencia_fuerte",
                     "Manejador de cierre ordenado y drenaje de recursos (Graceful Shutdown)",
+                )
+            if fname in ("evaluar_acceso_cruzado", "authorize_principal", "verify_jwt_token", "evaluate_access_policy"):
+                agregar(
+                    "identity-access-management",
+                    nodo.lineno,
+                    fname,
+                    "evidencia_fuerte",
+                    "Evaluador explicito de identidad y autorizacion (IAM/RBAC/ABAC)",
+                )
+            if fname in ("resolve_tenant", "assert_tenant_isolation", "set_tenant_context"):
+                agregar(
+                    "multi-tenancy-isolation",
+                    nodo.lineno,
+                    fname,
+                    "evidencia_fuerte",
+                    "Funcion explicita de resolucion o aislamiento por tenant (Multi-Tenancy)",
                 )
             if any(_es_decorador(d, "contextmanager") for d in nodo.decorator_list) and any(
                 k in fname.lower() for k in ("transaction", "batch", "unit_of_work", "uow", "lote")

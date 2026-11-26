@@ -2168,6 +2168,8 @@ Levanta un vault vacío en un comando: crea las carpetas estándar, aplica las m
 python vault_init.py                    # versión por defecto
 python vault_init.py --target v39.0     # versión concreta del estándar
 python vault_init.py --no-audit         # omite el vault_audit final
+python vault_init.py --name mi-vault    # crea el vault en VAULT_MASTER (~/.vault-master/mi-vault)
+python vault_init.py --list             # lista vaults de la casa y externos en registry.json
 ```
 
 `--clean` **borra todo el contenido del vault actual** antes de inicializar (salvo `.locks`). No se ejecuta sin haber mirado antes qué hay en el destino.
@@ -2222,7 +2224,10 @@ python vault_folder_registry.py --cleanup       # quita del registro las que ya 
 Las secciones canónicas salen de `vault_registry`, nunca de una lista propia: la
 copia literal que vivía aquí se quedó en 13 mientras el estándar ya tenía 22, y
 las carpetas personalizadas de las nueve restantes eran invisibles sin que nada
-fallara (AP-05 dentro del propio toolkit).
+fallara (AP-05 dentro del propio toolkit). La detección (`--scan`) recorre
+subcarpetas **de forma recursiva a cualquier profundidad**, aplicando siempre
+el filtro de prefijos ignorados (`.` y `_`) y omitiendo symlinks en todos los
+niveles.
 
 Desde v40.0 las rutas del registro salen del contexto Índices, y con la migración
 se corrigió que `--scan` grabase `11_Code\tests` en Windows mientras `--add` y
@@ -2241,8 +2246,15 @@ declara secciones nuevas en la raíz.
 python vault_section.py --list      # propias, rango libre y carpetas de raíz sin sección
 python vault_section.py --add 22_Scripts --documentacion referencia --description "Scripts de despliegue"
 python vault_section.py --add 23_Clientes --documentacion explicacion --tipos cliente,contrato
+python vault_section.py --add 24_Redes --documentacion referencia --subfolders switches/core/vlans,firewalls --sync
 python vault_section.py --retire 22_Scripts --superseded-by 23_Automatizacion
 ```
+
+`--subfolders` crea subcarpetas anidadas (rechazando `..` y prefijos `.`/`_`) y
+las registra en `folder-registry`; `--sync` regenera en el mismo paso el índice
+de la sección (`index.md`), el índice maestro (`99_Index/index.md`),
+`search-index.json` y `graph.json` para que nodos, aristas y búsquedas reflejen
+la nueva estructura de inmediato.
 
 Hasta v41.1 una carpeta de raíz fuera del registro solo podía ser CN-02. Medido
 en un vault ajeno: `/ans` guarda `scripts/` en la raíz y sus `.md` salían como
