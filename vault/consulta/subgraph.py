@@ -30,8 +30,15 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vault_errors import emit_error, wrap_main
 from vault_registry import comando_de_tool
-from vault.grafo.aristas import predicado_de  # noqa: E402
-from vault.grafo.lectura import grafo_para_consulta, nodos_por_ruta  # noqa: E402
+from vault.grafo.aristas import clasificar_arista_epistemica, predicado_de  # noqa: E402
+from vault.grafo.lectura import (  # noqa: E402
+    camino_mas_corto,
+    explicar_nodo,
+    formatear_reporte_markdown,
+    grafo_para_consulta,
+    nodos_por_ruta,
+    reporte_grafo,
+)
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
 from vault.kernel.enumeracion import notas_en_disco  # noqa: E402
 from vault.kernel import construir  # noqa: E402
@@ -208,9 +215,9 @@ def _adjacency(
     graph: Dict[str, Any],
     direction: str,
     predicates: Optional[Set[str]],
-) -> Dict[str, List[Tuple[str, str, float]]]:
-    """origen → [(destino, predicado, peso)] según la dirección pedida."""
-    adj: Dict[str, List[Tuple[str, str, float]]] = defaultdict(list)
+) -> Dict[str, List[Tuple[str, str, float, str, float]]]:
+    """origen → [(destino, predicado, peso, epistemic, confidence)] según la dirección."""
+    adj: Dict[str, List[Tuple[str, str, float, str, float]]] = defaultdict(list)
     for edge in graph.get("edges", []):
         src = edge.get("from") or edge.get("source") or ""
         tgt = edge.get("to") or edge.get("target") or ""
@@ -221,10 +228,11 @@ def _adjacency(
         if predicates and predicate not in predicates:
             continue
         weight = PREDICATE_WEIGHT.get(predicate, DEFAULT_WEIGHT)
+        epistemic, confidence = clasificar_arista_epistemica(edge)
         if direction in ("out", "both"):
-            adj[src].append((tgt, predicate, weight))
+            adj[src].append((tgt, predicate, weight, epistemic, confidence))
         if direction in ("in", "both"):
-            adj[tgt].append((src, predicate, weight))
+            adj[tgt].append((src, predicate, weight, epistemic, confidence))
     return dict(adj)
 
 
@@ -354,14 +362,20 @@ def vault_subgraph(
         current, d, relevance = queue.popleft()
         if d >= hops:
             continue
-        for neighbor, predicate, weight in adj.get(current, []):
+        for neighbor, predicate, weight, epistemic, confidence in adj.get(current, []):
             if weight < min_weight:
                 continue
             key = (current, neighbor, predicate)
             if key not in seen_edges:
                 seen_edges.add(key)
-                edges_out.append({"from": current, "to": neighbor,
-                                  "predicate": predicate, "weight": round(weight, 3)})
+                edges_out.append({
+                    "from": current,
+                    "to": neighbor,
+                    "predicate": predicate,
+                    "weight": round(weight, 3),
+                    "epistemic": epistemic,
+                    "confidence": confidence,
+                })
             new_relevance = relevance * weight * HOP_DECAY
             if new_relevance <= best.get(neighbor, 0.0):
                 continue
@@ -428,6 +442,77 @@ def vault_subgraph(
     }
 
 
+def _cargar_grafo_o_error() -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
+    try:
+        graph = _load_graph()
+    except _GrafoIlegible as exc:
+        return None, emit_error("vault_subgraph", exc.codigo, str(exc))
+    if graph is None:
+        return None, {
+            "ok": False,
+            "error_code": "GRAPH_MISSING",
+            "error": "No hay grafo. Ejecuta vault_graph para generarlo.",
+            "hint": comando_de_tool("vault_graph"),
+        }
+    return graph, None
+
+
+def vault_subgraph_path(
+    source: str,
+    target: str,
+    direction: str = "both",
+    predicates: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """Camino más corto entre dos nodos del grafo (consulta `path` estilo Graphify)."""
+    if direction not in ("in", "out", "both"):
+        return {"ok": False, "error_code": "INVALID_DIRECTION",
+                "error": f"direction debe ser in|out|both, no '{direction}'"}
+    graph, err = _cargar_grafo_o_error()
+    if err is not None:
+        return err
+    nodes = _nodes_by_path(graph)
+    desfase = _desfase(nodes)
+    res = camino_mas_corto(
+        graph, source, target,
+        direction=direction,
+        predicates=set(predicates) if predicates else None,
+        resolver=_resolve_seed,
+    )
+    res.update(desfase)
+    return res
+
+
+def vault_subgraph_explain(node: str, max_neighbors: int = 15) -> Dict[str, Any]:
+    """Explicación compacta de un nodo: grado, comunidad, god-node y vecindario epistémico."""
+    graph, err = _cargar_grafo_o_error()
+    if err is not None:
+        return err
+    nodes = _nodes_by_path(graph)
+    desfase = _desfase(nodes)
+    res = explicar_nodo(graph, node, max_neighbors=max_neighbors, resolver=_resolve_seed)
+    res.update(desfase)
+    return res
+
+
+def vault_subgraph_report(top: int = 10) -> Dict[str, Any]:
+    """Reporte estructural compacto del grafo (god nodes, comunidades, puentes y epistémica)."""
+    graph, err = _cargar_grafo_o_error()
+    if err is not None:
+        return err
+    nodes = _nodes_by_path(graph)
+    desfase = _desfase(nodes)
+    res = reporte_grafo(
+        graph,
+        top_god_nodes=top,
+        top_communities=top,
+        top_bridges=top,
+    )
+    res["graph_source"] = _fichero_de_grafo().name
+    res["overlay"] = graph.get("overlay", {"applied": False})
+    res.update(desfase)
+    return res
+
+
 def _to_mermaid(result: Dict[str, Any]) -> str:
     """Diagrama del subgrafo. Obsidian lo renderiza sin plugins."""
     lines = ["```mermaid", "graph LR"]
@@ -451,18 +536,21 @@ def _to_mermaid(result: Dict[str, Any]) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="vault_subgraph — subgrafo de K semillas y N saltos",
+        description="vault_subgraph — subgrafo, rutas (path), explicación (explain) y reporte estructural",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Ejemplos:
   # Vecindario a 2 saltos de una decision
   python vault_subgraph.py --seeds "03_Decisions/adr-001-mcp-transport.md" --hops 2
 
-  # Varias semillas, acotado a conocimiento
-  python vault_subgraph.py --seeds a.md b.md --hops 3 --section 07_Knowledge
+  # Ruta más corta entre dos notas (estilo Graphify path)
+  python vault_subgraph.py --path "vault-hub" "adr-001"
 
-  # Solo enlaces explicitos, hacia adelante
-  python vault_subgraph.py --seeds a.md --predicate wiki_link --direction out
+  # Ficha compacta de un nodo: comunidad, god-node y vecinos epistémicos
+  python vault_subgraph.py --explain "vault-hub"
+
+  # Reporte estructural compacto (god nodes, comunidades y puentes)
+  python vault_subgraph.py --report --format markdown
 
   # Diagrama para pegar en una nota
   python vault_subgraph.py --seeds a.md --format mermaid
@@ -475,8 +563,16 @@ Notas:
 """,
         allow_abbrev=False,
     )
-    parser.add_argument("--seeds", nargs="+", required=True,
+    parser.add_argument("--seeds", nargs="+",
                         help="Notas de partida (ruta o título)")
+    parser.add_argument("--path", nargs=2, metavar=("ORIGIN", "TARGET"),
+                        help="Ruta más corta entre dos notas del grafo")
+    parser.add_argument("--explain", metavar="NODE",
+                        help="Ficha compacta de un nodo (comunidad, god-node y vecindario)")
+    parser.add_argument("--report", action="store_true",
+                        help="Reporte estructural compacto (god nodes, comunidades, puentes y epistémica)")
+    parser.add_argument("--top", type=int, default=10,
+                        help="Máximo de entradas en --report / vecinos en --explain (default: 10)")
     parser.add_argument("--hops", type=int, default=DEFAULT_HOPS,
                         help=f"Saltos de expansión (default: {DEFAULT_HOPS})")
     parser.add_argument("--direction", default="both", choices=["in", "out", "both"])
@@ -489,9 +585,33 @@ Notas:
     parser.add_argument("--tags", nargs="*", help="Limita a notas con alguno de estos tags")
     parser.add_argument("--min-weight", type=float, default=0.0,
                         help="Descarta aristas por debajo de este peso")
-    parser.add_argument("--format", default="json", choices=["json", "mermaid"])
+    parser.add_argument("--format", default="json", choices=["json", "mermaid", "markdown"])
 
     args = parser.parse_args()
+
+    if args.report:
+        result = vault_subgraph_report(top=args.top)
+        if args.format == "markdown" and result.get("ok"):
+            print(formatear_reporte_markdown(result))
+        else:
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+        return 0 if result.get("ok") else 1
+
+    if args.path:
+        result = vault_subgraph_path(
+            source=args.path[0], target=args.path[1],
+            direction=args.direction, predicates=args.predicates,
+        )
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return 0 if result.get("ok") else 1
+
+    if args.explain:
+        result = vault_subgraph_explain(node=args.explain, max_neighbors=args.top)
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return 0 if result.get("ok") else 1
+
+    if not args.seeds:
+        parser.error("Debes especificar --seeds, --path, --explain o --report")
 
     result = vault_subgraph(
         seeds=args.seeds, hops=args.hops, direction=args.direction,

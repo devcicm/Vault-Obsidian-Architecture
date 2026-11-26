@@ -42,6 +42,7 @@ from vault_registry import ORDERED_SECTIONS
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from vault.grafo.analisis import reporte_grafo  # noqa: E402
 from vault.grafo.refresco import ensamblar_grafo, nodo_de_nota  # noqa: E402
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
 from vault.kernel import construir  # noqa: E402
@@ -364,6 +365,11 @@ Notas:
         action="store_true",
         help="Generate graph-enriched.json with typed predicates (merges wiki-links + entity + code relations)",
     )
+    parser.add_argument(
+        "--report",
+        action="store_true",
+        help="Include compact structural graph_report (god nodes, communities, bridges, epistemic breakdown)",
+    )
 
     args = parser.parse_args()
 
@@ -371,6 +377,10 @@ Notas:
         result = vault_graph_typed()
     else:
         result = vault_graph()
+
+    if args.report and result.get("ok") and _graph_file().exists():
+        grafo_actual = json.loads(_graph_file().read_text(encoding="utf-8"))
+        result["graph_report"] = reporte_grafo(grafo_actual)
 
     print(json.dumps(result, indent=2, ensure_ascii=False))
 

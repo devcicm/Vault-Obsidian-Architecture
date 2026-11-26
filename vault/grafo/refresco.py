@@ -24,7 +24,8 @@ from typing import Any, Callable, Dict, List
 
 from ..kernel.enumeracion import es_nota_indexable
 from ..kernel.fallos import FalloDeDominio
-from .aristas import TIPO_WIKILINK, consolidar_aristas
+from .analisis import resumen_epistemico
+from .aristas import TIPO_WIKILINK, consolidar_aristas, estampar_epistemica
 from .repositorio import RepositorioGrafo
 
 # `TIPO_WIKILINK` (dueño: `aristas`) es el tipo de las aristas que salen de un
@@ -81,7 +82,7 @@ def ensamblar_grafo(
         for path, node in nodes.items()
         if path not in entrantes and not path.startswith("00_System/")
     ]
-    edges = edges + list(extras)
+    edges = edges + [estampar_epistemica(e) for e in extras]
     broken_links = resuelto["rotos"]
     ambiguous_links = resuelto["ambiguos"]
     return {
@@ -96,6 +97,7 @@ def ensamblar_grafo(
             "nameCollisions": len(colisiones),
             "deletedNodes": sum(1 for n in nodes.values() if n.get("status") == "deleted"),
             "movedNodes": sum(1 for n in nodes.values() if n.get("status") == "moved"),
+            "epistemic": resumen_epistemico(edges),
         },
         "orphans": orphans,
         "brokenLinks": broken_links,

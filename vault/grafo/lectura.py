@@ -20,10 +20,37 @@ import json
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from .aristas import PREDICADO_WIKILINK, id_de_arista, predicado_de
+from .analisis import (
+    camino_mas_corto,
+    detectar_comunidades,
+    detectar_god_nodes,
+    explicar_nodo,
+    formatear_reporte_markdown,
+    importar_grafo_graphify,
+    reporte_grafo,
+    resumen_epistemico,
+)
+from .aristas import (
+    PREDICADO_WIKILINK,
+    estampar_epistemica,
+    id_de_arista,
+    predicado_de,
+)
 from .repositorio import RepositorioGrafo
 
-__all__ = ["grafo_para_consulta", "nodos_por_ruta", "superponer"]
+__all__ = [
+    "camino_mas_corto",
+    "detectar_comunidades",
+    "detectar_god_nodes",
+    "explicar_nodo",
+    "formatear_reporte_markdown",
+    "grafo_para_consulta",
+    "importar_grafo_graphify",
+    "nodos_por_ruta",
+    "reporte_grafo",
+    "resumen_epistemico",
+    "superponer",
+]
 
 
 def nodos_por_ruta(grafo: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
@@ -53,7 +80,7 @@ def superponer(basico: Dict[str, Any], enriquecido: Dict[str, Any]) -> Dict[str,
         if ruta in nodes and "class" in nodo and "class" not in nodes[ruta]:
             nodes[ruta]["class"] = nodo["class"]
             clases += 1
-    edges = list(basico.get("edges", []))
+    edges = [estampar_epistemica(e) for e in basico.get("edges", [])]
     vistas = {id_de_arista(e) for e in edges}
     tomadas = descartadas = 0
     for arista in enriquecido.get("edges", []):
@@ -65,7 +92,7 @@ def superponer(basico: Dict[str, Any], enriquecido: Dict[str, Any]) -> Dict[str,
         if id_de_arista(arista) in vistas:
             continue
         vistas.add(id_de_arista(arista))
-        edges.append(arista)
+        edges.append(estampar_epistemica(arista))
         tomadas += 1
     return {
         **basico,

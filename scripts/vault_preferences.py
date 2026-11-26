@@ -630,6 +630,11 @@ def _cuerpo_adapter(cliente: str, contexto: dict, reglas: dict) -> str:
             "",
         ]
     lineas += _protocolo_de_sesion()
+    lineas += [
+        "## Grafo primero (ahorro de contexto)",
+        "- Antes de lanzar búsquedas amplias (`grep`/`Glob`), consulta `vault_subgraph --report`, `--explain <nota>`, `--path <A> <B>` o `vault_context_pack`.",
+        "",
+    ]
     cola = [
         "",
         "## Dónde vive la política",

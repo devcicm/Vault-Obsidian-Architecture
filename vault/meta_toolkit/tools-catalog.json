@@ -2972,7 +2972,7 @@
     },
     "vault_graph": {
       "name": "vault_graph",
-      "description": "Genera grafo de relaciones entre notas.",
+      "description": "Genera grafo de relaciones entre notas con etiquetas epistémicas (EXTRACTED/INFERRED/AMBIGUOUS) y reporte estructural opcional.",
       "group": "Salud del Vault",
       "script": "vault_graph.py",
       "inputSchema": {
@@ -2980,7 +2980,11 @@
         "properties": {
           "typed": {
             "type": "boolean",
-            "description": "Generate graph-enriched.json with typed predicates (merges wiki-links + entity + code relations)"
+            "description": "Genera graph-enriched.json con predicados semánticos tipados"
+          },
+          "report": {
+            "type": "boolean",
+            "description": "Incluye graph_report compacto (god nodes, comunidades, puentes y desglose epistémico)"
           }
         },
         "additionalProperties": false
@@ -2997,7 +3001,8 @@
       "related": [
         "vault_audit",
         "vault_impact",
-        "vault_propagate"
+        "vault_propagate",
+        "vault_subgraph"
       ]
     },
     "vault_graph_fix": {
@@ -7403,7 +7408,7 @@
     },
     "vault_subgraph": {
       "name": "vault_subgraph",
-      "description": "Subgrafo de K semillas y N saltos sobre el grafo del vault, con peso por predicado y decaimiento por salto.",
+      "description": "Subgrafo de K semillas y N saltos, ruta más corta (--path), explicación de nodo (--explain) y reporte estructural (--report: god nodes, comunidades, puentes y epistémica).",
       "group": "Memoria de Contexto",
       "script": "vault_subgraph.py",
       "inputSchema": {
@@ -7415,6 +7420,25 @@
             "items": {
               "type": "string"
             }
+          },
+          "path": {
+            "type": "array",
+            "description": "Par [origen, destino] para calcular la ruta más corta en saltos",
+            "items": {
+              "type": "string"
+            }
+          },
+          "explain": {
+            "type": "string",
+            "description": "Nodo a explicar (comunidad, god-node y vecindario epistémico)"
+          },
+          "report": {
+            "type": "boolean",
+            "description": "Emite el reporte estructural compacto del grafo (GRAPH_REPORT)"
+          },
+          "top": {
+            "type": "integer",
+            "description": "Tope de entradas para --report o vecinos en --explain (default: 10)"
           },
           "hops": {
             "type": "integer",
@@ -7461,16 +7485,14 @@
           },
           "format": {
             "type": "string",
-            "description": "json | mermaid (default: json)",
+            "description": "json | mermaid | markdown (default: json)",
             "enum": [
               "json",
-              "mermaid"
+              "mermaid",
+              "markdown"
             ]
           }
         },
-        "required": [
-          "seeds"
-        ],
         "additionalProperties": false
       },
       "guards": [
