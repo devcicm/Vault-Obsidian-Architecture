@@ -458,7 +458,9 @@ def versiones_de_nota(raiz: Path, rel: str, limite: int = 100) -> List[Dict[str,
             continue
         sha, fecha_iso, mensaje = partes[0], partes[1], partes[2]
         try:
-            ts = datetime.fromisoformat(fecha_iso).astimezone(timezone.utc)
+            # Python 3.10: `fromisoformat` no acepta sufijo literal `Z` (PEP 632/3.11+).
+            iso_norm = f"{fecha_iso[:-1]}+00:00" if fecha_iso.endswith("Z") else fecha_iso
+            ts = datetime.fromisoformat(iso_norm).astimezone(timezone.utc)
         except ValueError:
             ts = None
         salida.append({

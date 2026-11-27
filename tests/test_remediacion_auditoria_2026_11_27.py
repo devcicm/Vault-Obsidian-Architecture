@@ -187,8 +187,10 @@ def test_h02_vault_errors_expone_causa_de_isolation_unavailable(monkeypatch, cap
     out = capsys.readouterr().out
     payload = json.loads(out)
     assert payload["ok"] is False
-    assert "pidfd_open" in payload["message"]
-    assert "pidfd_open" in (payload.get("args") or {}).get("causa", "")
+    # La clase de excepción se expone de forma sanitizada (sin filtrar rutas del host)
+    assert "IsolationUnavailable" in payload["message"]
+    assert (payload.get("args") or {}).get("causa") == "IsolationUnavailable"
+    assert "pidfd_open" not in payload["message"]
 
 
 def test_python_minimo_310_avisa_version_vieja():

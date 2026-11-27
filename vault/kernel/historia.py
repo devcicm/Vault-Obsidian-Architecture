@@ -176,7 +176,9 @@ def _leer_entradas_patches(fichero: Path) -> List[Dict[str, Any]]:
         texto_actual = texto
         ts_str = str(obj.get("timestamp") or "")
         try:
-            ts = datetime.fromisoformat(ts_str).astimezone(timezone.utc) if ts_str else None
+            # Python 3.10: `fromisoformat` no acepta sufijo literal `Z` (añadido en 3.11).
+            ts_norm = f"{ts_str[:-1]}+00:00" if ts_str.endswith("Z") else ts_str
+            ts = datetime.fromisoformat(ts_norm).astimezone(timezone.utc) if ts_norm else None
         except ValueError:
             ts = None
         reconstruidas.append({
