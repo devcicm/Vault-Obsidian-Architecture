@@ -842,6 +842,24 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Lista los vaults de la casa con su version y su git",
                 "validators": [],
             },
+            "sections-preset": {
+                "type": "string",
+                "required": False,
+                "description": "Preset opt-in de secciones estándar: completo, minimo o infraestructura",
+                "validators": [],
+            },
+            "only-sections": {
+                "type": "string",
+                "required": False,
+                "description": "Lista separada por comas de secciones estándar a habilitar (00_System y 99_Index siempre activas)",
+                "validators": [],
+            },
+            "extra-sections": {
+                "type": "string",
+                "required": False,
+                "description": "Secciones propias adicionales NN_Nombre[:clase_doc] separadas por comas",
+                "validators": [],
+            },
         },
         "guards": [],
         "side_effects": [
@@ -1257,6 +1275,18 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "type": "string",
                 "required": False,
                 "description": "Retirar una sección propia sin borrar nada",
+                "validators": [],
+            },
+            "disable": {
+                "type": "string",
+                "required": False,
+                "description": "Deshabilitar una sección estándar para nuevas escrituras sin borrar notas",
+                "validators": [],
+            },
+            "enable": {
+                "type": "string",
+                "required": False,
+                "description": "Habilitar una sección estándar deshabilitada o reactivar una propia retirada",
                 "validators": [],
             },
             "documentacion": {

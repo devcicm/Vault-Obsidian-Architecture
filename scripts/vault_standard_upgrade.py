@@ -621,7 +621,7 @@ def _estructura_sin_migracion(to_version: str, previstas: List[str] = ()) -> Lis
         return []
     raiz = _raiz()
     secciones = [
-        f for f in standard_folders()
+        f for f in standard_folders(raiz)
         if f not in previstas and not (raiz / f).exists()
     ]
     return [
@@ -672,8 +672,9 @@ def _run_compliance_check(target_version: str) -> Dict[str, Any]:
     """Non-blocking compliance check: folders, frontmatter, audit health."""
     gaps: List[Dict[str, Any]] = []
 
-    # 1. Folder check
-    missing_folders = [f for f in STANDARD_FOLDERS if not (_raiz() / f).exists()]
+    # 1. Folder check (respeta disabled_standard del vault si fue configurado)
+    activas = standard_folders(_raiz())
+    missing_folders = [f for f in activas if not (_raiz() / f).exists()]
     folders_ok = len(missing_folders) == 0
     if missing_folders:
         gaps.append(
@@ -747,7 +748,7 @@ def _run_compliance_check(target_version: str) -> Dict[str, Any]:
             (
                 1.0
                 if folders_ok
-                else max(0, 1 - len(missing_folders) / len(STANDARD_FOLDERS))
+                else max(0, 1 - len(missing_folders) / max(len(activas), 1))
             )
             * 0.4
             + frontmatter_compliance * 0.4
@@ -941,8 +942,9 @@ def vault_standard_upgrade(
         # Without this, --init only writes the version file and the consumer is left
         # with a single 00_System/ folder. The full structure must exist before any
         # vault_write / vault_section_index call can succeed.
+        activas_init = standard_folders(_raiz())
         base_folders_created: List[str] = []
-        for folder in STANDARD_FOLDERS:
+        for folder in activas_init:
             folder_path = _raiz() / folder
             if not folder_path.exists():
                 folder_path.mkdir(parents=True, exist_ok=True)
@@ -959,7 +961,7 @@ def vault_standard_upgrade(
         )  # lazy — avoid circular import
 
         sections_indexed: List[str] = []
-        for folder in STANDARD_FOLDERS:
+        for folder in activas_init:
             try:
                 res = vault_section_index(folder, include_subdirs=True)
                 if res.get("ok"):
