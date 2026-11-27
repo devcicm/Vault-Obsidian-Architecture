@@ -220,7 +220,7 @@ Quién escribe qué. Derivado del catálogo (`side_effects`): es el inventario q
 - `vault_change_log` (Change Log): Registra el cambio en el changelog del vault (con --propagate encola la propagación)
 - `vault_changelog_check` (Normas): Con --fijar-hash reescribe la entrada de la versión en curso; Con --freeze escribe scripts/changelog-baseline.json
 - `vault_ciclos` (Normas): scripts/ciclos-baseline.json
-- `vault_clones` (Normas): scripts\clones-baseline.json
+- `vault_clones` (Normas): scripts/clones-baseline.json
 - `vault_code_map` (Código): Genera 11_Code/{project}/map.md con diagrama
 - `vault_code_module` (Código): Crea nota en 11_Code/{project}/
 - `vault_code_relation` (Código): Actualiza índice de relaciones en 11_Code/

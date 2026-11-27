@@ -400,5 +400,5 @@ def test_los_jobs_obligatorios_son_los_del_workflow():
             esperados.add(f"{job.get('name') or clave} ({', '.join(map(str, combo))})")
     assert esperados == set(c.JOBS_OBLIGATORIOS)
     assert not [j for j in c.JOBS_OBLIGATORIOS if "macos" in j]
-    assert "Validate Vault Spec (windows-latest, 3.9, 2)" in c.JOBS_OBLIGATORIOS
+    assert "Validate Vault Spec (windows-latest, 3.10, 2)" in c.JOBS_OBLIGATORIOS
     assert "Puertas del estándar (ubuntu-latest)" in c.JOBS_OBLIGATORIOS

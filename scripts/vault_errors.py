@@ -667,7 +667,10 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
         _write_output(json.dumps(error, ensure_ascii=False))
         return 130 if interrupted else 1
     except (IsolationUnavailable, OSError) as exc:
-        causa = f"{type(exc).__name__}: {exc}"
+        # H-06 + test_spawn_failure_is_sanitized_without_thread_fallback:
+        # reportar solo la clase de excepción (nunca str(exc), que puede contener
+        # rutas privadas del host) y conservar el detalle en el trace interno.
+        causa = type(exc).__name__
         error = emit_error(tool_name, "UNEXPECTED_ERROR",
                            "Process isolation or completion could not be verified; "
                            f"no thread fallback was used ({causa}). Inspect state before retrying.",

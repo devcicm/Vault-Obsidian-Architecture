@@ -2374,7 +2374,8 @@ function startSSE(port, bindHost, tlsOptions = null) {
         const defaultRoot = resolve(detectVaultRoot());
         if (resolve(vaultRoot) !== defaultRoot) {
           const callerVault = basename(defaultRoot);
-          const decision = evaluateCrossVaultAccessPolicy(vaultRoot, callerVault, perfilToken || "lector");
+          const perfilMinimo = perfilToken || PERFILES_DE_TOKEN[0] || "";
+          const decision = evaluateCrossVaultAccessPolicy(vaultRoot, callerVault, perfilMinimo);
           if (decision.enforced && !decision.allowed) {
             rechazar(403, `Acceso denegado por 00_System/access-policy.json (${decision.reason}).`);
             return;

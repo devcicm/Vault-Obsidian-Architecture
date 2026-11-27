@@ -14,7 +14,12 @@ from pathlib import Path
 import vault_fix_all as vfa
 import vault_norms_catalog as ncat
 from vault.grafo.analisis import camino_mas_corto, explicar_nodo, reporte_grafo
-from vault.grafo.aristas import CONFIANZA_EPISTEMICA, clasificar_arista_epistemica, consolidar_aristas
+from vault.grafo.aristas import (
+    CONFIANZA_EPISTEMICA,
+    clasificar_arista_epistemica,
+    consolidar_aristas,
+    estampar_epistemica,
+)
 from vault.kernel.ciclo_ejecucion import CheckpointLog, GestorDispose, LeaseHeartbeat
 from vault.kernel.presupuesto_contexto import (
     HARD_CAPS_CONTEXTO,
@@ -37,10 +42,13 @@ def test_audiencias_publicas_y_privadas_de_las_seis_nuevas_id_normas():
 
 def test_ap80_y_pat11_epistemica_y_grafo_primero():
     assert CONFIANZA_EPISTEMICA == ("EXTRACTED", "INFERRED", "AMBIGUOUS")
-    aristas = consolidar_aristas([
-        {"from": "a.md", "to": "b.md", "type": "wiki-link"},
-        {"from": "b.md", "to": "c.md", "predicate": "mentions"},
-    ])
+    aristas = [
+        estampar_epistemica(a)
+        for a in consolidar_aristas([
+            {"from": "a.md", "to": "b.md", "type": "wiki-link"},
+            {"from": "b.md", "to": "c.md", "predicate": "mentions"},
+        ])
+    ]
     assert aristas[0]["epistemic"] == "EXTRACTED"
     assert aristas[1]["epistemic"] == "INFERRED"
     assert clasificar_arista_epistemica({"predicate": "desconocido"})[0] == "AMBIGUOUS"

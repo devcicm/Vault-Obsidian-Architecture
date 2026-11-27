@@ -37,8 +37,9 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 #: módulos que no son su dueño —lo vigila `tests/test_rutas_repo.py`— y esta
 #: ruta se declara como lo que es: un fichero dentro de un directorio del
 #: layout, no un literal suelto.
-BASELINE_DE_CLONES = str(
-    rutas.ruta_repo("scripts").relative_to(rutas.raiz_repo()) / "clones-baseline.json")
+BASELINE_DE_CLONES = (
+    rutas.ruta_repo("scripts").relative_to(rutas.raiz_repo()) / "clones-baseline.json"
+).as_posix()
 
 
 def _product_catalog_path() -> Path:

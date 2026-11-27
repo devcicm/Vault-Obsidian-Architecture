@@ -231,22 +231,29 @@ DEPENDENCIAS_PASOS: Dict[str, Tuple[str, ...]] = {
 
 def orden_topologico_pasos() -> List[Dict[str, Any]]:
     """Valida el DAG `DEPENDENCIAS_PASOS` y devuelve `PASOS` en orden topológico determinista."""
+    import heapq
+
     por_nombre = {p["nombre"]: p for p in PASOS}
     ts: TopologicalSorter[str] = TopologicalSorter()
     for p in PASOS:
         nombre = p["nombre"]
         deps = DEPENDENCIAS_PASOS.get(nombre, ())
         ts.add(nombre, *deps)
-    # Comprueba aciclicidad real; respeta el orden canónico de PASOS cuando
-    # varios nodos quedan listos simultáneamente (determinismo total).
+    # Comprueba aciclicidad real; un min-heap por `orden_canonico` libera siempre
+    # el paso de menor índice disponible, preservando el orden canónico de PASOS
+    # cuando no hay dependencia que lo contradiga.
     ts.prepare()
     orden_canonico = {p["nombre"]: idx for idx, p in enumerate(PASOS)}
     resueltos: List[Dict[str, Any]] = []
-    while ts.is_active():
-        listos = sorted(ts.get_ready(), key=lambda n: orden_canonico.get(n, 999))
-        for nombre in listos:
-            resueltos.append(por_nombre[nombre])
-            ts.done(nombre)
+    cola: List[Tuple[int, str]] = []
+    for n in ts.get_ready():
+        heapq.heappush(cola, (orden_canonico.get(n, 999), n))
+    while cola:
+        _, nombre = heapq.heappop(cola)
+        resueltos.append(por_nombre[nombre])
+        ts.done(nombre)
+        for n in ts.get_ready():
+            heapq.heappush(cola, (orden_canonico.get(n, 999), n))
     return resueltos
 
 

@@ -244,6 +244,11 @@ _RE_VAULT_ONBOARD_12 = re.compile('^\\s{2}([\\w-]+):\\s*$', re.MULTILINE)
 _RE_VAULT_ONBOARD_13 = re.compile(r"^\s+(push|pull_request|workflow_dispatch|schedule|release):", re.MULTILINE)
 _RE_VAULT_ONBOARD_14 = re.compile(r"^[-*]\s+(.+)$", re.MULTILINE)
 _RE_DEP_SEP = re.compile(r"[<>=!~;\[\s]")
+_RE_PYPROJECT_LICENSE = re.compile(
+    r'license\s*=\s*(?:\{\s*text\s*=\s*["\']([^"\']+)["\']\s*\}|["\']([^"\']+)["\'])'
+)
+_RE_PYPROJECT_DEPS = re.compile(r"dependencies\s*=\s*\[([^\]]*)\]", re.DOTALL)
+_RE_PYPROJECT_DEP_ITEM = re.compile(r'["\']([^"\']+)["\']')
 
 
 def _raiz() -> Path:
@@ -891,15 +896,12 @@ def _read_pyproject(project_path: Path) -> Dict[str, Any]:
             name = _RE_VAULT_ONBOARD_1.search(text)
             desc = _RE_VAULT_ONBOARD_2.search(text)
             ver = _RE_VAULT_ONBOARD_3.search(text)
-            lic_m = re.search(
-                r'license\s*=\s*(?:\{\s*text\s*=\s*["\']([^"\']+)["\']\s*\}|["\']([^"\']+)["\'])',
-                text,
-            )
+            lic_m = _RE_PYPROJECT_LICENSE.search(text)
             lic_fb = (lic_m.group(1) or lic_m.group(2) or "").strip() if lic_m else ""
             deps_fb: List[str] = []
-            deps_m = re.search(r"dependencies\s*=\s*\[([^\]]*)\]", text, re.DOTALL)
+            deps_m = _RE_PYPROJECT_DEPS.search(text)
             if deps_m:
-                for raw_dep in re.findall(r'["\']([^"\']+)["\']', deps_m.group(1)):
+                for raw_dep in _RE_PYPROJECT_DEP_ITEM.findall(deps_m.group(1)):
                     dep_name = _RE_DEP_SEP.split(raw_dep, maxsplit=1)[0].strip()
                     if dep_name:
                         deps_fb.append(dep_name)

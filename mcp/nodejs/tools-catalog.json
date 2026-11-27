@@ -940,7 +940,7 @@
         "Baseline que solo encoge, y un sitio congelado sin motivo escrito hace fallar la puerta: una excepcion sin dueño no es una excepcion"
       ],
       "side_effects": [
-        "scripts\\clones-baseline.json"
+        "scripts/clones-baseline.json"
       ],
       "perfil_minimo": "operador",
       "access_mode": "write",

@@ -26,6 +26,7 @@ import pytest
 
 from apoyo import SCRIPTS, correr_tool, entorno
 from test_mcp_runner import SesionMCP
+from vault_version import CURRENT_VERSION
 
 
 def _vault_minimo(ruta: Path) -> Path:
@@ -33,7 +34,7 @@ def _vault_minimo(ruta: Path) -> Path:
     for sec in ("00_System", "01_Projects", "08_Runbooks", "09_Infrastructure", "99_Index"):
         (ruta / sec).mkdir(parents=True, exist_ok=True)
     (ruta / "00_System" / "standard-version.json").write_text(
-        json.dumps({"applied_version": "v41.27"}, indent=2),
+        json.dumps({"applied_version": CURRENT_VERSION}, indent=2),
         encoding="utf-8",
     )
     return ruta

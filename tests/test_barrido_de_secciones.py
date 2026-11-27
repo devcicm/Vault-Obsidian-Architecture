@@ -49,6 +49,8 @@ PERMITIDOS = {
         "función superseded_by notas_en_disco; ya no la llama el barrido",
     "scripts/vault_init.py::<module>":
         "andamiaje: las carpetas que crea un vault nuevo son las del estándar",
+    "scripts/vault_init.py::_resolver_seleccion_secciones":
+        "valida opciones --sections-preset y --only-sections contra las secciones del estándar",
     "vault/autoria/listar.py::<module>":
         "descripciones del estándar para el listado de carpetas",
     "scripts/vault_onboard.py::vault_onboard":
@@ -57,6 +59,10 @@ PERMITIDOS = {
         "separa en el listado las del estándar de las propias",
     "vault/indices/registro_de_secciones.py::retirar":
         "una sección del estándar no se retira",
+    "vault/indices/registro_de_secciones.py::deshabilitar":
+        "--disable solo opera sobre secciones del estándar",
+    "vault/indices/registro_de_secciones.py::habilitar":
+        "distingue si --enable reactiva una sección del estándar o una propia",
     "scripts/vault_section_index.py::recetas_de_la_nota_de_comandos":
         "recetas `tool_hint`: solo el estándar declara receta",
     "scripts/vault_section_index.py::_nota_de_comandos":
@@ -65,8 +71,6 @@ PERMITIDOS = {
         "`VAULT_SECTIONS` conservada con superseded_by (no-derogación)",
     "scripts/vault_validate.py::<module>":
         "`REQUIRED_FOLDERS`: estructura exigida por el estándar",
-    "scripts/vault_validate.py::check_structure":
-        "la estructura mínima es la del estándar; las propias son opcionales",
     "vault/gobernanza/auditoria_runtime.py::auditar_runtime":
         "respaldo con secciones.json roto: se reporta CN-02 y se sigue con el estándar",
 }

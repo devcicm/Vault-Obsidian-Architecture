@@ -1179,7 +1179,9 @@ def corre_instalado() -> bool:
 
         return vault_grafo_import.DIRECTORIO.name == "_impl"
     except ImportError:
-        return (Path(__file__).resolve().parents[1] / "vault_toolkit" / "_impl").is_dir()
+        import importlib.util
+
+        return importlib.util.find_spec("vault_toolkit._impl") is not None
 
 
 def es_andamio(texto: str) -> bool:
