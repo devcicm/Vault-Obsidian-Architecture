@@ -199,7 +199,7 @@ def assert_within_vault(path: Path, vault_root: Path) -> Path:
             pedida = "<ruta absoluta>"
         raise ValueError(
             f"Path '{pedida}' is outside the vault. Use a relative path within the vault."
-        )
+        ) from None
     return resolved
 
 
@@ -377,12 +377,12 @@ def _rechazar_traversal(path: Path) -> None:
     resuelta = path.resolve()
     try:
         resuelta.relative_to(raiz)
-    except ValueError:
+    except ValueError as exc:
         raise ValueError(
             f"atomic_write bloqueado: '{path}' resuelve a '{resuelta}', fuera del "
             f"vault '{raiz}'. Las rutas se derivan de get_vault_root(), nunca por "
             f"concatenación de un argumento del usuario (AP-36)."
-        )
+        ) from exc
 
 
 #: Notas escritas en este proceso cuyo frontmatter parsea pero sale sin `type:`.
@@ -463,7 +463,7 @@ def _verificar_frontmatter(path: Path, text: str) -> None:
             f"atomic_write bloqueado: el frontmatter de '{path.name}' no parsea "
             f"como YAML ({type(exc).__name__}: {exc}). Es lo que verá quien lea la "
             f"nota, no lo que creyó escribir la tool (AP-46)."
-        )
+        ) from exc
     if isinstance(datos, dict) and not datos.get("type"):
         _FRONTMATTER_SIN_TIPO.append({"path": str(path), "reason": "missing_type"})
 

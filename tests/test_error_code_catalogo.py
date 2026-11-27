@@ -69,3 +69,14 @@ def test_ap52_la_puerta_los_bloquea(monkeypatch):
     r = vault_error_contract.scan()
     assert r["ok"] is False
     assert r["codes_outside_catalog"][0]["code"] == "NUEVO"
+
+
+def test_t5_standard_incompatible_esta_en_catalogo_con_recuperacion():
+    assert "STANDARD_INCOMPATIBLE" in ERROR_CATALOG
+    assert ErrorCode.STANDARD_INCOMPATIBLE == "STANDARD_INCOMPATIBLE"
+    e = construir_error("vault", ErrorCode.STANDARD_INCOMPATIBLE)
+    assert e["error_code"] == "STANDARD_INCOMPATIBLE"
+    assert e["severity"] == "error"
+    assert e["recovery"]["action"] == "run_tool"
+    assert e["recovery"]["tool"] == "vault_standard_upgrade"
+

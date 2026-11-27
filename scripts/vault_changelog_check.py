@@ -885,7 +885,7 @@ def main() -> int:
     print(json.dumps(r, indent=2, ensure_ascii=False))
     if args.strict and not r.get("ok"):
         return 1
-    return 0 if r.get("ok") else 0
+    return 0
 
 
 if __name__ == "__main__":

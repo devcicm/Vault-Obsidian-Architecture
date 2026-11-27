@@ -1374,7 +1374,7 @@ def _verificar_releyendo(vault_path: Path) -> None:
     try:
         fm = yaml.safe_load(m.group(1))
     except (yaml.YAMLError, RecursionError) as exc:  # AP-61 - ver vault_lib.parse_frontmatter
-        raise ValueError(f"{vault_path.name}: frontmatter ilegible para YAML: {exc}")
+        raise ValueError(f"{vault_path.name}: frontmatter ilegible para YAML: {exc}") from exc
     if not isinstance(fm, dict):
         raise ValueError(f"{vault_path.name}: el frontmatter no es un mapa YAML")
     faltan = [c for c in ("title", "type", "status", "tags", "updatedAt")
@@ -1501,7 +1501,7 @@ def _merge_stub_bajo_lock(vault_path: Path, new_content: str) -> str:
     merged = existing.rstrip() + "\n\n" + "\n\n".join(to_add) + "\n"
     try:
         atomic_write_text(vault_path, merged)
-    except NotaInmutableError as exc:
+    except NotaInmutableError:
         # La nota esta en una seccion declarada inmutable: **no se toca**. El
         # onboarding puebla, no reescribe el historico (medido el 2026-11-09 en
         # una revision independiente: aqui modificaba una nota de `11_Code`

@@ -187,7 +187,7 @@ Fronteras que hoy cruza (6), deuda declarada:
 | `vault_norms_coherence` | `vault_norms` | Gobernanza |
 | `vault_spec_memory` | `vault/ciclo_de_vida` | Ciclo de vida |
 | `vault_spec_memory` | `vault/gobernanza` | Gobernanza |
-| `vault/meta_toolkit/catalog_adapter.py` | `vault/gobernanza` | Gobernanza |
+| `vault/meta_toolkit/catalog_adapter.py` | `vault/gobernanza` (2 imports) | Gobernanza |
 | `vault_mcp` | `vault_mcp_context` | Consulta |
 
 ## CLI

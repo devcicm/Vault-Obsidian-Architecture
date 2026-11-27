@@ -622,7 +622,6 @@ def validate_and_fix(
 
     # 3. Auto-corrección si hay anomalías
     if other_anomalies:
-        original = text
         text, applied_fixes = fix_all_brackets(text)
         fixes.extend(applied_fixes)
 

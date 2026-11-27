@@ -255,7 +255,6 @@ def _content_gate_reason(content: str, folder: str) -> Optional[str]:
     # Check for remaining anomalies
     anomalies = detect_bracket_anomalies(fixed_content)
     if anomalies:
-        empty_anomalies = [a for a in anomalies if a["type"] == "empty"]
         non_empty_anomalies = [a for a in anomalies if a["type"] != "empty"]
 
         if non_empty_anomalies:

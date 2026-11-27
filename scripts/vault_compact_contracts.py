@@ -385,7 +385,6 @@ def _extract_argparse_args(source: str) -> tuple:
                 j += 1
 
             # Extract flag name
-            name_match = None
             names = _RE_VAULT_COMPACT_CONTRACTS_1.findall(call)
             if not names:
                 i += 1

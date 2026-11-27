@@ -681,7 +681,7 @@ def proyecto_registrado(
             return slug
         except FalloDeDominio as fallo:
             print(json.dumps(emitir(tool, fallo), ensure_ascii=False))
-            raise SystemExit(1)
+            raise SystemExit(1) from fallo
 
     _resolver.__name__ = "proyecto_registrado"
     return _resolver

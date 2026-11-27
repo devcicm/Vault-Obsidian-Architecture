@@ -2356,7 +2356,6 @@ def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]
         # salía como nota sin frontmatter.
         clase = clase_de_nota(rel, _raiz())
         is_index = clase == "derivada"
-        is_system = clase == "sistema"
         # Los campos de sección (tags, type, status, CIA, agent) solo se piden
         # a las notas de una sección: `sin_seccion` lleva el contrato de sistema.
         es_de_seccion = clase == "contenido"
@@ -3657,8 +3656,6 @@ def vault_audit(
     for bl in broken_links:
         target = bl.get("link", "")
         src = bl.get("from", "")
-        # build a clean slug from the target for the suggested filename
-        slug = target.lower().replace(" ", "-")
         next_actions.append(
             {
                 "priority": "high",

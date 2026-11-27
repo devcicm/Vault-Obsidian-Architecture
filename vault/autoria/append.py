@@ -204,8 +204,6 @@ def _append_bajo_lock(
         if section_match:
             # Find the position right after the section heading
 
-            section_start = section_match.start()
-
             section_end = section_match.end()
 
             # Find the next section or end of file

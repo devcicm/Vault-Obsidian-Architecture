@@ -20,6 +20,10 @@ import time
 class IsolationUnavailable(RuntimeError):
     """The worker could not be safely admitted or its completion verified."""
 
+    def __init__(self, message: str = "", *, public_reason: str = "") -> None:
+        super().__init__(message)
+        self.public_reason = public_reason
+
 
 def bootstrap_command(entry_module: str, entry_function: str, request: Path) -> list:
     """Interpreter command whose import path is exactly the caller's sys.path.
@@ -191,7 +195,10 @@ def ejecutar_aislado(module: str, function: str, payload: dict, timeout: float) 
                 supervisor = bootstrap_command("vault.kernel.aislamiento_linux", "supervisar", request)
                 return ejecutar(request, command, env, started + timeout, supervisor)
             except LinuxContainmentError as exc:
-                raise IsolationUnavailable("Linux containment could not be verified") from exc
+                raise IsolationUnavailable(
+                    "Linux containment could not be verified",
+                    public_reason=str(exc),
+                ) from exc
         if os.name != "nt":
             raise IsolationUnavailable("No verified containment adapter for this platform")
         process, job, completed = None, None, False

@@ -101,8 +101,6 @@ def get_diagram_path(
 
     safe_title = slugify_strict(title)
 
-    ext = "md"
-
     return get_category_folder(category) / f"{safe_project}-{safe_title}.md"
 
 
@@ -144,12 +142,6 @@ def vault_diagram_save(
         }
 
     timestamp = utcnow()
-
-    safe_project = slugify_strict(project)
-
-    safe_title = slugify_strict(title)
-
-    filename = f"{safe_project}-{safe_title}.md"
 
     diagram_path = get_diagram_path(project, title, category, diagram_type)
 

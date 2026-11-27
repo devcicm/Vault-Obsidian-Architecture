@@ -236,8 +236,6 @@ def calculate_tf_idf(keywords_by_file: dict) -> dict:
 def extract_all(mode: str = "nltk", custom_keywords: list = None):
     """Extraer keywords de todas las notas"""
 
-    stop_words = get_nltk_stopwords() if mode == "nltk" else set()
-
     keywords_global = Counter()
 
     keywords_by_file = {}

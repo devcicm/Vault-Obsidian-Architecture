@@ -225,7 +225,7 @@ _CICLO_DE_VIDA = {
         "<vault>` o define VAULT_ROOT con una carpeta que exista.",
     ),
     "STANDARD_INCOMPATIBLE": (
-        "VERSION_NOT_FOUND",
+        "STANDARD_INCOMPATIBLE",
         "El runtime es de otra versión del estándar: si es más nueva, actualiza "
         "el paquete; si es más vieja, vault_standard_upgrade --check da la ruta.",
     ),

@@ -1585,6 +1585,16 @@ function comprobarLlamada(name, args, session) {
       message: `Tool '${name}' bloqueada: la sesión cruzada sobre '${session.vaultName}' es estrictamente read_only (AP-36 / access-policy.json).`,
     };
   }
+  if (session?.crossVaultGrant && (args?.path || args?.folder)) {
+    const rutaSolicitada = String(args.path || args.folder);
+    const rec = _grantPermiteRecurso(session.crossVaultGrant, { rutaNota: rutaSolicitada });
+    if (!rec.ok) {
+      return {
+        code: "PERMISSION_DENIED",
+        message: `Acceso cruzado denegado a '${rutaSolicitada}' por access-policy.json (${rec.reason}).`,
+      };
+    }
+  }
   // Lo que `tools/list` no ofreció a este cliente tampoco se ejecuta (AP-40).
   if (TOOLS_DEL_PERFIL && !TOOLS_DEL_PERFIL.has(name)) {
     return {
@@ -2256,10 +2266,74 @@ const MESSAGE_TIMEOUT_MS = 30000;
 // conexiones cruzadas `GET /sse?vault=<otro>`. Cuando el baúl destino declara
 // política soberana, se evalúa fail-closed por `(callerVault, role, expires_at)`
 // y toda sesión cruzada autorizada queda estrictamente `read_only` (AP-36).
-function evaluateCrossVaultAccessPolicy(targetRoot, callerVault, role) {
-  const policyPath = join(targetRoot, "00_System", "access-policy.json");
+const _ORDEN_SENSIBILIDAD_CRUZADA = {
+  public: 0,
+  internal: 1,
+  confidential: 2,
+  restricted: 3,
+};
+const _SECCIONES_SENSIBLES_POR_DEFECTO = new Set(["17_Preferences", "20_Quarantine"]);
+
+function _grantPermiteRecurso(grant, options = {}) {
+  const maxSens = String(grant.max_sensitivity || "internal").trim().toLowerCase();
+  const maxRank = Object.prototype.hasOwnProperty.call(_ORDEN_SENSIBILIDAD_CRUZADA, maxSens)
+    ? _ORDEN_SENSIBILIDAD_CRUZADA[maxSens]
+    : _ORDEN_SENSIBILIDAD_CRUZADA.internal;
+
+  if (options.sensibilidadNota !== undefined && options.sensibilidadNota !== null) {
+    let sensEf = String(options.sensibilidadNota).trim().toLowerCase();
+    if (!Object.prototype.hasOwnProperty.call(_ORDEN_SENSIBILIDAD_CRUZADA, sensEf)) {
+      sensEf = "restricted";
+    }
+    if (_ORDEN_SENSIBILIDAD_CRUZADA[sensEf] > maxRank) {
+      return { ok: false, reason: `sensitivity_exceeds_max:${sensEf}>${maxSens}` };
+    }
+  }
+
+  const rutaNota = options.rutaNota ? String(options.rutaNota).replace(/\\/g, "/").replace(/^\/+/, "") : "";
+  if (rutaNota) {
+    const seccion = rutaNota.includes("/") ? rutaNota.split("/")[0] : rutaNota;
+    const allowedSec = Array.isArray(grant.allowed_sections) ? grant.allowed_sections : [];
+    const deniedSec = new Set(Array.isArray(grant.denied_sections) ? grant.denied_sections : []);
+    if (deniedSec.has(seccion)) {
+      return { ok: false, reason: `section_denied:${seccion}` };
+    }
+    if (allowedSec.length > 0) {
+      if (!allowedSec.includes(seccion)) {
+        return { ok: false, reason: `section_not_allowed:${seccion}` };
+      }
+    } else if (_SECCIONES_SENSIBLES_POR_DEFECTO.has(seccion)) {
+      return { ok: false, reason: `sensitive_section_blocked_by_default:${seccion}` };
+    }
+  }
+
+  const allowedTags = new Set(
+    (Array.isArray(grant.allowed_tags) ? grant.allowed_tags : [])
+      .map(t => String(t).trim().toLowerCase())
+      .filter(Boolean)
+  );
+  if (allowedTags.size > 0 && Array.isArray(options.tagsNota) && (rutaNota || options.tagsNota.length > 0 || options.sensibilidadNota !== undefined)) {
+    const notaTags = options.tagsNota.map(t => String(t).trim().toLowerCase()).filter(Boolean);
+    if (!notaTags.some(t => allowedTags.has(t))) {
+      return { ok: false, reason: "tag_not_allowed" };
+    }
+  }
+
+  return { ok: true, reason: "authorized" };
+}
+
+function evaluateCrossVaultAccessPolicy(targetRoot, callerVault, role, options = {}) {
+  const destinoRes = resolve(targetRoot);
+  if (options && options.callerRoot) {
+    if (resolve(options.callerRoot) === destinoRes) {
+      return { enforced: false, allowed: true, mode: "read_only", reason: "self_vault" };
+    }
+  }
+  const policyPath = join(destinoRes, "00_System", "access-policy.json");
+  // T-1 (H-03 / AP-48): paridad estricta fail-closed con Python (`evaluar_acceso_cruzado`).
+  // Sin 00_System/access-policy.json se deniega con `no_policy_fail_closed` (403).
   if (!existsSync(policyPath)) {
-    return { enforced: false, allowed: true, mode: "unrestricted_legacy", reason: "no_policy_file" };
+    return { enforced: true, allowed: false, mode: "deny", reason: "no_policy_fail_closed" };
   }
   let policy;
   try {
@@ -2271,6 +2345,15 @@ function evaluateCrossVaultAccessPolicy(targetRoot, callerVault, role) {
     return { enforced: true, allowed: false, mode: "deny", reason: "invalid_policy_fail_closed" };
   }
   const now = Date.now();
+  const callerProject = options && options.project ? String(options.project).trim() : "";
+  const tieneFiltroRecurso = Boolean(
+    options && (
+      options.rutaNota
+      || (options.sensibilidadNota !== undefined && options.sensibilidadNota !== null)
+      || (Array.isArray(options.tagsNota) && options.tagsNota.length > 0)
+    )
+  );
+  let motivoCercano = "no_matching_grant";
   for (const g of policy.grants) {
     if (!g || typeof g !== "object") continue;
     const p = g.principal;
@@ -2278,15 +2361,40 @@ function evaluateCrossVaultAccessPolicy(targetRoot, callerVault, role) {
     const grantVault = String(p.vault || "").trim();
     if (!grantVault || grantVault === "*" || grantVault !== callerVault) continue;
     const roles = Array.isArray(p.roles) ? p.roles : [];
-    if (!roles.includes(role)) continue;
+    if (!roles.includes(role)) {
+      motivoCercano = "role_not_granted";
+      continue;
+    }
+    const proyectosPermitidos = Array.isArray(p.projects) ? p.projects : [];
+    if (proyectosPermitidos.length > 0 && (!callerProject || !proyectosPermitidos.includes(callerProject))) {
+      motivoCercano = "project_not_granted";
+      continue;
+    }
     if (g.mode && g.mode !== "read_only") continue;
     if (g.expires_at) {
       const expMs = Date.parse(String(g.expires_at));
-      if (!Number.isFinite(expMs) || expMs < now) continue;
+      if (!Number.isFinite(expMs) || expMs < now) {
+        motivoCercano = "grant_expired";
+        continue;
+      }
     }
-    return { enforced: true, allowed: true, mode: "read_only", reason: "grant_matched" };
+    if (tieneFiltroRecurso) {
+      const rec = _grantPermiteRecurso(g, options);
+      if (!rec.ok) {
+        motivoCercano = rec.reason;
+        continue;
+      }
+    }
+    return {
+      enforced: true,
+      allowed: true,
+      mode: "read_only",
+      reason: "grant_matched",
+      grant: g,
+      max_sensitivity: g.max_sensitivity || "internal",
+    };
   }
-  return { enforced: true, allowed: false, mode: "deny", reason: "no_matching_grant" };
+  return { enforced: true, allowed: false, mode: "deny", reason: motivoCercano };
 }
 
 function startSSE(port, bindHost, tlsOptions = null) {
@@ -2361,7 +2469,10 @@ function startSSE(port, bindHost, tlsOptions = null) {
       let vaultRoot;
       let vaultName = "default";
 
+      const instanceId = String(req.headers["x-mcp-instance"] || url.searchParams.get("instance") || "").trim();
       let crossVaultReadOnly = false;
+      let crossVaultGrant = null;
+      let esCruzada = false;
       if (vaultParam) {
         const vr = VAULT_REGISTRY.get(vaultParam);
         if (!vr) {
@@ -2373,20 +2484,41 @@ function startSSE(port, bindHost, tlsOptions = null) {
         vaultName = vr.name;
         const defaultRoot = resolve(detectVaultRoot());
         if (resolve(vaultRoot) !== defaultRoot) {
-          const callerVault = basename(defaultRoot);
+          esCruzada = true;
+          const callerVault = (process.env.VAULT_CALLER_ID || "").trim() || basename(defaultRoot);
           const perfilMinimo = perfilToken || PERFILES_DE_TOKEN[0] || "";
-          const decision = evaluateCrossVaultAccessPolicy(vaultRoot, callerVault, perfilMinimo);
-          if (decision.enforced && !decision.allowed) {
+          const decision = evaluateCrossVaultAccessPolicy(vaultRoot, callerVault, perfilMinimo, {
+            callerRoot: defaultRoot,
+          });
+          if (!decision.allowed) {
             rechazar(403, `Acceso denegado por 00_System/access-policy.json (${decision.reason}).`);
             return;
           }
-          if (decision.enforced && decision.allowed) {
-            crossVaultReadOnly = true;
-          }
+          crossVaultReadOnly = true;
+          crossVaultGrant = decision.grant || null;
         }
       } else {
         vaultRoot = detectVaultRoot();
         vaultName = vaultRoot.split(/[/\\]/).pop();
+      }
+
+      // T-1 (sesión individual por instancia): denegar múltiples sesiones simultáneas
+      // de la misma instancia (`X-MCP-Instance`), de sesiones cruzadas con la misma
+      // credencial/destino o cuando `VAULT_MCP_SINGLE_SESSION=1`.
+      const resolvedTarget = resolve(vaultRoot);
+      let instanceKey = null;
+      if (instanceId) {
+        instanceKey = `inst:${instanceId}`;
+      } else if (esCruzada || process.env.VAULT_MCP_SINGLE_SESSION === "1") {
+        instanceKey = `cred:${credencialDigest || "anon"}:${resolvedTarget}`;
+      }
+      if (instanceKey) {
+        for (const activa of sessions.values()) {
+          if (activa.instanceKey === instanceKey) {
+            rechazar(409, "Esta instancia ya tiene una sesión SSE activa; se prohíben múltiples sesiones simultáneas.");
+            return;
+          }
+        }
       }
 
       const sessionId = randomUUID();
@@ -2396,6 +2528,8 @@ function startSSE(port, bindHost, tlsOptions = null) {
         vaultName,
         vaultVersion: version,
         crossVaultReadOnly,
+        crossVaultGrant,
+        instanceKey,
         initialized: false,
         clientCapabilities: null,
         clientInfo: null,
@@ -3145,4 +3279,5 @@ export {
   handleInitialize,
   handleToolsList,
   handleToolsCall,
+  evaluateCrossVaultAccessPolicy,
 };

@@ -277,8 +277,8 @@ def _punto(inv: Inventario, valor: str) -> Dict[str, Any]:
     if re.fullmatch(r"\d{4}-\d{2}-\d{2}", valor):
         try:
             d = datetime.combine(date.fromisoformat(valor), time.max, tzinfo=UTC)
-        except ValueError:
-            raise ValueError(f"{valor}: no es una fecha")
+        except ValueError as exc:
+            raise ValueError(f"{valor}: no es una fecha") from exc
         return {"valor": valor, "fecha": d, "version": None, "release": None}
     v = _version(valor)
     if v is None:

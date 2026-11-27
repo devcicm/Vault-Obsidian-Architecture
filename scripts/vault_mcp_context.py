@@ -185,7 +185,7 @@ def get_context(persist: bool = True) -> VaultContext:
 
 def save_context() -> Dict[str, Any]:
     """Fuerza el guardado del contexto."""
-    context = VaultContext(persist=True)
+    VaultContext(persist=True)
     return {"ok": True, "path": str(_context_file())}
 
 

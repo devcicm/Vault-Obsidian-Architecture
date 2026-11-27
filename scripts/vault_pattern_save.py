@@ -186,8 +186,6 @@ def vault_pattern_save(
 
     safe_project = slugify(project)
 
-    safe_name = slugify(name)
-
     pattern_path = get_pattern_path(project, name, pattern_type)
 
     existing_id = None

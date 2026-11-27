@@ -28,7 +28,10 @@ solo está lo declarado.
 """
 
 import re
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # Documentación del estándar embarcada dentro de un vault. Sus wikilinks son
 # **sintaxis de ejemplo** —`[[wiki-link]]`, `[[]]`, `[[nota]]`— no enlaces a

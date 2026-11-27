@@ -11,7 +11,7 @@ habría dos implementaciones de lo mismo (AP-48).
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, List, Sequence
+from typing import Any, Callable, Dict, List, Optional, Sequence
 
 from .repositorio import RepositorioIndices
 from .seccion import con_marca_de
