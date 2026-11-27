@@ -61,8 +61,11 @@ def test_resumen_inventario_cubre_todos_los_modulos_y_segundos():
     assert resumen["bloques"]["mcp"]["modulos"] >= 25
 
 
-def test_conftest_asigna_marker_de_bloque_sin_romper_slow():
+def test_conftest_asigna_marker_de_bloque_sin_romper_slow(monkeypatch):
     import conftest
+
+    # En CI con VAULT_SHARD=2/2 el hook filtraría items; aislamos el test del entorno.
+    monkeypatch.delenv("VAULT_SHARD", raising=False)
 
     class _Item:
         def __init__(self, nodeid: str) -> None:

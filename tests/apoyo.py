@@ -116,6 +116,14 @@ def _entorno_python(vault: Optional[Path],
                     env: Optional[Mapping[str, str]]) -> Dict[str, str]:
     """Compose a child environment that imports this checkout before site packages."""
     resultado = dict(env) if env is not None else entorno(vault)
+    # Windows + Python 3.10: `CryptGenRandom` durante `_Py_HashRandomization_Init`
+    # exige `SYSTEMROOT` cuando el llamador pasa un `env` mínimo.
+    if (
+        os.name == "nt"
+        and "SYSTEMROOT" in os.environ
+        and not any(k.upper() == "SYSTEMROOT" for k in resultado)
+    ):
+        resultado["SYSTEMROOT"] = os.environ["SYSTEMROOT"]
     heredado = resultado.get("PYTHONPATH", "")
     rutas_importacion = [Path(p) for p in heredado.split(os.pathsep) if p]
     rutas_importacion.extend((ROOT, SCRIPTS, TESTS))

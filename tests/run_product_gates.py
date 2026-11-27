@@ -91,6 +91,14 @@ def _run_gate(name: str, script: Path) -> tuple[int, str, str]:
 
 
 def main() -> int:
+    # H-24: en Windows CI la consola cp1252 lanza UnicodeEncodeError ante '\ufffd'
+    # o caracteres UTF-8 emitidos por los subprocesos de las product gates.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            try:
+                stream.reconfigure(encoding="utf-8", errors="replace")
+            except (OSError, ValueError):
+                pass
     gates = [
         ("clean_install", REPO_ROOT / "tests" / "clean_install_gate.py"),
         ("memory_e2e", REPO_ROOT / "tests" / "memory_recovery_e2e_gate.py"),

@@ -215,9 +215,9 @@ def _adjacency(
     graph: Dict[str, Any],
     direction: str,
     predicates: Optional[Set[str]],
-) -> Dict[str, List[Tuple[str, str, float, str, float]]]:
-    """origen → [(destino, predicado, peso, epistemic, confidence)] según la dirección."""
-    adj: Dict[str, List[Tuple[str, str, float, str, float]]] = defaultdict(list)
+) -> Dict[str, List[Tuple[str, str, float]]]:
+    """origen → [(destino, predicado, peso)] según la dirección (contrato estable de 3-tupla)."""
+    adj: Dict[str, List[Tuple[str, str, float]]] = defaultdict(list)
     for edge in graph.get("edges", []):
         src = edge.get("from") or edge.get("source") or ""
         tgt = edge.get("to") or edge.get("target") or ""
@@ -228,12 +228,26 @@ def _adjacency(
         if predicates and predicate not in predicates:
             continue
         weight = PREDICATE_WEIGHT.get(predicate, DEFAULT_WEIGHT)
-        epistemic, confidence = clasificar_arista_epistemica(edge)
         if direction in ("out", "both"):
-            adj[src].append((tgt, predicate, weight, epistemic, confidence))
+            adj[src].append((tgt, predicate, weight))
         if direction in ("in", "both"):
-            adj[tgt].append((src, predicate, weight, epistemic, confidence))
+            adj[tgt].append((src, predicate, weight))
     return dict(adj)
+
+
+def _indice_epistemico(graph: Dict[str, Any]) -> Dict[Tuple[str, str, str], Tuple[str, float]]:
+    """Mapa `(from, to, predicate) -> (epistemic, confidence)` preservando sellos explícitos."""
+    mapa: Dict[Tuple[str, str, str], Tuple[str, float]] = {}
+    for edge in graph.get("edges", []):
+        src = edge.get("from") or edge.get("source") or ""
+        tgt = edge.get("to") or edge.get("target") or ""
+        if not src or not tgt:
+            continue
+        pred = predicado_de(edge)
+        par = clasificar_arista_epistemica(edge)
+        mapa[(src, tgt, pred)] = par
+        mapa.setdefault((tgt, src, pred), par)
+    return mapa
 
 
 def _matches_filters(
@@ -311,6 +325,7 @@ def vault_subgraph(
     nodes = _nodes_by_path(graph)
     desfase = _desfase(nodes)
     adj = _adjacency(graph, direction, set(predicates) if predicates else None)
+    epistemica_por_arista = _indice_epistemico(graph)
 
     resolved: List[str] = []
     unresolved: List[str] = []
@@ -362,12 +377,15 @@ def vault_subgraph(
         current, d, relevance = queue.popleft()
         if d >= hops:
             continue
-        for neighbor, predicate, weight, epistemic, confidence in adj.get(current, []):
+        for neighbor, predicate, weight in adj.get(current, []):
             if weight < min_weight:
                 continue
             key = (current, neighbor, predicate)
             if key not in seen_edges:
                 seen_edges.add(key)
+                epistemic, confidence = epistemica_por_arista.get(
+                    key, clasificar_arista_epistemica({"predicate": predicate})
+                )
                 edges_out.append({
                     "from": current,
                     "to": neighbor,

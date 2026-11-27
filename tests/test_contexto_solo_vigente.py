@@ -178,7 +178,10 @@ def test_incluir_historico_devuelve_el_paquete_penalizado_de_antes(con_historia)
 def test_una_consulta_que_nombra_un_estado_historico_pide_historia(con_historia):
     """`deprecated` in the question is a request for history, not a filter target."""
     consulta = CONSULTA + " deprecated"
+    contador = con_historia / "00_System" / ".voice-counter"
+    contador.unlink(missing_ok=True)
     por_defecto = _pack(con_historia, consulta=consulta)
+    contador.unlink(missing_ok=True)
     explicito = _pack(con_historia, "--incluir-historico", consulta=consulta)
 
     assert _sin_reloj(por_defecto) == _sin_reloj(explicito)
@@ -187,7 +190,10 @@ def test_una_consulta_que_nombra_un_estado_historico_pide_historia(con_historia)
 
 @pytest.mark.parametrize("consulta", [CONSULTA, "guia del bus", "adr transporte eventos"])
 def test_sin_historia_el_paquete_es_byte_a_byte_el_de_antes(sin_historia, consulta):
+    contador = sin_historia / "00_System" / ".voice-counter"
+    contador.unlink(missing_ok=True)
     por_defecto = _pack(sin_historia, consulta=consulta)
+    contador.unlink(missing_ok=True)
     de_antes = _pack(sin_historia, "--incluir-historico", consulta=consulta)
 
     assert _sin_reloj(por_defecto) == _sin_reloj(de_antes)

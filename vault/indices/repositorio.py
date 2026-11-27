@@ -60,7 +60,18 @@ class RepositorioIndices:
 
     @property
     def dir_vocabulario(self) -> Path:
-        return self._ctx.ruta(CARPETA_AUDITORIAS, "vocabulary")
+        predeterminada = self._ctx.ruta(CARPETA_AUDITORIAS, "vocabulary")
+        if (predeterminada / FICHERO_BITACORA_ETIQUETAS).is_file():
+            return predeterminada
+        from ..kernel.registry import leer_secciones_deshabilitadas
+
+        try:
+            deshabilitadas = leer_secciones_deshabilitadas(self.raiz)
+        except ValueError:
+            deshabilitadas = []
+        if CARPETA_AUDITORIAS in deshabilitadas:
+            return self._ctx.ruta(CARPETA_SISTEMA, "vocabulary")
+        return predeterminada
 
     @property
     def indice_busqueda(self) -> Path:

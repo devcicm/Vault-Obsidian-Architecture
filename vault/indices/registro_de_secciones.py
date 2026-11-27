@@ -35,7 +35,10 @@ from vault_registry import (
     DOCUMENTACION_CLASES,
     NUMEROS_PROPIOS,
     ORDERED_SECTIONS,
+    PRESETS_SECCIONES,
+    SECCIONES_OBLIGATORIAS,
     SECCIONES_PROPIAS_RUTA,
+    leer_secciones_deshabilitadas,
     leer_secciones_propias,
     motivo_de_destino_invalido,
     motivo_de_nombre_invalido,
@@ -67,19 +70,44 @@ def _leer(raiz: Path):
         return None, emit_error(TOOL, "DATA_FILE_CORRUPT", str(e))
 
 
-def _guardar(raiz: Path, secciones: List[Dict[str, Any]]) -> None:
-    atomic_write_json(
-        raiz / SECCIONES_PROPIAS_RUTA,
-        {"schema": ESQUEMA, "secciones": sorted(secciones, key=lambda s: s["folder"])},
-    )
+def _leer_todo(raiz: Path):
+    """Devuelve `(propias, deshabilitadas, error)` desde `secciones.json`."""
+    try:
+        propias = leer_secciones_propias(raiz)
+        deshabilitadas = leer_secciones_deshabilitadas(raiz)
+        return propias, deshabilitadas, None
+    except ValueError as e:
+        return None, None, emit_error(TOOL, "DATA_FILE_CORRUPT", str(e))
+
+
+def _guardar(
+    raiz: Path,
+    secciones: List[Dict[str, Any]],
+    disabled_standard: Optional[List[str]] = None,
+) -> None:
+    if disabled_standard is None:
+        # Preservar las deshabilitadas existentes si el llamador solo modifica `secciones`.
+        try:
+            disabled_standard = leer_secciones_deshabilitadas(raiz)
+        except ValueError:
+            disabled_standard = []
+    payload: Dict[str, Any] = {
+        "schema": ESQUEMA,
+        "secciones": sorted(secciones, key=lambda s: s["folder"]),
+    }
+    limpias = sorted(set(disabled_standard or ()))
+    if limpias:
+        payload["disabled_standard"] = limpias
+    atomic_write_json(raiz / SECCIONES_PROPIAS_RUTA, payload)
 
 
 def listar(raiz: Optional[Path] = None) -> Dict[str, Any]:
-    """Las propias con su estado, y las carpetas de raíz que no son de ninguna sección."""
+    """Las propias con su estado, estándar activas/deshabilitadas y carpetas sin sección."""
     raiz = Path(raiz or get_vault_root())
-    propias, error = _leer(raiz)
+    propias, deshabilitadas, error = _leer_todo(raiz)
     if error:
         return error
+    deshabilitadas_set = set(deshabilitadas)
     todas = set(ORDERED_SECTIONS) | {s["folder"] for s in propias}
     sin_seccion = sorted(
         p.name for p in raiz.iterdir()
@@ -89,6 +117,10 @@ def listar(raiz: Optional[Path] = None) -> Dict[str, Any]:
         "ok": True,
         "written": 0,
         "standard": len(ORDERED_SECTIONS),
+        "active_standard": [s for s in ORDERED_SECTIONS if s not in deshabilitadas_set],
+        "disabled_standard": deshabilitadas,
+        "mandatory_sections": sorted(SECCIONES_OBLIGATORIAS),
+        "presets": sorted(PRESETS_SECCIONES),
         "free_range": list(NUMEROS_PROPIOS),
         "total": len(propias),
         "sections": [
@@ -120,8 +152,11 @@ def _normalizar_subcarpeta(sub: str) -> Optional[str]:
 
 
 def _sincronizar_indices_de_seccion(raiz: Path, folder: str) -> Dict[str, Any]:
-    """Regenera registro de carpetas, indices (seccion + maestro), busqueda y grafo.
+    """Regenera en secuencia registro de carpetas, indices (seccion + maestro), busqueda y grafo.
 
+    H-23: las 5 escrituras corren en secuencia (cada archivo individual se escribe
+    atómicamente vía `atomic_write_*`, pero el bloque completo no es una
+    transacción ACID única; cada paso informa su resultado en el envelope).
     Orquesta dentro del propio contexto `indices` (sin cruces nuevos hacia `grafo`:
     `vault_reindex(..., rebuild_graph=True)` delega por el puerto ya declarado).
     """
@@ -290,23 +325,146 @@ def retirar(folder: str, superseded_by: Optional[str] = None,
     }
 
 
+def deshabilitar(folder: str, raiz: Optional[Path] = None) -> Dict[str, Any]:
+    """Deshabilita una sección estándar para nuevas escrituras sin borrar nada (DN-02).
+
+    Las secciones obligatorias (`00_System`, `99_Index`) nunca pueden
+    deshabilitarse. Las notas existentes en disco se preservan intactas y siguen
+    siendo legibles/buscables.
+    """
+    raiz = Path(raiz or get_vault_root())
+    if folder in SECCIONES_OBLIGATORIAS:
+        return emit_error(
+            TOOL,
+            "INVALID_FOLDER",
+            f"{folder!r} es una sección obligatoria del núcleo y no puede deshabilitarse",
+            pista=f"Las secciones obligatorias son {', '.join(sorted(SECCIONES_OBLIGATORIAS))}.",
+        )
+    if folder not in ORDERED_SECTIONS:
+        return emit_error(
+            TOOL,
+            "INVALID_FOLDER",
+            f"{folder!r} no es una sección estándar del registro; para secciones propias usa --retire",
+            pista="vault_section --list enseña las secciones estándar activas y las propias.",
+        )
+    propias, deshabilitadas, error = _leer_todo(raiz)
+    if error:
+        return error
+    if folder in deshabilitadas:
+        return {
+            "ok": True,
+            "written": 0,
+            "folder": folder,
+            "status": "deshabilitada",
+            "already_disabled": True,
+            "notes_preserved": True,
+            "disabled_standard": deshabilitadas,
+            "registry": SECCIONES_PROPIAS_RUTA,
+        }
+    nuevas = sorted(set(deshabilitadas) | {folder})
+    _guardar(raiz, propias, disabled_standard=nuevas)
+    return {
+        "ok": True,
+        "written": 1,
+        "folder": folder,
+        "status": "deshabilitada",
+        "already_disabled": False,
+        "notes_preserved": True,
+        "disabled_standard": nuevas,
+        "registry": SECCIONES_PROPIAS_RUTA,
+    }
+
+
+def habilitar(folder: str, raiz: Optional[Path] = None, sync: bool = False) -> Dict[str, Any]:
+    """Reactiva una sección estándar deshabilitada (o una sección propia retirada)."""
+    raiz = Path(raiz or get_vault_root())
+    propias, deshabilitadas, error = _leer_todo(raiz)
+    if error:
+        return error
+    if folder in ORDERED_SECTIONS:
+        estaba_deshabilitada = folder in deshabilitadas
+        nuevas = [s for s in deshabilitadas if s != folder]
+        carpeta = raiz / folder
+        creada = not carpeta.is_dir()
+        carpeta.mkdir(parents=True, exist_ok=True)
+        gitkeep = carpeta / ".gitkeep"
+        if not gitkeep.exists():
+            gitkeep.touch()
+        written = 0
+        if estaba_deshabilitada:
+            _guardar(raiz, propias, disabled_standard=nuevas)
+            written = 1
+        elif creada:
+            written = 1
+        salida: Dict[str, Any] = {
+            "ok": True,
+            "written": written,
+            "folder": folder,
+            "status": "activa",
+            "created_folder": creada,
+            "disabled_standard": nuevas,
+            "registry": SECCIONES_PROPIAS_RUTA,
+        }
+        if sync:
+            salida["sync"] = _sincronizar_indices_de_seccion(raiz, folder)
+        return salida
+
+    elegida = next((s for s in propias if s["folder"] == folder), None)
+    if elegida is None:
+        return emit_error(
+            TOOL,
+            "UNKNOWN_SECTION",
+            f"{folder!r} no es una sección estándar ni una sección propia declarada en {SECCIONES_PROPIAS_RUTA}",
+        )
+    estaba_retirada = elegida.get("status", "activa") == "retirada"
+    elegida["status"] = "activa"
+    elegida.pop("superseded_by", None)
+    carpeta = raiz / folder
+    creada = not carpeta.is_dir()
+    carpeta.mkdir(parents=True, exist_ok=True)
+    written = 0
+    if estaba_retirada:
+        _guardar(raiz, propias, disabled_standard=deshabilitadas)
+        written = 1
+    elif creada:
+        written = 1
+    salida = {
+        "ok": True,
+        "written": written,
+        "folder": folder,
+        "status": "activa",
+        "created_folder": creada,
+        "disabled_standard": deshabilitadas,
+        "registry": SECCIONES_PROPIAS_RUTA,
+    }
+    if sync:
+        salida["sync"] = _sincronizar_indices_de_seccion(raiz, folder)
+    return salida
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description="Vault Section - secciones propias del vault (CN-02)",
+        description="Vault Section - secciones propias y habilitacion de carpetas del vault (CN-02)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Ejemplos:
   python vault_section.py --list
   python vault_section.py --add 22_Scripts --documentacion referencia --description "Scripts de despliegue"
   python vault_section.py --retire 22_Scripts --superseded-by 23_Automatizacion
+  python vault_section.py --disable 12_Bibliography
+  python vault_section.py --enable 12_Bibliography
         """,
         allow_abbrev=False,
     )
     accion = parser.add_mutually_exclusive_group()
     accion.add_argument("--list", action="store_true",
-                        help="Listar secciones propias y carpetas de raíz sin sección")
+                        help="Listar secciones propias, estándar activas/deshabilitadas y carpetas sin sección")
     accion.add_argument("--add", type=str, help="Declarar una sección propia NN_Nombre")
     accion.add_argument("--retire", type=str, help="Retirar una sección propia sin borrar nada")
+    accion.add_argument("--disable", type=str,
+                        help="Deshabilitar una sección estándar para nuevas escrituras sin borrar notas")
+    accion.add_argument("--enable", type=str,
+                        help="Habilitar una sección estándar deshabilitada o reactivar una propia retirada")
     parser.add_argument("--documentacion", type=str,
                         help="Clase de documento: " + ", ".join(DOCUMENTACION_CLASES))
     parser.add_argument("--description", type=str, default="", help="Qué contiene la sección")
@@ -339,6 +497,10 @@ Ejemplos:
         )
     elif args.retire:
         result = retirar(args.retire, args.superseded_by)
+    elif args.disable:
+        result = deshabilitar(args.disable)
+    elif args.enable:
+        result = habilitar(args.enable, sync=args.sync)
     else:
         result = listar()
 

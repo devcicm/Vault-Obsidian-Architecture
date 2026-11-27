@@ -606,6 +606,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         reconfigure = getattr(stream, "reconfigure", None)
         if callable(reconfigure):
             reconfigure(encoding="utf-8")
+    from .kernel.version_python import comprobar_python_minimo
+
+    aviso_py = comprobar_python_minimo()
+    if aviso_py is not None:
+        return _error("PYTHON_VERSION_UNSUPPORTED", aviso_py, 2)
     crudo = list(sys.argv[1:] if argv is None else argv)
     if crudo == ["--version"]:
         print(toolkit_version())

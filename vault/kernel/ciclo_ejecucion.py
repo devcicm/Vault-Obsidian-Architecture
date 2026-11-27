@@ -17,11 +17,12 @@ para blindar los procesos internos del toolkit bajo Perfil A:
 from __future__ import annotations
 
 import json
+import os
 import signal
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 from . import procesos_git
 
@@ -181,29 +182,64 @@ class CheckpointLog:
 
 
 class SagaPreSha:
-    """Compensación determinista por pre-SHA Git para mutaciones en lote (AP-83).
+    """Compensación determinista para mutaciones en lote sin pérdida de datos (AP-83, H-04).
 
-    Captura `HEAD` antes de iniciar un lote multi-nota sobre un vault con Git;
-    si ocurre un fallo parcial, `compensate()` devuelve el árbol al `pre_sha`
-    exacto (y registra el evento si se proporciona `CheckpointLog`).
+    Antes de iniciar un lote multi-nota sobre un vault:
+    1. Captura `HEAD` (`pre_sha`) si el vault tiene Git.
+    2. Registra el inventario de archivos existentes antes del lote y toma una
+       instantánea en bytes de cualquier archivo que ya tuviera modificaciones
+       sin commit, para **nunca destruir trabajo previo del usuario**.
+    3. Al compensar (`compensate()`), restaura archivos previamente sucios a su
+       instantánea exacta en bytes, restaura archivos limpios desde `pre_sha` en
+       bytes (sin corromper binarios) y retira archivos nuevos creados durante el
+       lote hacia `.history/saga-rolled-back/<run_id>/` (sin borrado destructivo).
     """
+
+    _OMITIR_ESCANEO = frozenset({".git", ".locks", ".history", "__pycache__"})
 
     def __init__(self, vault_root: Path, run_id: str = "batch") -> None:
         self._root = Path(vault_root).resolve()
         self._run_id = str(run_id)
         self._pre_sha: Optional[str] = None
+        self._archivos_previos: Set[str] = set()
+        self._snapshots_sucios: Dict[str, bytes] = {}
+        self._iniciada = False
 
     @property
     def pre_sha(self) -> Optional[str]:
         return self._pre_sha
 
+    def _listar_archivos(self) -> Set[str]:
+        encontrados: Set[str] = set()
+        for actual, dirs, archivos in os.walk(self._root, followlinks=False):
+            dirs[:] = [d for d in dirs if d not in self._OMITIR_ESCANEO]
+            base = Path(actual)
+            for nombre in archivos:
+                ruta = base / nombre
+                if ruta.is_symlink():
+                    continue
+                encontrados.add(ruta.relative_to(self._root).as_posix())
+        return encontrados
+
     def begin(self) -> Optional[str]:
-        """Captura el SHA actual de `HEAD` (None si el vault no es repo git)."""
+        """Captura `HEAD`, inventario previo y bytes exactos de archivos ya modificados."""
+        self._archivos_previos = self._listar_archivos()
+        self._snapshots_sucios = {}
         r = procesos_git.ejecutar_git(
             self._root, ["rev-parse", "HEAD"], capture_output=True, timeout=15,
         )
         if r.returncode == 0 and r.stdout.strip():
             self._pre_sha = r.stdout.strip()
+            r_dirty = procesos_git.ejecutar_git(
+                self._root, ["diff", "--name-only", self._pre_sha],
+                capture_output=True, timeout=15,
+            )
+            if r_dirty.returncode == 0:
+                for rel in (ln.strip() for ln in r_dirty.stdout.splitlines() if ln.strip()):
+                    ruta = (self._root / rel).resolve()
+                    if ruta.is_relative_to(self._root) and ruta.is_file():
+                        self._snapshots_sucios[rel] = ruta.read_bytes()
+        self._iniciada = True
         return self._pre_sha
 
     def compensate(
@@ -212,54 +248,90 @@ class SagaPreSha:
         *,
         checkpoints: Optional[CheckpointLog] = None,
     ) -> Dict[str, Any]:
-        """Restaura archivos al estado exacto de `pre_sha` sin destruir historia Git (AP-68).
-
-        Lee el árbol previo mediante `git show <pre_sha>:<ruta>` (verbo de solo
-        lectura autorizado por `procesos_git`) y reescribe atómicamente cada
-        archivo afectado dentro del vault (AP-36).
-        """
-        if not self._pre_sha:
+        """Revierte únicamente los efectos del lote sin destruir trabajo previo ni binarios (AP-68, H-04)."""
+        if not self._iniciada or not self._pre_sha:
             return {"ok": False, "compensated": False, "reason": "no_pre_sha"}
 
-        objetivos = list(files or [])
-        if not objetivos:
+        # 1. Determinar archivos modificados en Git + archivos nuevos creados durante el lote.
+        actuales = self._listar_archivos()
+        nuevos_en_lote = sorted(actuales - self._archivos_previos)
+
+        objetivos_mod = list(files or [])
+        if not objetivos_mod:
             r_diff = procesos_git.ejecutar_git(
                 self._root, ["diff", "--name-only", self._pre_sha],
                 capture_output=True, timeout=15,
             )
             if r_diff.returncode == 0:
-                objetivos = [ln.strip() for ln in r_diff.stdout.splitlines() if ln.strip()]
+                objetivos_mod = [ln.strip() for ln in r_diff.stdout.splitlines() if ln.strip()]
 
         restaurados: List[str] = []
-        for rel in objetivos:
+        preservados_sucios: List[str] = []
+        retirados_nuevos: List[str] = []
+        errores: List[str] = []
+
+        for rel in objetivos_mod:
             destino = (self._root / rel).resolve()
             if not destino.is_relative_to(self._root):
                 raise ValueError(f"AP-36: ruta fuera del vault en compensacion: {rel}")
+            if rel in self._snapshots_sucios:
+                destino.parent.mkdir(parents=True, exist_ok=True)
+                tmp = destino.with_name(f".{destino.name}.saga.tmp")
+                tmp.write_bytes(self._snapshots_sucios[rel])
+                tmp.replace(destino)
+                restaurados.append(rel)
+                preservados_sucios.append(rel)
+                continue
             r_show = procesos_git.ejecutar_git(
                 self._root, ["show", f"{self._pre_sha}:{rel}"],
-                capture_output=True, timeout=15,
+                capture_output=True, binario=True, timeout=15,
             )
             if r_show.returncode != 0:
+                errores.append(rel)
                 continue
             destino.parent.mkdir(parents=True, exist_ok=True)
             tmp = destino.with_name(f".{destino.name}.saga.tmp")
-            tmp.write_text(r_show.stdout, encoding="utf-8")
+            datos = r_show.stdout if isinstance(r_show.stdout, (bytes, bytearray)) else str(r_show.stdout).encode("utf-8")
+            tmp.write_bytes(datos)
             tmp.replace(destino)
             restaurados.append(rel)
 
-        ok = len(restaurados) == len(objetivos)
+        # 2. Retirar a cuarentena reversible archivos nuevos creados durante el lote
+        cuarentena = self._root / ".history" / "saga-rolled-back" / self._run_id
+        candidatos_nuevos = (
+            [f for f in files if f in nuevos_en_lote] if files is not None else nuevos_en_lote
+        )
+        for rel in candidatos_nuevos:
+            origen = (self._root / rel).resolve()
+            if not origen.is_relative_to(self._root) or not origen.is_file():
+                continue
+            destino_q = cuarentena / rel
+            destino_q.parent.mkdir(parents=True, exist_ok=True)
+            origen.replace(destino_q)
+            retirados_nuevos.append(rel)
+
+        ok = not errores
         if checkpoints is not None:
             checkpoints.save_checkpoint(
                 self._run_id,
                 "saga_compensate",
                 status="completed" if ok else "failed",
-                payload={"pre_sha": self._pre_sha, "restored": restaurados},
+                payload={
+                    "pre_sha": self._pre_sha,
+                    "restored": restaurados,
+                    "preserved_preexisting_dirty": preservados_sucios,
+                    "quarantined_new": retirados_nuevos,
+                    "errors": errores,
+                },
             )
         return {
             "ok": ok,
             "compensated": ok,
             "pre_sha": self._pre_sha,
             "restored": restaurados,
+            "preserved_preexisting_dirty": preservados_sucios,
+            "quarantined_new": retirados_nuevos,
+            "errors": errores,
         }
 
 

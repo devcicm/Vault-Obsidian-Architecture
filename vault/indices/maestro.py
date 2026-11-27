@@ -30,7 +30,14 @@ class ServicioIndiceMaestro:
 
     def generar(self) -> Dict[str, Any]:
         repo = self._repo
-        secciones: Sequence[str] = repo.ctx.secciones.ordenadas()
+        secciones_todas: Sequence[str] = repo.ctx.secciones.ordenadas()
+        from vault.kernel.registry import leer_secciones_deshabilitadas
+
+        deshabilitadas = set(leer_secciones_deshabilitadas(repo.raiz))
+        secciones = [
+            s for s in secciones_todas
+            if s not in deshabilitadas or (repo.raiz / s).exists()
+        ]
         resultados: List[Dict[str, Any]] = []
         total = 0
 

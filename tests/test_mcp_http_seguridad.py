@@ -599,6 +599,10 @@ def test_una_junction_que_apunta_fuera_no_pasa_la_contencion(servidor, tmp_path)
     puede hacer aquí y no solo en theory.
     """
     import subprocess
+    import sys
+
+    if sys.platform != "win32":
+        pytest.skip("mklink /J es exclusivo de Windows (H-11)")
 
     fuera = tmp_path / "fuera"
     fuera.mkdir()

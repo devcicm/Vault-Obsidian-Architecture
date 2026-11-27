@@ -31,7 +31,7 @@ import json
 
 import sys
 
-from vault_registry import ORDERED_SECTIONS, es_artefacto_derivado, secciones_del_vault
+from vault_registry import ORDERED_SECTIONS, es_artefacto_derivado, secciones_del_vault, standard_folders
 from vault_encoding import strip_bom
 from vault_errors import emit_error, wrap_main
 
@@ -348,11 +348,12 @@ def _notas_del_alcance(folder: Optional[str]) -> List[Path]:
 
 def check_structure() -> Dict[str, Any]:
 
-    """Verify that the standard numbered folders exist."""
+    """Verify that the active standard numbered folders exist."""
 
-    missing = [f for f in REQUIRED_FOLDERS if not (_raiz() / f).exists()]
+    expected = standard_folders(_raiz())
+    missing = [f for f in expected if not (_raiz() / f).exists()]
 
-    return {"expected": len(REQUIRED_FOLDERS), "missing": missing}
+    return {"expected": len(expected), "missing": missing}
 
 
 def check_indexes() -> Dict[str, Any]:

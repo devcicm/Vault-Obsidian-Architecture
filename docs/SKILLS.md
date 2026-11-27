@@ -38,6 +38,7 @@ LLM) puede invocar. Cada skill tiene:
 | `vault-code-review` | v1.0 | `agent/skills/vault-code-review/SKILL.md` | — | `scripts/vault_code_review.py` | Revisa PRs, diffs o archivos resolviendo `@vault:` por símbolo/ID corto, `PAT-10`, RDD, seguridad acotada al diff y visor HTML clicable |
 | `vault-curate` | v1.0 | `agent/skills/vault-curate/SKILL.md` | — | — (orquesta curación batch `SP-05` vía `vault_ronda` y `vault_propagate`) | Consolida banderas `FLAG-NNN` en lote (`--curate-plan`/`--curate-apply`), estampa `source_flags` y marca desacuerdos bilaterales `PAT-7` sin sobrescribir |
 | `vault-orquestacion` | v1.0 | `agent/skills/vault-orquestacion/SKILL.md` | — | — (orquesta el marco de 5 pilares `MODO-AGENTICO-ORQUESTACION.md`) | Guía el diagnóstico, diseño, implementación y registro del ciclo de vida moderno de ejecución durable, DAG, ACID, Saga y patrón `Dispose`/RAII |
+| `vault-mejora-continua` | v1.0 | `agent/skills/vault-mejora-continua/SKILL.md` | — | — (orquesta ciclo de mejora continua vía `vault_log_error`, `vault_bug_save`, `vault_ronda` y `vault_write`) | Captura errores observados en vivo, los clasifica por familia de antipatrón (`F1..F13`), escala recurrencias (`>=2`) a guard+test y cierra con nota `DN-01..DN-10` |
 
 Lo que la wheel lleva son los **puntos de entrada** de las skills cuyo entry point es una tool operativa del catálogo
 (por ejemplo `vault_sanacion`, `vault_onboard`, `vault_sdd_init`, `vault_move`, `vault_backup`, `vault_context_pack`, `vault_supersede`, `vault_ingest`, `vault_code_review`): instalado el paquete se

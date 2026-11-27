@@ -7,7 +7,7 @@ name = "vault-obsidian-architecture"
 version = "41.27"
 description = "Spec-Driven Development vault toolkit — persistent documental memory for LLM agents"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [{ name = "CARLOS IVAN CM" }]
 keywords = [
@@ -21,7 +21,6 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -36,7 +35,7 @@ dependencies = ["PyYAML>=6.0"]
 # sin Python (AP-44); Draft202012Validator existe desde 4.0.
 # pytest-xdist y pytest-timeout sostienen la forma canónica local de la suite
 # (`-n auto`) y su red anti-cuelgue (`--timeout` de addopts).
-dev = ["pytest>=7.0", "pytest-cov>=4.0", "pytest-xdist>=3.5", "pytest-timeout>=2.3", "ruff>=0.3.0", "jsonschema>=4.0", "build>=1.0"]
+dev = ["pytest>=7.0", "pytest-cov>=4.0", "pytest-xdist>=3.5", "pytest-timeout>=2.3", "ruff>=0.3.0", "jsonschema>=4.0", "build>=1.0", "setuptools>=68.0"]
 
 [project.urls]
 Homepage = "https://github.com/devcicm/Vault-Obsidian-Architecture"
@@ -76,7 +75,7 @@ build_py = "empaquetado.construir.BuildPy"
 "vault_toolkit._impl" = ["vault_ontology.json"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "normas"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]

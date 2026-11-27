@@ -2170,6 +2170,8 @@ python vault_init.py --target v39.0     # versión concreta del estándar
 python vault_init.py --no-audit         # omite el vault_audit final
 python vault_init.py --name mi-vault    # crea el vault en VAULT_MASTER (~/.vault-master/mi-vault)
 python vault_init.py --list             # lista vaults de la casa y externos en registry.json
+python vault_init.py --sections-preset minimo --extra-sections 22_Redes:referencia  # selector opt-in de carpetas
+python vault_init.py --only-sections 03_Decisions,07_Knowledge                      # solo secciones elegidas (+ núcleo obligatorio)
 ```
 
 `--clean` **borra todo el contenido del vault actual** antes de inicializar (salvo `.locks`). No se ejecuta sin haber mirado antes qué hay en el destino.
@@ -2243,11 +2245,13 @@ tiene y que el vault declara en `00_System/secciones.json`. No es lo mismo que
 declara secciones nuevas en la raíz.
 
 ```bash
-python vault_section.py --list      # propias, rango libre y carpetas de raíz sin sección
+python vault_section.py --list      # propias, estándar activas/deshabilitadas, presets y carpetas sin sección
 python vault_section.py --add 22_Scripts --documentacion referencia --description "Scripts de despliegue"
 python vault_section.py --add 23_Clientes --documentacion explicacion --tipos cliente,contrato
 python vault_section.py --add 24_Redes --documentacion referencia --subfolders switches/core/vlans,firewalls --sync
 python vault_section.py --retire 22_Scripts --superseded-by 23_Automatizacion
+python vault_section.py --disable 12_Bibliography   # deshabilita sección estándar sin borrar notas existentes
+python vault_section.py --enable 12_Bibliography    # reactiva sección estándar deshabilitada o propia retirada
 ```
 
 `--subfolders` crea subcarpetas anidadas (rechazando `..` y prefijos `.`/`_`) y

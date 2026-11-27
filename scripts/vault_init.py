@@ -38,12 +38,24 @@ from typing import Any, Dict, List
 
 from vault_errors import presupuesto_de_vault, emit_error, wrap_main
 from vault_standard_upgrade import version_conocida
-from vault_io import atomic_write_text, get_vault_root, set_vault_root, write_report
+from vault_io import (
+    atomic_write_json,
+    atomic_write_text,
+    get_vault_root,
+    set_vault_root,
+    write_report,
+)
 from vault_lib import utcnow
 from vault_version import CURRENT_VERSION
 from vault.kernel import procesos_git
 from vault_registry import (
+    DOCUMENTACION_CLASES,
+    PRESETS_SECCIONES,
+    SECCIONES_OBLIGATORIAS,
+    SECCIONES_PROPIAS_RUTA,
     comando_de_tool,
+    leer_secciones_propias,
+    motivo_de_nombre_invalido,
     standard_folders,
     EVENT_DRIVEN_SECTIONS,
     ORDERED_SECTIONS,
@@ -202,8 +214,100 @@ def _create_scaffold_note(section: str) -> Dict[str, Any]:
     }
 
 
+def _resolver_seleccion_secciones(
+    sections_preset: str | None = None,
+    only_sections: str | List[str] | None = None,
+    extra_sections: str | List[str] | None = None,
+):
+    """Valida las opciones opt-in de selección de carpetas antes de escribir nada (DN-01/DN-09).
+
+    Devuelve ``(disabled_standard, propias_extra, error_envelope)``. Cuando ninguna
+    opción fue pasada devuelve ``(None, None, None)`` y el bootstrap queda 100%
+    idéntico al histórico.
+    """
+    if not sections_preset and not only_sections and not extra_sections:
+        return None, None, None
+
+    if sections_preset and only_sections:
+        return None, None, emit_error(
+            "vault_init",
+            "INVALID_INPUT",
+            "--sections-preset y --only-sections son mutuamente excluyentes",
+        )
+
+    disabled_standard: List[str] = []
+    if sections_preset:
+        clave = sections_preset.strip().lower()
+        if clave not in PRESETS_SECCIONES:
+            return None, None, emit_error(
+                "vault_init",
+                "INVALID_INPUT",
+                f"--sections-preset {sections_preset!r} no existe; opciones: "
+                + ", ".join(sorted(PRESETS_SECCIONES)),
+            )
+        elegidas = set(PRESETS_SECCIONES[clave]) | set(SECCIONES_OBLIGATORIAS)
+        disabled_standard = [f for f in ORDERED_SECTIONS if f not in elegidas]
+    elif only_sections:
+        lista = (
+            [s.strip() for s in only_sections.split(",") if s.strip()]
+            if isinstance(only_sections, str)
+            else [str(s).strip() for s in only_sections if str(s).strip()]
+        )
+        desconocidas = [s for s in lista if s not in ORDERED_SECTIONS]
+        if desconocidas:
+            return None, None, emit_error(
+                "vault_init",
+                "INVALID_INPUT",
+                f"--only-sections contiene secciones estándar desconocidas: {desconocidas}",
+            )
+        elegidas = set(lista) | set(SECCIONES_OBLIGATORIAS)
+        disabled_standard = [f for f in ORDERED_SECTIONS if f not in elegidas]
+
+    propias_extra: List[Dict[str, Any]] = []
+    numeros_vistos: set[str] = set()
+    if extra_sections:
+        items = (
+            [s.strip() for s in extra_sections.split(",") if s.strip()]
+            if isinstance(extra_sections, str)
+            else [str(s).strip() for s in extra_sections if str(s).strip()]
+        )
+        for item in items:
+            if ":" in item:
+                carpeta, doc_clase = [p.strip() for p in item.split(":", 1)]
+            else:
+                carpeta, doc_clase = item, "referencia"
+            motivo = motivo_de_nombre_invalido(carpeta)
+            if motivo:
+                return None, None, emit_error(
+                    "vault_init", "INVALID_FOLDER", f"--extra-sections {carpeta!r}: {motivo}"
+                )
+            if doc_clase not in DOCUMENTACION_CLASES:
+                return None, None, emit_error(
+                    "vault_init",
+                    "INVALID_VALUE",
+                    f"--extra-sections {item!r}: clase '{doc_clase}' inválida; usar "
+                    + ", ".join(DOCUMENTACION_CLASES),
+                )
+            if carpeta[:2] in numeros_vistos:
+                return None, None, emit_error(
+                    "vault_init",
+                    "INVALID_FOLDER",
+                    f"--extra-sections repite el número {carpeta[:2]} en {carpeta!r}",
+                )
+            numeros_vistos.add(carpeta[:2])
+            propias_extra.append(
+                {"folder": carpeta, "documentacion": doc_clase, "status": "activa"}
+            )
+
+    return disabled_standard, propias_extra, None
+
+
 def _vault_init_sin_clean(
-    target_version: str = CURRENT_VERSION, run_audit: bool = True
+    target_version: str = CURRENT_VERSION,
+    run_audit: bool = True,
+    sections_preset: str | None = None,
+    only_sections: str | List[str] | None = None,
+    extra_sections: str | List[str] | None = None,
 ) -> dict:
     """Inicializa un vault fresco en VAULT_ROOT.
 
@@ -224,6 +328,15 @@ def _vault_init_sin_clean(
             "El vault de destino se fija con VAULT_ROOT, no con --target.",
             args={"target": target_version},
         )
+    # Validar selección opt-in de secciones ANTES de tocar el disco (DN-01/DN-09).
+    disabled_standard, propias_extra, err_sel = _resolver_seleccion_secciones(
+        sections_preset=sections_preset,
+        only_sections=only_sections,
+        extra_sections=extra_sections,
+    )
+    if err_sel is not None:
+        return err_sel
+
     # Safety: refuse to run if VAULT_ROOT looks wrong (sandbox not detected).
     # AP-52: el rechazo sale del catálogo, no de mutar un `ok: True`.
     if not _raiz().exists() or not _raiz().is_dir():
@@ -239,15 +352,45 @@ def _vault_init_sin_clean(
         "steps": [],
     }
 
+    # Step 0.5 (opt-in): escribir `00_System/secciones.json` antes de crear carpetas
+    # para que `standard_folders(raiz)`, `vault_standard_upgrade` y los índices
+    # respeten la selección declarada desde el primer paso.
+    if disabled_standard is not None or propias_extra:
+        (_raiz() / "00_System").mkdir(parents=True, exist_ok=True)
+        try:
+            existentes = leer_secciones_propias(_raiz())
+        except ValueError as exc:
+            return emit_error("vault_init", "DATA_FILE_CORRUPT", str(exc))
+        por_folder = {s["folder"]: s for s in existentes}
+        for s in propias_extra or []:
+            por_folder[s["folder"]] = s
+        payload: Dict[str, Any] = {
+            "schema": 1,
+            "secciones": sorted(por_folder.values(), key=lambda s: s["folder"]),
+        }
+        if disabled_standard:
+            payload["disabled_standard"] = sorted(set(disabled_standard))
+        atomic_write_json(_raiz() / SECCIONES_PROPIAS_RUTA, payload)
+        result["sections_config"] = {
+            "preset": sections_preset,
+            "disabled_standard": sorted(set(disabled_standard or [])),
+            "extra_sections": [s["folder"] for s in (propias_extra or [])],
+            "registry": SECCIONES_PROPIAS_RUTA,
+        }
+
     # (El antiguo "Step 0: --clean wipes..." vivia aqui. Se elimino porque
     # borraba con shutil.rmtree sin copia ni verificacion. La operacion
     # destructiva completa la orquesta `vault_init()` mediante
     # `_preparar_clean()`, y esta funcion solo corre cuando el contenido
     # anterior ya esta a salvo en una cuarentena verificada.)
 
-    # Step 1: create all 17 standard folders
+    # Step 1: create active standard folders (+ opt-in extra custom sections)
+    activas_estandar = standard_folders(_raiz())
+    carpetas_a_crear = list(activas_estandar) + [
+        s["folder"] for s in (propias_extra or [])
+    ]
     folders_created = []
-    for folder in standard_folders():
+    for folder in carpetas_a_crear:
         folder_path = _raiz() / folder
         if not folder_path.exists():
             folder_path.mkdir(parents=True, exist_ok=True)
@@ -260,7 +403,7 @@ def _vault_init_sin_clean(
         {
             "step": "folders",
             "created": folders_created,
-            "total": len(standard_folders()),
+            "total": len(carpetas_a_crear),
         }
     )
 
@@ -321,7 +464,9 @@ def _vault_init_sin_clean(
     # as they add real content.
     scaffolds_created = []
     scaffold_failed = False
-    for section in _SCAFFOLD_SECTIONS:
+    activas_set = set(activas_estandar)
+    secciones_andamio = [s for s in _SCAFFOLD_SECTIONS if s in activas_set]
+    for section in secciones_andamio:
         try:
             res = _create_scaffold_note(section)
             if res.get("created"):
@@ -336,7 +481,7 @@ def _vault_init_sin_clean(
         {
             "step": "scaffolds",
             "created": scaffolds_created,
-            "total": len(_SCAFFOLD_SECTIONS),
+            "total": len(secciones_andamio),
             "failed": scaffold_failed,
         }
     )
@@ -811,6 +956,9 @@ def vault_init(
     clean: bool = False,
     confirm: str | None = None,
     dry_run: bool = False,
+    sections_preset: str | None = None,
+    only_sections: str | List[str] | None = None,
+    extra_sections: str | List[str] | None = None,
 ) -> dict:
     """Inicializa un vault; con `clean`, solo sobre una copia verificada.
 
@@ -820,8 +968,13 @@ def vault_init(
     borra sin una via de recuperacion.
     """
     if not clean:
-        return _vault_init_sin_clean(target_version=target_version,
-                                     run_audit=run_audit)
+        return _vault_init_sin_clean(
+            target_version=target_version,
+            run_audit=run_audit,
+            sections_preset=sections_preset,
+            only_sections=only_sections,
+            extra_sections=extra_sections,
+        )
 
     raiz = _raiz()
     if not raiz.exists() or not raiz.is_dir():
@@ -867,8 +1020,13 @@ def vault_init(
     cuarentena = preparacion["cuarentena"]
     paso["estado"] = "CLEAN"
     try:
-        resultado = _vault_init_sin_clean(target_version=target_version,
-                                          run_audit=run_audit)
+        resultado = _vault_init_sin_clean(
+            target_version=target_version,
+            run_audit=run_audit,
+            sections_preset=sections_preset,
+            only_sections=only_sections,
+            extra_sections=extra_sections,
+        )
     except BaseException as exc:  # rollback tambien ante KeyboardInterrupt
         restauracion = _restaurar(raiz, cuarentena)
         estado = "ROLLBACK" if restauracion.get("ok") else "RECUPERACION_PENDIENTE"
@@ -986,6 +1144,34 @@ Notas:
         action="store_true",
         help="Lista los vaults de la casa (nombre, version y si tienen git).",
     )
+    parser.add_argument(
+        "--sections-preset",
+        dest="sections_preset",
+        default=None,
+        help=(
+            "Preset opt-in de secciones estandar a habilitar: "
+            + ", ".join(sorted(PRESETS_SECCIONES))
+            + " (por defecto: todas las secciones del estandar)."
+        ),
+    )
+    parser.add_argument(
+        "--only-sections",
+        dest="only_sections",
+        default=None,
+        help=(
+            "Lista separada por comas de secciones estandar a habilitar "
+            "(00_System y 99_Index siempre se mantienen activas)."
+        ),
+    )
+    parser.add_argument(
+        "--extra-sections",
+        dest="extra_sections",
+        default=None,
+        help=(
+            "Secciones propias adicionales a declarar y crear durante el bootstrap, "
+            "formato NN_Nombre[:clase_doc] separado por comas (ej: 22_Redes:referencia)."
+        ),
+    )
     args = parser.parse_args()
 
     if args.purge_backup:
@@ -1044,6 +1230,9 @@ Notas:
         clean=args.clean,
         confirm=args.confirm,
         dry_run=args.dry_run,
+        sections_preset=args.sections_preset,
+        only_sections=args.only_sections,
+        extra_sections=args.extra_sections,
     )
     if result.get("ok") and not args.no_git and era_nuevo:
         # El vault de la casa y el de una ruta personalizada nacen los dos con

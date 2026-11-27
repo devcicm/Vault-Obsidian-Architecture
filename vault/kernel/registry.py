@@ -23,8 +23,6 @@ import re
 from pathlib import Path
 from typing import Dict, Iterable, List, Mapping, Optional
 
-import vault_grafo_import
-
 # ──────────────────────────────────────────────────────────────────────────────
 # Secciones canónicas — orden, nombre y descripción
 # ──────────────────────────────────────────────────────────────────────────────
@@ -1053,10 +1051,43 @@ _SECTION_BY_FOLDER: Dict[str, Dict] = {s["folder"]: s for s in SECTIONS}
 
 ORDERED_SECTIONS: List[str] = [s["folder"] for s in SECTIONS]
 
+#: Secciones estructurales que nunca pueden deshabilitarse en un vault:
+#: `00_System` aloja metadatos, versión y `secciones.json`; `99_Index` aloja
+#: los índices derivados (`search-index.json`, `graph.json`, `index.md`).
+SECCIONES_OBLIGATORIAS = frozenset({"00_System", "99_Index"})
 
-def standard_folders() -> List[str]:
-    """Lista de carpetas raíz del vault (para vault_standard_upgrade)."""
-    return [s["folder"] for s in SECTIONS]
+#: Presets opt-in de secciones estándar para `vault_init --sections-preset`.
+#: `"completo"` coincide con el comportamiento histórico por defecto (DN-09).
+PRESETS_SECCIONES: Dict[str, tuple] = {
+    "completo": tuple(ORDERED_SECTIONS),
+    "minimo": (
+        "00_System",
+        "01_Projects",
+        "03_Decisions",
+        "07_Knowledge",
+        "99_Index",
+    ),
+    "infraestructura": (
+        "00_System",
+        "03_Decisions",
+        "07_Knowledge",
+        "08_Runbooks",
+        "09_Infrastructure",
+        "99_Index",
+    ),
+}
+
+
+def standard_folders(raiz: Optional[Path] = None) -> List[str]:
+    """Lista de carpetas estándar del vault.
+
+    Sin ``raiz`` devuelve todas las del estándar (retrocompatible). Con ``raiz``
+    excluye las declaradas en ``disabled_standard`` de ``00_System/secciones.json``.
+    """
+    if raiz is None:
+        return [s["folder"] for s in SECTIONS]
+    deshabilitadas = set(leer_secciones_deshabilitadas(raiz))
+    return [s["folder"] for s in SECTIONS if s["folder"] not in deshabilitadas]
 
 
 def runtime_seed_projection() -> Dict[str, object]:
@@ -1140,8 +1171,17 @@ def corre_instalado() -> bool:
     El único criterio de «checkout o wheel» para lo que se le muestra a quien
     usa la tool: `comando_de_tool` lo usa para el comando y `vault_errors`
     para que `recovery.docs` apunte a algo que exista (QA-PORT-13, 2026-11-17).
+    H-15: import perezoso de `vault_grafo_import` para que `vault.kernel.*`
+    sea importable como hoja pura sin exigir `scripts/` en `sys.path`.
     """
-    return vault_grafo_import.DIRECTORIO.name == "_impl"
+    try:
+        import vault_grafo_import
+
+        return vault_grafo_import.DIRECTORIO.name == "_impl"
+    except ImportError:
+        import importlib.util
+
+        return importlib.util.find_spec("vault_toolkit._impl") is not None
 
 
 def es_andamio(texto: str) -> bool:
@@ -1238,6 +1278,56 @@ def motivo_de_nombre_invalido(carpeta: str) -> Optional[str]:
     return None
 
 
+def _leer_json_secciones(raiz: Path) -> Optional[Dict]:
+    """Lee y parsea `00_System/secciones.json`; `None` si no existe, `ValueError` si está roto."""
+    ruta = Path(raiz) / SECCIONES_PROPIAS_RUTA
+    if not ruta.is_file():
+        return None
+    try:
+        datos = json.loads(ruta.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as e:
+        raise ValueError(f"{SECCIONES_PROPIAS_RUTA} no se puede leer: {e}") from e
+    if not isinstance(datos, dict):
+        raise ValueError(f"{SECCIONES_PROPIAS_RUTA}: el contenido raíz debe ser un objeto JSON")
+    return datos
+
+
+def leer_secciones_deshabilitadas(raiz: Path) -> List[str]:
+    """Secciones estándar deshabilitadas para escritura/bootstrap en el vault de `raiz`.
+
+    Campo opcional `disabled_standard` dentro de `00_System/secciones.json`
+    (retrocompatible con registros v1 sin esa clave). Falla en voz alta
+    (`ValueError`) si el fichero es ilegible, si `disabled_standard` no es una
+    lista de nombres de `ORDERED_SECTIONS` o si intenta deshabilitar una sección
+    obligatoria (`00_System`, `99_Index`).
+    """
+    datos = _leer_json_secciones(raiz)
+    if datos is None or "disabled_standard" not in datos:
+        return []
+    deshabilitadas = datos.get("disabled_standard")
+    if not isinstance(deshabilitadas, list):
+        raise ValueError(
+            f"{SECCIONES_PROPIAS_RUTA}: 'disabled_standard' debe ser una lista"
+        )
+    resultado: List[str] = []
+    vistas = set()
+    for carpeta in deshabilitadas:
+        if not isinstance(carpeta, str) or carpeta not in ORDERED_SECTIONS:
+            raise ValueError(
+                f"{SECCIONES_PROPIAS_RUTA}: 'disabled_standard' contiene "
+                f"{carpeta!r}, que no es una sección estándar"
+            )
+        if carpeta in SECCIONES_OBLIGATORIAS:
+            raise ValueError(
+                f"{SECCIONES_PROPIAS_RUTA}: {carpeta!r} es obligatoria y no "
+                "puede deshabilitarse"
+            )
+        if carpeta not in vistas:
+            vistas.add(carpeta)
+            resultado.append(carpeta)
+    return sorted(resultado)
+
+
 def leer_secciones_propias(raiz: Path) -> List[Dict[str, Optional[str]]]:
     """Las secciones propias declaradas en el vault de `raiz`, en orden de número.
 
@@ -1247,14 +1337,13 @@ def leer_secciones_propias(raiz: Path) -> List[Dict[str, Optional[str]]]:
     vault que sí las declaró, y cada nota suya pasaría a violar CN-02 sin que
     nadie supiera por qué (AP-51).
     """
-    ruta = Path(raiz) / SECCIONES_PROPIAS_RUTA
-    if not ruta.is_file():
+    datos = _leer_json_secciones(raiz)
+    if datos is None:
         return []
-    try:
-        datos = json.loads(ruta.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as e:
-        raise ValueError(f"{SECCIONES_PROPIAS_RUTA} no se puede leer: {e}") from e
-    secciones = datos.get("secciones") if isinstance(datos, dict) else None
+    # Validar también `disabled_standard` si está presente (fail-closed).
+    if "disabled_standard" in datos:
+        leer_secciones_deshabilitadas(raiz)
+    secciones = datos.get("secciones")
     if not isinstance(secciones, list):
         raise ValueError(f"{SECCIONES_PROPIAS_RUTA}: falta la lista 'secciones'")
     vistas = set()
@@ -1288,9 +1377,11 @@ _SECCIONES_LEIDAS: Dict[str, tuple] = {}
 def secciones_del_vault(raiz: Path) -> List[str]:
     """Las del estándar más las propias declaradas (activas y retiradas), en orden.
 
-    Las retiradas cuentan: sus notas no dejan de ser de sección por haberse
-    retirado la sección para lo nuevo. Un fichero roto no se cachea: lanza
-    cada vez (ver `leer_secciones_propias`).
+    Las retiradas y las estándar deshabilitadas siguen contando aquí: sus notas
+    existentes en disco nunca pierden identidad de sección ni desaparecen de la
+    búsqueda o el grafo (no-derogación, DN-02). Para conocer qué secciones
+    admiten escritura nueva usa `secciones_activas_del_vault` o
+    `motivo_de_destino_invalido`. Un fichero roto no se cachea: lanza cada vez.
     """
     ruta = Path(raiz) / SECCIONES_PROPIAS_RUTA
     try:
@@ -1304,6 +1395,19 @@ def secciones_del_vault(raiz: Path) -> List[str]:
     secciones = sorted(ORDERED_SECTIONS + [s["folder"] for s in leer_secciones_propias(raiz)])
     _SECCIONES_LEIDAS[str(ruta)] = (firma, tuple(secciones))
     return secciones
+
+
+def secciones_activas_del_vault(raiz: Path) -> List[str]:
+    """Secciones habilitadas del vault (estándar activas + propias activas), en orden."""
+    deshabilitadas = set(leer_secciones_deshabilitadas(raiz))
+    propias_activas = [
+        s["folder"]
+        for s in leer_secciones_propias(raiz)
+        if s.get("status", "activa") != "retirada"
+    ]
+    return sorted(
+        [s for s in ORDERED_SECTIONS if s not in deshabilitadas] + propias_activas
+    )
 
 
 def es_de_seccion(ruta_relativa: str, raiz: Optional[Path] = None) -> bool:
@@ -1330,15 +1434,31 @@ def es_de_seccion(ruta_relativa: str, raiz: Optional[Path] = None) -> bool:
 def motivo_de_destino_invalido(folder: str, raiz: Path, nueva: bool = True) -> Optional[str]:
     """Por qué `folder` no admite la nota en el vault de `raiz`; None si la admite (CN-02).
 
-    Son destino las secciones del estándar y las propias que el vault declara.
-    Una propia **retirada** no admite notas nuevas, pero sí actualizar las que
-    ya tiene: siguen siendo de sección (`secciones_del_vault`). Un registro de
-    secciones ilegible lanza ValueError, como `leer_secciones_propias`.
+    Son destino las secciones del estándar habilitadas y las propias que el vault
+    declara. Una sección estándar **deshabilitada** o una propia **retirada** no
+    admiten notas nuevas, pero sí actualizar las que ya tienen: siguen siendo de
+    sección (`secciones_del_vault`, DN-02). Un registro de secciones ilegible
+    lanza ValueError, como `leer_secciones_propias`.
     """
     seccion = (folder or "").replace("\\", "/").strip("/").split("/")[0]
     if not seccion:
         return "la raíz del vault no es una sección (AP-15)"
     if seccion in ORDERED_SECTIONS:
+        if nueva:
+            try:
+                deshabilitadas = leer_secciones_deshabilitadas(raiz)
+            except ValueError:
+                # Contrato existente (test_secciones_propias_consumidores):
+                # un `secciones.json` roto bloquea secciones propias y falla en
+                # `vault_section`/`secciones_del_vault`, pero no impide escribir
+                # en una sección del estándar.
+                return None
+            if seccion in deshabilitadas:
+                return (
+                    f"la sección estándar {seccion!r} está deshabilitada en "
+                    f"{SECCIONES_PROPIAS_RUTA} y no admite notas nuevas; reactívala "
+                    f"con vault_section --enable {seccion}"
+                )
         return None
     propia = next((s for s in leer_secciones_propias(raiz) if s["folder"] == seccion), None)
     if propia is None:

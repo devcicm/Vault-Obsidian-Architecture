@@ -82,7 +82,7 @@ def ensamblar_grafo(
         for path, node in nodes.items()
         if path not in entrantes and not path.startswith("00_System/")
     ]
-    edges = edges + [estampar_epistemica(e) for e in extras]
+    edges = edges + list(extras)
     broken_links = resuelto["rotos"]
     ambiguous_links = resuelto["ambiguos"]
     return {
