@@ -25,6 +25,18 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": "vault-obsidian-architecture.md §La casa de los vaults",
         },
     },
+    "STANDARD_INCOMPATIBLE": {
+        "category": "validation",
+        "severity": "error",
+        "message": "La versión del estándar del vault no es compatible con esta versión del toolkit.",
+        "recovery": {
+            "action": "run_tool",
+            "tool": "vault_standard_upgrade",
+            "args": ["--check"],
+            "hint": "Si el runtime es más reciente, actualiza el paquete instalado; si es más antiguo, ejecuta vault_standard_upgrade --check para ver la ruta de migración.",
+            "docs": "vault-obsidian-architecture.md §Versionado del estándar",
+        },
+    },
     "INIT_FAILED_AFTER_CLEAN": {
         "category": "infrastructure",
         "severity": "critical",

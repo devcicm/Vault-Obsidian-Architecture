@@ -18,6 +18,15 @@ from vault.kernel.normativa.fundamentals_catalog import cia_valores
 from vault.kernel.regex import strip_code_blocks
 
 _RE_SAFETY_1 = re.compile(r"^(`{3,}|~{3,})(.*)$")
+_RE_SEPARATED_LETTERS = re.compile(
+    r"(?<![A-Za-z0-9])(?:[A-Za-z][._\-/|*]){3,}[A-Za-z](?![A-Za-z0-9])"
+)
+_RE_SPACED_LETTERS = re.compile(
+    r"(?<![A-Za-z0-9])(?:[A-Za-z] ){3,}[A-Za-z](?![A-Za-z0-9])"
+)
+_RE_HTML_COMMENT = re.compile(r"<!--(.*?)-->", re.DOTALL)
+_RE_SEP_CHARS = re.compile(r"[._\-/|*\s]+")
+_AUDIT_EVIDENCE_FENCE_INFO = frozenset({"audit-evidence", "literal-probe"})
 
 _INJECTION_PATTERNS: List[Tuple[str, str, str]] = [
     ("POISON-01", r"(?i)\b(ignora|ignore|olvida|forget|disregard)\b[^.\n]{0,40}"
@@ -32,6 +41,10 @@ _INJECTION_PATTERNS: List[Tuple[str, str, str]] = [
     ("POISON-05", r"(?i)\b(no|never|nunca)\s+(le\s+)?(digas|menciones|tell|mention|reveal)\b"
                   r"[^.\n]{0,30}\b(usuario|user|humano|human)\b",
      "instrucción de ocultar información al usuario"),
+]
+_COMPILED_INJECTION_PATTERNS: List[Tuple[str, re.Pattern, str]] = [
+    (code, re.compile(pat, re.MULTILINE), detail)
+    for code, pat, detail in _INJECTION_PATTERNS
 ]
 
 _INVISIBLE = {
@@ -135,6 +148,53 @@ def _prose_only_lines(text: str):
             yield buffered
 
 
+def _strip_audit_evidence_fences(text: str) -> str:
+    """Omite únicamente bloques cerrados ```audit-evidence / ```literal-probe (T-4 / H-20).
+
+    Permite citar sondas hostiles como dato forense en notas de auditoría sin
+    desactivar el pre-vuelo sobre el resto del documento. Un bloque sin cierre
+    NO se omite: sus líneas vuelven al escaneo normal.
+    """
+    out: List[str] = []
+    in_quote = False
+    fence_char = ""
+    fence_len = 0
+    quote_buffer: List[str] = []
+    for line in text.splitlines(keepends=True):
+        stripped = line.lstrip()
+        if not in_quote:
+            m = _RE_SAFETY_1.match(stripped)
+            if m:
+                info = m.group(2).strip().split()[0].lower() if m.group(2).strip() else ""
+                if info in _AUDIT_EVIDENCE_FENCE_INFO:
+                    in_quote = True
+                    fence_char = m.group(1)[0]
+                    fence_len = len(m.group(1))
+                    quote_buffer = [line]
+                    continue
+            out.append(line)
+        else:
+            close_candidate = stripped.rstrip("\r\n ")
+            if len(close_candidate) >= fence_len and set(close_candidate) == {fence_char}:
+                in_quote = False
+                fence_char = ""
+                fence_len = 0
+                quote_buffer = []
+                continue
+            quote_buffer.append(line)
+    if in_quote and quote_buffer:
+        out.extend(quote_buffer)
+    return "".join(out)
+
+
+def _normalizar_anti_evasion(text: str) -> str:
+    """Normaliza NFKC y colapsa separadores entre letras aisladas (T-4 / H-20)."""
+    norm = unicodedata.normalize("NFKC", text)
+    norm = _RE_SEPARATED_LETTERS.sub(lambda m: _RE_SEP_CHARS.sub("", m.group(0)), norm)
+    norm = _RE_SPACED_LETTERS.sub(lambda m: _RE_SEP_CHARS.sub("", m.group(0)), norm)
+    return norm
+
+
 def scan_poison(text: str, field_name: str = "content") -> List[Finding]:
     """Busca prompt injection, caracteres invisibles y de control (sin AP-21).
 
@@ -146,16 +206,34 @@ def scan_poison(text: str, field_name: str = "content") -> List[Finding]:
     if not text:
         return findings
 
-    # Fase H (`C4`): POISON-01, POISON-03, POISON-04 y POISON-05 aplican sobre
-    # el texto completo (encabezados `#` y bloques cercados incluidos). Solo
-    # POISON-02 (`user:`/`system:`/`assistant:`) se acota a prosa fuera de
-    # fences cerrados para no rechazar bloques YAML/INI legítimos (`user: postgres`).
-    _PROSE_ONLY_CODES = {"POISON-02"}
-    raw_patterns = [p for p in _INJECTION_PATTERNS if p[0] not in _PROSE_ONLY_CODES]
-    prose_patterns = [p for p in _INJECTION_PATTERNS if p[0] in _PROSE_ONLY_CODES]
+    texto_activo = _strip_audit_evidence_fences(text)
+    texto_norm = _normalizar_anti_evasion(texto_activo)
 
-    for code, pattern, detail in raw_patterns:
-        match = re.search(pattern, text, re.MULTILINE)
+    # Fase H (`C4`) + T-4 (`H-20`): POISON-01, POISON-03, POISON-04 y POISON-05
+    # aplican sobre el texto completo y su forma normalizada anti-evasión (NFKC
+    # y colapso de separadores entre letras). Solo POISON-02 se acota a prosa
+    # fuera de fences cerrados.
+    _PROSE_ONLY_CODES = {"POISON-02"}
+    raw_patterns = [p for p in _COMPILED_INJECTION_PATTERNS if p[0] not in _PROSE_ONLY_CODES]
+    prose_patterns = [p for p in _COMPILED_INJECTION_PATTERNS if p[0] in _PROSE_ONLY_CODES]
+
+    # Comentarios HTML (`<!-- ... -->`) que ocultan directivas al agente lector.
+    for m_html in _RE_HTML_COMMENT.finditer(texto_activo):
+        cuerpo_html = m_html.group(1)
+        cuerpo_html_norm = _normalizar_anti_evasion(cuerpo_html)
+        for code, compiled, detail in _COMPILED_INJECTION_PATTERNS:
+            mh = compiled.search(cuerpo_html) or compiled.search(cuerpo_html_norm)
+            if mh:
+                fragment = mh.group(0).strip()[:120]
+                findings.append(Finding(
+                    "POISON-HTML-COMMENT", "critical", field_name,
+                    f"directiva oculta en comentario HTML ({code}: {detail}). Coincidencia: {fragment!r}",
+                    context="html_comment",
+                ))
+                break
+
+    for code, compiled, detail in raw_patterns:
+        match = compiled.search(texto_activo) or compiled.search(texto_norm)
         if match:
             fragment = match.group(0).strip()[:120]
             findings.append(Finding(
@@ -163,9 +241,10 @@ def scan_poison(text: str, field_name: str = "content") -> List[Finding]:
                 f"{detail}. Coincidencia: {fragment!r}",
             ))
 
-    prose_text = "".join(_prose_only_lines(text))
-    for code, pattern, detail in prose_patterns:
-        match = re.search(pattern, prose_text, re.MULTILINE)
+    prose_text = "".join(_prose_only_lines(texto_activo))
+    prose_norm = _normalizar_anti_evasion(prose_text)
+    for code, compiled, detail in prose_patterns:
+        match = compiled.search(prose_text) or compiled.search(prose_norm)
         if match:
             fragment = match.group(0).strip()[:120]
             findings.append(Finding(

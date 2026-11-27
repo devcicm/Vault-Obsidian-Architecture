@@ -77,9 +77,47 @@ SECRET_PATTERNS = [
     },
     {
         "id": "password_assignment",
-        "pattern": r"(?i)password\s*[:=]\s*['\"]?([^\s'\"]{4,})",
-        "severity": "high",
+        # T-4 (H-20): asignar una contraseña real en texto plano debe bloquear la
+        # escritura (`critical`), excluyendo placeholders evidentes (<...>, ***,
+        # changeme, example, placeholder, redacted, variables de entorno ${...}).
+        "pattern": (
+            r"(?i)\bpassword\s*[:=]\s*['\"]?"
+            r"(?!(?:<[^>]+>|\*{3,}|x{3,}|changeme|placeholder|example|dummy|"
+            r"redacted|none|null|true|false|\$\{?[\w]+\}?|os\.environ|process\.env)\b)"
+            r"(?![\"'\s<*$])([^\s'\"]{4,})"
+        ),
+        "severity": "critical",
         "description": "Hardcoded password assignment",
+    },
+    {
+        "id": "secret_token_assignment",
+        # T-4 (H-20): detecta `secret=`/`token=`/`api_key=` con valores reales
+        # (>=8 chars con dígito o separador técnico) sin falsos positivos en
+        # prosa ni llamadas de código (`token = document.createElementNS(...)`).
+        "pattern": (
+            r"(?i)\b(?:api[_-]?key|apikey|api[_-]?secret|client_secret|"
+            r"access_token|refresh_token|auth_token|private_token|secret|token)"
+            r"\s*[:=]\s*['\"]?"
+            r"(?!(?:<[^>]+>|\*{3,}|x{3,}|changeme|placeholder|example|dummy|"
+            r"redacted|none|null|true|false|\$\{?[\w]+\}?)\b)"
+            r"(?![A-Za-z_]\w*\.[A-Za-z_]\w*\()"
+            r"(?=[A-Za-z0-9_\-.!@#$%^&*]{8,})"
+            r"(?=[A-Za-z0-9_\-.!@#$%^&*]*[0-9])"
+            r"[A-Za-z0-9_\-.!@#$%^&*]{8,}"
+        ),
+        "severity": "critical",
+        "description": "Hardcoded secret/token assignment with credential-like value",
+    },
+    {
+        "id": "credential_uri",
+        # T-4 (H-20): URI con usuario y contraseña embebidos (ej. postgresql://user:pass@host).
+        "pattern": (
+            r"(?i)\b(?:https?|postgres(?:ql)?|mysql|mariadb|mongodb(?:\+srv)?|"
+            r"redis|rediss|amqp|amqps|ftp|ftps|sftp|mssql|oracle|ldap|ldaps)"
+            r"://[^/\s:@]+:(?!\*{3,}|x{3,}|<[^>]+>)[^/\s@]{3,}@[^\s/]+"
+        ),
+        "severity": "critical",
+        "description": "URI with embedded credentials",
     },
     {
         "id": "api_key_assignment",
