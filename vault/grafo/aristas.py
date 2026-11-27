@@ -10,6 +10,8 @@ declara una vez qué hace a dos aristas la misma, para que los dos productores
 
 from typing import Any, Dict, Iterable, List, Tuple
 
+from ..kernel import rutas
+
 __all__ = [
     "CONFIANZA_EPISTEMICA",
     "PREDICADO_WIKILINK",
@@ -49,7 +51,7 @@ _PREDICADOS_EXTRACTED = frozenset({
     "inherits",
     "defines",
     "contains",
-    "tests",
+    rutas.TESTS,
     "mitigates",
     "triggers",
     "owns",
@@ -149,23 +151,17 @@ def consolidar_aristas(aristas: Iterable[Dict[str, Any]]) -> List[Dict[str, Any]
     unicas: Dict[str, Dict[str, Any]] = {}
     for arista in aristas:
         ident = id_de_arista(arista)
-        etiqueta, confianza = clasificar_arista_epistemica(arista)
         previa = unicas.get(ident)
         if previa is None:
             unicas[ident] = {
                 "id": ident,
                 **arista,
-                "epistemic": etiqueta,
-                "confidence": confianza,
                 "occurrences": arista.get("occurrences", 1),
             }
             if "variants" in arista:
                 unicas[ident]["variants"] = list(arista["variants"])
             continue
         previa["occurrences"] += arista.get("occurrences", 1)
-        if confianza > previa.get("confidence", 0.0):
-            previa["epistemic"] = etiqueta
-            previa["confidence"] = confianza
         distinto = {
             k: v for k, v in arista.items()
             if k not in _CAMPOS_DE_IDENTIDAD and previa.get(k) != v

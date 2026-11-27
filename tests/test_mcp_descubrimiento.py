@@ -7,6 +7,7 @@ parcial publicado como total es un dato falso sobre el vault del usuario.
 """
 
 import json
+import os
 
 from test_backup_base64 import _ilegible
 from test_mcp_runner import SesionMCP, _init_vault
@@ -95,7 +96,7 @@ def test_descubrimiento_parcial_publica_incompletitud_sin_detalles_privados(tmp_
     )
     missing_optional_root = tmp_path / "missing-optional-scan-root"
     s = SesionMCP(por_defecto, {
-        "VAULT_SCAN_ROOTS": f"{busqueda};{missing_optional_root}",
+        "VAULT_SCAN_ROOTS": f"{busqueda}{os.pathsep}{missing_optional_root}",
         "NODE_OPTIONS": f'--require="{injection.as_posix()}"',
     })
     try:
@@ -129,7 +130,7 @@ def test_raices_opcionales_ausentes_no_marcan_descubrimiento_incompleto(tmp_path
     (busqueda / "vault-visible" / "00_System").mkdir(parents=True)
     (busqueda / "vault-visible" / "99_Index").mkdir()
     missing = tmp_path / "missing-optional-scan-root"
-    s = SesionMCP(por_defecto, {"VAULT_SCAN_ROOTS": f"{busqueda};{missing}"})
+    s = SesionMCP(por_defecto, {"VAULT_SCAN_ROOTS": f"{busqueda}{os.pathsep}{missing}"})
     try:
         response = s.llamar("vault_registry", {})
     finally:

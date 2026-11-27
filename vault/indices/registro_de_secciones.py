@@ -120,8 +120,11 @@ def _normalizar_subcarpeta(sub: str) -> Optional[str]:
 
 
 def _sincronizar_indices_de_seccion(raiz: Path, folder: str) -> Dict[str, Any]:
-    """Regenera registro de carpetas, indices (seccion + maestro), busqueda y grafo.
+    """Regenera en secuencia registro de carpetas, indices (seccion + maestro), busqueda y grafo.
 
+    H-23: las 5 escrituras corren en secuencia (cada archivo individual se escribe
+    atómicamente vía `atomic_write_*`, pero el bloque completo no es una
+    transacción ACID única; cada paso informa su resultado en el envelope).
     Orquesta dentro del propio contexto `indices` (sin cruces nuevos hacia `grafo`:
     `vault_reindex(..., rebuild_graph=True)` delega por el puerto ya declarado).
     """

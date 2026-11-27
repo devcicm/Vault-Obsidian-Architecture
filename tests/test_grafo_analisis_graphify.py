@@ -60,6 +60,7 @@ def test_clasificacion_epistemica_y_consolidacion_aristas():
         CONFIANZA_EPISTEMICA,
         clasificar_arista_epistemica,
         consolidar_aristas,
+        estampar_epistemica,
     )
 
     assert CONFIANZA_EPISTEMICA == ("EXTRACTED", "INFERRED", "AMBIGUOUS")
@@ -71,11 +72,14 @@ def test_clasificacion_epistemica_y_consolidacion_aristas():
     # Respeta etiqueta explícita si ya viene válida
     assert clasificar_arista_epistemica({"predicate": "related", "epistemic": "INFERRED", "confidence": 0.82}) == ("INFERRED", 0.82)
 
-    consolidadas = consolidar_aristas([
-        {"from": "a.md", "to": "b.md", "type": "wiki-link"},
-        {"from": "a.md", "to": "b.md", "type": "wiki-link"},
-        {"from": "a.md", "to": "c.md", "predicate": "shared_tag"},
-    ])
+    consolidadas = [
+        estampar_epistemica(e)
+        for e in consolidar_aristas([
+            {"from": "a.md", "to": "b.md", "type": "wiki-link"},
+            {"from": "a.md", "to": "b.md", "type": "wiki-link"},
+            {"from": "a.md", "to": "c.md", "predicate": "shared_tag"},
+        ])
+    ]
     assert len(consolidadas) == 2
     assert consolidadas[0]["epistemic"] == "EXTRACTED" and consolidadas[0]["confidence"] == 1.0
     assert consolidadas[0]["occurrences"] == 2

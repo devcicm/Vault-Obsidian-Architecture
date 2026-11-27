@@ -381,13 +381,11 @@ function discoverVaults(searchRoots) {
     }
   }
 
-  // Paridad con `vault/kernel/vault_home.py` + `vault/kernel/acceso_baules.py`:
-  // En `VAULT_MASTER` (`~/.vault-master/`) los baúles viven por nombre propio
-  // (`agente`, `gestion`, `infraestructura-redes`) sin exigir prefijo `vault-`,
-  // y `registry.json` declara baúles externos en rutas personalizadas.
-  // Se activa cuando `VAULT_MASTER` está definido o cuando no se acotó un
-  // `VAULT_SCAN_ROOTS` explícito (p. ej. pruebas aisladas).
-  const explorarMaster = Boolean(process.env.VAULT_MASTER) || !process.env.VAULT_SCAN_ROOTS;
+  // Paridad opt-in con `vault/kernel/vault_home.py` + `vault/kernel/acceso_baules.py` (H-16):
+  // Solo explora `VAULT_MASTER` cuando el operador lo habilita explícitamente vía
+  // `VAULT_MASTER` en el entorno. Nunca escanea `~/.vault-master/` a espaldas del
+  // usuario ni interfiere con `VAULT_SCAN_ROOTS` en entornos aislados.
+  const explorarMaster = Boolean((process.env.VAULT_MASTER || "").trim());
   if (explorarMaster) {
     const masterDir = resolveMasterHome();
     if (existsSync(masterDir)) {
@@ -1581,6 +1579,12 @@ function comprobarLlamada(name, args, session) {
   if (!tool || tool.exposed_via_mcp === false) {
     return { code: "tool_not_found", message: `Tool '${name}' not found.` };
   }
+  if (session?.crossVaultReadOnly && tool.side_effects) {
+    return {
+      code: "PERMISSION_DENIED",
+      message: `Tool '${name}' bloqueada: la sesión cruzada sobre '${session.vaultName}' es estrictamente read_only (AP-36 / access-policy.json).`,
+    };
+  }
   // Lo que `tools/list` no ofreció a este cliente tampoco se ejecuta (AP-40).
   if (TOOLS_DEL_PERFIL && !TOOLS_DEL_PERFIL.has(name)) {
     return {
@@ -2200,12 +2204,15 @@ function credencialDeToken(cabecera, permisosPorToken) {
   const m = /^Bearer\s+(.+)$/i.exec(cabecera || "");
   if (!m) return null;
   const d = digest(m[1].trim());
+  let encontrada = null;
+  // H-13: recorrer TODAS las entradas sin cortar en la primera coincidencia
+  // para mantener tiempo constante frente a la posición del token en la lista.
   for (const entrada of permisosPorToken) {
     if (timingSafeEqual(d, entrada.digest)) {
-      return { perfil: entrada.perfil, digest: d };
+      encontrada = { perfil: entrada.perfil, digest: d };
     }
   }
-  return null;
+  return encontrada;
 }
 
 // Dos credenciales son la misma si sus digests coinciden. Los digests son de
@@ -2244,6 +2251,43 @@ function hostPermitido(host, port, bindHost) {
 const MAX_MESSAGE_BYTES = 1024 * 1024;
 const MAX_SSE_SESSIONS = 64;
 const MESSAGE_TIMEOUT_MS = 30000;
+
+// H-03: enforcement real de `<targetRoot>/00_System/access-policy.json` en
+// conexiones cruzadas `GET /sse?vault=<otro>`. Cuando el baúl destino declara
+// política soberana, se evalúa fail-closed por `(callerVault, role, expires_at)`
+// y toda sesión cruzada autorizada queda estrictamente `read_only` (AP-36).
+function evaluateCrossVaultAccessPolicy(targetRoot, callerVault, role) {
+  const policyPath = join(targetRoot, "00_System", "access-policy.json");
+  if (!existsSync(policyPath)) {
+    return { enforced: false, allowed: true, mode: "unrestricted_legacy", reason: "no_policy_file" };
+  }
+  let policy;
+  try {
+    policy = JSON.parse(readFileSync(policyPath, "utf-8"));
+  } catch (e) {
+    return { enforced: true, allowed: false, mode: "deny", reason: "invalid_policy_fail_closed" };
+  }
+  if (!policy || typeof policy !== "object" || policy.default !== "deny" || !Array.isArray(policy.grants)) {
+    return { enforced: true, allowed: false, mode: "deny", reason: "invalid_policy_fail_closed" };
+  }
+  const now = Date.now();
+  for (const g of policy.grants) {
+    if (!g || typeof g !== "object") continue;
+    const p = g.principal;
+    if (!p || typeof p !== "object") continue;
+    const grantVault = String(p.vault || "").trim();
+    if (!grantVault || grantVault === "*" || grantVault !== callerVault) continue;
+    const roles = Array.isArray(p.roles) ? p.roles : [];
+    if (!roles.includes(role)) continue;
+    if (g.mode && g.mode !== "read_only") continue;
+    if (g.expires_at) {
+      const expMs = Date.parse(String(g.expires_at));
+      if (!Number.isFinite(expMs) || expMs < now) continue;
+    }
+    return { enforced: true, allowed: true, mode: "read_only", reason: "grant_matched" };
+  }
+  return { enforced: true, allowed: false, mode: "deny", reason: "no_matching_grant" };
+}
 
 function startSSE(port, bindHost, tlsOptions = null) {
   const { permisosPorToken, token, generado } = resolverTokenHttp();
@@ -2317,6 +2361,7 @@ function startSSE(port, bindHost, tlsOptions = null) {
       let vaultRoot;
       let vaultName = "default";
 
+      let crossVaultReadOnly = false;
       if (vaultParam) {
         const vr = VAULT_REGISTRY.get(vaultParam);
         if (!vr) {
@@ -2326,6 +2371,18 @@ function startSSE(port, bindHost, tlsOptions = null) {
         }
         vaultRoot = vr.path;
         vaultName = vr.name;
+        const defaultRoot = resolve(detectVaultRoot());
+        if (resolve(vaultRoot) !== defaultRoot) {
+          const callerVault = basename(defaultRoot);
+          const decision = evaluateCrossVaultAccessPolicy(vaultRoot, callerVault, perfilToken || "lector");
+          if (decision.enforced && !decision.allowed) {
+            rechazar(403, `Acceso denegado por 00_System/access-policy.json (${decision.reason}).`);
+            return;
+          }
+          if (decision.enforced && decision.allowed) {
+            crossVaultReadOnly = true;
+          }
+        }
       } else {
         vaultRoot = detectVaultRoot();
         vaultName = vaultRoot.split(/[/\\]/).pop();
@@ -2337,6 +2394,7 @@ function startSSE(port, bindHost, tlsOptions = null) {
         vaultRoot,
         vaultName,
         vaultVersion: version,
+        crossVaultReadOnly,
         initialized: false,
         clientCapabilities: null,
         clientInfo: null,

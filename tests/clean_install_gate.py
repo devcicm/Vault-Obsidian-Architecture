@@ -122,7 +122,7 @@ def _mcp_instalado(vault: Path, runtime: Path, work: Path, env: dict[str, str]) 
         {"jsonrpc": "2.0", "method": "notifications/initialized"},
         {"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}},
         {"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {
-            "name": "vault_query_parse", "arguments": {"query": QUERY_ARGS[1]}}},
+            "name": "vault_search", "arguments": {"query": QUERY_ARGS[1]}}},
     ]
     sesion = subprocess.run(
         ["node", str(server)], input="".join(json.dumps(m) + "\n" for m in mensajes),
@@ -142,7 +142,7 @@ def _mcp_instalado(vault: Path, runtime: Path, work: Path, env: dict[str, str]) 
         payload = json.loads(respuestas[2]["result"]["content"][0]["text"])
     except (KeyError, IndexError, json.JSONDecodeError) as exc:
         _fail(f"sesión MCP instalada inválida ({exc}): {sesion.stderr[-2000:]}")
-    if "vault_query_parse" not in nombres or payload.get("ok") is not True:
+    if "vault_search" not in nombres or "vault_context_pack" not in nombres or payload.get("ok") is not True:
         _fail(f"el servidor MCP instalado no ejecutó la tool: {payload}")
     return {"server": str(server), "stdio": "ok", "tools": len(nombres)}
 

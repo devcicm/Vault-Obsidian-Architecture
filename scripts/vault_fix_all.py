@@ -382,9 +382,16 @@ def fix_all(dry_run: bool = False, solo_paso: int | None = None,
             "omitted": omitidos,
         }
 
-    # AP-82 / AP-83: ejecución bajo ámbito Dispose/RAII y orden DAG validado.
-    with GestorDispose():
-        resultados = [_ejecutar_paso(p, n) for n, p in pasos_a_correr]
+    # AP-82 / AP-83: ejecución bajo ámbito Dispose/RAII con registro real de
+    # liberación de estado y orden topológico DAG validado.
+    estado_corrida = {"activa": True, "pasos_completados": 0}
+    with GestorDispose() as gestor:
+        gestor.register("cierre_corrida_fix_all", lambda: estado_corrida.__setitem__("activa", False))
+        resultados = []
+        for n, p in pasos_a_correr:
+            res_paso = _ejecutar_paso(p, n)
+            resultados.append(res_paso)
+            estado_corrida["pasos_completados"] += 1
     fallidos = [r for r in resultados if not r["ok"]]
     return {
         "ok": not fallidos,

@@ -610,6 +610,18 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
     import inspect
     import subprocess
     from vault.kernel.aislamiento import ejecutar_aislado, IsolationUnavailable
+    from vault.kernel.version_python import comprobar_python_minimo
+
+    aviso_py = comprobar_python_minimo()
+    if aviso_py is not None:
+        error = emit_error(
+            tool_name,
+            "UNEXPECTED_ERROR",
+            aviso_py,
+            args={"python_version": f"{sys.version_info[0]}.{sys.version_info[1]}"},
+        )
+        _write_output(json.dumps(error, ensure_ascii=False))
+        return 2
 
     rejection = (_rechazo_por_raiz_inexistente(tool_name)
                  or _rechazo_por_raiz_del_programa(tool_name)
@@ -655,10 +667,11 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
         _write_output(json.dumps(error, ensure_ascii=False))
         return 130 if interrupted else 1
     except (IsolationUnavailable, OSError) as exc:
+        causa = f"{type(exc).__name__}: {exc}"
         error = emit_error(tool_name, "UNEXPECTED_ERROR",
                            "Process isolation or completion could not be verified; "
-                           "no thread fallback was used. Inspect state before retrying.",
-                           args={"reintentar": False})
+                           f"no thread fallback was used ({causa}). Inspect state before retrying.",
+                           args={"reintentar": False, "causa": causa})
         _write_output(json.dumps(error, ensure_ascii=False))
         return 1
     if result["stdout"]:

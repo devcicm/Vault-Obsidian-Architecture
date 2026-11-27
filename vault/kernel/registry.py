@@ -23,8 +23,6 @@ import re
 from pathlib import Path
 from typing import Dict, Iterable, List, Mapping, Optional
 
-import vault_grafo_import
-
 # ──────────────────────────────────────────────────────────────────────────────
 # Secciones canónicas — orden, nombre y descripción
 # ──────────────────────────────────────────────────────────────────────────────
@@ -1140,8 +1138,15 @@ def corre_instalado() -> bool:
     El único criterio de «checkout o wheel» para lo que se le muestra a quien
     usa la tool: `comando_de_tool` lo usa para el comando y `vault_errors`
     para que `recovery.docs` apunte a algo que exista (QA-PORT-13, 2026-11-17).
+    H-15: import perezoso de `vault_grafo_import` para que `vault.kernel.*`
+    sea importable como hoja pura sin exigir `scripts/` en `sys.path`.
     """
-    return vault_grafo_import.DIRECTORIO.name == "_impl"
+    try:
+        import vault_grafo_import
+
+        return vault_grafo_import.DIRECTORIO.name == "_impl"
+    except ImportError:
+        return (Path(__file__).resolve().parents[1] / "vault_toolkit" / "_impl").is_dir()
 
 
 def es_andamio(texto: str) -> bool:

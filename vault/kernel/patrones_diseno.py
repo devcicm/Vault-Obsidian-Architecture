@@ -1057,6 +1057,42 @@ _REGLAS_GENERICAS: Tuple[Tuple[str, re.Pattern, str, str], ...] = (
         "evidencia_fuerte",
         "Aislamiento explicito por tenant (Multi-Tenancy & Tenant Isolation)",
     ),
+    (
+        "modular-monolith",
+        re.compile(r"\b(?:class|interface)\s+([A-Za-z0-9_]*(?:ModuleBoundary|ModularKernel|ModuleRegistry|BoundedModule))\b"),
+        "evidencia_fuerte",
+        "Frontera modular explicita dentro de un Modular Monolith",
+    ),
+    (
+        "microservices-architecture",
+        re.compile(r"\b(?:class|interface)\s+([A-Za-z0-9_]*(?:ServiceDiscoveryClient|MicroserviceClient|ServiceMeshClient|ServiceRegistryClient))\b"),
+        "evidencia_fuerte",
+        "Descubrimiento o comunicacion explicita entre microservicios autonomos",
+    ),
+    (
+        "strangler-fig",
+        re.compile(r"\b(?:class|interface)\s+([A-Za-z0-9_]*(?:StranglerProxy|StranglerRouter|LegacyMigrationRouter|StranglerFacade))\b"),
+        "evidencia_fuerte",
+        "Interceptador incremental de migracion estilo Strangler Fig",
+    ),
+    (
+        "backend-for-frontend",
+        re.compile(r"\b(?:class|interface)\s+([A-Za-z0-9_]*(?:BffController|BffGateway|MobileBff|WebBff|BackendForFrontend))\b"),
+        "evidencia_fuerte",
+        "Fachada backend dedicada por cliente (Backend for Frontend / BFF)",
+    ),
+    (
+        "sidecar-ambassador",
+        re.compile(r"\b(?:class|interface)\s+([A-Za-z0-9_]*(?:SidecarProxy|AmbassadorProxy|SidecarAgent|EnvoySidecar))\b"),
+        "evidencia_fuerte",
+        "Proxy auxiliar desacoplado estilo Sidecar / Ambassador",
+    ),
+    (
+        "lazy-initialization",
+        re.compile(r"\b(?:class|interface)\s+([A-Za-z0-9_]*LazyLoader)|\b(getOrInitLazy|lazyInit)\s*\("),
+        "evidencia_fuerte",
+        "Inicializacion diferida bajo demanda (Lazy Initialization)",
+    ),
 )
 
 _RE_SLUGS = re.compile(r"[^a-z0-9]+")
@@ -1779,6 +1815,58 @@ def _detectar_python(
                     cname,
                     "evidencia_fuerte",
                     "Resolucion o aislamiento explicito por tenant (Multi-Tenancy)",
+                )
+            if cname.endswith(("ModuleBoundary", "ModularKernel", "BoundedModule")):
+                agregar(
+                    "modular-monolith",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Contrato explicito de modulo encapsulado (Modular Monolith)",
+                )
+            if cname.endswith(("ServiceDiscoveryClient", "MicroserviceClient", "ServiceMeshClient")):
+                agregar(
+                    "microservices-architecture",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Cliente explicito de descubrimiento/comunicacion entre microservicios",
+                )
+            if cname.endswith(("StranglerProxy", "StranglerRouter", "StranglerFacade")):
+                agregar(
+                    "strangler-fig",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Router incremental de reemplazo de sistema heredado (Strangler Fig)",
+                )
+            if cname.endswith(("BffController", "BffGateway", "MobileBff", "WebBff", "BackendForFrontend")):
+                agregar(
+                    "backend-for-frontend",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Fachada backend dedicada por tipo de cliente (BFF)",
+                )
+            if cname.endswith(("SidecarProxy", "AmbassadorProxy", "SidecarAgent")):
+                agregar(
+                    "sidecar-ambassador",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Proceso o proxy auxiliar estilo Sidecar / Ambassador",
+                )
+            if cname.endswith("LazyLoader") or any(
+                isinstance(item, ast.FunctionDef)
+                and any(_es_decorador(d, "cached_property") for d in item.decorator_list)
+                for item in nodo.body
+            ):
+                agregar(
+                    "lazy-initialization",
+                    nodo.lineno,
+                    cname,
+                    "evidencia_fuerte",
+                    "Inicializacion diferida bajo demanda (`cached_property` / `LazyLoader`)",
                 )
             if {"__iter__", "__next__"}.issubset(metodos):
                 agregar(

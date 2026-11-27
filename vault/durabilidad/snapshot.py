@@ -90,7 +90,11 @@ def merkle_de(carpeta: Path, algo: int = MERKLE_ALGO,
     return raiz_merkle(hojas), len(hojas)
 
 
-def merkle_vivo(raiz: Path, algo: int = MERKLE_ALGO) -> tuple[str, int]:
+def merkle_vivo(
+    raiz: Path,
+    algo: int = MERKLE_ALGO,
+    ilegibles: list[str] | None = None,
+) -> tuple[str, int]:
     """La huella del vault TAL COMO entraría en un snapshot, sin copiarlo.
 
     Existe para la dedup de `crear`: si el vault vivo tiene la misma raíz

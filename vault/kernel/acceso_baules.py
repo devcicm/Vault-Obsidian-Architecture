@@ -19,6 +19,7 @@ Cero dependencias externas fuera de stdlib + PyYAML (via parser del kernel).
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
@@ -27,13 +28,13 @@ import os
 from pathlib import Path
 import shutil
 import tempfile
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
+import time
+from typing import Any, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Tuple
 
 from . import procesos_git
 from .enumeracion import notas_en_disco
 from .errores import construir_error
 from .frontmatter_parsing import parse_frontmatter, separar_frontmatter
-from .registry import secciones_del_vault
 from .vault_home import es_ruta_de_master, listar_vaults_de_la_casa, master_home
 
 #: Version del esquema del registro maestro y de la politica de acceso.
@@ -157,6 +158,36 @@ def leer_registro_maestro(casa: Optional[Path] = None) -> Dict[str, Any]:
     return datos
 
 
+@contextmanager
+def _bloquear_registro(ruta_reg: Path, timeout_s: float = 10.0) -> Iterator[None]:
+    """Lock exclusivo de fichero para serializar escrituras concurrentes a `registry.json` (H-06)."""
+    ruta_reg.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = ruta_reg.with_name(f".{ruta_reg.name}.lock")
+    limite = time.monotonic() + max(0.5, float(timeout_s))
+    adquirido = False
+    while True:
+        try:
+            fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            try:
+                os.write(fd, f"{os.getpid()}\n".encode("ascii"))
+            finally:
+                os.close(fd)
+            adquirido = True
+            break
+        except FileExistsError:
+            if time.monotonic() >= limite:
+                raise TimeoutError(f"Timeout adquiriendo lock de registro maestro: {lock_path}")
+            time.sleep(0.02)
+    try:
+        yield
+    finally:
+        if adquirido:
+            try:
+                lock_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+
+
 def registrar_baul_maestro(
     nombre: str,
     ruta: "str | Path",
@@ -166,9 +197,15 @@ def registrar_baul_maestro(
     descripcion: str = "",
     tenant_id: Optional[str] = None,
     previous_path: Optional[str] = None,
+    allow_update: bool = False,
     casa: Optional[Path] = None,
 ) -> Dict[str, Any]:
-    """Registra o actualiza un baul (interno en master o externo) en `registry.json`."""
+    """Registra o actualiza un baul (interno en master o externo) en `registry.json`.
+
+    H-06: serializado bajo lock de fichero y protegido contra colisiones de
+    identidad — registrar un `name` existente con distinta ruta (o una ruta
+    existente con distinto `name`) lanza `ValueError` salvo `allow_update=True`.
+    """
     limpio = (nombre or "").strip()
     if not limpio or any(sep in limpio for sep in ("/", "\\", ":")):
         raise ValueError(f"Nombre de baul invalido: {nombre!r}")
@@ -180,55 +217,68 @@ def registrar_baul_maestro(
     except (OSError, ValueError):
         en_master = es_ruta_de_master(ruta_resuelta) if casa is None else False
 
-    registro = leer_registro_maestro(casa_dir)
-    entradas: List[Dict[str, Any]] = [
-        dict(v) for v in registro.get("vaults", []) if isinstance(v, dict)
-    ]
+    reg_path = ruta_registro_maestro(casa_dir)
+    with _bloquear_registro(reg_path):
+        registro = leer_registro_maestro(casa_dir)
+        entradas: List[Dict[str, Any]] = [
+            dict(v) for v in registro.get("vaults", []) if isinstance(v, dict)
+        ]
 
-    ahora = _ahora_utc_iso()
-    nueva = {
-        "name": limpio,
-        "tenant_id": (tenant_id or limpio).strip(),
-        "path": str(ruta_resuelta),
-        "origin": "master" if en_master else "external",
-        "aliases": sorted({str(a).strip() for a in alias if str(a).strip()}),
-        "projects": sorted({str(p).strip() for p in proyectos if str(p).strip()}),
-        "description": (descripcion or "").strip(),
-        "updated_at": ahora,
-    }
-    if previous_path:
-        nueva["previous_path"] = str(Path(previous_path).expanduser().resolve())
+        ahora = _ahora_utc_iso()
+        nueva = {
+            "name": limpio,
+            "tenant_id": (tenant_id or limpio).strip(),
+            "path": str(ruta_resuelta),
+            "origin": "master" if en_master else "external",
+            "aliases": sorted({str(a).strip() for a in alias if str(a).strip()}),
+            "projects": sorted({str(p).strip() for p in proyectos if str(p).strip()}),
+            "description": (descripcion or "").strip(),
+            "updated_at": ahora,
+        }
+        if previous_path:
+            nueva["previous_path"] = str(Path(previous_path).expanduser().resolve())
 
-    reemplazada = False
-    for idx, existente in enumerate(entradas):
-        misma_ruta = False
-        try:
-            misma_ruta = Path(existente.get("path", "")).expanduser().resolve() == ruta_resuelta
-        except OSError:
+        reemplazada = False
+        for idx, existente in enumerate(entradas):
             misma_ruta = False
-        if existente.get("name") == limpio or misma_ruta:
-            if not previous_path and existente.get("previous_path"):
-                nueva["previous_path"] = existente["previous_path"]
-            nueva["registered_at"] = existente.get("registered_at") or ahora
-            entradas[idx] = nueva
-            reemplazada = True
-            break
+            try:
+                misma_ruta = Path(existente.get("path", "")).expanduser().resolve() == ruta_resuelta
+            except OSError:
+                misma_ruta = False
+            mismo_nombre = existente.get("name") == limpio
+            if mismo_nombre and not misma_ruta and not allow_update:
+                raise ValueError(
+                    f"Conflicto de identidad en registro maestro: el baul {limpio!r} ya apunta a "
+                    f"{existente.get('path')!r}; usa allow_update=True para reubicarlo."
+                )
+            if misma_ruta and not mismo_nombre and not allow_update:
+                raise ValueError(
+                    f"Conflicto de identidad en registro maestro: la ruta {str(ruta_resuelta)!r} "
+                    f"ya esta registrada como {existente.get('name')!r}; usa allow_update=True para renombrarla."
+                )
+            if mismo_nombre or misma_ruta:
+                if not previous_path and existente.get("previous_path"):
+                    nueva["previous_path"] = existente["previous_path"]
+                nueva["registered_at"] = existente.get("registered_at") or ahora
+                entradas[idx] = nueva
+                reemplazada = True
+                break
 
-    if not reemplazada:
-        nueva["registered_at"] = ahora
-        entradas.append(nueva)
+        if not reemplazada:
+            nueva["registered_at"] = ahora
+            entradas.append(nueva)
 
-    entradas.sort(key=lambda item: (item.get("origin") != "master", item.get("name", "")))
-    payload = {
-        "schema_version": SCHEMA_VERSION,
-        "updated_at": ahora,
-        "vaults": entradas,
-    }
-    _escribir_json_atomico(ruta_registro_maestro(casa_dir), payload)
+        entradas.sort(key=lambda item: (item.get("origin") != "master", item.get("name", "")))
+        payload = {
+            "schema_version": SCHEMA_VERSION,
+            "updated_at": ahora,
+            "vaults": entradas,
+        }
+        _escribir_json_atomico(reg_path, payload)
     return {
         "ok": True,
         "written": 1,
-        "registry_path": str(ruta_registro_maestro(casa_dir)),
+        "registry_path": str(reg_path),
         "vault": nueva,
     }
 
@@ -417,6 +467,7 @@ def verificar_migracion_baul(
             nombre_registro or dst.name,
             dst,
             previous_path=str(src),
+            allow_update=True,
             casa=registrar_en_casa,
         )
         salida["registry_updated"] = reg.get("ok", False)
@@ -673,6 +724,8 @@ def consultar_notas_autorizadas(
             f"Baul destino no encontrado: {destino}",
             extra={"target_vault": destino.name, "results": []},
         )
+
+    from .registry import secciones_del_vault
 
     secciones = secciones_del_vault(destino)
     notas = notas_en_disco(destino, secciones, incluir_indices=False)
