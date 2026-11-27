@@ -527,7 +527,7 @@ def vault_infra_save(
             index["locations"][location].append(name)
 
 
-    map_path = save_infra_map(index["components"], project, location)
+    save_infra_map(index["components"], project, location)
 
     return {
         "ok": True,

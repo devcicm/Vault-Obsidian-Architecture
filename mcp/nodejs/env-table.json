@@ -212,6 +212,20 @@
       "purpose": "Rol de privilegios para clientes MCP locales sobre transporte `stdio` (`lector`, `ejecutor` u `operador`, validado fail-closed contra `tools-catalog.json` → `perfiles_de_token`). Vacía conserva la compatibilidad sin recorte en `stdio`. Solo la lee el `.mjs`."
     },
     {
+      "name": "VAULT_MCP_SINGLE_SESSION",
+      "type": "bandera",
+      "default": false,
+      "context": "meta_toolkit",
+      "purpose": "Con `1`, el servidor MCP HTTP/SSE rechaza con 409 cualquier segunda sesión simultánea abierta con la misma credencial sobre el mismo vault (sesión individual estricta por instancia). Solo la lee el `.mjs`."
+    },
+    {
+      "name": "VAULT_CALLER_ID",
+      "type": "texto",
+      "default": "",
+      "context": "meta_toolkit",
+      "purpose": "Identidad explícita del baúl llamador al evaluar `00_System/access-policy.json` en sesiones cruzadas (`GET /sse?vault=`). Vacía, deriva del nombre de la raíz por defecto. Solo la lee el `.mjs`."
+    },
+    {
       "name": "VAULT_MCP_PYTHON",
       "type": "ruta",
       "default": null,

@@ -159,7 +159,7 @@ Dentro de **Vault-Obsidian-Architecture**, el almacenamiento sigue siendo 100% M
 
 ## 6. Referencias Cruzadas
 
-- **Catálogo oficial de patrones (`PAT-10`):** `vault/kernel/patrones_diseno.py` (70 patrones en 5 categorías, incluyendo `dispose-raii`, `acid-transactions`, `saga-compensation`, `durable-execution-checkpoint-replay`, `dag-workflow-orchestration`, `heartbeat-lease` y `graceful-shutdown`).
+- **Catálogo oficial de patrones (`PAT-10`):** `vault/kernel/patrones_diseno.py` (72 patrones en 5 categorías, incluyendo `dispose-raii`, `acid-transactions`, `saga-compensation`, `durable-execution-checkpoint-replay`, `dag-workflow-orchestration`, `heartbeat-lease` y `graceful-shutdown`).
 - **Skill agéntica invocable:** [`agent/skills/vault-orquestacion/SKILL.md`](../agent/skills/vault-orquestacion/SKILL.md).
 - **Mapa por capas de VOA:** [`docs/architecture/MAPA-CAPAS.md`](architecture/MAPA-CAPAS.md).
 - **Contratos y carriles de cierre:** [`docs/CARRILES.md`](CARRILES.md) · [`docs/PUERTAS.md`](PUERTAS.md).

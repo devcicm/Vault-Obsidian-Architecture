@@ -72,7 +72,7 @@ def _request(method: str, path: str, payload: Optional[Dict[str, Any]] = None, p
         try:
             cuerpo = json.loads(exc.read().decode("utf-8"))
         except (OSError, ValueError):
-            raise exc
+            raise exc from None
         if isinstance(cuerpo, dict) and cuerpo.get("error_code"):
             return cuerpo
         raise

@@ -10211,6 +10211,20 @@
         "docs": null
       }
     },
+    "STANDARD_INCOMPATIBLE": {
+      "category": "validation",
+      "severity": "error",
+      "message": "La versión del estándar del vault no es compatible con esta versión del toolkit.",
+      "recovery": {
+        "action": "run_tool",
+        "tool": "vault_standard_upgrade",
+        "args": [
+          "--check"
+        ],
+        "hint": "Si el runtime es más reciente, actualiza el paquete instalado; si es más antiguo, ejecuta vault_standard_upgrade --check para ver la ruta de migración.",
+        "docs": "vault-obsidian-architecture.md §Versionado del estándar"
+      }
+    },
     "TAG_FIX_ERROR": {
       "category": "io",
       "severity": "warning",

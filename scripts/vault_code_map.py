@@ -93,8 +93,6 @@ def generate_code_map(project: str, index: Dict[str, Any]) -> str:
     for i, mod in enumerate(modules):
         title = mod.get("title", mod.get("filePath", ""))
 
-        slug = slugify_strict(Path(mod.get("filePath", title)).stem)
-
         node_id = f"N{i}"
 
         lines.append(f'    {node_id}["{title}"]')

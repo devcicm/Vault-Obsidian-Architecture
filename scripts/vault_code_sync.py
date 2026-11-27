@@ -233,7 +233,6 @@ def vault_code_sync(
         fix_applied = False
         if fix and not dry_run:
             try:
-                title = meta.get("title", note_path.stem)
                 iso_type = meta.get("iso_type", "module")
                 tag_title = f"{Path(source_file_str).name} ({iso_type})"
                 tag_result = link_vault(

@@ -215,7 +215,6 @@ def vault_norms_scan(path: str) -> Dict[str, Any]:
         return emit_error("vault_norms", "FILE_READ_ERROR", f"No se pudo leer {path}: {e}", exception=e)
 
     rel = path.replace("\\", "/")
-    folder = rel.split("/")[0] if "/" in rel else ""
 
     applicable: List[Dict[str, Any]] = []
 

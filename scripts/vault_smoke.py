@@ -312,7 +312,7 @@ def run_one(tool: str, arbol: bool = False, argv: Optional[List[str]] = None,
             # Meta-toolkit examples such as `--freeze` write the repository's
             # own baselines, which no disposable vault copy isolates: they are
             # restored so an audit run never changes tracked files.
-            with vault_baseline.baselines_intactas(SCRIPTS_DIR) as reescritas:
+            with vault_baseline.baselines_intactas(SCRIPTS_DIR):
                 proc = subprocess.run(argv, capture_output=True, text=True, env=env,
                                       encoding="utf-8", errors="replace",
                                       timeout=SMOKE_TIMEOUT, cwd=str(cwd))

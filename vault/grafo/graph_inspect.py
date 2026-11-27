@@ -718,7 +718,7 @@ def main() -> int:
     else:
         print(json.dumps(report, indent=2, ensure_ascii=False))
 
-    return 0 if report["severity"] in ("none", "low") else 0
+    return 0
 
 
 if __name__ == "__main__":

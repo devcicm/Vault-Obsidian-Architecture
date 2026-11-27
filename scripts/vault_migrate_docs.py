@@ -314,8 +314,6 @@ def process_file_staging(
     if not content.strip():
         return None
 
-    original_content = content
-
     content_stripped = strip_html(content)
 
     content_converted = convert_links(content_stripped)

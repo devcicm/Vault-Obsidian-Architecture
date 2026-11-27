@@ -1031,7 +1031,6 @@ def medir() -> Dict[str, Any]:
             con_puerta = bool(a["ejerce"]())
         except (OSError, ValueError, KeyError):
             con_puerta = False
-        descubierta = a["estado"] == "descubierta"
         afirmadas.append({
             "id": a["id"],
             "afirmacion": a["afirmacion"],

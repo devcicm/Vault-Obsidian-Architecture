@@ -411,7 +411,7 @@ def adquirir(objetivo: Path, timeout: float, caduca_tras: float = CADUCA_TRAS) -
             except OSError:
                 pass
             if time.monotonic() >= limite:
-                raise TimeoutError(f"Timeout waiting for lock: {lock_dir}")
+                raise TimeoutError(f"Timeout waiting for lock: {lock_dir}") from None
             time.sleep(0.05)
             continue
         except OSError as exc:
@@ -431,7 +431,7 @@ def adquirir(objetivo: Path, timeout: float, caduca_tras: float = CADUCA_TRAS) -
             if time.monotonic() >= limite:
                 raise TimeoutError(
                     f"Timeout waiting for lock: {lock_dir} "
-                    f"(el padre se movio: {exc})")
+                    f"(el padre se movio: {exc})") from exc
             crear_carpeta_de_locks(raiz)
             continue
         try:

@@ -213,12 +213,6 @@ def vault_list(folder: Optional[str] = None, status: Optional[str] = None, limit
 
                 note_count = sum(1 for _ in item.rglob("*.md"))
 
-                folder_id = (
-
-                    item.name[:2] if item.name.startswith(("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")) else ""
-
-                )
-
                 folders.append(
 
                     {

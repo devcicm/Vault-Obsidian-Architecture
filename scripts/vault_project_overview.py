@@ -238,7 +238,6 @@ def vault_project_overview(
     if final_description:
         body_sections.append(f"## Descripción\n\n{final_description}\n")
 
-    total = len(dependencies) + len(frameworks) + len(decisions) + len(patterns)
     body_sections.append(
         f"_Actualizado: {timestamp[:10]} · deps: {len(dependencies)} · frameworks: {len(frameworks)} · ADRs: {len(decisions)} · patrones: {len(patterns)}_\n"
     )

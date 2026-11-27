@@ -336,25 +336,7 @@ def validate_er(diagram: str) -> List[Dict[str, Any]]:
 
 def validate_gantt(diagram: str) -> List[Dict[str, Any]]:
     """Valida gantt."""
-    errors = []
-    lines = diagram.strip().split("\n")
-
-    has_title = False
-    has_sections = False
-    has_tasks = False
-
-    for line in lines:
-        line = line.strip()
-        if line.startswith("gantt"):
-            continue
-        if line.startswith("title "):
-            has_title = True
-        if line.startswith("section "):
-            has_sections = True
-        if _RE_MERMAID_REGLAS_1.match(line):
-            has_tasks = True
-
-    return errors
+    return []
 
 
 def validate_pie(diagram: str) -> List[Dict[str, Any]]:

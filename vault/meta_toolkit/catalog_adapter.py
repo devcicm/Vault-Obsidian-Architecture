@@ -7,9 +7,12 @@ conectan los registros canónicos del toolkit con esos protocolos.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
 
 from .catalogo_producto import ToolProducto, catalogo_producto
+
+if TYPE_CHECKING:
+    from ..gobernanza.base import ToolFragment
 
 
 class ToolsCatalogAdapter:

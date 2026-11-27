@@ -695,7 +695,7 @@ def _cronometro(funcion, *args, **kwargs) -> float:
 
     inicio = _time.perf_counter()
     try:
-        valor = funcion(*args, **kwargs)
+        funcion(*args, **kwargs)
     except Exception as exc:  # noqa: BLE001 — el runner no debe tumbar la tool
         _MEDIDAS_ANTES["error"] = f"{type(exc).__name__}: {exc}"
         return -1.0
@@ -795,7 +795,6 @@ def registrar_skip_path(commit: Optional[str] = None, dry_run: bool = False) -> 
         _git("add", "-A")
         _git("commit", "-q", "-m", "inicio")
 
-        vault = base / "vault"
         # El vault tiene que EXISTIR antes de medir: onboard no crea uno (no se
         # pisa un vault), así que sin este init el runner midiese un rechazo
         # de 0,25 s y lo publicaría como si el skip-path fuera gratis.

@@ -242,6 +242,13 @@ def count_gates_total() -> int:
     return len(vault_gate.PUERTAS)
 
 
+def count_design_patterns() -> int:
+    """Patrones de diseño y arquitectura en `vault.kernel.patrones_diseno.CATALOGO_PATRONES`."""
+    from vault.kernel.patrones_diseno import CATALOGO_PATRONES
+
+    return len(CATALOGO_PATRONES)
+
+
 #: A-03 del estudio vault-dev-codex: el conteo de la suite es un
 #: `pytest --collect-only` completo y medió 54,6 s el 2026-10-29, dentro del
 #: techo genérico de 60 s de `VAULT_TOOL_TIMEOUT` (5 s de holgura). `vault_gate`
@@ -509,6 +516,14 @@ COUNTED_FACTS: List[Dict] = [
         ],
     },
     {
+        "id": "design_patterns",
+        "description": "Patrones de diseño y arquitectura en CATALOGO_PATRONES",
+        "value": count_design_patterns,
+        "patterns": [
+            r"(\d+)\s+patrones\s+en\s+\d+\s+categor[ií]as",
+        ],
+    },
+    {
         "id": "tests",
         "description": "Tests recolectados por pytest",
         "value": count_tests,
@@ -536,6 +551,7 @@ WATCHED_DOCS = [
     cita_repo(rutas.CLI, "README.md"),
     cita_repo(rutas.CLI, "COMMANDS.md"),
     cita_repo(rutas.DOCS, "SKILLS.md"),
+    cita_repo(rutas.DOCS, "MODO-AGENTICO-ORQUESTACION.md"),
     cita_repo(rutas.MCP, "PLAN.md"),
     cita_repo(rutas.SCRIPTS, "README.md"),
     cita_repo(rutas.DOCS, "product/overview.md"),

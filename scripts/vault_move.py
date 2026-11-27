@@ -436,8 +436,6 @@ def update_graph(old_path: str, new_path: str, dry_run: bool = False) -> Dict[st
 
     old_stem = Path(old_path).stem
     new_stem = Path(new_path).stem
-    old_folder = str(Path(old_path).parent)
-    new_folder = str(Path(new_path).parent)
 
     def cambiar(graph_data: Dict[str, Any]) -> bool:
         updated = False
@@ -1010,10 +1008,7 @@ def check_move_impact(from_path: str, to_path: str) -> Dict[str, Any]:
     if not source.exists():
         return emit_error("vault_move", "FILE_NOT_FOUND", f"Archivo no encontrado: {from_path}")
 
-    content = source.read_text(encoding="utf-8")
     old_rel = source.relative_to(_raiz()).as_posix()
-
-    wiki_links = RE_WIKILINK.findall(content)
 
     # El mismo criterio con el que `_mover_nota` reescribe (AP-57): el impacto
     # que se anuncia es el que el movimiento va a tener.

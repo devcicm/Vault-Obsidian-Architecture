@@ -826,7 +826,7 @@ Ejemplos:
                     print(json.dumps(emit_error(
                         "vault_mermaid_check", "INVALID_PATH", str(exc)
                     ), ensure_ascii=False))
-                    raise SystemExit(1)
+                    raise SystemExit(1) from exc
                 if not path.exists():
                     print(json.dumps(emit_error(
                         "vault_mermaid_check", "FILE_NOT_FOUND", f"Archivo no encontrado: {args.path}"

@@ -288,7 +288,7 @@ def _leer_snapshot(ruta: str) -> dict:
     try:
         return json.loads(Path(ruta).read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
-        raise SnapshotInvalido(f"snapshot ilegible: {exc}")
+        raise SnapshotInvalido(f"snapshot ilegible: {exc}") from exc
 
 
 def comparar(a: str, b: str) -> dict:

@@ -614,11 +614,6 @@ def vault_quality_check(
     total = len(scored)
     overall_dq = round(total_score / total, 3) if total else 0.0
 
-    below_threshold = sum(
-        1
-        for v in scored.values()
-        if v["overall"] < min_score or (min_score == 0.0 and False)
-    )
     below_07 = sum(1 for v in scored.values() if v["overall"] < 0.7)
 
     generated_at = utcnow()

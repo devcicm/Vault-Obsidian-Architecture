@@ -137,7 +137,6 @@ def _run_script(script: str, args: List[str], vault_root: Optional[Path] = None,
     """Run a vault script and return (returncode, stdout, stderr)."""
     script_path = SCRIPTS_DIR / f"{script}.py"
     cmd = [PYTHON, str(script_path)] + args
-    env = os.environ.copy()
     if vault_root:
         # Scripts auto-detect vault root from __file__ location; no env override needed.
         pass
