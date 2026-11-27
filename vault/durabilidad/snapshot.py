@@ -19,7 +19,7 @@ import json
 import re
 import shutil
 from pathlib import Path
-from typing import Sequence
+from typing import List, Sequence
 
 from ..kernel import rutas
 from ..kernel.contexto import VaultContext
@@ -204,9 +204,12 @@ class ServicioSnapshot:
         nuevo le toca snapshot nuevo: el dedup solo cierra el caso «no cambió
         nada desde la última copia».
         """
-        raiz_viva, _ = merkle_vivo(self._ctx.raiz)
+        ilegibles: List[str] = []
+        raiz_viva, _ = merkle_vivo(self._ctx.raiz, ilegibles=ilegibles)
         ultimo = (self._repo.registro_crudo().get("backups") or [None])[0]
-        if ultimo and ultimo.get("name"):
+        # T-2 (H-05): si hay ficheros ilegibles, la huella viva es incompleta y
+        # queda prohibido declarar `unchanged` por deduplicación.
+        if not ilegibles and ultimo and ultimo.get("name"):
             manifiesto_previo = (self._repo.ruta_de(ultimo["name"])
                                  / FICHERO_MANIFIESTO)
             try:
@@ -236,26 +239,48 @@ class ServicioSnapshot:
         ruta = self._repo.ruta_de(nombre)
         self._repo.raiz_backups.mkdir(parents=True, exist_ok=True)
 
+        def _copiar_tolerante(src: str, dst: str) -> None:
+            try:
+                shutil.copy2(src, dst)
+            except OSError:
+                try:
+                    rel = Path(src).relative_to(self._ctx.raiz).as_posix()
+                except ValueError:
+                    rel = str(src)
+                ilegibles.append(rel)
+
         copiados = 0
         for item in self._ctx.raiz.iterdir():
             if item.name.startswith(".") or item.name in NO_COPIAR:
                 continue
             destino = ruta / item.name
             if item.is_dir():
-                shutil.copytree(item, destino, dirs_exist_ok=True)
+                shutil.copytree(
+                    item,
+                    destino,
+                    dirs_exist_ok=True,
+                    copy_function=_copiar_tolerante,
+                )
                 copiados += sum(1 for p in destino.rglob("*") if p.is_file())
             else:
-                shutil.copy2(item, destino)
-                copiados += 1
+                try:
+                    shutil.copy2(item, destino)
+                    copiados += 1
+                except OSError:
+                    ilegibles.append(item.relative_to(self._ctx.raiz).as_posix())
 
         datos = inventario(ruta)
         raiz, cuenta = merkle_de(ruta)
         ahora = self._ctx.reloj.marca()
-        self._ctx.escritor.escribir_json(ruta / FICHERO_MANIFIESTO, {
+        ilegibles_unicos = sorted(set(ilegibles))
+        manifiesto_payload: dict = {
             "name": nombre, "label": slug, "createdAt": ahora, "vault": datos,
             "merkle_root": raiz, "merkle_file_count": cuenta,
             "merkle_algo": MERKLE_ALGO,
-        })
+        }
+        if ilegibles_unicos:
+            manifiesto_payload["unreadable"] = ilegibles_unicos
+        self._ctx.escritor.escribir_json(ruta / FICHERO_MANIFIESTO, manifiesto_payload)
 
         registro = self._repo.registro_crudo()
         registro.setdefault("backups", []).insert(0, Backup(
@@ -266,7 +291,7 @@ class ServicioSnapshot:
         ).a_envelope())
         self._repo.guardar_registro(registro)
 
-        return {
+        salida: dict = {
             "name": nombre,
             "path": str(ruta.relative_to(self._ctx.raiz)).replace("\\", "/") + "/",
             "manifest": datos,
@@ -275,6 +300,9 @@ class ServicioSnapshot:
             "merkle_algo": MERKLE_ALGO,
             "files_copied": copiados,
         }
+        if ilegibles_unicos:
+            salida["unreadable"] = ilegibles_unicos
+        return salida
 
     def verificar(self, nombre: str) -> dict:
         """Recomputa la huella y la compara con la sellada.

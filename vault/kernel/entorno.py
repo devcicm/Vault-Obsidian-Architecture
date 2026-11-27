@@ -340,6 +340,18 @@ VARIABLES: Dict[str, Variable] = {
             "compatibilidad sin recorte en `stdio`. Solo la lee el `.mjs`.",
         ),
         Variable(
+            "VAULT_MCP_SINGLE_SESSION", "bandera", False, "meta_toolkit",
+            "Con `1`, el servidor MCP HTTP/SSE rechaza con 409 cualquier segunda "
+            "sesión simultánea abierta con la misma credencial sobre el mismo vault "
+            "(sesión individual estricta por instancia). Solo la lee el `.mjs`.",
+        ),
+        Variable(
+            "VAULT_CALLER_ID", "texto", "", "meta_toolkit",
+            "Identidad explícita del baúl llamador al evaluar `00_System/access-policy.json` "
+            "en sesiones cruzadas (`GET /sse?vault=`). Vacía, deriva del nombre de la "
+            "raíz por defecto. Solo la lee el `.mjs`.",
+        ),
+        Variable(
             "VAULT_MCP_PYTHON", "ruta", None, "meta_toolkit",
             "Intérprete con el que el servidor MCP lanza las tools. Vacía, "
             "sondea `python3`, `python` y `py` (en ese orden; `py` al final "

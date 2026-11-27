@@ -492,7 +492,15 @@ def vault_change_log_query(
             if any(es_del(seg) for seg in str(e.get("path", "")).replace("\\", "/").split("/"))
         ]
 
-    entries_sorted = sorted(entries, key=lambda e: e.get("timestamp", ""), reverse=True)
+    # T-3: desempatar empates del mismo segundo por posición de línea en el fichero
+    # para que el último append aparezca siempre primero de forma determinista.
+    entries_sorted = [
+        e for _, e in sorted(
+            enumerate(entries),
+            key=lambda par: (par[1].get("timestamp", ""), par[0]),
+            reverse=True,
+        )
+    ]
 
     page = entries_sorted[:last]
 

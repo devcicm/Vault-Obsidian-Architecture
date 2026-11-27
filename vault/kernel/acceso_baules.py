@@ -174,9 +174,9 @@ def _bloquear_registro(ruta_reg: Path, timeout_s: float = 10.0) -> Iterator[None
                 os.close(fd)
             adquirido = True
             break
-        except FileExistsError:
+        except FileExistsError as exc:
             if time.monotonic() >= limite:
-                raise TimeoutError(f"Timeout adquiriendo lock de registro maestro: {lock_path}")
+                raise TimeoutError(f"Timeout adquiriendo lock de registro maestro: {lock_path}") from exc
             time.sleep(0.02)
     try:
         yield
@@ -633,6 +633,7 @@ def evaluar_acceso_cruzado(
     principal: Principal,
     raiz_destino: "str | Path",
     *,
+    raiz_origen: "Optional[str | Path]" = None,
     ruta_nota: Optional[str] = None,
     tags_nota: Sequence[str] = (),
     sensibilidad_nota: Optional[str] = "internal",
@@ -655,7 +656,13 @@ def evaluar_acceso_cruzado(
     if principal.role not in ROLES_VALIDOS:
         return {**base, "allowed": False, "mode": "deny", "reason": "invalid_role"}
 
-    if principal.vault == target_name:
+    # T-1 (H-03): si se conoce `raiz_origen`, comparar rutas reales resueltas
+    # para que dos carpetas homónimas (ej. `a/vault` y `b/vault`) no pasen como self_vault.
+    if raiz_origen is not None:
+        es_mismo_baul = Path(raiz_origen).resolve() == destino
+    else:
+        es_mismo_baul = principal.vault == target_name
+    if es_mismo_baul:
         return {**base, "allowed": True, "mode": "read_only", "reason": "self_vault"}
 
     try:
